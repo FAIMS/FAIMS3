@@ -1,0 +1,22 @@
+{
+  "name": "faims3",
+  "version": "1.0.0",
+  "description": "Field Acquired Information Management Systems (FAIMS) Project, Version 3.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/FAIMS/FAIMS3.git"
+  },
+  "author": "James Tocknell, Aidan Farrell, Elizabeth Mannering",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FAIMS/FAIMS3/issues"
+  },
+  "homepage": "https://github.com/FAIMS/FAIMS3#readme",
+  "dependencies": {
+    "pouchdb": "^7.2.2"
+  }
+}
