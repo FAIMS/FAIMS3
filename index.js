@@ -26,120 +26,84 @@ const design_docs = {
     
 };
 
-function on_res_end(res) {
+function database_call(method, url, body=null, headers={}) {
     return new Promise((resolve, reject) => {
-        let rawData = '';
-        res.on('data', (chunk) => {rawData += chunk;});
-        res.on('end', () => {
-            if(!res.complete) {
-                reject(res);
-            } else {
-                resolve(rawData);
+        let options = {
+            ...dbinfo.options,
+            path: '/' + url,
+            method: method,
+            headers: {
+                ...headers,
+                "Cookie": cookies
             }
-        })
-    })
+        };
+
+        if(body != null && method == 'GET') {
+            options.path += '?' + new URLSearchParams(body).toString();
+        } else if(body != null && !options.headers["Content-Type"]) {
+            options.headers["Content-Type"] = 'application/json';
+        }
+
+        const request = http.request(options, async (res) => {
+            try {
+                let rawData = '';
+                res.on('data', chunk => {rawData += chunk;});
+                res.on('end', () => {
+                    if(!res.complete) {
+                        reject(res);
+                    } else {
+                        resolve([rawData, res]);
+                    }
+                })
+            } catch(e) {
+                reject(e);
+            }
+        });
+        request.on('error', reject);
+        if(body != null && method != 'GET') {
+            request.write(JSON.stringify(body));
+        }
+        request.end();
+    });
 }
 
 function create_db(db_name) {
-    const options = {
-        ...dbinfo.options,
-        path: '/' + db_name,
-        method: 'PUT',
-        headers: {
-            "Cookie":cookies 
-        }
-    }
-    return new Promise((resolve, reject) => {
-        const req = http.request(options, async (res) => {
-            if(res.statusCode >= 200 && res.statusCode < 300) {
-                let d = await on_res_end(res);
-                console.info("Create DB: " + d);
+    return database_call('PUT', db_name).then(async ([d, res]) => {
+        if(res.statusCode >= 200 && res.statusCode < 300) {
+            console.info("Create DB: " + d);
+            await secure_db(db_name);
+            await design_db(db_name);
+            resolve();
+        } else {
+            console.info("Create DB: " + d)
+            let data = JSON.parse(d);
+            if(data['error'] && data['error'] == 'file_exists') {
+                console.info("Continuing on existing DB");
                 await secure_db(db_name);
                 await design_db(db_name);
                 resolve();
-            } else {
-                let d = await on_res_end(res);
-                console.info("Create DB: " + d)
-                let data = JSON.parse(d);
-                if(data['error'] && data['error'] == 'file_exists') {
-                    console.info("Continuing on existing DB");
-                    await secure_db(db_name);
-                    await design_db(db_name);
-                    resolve();
-                }
             }
-        });
-        req.on('error', error => {
-            console.error(error);
-            reject(error);
-        });
-        req.end();
-    })
+        }
+    });
 }
 
 function design_db(db_name) {
-    const params = new URLSearchParams({
-        conflicts: true,
-        include_docs:true
-    })
-    const options = {
-        ...dbinfo.options,
-        path: '/' + db_name + '/_design_docs?' + params.toString(),
-        method: 'GET',
-        headers: {
-            "Cookie": cookies
-        }
-    };
-    return new Promise((resolve, reject) => {
-        const req = http.request(options, async (res) => {
-            let d = await on_res_end(res);
-            console.info("Design DB: " + d);
-            resolve();
-        });
-        req.on('error', error => {
-            console.error(error);
-            reject(error);
-        });
-        req.end();
-    })
+    return database_call('GET', '_design_docs', {conflicts:true,include_docs:true}).then(([d, res]) => {
+        console.info("Design DB: " + d);
+    });
 }
 
 function try_insert(db_name, to_insert) {
-    const options = {
-        path: '/' + db_name,
-        method: 'POST',
-        headers: {
-            "Cookie": cookies,
-            "Accept": "application/json; text/plain",
-            "Content-Type": "application/json"
-        }
-    };
-    return new Promise((resolve, reject) => {
-        const body = JSON.stringify(to_insert);
-        const req = http.request(options, async (res) => {
-            let d = await on_res_end(res);
-            console.info("Try insert : " + d);
-            resolve();
-        });
-        req.on('error', error => {
-            console.error(error);
-            reject(error);
-        });
-        req.write(body);
-        req.end();
+    return database_call('POST', db_name, to_insert, {
+        "Accept": "application/json; text/plain",
+        "Content-Type": "application/json"
+    }).then(([d, res]) => {
+        console.info("Try insert : " + d);
     })
 }
 
 function secure_db(db_name) {
-    const options = {
-        ...dbinfo.options,
-        path: '/' + db_name + '/_security',
-        method: 'PUT',
-        headers: {
-            "Cookie":cookies 
-        }
-    }
-    const body = JSON.stringify({
+    return database_call('PUT', db_name + '/_security', {
         "admins": {
             "names": [], "roles": []
         },
@@ -147,76 +111,31 @@ function secure_db(db_name) {
         {
             "names": [test_name], "roles": []
         } 
-    });
-    return new Promise((resolve, reject) => {
-        const req = http.request(options, async (res) => {
-            let d = await on_res_end(res);
-            console.info("Secure DB: " + d)
-            resolve();
+    }).then(([d, res]) => {
+        console.info("Secure DB: " + d);
+        return database_call('GET', db_name + '/_security').then(([d, res]) => {
+            console.info("Secured DB: " + d);
         });
-        req.on('error', error => {
-            console.error(error);
-            reject(error);
-        });
-        req.write(body);
-        req.end();
     });
 }
 
 function create_user() {
-    const options = {
-        ...dbinfo.options,
-        path: '/_users/org.couchdb.user:' + test_name,
-        method: 'PUT',
-        headers: {
-            ...dbinfo.headers,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Cookie': cookies
-        }
-    };
-    const body = JSON.stringify({
+    return database_call('PUT', '_users/org.couchdb.user:' + test_name, {
         name: test_name,
         password: test_pass,
         roles: [],
         type: "user"
-    })
-    return new Promise((resolve, reject) => {
-        const req = http.request(options, async (res) => {
-            let d = await on_res_end(res);
-            console.info("Create User: " + d)
-            resolve();
-        });
-        req.on('error', error => {
-            console.error(error);
-            reject(error);
-        });
-
-        req.write(body);
-        req.end();
+    }, {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }).then(([d, res]) => {
+        console.info("Create User: " + d)
     });
 }
 
 function get_user() {
-    const options = {
-        ...dbinfo.options,
-        path: '/_users/org.couchdb.user:' + test_name,
-        method: 'GET',
-        headers: {
-            "Cookie":cookies 
-        }
-    };
-    return new Promise((resolve, reject) => {
-        const req = http.request(options, async (res) => {
-            let d = await on_res_end(res); 
-            console.info("User: " + d)
-            resolve();
-        });
-        req.on('error', error => {
-            console.error(error);
-            reject();
-        });
-        req.end();
+    return database_call('GET', '_users/org.couchdb.user:' + test_name).then(([d, res]) => {
+        console.info("User: " + d)
     });
 }
 
@@ -237,37 +156,16 @@ function parse_cookie(cookies) {
 }
 
 function login(username, password) {
-    const options = {
-        ...dbinfo.options,
-        path: '/_session',
-        method: 'POST',
-        headers: {
-            ...dbinfo.headers,
-            'Content-Type': 'application/json',
-        }
-    };
-    const body = JSON.stringify({
+    return database_call('POST', '_session', {
         name: username,
         password: password
-    })
-    return new Promise((resolve, reject) => {
-        const req = http.request(options, async (res) => {
-            let d = await on_res_end(res);
-            console.info("Session: " + d);
-            console.info("Headers:" + JSON.stringify(res.headers));
-            if(res.headers['set-cookie']) {
-                cookies = parse_cookie(res.headers['set-cookie']);
-                console.info("Cookie: " + cookies);
-            }
-            resolve();
-        });
-        req.on('error', error => {
-            console.error(error);
-            reject(error);
-        });
-
-        req.write(body);
-        req.end();
+    }).then(([d, res]) => {
+        console.info("Session: " + d);
+        console.info("Headers:" + JSON.stringify(res.headers));
+        if(res.headers['set-cookie']) {
+            cookies = parse_cookie(res.headers['set-cookie']);
+            console.info("Cookie: " + cookies);
+        }
     });
 }
 
