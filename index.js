@@ -1,6 +1,13 @@
 const http = require('http');
 const util = require('util');
+const fs = require('fs');
+const PouchDB = require('pouchdb');
+const replicationStream = require('pouchdb-replication-stream');
 const dbinfo = require('./dbinfo.js');
+
+PouchDB.plugin(require('pouchdb-load'));
+PouchDB.plugin(replicationStream.plugin);
+PouchDB.adapter('writableStream', replicationStream.adapters.writableStream);
 
 /*
     From the CouchDB Documentation:
@@ -73,7 +80,6 @@ function create_db(db_name) {
             console.info("Create DB: " + d);
             await secure_db(db_name);
             await design_db(db_name);
-            resolve();
         } else {
             console.info("Create DB: " + d)
             let data = JSON.parse(d);
@@ -81,16 +87,33 @@ function create_db(db_name) {
                 console.info("Continuing on existing DB");
                 await secure_db(db_name);
                 await design_db(db_name);
-                resolve();
             }
         }
     });
 }
 
 function design_db(db_name) {
-    return database_call('GET', '_design_docs', {conflicts:true,include_docs:true}).then(([d, res]) => {
+    return database_call('GET', db_name + '/_design_docs', {conflicts:true,include_docs:true}).then(([d, res]) => {
         console.info("Design DB: " + d);
     });
+}
+
+function get_document(db_name, doc_id) {
+    if(doc_id == null) {
+        return database_call('GET', db_name + '/_all_docs', {
+            "Accept": "application/json; text/plain",
+            "Content-Type": "application/json"
+        }).then(([d, res]) => {
+            return JSON.parse(d);
+        });
+    } else {
+        return database_call('GET', db_name + '/' + doc_id, {
+            "Accept": "application/json; text/plain",
+            "Content-Type": "application/json"
+        }).then(([d, res]) => {
+            return JSON.parse(d)
+        });
+    }
 }
 
 function try_insert(db_name, to_insert) {
@@ -99,6 +122,7 @@ function try_insert(db_name, to_insert) {
         "Content-Type": "application/json"
     }).then(([d, res]) => {
         console.info("Try insert : " + d);
+        return d;
     })
 }
 
@@ -169,12 +193,140 @@ function login(username, password) {
     });
 }
 
-async function main() {
-    await login(dbinfo.username, dbinfo.password);
-    await create_db(test_db);
-}
-main();
+// async function main() {
+//     console.log("Starting main");
+//     await login(dbinfo.username, dbinfo.password);
+//     console.log("Logged in");
+//     await create_db(test_db);
+//     console.log("DB now exists");
+
+//     await login(test_name, test_pass);
+//     console.log("Logged in (2)");
+//     await try_insert(test_db, {
+//         "id": "44ebabfa7c9fd463be987bddac003e9d",
+//         "comment": "This is the first document created in this CouchDB Instance.\n" +
+//         "Aidan Farrell is using this to experiment & test authentication/authorization "
+//     });
+//     console.log("Got document: " + JSON.stringify(await get_document(test_db, "44ebabfa7c9fd463be987bddac003e9d"), null,'  '));
+// }
+// main();
 
 // design_db('_users')
 
 // login(test_name, test_pass, try_insert);
+
+let my_id = "c45a4cc8-2a05-43b9-9839-dbe85521725c";
+
+async function db_reuse(db) {
+    console.info("Testing DB");
+
+    get_response = await db.get(my_id);
+    console.log("Got ID: " + JSON.stringify(get_response));
+
+    let new_object = {
+        '_id': my_id,
+        '_rev': get_response._rev,
+        'data': get_response.data == '2' ? '3' : '2'
+    };
+
+    try {
+        put_response = await db.put(new_object);
+        console.log("Put updated: " + JSON.stringify(put_response));
+
+        get_response = await db.get(my_id);
+        console.log('Response: ' + JSON.stringify(get_response));
+
+        console.info("Syncing to CouchDB");
+        let remote_db = new PouchDB(dbinfo.url_noauth, {
+            skip_setup:true,
+            auth: {
+                username: test_name,
+                password: test_pass
+            }
+        });
+    
+        await PouchDB.sync(db.name, dbinfo.url + '/'  + test_db);
+        
+    } catch(err) {
+        console.error(err);
+    }
+
+    try {
+        console.log("Logging in");
+        await login(test_name, test_pass);
+
+        console.info(JSON.stringify(await get_document(test_db, null), null, '  '));
+
+        let new_id = await try_insert(test_db, new_object);
+        // console.log(new_id)
+        // console.log("Got document: " + JSON.stringify(await get_document(test_db, new_id), null,'  '));
+    } catch(err) {
+        console.error(err);
+    }
+    console.info("Writing DB to file");
+
+
+    let ws = fs.createWriteStream('output.txt');
+    let dump_response = await db.dump(ws);
+    if(dump_response['ok']) {
+        console.info("Saved DB");
+    } else {
+        console.error("Could not save DB: ", dump_response);
+    }
+}
+
+async function db_create(db) {
+    console.info("Testing DB");
+    try {
+        initial_response = await db.post({
+            'data': '1'
+        });
+
+        console.log("Posted data: " + JSON.stringify(initial_response));
+
+        get_response = await db.get(initial_response.id);
+
+        console.log('Reread data: ' + JSON.stringify(get_response.data));
+
+        put_response = await db.put({
+            '_id': initial_response.id,
+            '_rev': initial_response.rev,
+            'data': '2'
+        })
+
+        console.log("Put updated: " + JSON.stringify(put_response));
+
+        get_response = await db.get(initial_response.id);
+
+        console.log('Response: ' + JSON.stringify(get_response.data));
+    } catch(err) {
+        console.error(err);
+    }
+
+    console.info("Writing DB to file");
+
+
+    let ws = fs.createWriteStream('output.txt');
+    let dump_response = await db.dump(ws);
+    if(dump_response['ok']) {
+        console.info("Saved DB");
+    } else {
+        console.error("Could not save DB: ", dump_response);
+    }
+}
+
+let db = new PouchDB("test");
+
+var rs = {};
+var rs = fs.createReadStream('output.txt');
+
+db.load(rs).then(function (res) {
+    if(res['ok']) {
+        db_reuse(db)
+    } else {
+        console.error("Could not load DB: ", res);
+    }
+}).catch(err => {
+    console.log("Could not load DB: " + err);
+    db_create(db)
+});
