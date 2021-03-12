@@ -193,7 +193,31 @@ function login(username, password) {
     });
 }
 
+let _remoteDB;
+const remoteDB = () => {
+    if(_remoteDB == null) {
+        _remoteDB = new PouchDB(dbinfo.url_noauth + '/project_models', {
+            skip_setup:true,
+            // auth: {
+            //     username: test_name,
+            //     password: test_pass
+            // }
+        });
+    }
+    return _remoteDB;
+}
 
+async function db_synchronise(db) {
+    return new Promise((resolve, reject) => {
+        remoteDB().replicate.from(db)
+            .on('complete', resolve)
+            .on('error', reject);
+    }).then(new Promise((resolve, reject) => {
+        db.replicate.from(remoteDB())
+            .on('complete', resolve)
+            .on('error', reject);
+    }));
+}
 
 async function db_create(db) {
     console.info("Testing DB");
