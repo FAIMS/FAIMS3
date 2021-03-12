@@ -219,30 +219,29 @@ async function db_synchronise(db) {
     }));
 }
 
-async function db_create(db) {
-    console.info("Testing DB");
+async function simple_test(db) {
     try {
         initial_response = await db.post({
-            'data': '1'
+            'members': []
         });
 
         console.log("Posted data: " + JSON.stringify(initial_response));
 
         get_response = await db.get(initial_response.id);
 
-        console.log('Reread data: ' + JSON.stringify(get_response.data));
+        console.log('Reread data: ' + JSON.stringify(get_response));
 
         put_response = await db.put({
             '_id': initial_response.id,
             '_rev': initial_response.rev,
-            'data': '2'
+            'members': ['test1']
         })
 
         console.log("Put updated: " + JSON.stringify(put_response));
 
         get_response = await db.get(initial_response.id);
 
-        console.log('Response: ' + JSON.stringify(get_response.data));
+        console.log('Response: ' + JSON.stringify(get_response));
     } catch(err) {
         console.error(err);
     }
