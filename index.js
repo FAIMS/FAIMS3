@@ -245,31 +245,39 @@ async function simple_test(db) {
     } catch(err) {
         console.error(err);
     }
-
-    console.info("Writing DB to file");
-
-
-    let ws = fs.createWriteStream('output.txt');
-    let dump_response = await db.dump(ws);
-    if(dump_response['ok']) {
-        console.info("Saved DB");
-    } else {
-        console.error("Could not save DB: ", dump_response);
-    }
 }
 
-let db = new PouchDB("test");
+function main() {
+    let db = new PouchDB("test");
 
-var rs = {};
-var rs = fs.createReadStream('output.txt');
+    let rs = fs.createReadStream('output.json');
+    rs.on('error', async (err) => {
+        try {
+            await db_synchronise(db);
+            await simple_test(db);
+            await db_synchronise(db);
+        } catch(err) {
+            console.log(err);
+        }
+    })
+    rs.on('ready', () => {
+        db.load(rs).then(async (res) => {
+            if(res['ok']) {
+                try {
+                    await db_synchronise(db);
+                    await simple_test(db);
+                    await db_synchronise(db);
+                } catch(err) {
+                    console.log(err);
+                }
+            } else {
+                console.error("Could not load DB: ", res);
+            }
+        }).catch(err => {
+            console.log("Could not load DB: " + err);
+        });
+    })
 
-db.load(rs).then(function (res) {
-    if(res['ok']) {
-        db_reuse(db)
-    } else {
-        console.error("Could not load DB: ", res);
-    }
-}).catch(err => {
-    console.log("Could not load DB: " + err);
-    db_create(db)
-});
+}
+
+main()
