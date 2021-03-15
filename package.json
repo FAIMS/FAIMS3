@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/FAIMS/FAIMS3#readme",
   "dependencies": {
-    "pouchdb": "^7.2.2"
+    "pouchdb": "^7.2.2",
+    "pouchdb-load": "^1.4.6",
+    "pouchdb-replication-stream": "^1.2.9"
   }
 }
