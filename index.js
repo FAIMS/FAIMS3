@@ -209,14 +209,13 @@ const remoteDB = () => {
 
 async function db_synchronise(db) {
     return new Promise((resolve, reject) => {
-        remoteDB().replicate.from(db)
+        db.sync(remoteDB(), {
+            live:true,
+            retry:true
+        })
             .on('complete', resolve)
             .on('error', reject);
-    }).then(new Promise((resolve, reject) => {
-        db.replicate.from(remoteDB())
-            .on('complete', resolve)
-            .on('error', reject);
-    }));
+    });
 }
 
 async function simple_test(db) {
