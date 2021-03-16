@@ -5,9 +5,9 @@ const PouchDB = require('pouchdb');
 const replicationStream = require('pouchdb-replication-stream');
 const dbinfo = require('./dbinfo.js');
 
+PouchDB.plugin(require('pouchdb-find'));
 PouchDB.plugin(require('pouchdb-load'));
 PouchDB.plugin(replicationStream.plugin);
-PouchDB.adapter('writableStream', replicationStream.adapters.writableStream);
 
 /*
     From the CouchDB Documentation:
@@ -23,260 +23,210 @@ PouchDB.adapter('writableStream', replicationStream.adapters.writableStream);
     * type            string:          Document type. Constantly has the value user
 */
 
-const test_name = 'test1';
-const test_pass = 'apple';
-const test_db = 'authorization_test';
-
-let cookies = [];
-
-const design_docs = {
-    
-};
-
-function database_call(method, url, body=null, headers={}) {
-    return new Promise((resolve, reject) => {
-        let options = {
-            ...dbinfo.options,
-            path: '/' + url,
-            method: method,
-            headers: {
-                ...headers,
-                "Cookie": cookies
-            }
-        };
-
-        if(body != null && method == 'GET') {
-            options.path += '?' + new URLSearchParams(body).toString();
-        } else if(body != null && !options.headers["Content-Type"]) {
-            options.headers["Content-Type"] = 'application/json';
-        }
-
-        const request = http.request(options, async (res) => {
-            try {
-                let rawData = '';
-                res.on('data', chunk => {rawData += chunk;});
-                res.on('end', () => {
-                    if(!res.complete) {
-                        reject(res);
-                    } else {
-                        resolve([rawData, res]);
-                    }
-                })
-            } catch(e) {
-                reject(e);
-            }
-        });
-        request.on('error', reject);
-        if(body != null && method != 'GET') {
-            request.write(JSON.stringify(body));
-        }
-        request.end();
-    });
+const test_auth = {
+    username: "test1",
+    password: "apple"
 }
 
-function create_db(db_name) {
-    return database_call('PUT', db_name).then(async ([d, res]) => {
-        if(res.statusCode >= 200 && res.statusCode < 300) {
-            console.info("Create DB: " + d);
-            await secure_db(db_name);
-            await design_db(db_name);
-        } else {
-            console.info("Create DB: " + d)
-            let data = JSON.parse(d);
-            if(data['error'] && data['error'] == 'file_exists') {
-                console.info("Continuing on existing DB");
-                await secure_db(db_name);
-                await design_db(db_name);
-            }
-        }
-    });
+const proxy_auth = {
+    username: UNCOMMITTED,
+    password: UNCOMMITTED,
 }
 
-function design_db(db_name) {
-    return database_call('GET', db_name + '/_design_docs', {conflicts:true,include_docs:true}).then(([d, res]) => {
-        console.info("Design DB: " + d);
-    });
-}
+/**
+ * String literal of code that is run in couchdb,
+ * when add_prelude is called with another function.
+ */
+let couch_js_prelude = (function() {
+    const MEMBER_PREFIX='member_';
+    const LEADER_PREFIX='leader_';
+    const includes = function(array, searchElement, fromIndex) {
+        return array.lastIndexOf(searchElement) >= (fromIndex || 0);
+    };
+    const diff_ = function(user1, user2) {
 
-function get_document(db_name, doc_id) {
-    if(doc_id == null) {
-        return database_call('GET', db_name + '/_all_docs', {
-            "Accept": "application/json; text/plain",
-            "Content-Type": "application/json"
-        }).then(([d, res]) => {
-            return JSON.parse(d);
-        });
-    } else {
-        return database_call('GET', db_name + '/' + doc_id, {
-            "Accept": "application/json; text/plain",
-            "Content-Type": "application/json"
-        }).then(([d, res]) => {
-            return JSON.parse(d)
-        });
     }
-}
+}).toString();
+// Slice away the function() and Curly brackets
+couch_js_prelude = couch_js_prelude.slice(couch_js_prelude.indexOf('{')+1, couch_js_prelude.lastIndexOf('}'))
 
-function try_insert(db_name, to_insert) {
-    return database_call('POST', db_name, to_insert, {
-        "Accept": "application/json; text/plain",
-        "Content-Type": "application/json"
-    }).then(([d, res]) => {
-        console.info("Try insert : " + d);
-        return d;
-    })
-}
+function add_prelude(func_js) {
+    const func = func_js.toString();
 
-function secure_db(db_name) {
-    return database_call('PUT', db_name + '/_security', {
-        "admins": {
-            "names": [], "roles": []
-        },
-        "members":
-        {
-            "names": [test_name], "roles": []
-        } 
-    }).then(([d, res]) => {
-        console.info("Secure DB: " + d);
-        return database_call('GET', db_name + '/_security').then(([d, res]) => {
-            console.info("Secured DB: " + d);
-        });
-    });
-}
+    // This is split based on where the prelude must be inserted:
+    // After the first '{'
+    const func_declaration = func.slice(0, func.indexOf('{') + 1);
+    const func_rest = func.slice(func.indexOf('{') + 1);
 
-function create_user() {
-    return database_call('PUT', '_users/org.couchdb.user:' + test_name, {
-        name: test_name,
-        password: test_pass,
-        roles: [],
-        type: "user"
-    }, {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }).then(([d, res]) => {
-        console.info("Create User: " + d)
-    });
-}
-
-function get_user() {
-    return database_call('GET', '_users/org.couchdb.user:' + test_name).then(([d, res]) => {
-        console.info("User: " + d)
-    });
-}
-
-function parse_cookie(cookies) {
-    all_cookies = [];
-    cookies.forEach(cookie_string => {
-        let semicolon_split = cookie_string.split(';');
-        let output_cookie = {};
-        let first_name = null;
-        semicolon_split.forEach(part => {
-            let [name, value] = part.trim().split('=');
-            output_cookie[name] = value;
-            first_name = first_name || name;
-        });
-        all_cookies += first_name + '=' + output_cookie[first_name];
-    });
-    return all_cookies;
-}
-
-function login(username, password) {
-    return database_call('POST', '_session', {
-        name: username,
-        password: password
-    }).then(([d, res]) => {
-        console.info("Session: " + d);
-        console.info("Headers:" + JSON.stringify(res.headers));
-        if(res.headers['set-cookie']) {
-            cookies = parse_cookie(res.headers['set-cookie']);
-            console.info("Cookie: " + cookies);
-        }
-    });
-}
-
-let _remoteDB;
-const remoteDB = () => {
-    if(_remoteDB == null) {
-        _remoteDB = new PouchDB(dbinfo.url_noauth + '/project_models', {
-            skip_setup:true,
-            // auth: {
-            //     username: test_name,
-            //     password: test_pass
-            // }
-        });
+    if(func_declaration.indexOf('=>') >= 0) { 
+        throw 'add_prelude must receive ES5-Compatible functions, arrow syntax is not supported.'
     }
-    return _remoteDB;
+
+    return func_declaration + couch_js_prelude + func_rest;
 }
 
-async function db_synchronise(db) {
-    return new Promise((resolve, reject) => {
-        db.sync(remoteDB(), {
-            live:true,
-            retry:true
-        })
-            .on('complete', resolve)
-            .on('error', reject);
-    });
-}
-
-async function simple_test(db) {
-    try {
-        initial_response = await db.post({
-            'members': []
-        });
-
-        console.log("Posted data: " + JSON.stringify(initial_response));
-
-        get_response = await db.get(initial_response.id);
-
-        console.log('Reread data: ' + JSON.stringify(get_response));
-
-        put_response = await db.put({
-            '_id': initial_response.id,
-            '_rev': initial_response.rev,
-            'members': ['test1']
-        })
-
-        console.log("Put updated: " + JSON.stringify(put_response));
-
-        get_response = await db.get(initial_response.id);
-
-        console.log('Response: ' + JSON.stringify(get_response));
-    } catch(err) {
-        console.error(err);
-    }
-}
-
-function main() {
-    let db = new PouchDB("test");
-
-    let rs = fs.createReadStream('output.json');
-    rs.on('error', async (err) => {
-        try {
-            await db_synchronise(db);
-            await simple_test(db);
-            await db_synchronise(db);
-        } catch(err) {
-            console.log(err);
-        }
-    })
-    rs.on('ready', () => {
-        db.load(rs).then(async (res) => {
-            if(res['ok']) {
-                try {
-                    await db_synchronise(db);
-                    await simple_test(db);
-                    await db_synchronise(db);
-                } catch(err) {
-                    console.log(err);
+const presets = [
+    // {
+    //     db: '_users',
+    //     doc_id: '_security',
+    //     data: {
+    //         "members":{
+    //             "roles":["_admin"]
+    //         },
+    //         "admins":{
+    //             "roles":["_admin"]
+    //         }
+    //     }
+    // },
+    {
+        db: 'directory',
+        doc_id: '_design/permissions',
+        data: {
+            "validate_doc_update": add_prelude(function(newDoc, oldDoc, userCtx) {
+                if(!includes(userCtx.roles, '_admin')) {
+                    throw({unauthorized: "Access denied. Only server admin may update the directory"});
                 }
-            } else {
-                console.error("Could not load DB: ", res);
-            }
-        }).catch(err => {
-            console.log("Could not load DB: " + err);
+            })
+        }
+    },
+    {
+        db: '_users',
+        doc_id: '_design/permissions',
+        data: {
+            "validate_doc_update": add_prelude(function(newDoc, oldDoc, userCtx) {
+                if(!includes(userCtx.roles, "user_manager") && !includes(userCtx.roles, "_admin")) {
+                    throw({unauthorized: "Access denied. Only the FAIMS server may change devices"});
+                }
+
+                if(!includes(userCtx.roles, "_admin") && (
+                    !newDoc.user || typeof(newDoc.user) !== 'string'
+                )) {
+                    throw({forbidden: "'user' field required to be an id string"})
+                }
+            })
+        }
+    },
+    {
+        db: 'lake_mungo',
+        doc_id: '_design/permissions',
+        data: {
+            "validate_doc_update": add_prelude(function(newDoc, oldDoc, userCtx) {
+                if(
+                    !includes(userCtx.roles, '_admin') && 
+                    !includes(userCtx.roles, MEMBER_PREFIX + 'lake_mungo') &&
+                    !includes(userCtx.roles, LEADER_PREFIX + 'lake_mungo') &&
+                    !newDoc.deleted && oldDoc == null
+                ) {
+                    throw({unauthorized:"You must be a member of the team to write to this database"});
+                }
+            })
+        }
+    },
+    {
+        db: 'lake_mungo',
+        doc_id: '_design/validation',
+        data: {
+            "validate_doc_update": add_prelude(function(newDoc, oldDoc, userCtx) {
+                if(!newDoc.history || typeof(newDoc.history) !== 'array') {
+                    throw({forbidden:"'author' field required to be an array"})
+                }
+
+                //TODO
+            })
+        }
+    },
+    {
+        db: 'people',
+        doc_id: '_design/permissions',
+        data: {
+            "validate_doc_update": add_prelude(function(newDoc, oldDoc, userCtx) {
+                if(userCtx.roles.indexOf('_admin') >= 0) {
+                    return;
+                }
+
+                if(!includes(userCtx.roles, 'user_manager')) {
+                    // Regular users: Check for more restrictions
+                    // A regular user attempting to modify something about themselves:
+                    // they can't create themselves (but they can delete themselves)
+                    // And roles cannot be changed, since that requires syncing devices
+                    // And devices cannot be modified either, for the same reason
+                    if(oldDoc == null) {
+                        throw({unauthorized: "Access denied. Only the FAIMS server may add users."});
+                    } else if(newDoc.deleted) {
+                        throw({unauthorized: "Access denied. Only the FAIMS server may delete users"});
+                    } else if(JSON.stringify(newDoc.roles) != JSON.stringify(oldDoc.roles)) {
+                        throw({unauthorized: "Access denied. Only the FAIMS server may change roles"});
+                    } else if(JSON.stringify(newDoc.devices) != JSON.stringify(oldDoc.roles)) {
+                        throw({unauthorized: "Access denied. Only the FAIMS server may change devices"});
+                    }
+                }
+            })
+        }
+    }
+];
+
+async function sync_preset(preset, db) {
+    let existing;
+    try {
+        existing = await db.get(preset.doc_id);
+    } catch(err) {
+        if(err.error == 'not_found') {
+            // Post in a new version
+            // console.log('CREATE ' + JSON.stringify(preset.data));
+
+            await db.put({
+                _id: preset.doc_id,
+                ...preset.data
+            });
+            return;
+        } else {
+            throw err;
+        }
+    }
+    
+    const replacing_rev = existing._rev;
+
+    // Allows for JSON.stringify comparison
+    delete existing._id;
+    delete existing._rev;
+
+    // This isn't guaranteed to elude the case that they're equal
+    // but it WILL make sure that if they're not equal, it will modify
+    if(JSON.stringify(existing) != JSON.stringify(preset.data)) {
+        await db.put({
+            '_id': preset.doc_id,
+            '_rev': replacing_rev,
+            ...preset.data
         });
-    })
+
+        console.log('synced*: ' + db.name + '/' + preset.doc_id);
+    } else {
+        console.log('synced:  ' + db.name + '/' + preset.doc_id);
+    }
+}
+
+let _remoteDBs = {};
+const remoteDB = (db_name, auth) => {
+    let key = db_name + auth.username + auth.password;
+    if(_remoteDBs[key] == null) {
+        _remoteDBs[key] = new PouchDB(dbinfo.url_noauth + '/' + db_name, {
+            skip_setup:true,
+            auth: auth
+        });
+    }
+    return _remoteDBs[key];
+}
+
+async function main() {
+    for(let i = 0; i < presets.length; i++) {
+        const preset = presets[i];
+        try {
+            await sync_preset(preset, remoteDB(preset.db, dbinfo.auth));
+        } catch(err) {
+            console.error(err);
+        }
+    }
 
 }
 
-main()
+main().catch(console.error);
