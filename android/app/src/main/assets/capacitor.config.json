@@ -1,0 +1,13 @@
+{
+  "appId": "org.fedarch.faims3",
+  "appName": "FAIMS3",
+  "bundledWebRuntime": false,
+  "npmClient": "npm",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  },
+  "cordova": {}
+}

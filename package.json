@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@capacitor/android": "^2.4.7",
+    "@capacitor/cli": "^2.4.7",
+    "@capacitor/core": "^2.4.7",
+    "@capacitor/ios": "^2.4.7",
+    "@types/pouchdb": "^6.4.0",
+    "pouchdb": "^7.2.2"
+  }
+}
