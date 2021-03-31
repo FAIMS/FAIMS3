@@ -8,7 +8,7 @@ const PROJECT_DBNAME_PREFIX = 'project-';
 interface ConnectionInfo {
     host: string,
     port: number,
-    lan: boolean | undefined,
+    lan?: boolean,
     db_name: string
 }
 
@@ -16,9 +16,9 @@ interface DirectoryDoc {
     _id: string;
     name: string;
     description: string;
-    people_db: null |  ConnectionInfo,
-    projects_db: null |  ConnectionInfo,
-    devices_db: null |  ConnectionInfo
+    people_db?: null |  ConnectionInfo,
+    projects_db?: null |  ConnectionInfo,
+    devices_db?: null |  ConnectionInfo
 }
 
 interface DefaultInstanceDirectoryDoc extends DirectoryDoc {
