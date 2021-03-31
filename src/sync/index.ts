@@ -35,15 +35,29 @@ interface ActiveDoc {
     password: string
 }
 
-interface LocalDBList {
-    [key: string] : PouchDB.Database
+interface LocalDBList<Content extends {}> {
+    [key: string] : PouchDB.Database<Content>
 }
 
-interface ProjectInfo {
+/**
+ * Describes a project, with connection, name, description, and schema
+ */
+interface ProjectsDoc {
     name: string,
     description: string,
     connection: null | ConnectionInfo
     //TODO: Schema
+}
+
+/**
+ * Document from a devices DB
+ */
+interface DevicesDoc {
+
+}
+
+interface ProjectDoc {
+    
 }
 
 /**
@@ -66,29 +80,29 @@ const active_db = new PouchDB<ActiveDoc>("active");
 /**
  * mapping from instance id to a PouchDB CLIENTSIDE DB
  */
-let projects_dbs : LocalDBList = {};
+let projects_dbs : LocalDBList<ProjectsDoc> = {};
 /**
  * mapping from instance id to a PouchDB Connection to a server database
  */
-let remote_projects_dbs : LocalDBList = {};
+let remote_projects_dbs : LocalDBList<ProjectsDoc> = {};
 
 /**
  * mapping from instance id to a PouchDB CLIENTSIDE DB
  */
-let devices_dbs : LocalDBList = {};
+let devices_dbs : LocalDBList<DevicesDoc> = {};
 /**
  * mapping from instance id to a PouchDB Connection to a server database
  */
-let remote_devices_dbs : LocalDBList = {};
+let remote_devices_dbs : LocalDBList<DevicesDoc> = {};
 
 /**
  * mapping from active id (instance id/project id) to a PouchDB CLIENTSIDE DB
  */
-let project_dbs : LocalDBList = {};
+let project_dbs : LocalDBList<ProjectDoc> = {};
 /**
  * mapping from active id (instance id/project id) to a PouchDB Connection to a server database
  */
-let remote_project_dbs : LocalDBList = {};
+let remote_project_dbs : LocalDBList<ProjectDoc> = {};
 
 /**
  * 
@@ -99,16 +113,16 @@ let remote_project_dbs : LocalDBList = {};
  * @param global_server_dbs remote_projects_db or remote_devices_db
  * @returns The local DB
  */
-function ensure_instance_db_is_local_and_synced(
+function ensure_instance_db_is_local_and_synced<Content extends {}>(
     prefix: string,
     local_db_id : string,
     connection_info : ConnectionInfo,
-    global_client_dbs : LocalDBList,
-    global_server_dbs : LocalDBList
-) : PouchDB.Database {
+    global_client_dbs : LocalDBList<Content>,
+    global_server_dbs : LocalDBList<Content>
+) : PouchDB.Database<Content> {
     // Already connected/loaded local DB
     if(global_client_dbs[local_db_id]) {
-        return global_client_dbs[local_db_id];
+        return global_client_dbs[local_db_id] as PouchDB.Database<Content>;
     }
 
     if(
@@ -208,7 +222,7 @@ export async function initialize_directory(directory_url : string) {
             projects_connection_info,
             projects_dbs,
             remote_projects_dbs
-        ) as PouchDB.Database<ProjectInfo>;
+        ) as PouchDB.Database<ProjectsDoc>;
 
         let devices_local_id = instance_info['devices_db'] ? instance_info._id : DEFAULT_INSTANCE_ID;
         let devices_connection_info = instance_info['devices_db'] || (await get_default_instance())['devices_db'];
