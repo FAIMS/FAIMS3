@@ -105,6 +105,22 @@ let project_dbs : LocalDBList<ProjectDoc> = {};
 let remote_project_dbs : LocalDBList<ProjectDoc> = {};
 
 /**
+ * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
+ * @param connection_info Network address/database info to use to initialize the connection
+ * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
+ */
+function ConnectionInfo_create_pouch<Content extends {}>(
+    connection_info: ConnectionInfo
+) : PouchDB.Database<Content>
+{
+    return new PouchDB(
+        connection_info.host + ':' + 
+        connection_info.port + '/' +
+        connection_info.db_name
+    );
+}
+
+/**
  * 
  * @param prefix Name to use to run new PouchDB(prefix + '/' + id)
  * @param instance_info An instance object, i.e. a doc from the directory db
@@ -154,11 +170,7 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
     // This is to ensure the database is runnable while offline
 
     try {
-        global_server_dbs[local_db_id] = new PouchDB(
-            connection_info.host + ':' + 
-            connection_info.port + '/' +
-            connection_info.db_name
-        );
+        global_server_dbs[local_db_id] = ConnectionInfo_create_pouch(connection_info);
         // try to sync here, to ensure the connection works or returns false.
         PouchDB.replicate(global_server_dbs[local_db_id], global_client_dbs[local_db_id]);
     } catch(err) {
@@ -186,9 +198,9 @@ async function get_default_instance() : Promise<DefaultInstanceDirectoryDoc> {
 
 PouchDB.plugin(PouchDBFind);
 
-export async function initialize_directory(directory_url : string) {
+export async function initialize_dbs(directory_connection : ConnectionInfo) {
     try {
-        let directory_remote = new PouchDB(directory_url);
+        let directory_remote = ConnectionInfo_create_pouch(directory_connection);
         PouchDB.replicate(directory_remote, directory_db);
     } catch(error) {
         console.error("Could not connect to directory server to sync: " + error);
