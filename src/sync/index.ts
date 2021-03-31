@@ -141,16 +141,6 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
         return global_client_dbs[local_db_id] as PouchDB.Database<Content>;
     }
 
-    if(
-        typeof(connection_info) !== 'object' ||
-        typeof(connection_info.host) !== 'string' ||
-        typeof(connection_info.port) !== 'string' ||
-        typeof(connection_info.lan) !== 'boolean' ||
-        typeof(connection_info.db_name) !== 'string'
-    ) {
-        throw({message:"One of the active FAIMS instances is misconfigured in the FAIMS directory.", error: "database_directory_format"});
-    }
-
     // The first part of this function, to get the local DB
     // Creates the prefix/escaped_name using the local_db_id
     // then uses said name on a new PouchDB(name) to load the database.
