@@ -26,7 +26,14 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "preserve": "npm run build",
-    "serve": "npx cap serve"
+    "serve": "npx cap serve",
+    "lint": "gts lint",
+    "clean": "gts clean",
+    "compile": "tsc",
+    "fix": "gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run lint"
   },
   "dependencies": {
     "@capacitor/android": "^2.4.7",
@@ -47,5 +54,10 @@
     "react-scripts": "4.0.3",
     "typescript": "^4.2.3",
     "web-vitals": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^14.11.2",
+    "gts": "^3.1.0",
+    "typescript": "^4.0.3"
   }
 }
