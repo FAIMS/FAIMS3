@@ -2,77 +2,8 @@ import React from 'react';
 import Input from '@material-ui/core/Input';
 
 import {getComponentByName} from './ComponentRegistry';
+import {getUiSpecForProject} from './dbHelpers';
 
-
-function getUiSpecForProject(project_name: string) {
-    return {
-        "fields": {
-            "int-field": {
-              "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
-              "component-name": "Input",
-              "type-returned": "faims-core::Integer", // matches a type in the Project Model
-              "documentation": "<p>Some HTML</p>", // the documentation on the field
-              "component-parameters": {
-                "type": "number",
-              } // configure appearance/actions/etc. of component
-            },
-            "str-field": {
-              "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
-              "component-name": "Input",
-              "type-returned": "faims-core::Integer", // matches a type in the Project Model
-              "documentation": "<p>Some HTML</p>", // the documentation on the field
-              "component-parameters": {
-                "type": "string",
-              } // configure appearance/actions/etc. of component
-            },
-            "bool-field": {
-              "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
-              "component-name": "Checkbox",
-              "type-returned": "faims-core::Integer", // matches a type in the Project Model
-              "documentation": "<p>Some HTML</p>", // the documentation on the field
-              "component-parameters": {
-              } // configure appearance/actions/etc. of component
-            },
-            "date-field": {
-              "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
-              "component-name": "TextField",
-              "type-returned": "faims-core::Integer", // matches a type in the Project Model
-              "documentation": "<p>Some HTML</p>", // the documentation on the field
-              "component-parameters": {
-                "type": "date",
-              } // configure appearance/actions/etc. of component
-            },
-            "time-field": {
-              "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
-              "component-name": "TextField",
-              "type-returned": "faims-core::Integer", // matches a type in the Project Model
-              "documentation": "<p>Some HTML</p>", // the documentation on the field
-              "component-parameters": {
-                "type": "time",
-              } // configure appearance/actions/etc. of component
-            },
-        },
-        "views": {
-            "start-view": {
-                "fields": [
-                    "int-field",
-                    "str-field",
-                    "bool-field",
-                    "date-field",
-                    "time-field",
-                ], // ordering sets appearance order
-                //"next-view": "another-view-id", // either this gets handled by a component, or we stick it here
-                //"next-view-label": "Done!"
-            }
-        },
-        "start-view": "start-view",
-    };
-}
 
 type FormProps = {
     project: string;
@@ -155,11 +86,15 @@ type ViewProps = {
 };
 
 type ViewState = {
+    validationCallbacks: any;
 };
 
 export class ViewComponent extends React.Component<ViewProps,ViewState> {
     constructor(props) {
         super(props)
+        this.state = {
+            validationCallbacks: {},
+        };
         this.validate = this.validate.bind(this);
         let form = this.props.form;
         form.setValidateCallback(this.validateCallback);
@@ -167,7 +102,11 @@ export class ViewComponent extends React.Component<ViewProps,ViewState> {
 
     validateCallback () {
         console.log("Doing the validation");
-        return {};
+        let validatedFormValues = {};
+        for (let [name, callback] of this.state.validationCallbacks) {
+            validatedFormValues[name] = callback();
+        }
+        return validatedFormValues;
     }
 
     validate(event) {
@@ -181,6 +120,14 @@ export class ViewComponent extends React.Component<ViewProps,ViewState> {
 
     getForm() {
         return this.props.form;
+    }
+
+    registerCallback(name:string, callback: any) {
+        this.state.validationCallbacks[name] = callback;
+    }
+
+    unregisterCallback(name:string) {
+        delete this.state.validationCallbacks[name];
     }
 
     render() {
