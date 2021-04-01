@@ -9,7 +9,7 @@ function getUiSpecForProject(project_name: string) {
         "fields": {
             "int-field": {
               "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/aquire value from
+              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
               "component-name": "Input",
               "type-returned": "faims-core::Integer", // matches a type in the Project Model
               "documentation": "<p>Some HTML</p>", // the documentation on the field
@@ -19,7 +19,7 @@ function getUiSpecForProject(project_name: string) {
             },
             "str-field": {
               "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/aquire value from
+              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
               "component-name": "Input",
               "type-returned": "faims-core::Integer", // matches a type in the Project Model
               "documentation": "<p>Some HTML</p>", // the documentation on the field
@@ -29,7 +29,7 @@ function getUiSpecForProject(project_name: string) {
             },
             "bool-field": {
               "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/aquire value from
+              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
               "component-name": "Checkbox",
               "type-returned": "faims-core::Integer", // matches a type in the Project Model
               "documentation": "<p>Some HTML</p>", // the documentation on the field
@@ -38,7 +38,7 @@ function getUiSpecForProject(project_name: string) {
             },
             "date-field": {
               "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/aquire value from
+              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
               "component-name": "TextField",
               "type-returned": "faims-core::Integer", // matches a type in the Project Model
               "documentation": "<p>Some HTML</p>", // the documentation on the field
@@ -48,7 +48,7 @@ function getUiSpecForProject(project_name: string) {
             },
             "time-field": {
               "label": "A helpful label",
-              "component-namespace": "core-material-ui", // this says what web component to use to render/aquire value from
+              "component-namespace": "core-material-ui", // this says what web component to use to render/acquire value from
               "component-name": "TextField",
               "type-returned": "faims-core::Integer", // matches a type in the Project Model
               "documentation": "<p>Some HTML</p>", // the documentation on the field
