@@ -14,12 +14,16 @@ on:
 
 jobs:
   build:
-
+    # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     runs-on: ubuntu-latest
-
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        node-version: [12.x]
+        node-version: [14.x]
+        experimental: [false]
+        include:
+          - node-version: 15.x
+            experimental: true
 
     steps:
     - uses: actions/checkout@v2
