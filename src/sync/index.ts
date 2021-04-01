@@ -1,71 +1,21 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import jsonpointer from 'jsonpointer';
+import * as DataModel from '../datamodel';
 
 const DEFAULT_INSTANCE_ID = 'default';
 const PROJECT_DBNAME_PREFIX = 'project-';
-
-interface ConnectionInfo {
-    host: string,
-    port: number,
-    lan?: boolean,
-    db_name: string
-}
-
-interface DirectoryDoc {
-    _id: string;
-    name: string;
-    description: string;
-    people_db?: null |  ConnectionInfo,
-    projects_db?: null |  ConnectionInfo,
-    devices_db?: null |  ConnectionInfo
-}
-
-interface DefaultInstanceDirectoryDoc extends DirectoryDoc {
-    // All are not null:
-    people_db: ConnectionInfo,
-    projects_db: ConnectionInfo,
-    devices_db: ConnectionInfo
-}
-
-interface ActiveDoc {
-    instance_id: string
-    project_id: string
-    username: string
-    password: string
-}
 
 interface LocalDBList<Content extends {}> {
     [key: string] : PouchDB.Database<Content>
 }
 
 /**
- * Describes a project, with connection, name, description, and schema
- */
-interface ProjectsDoc {
-    name: string,
-    description: string,
-    connection: null | ConnectionInfo
-    //TODO: Schema
-}
-
-/**
- * Document from a devices DB
- */
-interface DevicesDoc {
-
-}
-
-interface ProjectDoc {
-    
-}
-
-/**
  * Directory: All (public, anyways) Faims instances 
  */
-const directory_db = new PouchDB<DirectoryDoc>("directory");
+const directory_db = new PouchDB<DataModel.ListingsObject>("directory");
 
-let default_instance : null | DefaultInstanceDirectoryDoc = null; //Set to directory_db.get(DEFAULT_INSTANCE_ID) by get_default_instance
+let default_instance : null | DataModel.NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_INSTANCE_ID) by get_default_instance
 
 /**
  * Active: A local (NOT synced) list of:
@@ -75,34 +25,34 @@ let default_instance : null | DefaultInstanceDirectoryDoc = null; //Set to direc
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
  *   * username, password: A device login (mostly the same across all docs in this db, except for differences in devices_db of the instance),
  */
-const active_db = new PouchDB<ActiveDoc>("active");
+const active_db = new PouchDB<DataModel.ActiveDoc>("active");
 
 /**
  * mapping from instance id to a PouchDB CLIENTSIDE DB
  */
-let projects_dbs : LocalDBList<ProjectsDoc> = {};
+let projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 /**
  * mapping from instance id to a PouchDB Connection to a server database
  */
-let remote_projects_dbs : LocalDBList<ProjectsDoc> = {};
+let remote_projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 
 /**
  * mapping from instance id to a PouchDB CLIENTSIDE DB
  */
-let devices_dbs : LocalDBList<DevicesDoc> = {};
+let devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
 /**
  * mapping from instance id to a PouchDB Connection to a server database
  */
-let remote_devices_dbs : LocalDBList<DevicesDoc> = {};
+let remote_devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
 
 /**
  * mapping from active id (instance id/project id) to a PouchDB CLIENTSIDE DB
  */
-let project_dbs : LocalDBList<ProjectDoc> = {};
+let project_dbs : LocalDBList<DataModel.ProjectDoc> = {};
 /**
  * mapping from active id (instance id/project id) to a PouchDB Connection to a server database
  */
-let remote_project_dbs : LocalDBList<ProjectDoc> = {};
+let remote_project_dbs : LocalDBList<DataModel.ProjectDoc> = {};
 
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
@@ -110,7 +60,7 @@ let remote_project_dbs : LocalDBList<ProjectDoc> = {};
  * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
  */
 function ConnectionInfo_create_pouch<Content extends {}>(
-    connection_info: ConnectionInfo
+    connection_info: DataModel.ConnectionInfo
 ) : PouchDB.Database<Content>
 {
     return new PouchDB(
@@ -132,7 +82,7 @@ function ConnectionInfo_create_pouch<Content extends {}>(
 function ensure_instance_db_is_local_and_synced<Content extends {}>(
     prefix: string,
     local_db_id : string,
-    connection_info : ConnectionInfo,
+    connection_info : DataModel.ConnectionInfo,
     global_client_dbs : LocalDBList<Content>,
     global_server_dbs : LocalDBList<Content>
 ) : PouchDB.Database<Content> {
@@ -171,7 +121,7 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
     return global_client_dbs[local_db_id]
 }
 
-async function get_default_instance() : Promise<DefaultInstanceDirectoryDoc> {
+async function get_default_instance() : Promise<DataModel.NonNullListingsObject> {
     if(default_instance == null) {
         let possibly_corrupted_instance=  await directory_db.get(DEFAULT_INSTANCE_ID);
         default_instance = {
@@ -188,7 +138,7 @@ async function get_default_instance() : Promise<DefaultInstanceDirectoryDoc> {
 
 PouchDB.plugin(PouchDBFind);
 
-export async function initialize_dbs(directory_connection : ConnectionInfo) {
+export async function initialize_dbs(directory_connection : DataModel.ConnectionInfo) {
     try {
         let directory_remote = ConnectionInfo_create_pouch(directory_connection);
         PouchDB.replicate(directory_remote, directory_db);
@@ -201,7 +151,7 @@ export async function initialize_dbs(directory_connection : ConnectionInfo) {
 
     active_projects.forEach(async doc => {
         if(
-            typeof(doc.instance_id) !== 'string' ||
+            typeof(doc.listing_id) !== 'string' ||
             typeof(doc.project_id) !== 'string' ||
             typeof(doc.username) !== 'string' ||
             typeof(doc.password) !== 'string'
@@ -213,7 +163,7 @@ export async function initialize_dbs(directory_connection : ConnectionInfo) {
         
         // First, using the instance id, ensure that the projects and devices dbs are accessable
         
-        let instance_info = await directory_db.get(doc.instance_id);
+        let instance_info = await directory_db.get(doc.listing_id);
 
         let projects_local_id = instance_info['projects_db'] ? instance_info._id : DEFAULT_INSTANCE_ID;
         let projects_connection_info = instance_info['projects_db'] || (await get_default_instance())['projects_db'];
@@ -224,7 +174,7 @@ export async function initialize_dbs(directory_connection : ConnectionInfo) {
             projects_connection_info,
             projects_dbs,
             remote_projects_dbs
-        ) as PouchDB.Database<ProjectsDoc>;
+        ) as PouchDB.Database<DataModel.ProjectObject>;
 
         let devices_local_id = instance_info['devices_db'] ? instance_info._id : DEFAULT_INSTANCE_ID;
         let devices_connection_info = instance_info['devices_db'] || (await get_default_instance())['devices_db'];
