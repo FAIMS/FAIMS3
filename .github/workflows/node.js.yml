@@ -3,13 +3,7 @@
 
 name: Node.js 14.x CI - Lint, build, test, cap doctor
 
-on: 
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: [push, pull_request]
 
 
 jobs:
@@ -35,4 +29,5 @@ jobs:
     - run: npm run lint
     - run: npm run build --if-present
     - run: npm test
-    - run: npm cap doctor
+    - run: npx cap copy
+    - run: npx cap doctor android # ios requires xcode
