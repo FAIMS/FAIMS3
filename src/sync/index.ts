@@ -3,7 +3,7 @@ import PouchDBFind from 'pouchdb-find';
 import jsonpointer from 'jsonpointer';
 import * as DataModel from '../datamodel';
 
-const DEFAULT_INSTANCE_ID = 'default';
+const DEFAULT_LISTING_ID = 'default';
 const PROJECT_DBNAME_PREFIX = 'project-';
 
 interface LocalDBList<Content extends {}> {
@@ -15,42 +15,42 @@ interface LocalDBList<Content extends {}> {
  */
 const directory_db = new PouchDB<DataModel.ListingsObject>("directory");
 
-let default_instance : null | DataModel.NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_INSTANCE_ID) by get_default_instance
+let default_instance : null | DataModel.NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_LISTING_ID) by get_default_instance
 
 /**
  * Active: A local (NOT synced) list of:
- *   {_id, username, password, project_id, instance_id}
- *   For each project the current device is part of (so this is keyed by instance id + project id),
- *   * instance_id: A couchdb instance object's id (from "directory" db)
+ *   {_id, username, password, project_id, listing_id}
+ *   For each project the current device is part of (so this is keyed by listing id + project id),
+ *   * listing_id: A couchdb instance object's id (from "directory" db)
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
  *   * username, password: A device login (mostly the same across all docs in this db, except for differences in devices_db of the instance),
  */
 const active_db = new PouchDB<DataModel.ActiveDoc>("active");
 
 /**
- * mapping from instance id to a PouchDB CLIENTSIDE DB
+ * mapping from listing id to a PouchDB CLIENTSIDE DB
  */
 let projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 /**
- * mapping from instance id to a PouchDB Connection to a server database
+ * mapping from listing id to a PouchDB Connection to a server database
  */
 let remote_projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 
 /**
- * mapping from instance id to a PouchDB CLIENTSIDE DB
+ * mapping from listing id to a PouchDB CLIENTSIDE DB
  */
 let devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
 /**
- * mapping from instance id to a PouchDB Connection to a server database
+ * mapping from listing id to a PouchDB Connection to a server database
  */
 let remote_devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
 
 /**
- * mapping from active id (instance id/project id) to a PouchDB CLIENTSIDE DB
+ * mapping from active id (listing id/project id) to a PouchDB CLIENTSIDE DB
  */
 let project_dbs : LocalDBList<DataModel.ProjectDoc> = {};
 /**
- * mapping from active id (instance id/project id) to a PouchDB Connection to a server database
+ * mapping from active id (listing id/project id) to a PouchDB Connection to a server database
  */
 let remote_project_dbs : LocalDBList<DataModel.ProjectDoc> = {};
 
@@ -161,11 +161,11 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
             return; //This doesn't throw because we want to be tolerant of errors and let the user re-add the active project
         }
         
-        // First, using the instance id, ensure that the projects and devices dbs are accessable
+        // First, using the listing id, ensure that the projects and devices dbs are accessable
         
         let instance_info = await directory_db.get(doc.listing_id);
 
-        let projects_local_id = instance_info['projects_db'] ? instance_info._id : DEFAULT_INSTANCE_ID;
+        let projects_local_id = instance_info['projects_db'] ? instance_info._id : DEFAULT_LISTING_ID;
         let projects_connection_info = instance_info['projects_db'] || (await get_default_instance())['projects_db'];
 
         let projects_db = ensure_instance_db_is_local_and_synced(
@@ -176,7 +176,7 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
             remote_projects_dbs
         ) as PouchDB.Database<DataModel.ProjectObject>;
 
-        let devices_local_id = instance_info['devices_db'] ? instance_info._id : DEFAULT_INSTANCE_ID;
+        let devices_local_id = instance_info['devices_db'] ? instance_info._id : DEFAULT_LISTING_ID;
         let devices_connection_info = instance_info['devices_db'] || (await get_default_instance())['devices_db'];
 
         ensure_instance_db_is_local_and_synced(
