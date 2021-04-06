@@ -123,7 +123,7 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
 
 async function get_default_instance() : Promise<DataModel.NonNullListingsObject> {
     if(default_instance == null) {
-        let possibly_corrupted_instance=  await directory_db.get(DEFAULT_INSTANCE_ID);
+        let possibly_corrupted_instance=  await directory_db.get(DEFAULT_LISTING_ID);
         default_instance = {
             _id:        possibly_corrupted_instance._id,
             name:       possibly_corrupted_instance.name,
