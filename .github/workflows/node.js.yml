@@ -3,13 +3,7 @@
 
 name: Node.js 14.x CI - Lint, build, test, cap doctor
 
-on: 
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: [push, pull_request]
 
 
 jobs:
