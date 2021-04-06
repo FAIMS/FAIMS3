@@ -114,7 +114,7 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
         // try to sync here, to ensure the connection works or returns false.
         PouchDB.replicate(global_server_dbs[local_db_id], global_client_dbs[local_db_id]);
     } catch(err) {
-        console.error("Could not sync the remote instance DB " + JSON.stringify(connection_info) + ":");
+        console.error(`Could not sync the remote instance DB ${JSON.stringify(connection_info)}:`);
         console.error(err);
         delete global_server_dbs[local_db_id]
     }
@@ -138,12 +138,31 @@ async function get_default_instance() : Promise<DataModel.NonNullListingsObject>
 
 PouchDB.plugin(PouchDBFind);
 
+/**
+ * Creates & Populates the active_projects database,
+ * then disconnects it
+ * 
+ * Call before initialize_db
+ */
+export async function populate_test_data() {
+    let test_doc = {
+        _id: 'default/lake_mungo',
+        listing_id: 'default',
+        project_id: 'lake_mungo',
+        username: 'test1',
+        password: 'apple'
+    };
+    let {id, rev, ok} = await active_db.put(test_doc);
+    if(test_doc._id != id) throw("Could not correctly put the right test ID'd data");
+    if(ok !== true) throw("Could not insert test data");
+}
+
 export async function initialize_dbs(directory_connection : DataModel.ConnectionInfo) {
     try {
         let directory_remote = ConnectionInfo_create_pouch(directory_connection);
         PouchDB.replicate(directory_remote, directory_db);
     } catch(error) {
-        console.error("Could not connect to directory server to sync: " + error);
+        console.error(`Could not connect to directory server to sync: ${error}`);
     }
 
     // For every active project, try to sync their devices & projects DBs
