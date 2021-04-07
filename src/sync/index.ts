@@ -6,7 +6,7 @@ import * as DataModel from '../datamodel';
 const DEFAULT_LISTING_ID = 'default';
 const PROJECT_DBNAME_PREFIX = 'project-';
 
-interface LocalDBList<Content extends {}> {
+export interface LocalDBList<Content extends {}> {
     [key: string] : PouchDB.Database<Content>
 }
 
