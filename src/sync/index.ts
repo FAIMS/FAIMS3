@@ -4,7 +4,8 @@ import jsonpointer from 'jsonpointer';
 import * as DataModel from '../datamodel';
 
 const DEFAULT_LISTING_ID = 'default';
-const PROJECT_DBNAME_PREFIX = 'project-';
+const METADATA_DBNAME_PREFIX = 'data-';
+const DATA_DBNAME_PREFIX = 'metadata-'
 
 export interface LocalDBList<Content extends {}> {
     [key: string] : PouchDB.Database<Content>
@@ -28,11 +29,17 @@ let default_instance : null | DataModel.NonNullListingsObject = null; //Set to d
 const active_db = new PouchDB<DataModel.ActiveDoc>("active");
 
 /**
- * mapping from listing id to a PouchDB CLIENTSIDE DB
+ * Each listing has a Projects database and Users/Devices DBs
+ * 
+ * This is the local copy of said data. It is modified directly,
+ * and synced periodically.
  */
 let projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 /**
- * mapping from listing id to a PouchDB Connection to a server database
+ * Each listing has a Projects database and Users/Devices DBs
+ * 
+ * This is the remote copy of said data. It may not be accessable
+ * all the time, and is only used for syncing.
  */
 let remote_projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 
@@ -46,13 +53,43 @@ let devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
 let remote_devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
 
 /**
- * mapping from active id (listing id/project id) to a PouchDB CLIENTSIDE DB
+ * Per-[active]-project project data:
+ * Contain in these databases (indexed by the active_db id's)
+ * is project data.
+ * 
+ * This is the local copy of said data. It is modified directly,
+ * and synced periodically.
  */
-let project_dbs : LocalDBList<DataModel.ProjectDoc> = {};
+let data_dbs : LocalDBList<DataModel.ProjectDoc> = {};
 /**
- * mapping from active id (listing id/project id) to a PouchDB Connection to a server database
+ * Per-[active]-project project data:
+ * Contain in these databases (indexed by the active_db id's)
+ * is project data.
+ * 
+ * This is the remote copy of said data. It may not be accessable
+ * all the time, and is only used for syncing.
  */
-let remote_project_dbs : LocalDBList<DataModel.ProjectDoc> = {};
+let remote_data_dbs : LocalDBList<DataModel.ProjectDoc> = {};
+
+/**
+ * Synced from the project metadatabase for each active project,
+ * This has the metadata describing a database. Project Schemas,
+ * GUI Models, and a Prople database.
+ * 
+ * This is the local copy of said data. It is modified directly,
+ * and synced periodically.
+ */
+let metadata_dbs : LocalDBList<DataModel.ProjectMetaObject> = {};
+
+/**
+ * Synced from the project metadatabase for each active project,
+ * This has the metadata describing a database. Project Schemas,
+ * GUI Models, and a Prople database. 
+ * 
+ * This is the remote copy of said data. It may not be accessable
+ * all the time, and is only used for syncing.
+ */
+let remote_metadata_dbs : LocalDBList<DataModel.ProjectMetaObject> = {};
 
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
@@ -209,23 +246,40 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
         // Now that we have instance connections,
         // So the project should be accessable
 
-        let project_info = await projects_db.get(doc.project_id);
+        let project_info : DataModel.ProjectObject = await projects_db.get(doc.project_id);
         let project_local_id = doc._id;
         // Defaults to the same couch as the projects db, but different database name:
-        let project_connection_info = project_info['connection'] || {
+        let meta_connection_info = project_info.metadata_db || {
             host : projects_connection_info.host,
             port : projects_connection_info.port,
             lan : projects_connection_info.lan,
-            db_name : PROJECT_DBNAME_PREFIX + project_info.name
+            db_name : METADATA_DBNAME_PREFIX + project_info.name
         };
 
         ensure_instance_db_is_local_and_synced(
-            'project',
+            'data',
             project_local_id,
-            project_connection_info,
-            project_dbs,
-            remote_project_dbs
+            meta_connection_info,
+            data_dbs,
+            remote_data_dbs
         );
+
+        // Defaults to the same couch as the projects db, but different database name:
+        let data_connection_info = project_info.data_db || {
+            host : projects_connection_info.host,
+            port : projects_connection_info.port,
+            lan : projects_connection_info.lan,
+            db_name : DATA_DBNAME_PREFIX + project_info.name
+        };
+
+        ensure_instance_db_is_local_and_synced(
+            'data',
+            project_local_id,
+            data_connection_info,
+            data_dbs,
+            remote_data_dbs
+        );
+        
     });
 
 
