@@ -24,19 +24,19 @@ let default_instance : null | DataModel.NonNullListingsObject = null; //Set to d
  *   For each project the current device is part of (so this is keyed by listing id + project id),
  *   * listing_id: A couchdb instance object's id (from "directory" db)
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
- *   * username, password: A device login (mostly the same across all docs in this db, except for differences in devices_db of the instance),
+ *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
  */
 const active_db = new PouchDB<DataModel.ActiveDoc>("active");
 
 /**
- * Each listing has a Projects database and Users/Devices DBs
+ * Each listing has a Projects database and Users/People DBs
  * 
  * This is the local copy of said data. It is modified directly,
  * and synced periodically.
  */
 let projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 /**
- * Each listing has a Projects database and Users/Devices DBs
+ * Each listing has a Projects database and Users/People DBs
  * 
  * This is the remote copy of said data. It may not be accessable
  * all the time, and is only used for syncing.
@@ -46,11 +46,11 @@ let remote_projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
 /**
  * mapping from listing id to a PouchDB CLIENTSIDE DB
  */
-let devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
+let people_dbs : LocalDBList<DataModel.PeopleDoc> = {};
 /**
  * mapping from listing id to a PouchDB Connection to a server database
  */
-let remote_devices_dbs : LocalDBList<DataModel.DevicesDoc> = {};
+let remote_people_dbs : LocalDBList<DataModel.PeopleDoc> = {};
 
 /**
  * Per-[active]-project project data:
@@ -112,9 +112,9 @@ function ConnectionInfo_create_pouch<Content extends {}>(
  * 
  * @param prefix Name to use to run new PouchDB(prefix + '/' + id)
  * @param instance_info An instance object, i.e. a doc from the directory db
- * @param instance_member_name 'projects_db' or 'devices_db'
- * @param global_client_dbs projects_db or devices_db
- * @param global_server_dbs remote_projects_db or remote_devices_db
+ * @param instance_member_name 'projects_db' or 'people_db'
+ * @param global_client_dbs projects_db or people_db
+ * @param global_server_dbs remote_projects_db or remote_people_db
  * @returns The local DB
  */
 function ensure_instance_db_is_local_and_synced<Content extends {}>(
@@ -166,9 +166,8 @@ async function get_default_instance() : Promise<DataModel.NonNullListingsObject>
             _id:        possibly_corrupted_instance._id,
             name:       possibly_corrupted_instance.name,
             description:possibly_corrupted_instance.description,
-            people_db:  possibly_corrupted_instance.people_db!,
             projects_db:possibly_corrupted_instance.projects_db!,
-            devices_db: possibly_corrupted_instance.devices_db!
+            people_db: possibly_corrupted_instance.people_db!
         };
     }
     return default_instance;
@@ -203,7 +202,7 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
         console.error(`Could not connect to directory server to sync: ${error}`);
     }
 
-    // For every active project, try to sync their devices & projects DBs
+    // For every active project, try to sync their people & projects DBs
     let active_projects = (await active_db.find({selector:{}})).docs;
 
     active_projects.forEach(async doc => {
@@ -218,7 +217,7 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
             return; //This doesn't throw because we want to be tolerant of errors and let the user re-add the active project
         }
         
-        // First, using the listing id, ensure that the projects and devices dbs are accessable
+        // First, using the listing id, ensure that the projects and people dbs are accessable
         
         let instance_info = await directory_db.get(doc.listing_id);
 
@@ -233,15 +232,15 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
             remote_projects_dbs
         ) as PouchDB.Database<DataModel.ProjectObject>;
 
-        let devices_local_id = instance_info['devices_db'] ? instance_info._id : DEFAULT_LISTING_ID;
-        let devices_connection_info = instance_info['devices_db'] || (await get_default_instance())['devices_db'];
+        let people_local_id = instance_info['people_db'] ? instance_info._id : DEFAULT_LISTING_ID;
+        let people_connection_info = instance_info['people_db'] || (await get_default_instance())['people_db'];
 
         ensure_instance_db_is_local_and_synced(
-            'devices',
-            devices_local_id,
-            devices_connection_info,
-            devices_dbs,
-            remote_devices_dbs
+            'people',
+            people_local_id,
+            people_connection_info,
+            people_dbs,
+            remote_people_dbs
         );
 
         // Now that we have instance connections,
