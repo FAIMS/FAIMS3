@@ -2,12 +2,6 @@
   "name": "faims3-app",
   "version": "0.1.0",
   "private": true,
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -41,6 +35,7 @@
     "@capacitor/core": "^2.4.7",
     "@capacitor/ios": "^2.4.7",
     "@material-ui/core": "^4.11.3",
+    "@material-ui/icons": "^4.11.2",
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.5",
     "@testing-library/user-event": "^12.8.3",
@@ -50,12 +45,14 @@
     "@types/react": "^17.0.3",
     "@types/react-dom": "^17.0.3",
     "formik": "^2.2.6",
+    "formik-material-ui": "^3.0.1",
     "pouchdb": "^7.2.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "4.0.3",
     "typescript": "^4.2.3",
-    "web-vitals": "^1.1.1"
+    "web-vitals": "^1.1.1",
+    "yup": "^0.32.9"
   },
   "devDependencies": {
     "@types/node": "^14.11.2",
