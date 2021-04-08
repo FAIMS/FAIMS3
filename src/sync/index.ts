@@ -101,6 +101,7 @@ function ConnectionInfo_create_pouch<Content extends {}>(
 ) : PouchDB.Database<Content>
 {
     return new PouchDB(
+        connection_info.proto + '://' +
         connection_info.host + ':' + 
         connection_info.port + '/' +
         connection_info.db_name
@@ -250,6 +251,7 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
         let project_local_id = doc._id;
         // Defaults to the same couch as the projects db, but different database name:
         let meta_connection_info = project_info.metadata_db || {
+            proto: projects_connection_info.proto,
             host : projects_connection_info.host,
             port : projects_connection_info.port,
             lan : projects_connection_info.lan,
@@ -266,6 +268,7 @@ export async function initialize_dbs(directory_connection : DataModel.Connection
 
         // Defaults to the same couch as the projects db, but different database name:
         let data_connection_info = project_info.data_db || {
+            proto: projects_connection_info.proto,
             host : projects_connection_info.host,
             port : projects_connection_info.port,
             lan : projects_connection_info.lan,

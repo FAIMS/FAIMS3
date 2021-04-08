@@ -12,6 +12,7 @@ async function initialize() {
   await Sync.populate_test_data();
 
   await Sync.initialize_dbs({
+      proto: 'http',
       host: '10.80.11.44',
       port: 5984,
       db_name: 'directory'
