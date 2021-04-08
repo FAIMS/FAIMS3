@@ -2,7 +2,7 @@ import React from 'react';
 import Input from '@material-ui/core/Input';
 import Checkbox from '@material-ui/core/Checkbox';
 import TextField from '@material-ui/core/TextField';
-
+import {TextField as FormikTextField} from 'formik-material-ui';
 const componentRegistry: {string?: {string: React.Component}} = {};
 
 //export function NoSuchComponentNamespace(message: string) {
@@ -43,3 +43,4 @@ function getNameSpace(namespace) {
 registerComponent('core-material-ui', 'Input', Input);
 registerComponent('core-material-ui', 'Checkbox', Checkbox);
 registerComponent('core-material-ui', 'TextField', TextField);
+registerComponent('formik-material-ui', 'TextField', FormikTextField);
