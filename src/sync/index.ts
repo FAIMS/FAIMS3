@@ -146,19 +146,25 @@ async function get_default_instance() : Promise<DataModel.NonNullListingsObject>
 PouchDB.plugin(PouchDBFind);
 
 /**
- * Creates & Populates the active_projects database,
- * then disconnects it
+ * Creates & Populates the active_projects database.
  * 
  * Call before initialize_db
  */
 export async function populate_test_data() {
-    let test_doc = {
+    let test_doc : any = {
         _id: 'default/lake_mungo',
         listing_id: 'default',
         project_id: 'lake_mungo',
         username: 'test1',
         password: 'apple'
     };
+    
+    try {
+        let current_test_doc = await active_db.get('default/lake_mungo');
+        test_doc._rev = current_test_doc._rev;
+    } catch(err) {
+        
+    }
     let {id, rev, ok} = await active_db.put(test_doc);
     if(test_doc._id != id) throw("Could not correctly put the right test ID'd data");
     if(ok !== true) throw("Could not insert test data");
@@ -167,7 +173,10 @@ export async function populate_test_data() {
 export async function initialize_dbs(directory_connection : DataModel.ConnectionInfo) {
     try {
         let directory_remote = ConnectionInfo_create_pouch(directory_connection);
-        PouchDB.replicate(directory_remote, directory_db);
+        // TODO: Investigate if a timeout is needed on this await
+        // ALSO TODO: Allow the user to cancel this replication, and other ones?
+        await PouchDB.replicate(directory_remote, directory_db);
+        
     } catch(error) {
         console.error(`Could not connect to directory server to sync: ${error}`);
     }
