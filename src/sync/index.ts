@@ -8,11 +8,12 @@ const METADATA_DBNAME_PREFIX = 'data-';
 const DATA_DBNAME_PREFIX = 'metadata-'
 
 export interface LocalDB<Content extends {}> {
-    local:             PouchDB.Database<Content>,
-    remote:     null | PouchDB.Database<Content>,
+    local:      PouchDB.Database<Content>,
+    remote:     PouchDB.Database<Content>,
 
-    connection: null | PouchDB.Replication.Replication<Content> 
-                     | PouchDB.Replication.Sync<Content>
+    is_sync : boolean,
+    connection: PouchDB.Replication.Replication<Content> 
+              | PouchDB.Replication.Sync<Content>
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -104,29 +105,18 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
     // Load any existing data from the client
     let local : PouchDB.Database<Content> = new PouchDB(prefix + '/' + local_db_id);
 
-    let remote : PouchDB.Database<Content>;
-    let connection : PouchDB.Replication.Replication<Content>;
+    let remote : PouchDB.Database<Content> = ConnectionInfo_create_pouch(connection_info);
+    
+    let connection : PouchDB.Replication.Replication<Content> = PouchDB.replicate(local, remote, {
+        live: true, retry: true
+    });
 
-    // Second part here is optional, in that if an error occurs,
-    // the client side database is still returned.
-    // This is to ensure the database is runnable while offline
-
-    try {
-        remote = ConnectionInfo_create_pouch(connection_info);
-        // try to sync here, to ensure the connection works or returns false.
-        connection = PouchDB.replicate(local, remote);
-
-        return global_dbs[local_db_id] = {
-            local:local, 
-            remote: remote, 
-            connection: connection
-        };
-    } catch(err) {
-        console.error(`Could not sync the remote instance DB ${JSON.stringify(connection_info)}:`);
-        console.error(err);
-        
-        return global_dbs[local_db_id] = {local:local, remote: null, connection: null};
-    }
+    return global_dbs[local_db_id] = {
+        local:local, 
+        remote: remote, 
+        is_sync: false,
+        connection: connection
+    };
 }
 
 async function get_default_instance() : Promise<DataModel.NonNullListingsObject> {
@@ -171,103 +161,134 @@ export async function populate_test_data() {
 }
 
 export async function initialize_dbs(directory_connection : DataModel.ConnectionInfo) {
+    let listings_syncers : Array<Promise<void>> = [];
+
     try {
-        let directory_remote = ConnectionInfo_create_pouch(directory_connection);
-        // TODO: Investigate if a timeout is needed on this await
-        // ALSO TODO: Allow the user to cancel this replication, and other ones?
-        await PouchDB.replicate(directory_remote, directory_db);
+        let directory_remote = ConnectionInfo_create_pouch<DataModel.ListingsObject>(directory_connection);
+
+        //TODO: Turn off retry when the data usage is limited
+        //      or, at least, filter to only the active projects
+        PouchDB.replicate(directory_remote, directory_db, {
+            live: true,
+            retry: false
+        }).on('complete', info => {
+            info.docs.forEach(l => listings_syncers.push(activate_projects_for_listing(l)));
+        })
         
     } catch(error) {
         console.error(`Could not connect to directory server to sync: ${error}`);
     }
+}
 
-    // For every active project, try to sync their people & projects DBs
-    let active_projects = (await active_db.find({selector:{}})).docs;
+async function activate_projects_for_listing(listing_object : PouchDB.Core.ExistingDocument<DataModel.ListingsObject>) {
 
-    let syncer_tasks : Array<Promise<void>> = [];
+    // Connect to people db and projects db for this listing db
 
-    active_projects.forEach(doc => {
-        let syncer_task_func = async (doc : PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>) => {
-            try {
-                if(
-                    typeof(doc.listing_id) !== 'string' ||
-                    typeof(doc.project_id) !== 'string' ||
-                    typeof(doc.username) !== 'string' ||
-                    typeof(doc.password) !== 'string'
-                ) {
-                    console.error({message:"The internal database is (partially) corrupted.", error: "database_active_format", doc:doc});
-                    directory_db.remove(doc);
-                    return; //This doesn't throw because we want to be tolerant of errors and let the user re-add the active project
-                }
-                
-                // First, using the listing id, ensure that the projects and people dbs are accessable
-                
-                let listing_object = await directory_db.get(doc.listing_id);
+    let projects_local_id = listing_object['projects_db'] ? listing_object._id : DEFAULT_LISTING_ID;
+    let projects_connection = listing_object['projects_db'] || (await get_default_instance())['projects_db'];
 
-                let projects_local_id = listing_object['projects_db'] ? listing_object._id : DEFAULT_LISTING_ID;
-                let projects_connection = listing_object['projects_db'] || (await get_default_instance())['projects_db'];
+    let people_local_id = listing_object['people_db'] ? listing_object._id : DEFAULT_LISTING_ID;
+    let people_connection = listing_object['people_db'] || (await get_default_instance())['people_db'];
 
-                let projects_db = ensure_instance_db_is_local_and_synced(
-                    'projects',
-                    projects_local_id,
-                    projects_connection,
-                    projects_dbs,
-                ).local as PouchDB.Database<DataModel.ProjectObject>;
+    // Only sync active projects:
+    let active_projects = (await active_db.find({selector:{listing_id: listing_object._id}})).docs;
 
-                let people_local_id = listing_object['people_db'] ? listing_object._id : DEFAULT_LISTING_ID;
-                let people_connection = listing_object['people_db'] || (await get_default_instance())['people_db'];
+    // TODO: Pass in a filter to ensure_instance_db_is_local_and_synced
+    // to filter to only active projects
+    // (However, make sure that when the user adds another active project
+    // that this people_db is re-activatable).
+    ensure_instance_db_is_local_and_synced(
+        'people',
+        people_local_id,
+        people_connection,
+        people_dbs
+    );
 
-                ensure_instance_db_is_local_and_synced(
-                    'people',
-                    people_local_id,
-                    people_connection,
-                    people_dbs
-                );
+    let projects_db = ensure_instance_db_is_local_and_synced(
+        'projects',
+        projects_local_id,
+        projects_connection,
+        projects_dbs,
+    );
 
-                // Now that we have instance connections,
-                // So the project should be accessable
 
-                let project_info : DataModel.ProjectObject = await projects_db.get(doc.project_id);
-                let project_local_id = doc._id;
-                // Defaults to the same couch as the projects db, but different database name:
-                let meta_connection_info = project_info.metadata_db || {
-                    proto: projects_connection.proto,
-                    host : projects_connection.host,
-                    port : projects_connection.port,
-                    lan : projects_connection.lan,
-                    db_name : METADATA_DBNAME_PREFIX + project_info.name
-                };
+    //https://pouchdb.com/api.html#replication-events
+    let online_handler = (replication_result : 
+        PouchDB.Replication.ReplicationResult<DataModel.ProjectObject> | 
+        PouchDB.Replication.SyncResult<DataModel.ProjectObject>
+    ) => {
+        let change;
 
-                ensure_instance_db_is_local_and_synced(
-                    'metadata',
-                    project_local_id,
-                    meta_connection_info,
-                    metadata_dbs
-                );
-
-                // Defaults to the same couch as the projects db, but different database name:
-                let data_connection_info = project_info.data_db || {
-                    proto: projects_connection.proto,
-                    host : projects_connection.host,
-                    port : projects_connection.port,
-                    lan : projects_connection.lan,
-                    db_name : DATA_DBNAME_PREFIX + project_info.name
-                };
-
-                ensure_instance_db_is_local_and_synced(
-                    'data',
-                    project_local_id,
-                    data_connection_info,
-                    data_dbs
-                );
-            } catch(err) {
-                console.error('Failed to initialize an active database ', doc, err);
+        // Sync replication result has indirection, and a 'direction' where we only care
+        // if it's pulled a new thing.
+        if((replication_result as any).direction) {
+            let sync_result = replication_result as PouchDB.Replication.SyncResult<DataModel.ProjectObject>;
+            if(sync_result.direction == 'push'){ 
+                return;
             }
+            change = sync_result.change;
+        } else {
+            change = replication_result as PouchDB.Replication.ReplicationResult<DataModel.ProjectObject>;
+        }
+
+        let this_project = change.docs.find(project_obj => project_obj._id == doc.project_id);
+        if(this_project != null) {
+            active_promises.push(project_doc_found());
+        }
+    };
+    
+    // Typescript doesn't recognise PouchDB.Replication.ReplicationEventEmitter.on('change', ...) overload
+    // it only lets me use 'active' and 'error'|'paused'|'denied'
+    // So I have to cast the .on function
+    (
+        projects_db.connection.on as 
+            (event: 'change', listener: typeof online_handler) => typeof projects_db.connection
+    )('change', online_handler);
+
+    let activate_individual_project = async function
+    (
+        doc : PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>,
+        projects_db : LocalDB<DataModel.ProjectObject>, 
+        projects_connection: DataModel.ConnectionInfo
+    ) {
+        // Now that we have instance connections,
+        // So the project should be accessable
+        
+        let project_info : DataModel.ProjectObject = await projects_db.local.get(doc.project_id);
+        console.info(`An instance's Projects DB has sent a requested Project Object for the active project ${doc.project_id}. Connecting to Data/MetaData DBs now...`);
+
+        let project_local_id = doc._id;
+        // Defaults to the same couch as the projects db, but different database name:
+        let meta_connection_info = project_info.metadata_db || {
+            proto: projects_connection.proto,
+            host : projects_connection.host,
+            port : projects_connection.port,
+            lan : projects_connection.lan,
+            db_name : METADATA_DBNAME_PREFIX + project_info.name
         };
-        syncer_tasks.push(syncer_task_func(doc));
-    });
 
+        let data_connection_info = project_info.data_db || {
+            proto: projects_connection.proto,
+            host : projects_connection.host,
+            port : projects_connection.port,
+            lan : projects_connection.lan,
+            db_name : DATA_DBNAME_PREFIX + project_info.name
+        };
 
+        ensure_instance_db_is_local_and_synced(
+            'metadata',
+            project_local_id,
+            meta_connection_info,
+            metadata_dbs
+        );
+
+        ensure_instance_db_is_local_and_synced(
+            'data',
+            project_local_id,
+            data_connection_info,
+            data_dbs
+        );
+    };
 }
 
 export function get_instances() {
