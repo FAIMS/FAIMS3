@@ -6,7 +6,7 @@ import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from './dbHelpers';
-import {Formik, Form, Field, FormikProps, ErrorMessage} from 'formik';
+import {Formik, Form, Field, FormikProps} from 'formik';
 
 type FormProps = {
   project: string;
@@ -30,6 +30,11 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     this.getInitialValues = this.getInitialValues.bind(this);
   }
 
+  componentDidMount() {
+    // get view components, render form
+
+  }
+
   save(values) {
     console.log(values);
   }
@@ -46,6 +51,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
+    console.log('getComponentFromField');
     const uiSpec = this.state.uiSpec;
     const fields = uiSpec['fields'];
     return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
@@ -56,6 +62,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     view: ViewComponent,
     fieldName: string
   ) {
+    console.log('getComponentFromFieldConfig');
     const Component = getComponentByName(
       fieldConfig['component-namespace'],
       fieldConfig['component-name']
@@ -63,24 +70,27 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const formProps = view.props.formProps;
     const errors = formProps.errors;
     return (
-      <React.Fragment key={fieldName}>
-        <Box mb={3}>
-          <Field
-            component={Component}
-            // view={view}
-            error={formProps.touched[fieldName] && Boolean(errors[fieldName])}
-            {...fieldConfig['component-parameters']}
-            {...fieldConfig['component-parameters']['InputProps']}
-            {...fieldConfig['component-parameters']['SelectProps']}
-            {...fieldConfig['component-parameters']['InputLabelProps']}
-            {...fieldConfig['component-parameters']['FormHelperTextProps']}
-          />
-        </Box>
-      </React.Fragment>
+      <Box mb={3} key={fieldName}>
+        <Field
+          component={Component} //e.g, TextField (default <input/>)
+          name={fieldName}
+          onChange={formProps.handleChange}
+          onBlur={formProps.handleBlur}
+          value={formProps.values[fieldName]}
+          // view={view}
+          error={formProps.touched[fieldName] && Boolean(errors[fieldName])}
+          {...fieldConfig['component-parameters']}
+          {...fieldConfig['component-parameters']['InputProps']}
+          {...fieldConfig['component-parameters']['SelectProps']}
+          {...fieldConfig['component-parameters']['InputLabelProps']}
+          {...fieldConfig['component-parameters']['FormHelperTextProps']}
+        />
+      </Box>
     );
   }
 
   getValidationSchema() {
+    console.log('getValidationSchema');
     const {uiSpec, currentView} = this.state;
     const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
     const fields = uiSpec['fields'];
@@ -92,6 +102,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getInitialValues() {
+    console.log('getInitialValues');
     const {uiSpec, currentView} = this.state;
     const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
     const fields = uiSpec['fields'];
@@ -176,10 +187,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
             </Form>
           )}
         </Formik>
-        {/*<form onSubmit={this.validate}>*/}
-        {/*  <ViewComponent viewList={viewList} form={this} />*/}
-        {/*  <Input type="submit" value="Save" />*/}
-        {/*</form>*/}
       </React.Fragment>
     );
   }
@@ -201,6 +208,10 @@ export class ViewComponent extends React.Component<ViewProps, ViewState> {
     const form = this.props.form;
   }
 
+  componentDidMount() {
+
+  }
+
   save(values) {
     console.log(values);
   }
@@ -212,11 +223,11 @@ export class ViewComponent extends React.Component<ViewProps, ViewState> {
   render() {
     const form = this.props.form;
     return (
-      <>
+      <React.Fragment>
         {this.props.viewList.map(fieldName => {
           return form.getComponentFromField(fieldName, this);
         })}
-      </>
+      </React.Fragment>
     );
   }
 }

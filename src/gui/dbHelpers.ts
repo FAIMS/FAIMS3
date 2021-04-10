@@ -19,6 +19,7 @@ export function getUiSpecForProject(project_name: string) {
           id: 'email-field',
           helperText: 'Some helper text for email field',
           variant: 'outlined',
+          required: true,
           InputProps: {
             type: 'email',
           },
@@ -30,7 +31,7 @@ export function getUiSpecForProject(project_name: string) {
         },
         validationSchema: Yup.string()
           .email('Enter a valid email')
-          .required('You must provide a valid email'),
+          .required('This field is required'),
         initialValue: '',
       },
       'str-field': {
@@ -43,6 +44,7 @@ export function getUiSpecForProject(project_name: string) {
           id: 'str-field',
           helperText: 'Enter a string',
           variant: 'outlined',
+          required: true,
           InputProps: {
             type: 'string',
           },
@@ -55,8 +57,8 @@ export function getUiSpecForProject(project_name: string) {
         validationSchema: Yup.string()
           .min(2, 'Too Short!')
           .max(50, 'Too Long!')
-          .required('You must provide a string'),
-        initialValue: '',
+          .required('This field is required'),
+        initialValue: 'hello',
       },
       'int-field': {
         'component-namespace': 'core-material-ui', // this says what web component to use to render/acquire value from
@@ -68,6 +70,7 @@ export function getUiSpecForProject(project_name: string) {
           id: 'int-field',
           helperText: 'Enter an integer between 0 and 20',
           variant: 'outlined',
+          required: true,
           InputProps: {
             type: 'number',
           },
@@ -78,34 +81,13 @@ export function getUiSpecForProject(project_name: string) {
           FormHelperTextProps: {},
         },
         validationSchema: Yup.number()
+          .required('This field is required')
           .positive()
           .integer()
           .min(0, 'Min is 0')
-          .max(20, 'max is 20')
-          .required('Please provide an integer between 0 and 20'),
+          .max(20, 'max is 20'),
         initialValue: 1,
       },
-
-      // 'str-field': {
-      //   'component-namespace': 'core-material-ui',
-      //   'component-name': 'TextField',
-      //   'type-returned': 'faims-core::Integer', // matches a type in the Project Model
-      //   'component-parameters': {
-      //     fullWidth: true,
-      //     name: project_name + 'str-field',
-      //     id: project_name + 'str-field',
-      //     helperText: 'Some helper text for string field',
-      //     variant: 'outlined',
-      //     InputProps: {
-      //       type: 'string',
-      //     },
-      //     SelectProps: {},
-      //     InputLabelProps: {
-      //       label: 'String Field Label',
-      //     },
-      //     FormHelperTextProps: {},
-      //   },
-      // },
       // 'bool-field': {
       //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
       //   'component-name': 'Checkbox',
