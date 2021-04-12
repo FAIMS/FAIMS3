@@ -70,13 +70,13 @@ function ConnectionInfo_create_pouch<Content extends {}>(
   connection_info: DataModel.ConnectionInfo
 ): PouchDB.Database<Content> {
   return new PouchDB(
-    connection_info.proto +
+    encodeURIComponent(connection_info.proto) +
       '://' +
-      connection_info.host +
+      encodeURIComponent(connection_info.host) +
       ':' +
-      connection_info.port +
+      encodeURIComponent(connection_info.port) +
       '/' +
-      connection_info.db_name
+      encodeURIComponent(connection_info.db_name)
   );
 }
 
