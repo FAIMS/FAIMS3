@@ -40,26 +40,26 @@ const active_db = new PouchDB<DataModel.ActiveDoc>('active');
 /**
  * Each listing has a Projects database and Users/People DBs
  */
-const projects_dbs : LocalDBList<DataModel.ProjectObject> = {};
+const projects_dbs: LocalDBList<DataModel.ProjectObject> = {};
 
 /**
  * mapping from listing id to a PouchDB CLIENTSIDE DB
  */
-const people_dbs : LocalDBList<DataModel.PeopleDoc> = {};
+const people_dbs: LocalDBList<DataModel.PeopleDoc> = {};
 
 /**
  * Per-[active]-project project data:
  * Contain in these databases (indexed by the active_db id's)
  * is project data.
  */
-const data_dbs : LocalDBList<DataModel.ProjectDoc> = {};
+const data_dbs: LocalDBList<DataModel.Datum> = {};
 
 /**
  * Synced from the project metadatabase for each active project,
  * This has the metadata describing a database. Project Schemas,
  * GUI Models, and a Prople database.
  */
-const metadata_dbs : LocalDBList<DataModel.ProjectMetaObject> = {};
+const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
 
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
@@ -106,15 +106,15 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
   // then uses said name on a new PouchDB(name) to load the database.
 
   // Load any existing data from the client
-  let local: PouchDB.Database<Content> = new PouchDB(
+  const local: PouchDB.Database<Content> = new PouchDB(
     prefix + '/' + local_db_id
   );
 
-  let remote: PouchDB.Database<Content> = ConnectionInfo_create_pouch(
+  const remote: PouchDB.Database<Content> = ConnectionInfo_create_pouch(
     connection_info
   );
 
-  let connection: PouchDB.Replication.Replication<Content> = /* ASYNC UNAWAITED */ PouchDB.replicate(
+  const connection: PouchDB.Replication.Replication<Content> = /* ASYNC UNAWAITED */ PouchDB.replicate(
     remote,
     local,
     {
@@ -133,8 +133,8 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
 }
 
 async function get_default_instance(): Promise<DataModel.NonNullListingsObject> {
-  if (default_instance == null) {
-    let possibly_corrupted_instance = await directory_db.get(
+  if (default_instance === null) {
+    const possibly_corrupted_instance = await directory_db.get(
       DEFAULT_LISTING_ID
     );
     default_instance = {
@@ -156,7 +156,14 @@ PouchDB.plugin(PouchDBFind);
  * Call before initialize_db
  */
 export async function populate_test_data() {
-  let test_doc: any = {
+  const test_doc: {
+    _rev?: string;
+    _id: string;
+    listing_id: string;
+    project_id: string;
+    username: string;
+    password: string;
+  } = {
     _id: 'default/lake_mungo',
     listing_id: 'default',
     project_id: 'lake_mungo',
@@ -167,27 +174,27 @@ export async function populate_test_data() {
   try {
     const current_test_doc = await active_db.get('default/lake_mungo');
     test_doc._rev = current_test_doc._rev;
-  } catch (err) {}
-  const {id, rev, ok} = await active_db.put(test_doc);
-  if (test_doc._id != id)
-    throw "Could not correctly put the right test ID'd data";
-  if (ok !== true) throw 'Could not insert test data';
+  } catch (err) {
+    // Not in the DB means _rev is unnecessary for put()
+  }
+  await active_db.put(test_doc);
 }
 
-const listings_syncers : {[key:string]:Promise<void>} = {}
+const listings_syncers: {[key: string]: Promise<void>} = {};
 
 export async function initialize_dbs(
   directory_connection: DataModel.ConnectionInfo
 ) {
   try {
-    let directory_remote = ConnectionInfo_create_pouch<DataModel.ListingsObject>(
+    const directory_remote = ConnectionInfo_create_pouch<DataModel.ListingsObject>(
       directory_connection
+    );
 
-
-    /* ASYNC UNAWAITED */ PouchDB.replicate(directory_remote, directory_db, {
+    /* ASYNC UNAWAITED */
+    PouchDB.replicate(directory_remote, directory_db, {
       live: false,
       retry: false,
-    }).on('paused', info => {
+    }).on('paused', (/*info*/) => {
       directory_db
         .allDocs({
           include_docs: true,
@@ -204,9 +211,8 @@ export async function initialize_dbs(
           })
         );
     });
-
   } catch (error) {
-    // console.error(`Could not connect to directory server to sync: ${error}`);
+    console.error(`Could not connect to directory server to sync: ${error}`);
     throw error;
   }
 }
@@ -216,21 +222,21 @@ async function activate_projects_for_listing(
 ) {
   // Connect to people db and projects db for this listing db
 
-  let projects_local_id = listing_object['projects_db']
+  const projects_local_id = listing_object['projects_db']
     ? listing_object._id
     : DEFAULT_LISTING_ID;
-  let projects_connection =
+  const projects_connection =
     listing_object['projects_db'] ||
     (await get_default_instance())['projects_db'];
 
-  let people_local_id = listing_object['people_db']
+  const people_local_id = listing_object['people_db']
     ? listing_object._id
     : DEFAULT_LISTING_ID;
-  let people_connection =
+  const people_connection =
     listing_object['people_db'] || (await get_default_instance())['people_db'];
 
   // Only sync active projects:
-  let active_projects = (
+  const active_projects = (
     await active_db.find({selector: {listing_id: listing_object._id}})
   ).docs;
 
@@ -246,13 +252,13 @@ async function activate_projects_for_listing(
   );
 
   const projects_db = ensure_instance_db_is_local_and_synced(
-        'projects',
-        projects_local_id,
-        projects_connection,
-        projects_dbs,
-        // Filters to only projects that are active
-        {doc_ids: active_projects.map(v => v.project_id)}
-    );
+    'projects',
+    projects_local_id,
+    projects_connection,
+    projects_dbs,
+    // Filters to only projects that are active
+    {doc_ids: active_projects.map(v => v.project_id)}
+  );
 
   projects_db.connection.on('paused', () => {
     active_projects.forEach(doc =>
@@ -262,20 +268,20 @@ async function activate_projects_for_listing(
     );
   });
 
-  let activate_individual_project = async function (
+  const activate_individual_project = async function (
     doc: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>
   ) {
     // Now that we have instance connections,
     // So the project should be accessable
 
-    let project_info: DataModel.ProjectObject = await projects_db.local.get(
+    const project_info: DataModel.ProjectObject = await projects_db.local.get(
       doc.project_id
     );
     console.info(`Connecting to ${doc.project_id} Data/MetaData DBs...`);
 
     const project_local_id = doc._id;
     // Defaults to the same couch as the projects db, but different database name:
-    let meta_connection_info = project_info.metadata_db || {
+    const meta_connection_info = project_info.metadata_db || {
       proto: projects_connection.proto,
       host: projects_connection.host,
       port: projects_connection.port,
@@ -284,12 +290,12 @@ async function activate_projects_for_listing(
     };
 
     const data_connection_info = project_info.data_db || {
-            proto: projects_connection.proto,
-            host : projects_connection.host,
-            port : projects_connection.port,
-            lan : projects_connection.lan,
-            db_name : DATA_DBNAME_PREFIX + project_info._id
-        };
+      proto: projects_connection.proto,
+      host: projects_connection.host,
+      port: projects_connection.port,
+      lan: projects_connection.lan,
+      db_name: DATA_DBNAME_PREFIX + project_info._id,
+    };
 
     ensure_instance_db_is_local_and_synced(
       'metadata',
