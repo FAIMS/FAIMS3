@@ -4,8 +4,8 @@ import jsonpointer from 'jsonpointer';
 import * as DataModel from '../datamodel';
 
 const DEFAULT_LISTING_ID = 'default';
-const METADATA_DBNAME_PREFIX = 'data-';
-const DATA_DBNAME_PREFIX = 'metadata-'
+const METADATA_DBNAME_PREFIX = 'metadata-';
+const DATA_DBNAME_PREFIX = 'data-'
 
 export interface LocalDB<Content extends {}> {
     local:      PouchDB.Database<Content>,
@@ -160,23 +160,32 @@ export async function populate_test_data() {
     if(ok !== true) throw("Could not insert test data");
 }
 
-export async function initialize_dbs(directory_connection : DataModel.ConnectionInfo) {
-    let listings_syncers : Array<Promise<void>> = [];
+let listings_syncers : {[key:string]:Promise<void>} = {}
 
+export async function initialize_dbs(directory_connection : DataModel.ConnectionInfo) {
     try {
         let directory_remote = ConnectionInfo_create_pouch<DataModel.ListingsObject>(directory_connection);
-
-        //TODO: Turn off retry when the data usage is limited
-        //      or, at least, filter to only the active projects
-        PouchDB.replicate(directory_remote, directory_db, {
-            live: true,
+        
+        /* ASYNC UNAWAITED */ PouchDB.replicate(directory_remote, directory_db, {
+            live: false,
             retry: false
-        }).on('complete', info => {
-            info.docs.forEach(l => listings_syncers.push(activate_projects_for_listing(l)));
+        }).on('paused', info => {
+            directory_db.allDocs({
+                include_docs: true
+            }).then(all_listings => 
+                all_listings.rows.forEach(listing => {
+                    if(!listing.id.startsWith('_design/')) {
+                        listings_syncers[listing.id] = /* ASYNC UNAWAITED */
+                            activate_projects_for_listing(listing.doc!)
+                            .catch(console.error)
+                    }
+                })
+            );
         })
         
     } catch(error) {
-        console.error(`Could not connect to directory server to sync: ${error}`);
+        // console.error(`Could not connect to directory server to sync: ${error}`);
+        throw error;
     }
 }
 
@@ -212,50 +221,19 @@ async function activate_projects_for_listing(listing_object : PouchDB.Core.Exist
     );
 
 
-    //https://pouchdb.com/api.html#replication-events
-    let online_handler = (replication_result : 
-        PouchDB.Replication.ReplicationResult<DataModel.ProjectObject> | 
-        PouchDB.Replication.SyncResult<DataModel.ProjectObject>
-    ) => {
-        let change;
-
-        // Sync replication result has indirection, and a 'direction' where we only care
-        // if it's pulled a new thing.
-        if((replication_result as any).direction) {
-            let sync_result = replication_result as PouchDB.Replication.SyncResult<DataModel.ProjectObject>;
-            if(sync_result.direction == 'push'){ 
-                return;
-            }
-            change = sync_result.change;
-        } else {
-            change = replication_result as PouchDB.Replication.ReplicationResult<DataModel.ProjectObject>;
-        }
-
-        let this_project = change.docs.find(project_obj => project_obj._id == doc.project_id);
-        if(this_project != null) {
-            active_promises.push(project_doc_found());
-        }
-    };
-    
-    // Typescript doesn't recognise PouchDB.Replication.ReplicationEventEmitter.on('change', ...) overload
-    // it only lets me use 'active' and 'error'|'paused'|'denied'
-    // So I have to cast the .on function
-    (
-        projects_db.connection.on as 
-            (event: 'change', listener: typeof online_handler) => typeof projects_db.connection
-    )('change', online_handler);
+    projects_db.connection.on('paused', () => {
+        active_projects.forEach(doc => /* ASYNC UNAWAITED */activate_individual_project(doc).catch(console.error));
+    });
 
     let activate_individual_project = async function
     (
-        doc : PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>,
-        projects_db : LocalDB<DataModel.ProjectObject>, 
-        projects_connection: DataModel.ConnectionInfo
+        doc : PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>
     ) {
         // Now that we have instance connections,
         // So the project should be accessable
         
         let project_info : DataModel.ProjectObject = await projects_db.local.get(doc.project_id);
-        console.info(`An instance's Projects DB has sent a requested Project Object for the active project ${doc.project_id}. Connecting to Data/MetaData DBs now...`);
+        console.info(`Connecting to ${doc.project_id} Data/MetaData DBs...`);
 
         let project_local_id = doc._id;
         // Defaults to the same couch as the projects db, but different database name:
@@ -264,7 +242,7 @@ async function activate_projects_for_listing(listing_object : PouchDB.Core.Exist
             host : projects_connection.host,
             port : projects_connection.port,
             lan : projects_connection.lan,
-            db_name : METADATA_DBNAME_PREFIX + project_info.name
+            db_name : METADATA_DBNAME_PREFIX + project_info._id
         };
 
         let data_connection_info = project_info.data_db || {
@@ -272,7 +250,7 @@ async function activate_projects_for_listing(listing_object : PouchDB.Core.Exist
             host : projects_connection.host,
             port : projects_connection.port,
             lan : projects_connection.lan,
-            db_name : DATA_DBNAME_PREFIX + project_info.name
+            db_name : DATA_DBNAME_PREFIX + project_info._id
         };
 
         ensure_instance_db_is_local_and_synced(
