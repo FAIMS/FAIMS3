@@ -67,8 +67,20 @@ export type ProjectMetaObject = ProjectSchema | ProjectUIModel | ProjectPeople;
 /**
  * Document from a people DB
  */
-export interface PeopleDoc {}
+export interface PeopleDoc {
+  roles: Array<string>;
+  devices: Array<string>;
+  salt: string;
+  ierations: 10;
+  derived_key: string;
+  passsword_scheme: string;
+}
 
-export interface ProjectDoc {}
-
+export interface Datum {
+  // Main datum type
+  history: Array<{
+    person: string;
+    date: bigint;
+  }>;
+  //TODO: More stuff
 }

@@ -203,6 +203,7 @@ export async function initialize_dbs(
             }
           })
         );
+    });
 
   } catch (error) {
     // console.error(`Could not connect to directory server to sync: ${error}`);
