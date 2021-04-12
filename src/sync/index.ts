@@ -1,3 +1,4 @@
+import EventEmitter from 'node:events';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
@@ -25,6 +26,7 @@ export interface LocalDBList<Content extends {}> {
  * Directory: All (public, anyways) Faims instances
  */
 export const directory_db = new PouchDB<DataModel.ListingsObject>('directory');
+export let directory_ready = false;
 
 let default_instance: null | DataModel.NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_LISTING_ID) by get_default_instance
 
@@ -183,7 +185,106 @@ export async function populate_test_data() {
   await active_db.put(test_doc);
 }
 
-const listings_syncers: {[key: string]: Promise<void>} = {};
+/**
+ * WARNING: All these may trigger more than once
+ * When the user goes online and completes a sync,
+ * or when the user goes offline before sync completes.
+ */
+export interface InitializationEvents extends EventEmitter {
+  on(
+    event: 'directory_ready',
+    listener: (
+      rows: Array<{
+        // Defined as a subset of PouchDB.AllDocsResponse<ListingsObject>
+        // (doc being non-null, without AllDocsMeta)
+        doc: PouchDB.Core.ExistingDocument<DataModel.ListingsObject>;
+        id: PouchDB.Core.DocumentId;
+        key: PouchDB.Core.DocumentKey;
+        value: {
+          rev: PouchDB.Core.RevisionId;
+          deleted?: boolean;
+        };
+      }>
+    ) => unknown
+  ): this;
+  // Listing ready is activated for each listing
+  // just before their individual projects are iterated over.
+  // Said listing's projects db & people_db are already
+  // initialized and, the first handler of this event
+  // starts synchronizing them
+  on(
+    event: 'listing_ready',
+    listener: (
+      listing_object: PouchDB.Core.ExistingDocument<DataModel.ListingsObject>,
+      active_in_listing: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>[]
+    ) => unknown
+  ): this;
+  // combined_id is used to index data_dbs, metadata_dbs by js key, and active_dbs by _id
+  on(
+    event: 'project_object_ready',
+    listener: (
+      combined_id: string,
+      listing_id: string,
+      project_id: DataModel.ProjectObject
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_data_ready',
+    listener: (
+      combined_id: string,
+      listing_id: string,
+      project_id: string
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_meta_ready',
+    listener: (
+      combined_id: string,
+      listing_id: string,
+      project_id: string
+    ) => unknown
+  ): this;
+  /*
+      The following 'complete' listeners only trigger when they have
+      completed everything below them. That means a project_complete
+      only triggers when it's data and metadata are synced (lowest level)
+      then a listings only triggers when all it's projects are complete
+  */
+  on(event: 'directory_complete', listener: () => unknown): this;
+  on(
+    event: 'listing_complete',
+    listener: (listing_id: string) => unknown
+  ): this;
+
+  on(
+    event: 'project_complete',
+    listener: (
+      combined_id: string,
+      listing_id: string,
+      project_id: string
+    ) => unknown
+  ): this;
+
+  // Errors: Not to be confused with offline mode.
+
+  // When a whole listing isn't able to sync
+  on(event: 'directory_error', listener: (err: unknown) => unknown): this;
+  on(
+    event: 'listing_error',
+    listener: (listing_id: string, err: unknown) => unknown
+  ): this;
+  on(
+    event: 'project_error',
+    listener: (
+      combined_id: string,
+      listing_id: string,
+      project_id: string,
+      err: unknown
+    ) => unknown
+  ): this;
+}
+
+export const initializationEvents: InitializationEvents = new EventEmitter();
 
 export async function initialize_dbs(
   directory_connection: DataModel.ConnectionInfo
@@ -191,6 +292,19 @@ export async function initialize_dbs(
   try {
     const directory_remote = ConnectionInfo_create_pouch<DataModel.ListingsObject>(
       directory_connection
+    );
+
+    // Next phase of initialization: For each listings object,
+    // activate projects in said listing
+    // (Careful to errors for individual listings here)
+    initializationEvents.on('directory_ready', rows =>
+      rows.forEach(listing => {
+        if (!listing.id.startsWith('_design/')) {
+          activate_projects_for_listing(listing.doc!).catch(err =>
+            initializationEvents.emit('listing_error', listing.id, err)
+          );
+        }
+      })
     );
 
     /* ASYNC UNAWAITED */
@@ -202,17 +316,10 @@ export async function initialize_dbs(
         .allDocs({
           include_docs: true,
         })
-        .then(all_listings =>
-          all_listings.rows.forEach(listing => {
-            if (!listing.id.startsWith('_design/')) {
-              listings_syncers[listing.id] =
-                /* ASYNC UNAWAITED */
-                activate_projects_for_listing(listing.doc!).catch(
-                  console.error
-                );
-            }
-          })
-        );
+        .then(all_listings => {
+          directory_ready = true;
+          initializationEvents.emit('directory_ready', all_listings.rows);
+        });
     });
   } catch (error) {
     console.error(`Could not connect to directory server to sync: ${error}`);
@@ -243,15 +350,15 @@ async function activate_projects_for_listing(
     await active_db.find({selector: {listing_id: listing_object._id}})
   ).docs;
 
-  // TODO: Pass in a filter to ensure_instance_db_is_local_and_synced
-  // to filter to only active projects
-  // (However, make sure that when the user adds another active project
-  // that this people_db is re-activatable).
+  // TODO: Ensure that when the user adds a new active project
+  // that these filters are updated.
   ensure_instance_db_is_local_and_synced(
     'people',
     people_local_id,
     people_connection,
-    people_dbs
+    people_dbs,
+    // Filters to only projects that are active
+    {doc_ids: active_projects.map(v => v.project_id)}
   );
 
   const projects_db = ensure_instance_db_is_local_and_synced(
@@ -263,57 +370,144 @@ async function activate_projects_for_listing(
     {doc_ids: active_projects.map(v => v.project_id)}
   );
 
+  let num_projects_incomplete = 0;
+
+  const completion_handler = () =>
+    // combined_id: string,
+    // listing_id: string,
+    // project_id: string
+    {
+      num_projects_incomplete -= 1;
+      if (num_projects_incomplete === 0) {
+        initializationEvents.emit('listing_complete', listing_object._id);
+        initializationEvents.removeListener(
+          'project_complete',
+          completion_handler
+        );
+      }
+    };
+
+  initializationEvents.on('project_complete', completion_handler);
+
   projects_db.connection.on('paused', () => {
-    active_projects.forEach(doc =>
-      /* ASYNC UNAWAITED */ activate_individual_project(doc).catch(
-        console.error
-      )
+    active_db
+      .find({selector: {listing_id: listing_object._id}})
+      .then(find_response => {
+        initializationEvents.emit(
+          'listing_ready',
+          listing_object,
+          find_response.docs
+        );
+        num_projects_incomplete += find_response.docs.length;
+        // Each project in the listing:
+        find_response.docs.forEach(doc =>
+          activate_individual_project(listing_object._id, doc).catch((/* err */) =>
+            initializationEvents.emit(
+              'project_error',
+              doc._id,
+              listing_object._id,
+              doc.project_id
+            )
+          )
+        );
+      });
+  });
+}
+
+async function activate_individual_project(
+  listing_id: string,
+  doc: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>
+) {
+  const projects_db = projects_dbs[listing_id];
+  const projects_connection = projects_db.connection_info;
+
+  const project_info: DataModel.ProjectObject = await projects_db.local.get(
+    doc.project_id
+  );
+  console.info(`Connecting to ${doc.project_id} Data/MetaData DBs...`);
+
+  const project_local_id = doc._id;
+  // Defaults to the same couch as the projects db, but different database name:
+  const meta_connection_info = project_info.metadata_db || {
+    proto: projects_connection.proto,
+    host: projects_connection.host,
+    port: projects_connection.port,
+    lan: projects_connection.lan,
+    db_name: METADATA_DBNAME_PREFIX + project_info._id,
+  };
+
+  const data_connection_info = project_info.data_db || {
+    proto: projects_connection.proto,
+    host: projects_connection.host,
+    port: projects_connection.port,
+    lan: projects_connection.lan,
+    db_name: DATA_DBNAME_PREFIX + project_info._id,
+  };
+
+  ensure_instance_db_is_local_and_synced(
+    'metadata',
+    project_local_id,
+    meta_connection_info,
+    metadata_dbs
+  );
+
+  ensure_instance_db_is_local_and_synced(
+    'data',
+    project_local_id,
+    data_connection_info,
+    data_dbs
+  );
+
+  let complete_emitted = false;
+  let metadata_synced = false;
+  let data_synced = false;
+
+  // The initializationEvents needs to be notified whenever
+  // a metadata db or a data db has been synced.
+  //
+  // Then the emit_complete can call project_complete when both are done
+  // AND all previous event handlers for _ready have been called
+
+  const emit_complete = function () {
+    if (metadata_synced && data_synced && !complete_emitted) {
+      complete_emitted = true;
+      initializationEvents.emit(
+        'project_complete',
+        project_local_id,
+        listing_id,
+        project_info._id
+      );
+    }
+  };
+
+  metadata_dbs[project_local_id].connection.on('paused', () => {
+    metadata_synced = true;
+    initializationEvents.emit(
+      'project_meta_ready',
+      project_local_id,
+      listing_id,
+      project_info._id
     );
+    emit_complete();
   });
 
-  const activate_individual_project = async function (
-    doc: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>
-  ) {
-    // Now that we have instance connections,
-    // So the project should be accessable
-
-    const project_info: DataModel.ProjectObject = await projects_db.local.get(
-      doc.project_id
-    );
-    console.info(`Connecting to ${doc.project_id} Data/MetaData DBs...`);
-
-    const project_local_id = doc._id;
-    // Defaults to the same couch as the projects db, but different database name:
-    const meta_connection_info = project_info.metadata_db || {
-      proto: projects_connection.proto,
-      host: projects_connection.host,
-      port: projects_connection.port,
-      lan: projects_connection.lan,
-      db_name: METADATA_DBNAME_PREFIX + project_info._id,
-    };
-
-    const data_connection_info = project_info.data_db || {
-      proto: projects_connection.proto,
-      host: projects_connection.host,
-      port: projects_connection.port,
-      lan: projects_connection.lan,
-      db_name: DATA_DBNAME_PREFIX + project_info._id,
-    };
-
-    ensure_instance_db_is_local_and_synced(
-      'metadata',
+  data_dbs[project_local_id].connection.on('paused', () => {
+    data_synced = true;
+    initializationEvents.emit(
+      'project_data_ready',
       project_local_id,
-      meta_connection_info,
-      metadata_dbs
+      listing_id,
+      project_info._id
     );
+    emit_complete();
+  });
 
-    ensure_instance_db_is_local_and_synced(
-      'data',
-      project_local_id,
-      data_connection_info,
-      data_dbs
-    );
-  };
+  initializationEvents.emit(
+    'project_object_ready',
+    project_local_id,
+    listing_id,
+    project_info
+  );
 }
 
 export async function active_projects() {
