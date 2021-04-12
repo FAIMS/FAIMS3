@@ -401,14 +401,16 @@ async function activate_projects_for_listing(
         num_projects_incomplete += find_response.docs.length;
         // Each project in the listing:
         find_response.docs.forEach(doc =>
-          activate_individual_project(listing_object._id, doc).catch((/* err */) =>
+          activate_individual_project(
+            listing_object._id,
+            doc
+          ).catch((/* err */) =>
             initializationEvents.emit(
               'project_error',
               doc._id,
               listing_object._id,
               doc.project_id
-            )
-          )
+            ))
         );
       });
   });
@@ -512,4 +514,12 @@ async function activate_individual_project(
 
 export async function active_projects() {
   return new Promise((/* resolve, reject */) => {});
+}
+
+export function getProjectDB(project_name: string) {
+  return metadata_dbs[project_name].local;
+}
+
+export function getDataDB(project_name: string) {
+  return data_dbs[project_name].local;
 }
