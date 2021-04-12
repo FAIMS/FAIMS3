@@ -24,7 +24,7 @@ export interface LocalDBList<Content extends {}> {
 /**
  * Directory: All (public, anyways) Faims instances
  */
-const directory_db = new PouchDB<DataModel.ListingsObject>('directory');
+export const directory_db = new PouchDB<DataModel.ListingsObject>('directory');
 
 let default_instance: null | DataModel.NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_LISTING_ID) by get_default_instance
 
@@ -36,31 +36,31 @@ let default_instance: null | DataModel.NonNullListingsObject = null; //Set to di
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
  *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
  */
-const active_db = new PouchDB<DataModel.ActiveDoc>('active');
+export const active_db = new PouchDB<DataModel.ActiveDoc>('active');
 
 /**
  * Each listing has a Projects database and Users/People DBs
  */
-const projects_dbs: LocalDBList<DataModel.ProjectObject> = {};
+export const projects_dbs: LocalDBList<DataModel.ProjectObject> = {};
 
 /**
  * mapping from listing id to a PouchDB CLIENTSIDE DB
  */
-const people_dbs: LocalDBList<DataModel.PeopleDoc> = {};
+export const people_dbs: LocalDBList<DataModel.PeopleDoc> = {};
 
 /**
  * Per-[active]-project project data:
  * Contain in these databases (indexed by the active_db id's)
  * is project data.
  */
-const data_dbs: LocalDBList<DataModel.Datum> = {};
+export const data_dbs: LocalDBList<DataModel.Datum> = {};
 
 /**
  * Synced from the project metadatabase for each active project,
  * This has the metadata describing a database. Project Schemas,
  * GUI Models, and a Prople database.
  */
-const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
+export const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
 
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
@@ -121,6 +121,7 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
     {
       live: true,
       retry: false,
+      // TODO: Re-fresh database when options are different
       ...options, //live & retry can be overwritten
     }
   );
@@ -315,4 +316,6 @@ async function activate_projects_for_listing(
   };
 }
 
-export function get_instances() {}
+export async function active_projects() {
+  return new Promise((/* resolve, reject */) => {});
+}
