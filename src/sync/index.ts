@@ -14,6 +14,7 @@ export interface LocalDB<Content extends {}> {
   connection:
     | PouchDB.Replication.Replication<Content>
     | PouchDB.Replication.Sync<Content>;
+  connection_info: DataModel.ConnectionInfo;
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -129,6 +130,7 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
     remote: remote,
     is_sync: false,
     connection: connection,
+    connection_info: connection_info,
   });
 }
 
