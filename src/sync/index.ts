@@ -92,6 +92,7 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
     local_db_id : string,
     connection_info : DataModel.ConnectionInfo,
     global_dbs : LocalDBList<Content>,
+    options?: PouchDB.Replication.ReplicateOptions
 ) : LocalDB<Content> {
     // Already connected/loaded local DB
     if(global_dbs[local_db_id]) {
@@ -107,8 +108,8 @@ function ensure_instance_db_is_local_and_synced<Content extends {}>(
 
     let remote : PouchDB.Database<Content> = ConnectionInfo_create_pouch(connection_info);
     
-    let connection : PouchDB.Replication.Replication<Content> = PouchDB.replicate(local, remote, {
-        live: true, retry: true
+    let connection : PouchDB.Replication.Replication<Content> = /* ASYNC UNAWAITED */PouchDB.replicate(remote, local, {
+        live: true, retry: false, ...options //live & retry can be overwritten
     });
 
     return global_dbs[local_db_id] = {
@@ -218,6 +219,8 @@ async function activate_projects_for_listing(listing_object : PouchDB.Core.Exist
         projects_local_id,
         projects_connection,
         projects_dbs,
+        // Filters to only projects that are active
+        {doc_ids: active_projects.map(v => v.project_id)}
     );
 
 
