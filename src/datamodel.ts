@@ -1,3 +1,6 @@
+export const UI_SPECIFICATION_NAME = 'ui-specification';
+export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
+
 export interface ConnectionInfo {
   proto: string;
   host: string;
@@ -43,11 +46,17 @@ export interface ProjectObject {
  * Objects that may be contained in a Project's metadata DB
  */
 export interface ProjectSchema {
-  _id: string;
+  _id?: string; // optional as we may want to include the raw json in places
+  namespace: string;
+  constants: any; // any for now until we lock down the json
+  types: any; // any for now until we lock down the json
 }
 
 export interface ProjectUIModel {
   _id: string;
+  fields: Array<any>;
+  views: Array<any>;
+  start_view: string;
 }
 
 export interface ProjectPeople {
