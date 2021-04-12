@@ -1,6 +1,5 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
-import jsonpointer from 'jsonpointer';
 import * as DataModel from '../datamodel';
 
 const DEFAULT_LISTING_ID = 'default';
