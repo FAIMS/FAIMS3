@@ -1,5 +1,9 @@
 import {getProjectDB} from './sync/index';
-import {PROJECT_SPECIFICATION_PREFIX, ProjectSchema} from './datamodel';
+import {
+  PROJECT_SPECIFICATION_PREFIX,
+  ProjectSchema,
+  FAIMSType,
+} from './datamodel';
 
 export const FAIMS_NAMESPACES = [
   'faims-core',
@@ -39,7 +43,13 @@ export function createTypeContext(
 
 export function parseTypeName(typename: string): TypeReference {
   const splitname = typename.split('::');
-  if (splitname.length !== 2) {
+  if (
+    splitname.length !== 2 ||
+    splitname[0].trim() === '' ||
+    splitname[0].includes(':') ||
+    splitname[1].trim() === '' ||
+    splitname[1].includes(':')
+  ) {
     throw Error('Not a valid type name');
   }
   return {namespace: splitname[0], name: splitname[1]};
@@ -102,24 +112,57 @@ async function lookupBuiltinReference(
   return {};
 }
 
+async function getOrCreateSpecDoc(
+  project_name: string,
+  namespace: string
+): Promise<ProjectSchema> {
+  const projdb = getProjectDB(project_name);
+  try {
+    const specdoc: ProjectSchema = await projdb.get(
+      PROJECT_SPECIFICATION_PREFIX + '-' + namespace
+    );
+    if (specdoc.namespace !== namespace) {
+      throw Error('namespace names do not match!');
+    }
+    return specdoc;
+  } catch (err) {
+    if (err.status === 404) {
+      return {
+        _id: PROJECT_SPECIFICATION_PREFIX + '-' + namespace,
+        namespace: namespace,
+        types: {},
+        constants: {},
+      };
+    }
+    throw Error(err);
+  }
+}
+
 async function lookupProjectReference(
   faimsRef: TypeReference,
   context: TypeContext,
   specOpt: ProjectSpecOptions
 ) {
   const project_name = context.project_name;
-  const projdb = getProjectDB(project_name);
   try {
-    const specdoc: ProjectSchema = await projdb.get(
-      PROJECT_SPECIFICATION_PREFIX + '-' + faimsRef['namespace']
+    const specdoc = await getOrCreateSpecDoc(
+      project_name,
+      faimsRef['namespace']
     );
-    if (specdoc.namespace !== faimsRef['namespace']) {
-      throw Error('namespace names do not match!');
-    }
     if (specOpt === ProjectSpecOptions.constants) {
-      return specdoc.constants[faimsRef['name']];
+      const refVal = specdoc.constants[faimsRef['name']];
+      if (refVal === undefined) {
+        throw Error(
+          `Constant ${faimsRef['name']} not in ${faimsRef['namespace']}`
+        );
+      }
+      return refVal;
     } else if (specOpt === ProjectSpecOptions.types) {
-      return parseTypeInformation(specdoc.types[faimsRef['name']], context);
+      const refVal = specdoc.types[faimsRef['name']];
+      if (refVal === undefined) {
+        throw Error(`Type ${faimsRef['name']} not in ${faimsRef['namespace']}`);
+      }
+      return parseTypeInformation(refVal, context);
     }
     throw Error('Unsupported option, implementation needed');
   } catch (err) {
@@ -128,16 +171,24 @@ async function lookupProjectReference(
   }
 }
 
-function parseTypeInformation(typeInfo: any, context: TypeContext) {
+function parseTypeInformation(
+  typeInfo: FAIMSType,
+  context: TypeContext
+): FAIMSType {
   const supertypes = typeInfo['super-types'];
-  const computedProps = supertypes.map((name: string) => {
-    return lookupFAIMSType(name, context);
-  });
+  let computedProps;
+  if (supertypes !== undefined) {
+    computedProps = supertypes.map((name: string) => {
+      return lookupFAIMSType(name, context);
+    });
+  } else {
+    computedProps = [];
+  }
   computedProps.append(typeInfo);
   return compressTypes(computedProps);
 }
 
-function compressTypes(typeInfo: any) {
+function compressTypes(typeInfo: Array<FAIMSType>): FAIMSType {
   let allowedValues = [];
   const members = [];
   const constraints = [];
@@ -157,4 +208,92 @@ function compressTypes(typeInfo: any) {
     'additional-members': members,
     'additional-constraints': constraints,
   };
+}
+
+export async function upsertFAIMSType(
+  qualname: string,
+  typeInfo: FAIMSType,
+  context: TypeContext
+) {
+  const project_name = context.project_name;
+  const parsedName = parseTypeName(qualname);
+
+  if (!allowedProjectSpecUpsertPermissions(parsedName, context)) {
+    throw Error(`Not allowed to create or modify ${qualname}`);
+  }
+
+  let validatedInfo;
+  try {
+    validatedInfo = await validateTypeInfo(typeInfo);
+  } catch (err) {
+    console.log(err);
+    throw Error('invalid type information');
+  }
+
+  const specdoc = await getOrCreateSpecDoc(
+    project_name,
+    parsedName['namespace']
+  );
+  specdoc.types[parsedName['name']] = validatedInfo;
+
+  const projdb = getProjectDB(project_name);
+  try {
+    projdb.put(specdoc);
+  } catch (err) {
+    console.log(err);
+    throw Error('Failed to add type');
+  }
+}
+
+export async function upsertFAIMSConstant(
+  qualname: string,
+  constInfo: any,
+  context: TypeContext
+) {
+  const project_name = context.project_name;
+  const parsedName = parseTypeName(qualname);
+
+  if (!allowedProjectSpecUpsertPermissions(parsedName, context)) {
+    throw Error(`Not allowed to create or modify ${qualname}`);
+  }
+
+  let validatedInfo;
+  try {
+    validatedInfo = await validateConstInfo(constInfo);
+  } catch (err) {
+    console.log(err);
+    throw Error('invalid type information');
+  }
+
+  const specdoc = await getOrCreateSpecDoc(
+    project_name,
+    parsedName['namespace']
+  );
+  specdoc.constants[parsedName['name']] = validatedInfo;
+
+  const projdb = getProjectDB(project_name);
+  try {
+    return projdb.put(specdoc);
+  } catch (err) {
+    console.log(err);
+    throw Error('Failed to add constant');
+  }
+}
+
+function allowedProjectSpecUpsertPermissions(
+  name: TypeReference,
+  context: TypeContext
+): boolean {
+  // Not implemented yet
+  return true;
+}
+
+async function validateTypeInfo(typeInfo: FAIMSType) {
+  // Not implemented yet
+  return typeInfo;
+}
+
+async function validateConstInfo(constInfo: any) {
+  // Not implemented yet
+  return constInfo;
 }

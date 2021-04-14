@@ -45,11 +45,28 @@ export interface ProjectObject {
 /*
  * Objects that may be contained in a Project's metadata DB
  */
+export interface FAIMSType {
+  [key: string]: any; // any for now until we lock down the json
+}
+
+export interface FAIMSTypeCollection {
+  [key: string]: FAIMSType;
+}
+
+export interface FAIMSConstant {
+  [key: string]: any; // any for now until we lock down the json
+}
+
+export interface FAIMSConstantCollection {
+  [key: string]: FAIMSConstant;
+}
+
 export interface ProjectSchema {
   _id?: string; // optional as we may want to include the raw json in places
+  _ref?: string; // optional as we may want to include the raw json in places
   namespace: string;
-  constants: any; // any for now until we lock down the json
-  types: any; // any for now until we lock down the json
+  constants: FAIMSConstantCollection;
+  types: FAIMSTypeCollection;
 }
 
 export interface ProjectUIModel {
