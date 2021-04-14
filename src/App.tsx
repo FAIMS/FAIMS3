@@ -1,14 +1,21 @@
-import React from 'react';
+import React, {useState} from 'react';
 import logo from './logo.svg';
 import './App.css';
+import * as Sync from './sync/index';
 
 function App() {
+  const [listings, setListings] = useState(0);
+
+  Sync.initializeEvents.on('complete', () => {
+    setListings(1);
+  });
+
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
-          Edit <code>src/App.tsx</code> and save to reload.
+          Edit {listings} <code>src/App.tsx</code> and save to reload.
         </p>
         <a
           className="App-link"
