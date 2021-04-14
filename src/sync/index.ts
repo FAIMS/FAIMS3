@@ -252,7 +252,7 @@ function process_listings(
   let incompleteness = listing_objects.length;
   const complete_one = () => {
     if ((incompleteness -= 1) === 0) {
-      emitter.emit('complete');
+      emitter.emit('complete', listing_objects);
     }
   };
 
@@ -356,7 +356,7 @@ function process_projects(
   let incompleteness = active_projects.length;
   const complete_one = () => {
     if ((incompleteness -= 1) === 0) {
-      emitter.emit('complete', listing);
+      emitter.emit('complete', listing, active_projects);
     }
   };
 

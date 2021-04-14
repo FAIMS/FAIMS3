@@ -4,10 +4,10 @@ import './App.css';
 import * as Sync from './sync/index';
 
 function App() {
-  const [listings, setListings] = useState(0);
+  const [listings, setListings] = useState('');
 
-  Sync.initializeEvents.on('complete', () => {
-    setListings(1);
+  Sync.initializeEvents.on('complete', (...args) => {
+    setListings(JSON.stringify(args));
   });
 
   return (
