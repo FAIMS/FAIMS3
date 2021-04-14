@@ -245,6 +245,15 @@ function process_listings(
 
   emitter.on('listing_complete', complete_one);
 
+  let unprocessed = active_projects.length;
+  const processed_one = () => {
+    if ((unprocessed -= 1) === 0) {
+      emitter.emit('processed', listing_objects);
+    }
+  };
+
+  emitter.on('listing_processing', processed_one);
+
   listing_objects.forEach(ap => {
     const contextualizingEmitter = contextualizeEvents(emitter, [
       ['project_complete', 'project_complete'],
@@ -253,6 +262,7 @@ function process_listings(
       ['project_meta_complete', 'project_meta_complete'],
       ['project_error', 'project_error'],
 
+      ['listing_processed', 'processed'],
       ['listing_complete', 'complete'],
       ['listing_processing', 'processing'],
       ['listing_error', 'error'],
@@ -348,6 +358,15 @@ function process_projects(
   };
 
   emitter.on('project_complete', complete_one);
+
+  let unprocessed = active_projects.length;
+  const processed_one = () => {
+    if ((unprocessed -= 1) === 0) {
+      emitter.emit('processed', listing, active_projects);
+    }
+  };
+
+  emitter.on('project_processing', processed_one);
 
   active_projects.forEach(ap => {
     const contextualizingEmitter = contextualizeEvents(
