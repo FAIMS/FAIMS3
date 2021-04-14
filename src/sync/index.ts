@@ -184,18 +184,6 @@ export async function populate_test_data() {
   await active_db.put(test_doc);
 }
 
-type DirectoryRows = Array<{
-  // Defined as a subset of PouchDB.AllDocsResponse<ListingsObject>
-  // (doc being non-null, without AllDocsMeta)
-  doc: PouchDB.Core.ExistingDocument<DataModel.ListingsObject>;
-  id: PouchDB.Core.DocumentId;
-  key: PouchDB.Core.DocumentKey;
-  value: {
-    rev: PouchDB.Core.RevisionId;
-    deleted?: boolean;
-  };
-}>;
-
 export const initializeEvents: EventEmitter = new EventEmitter();
 
 export function initialize_dbs(directory_connection: DataModel.ConnectionInfo) {
@@ -214,7 +202,6 @@ async function process_directory(
     directory_connection_info
   );
 
-  /* ASYNC UNAWAITED */
   const directory_connection = PouchDB.replicate(
     directory_remote,
     directory_db,
@@ -334,12 +321,12 @@ async function process_listing(
 function contextualizeEvents(
   emit_to: EventEmitter,
   mappings: [string, string][],
-  ...context: any
+  ...context: unknown[]
 ): EventEmitter {
   const event_from = new EventEmitter();
 
   mappings.forEach(([new_name, contextless_name]) =>
-    event_from.on(contextless_name, (...orig_args: any) => {
+    event_from.on(contextless_name, (...orig_args: unknown[]) => {
       // Emit new_name with the new arguments THEN the old arguments
       emit_to.emit(new_name, ...context, ...orig_args);
     })
