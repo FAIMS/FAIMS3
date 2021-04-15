@@ -22,6 +22,9 @@ export interface LocalDBList<Content extends {}> {
   [key: string]: LocalDB<Content>;
 }
 
+export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>;
+export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsObject>;
+
 /**
  * Directory: All (public, anyways) Faims instances
  */
@@ -184,11 +187,129 @@ export async function populate_test_data() {
   await active_db.put(test_doc);
 }
 
-export const initializeEvents: EventEmitter = new EventEmitter();
+interface DirectoryEmitter extends EventEmitter {
+  on(
+    event: 'project_meta_complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_data_complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_processing',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_error',
+    listener: (listing: DataModel.ListingsObject, err: unknown) => unknown
+  ): this;
+  on(
+    event: 'listing_complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      active_projects: ExistingActiveDoc[]
+    ) => unknown
+  ): this;
+  on(
+    event: 'listing_processing',
+    listener: (listing: DataModel.ListingsObject) => unknown
+  ): this;
+  on(
+    event: 'listing_processed',
+    listener: (
+      listing: DataModel.ListingsObject,
+      active_projects: ExistingActiveDoc[]
+    ) => unknown
+  ): this;
+  on(event: 'listing_error', listener: (err: unknown) => unknown): this;
+  on(
+    event: 'complete',
+    listener: (listings: ExistingListings[]) => unknown
+  ): this;
+  on(event: 'processing', listener: () => unknown): this;
+  on(
+    event: 'processed',
+    listener: (listings: ExistingListings[]) => unknown
+  ): this;
+  on(event: 'error', listener: (err: unknown) => unknown): this;
+
+  emit(
+    event: 'project_meta_complete',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>
+  ): boolean;
+  emit(
+    event: 'project_data_complete',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'project_complete',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'project_processing',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'project_error',
+    listing: DataModel.ListingsObject,
+    err: unknown
+  ): boolean;
+  emit(
+    event: 'listing_complete',
+    listing: DataModel.ListingsObject,
+    active_projects: ExistingActiveDoc[]
+  ): boolean;
+  emit(event: 'listing_processing', listing: DataModel.ListingsObject): boolean;
+  emit(
+    event: 'listing_processed',
+    listing: DataModel.ListingsObject,
+    active_projects: ExistingActiveDoc[]
+  ): boolean;
+  emit(event: 'listing_error', err: unknown): boolean;
+  emit(event: 'complete', listings: ExistingListings[]): boolean;
+  emit(event: 'processing'): boolean;
+  emit(event: 'processed', listings: ExistingListings[]): boolean;
+  emit(event: 'error', err: unknown): boolean;
+}
+
+export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 export function initialize_dbs(directory_connection: DataModel.ConnectionInfo) {
   process_directory(directory_connection).catch(err =>
-    initializeEvents.emit('directory_error', err)
+    initializeEvents.emit('error', err)
   );
   return initializeEvents;
 }
@@ -233,8 +354,8 @@ async function process_directory(
 }
 
 function process_listings(
-  emitter: EventEmitter,
-  listing_objects: PouchDB.Core.ExistingDocument<DataModel.ListingsObject>[]
+  emitter: DirectoryEmitter,
+  listing_objects: ExistingListings[]
 ) {
   let incompleteness = listing_objects.length;
   const complete_one = () => {
@@ -255,18 +376,21 @@ function process_listings(
   emitter.on('listing_processing', processed_one);
 
   listing_objects.forEach(ap => {
-    const contextualizingEmitter = contextualizeEvents(emitter, [
-      ['project_complete', 'project_complete'],
-      ['project_processing', 'project_processing'],
-      ['project_data_complete', 'project_data_complete'],
-      ['project_meta_complete', 'project_meta_complete'],
-      ['project_error', 'project_error'],
+    const contextualizingEmitter: ListingEmitter = contextualizeEvents(
+      emitter,
+      [
+        ['project_complete', 'project_complete'],
+        ['project_processing', 'project_processing'],
+        ['project_data_complete', 'project_data_complete'],
+        ['project_meta_complete', 'project_meta_complete'],
+        ['project_error', 'project_error'],
 
-      ['listing_processed', 'processed'],
-      ['listing_complete', 'complete'],
-      ['listing_processing', 'processing'],
-      ['listing_error', 'error'],
-    ]);
+        ['listing_complete', 'complete'],
+        ['listing_processed', 'processed'],
+        ['listing_processing', 'processing'],
+        ['listing_error', 'error'],
+      ]
+    );
 
     process_listing(contextualizingEmitter, ap).catch(err =>
       contextualizingEmitter.emit('error', err)
@@ -275,9 +399,113 @@ function process_listings(
   return emitter;
 }
 
+interface ListingEmitter extends EventEmitter {
+  on(
+    event: 'project_meta_complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_data_complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_processing',
+    listener: (
+      listing: DataModel.ListingsObject,
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_error',
+    listener: (listing: DataModel.ListingsObject, err: unknown) => unknown
+  ): this;
+  on(
+    event: 'complete',
+    listener: (
+      listing: DataModel.ListingsObject,
+      active_projects: ExistingActiveDoc[]
+    ) => unknown
+  ): this;
+  on(
+    event: 'processing',
+    listener: (listing: DataModel.ListingsObject) => unknown
+  ): this;
+  on(
+    event: 'processed',
+    listener: (
+      listing: DataModel.ListingsObject,
+      active_projects: ExistingActiveDoc[]
+    ) => unknown
+  ): this;
+  on(event: 'error', listener: (err: unknown) => unknown): this;
+
+  emit(
+    event: 'project_meta_complete',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>
+  ): boolean;
+  emit(
+    event: 'project_data_complete',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'project_complete',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'project_processing',
+    listing: DataModel.ListingsObject,
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'project_error',
+    listing: DataModel.ListingsObject,
+    err: unknown
+  ): boolean;
+  emit(
+    event: 'complete',
+    listing: DataModel.ListingsObject,
+    active_projects: ExistingActiveDoc[]
+  ): boolean;
+  emit(event: 'processing', listing: DataModel.ListingsObject): boolean;
+  emit(
+    event: 'processed',
+    listing: DataModel.ListingsObject,
+    active_projects: ExistingActiveDoc[]
+  ): boolean;
+  emit(event: 'error', err: unknown): boolean;
+}
+
 async function process_listing(
-  emitter: EventEmitter,
-  listing_object: PouchDB.Core.ExistingDocument<DataModel.ListingsObject>
+  emitter: ListingEmitter,
+  listing_object: ExistingListings
 ) {
   // Connect to people db and projects db for this listing db
 
@@ -346,10 +574,10 @@ function contextualizeEvents(
 }
 
 function process_projects(
-  emitter: EventEmitter,
+  emitter: ListingEmitter,
   listing: DataModel.ListingsObject,
-  active_projects: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>[]
-): EventEmitter {
+  active_projects: ExistingActiveDoc[]
+) {
   let incompleteness = active_projects.length;
   const complete_one = () => {
     if ((incompleteness -= 1) === 0) {
@@ -369,7 +597,7 @@ function process_projects(
   emitter.on('project_processing', processed_one);
 
   active_projects.forEach(ap => {
-    const contextualizingEmitter = contextualizeEvents(
+    const contextualizingEmitter: ProjectEmitter = contextualizeEvents(
       emitter,
       [
         ['project_complete', 'complete'],
@@ -385,11 +613,68 @@ function process_projects(
       contextualizingEmitter.emit('error', err)
     );
   });
-  return emitter;
+}
+
+interface ProjectEmitter extends EventEmitter {
+  on(
+    event: 'meta_complete',
+    listener: (
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>
+    ) => unknown
+  ): this;
+  on(
+    event: 'data_complete',
+    listener: (
+      project: ExistingActiveDoc,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'complete',
+    listener: (
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(
+    event: 'processing',
+    listener: (
+      project: ExistingActiveDoc,
+      meta: LocalDB<DataModel.ProjectMetaObject>,
+      data: LocalDB<DataModel.Datum>
+    ) => unknown
+  ): this;
+  on(event: 'error', listener: (err: unknown) => unknown): this;
+
+  emit(
+    event: 'meta_complete',
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>
+  ): boolean;
+  emit(
+    event: 'data_complete',
+    project: ExistingActiveDoc,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'complete',
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(
+    event: 'processing',
+    project: ExistingActiveDoc,
+    meta: LocalDB<DataModel.ProjectMetaObject>,
+    data: LocalDB<DataModel.Datum>
+  ): boolean;
+  emit(event: 'error', err: unknown): boolean;
 }
 
 async function process_project(
-  emitter: EventEmitter,
+  emitter: ProjectEmitter,
   active_project: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>
 ): Promise<void> {
   const active_id = active_project._id;
@@ -428,8 +713,16 @@ async function process_project(
     data_dbs
   );
 
-  function synced_callback<T>(evt_name: string, db: LocalDB<T>) {
-    return () => emitter.emit(evt_name, active_project, db);
+  function synced_callback<T>(
+    evt_name: 'meta_complete' | 'data_complete',
+    db: LocalDB<T>
+  ) {
+    return () =>
+      (emitter.emit as (
+        evt: string,
+        project: ExistingActiveDoc,
+        arg: LocalDB<T>
+      ) => boolean)(evt_name, active_project, db);
   }
 
   meta_db.connection.on('paused', synced_callback('meta_complete', meta_db));
