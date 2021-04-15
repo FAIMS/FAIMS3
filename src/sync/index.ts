@@ -366,14 +366,17 @@ function process_listings(
 
   emitter.on('listing_complete', complete_one);
 
-  let unprocessed = active_projects.length;
+  let unprocessed = listing_objects.length;
   const processed_one = () => {
     if ((unprocessed -= 1) === 0) {
       emitter.emit('processed', listing_objects);
     }
   };
 
-  emitter.on('listing_processing', processed_one);
+  // Only once the listing has processed all its own projects
+  // this is different that process_projects,
+  // on(listing_processed) instead of _processing
+  emitter.on('listing_processed', processed_one);
 
   listing_objects.forEach(ap => {
     const contextualizingEmitter: ListingEmitter = contextualizeEvents(
