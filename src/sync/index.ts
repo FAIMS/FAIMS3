@@ -238,7 +238,7 @@ interface DirectoryEmitter extends EventEmitter {
     listener: (listing: DataModel.ListingsObject) => unknown
   ): this;
   on(
-    event: 'listing_processed',
+    event: 'listing_dbs_created',
     listener: (
       listing: DataModel.ListingsObject,
       active_projects: ExistingActiveDoc[]
@@ -251,7 +251,7 @@ interface DirectoryEmitter extends EventEmitter {
   ): this;
   on(event: 'processing', listener: () => unknown): this;
   on(
-    event: 'processed',
+    event: 'dbs_created',
     listener: (listings: ExistingListings[]) => unknown
   ): this;
   on(event: 'error', listener: (err: unknown) => unknown): this;
@@ -294,20 +294,23 @@ interface DirectoryEmitter extends EventEmitter {
   ): boolean;
   emit(event: 'listing_processing', listing: DataModel.ListingsObject): boolean;
   emit(
-    event: 'listing_processed',
+    event: 'listing_dbs_created',
     listing: DataModel.ListingsObject,
     active_projects: ExistingActiveDoc[]
   ): boolean;
   emit(event: 'listing_error', err: unknown): boolean;
   emit(event: 'complete', listings: ExistingListings[]): boolean;
   emit(event: 'processing'): boolean;
-  emit(event: 'processed', listings: ExistingListings[]): boolean;
+  emit(event: 'dbs_created', listings: ExistingListings[]): boolean;
   emit(event: 'error', err: unknown): boolean;
 }
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 export function initialize_dbs(directory_connection: DataModel.ConnectionInfo) {
+  initializeEvents.once('dbs_created', () => {
+    is_dbs_created = true;
+  });
   process_directory(directory_connection).catch(err =>
     initializeEvents.emit('error', err)
   );
@@ -366,17 +369,17 @@ function process_listings(
 
   emitter.on('listing_complete', complete_one);
 
-  let unprocessed = listing_objects.length;
-  const processed_one = () => {
-    if ((unprocessed -= 1) === 0) {
-      emitter.emit('processed', listing_objects);
+  let undbs_created = listing_objects.length;
+  const dbs_created_one = () => {
+    if ((undbs_created -= 1) === 0) {
+      emitter.emit('dbs_created', listing_objects);
     }
   };
 
-  // Only once the listing has processed all its own projects
+  // Only once the listing has dbs_created all its own projects
   // this is different that process_projects,
-  // on(listing_processed) instead of _processing
-  emitter.on('listing_processed', processed_one);
+  // on(listing_dbs_created) instead of _processing
+  emitter.on('listing_dbs_created', dbs_created_one);
 
   listing_objects.forEach(ap => {
     const contextualizingEmitter: ListingEmitter = contextualizeEvents(
@@ -389,7 +392,7 @@ function process_listings(
         ['project_error', 'project_error'],
 
         ['listing_complete', 'complete'],
-        ['listing_processed', 'processed'],
+        ['listing_dbs_created', 'dbs_created'],
         ['listing_processing', 'processing'],
         ['listing_error', 'error'],
       ]
@@ -400,6 +403,17 @@ function process_listings(
     );
   });
   return emitter;
+}
+
+let is_dbs_created = false;
+
+async function wait_until_dbs_created(): Promise<void> {
+  if (is_dbs_created) {
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    initializeEvents.once('dbs_created', resolve);
+  });
 }
 
 interface ListingEmitter extends EventEmitter {
@@ -453,7 +467,7 @@ interface ListingEmitter extends EventEmitter {
     listener: (listing: DataModel.ListingsObject) => unknown
   ): this;
   on(
-    event: 'processed',
+    event: 'dbs_created',
     listener: (
       listing: DataModel.ListingsObject,
       active_projects: ExistingActiveDoc[]
@@ -499,7 +513,7 @@ interface ListingEmitter extends EventEmitter {
   ): boolean;
   emit(event: 'processing', listing: DataModel.ListingsObject): boolean;
   emit(
-    event: 'processed',
+    event: 'dbs_created',
     listing: DataModel.ListingsObject,
     active_projects: ExistingActiveDoc[]
   ): boolean;
@@ -590,14 +604,14 @@ function process_projects(
 
   emitter.on('project_complete', complete_one);
 
-  let unprocessed = active_projects.length;
-  const processed_one = () => {
-    if ((unprocessed -= 1) === 0) {
-      emitter.emit('processed', listing, active_projects);
+  let undbs_created = active_projects.length;
+  const dbs_created_one = () => {
+    if ((undbs_created -= 1) === 0) {
+      emitter.emit('dbs_created', listing, active_projects);
     }
   };
 
-  emitter.on('project_processing', processed_one);
+  emitter.on('project_processing', dbs_created_one);
 
   active_projects.forEach(ap => {
     const contextualizingEmitter: ProjectEmitter = contextualizeEvents(
@@ -747,14 +761,12 @@ async function process_project(
   emitter.emit('processing', active_project, meta_db, data_db);
 }
 
-export async function active_projects() {
-  return new Promise((/* resolve, reject */) => {});
+export async function getProjectDB(active_id: string) {
+  await wait_until_dbs_created();
+  return metadata_dbs[active_id].local;
 }
 
-export function getProjectDB(project_name: string) {
-  return metadata_dbs[project_name].local;
-}
-
-export function getDataDB(project_name: string) {
-  return data_dbs[project_name].local;
+export async function getDataDB(active_id: string) {
+  await wait_until_dbs_created();
+  return data_dbs[active_id].local;
 }
