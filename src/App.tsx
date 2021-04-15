@@ -1,10 +1,9 @@
 import React from 'react';
 import './App.css';
-import {FAIMSForm} from './gui/index';
+import {FAIMSContainer} from './gui';
 import Navbar from './gui/navbar';
 import {MuiThemeProvider, createMuiTheme} from '@material-ui/core/styles';
 import {Shadows} from '@material-ui/core/styles/shadows';
-import Container from '@material-ui/core/Container';
 
 const theme = createMuiTheme({
   palette: {
@@ -25,9 +24,7 @@ function App() {
   return (
     <MuiThemeProvider theme={theme}>
       <Navbar />
-      <Container maxWidth="sm">
-        <FAIMSForm project="test" />
-      </Container>
+      <FAIMSContainer />
     </MuiThemeProvider>
   );
 }
