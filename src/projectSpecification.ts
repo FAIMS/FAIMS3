@@ -60,22 +60,27 @@ export async function lookupFAIMSType(faimsType: string, context: TypeContext) {
     return typeCache.get(faimsType);
   }
   const parsedName = parseTypeName(faimsType);
-  let refVal;
-  if (FAIMS_NAMESPACES.includes(parsedName['namespace'])) {
-    refVal = lookupBuiltinReference(
-      parsedName,
-      context,
-      ProjectSpecOptions.types
-    );
-  } else {
-    refVal = lookupProjectReference(
-      parsedName,
-      context,
-      ProjectSpecOptions.types
-    );
+  try {
+    let refVal;
+    if (FAIMS_NAMESPACES.includes(parsedName['namespace'])) {
+      refVal = await lookupBuiltinReference(
+        parsedName,
+        context,
+        ProjectSpecOptions.types
+      );
+    } else {
+      refVal = await lookupProjectReference(
+        parsedName,
+        context,
+        ProjectSpecOptions.types
+      );
+    }
+    typeCache.set(faimsType, refVal);
+    return refVal;
+  } catch (err) {
+    console.warn(err);
+    throw Error('failed to look up type');
   }
-  typeCache.set(faimsType, refVal);
-  return refVal;
 }
 
 export async function lookupFAIMSConstant(
@@ -86,22 +91,27 @@ export async function lookupFAIMSConstant(
     return constantCache.get(faimsConst);
   }
   const parsedName = parseTypeName(faimsConst);
-  let refVal;
-  if (FAIMS_NAMESPACES.includes(parsedName['namespace'])) {
-    refVal = lookupBuiltinReference(
-      parsedName,
-      context,
-      ProjectSpecOptions.constants
-    );
-  } else {
-    refVal = lookupProjectReference(
-      parsedName,
-      context,
-      ProjectSpecOptions.constants
-    );
+  try {
+    let refVal;
+    if (FAIMS_NAMESPACES.includes(parsedName['namespace'])) {
+      refVal = await lookupBuiltinReference(
+        parsedName,
+        context,
+        ProjectSpecOptions.constants
+      );
+    } else {
+      refVal = await lookupProjectReference(
+        parsedName,
+        context,
+        ProjectSpecOptions.constants
+      );
+    }
+    constantCache.set(faimsConst, refVal);
+    return refVal;
+  } catch (err) {
+    console.warn(err);
+    throw Error('failed to look up constant');
   }
-  constantCache.set(faimsConst, refVal);
-  return refVal;
 }
 
 async function lookupBuiltinReference(
@@ -166,7 +176,7 @@ async function lookupProjectReference(
     }
     throw Error('Unsupported option, implementation needed');
   } catch (err) {
-    console.log(err);
+    console.warn(err);
     throw Error('failed to look up reference');
   }
 }
@@ -184,20 +194,20 @@ function parseTypeInformation(
   } else {
     computedProps = [];
   }
-  computedProps.append(typeInfo);
+  computedProps.push(typeInfo);
   return compressTypes(computedProps);
 }
 
 function compressTypes(typeInfo: Array<FAIMSType>): FAIMSType {
   let allowedValues = [];
-  const members = [];
+  const members = {};
   const constraints = [];
   for (const typ of typeInfo) {
     if (typ['allowed-values'] !== undefined) {
       allowedValues = typ['allowed-values'];
     }
     if (typ['additional-members'] !== undefined) {
-      members.push(...typ['additional-members']);
+      Object.assign(members, typ['additional-members']);
     }
     if (typ['additional-constraints'] !== undefined) {
       constraints.push(...typ['additional-constraints']);
@@ -226,21 +236,24 @@ export async function upsertFAIMSType(
   try {
     validatedInfo = await validateTypeInfo(typeInfo);
   } catch (err) {
-    console.log(err);
+    console.warn(err);
     throw Error('invalid type information');
   }
 
-  const specdoc = await getOrCreateSpecDoc(
-    project_name,
-    parsedName['namespace']
-  );
-  specdoc.types[parsedName['name']] = validatedInfo;
+  let specdoc;
+  try {
+    specdoc = await getOrCreateSpecDoc(project_name, parsedName['namespace']);
+    specdoc.types[parsedName['name']] = validatedInfo;
+  } catch (err) {
+    console.warn(err);
+    throw Error('failed to get document');
+  }
 
   const projdb = getProjectDB(project_name);
   try {
-    projdb.put(specdoc);
+    return projdb.put(specdoc);
   } catch (err) {
-    console.log(err);
+    console.warn(err);
     throw Error('Failed to add type');
   }
 }
@@ -261,7 +274,7 @@ export async function upsertFAIMSConstant(
   try {
     validatedInfo = await validateConstInfo(constInfo);
   } catch (err) {
-    console.log(err);
+    console.warn(err);
     throw Error('invalid type information');
   }
 
@@ -275,7 +288,7 @@ export async function upsertFAIMSConstant(
   try {
     return projdb.put(specdoc);
   } catch (err) {
-    console.log(err);
+    console.warn(err);
     throw Error('Failed to add constant');
   }
 }

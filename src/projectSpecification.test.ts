@@ -13,8 +13,32 @@ import {getProjectDB} from './sync/index';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adaptor for testing
 
+const projdbs: any = {};
+
 function mockProjectDB(project_name: string) {
-  return new PouchDB(project_name, {adapter: 'memory'});
+  if (projdbs[project_name] === undefined) {
+    const db = new PouchDB(project_name, {adapter: 'memory'});
+    projdbs[project_name] = db;
+  }
+  return projdbs[project_name];
+}
+
+async function cleanProjectDBS() {
+  let db;
+  for (const project_name in projdbs) {
+    db = projdbs[project_name];
+    delete projdbs[project_name];
+
+    if (db !== undefined) {
+      try {
+        const alldocs = await db.allDocs({include_docs: true});
+        await db.destroy();
+        //await db.close();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
 }
 
 jest.mock('./sync/index', () => ({
@@ -60,40 +84,49 @@ testProp(
   }
 );
 
-testProp(
-  'types roundtrip',
-  [
-    fc.string(),
-    fc.string(),
-    fc.string(),
-    fc.array(fc.anything()), // allowed-values
-    fc.dictionary(fc.string(), fc.jsonObject()), // additional-members
-    fc.dictionary(fc.string(), fc.jsonObject()), // additional-constraints
-  ],
-  (
-    project_name,
-    namespace,
-    name,
-    allowedValues,
-    additionalMembers,
-    additionalConstraints
-  ) => {
-    fc.pre(!namespace.includes(':'));
-    fc.pre(!name.includes(':'));
-    fc.pre(namespace.trim() !== '');
-    fc.pre(name.trim() !== '');
+describe('roundtrip reading and writing to db', () => {
+  //afterEach(() => {
+  //  return cleanProjectDBS();
+  //});
+  testProp(
+    'types roundtrip',
+    [
+      fc.string(),
+      fc.string(),
+      fc.string(),
+      fc.array(fc.jsonObject()), // allowed-values
+      fc.dictionary(fc.string(), fc.jsonObject()), // additional-members
+      fc.array(fc.jsonObject()), // additional-constraints
+    ],
+    async (
+      project_name,
+      namespace,
+      name,
+      allowedValues,
+      additionalMembers,
+      additionalConstraints
+    ) => {
+      fc.pre(!namespace.includes(':'));
+      fc.pre(!name.includes(':'));
+      fc.pre(namespace.trim() !== '');
+      fc.pre(name.trim() !== '');
+      await cleanProjectDBS();
+      fc.pre(projdbs !== {});
 
-    const fulltype = namespace + '::' + name;
-    const context = createTypeContext(project_name);
+      const fulltype = namespace + '::' + name;
+      const context = createTypeContext(project_name, false);
 
-    const typeInfo = {
-      'allowed-values': allowedValues,
-      'additional-members': additionalMembers,
-      'additional-constraints': additionalConstraints,
-    };
+      const typeInfo = {
+        'allowed-values': allowedValues,
+        'additional-members': additionalMembers,
+        'additional-constraints': additionalConstraints,
+      };
 
-    return upsertFAIMSType(fulltype, typeInfo, context)
-      .then(result => lookupFAIMSType(fulltype, context))
-      .then(result => expect(result).toBe(typeInfo));
-  }
-);
+      return upsertFAIMSType(fulltype, typeInfo, context)
+        .then(result => {
+          return lookupFAIMSType(fulltype, context);
+        })
+        .then(result => expect(result).toEqual(typeInfo));
+    }
+  );
+});
