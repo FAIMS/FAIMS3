@@ -747,3 +747,11 @@ async function process_project(
 export async function active_projects() {
   return new Promise((/* resolve, reject */) => {});
 }
+
+export function getProjectDB(project_name: string) {
+  return metadata_dbs[project_name].local;
+}
+
+export function getDataDB(project_name: string) {
+  return data_dbs[project_name].local;
+}
