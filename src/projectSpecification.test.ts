@@ -7,6 +7,7 @@ import {
   upsertFAIMSType,
   lookupFAIMSConstant,
   upsertFAIMSConstant,
+  clearAllCaches,
 } from './projectSpecification';
 
 import {getProjectDB} from './sync/index';
@@ -85,9 +86,6 @@ testProp(
 );
 
 describe('roundtrip reading and writing to db', () => {
-  //afterEach(() => {
-  //  return cleanProjectDBS();
-  //});
   testProp(
     'types roundtrip',
     [
@@ -127,6 +125,117 @@ describe('roundtrip reading and writing to db', () => {
           return lookupFAIMSType(fulltype, context);
         })
         .then(result => expect(result).toEqual(typeInfo));
+    }
+  );
+  testProp(
+    'constants roundtrip',
+    [
+      fc.string(),
+      fc.string(),
+      fc.string(),
+      fc.dictionary(fc.string(), fc.jsonObject()),
+    ],
+    async (
+      project_name,
+      namespace,
+      name,
+      constInfo,
+    ) => {
+      fc.pre(!namespace.includes(':'));
+      fc.pre(!name.includes(':'));
+      fc.pre(namespace.trim() !== '');
+      fc.pre(name.trim() !== '');
+      await cleanProjectDBS();
+      fc.pre(projdbs !== {});
+
+      const fullconst = namespace + '::' + name;
+      const context = createTypeContext(project_name, false);
+
+      return upsertFAIMSConstant(fullconst, constInfo, context)
+        .then(result => {
+          return lookupFAIMSConstant(fullconst, context);
+        })
+        .then(result => expect(result).toEqual(constInfo));
+    }
+  );
+  testProp(
+    'types roundtrip with caching',
+    [
+      fc.string(),
+      fc.string(),
+      fc.string(),
+      fc.array(fc.jsonObject()), // allowed-values
+      fc.dictionary(fc.string(), fc.jsonObject()), // additional-members
+      fc.array(fc.jsonObject()), // additional-constraints
+    ],
+    async (
+      project_name,
+      namespace,
+      name,
+      allowedValues,
+      additionalMembers,
+      additionalConstraints
+    ) => {
+      fc.pre(!namespace.includes(':'));
+      fc.pre(!name.includes(':'));
+      fc.pre(namespace.trim() !== '');
+      fc.pre(name.trim() !== '');
+      await cleanProjectDBS();
+      clearAllCaches();
+      fc.pre(projdbs !== {});
+
+      const fulltype = namespace + '::' + name;
+      const context = createTypeContext(project_name);
+
+      const typeInfo = {
+        'allowed-values': allowedValues,
+        'additional-members': additionalMembers,
+        'additional-constraints': additionalConstraints,
+      };
+
+      return upsertFAIMSType(fulltype, typeInfo, context)
+        .then(result => {
+          return lookupFAIMSType(fulltype, context);
+        })
+        .then(result => expect(result).toEqual(typeInfo)).then(result => {
+          return lookupFAIMSType(fulltype, context);
+        })
+        .then(result => expect(result).toEqual(typeInfo));
+    }
+  );
+  testProp(
+    'constants roundtrip with caching',
+    [
+      fc.string(),
+      fc.string(),
+      fc.string(),
+      fc.dictionary(fc.string(), fc.jsonObject()),
+    ],
+    async (
+      project_name,
+      namespace,
+      name,
+      constInfo,
+    ) => {
+      fc.pre(!namespace.includes(':'));
+      fc.pre(!name.includes(':'));
+      fc.pre(namespace.trim() !== '');
+      fc.pre(name.trim() !== '');
+      await cleanProjectDBS();
+      clearAllCaches();
+      fc.pre(projdbs !== {});
+
+      const fullconst = namespace + '::' + name;
+      const context = createTypeContext(project_name);
+
+      return upsertFAIMSConstant(fullconst, constInfo, context)
+        .then(result => {
+          return lookupFAIMSConstant(fullconst, context);
+        })
+        .then(result => expect(result).toEqual(constInfo)).then(result => {
+          return lookupFAIMSConstant(fullconst, context);
+        })
+        .then(result => expect(result).toEqual(constInfo));
     }
   );
 });

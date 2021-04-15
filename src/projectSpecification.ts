@@ -310,3 +310,16 @@ async function validateConstInfo(constInfo: any) {
   // Not implemented yet
   return constInfo;
 }
+
+function clearTypeCache() {
+    typeCache.clear();
+}
+
+function clearConstantCache() {
+    constantCache.clear();
+}
+
+export function clearAllCaches() {
+    clearTypeCache();
+    clearConstantCache();
+}
