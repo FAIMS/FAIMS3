@@ -5,14 +5,21 @@ name: Compile APK, Electron, and Test on BrowserStack
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
-on: push
-  branches:
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
       - main
   pull_request:
+    branches:
       - main
+  # Also trigger on page_build, as well as release created events
+  page_build:
   release:
-      types:
-        - created 
+    types: # This configuration does not affect the page_build event above
+      - created
 
 
 
