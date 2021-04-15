@@ -5,7 +5,15 @@ name: Compile APK, Electron, and Test on BrowserStack
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
-on: [push, pull_request]
+on: push
+  branches:
+      - main
+  pull_request:
+      - main
+  release:
+      types:
+        - created 
+
 
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -14,6 +22,7 @@ jobs:
     # The type of runner that the job will run on
     # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
     runs-on: ubuntu-latest
+    continue-on-error: true
     strategy:
       matrix:
         node-version: [14.x]
