@@ -135,12 +135,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.string(),
       fc.dictionary(fc.string(), fc.jsonObject()),
     ],
-    async (
-      project_name,
-      namespace,
-      name,
-      constInfo,
-    ) => {
+    async (project_name, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -197,7 +192,8 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSType(fulltype, context);
         })
-        .then(result => expect(result).toEqual(typeInfo)).then(result => {
+        .then(result => expect(result).toEqual(typeInfo))
+        .then(result => {
           return lookupFAIMSType(fulltype, context);
         })
         .then(result => expect(result).toEqual(typeInfo));
@@ -211,12 +207,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.string(),
       fc.dictionary(fc.string(), fc.jsonObject()),
     ],
-    async (
-      project_name,
-      namespace,
-      name,
-      constInfo,
-    ) => {
+    async (project_name, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -232,7 +223,8 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSConstant(fullconst, context);
         })
-        .then(result => expect(result).toEqual(constInfo)).then(result => {
+        .then(result => expect(result).toEqual(constInfo))
+        .then(result => {
           return lookupFAIMSConstant(fullconst, context);
         })
         .then(result => expect(result).toEqual(constInfo));

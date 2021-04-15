@@ -312,14 +312,14 @@ async function validateConstInfo(constInfo: any) {
 }
 
 function clearTypeCache() {
-    typeCache.clear();
+  typeCache.clear();
 }
 
 function clearConstantCache() {
-    constantCache.clear();
+  constantCache.clear();
 }
 
 export function clearAllCaches() {
-    clearTypeCache();
-    clearConstantCache();
+  clearTypeCache();
+  clearConstantCache();
 }
