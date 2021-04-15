@@ -1,6 +1,3 @@
-import * as Yup from 'yup';
-// import {bool} from 'yup';
-
 export function lookupFAIMSType(faimsType: string) {
   return {};
 }
@@ -29,9 +26,11 @@ export function getUiSpecForProject(project_name: string) {
           },
           FormHelperTextProps: {},
         },
-        validationSchema: Yup.string()
-          .email('Enter a valid email')
-          .required('This field is required'),
+        validationSchema: [
+          ['yup.string'],
+          ['yup.email', 'Enter a valid email'],
+          ['yup.required'],
+        ],
         initialValue: '',
       },
       'str-field': {
@@ -54,10 +53,12 @@ export function getUiSpecForProject(project_name: string) {
           },
           FormHelperTextProps: {},
         },
-        validationSchema: Yup.string()
-          .min(2, 'Too Short!')
-          .max(50, 'Too Long!')
-          .required('This field is required'),
+        validationSchema: [
+          ['yup.string'],
+          ['yup.min', 2, 'Too Short!'],
+          ['yup.max', 50, 'Too Long!'],
+          ['yup.required'],
+        ],
         initialValue: 'hello',
       },
       'int-field': {
@@ -80,12 +81,13 @@ export function getUiSpecForProject(project_name: string) {
           },
           FormHelperTextProps: {},
         },
-        validationSchema: Yup.number()
-          .required('This field is required')
-          .positive()
-          .integer()
-          .min(0, 'Min is 0')
-          .max(20, 'max is 20'),
+        validationSchema: [
+          ['yup.number'],
+          ['yup.positive'],
+          ['yup.integer'],
+          ['yup.min', 0, 'Min is 0'],
+          ['yup.max', 20, 'Max is 20'],
+        ],
         initialValue: 1,
       },
       // 'bool-field': {
@@ -143,10 +145,11 @@ export function getUiSpecForProject(project_name: string) {
           // 'date-field',
           // 'time-field',
         ], // ordering sets appearance order
-        //"next-view": "another-view-id", // either this gets handled by a component, or we stick it here
-        //"next-view-label": "Done!"
       },
+      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
+      'next-view-label': 'Done!',
     },
+
     'start-view': 'start-view',
   };
 }

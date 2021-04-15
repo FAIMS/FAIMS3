@@ -1,5 +1,4 @@
 import React from 'react';
-import * as Yup from 'yup';
 import {Button, Chip, Grid, Box} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
@@ -7,6 +6,7 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from './dbHelpers';
 import {Formik, Form, Field, FormikProps} from 'formik';
+import {transformAll} from '@demvsystems/yup-ast';
 
 type FormProps = {
   project: string;
@@ -32,7 +32,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   componentDidMount() {
     // get view components, render form
-
   }
 
   save(values) {
@@ -51,7 +50,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
-    console.log('getComponentFromField');
+    // console.log('getComponentFromField');
     const uiSpec = this.state.uiSpec;
     const fields = uiSpec['fields'];
     return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
@@ -62,7 +61,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     view: ViewComponent,
     fieldName: string
   ) {
-    console.log('getComponentFromFieldConfig');
+    // console.log('getComponentFromFieldConfig');
     const Component = getComponentByName(
       fieldConfig['component-namespace'],
       fieldConfig['component-name']
@@ -90,7 +89,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getValidationSchema() {
-    console.log('getValidationSchema');
+    // console.log('getValidationSchema');
     const {uiSpec, currentView} = this.state;
     const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
     const fields = uiSpec['fields'];
@@ -98,11 +97,11 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     viewList.forEach(fieldName => {
       validationSchema[fieldName] = fields[fieldName]['validationSchema'];
     });
-    return Yup.object().shape(validationSchema);
+    return transformAll([['yup.object'], ['yup.shape', validationSchema]]);
   }
 
   getInitialValues() {
-    console.log('getInitialValues');
+    // console.log('getInitialValues');
     const {uiSpec, currentView} = this.state;
     const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
     const fields = uiSpec['fields'];
@@ -126,6 +125,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         <Formik
           initialValues={this.getInitialValues()}
           validationSchema={this.getValidationSchema}
+          validateOnMount={true}
           onSubmit={(values, {setSubmitting}) => {
             setTimeout(() => {
               setSubmitting(false);
@@ -208,9 +208,7 @@ export class ViewComponent extends React.Component<ViewProps, ViewState> {
     const form = this.props.form;
   }
 
-  componentDidMount() {
-
-  }
+  componentDidMount() {}
 
   save(values) {
     console.log(values);
