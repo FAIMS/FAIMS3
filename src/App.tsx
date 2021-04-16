@@ -1,32 +1,38 @@
-import React, {useState} from 'react';
-import logo from './logo.svg';
+import React from 'react';
 import './App.css';
+import {FAIMSContainer} from './gui';
+import Navbar from './gui/navbar';
+import {MuiThemeProvider, createMuiTheme} from '@material-ui/core/styles';
+import {Shadows} from '@material-ui/core/styles/shadows';
 import * as Sync from './sync/index';
 
+const theme = createMuiTheme({
+  palette: {
+    primary: {
+      main: '#1B3E93',
+    },
+    secondary: {
+      main: '#F68E1E',
+    },
+  },
+  typography: {
+    fontFamily: "'Open Sans', sans-serif",
+  },
+  shadows: Array(25).fill('none') as Shadows,
+});
+
 function App() {
-  const [listings, setListings] = useState('');
+  const [listings, setListings] = React.useState('');
 
   Sync.initializeEvents.on('complete', (...args) => {
     setListings(JSON.stringify(args));
   });
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit {listings} <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <MuiThemeProvider theme={theme}>
+      <Navbar />
+      <FAIMSContainer />
+    </MuiThemeProvider>
   );
 }
 
