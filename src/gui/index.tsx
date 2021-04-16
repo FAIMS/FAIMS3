@@ -1,15 +1,16 @@
 import React from 'react';
 
-import {getAvailableProjectsMetaData} from './dbHelpers';
+import {getAvailableProjectsMetaData, ProjectsList} from './dbHelpers';
 import ProjectNavTabs from './projectNav';
 import {FAIMSForm} from './form';
+import {initializeEvents, projects_dbs} from '../sync';
 
 type FAIMSContainerProps = {
   // project: string;
 };
 
 type FAIMSContainerState = {
-  projects: any;
+  projects: ProjectsList;
 };
 
 export class FAIMSContainer extends React.Component<
@@ -18,10 +19,18 @@ export class FAIMSContainer extends React.Component<
 > {
   constructor(props) {
     super(props);
-    const projects = getAvailableProjectsMetaData('dummyuser');
+    const projects: ProjectsList = {};
+
     this.state = {
       projects: projects,
     };
+
+    initializeEvents.on(
+      'project_processing',
+      (listing, project, active, meta, data) => {
+        projects[active._id] = project;
+      }
+    );
   }
 
   componentDidMount() {
