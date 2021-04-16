@@ -411,15 +411,16 @@ function process_listings(
 }
 
 let is_dbs_created = false;
-
-async function wait_until_dbs_created(): Promise<void> {
-  if (is_dbs_created) {
-    return;
-  }
-  return new Promise((resolve, reject) => {
-    initializeEvents.once('dbs_created', resolve);
-  });
-}
+/**
+ * Keyed by active_id, this specifies which of the active
+ * projects have their data synced currently (or are offline)
+ */
+export const data_db_created: {[key: string]: boolean} = {};
+/**
+ * Keyed by active_id, this specifies which of the active
+ * projects have their metadata synced currently (or are offline)
+ */
+export const meta_db_created: {[key: string]: boolean} = {};
 
 interface ListingEmitter extends EventEmitter {
   on(
@@ -754,22 +755,37 @@ async function process_project(
 
   function synced_callback<T>(
     evt_name: 'meta_complete' | 'data_complete',
+    complete_marker: {[key: string]: boolean},
     db: LocalDB<T>
   ) {
-    return () =>
+    return () => {
+      complete_marker[active_id] = true;
       (emitter.emit as (
         evt: string,
         project: DataModel.ProjectObject,
         active: ExistingActiveDoc,
         arg: LocalDB<T>
       ) => boolean)(evt_name, project_info, active_project, db);
+    };
   }
 
-  meta_db.connection.on('paused', synced_callback('meta_complete', meta_db));
-  meta_db.connection.on('error', synced_callback('meta_complete', meta_db));
+  meta_db.connection.on(
+    'paused',
+    synced_callback('meta_complete', meta_db_created, meta_db)
+  );
+  meta_db.connection.on(
+    'error',
+    synced_callback('meta_complete', meta_db_created, meta_db)
+  );
 
-  data_db.connection.on('paused', synced_callback('data_complete', data_db));
-  data_db.connection.on('error', synced_callback('data_complete', data_db));
+  data_db.connection.on(
+    'paused',
+    synced_callback('data_complete', data_db_created, data_db)
+  );
+  data_db.connection.on(
+    'error',
+    synced_callback('data_complete', data_db_created, data_db)
+  );
 
   let incompleteness = 2;
   function complete_one() {
@@ -784,12 +800,42 @@ async function process_project(
   emitter.emit('processing', project_info, active_project, meta_db, data_db);
 }
 
-export async function getProjectDB(active_id: string) {
-  await wait_until_dbs_created();
-  return metadata_dbs[active_id].local;
+export async function getProjectDB(
+  active_id: string
+): Promise<PouchDB.Database<DataModel.Datum>> {
+  if (data_db_created[active_id]) {
+    return data_dbs[active_id].local;
+  }
+  return new Promise(resolve => {
+    initializeEvents.once(
+      'project_data_complete',
+      (
+        listing: DataModel.ListingsObject,
+        project: ExistingActiveDoc,
+        data: LocalDB<DataModel.Datum>
+      ) => {
+        resolve(data.local);
+      }
+    );
+  });
 }
 
-export async function getDataDB(active_id: string) {
-  await wait_until_dbs_created();
-  return data_dbs[active_id].local;
+export async function getDataDB(
+  active_id: string
+): Promise<PouchDB.Database<DataModel.ProjectMetaObject>> {
+  if (meta_db_created[active_id]) {
+    return metadata_dbs[active_id].local;
+  }
+  return new Promise(resolve => {
+    initializeEvents.once(
+      'project_data_complete',
+      (
+        listing: DataModel.ListingsObject,
+        project: ExistingActiveDoc,
+        meta: LocalDB<DataModel.ProjectMetaObject>
+      ) => {
+        resolve(meta.local);
+      }
+    );
+  });
 }
