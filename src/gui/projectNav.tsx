@@ -12,15 +12,17 @@ import Tab from '@material-ui/core/Tab';
 import Box from '@material-ui/core/Box';
 import {FAIMSForm} from './form';
 import grey from '@material-ui/core/colors/grey';
+import {ProjectsList} from './dbHelpers';
+import {NumberSchema} from 'yup';
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: any;
-  value: any;
+  index_of_active: any;
 }
 
 function TabPanel(props: TabPanelProps) {
-  const {children, value, index, ...other} = props;
+  const {children, index_of_active: value, index, ...other} = props;
 
   return (
     <div
@@ -53,11 +55,11 @@ const styles = (theme: Theme) =>
 
 interface ProjectNavTabsProps extends WithStyles<typeof styles> {
   classes: any;
-  projectList: Array<object>;
+  projectList: ProjectsList;
 }
 
 type ProjectNavTabsState = {
-  activeTab: any;
+  activeTab: string;
 };
 
 class ProjectNavTabs extends React.Component<
@@ -67,7 +69,7 @@ class ProjectNavTabs extends React.Component<
   constructor(props) {
     super(props);
     this.state = {
-      activeTab: this.props.projectList[0]['project_id'],
+      activeTab: '',
     };
     this.handleChange = this.handleChange.bind(this);
   }
@@ -78,7 +80,17 @@ class ProjectNavTabs extends React.Component<
 
   render() {
     const {classes} = this.props;
-    const {activeTab} = this.state;
+    let {activeTab} = this.state;
+
+    if (Object.keys(this.props.projectList).length === 0) {
+      // Before the projects are initialized,
+      // rendering this component displays a loading screen
+      return <div>Loading</div>;
+    } else if (this.props.projectList[activeTab] === undefined) {
+      // Immediately after loading screen is finished loading, there
+      // is no selected tab, so default to the first one:
+      activeTab = Object.keys(this.props.projectList)[0];
+    }
 
     return (
       <div className={classes.root}>
@@ -92,39 +104,45 @@ class ProjectNavTabs extends React.Component<
             scrollButtons="auto"
             aria-label="scrollable auto tabs example"
           >
-            {this.props.projectList.map(project => {
-              return (
-                <Tab
-                  label={project['pretty_name']}
-                  value={project['project_id']}
-                  key={'projectNavTab' + project['project_id']}
-                  {...a11yProps(project['project_id'])}
-                />
-              );
-            })}
+            {Object.keys(this.props.projectList).map(
+              (active_id, project_index) => {
+                const project = this.props.projectList[active_id];
+                return (
+                  <Tab
+                    label={project.name}
+                    value={active_id}
+                    key={'projectNavTab' + active_id}
+                    {...a11yProps(project._id)}
+                  />
+                );
+              }
+            )}
           </Tabs>
         </AppBar>
 
         <Container maxWidth="md">
-          {this.props.projectList.map(project => {
-            return (
-              <TabPanel
-                value={activeTab.toString()}
-                index={project['project_id'].toString()}
-                key={'projectNavTabPanel' + project['project_id']}
-              >
-                <Box bgcolor={grey[200]} p={2} mb={2}>
-                  <pre style={{margin: 0}}>
-                    {JSON.stringify(project, null, 2)}
-                  </pre>
-                </Box>
-                <Box p={2} mb={2}>
-                  <strong>VIEW STEPPER GOES HERE</strong>
-                </Box>
-                <FAIMSForm activeProjectID={activeTab} />
-              </TabPanel>
-            );
-          })}
+          {Object.keys(this.props.projectList).map(
+            (active_id, project_index) => {
+              const project = this.props.projectList[active_id];
+              return (
+                <TabPanel
+                  index_of_active={activeTab}
+                  index={active_id}
+                  key={'projectNavTabPanel' + active_id}
+                >
+                  <Box bgcolor={grey[200]} p={2} mb={2}>
+                    <pre style={{margin: 0}}>
+                      {JSON.stringify(project, null, 2)}
+                    </pre>
+                  </Box>
+                  <Box p={2} mb={2}>
+                    <strong>VIEW STEPPER GOES HERE</strong>
+                  </Box>
+                  <FAIMSForm activeProjectID={active_id} />
+                </TabPanel>
+              );
+            }
+          )}
         </Container>
       </div>
     );

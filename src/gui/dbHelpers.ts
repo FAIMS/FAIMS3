@@ -1,19 +1,37 @@
+import {ProjectObject} from '../datamodel';
+
 export function lookupFAIMSType(faimsType: string) {
   return {};
 }
 
-export function getAvailableProjectsMetaData(username) {
-  return [
-    {name: 'projectA', pretty_name: 'Project A', project_id: '0'},
-    {name: 'projectB', pretty_name: 'Project B', project_id: '1'},
-    {name: 'projectC', pretty_name: 'Project C', project_id: '2'},
-  ];
+export type ProjectsList = {
+  [key: string]: ProjectObject;
+};
+
+export function getAvailableProjectsMetaData(username) : ProjectsList {
+  return {
+    'default/projectA': {
+      _id: 'projectA',
+      name: 'Project A',
+      description: 'A dummy project',
+    },
+    'default/projectB': {
+      _id: 'projectB',
+      name: 'Project B',
+      description: 'A dummy project',
+    },
+    'default/projectC': {
+      _id: 'projectC',
+      name: 'Project C',
+      description: 'A dummy project',
+    },
+  };
 }
 
-export function getUiSpecForProject(project_id: string) {
+export function getUiSpecForProject(active_id: string) {
   // https://material-ui.com/components/text-fields/
   const project_spec = {
-    '0': {
+    'default/projectA': {
       fields: {
         'email-field': {
           'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
@@ -250,7 +268,7 @@ export function getUiSpecForProject(project_id: string) {
 
       'start-view': 'start-view',
     },
-    '1': {
+    'default/projectB': {
       fields: {},
       views: {
         'start-view': {
@@ -268,7 +286,7 @@ export function getUiSpecForProject(project_id: string) {
       },
       'start-view': 'start-view',
     },
-    '2': {
+    'default/projectC': {
       fields: {},
       views: {
         'start-view': {
@@ -287,5 +305,8 @@ export function getUiSpecForProject(project_id: string) {
       'start-view': 'start-view',
     },
   };
-  return project_spec[project_id];
+  // For sync merge with ui-form debugging
+  project_spec['default/lake_mungo'] = project_spec['default/projectA'];
+  project_spec['csiro/csiro-geochemistry'] = project_spec['default/projectB'];
+  return project_spec[active_id];
 }
