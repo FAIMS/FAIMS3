@@ -336,22 +336,19 @@ async function process_directory(
   );
 
   const synced_callback = () => {
-    directory_db
-      .allDocs({
-        include_docs: true,
-      })
-      .then(all_listings => {
-        process_listings(
-          emitter,
-          all_listings.rows
-            .map(d => d.doc!)
-            .filter(d => !d._id.startsWith('_design/'))
-        );
-      });
+    directory_db.allDocs({include_docs: true}).then(all_listings =>
+      process_listings(
+        emitter,
+        all_listings.rows
+          .map(d => d.doc!)
+          .filter(d => !d._id.startsWith('_design/'))
+      )
+    );
   };
 
   directory_connection.on('paused', synced_callback);
   directory_connection.on('error', synced_callback);
+  synced_callback();
 
   emitter.emit('processing');
 }
@@ -569,6 +566,7 @@ async function process_listing(
   };
   projects_db.connection.on('paused', synced_callback);
   projects_db.connection.on('error', synced_callback);
+  synced_callback();
 
   emitter.emit('processing', listing_object);
 }
