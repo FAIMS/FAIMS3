@@ -192,7 +192,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_meta_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>
     ) => unknown
   ): this;
@@ -200,7 +201,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_data_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
@@ -208,7 +210,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -217,7 +220,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_processing',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -259,26 +263,30 @@ interface DirectoryEmitter extends EventEmitter {
   emit(
     event: 'project_meta_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
     event: 'project_data_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_processing',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
@@ -418,7 +426,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_meta_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>
     ) => unknown
   ): this;
@@ -426,7 +435,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_data_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
@@ -434,7 +444,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -443,7 +454,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_processing',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -475,26 +487,30 @@ interface ListingEmitter extends EventEmitter {
   emit(
     event: 'project_meta_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
     event: 'project_data_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_processing',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
@@ -634,21 +650,24 @@ interface ProjectEmitter extends EventEmitter {
   on(
     event: 'meta_complete',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>
     ) => unknown
   ): this;
   on(
     event: 'data_complete',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
   on(
     event: 'complete',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -656,7 +675,8 @@ interface ProjectEmitter extends EventEmitter {
   on(
     event: 'processing',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -665,23 +685,27 @@ interface ProjectEmitter extends EventEmitter {
 
   emit(
     event: 'meta_complete',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
     event: 'data_complete',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'complete',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'processing',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
@@ -735,9 +759,10 @@ async function process_project(
     return () =>
       (emitter.emit as (
         evt: string,
-        project: ExistingActiveDoc,
+        project: DataModel.ProjectObject,
+        active: ExistingActiveDoc,
         arg: LocalDB<T>
-      ) => boolean)(evt_name, active_project, db);
+      ) => boolean)(evt_name, project_info, active_project, db);
   }
 
   meta_db.connection.on('paused', synced_callback('meta_complete', meta_db));
@@ -749,14 +774,14 @@ async function process_project(
   let incompleteness = 2;
   function complete_one() {
     if ((incompleteness -= 1) === 0) {
-      emitter.emit('complete', active_project, meta_db, data_db);
+      emitter.emit('complete', project_info, active_project, meta_db, data_db);
     }
   }
 
   emitter.on('meta_complete', complete_one);
   emitter.on('data_complete', complete_one);
 
-  emitter.emit('processing', active_project, meta_db, data_db);
+  emitter.emit('processing', project_info, active_project, meta_db, data_db);
 }
 
 export async function getProjectDB(active_id: string) {
