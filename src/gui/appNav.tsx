@@ -33,7 +33,7 @@ const styles = (theme: Theme) =>
     },
   });
 
-class Navbar extends React.Component<NavbarProps, NavbarState> {
+class AppNavBar extends React.Component<NavbarProps, NavbarState> {
   render() {
     const {classes} = this.props;
 
@@ -59,4 +59,4 @@ class Navbar extends React.Component<NavbarProps, NavbarState> {
     );
   }
 }
-export default withStyles(styles)(Navbar);
+export default withStyles(styles)(AppNavBar);

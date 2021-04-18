@@ -3,6 +3,9 @@ import Input from '@material-ui/core/Input';
 import Checkbox from '@material-ui/core/Checkbox';
 import TextField from '@material-ui/core/TextField';
 import {TextField as FormikTextField} from 'formik-material-ui';
+import {Select as FormikSelect} from 'formik-material-ui';
+import {Select as FAIMSSelect} from './fields/select';
+
 const componentRegistry: {string?: {string: React.Component}} = {};
 
 //export function NoSuchComponentNamespace(message: string) {
@@ -44,3 +47,5 @@ registerComponent('core-material-ui', 'Input', Input);
 registerComponent('core-material-ui', 'Checkbox', Checkbox);
 registerComponent('core-material-ui', 'TextField', TextField);
 registerComponent('formik-material-ui', 'TextField', FormikTextField);
+registerComponent('formik-material-ui', 'Select', FormikSelect);
+registerComponent('faims-custom', 'Select', FAIMSSelect);

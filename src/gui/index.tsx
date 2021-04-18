@@ -1,8 +1,7 @@
 import React from 'react';
-
 import {getAvailableProjectsMetaData} from './dbHelpers';
+import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
-import {FAIMSForm} from './form';
 
 type FAIMSContainerProps = {
   // project: string;
@@ -31,6 +30,7 @@ export class FAIMSContainer extends React.Component<
   render() {
     return (
       <React.Fragment>
+        <AppNavBar />
         <ProjectNavTabs projectList={this.state.projects} />
       </React.Fragment>
     );

@@ -5,6 +5,7 @@
     "react-app/jest"
   ],
   "rules": {
-    "prettier/prettier": "warn"
+    "prettier/prettier": "warn",
+    "no-trailing-spaces": "warn"
   }
 }

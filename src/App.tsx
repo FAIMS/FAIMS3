@@ -1,8 +1,11 @@
 import React from 'react';
 import './App.css';
 import {FAIMSContainer} from './gui';
-import Navbar from './gui/navbar';
+
 import {MuiThemeProvider, createMuiTheme} from '@material-ui/core/styles';
+// import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@material-ui/core';
+// https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
+// will be resolved in material-ui v5
 import {Shadows} from '@material-ui/core/styles/shadows';
 
 const theme = createMuiTheme({
@@ -23,7 +26,6 @@ const theme = createMuiTheme({
 function App() {
   return (
     <MuiThemeProvider theme={theme}>
-      <Navbar />
       <FAIMSContainer />
     </MuiThemeProvider>
   );

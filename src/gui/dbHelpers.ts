@@ -43,14 +43,14 @@ export function getUiSpecForProject(project_id: string) {
           initialValue: '',
         },
         'str-field': {
-          'component-namespace': 'core-material-ui', // this says what web component to use to render/acquire value from
+          'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
           'component-name': 'TextField',
           'type-returned': 'faims-core::String', // matches a type in the Project Model
           'component-parameters': {
             fullWidth: true,
             name: 'str-field',
             id: 'str-field',
-            helperText: 'Enter a string',
+            helperText: 'Enter a string between 2 and 50 characters long',
             variant: 'outlined',
             required: true,
             InputProps: {
@@ -71,7 +71,7 @@ export function getUiSpecForProject(project_id: string) {
           initialValue: 'hello',
         },
         'int-field': {
-          'component-namespace': 'core-material-ui', // this says what web component to use to render/acquire value from
+          'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
           'component-name': 'TextField',
           'type-returned': 'faims-core::Integer', // matches a type in the Project Model
           'component-parameters': {
@@ -98,6 +98,93 @@ export function getUiSpecForProject(project_id: string) {
             ['yup.max', 20, 'Max is 20'],
           ],
           initialValue: 1,
+        },
+        'select-field': {
+          'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+          'component-name': 'Select',
+          'type-returned': 'faims-core::String', // matches a type in the Project Model
+          'component-parameters': {
+            fullWidth: true,
+            name: 'select-field',
+            id: 'select-field',
+            helperText: 'Choose a currency',
+            variant: 'outlined',
+            required: true,
+            select: true,
+            InputProps: {
+              type: 'string',
+            },
+            SelectProps: {
+              options: [
+                {
+                  value: 'USD',
+                  label: '$',
+                },
+                {
+                  value: 'EUR',
+                  label: '€',
+                },
+                {
+                  value: 'BTC',
+                  label: '฿',
+                },
+                {
+                  value: 'JPY',
+                  label: '¥',
+                },
+              ],
+            },
+            InputLabelProps: {
+              label: 'Choose a currency',
+            },
+            FormHelperTextProps: {children: 'Some helper text'},
+          },
+          validationSchema: [['yup.string'], ['yup.required']],
+          initialValue: '',
+        },
+        'multi-select-field': {
+          'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+          'component-name': 'Select',
+          'type-returned': 'faims-core::String', // matches a type in the Project Model
+          'component-parameters': {
+            fullWidth: true,
+            name: 'multi-select-field',
+            id: 'multi-select-field',
+            helperText: 'Choose multiple currencies',
+            variant: 'outlined',
+            required: true,
+            select: true,
+            InputProps: {
+              type: 'string',
+            },
+            SelectProps: {
+              multiple: true,
+              options: [
+                {
+                  value: 'USD',
+                  label: '$',
+                },
+                {
+                  value: 'EUR',
+                  label: '€',
+                },
+                {
+                  value: 'BTC',
+                  label: '฿',
+                },
+                {
+                  value: 'JPY',
+                  label: '¥',
+                },
+              ],
+            },
+            InputLabelProps: {
+              label: 'Choose multiple currencies',
+            },
+            FormHelperTextProps: {children: 'Some helper text'},
+          },
+          validationSchema: [['yup.string'], ['yup.required']],
+          initialValue: [],
         },
         // 'bool-field': {
         //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
@@ -150,6 +237,8 @@ export function getUiSpecForProject(project_id: string) {
             'email-field',
             'str-field',
             'int-field',
+            'select-field',
+            'multi-select-field',
             // 'bool-field',
             // 'date-field',
             // 'time-field',
