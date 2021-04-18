@@ -838,3 +838,4 @@ export async function getDataDB(
       }
     );
   });
+}
