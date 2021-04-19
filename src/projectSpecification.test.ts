@@ -9,6 +9,7 @@ import {
   upsertFAIMSConstant,
   clearAllCaches,
 } from './projectSpecification';
+import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';
 
@@ -124,7 +125,7 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSType(fulltype, context);
         })
-        .then(result => expect(result).toEqual(typeInfo));
+        .then(result => expect(equals(result, typeInfo)).toBe(true));
     }
   );
   testProp(
@@ -150,7 +151,7 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSConstant(fullconst, context);
         })
-        .then(result => expect(result).toEqual(constInfo));
+        .then(result => expect(equals(result, constInfo)).toBe(true));
     }
   );
   testProp(
@@ -196,7 +197,7 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSType(fulltype, context);
         })
-        .then(result => expect(result).toEqual(typeInfo));
+        .then(result => expect(equals(result, typeInfo)).toBe(true));
     }
   );
   testProp(
@@ -227,7 +228,7 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSConstant(fullconst, context);
         })
-        .then(result => expect(result).toEqual(constInfo));
+        .then(result => expect(equals(result, constInfo)).toBe(true));
     }
   );
 });

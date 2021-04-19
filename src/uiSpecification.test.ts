@@ -2,6 +2,7 @@ import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 import {getUiSpecForProject, setUiSpecForProject} from './uiSpecification';
 import {UI_SPECIFICATION_NAME} from './datamodel';
+import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';
 
@@ -64,7 +65,7 @@ describe('roundtrip reading and writing to db', () => {
         })
         .then(result => {
           delete result['_rev'];
-          expect(result).toEqual(uiInfo);
+          expect(equals(result, uiInfo)).toBe(true);
         });
     }
   );
