@@ -1,6 +1,4 @@
 ---
 rules:
-  truthy: {check-keys: false}
-  line-length: 
-    level: disable
-    allow-non-breakable-inline-mappings: true
+  truthy: disable
+  line-length: disable
