@@ -13,9 +13,9 @@ made, and commit them if needed.
 There are a number of helper script (which can be seen in the `package.json`),
 but the ones that should always exist are:
 
- * `npm run build`: builds the webapp (not the Android/iOS apps)
- * `npm run test`: runs the main test suite
- * `npm run serve`: runs the webapp in a browser (currently via capacitor's
+* `npm run build`: builds the webapp (not the Android/iOS apps)
+* `npm run test`: runs the main test suite
+* `npm run serve`: runs the webapp in a browser (currently via capacitor's
    system, to ensure that the webapp and the phone apps are as similar as
    possible).
 
