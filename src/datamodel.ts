@@ -45,26 +45,46 @@ export interface ProjectObject {
 /*
  * Objects that may be contained in a Project's metadata DB
  */
+export interface FAIMSType {
+  [key: string]: any; // any for now until we lock down the json
+}
+
+export interface FAIMSTypeCollection {
+  [key: string]: FAIMSType;
+}
+
+export interface FAIMSConstant {
+  [key: string]: any; // any for now until we lock down the json
+}
+
+export interface FAIMSConstantCollection {
+  [key: string]: FAIMSConstant;
+}
+
 export interface ProjectSchema {
   _id?: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
   namespace: string;
-  constants: any; // any for now until we lock down the json
-  types: any; // any for now until we lock down the json
+  constants: FAIMSConstantCollection;
+  types: FAIMSTypeCollection;
 }
 
 export interface ProjectUIModel {
-  _id: string;
+  _id: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
   fields: Array<any>;
-  views: Array<any>;
+  fviews: Array<any>; // conflicts with pouchdb views/indexes, hence fviews
   start_view: string;
 }
 
 export interface ProjectPeople {
   _id: string;
+  _rev?: string; // optional as we may want to include the raw json in places
 }
 
 export interface Observation {
   _id: string;
+  _rev?: string; // optional as we may want to include the raw json in places
 }
 
 /*
@@ -83,13 +103,4 @@ export interface PeopleDoc {
   ierations: 10;
   derived_key: string;
   passsword_scheme: string;
-}
-
-export interface Datum {
-  // Main datum type
-  history: Array<{
-    person: string;
-    date: bigint;
-  }>;
-  //TODO: More stuff
 }
