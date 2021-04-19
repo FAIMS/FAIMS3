@@ -163,7 +163,7 @@ PouchDB.plugin(PouchDBFind);
  * Call before initialize_db
  */
 export async function populate_test_data() {
-  const test_doc: {
+  const test_doc1: {
     _rev?: string;
     _id: string;
     listing_id: string;
@@ -177,14 +177,35 @@ export async function populate_test_data() {
     username: 'test1',
     password: 'apple',
   };
+  const test_doc2: {
+    _rev?: string;
+    _id: string;
+    listing_id: string;
+    project_id: string;
+    username: string;
+    password: string;
+  } = {
+    _id: 'csiro/csiro-geochemistry',
+    listing_id: 'csiro',
+    project_id: 'csiro-geochemistry',
+    username: 'test1',
+    password: 'apple',
+  };
 
   try {
-    const current_test_doc = await active_db.get('default/lake_mungo');
-    test_doc._rev = current_test_doc._rev;
+    const current_test_doc = await active_db.get(test_doc1._id);
+    test_doc1._rev = current_test_doc._rev;
   } catch (err) {
     // Not in the DB means _rev is unnecessary for put()
   }
-  await active_db.put(test_doc);
+  await active_db.put(test_doc1);
+  try {
+    const current_test_doc = await active_db.get(test_doc2._id);
+    test_doc2._rev = current_test_doc._rev;
+  } catch (err) {
+    // Not in the DB means _rev is unnecessary for put()
+  }
+  await active_db.put(test_doc2);
 }
 
 interface DirectoryEmitter extends EventEmitter {
