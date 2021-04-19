@@ -2,8 +2,8 @@
 
 ## Setup and development (quick-start)
 
-Before you do anything (apart from cloning this repository), you should run 
-npm install` to get all the dependencies
+Before you do anything (apart from cloning this repository), you should run
+npm install`to get all the dependencies
 for the scripts installed (If you have been doing some development, either
 stashing or committing your changes before
 running `npm install` would be wise).
