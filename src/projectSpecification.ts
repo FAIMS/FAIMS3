@@ -3,6 +3,7 @@ import {
   PROJECT_SPECIFICATION_PREFIX,
   ProjectSchema,
   FAIMSType,
+  FAIMSConstant,
 } from './datamodel';
 
 export const FAIMS_NAMESPACES = [
@@ -13,8 +14,8 @@ export const FAIMS_NAMESPACES = [
   'faims-person',
 ];
 
-const typeCache = new Map();
-const constantCache = new Map();
+const typeCache = new Map<string, FAIMSType>();
+const constantCache = new Map<string, FAIMSConstant>();
 
 interface TypeReference {
   namespace: string;
@@ -152,7 +153,7 @@ async function lookupProjectReference(
   faimsRef: TypeReference,
   context: TypeContext,
   specOpt: ProjectSpecOptions
-) {
+): Promise<FAIMSConstant | FAIMSType> {
   const project_name = context.project_name;
   try {
     const specdoc = await getOrCreateSpecDoc(
