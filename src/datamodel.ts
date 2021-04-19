@@ -104,12 +104,3 @@ export interface PeopleDoc {
   derived_key: string;
   passsword_scheme: string;
 }
-
-export interface Datum {
-  // Main datum type
-  history: Array<{
-    person: string;
-    date: bigint;
-  }>;
-  //TODO: More stuff
-}

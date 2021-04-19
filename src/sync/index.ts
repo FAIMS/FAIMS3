@@ -57,7 +57,7 @@ export const people_dbs: LocalDBList<DataModel.PeopleDoc> = {};
  * Contain in these databases (indexed by the active_db id's)
  * is project data.
  */
-export const data_dbs: LocalDBList<DataModel.Datum> = {};
+export const data_dbs: LocalDBList<DataModel.Observation> = {};
 
 /**
  * Synced from the project metadatabase for each active project,
@@ -201,7 +201,7 @@ interface DirectoryEmitter extends EventEmitter {
     listener: (
       listing: DataModel.ListingsObject,
       project: ExistingActiveDoc,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -210,7 +210,7 @@ interface DirectoryEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       project: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -219,7 +219,7 @@ interface DirectoryEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       project: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -266,21 +266,21 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_data_complete',
     listing: DataModel.ListingsObject,
     project: ExistingActiveDoc,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'project_complete',
     listing: DataModel.ListingsObject,
     project: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'project_processing',
     listing: DataModel.ListingsObject,
     project: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'project_error',
@@ -416,7 +416,7 @@ interface ListingEmitter extends EventEmitter {
     listener: (
       listing: DataModel.ListingsObject,
       project: ExistingActiveDoc,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -425,7 +425,7 @@ interface ListingEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       project: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -434,7 +434,7 @@ interface ListingEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       project: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -471,21 +471,21 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_data_complete',
     listing: DataModel.ListingsObject,
     project: ExistingActiveDoc,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'project_complete',
     listing: DataModel.ListingsObject,
     project: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'project_processing',
     listing: DataModel.ListingsObject,
     project: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'project_error',
@@ -630,7 +630,7 @@ interface ProjectEmitter extends EventEmitter {
     event: 'data_complete',
     listener: (
       project: ExistingActiveDoc,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -638,7 +638,7 @@ interface ProjectEmitter extends EventEmitter {
     listener: (
       project: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(
@@ -646,7 +646,7 @@ interface ProjectEmitter extends EventEmitter {
     listener: (
       project: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.Datum>
+      data: LocalDB<DataModel.Observation>
     ) => unknown
   ): this;
   on(event: 'error', listener: (err: unknown) => unknown): this;
@@ -659,19 +659,19 @@ interface ProjectEmitter extends EventEmitter {
   emit(
     event: 'data_complete',
     project: ExistingActiveDoc,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'complete',
     project: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(
     event: 'processing',
     project: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.Datum>
+    data: LocalDB<DataModel.Observation>
   ): boolean;
   emit(event: 'error', err: unknown): boolean;
 }
