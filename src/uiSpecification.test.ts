@@ -25,7 +25,6 @@ async function cleanProjectDBS() {
 
     if (db !== undefined) {
       try {
-        const alldocs = await db.allDocs({include_docs: true});
         await db.destroy();
         //await db.close();
       } catch (err) {
@@ -55,8 +54,8 @@ describe('roundtrip reading and writing to db', () => {
       const uiInfo = {
         _id: UI_SPECIFICATION_NAME,
         fields: fields,
-        views: views,
-        'start-view': start_view,
+        fviews: views,
+        start_view: start_view,
       };
 
       return setUiSpecForProject(project_name, uiInfo)

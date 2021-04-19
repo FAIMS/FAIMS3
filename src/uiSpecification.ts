@@ -3,23 +3,24 @@ import {UI_SPECIFICATION_NAME, ProjectUIModel} from './datamodel';
 
 export async function getUiSpecForProject(
   project_name: string
-): ProjectUIModel {
+): Promise<ProjectUIModel> {
   const projdb = getProjectDB(project_name);
   try {
-    return projdb.get(UI_SPECIFICATION_NAME);
+    return await projdb.get(UI_SPECIFICATION_NAME);
   } catch (err) {
     console.warn(err);
     throw Error('failed to find ui specification');
   }
 }
 
-export function setUiSpecForProject(
+export async function setUiSpecForProject(
   project_name: string,
   uiInfo: ProjectUIModel
 ) {
   const projdb = getProjectDB(project_name);
+  uiInfo['_id'] = UI_SPECIFICATION_NAME;
   try {
-    return projdb.put(uiInfo);
+    return await projdb.put(uiInfo);
   } catch (err) {
     console.warn(err);
     throw Error('failed to set ui specification');
