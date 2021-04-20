@@ -82,9 +82,21 @@ export interface ProjectPeople {
   _rev?: string; // optional as we may want to include the raw json in places
 }
 
+// This is used within the form/ui subsystem, do not use with pouch
 export interface Observation {
-  _id: string;
+  _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
+  type: string;
+  data: any;
+}
+
+// This is used within the pouch/sync subsystem, do not use with form/ui
+export interface EncodedObservation {
+  _id?: string;
+  _rev?: string; // optional as we may want to include the raw json in places
+  format_version: number;
+  type: string;
+  data: any;
 }
 
 /*
