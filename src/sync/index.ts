@@ -823,7 +823,7 @@ async function process_project(
 
 export async function getProjectDB(
   active_id: string
-): Promise<PouchDB.Database<DataModel.Datum>> {
+): Promise<PouchDB.Database<DataModel.Observation>> {
   if (data_db_created[active_id]) {
     return data_dbs[active_id].local;
   }
@@ -833,7 +833,7 @@ export async function getProjectDB(
       (
         listing: DataModel.ListingsObject,
         project: ExistingActiveDoc,
-        data: LocalDB<DataModel.Datum>
+        data: LocalDB<DataModel.Observation>
       ) => {
         resolve(data.local);
       }
