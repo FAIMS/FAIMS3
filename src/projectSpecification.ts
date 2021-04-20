@@ -1,4 +1,5 @@
 import {getProjectDB} from './sync/index';
+import PouchDB from 'pouchdb';
 import {
   PROJECT_SPECIFICATION_PREFIX,
   ProjectSchema,
@@ -126,12 +127,12 @@ async function lookupBuiltinReference(
 async function getOrCreateSpecDoc(
   project_name: string,
   namespace: string
-): Promise<ProjectSchema> {
-  const projdb = getProjectDB(project_name);
+): Promise<ProjectSchema & PouchDB.Core.IdMeta> {
+  const projdb = await getProjectDB(project_name);
   try {
-    const specdoc: ProjectSchema = await projdb.get(
+    const specdoc = await projdb.get(
       PROJECT_SPECIFICATION_PREFIX + '-' + namespace
-    );
+    ) as PouchDB.Core.ExistingDocument<ProjectSchema>;
     if (specdoc.namespace !== namespace) {
       throw Error('namespace names do not match!');
     }
@@ -241,7 +242,7 @@ export async function upsertFAIMSType(
     throw Error('invalid type information');
   }
 
-  let specdoc;
+  let specdoc : ProjectSchema & PouchDB.Core.IdMeta;
   try {
     specdoc = await getOrCreateSpecDoc(project_name, parsedName['namespace']);
     specdoc.types[parsedName['name']] = validatedInfo;
@@ -250,7 +251,7 @@ export async function upsertFAIMSType(
     throw Error('failed to get document');
   }
 
-  const projdb = getProjectDB(project_name);
+  const projdb = await getProjectDB(project_name);
   try {
     return projdb.put(specdoc);
   } catch (err) {
@@ -285,7 +286,7 @@ export async function upsertFAIMSConstant(
   );
   specdoc.constants[parsedName['name']] = validatedInfo;
 
-  const projdb = getProjectDB(project_name);
+  const projdb = await getProjectDB(project_name);
   try {
     return projdb.put(specdoc);
   } catch (err) {
