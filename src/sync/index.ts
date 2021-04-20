@@ -66,6 +66,18 @@ export const data_dbs: LocalDBList<DataModel.EncodedObservation> = {};
  */
 export const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
 
+export let is_dbs_created = false;
+/**
+ * Keyed by active_id, this specifies which of the active
+ * projects have their data synced currently (or are offline)
+ */
+export const data_db_created: {[key: string]: boolean} = {};
+/**
+ * Keyed by active_id, this specifies which of the active
+ * projects have their metadata synced currently (or are offline)
+ */
+export const meta_db_created: {[key: string]: boolean} = {};
+
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
  * @param connection_info Network address/database info to use to initialize the connection
@@ -163,7 +175,7 @@ PouchDB.plugin(PouchDBFind);
  * Call before initialize_db
  */
 export async function populate_test_data() {
-  const test_doc: {
+  const test_doc1: {
     _rev?: string;
     _id: string;
     listing_id: string;
@@ -177,14 +189,35 @@ export async function populate_test_data() {
     username: 'test1',
     password: 'apple',
   };
+  const test_doc2: {
+    _rev?: string;
+    _id: string;
+    listing_id: string;
+    project_id: string;
+    username: string;
+    password: string;
+  } = {
+    _id: 'csiro/csiro-geochemistry',
+    listing_id: 'csiro',
+    project_id: 'csiro-geochemistry',
+    username: 'test1',
+    password: 'apple',
+  };
 
   try {
-    const current_test_doc = await active_db.get('default/lake_mungo');
-    test_doc._rev = current_test_doc._rev;
+    const current_test_doc = await active_db.get(test_doc1._id);
+    test_doc1._rev = current_test_doc._rev;
   } catch (err) {
     // Not in the DB means _rev is unnecessary for put()
   }
-  await active_db.put(test_doc);
+  await active_db.put(test_doc1);
+  try {
+    const current_test_doc = await active_db.get(test_doc2._id);
+    test_doc2._rev = current_test_doc._rev;
+  } catch (err) {
+    // Not in the DB means _rev is unnecessary for put()
+  }
+  await active_db.put(test_doc2);
 }
 
 interface DirectoryEmitter extends EventEmitter {
@@ -192,7 +225,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_meta_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>
     ) => unknown
   ): this;
@@ -200,7 +234,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_data_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
@@ -208,7 +243,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -217,7 +253,8 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'project_processing',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -238,7 +275,7 @@ interface DirectoryEmitter extends EventEmitter {
     listener: (listing: DataModel.ListingsObject) => unknown
   ): this;
   on(
-    event: 'listing_processed',
+    event: 'listing_dbs_created',
     listener: (
       listing: DataModel.ListingsObject,
       active_projects: ExistingActiveDoc[]
@@ -251,7 +288,7 @@ interface DirectoryEmitter extends EventEmitter {
   ): this;
   on(event: 'processing', listener: () => unknown): this;
   on(
-    event: 'processed',
+    event: 'dbs_created',
     listener: (listings: ExistingListings[]) => unknown
   ): this;
   on(event: 'error', listener: (err: unknown) => unknown): this;
@@ -259,26 +296,30 @@ interface DirectoryEmitter extends EventEmitter {
   emit(
     event: 'project_meta_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
     event: 'project_data_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_processing',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
@@ -294,20 +335,23 @@ interface DirectoryEmitter extends EventEmitter {
   ): boolean;
   emit(event: 'listing_processing', listing: DataModel.ListingsObject): boolean;
   emit(
-    event: 'listing_processed',
+    event: 'listing_dbs_created',
     listing: DataModel.ListingsObject,
     active_projects: ExistingActiveDoc[]
   ): boolean;
   emit(event: 'listing_error', err: unknown): boolean;
   emit(event: 'complete', listings: ExistingListings[]): boolean;
   emit(event: 'processing'): boolean;
-  emit(event: 'processed', listings: ExistingListings[]): boolean;
+  emit(event: 'dbs_created', listings: ExistingListings[]): boolean;
   emit(event: 'error', err: unknown): boolean;
 }
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 export function initialize_dbs(directory_connection: DataModel.ConnectionInfo) {
+  initializeEvents.once('dbs_created', () => {
+    is_dbs_created = true;
+  });
   process_directory(directory_connection).catch(err =>
     initializeEvents.emit('error', err)
   );
@@ -333,22 +377,19 @@ async function process_directory(
   );
 
   const synced_callback = () => {
-    directory_db
-      .allDocs({
-        include_docs: true,
-      })
-      .then(all_listings => {
-        process_listings(
-          emitter,
-          all_listings.rows
-            .map(d => d.doc!)
-            .filter(d => !d._id.startsWith('_design/'))
-        );
-      });
+    directory_db.allDocs({include_docs: true}).then(all_listings =>
+      process_listings(
+        emitter,
+        all_listings.rows
+          .map(d => d.doc!)
+          .filter(d => !d._id.startsWith('_design/'))
+      )
+    );
   };
 
   directory_connection.on('paused', synced_callback);
   directory_connection.on('error', synced_callback);
+  synced_callback();
 
   emitter.emit('processing');
 }
@@ -366,17 +407,17 @@ function process_listings(
 
   emitter.on('listing_complete', complete_one);
 
-  let unprocessed = listing_objects.length;
-  const processed_one = () => {
-    if ((unprocessed -= 1) === 0) {
-      emitter.emit('processed', listing_objects);
+  let undbs_created = listing_objects.length;
+  const dbs_created_one = () => {
+    if ((undbs_created -= 1) === 0) {
+      emitter.emit('dbs_created', listing_objects);
     }
   };
 
-  // Only once the listing has processed all its own projects
+  // Only once the listing has dbs_created all its own projects
   // this is different that process_projects,
-  // on(listing_processed) instead of _processing
-  emitter.on('listing_processed', processed_one);
+  // on(listing_dbs_created) instead of _processing
+  emitter.on('listing_dbs_created', dbs_created_one);
 
   listing_objects.forEach(ap => {
     const contextualizingEmitter: ListingEmitter = contextualizeEvents(
@@ -389,7 +430,7 @@ function process_listings(
         ['project_error', 'project_error'],
 
         ['listing_complete', 'complete'],
-        ['listing_processed', 'processed'],
+        ['listing_dbs_created', 'dbs_created'],
         ['listing_processing', 'processing'],
         ['listing_error', 'error'],
       ]
@@ -407,7 +448,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_meta_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>
     ) => unknown
   ): this;
@@ -415,7 +457,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_data_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
@@ -423,7 +466,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_complete',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -432,7 +476,8 @@ interface ListingEmitter extends EventEmitter {
     event: 'project_processing',
     listener: (
       listing: DataModel.ListingsObject,
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -453,7 +498,7 @@ interface ListingEmitter extends EventEmitter {
     listener: (listing: DataModel.ListingsObject) => unknown
   ): this;
   on(
-    event: 'processed',
+    event: 'dbs_created',
     listener: (
       listing: DataModel.ListingsObject,
       active_projects: ExistingActiveDoc[]
@@ -464,26 +509,30 @@ interface ListingEmitter extends EventEmitter {
   emit(
     event: 'project_meta_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
     event: 'project_data_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_complete',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'project_processing',
     listing: DataModel.ListingsObject,
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
@@ -499,7 +548,7 @@ interface ListingEmitter extends EventEmitter {
   ): boolean;
   emit(event: 'processing', listing: DataModel.ListingsObject): boolean;
   emit(
-    event: 'processed',
+    event: 'dbs_created',
     listing: DataModel.ListingsObject,
     active_projects: ExistingActiveDoc[]
   ): boolean;
@@ -555,6 +604,7 @@ async function process_listing(
   };
   projects_db.connection.on('paused', synced_callback);
   projects_db.connection.on('error', synced_callback);
+  synced_callback();
 
   emitter.emit('processing', listing_object);
 }
@@ -590,14 +640,14 @@ function process_projects(
 
   emitter.on('project_complete', complete_one);
 
-  let unprocessed = active_projects.length;
-  const processed_one = () => {
-    if ((unprocessed -= 1) === 0) {
-      emitter.emit('processed', listing, active_projects);
+  let undbs_created = active_projects.length;
+  const dbs_created_one = () => {
+    if ((undbs_created -= 1) === 0) {
+      emitter.emit('dbs_created', listing, active_projects);
     }
   };
 
-  emitter.on('project_processing', processed_one);
+  emitter.on('project_processing', dbs_created_one);
 
   active_projects.forEach(ap => {
     const contextualizingEmitter: ProjectEmitter = contextualizeEvents(
@@ -622,21 +672,24 @@ interface ProjectEmitter extends EventEmitter {
   on(
     event: 'meta_complete',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>
     ) => unknown
   ): this;
   on(
     event: 'data_complete',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
   on(
     event: 'complete',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -644,7 +697,8 @@ interface ProjectEmitter extends EventEmitter {
   on(
     event: 'processing',
     listener: (
-      project: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -653,23 +707,27 @@ interface ProjectEmitter extends EventEmitter {
 
   emit(
     event: 'meta_complete',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
     event: 'data_complete',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'complete',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
     event: 'processing',
-    project: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
@@ -718,43 +776,67 @@ async function process_project(
 
   function synced_callback<T>(
     evt_name: 'meta_complete' | 'data_complete',
+    complete_marker: {[key: string]: boolean},
     db: LocalDB<T>
   ) {
-    return () =>
+    return () => {
+      complete_marker[active_id] = true;
       (emitter.emit as (
         evt: string,
-        project: ExistingActiveDoc,
+        project: DataModel.ProjectObject,
+        active: ExistingActiveDoc,
         arg: LocalDB<T>
-      ) => boolean)(evt_name, active_project, db);
+      ) => boolean)(evt_name, project_info, active_project, db);
+    };
   }
 
-  meta_db.connection.on('paused', synced_callback('meta_complete', meta_db));
-  meta_db.connection.on('error', synced_callback('meta_complete', meta_db));
+  meta_db.connection.on(
+    'paused',
+    synced_callback('meta_complete', meta_db_created, meta_db)
+  );
+  meta_db.connection.on(
+    'error',
+    synced_callback('meta_complete', meta_db_created, meta_db)
+  );
 
-  data_db.connection.on('paused', synced_callback('data_complete', data_db));
-  data_db.connection.on('error', synced_callback('data_complete', data_db));
+  data_db.connection.on(
+    'paused',
+    synced_callback('data_complete', data_db_created, data_db)
+  );
+  data_db.connection.on(
+    'error',
+    synced_callback('data_complete', data_db_created, data_db)
+  );
 
   let incompleteness = 2;
   function complete_one() {
     if ((incompleteness -= 1) === 0) {
-      emitter.emit('complete', active_project, meta_db, data_db);
+      emitter.emit('complete', project_info, active_project, meta_db, data_db);
     }
   }
 
   emitter.on('meta_complete', complete_one);
   emitter.on('data_complete', complete_one);
 
-  emitter.emit('processing', active_project, meta_db, data_db);
+  emitter.emit('processing', project_info, active_project, meta_db, data_db);
 }
 
-export async function active_projects() {
-  return new Promise((/* resolve, reject */) => {});
+export function getDataDB(
+  active_id: string
+): PouchDB.Database<DataModel.EncodedObservation> {
+  if (data_db_created[active_id]) {
+    return data_dbs[active_id].local;
+  } else {
+    throw 'Projects not initialized yet';
+  }
 }
 
-export function getProjectDB(project_name: string) {
-  return metadata_dbs[project_name].local;
-}
-
-export function getDataDB(project_name: string) {
-  return data_dbs[project_name].local;
+export function getProjectDB(
+  active_id: string
+): PouchDB.Database<DataModel.ProjectMetaObject> {
+  if (meta_db_created[active_id]) {
+    return metadata_dbs[active_id].local;
+  } else {
+    throw 'Projects not initialized yet';
+  }
 }

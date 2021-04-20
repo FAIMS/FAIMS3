@@ -193,7 +193,7 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSType(fulltype, context);
         })
-        .then(result => expect(result).toEqual(typeInfo))
+        .then(result => expect(equals(result, typeInfo)).toBe(true))
         .then(result => {
           return lookupFAIMSType(fulltype, context);
         })
@@ -224,7 +224,7 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           return lookupFAIMSConstant(fullconst, context);
         })
-        .then(result => expect(result).toEqual(constInfo))
+        .then(result => expect(equals(result, constInfo)).toBe(true))
         .then(result => {
           return lookupFAIMSConstant(fullconst, context);
         })
