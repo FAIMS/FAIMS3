@@ -821,7 +821,7 @@ async function process_project(
   emitter.emit('processing', project_info, active_project, meta_db, data_db);
 }
 
-export async function getProjectDB(
+export async function getDataDB(
   active_id: string
 ): Promise<PouchDB.Database<DataModel.Observation>> {
   if (data_db_created[active_id]) {
@@ -841,7 +841,7 @@ export async function getProjectDB(
   });
 }
 
-export async function getDataDB(
+export async function getProjectDB(
   active_id: string
 ): Promise<PouchDB.Database<DataModel.ProjectMetaObject>> {
   if (meta_db_created[active_id]) {
@@ -849,7 +849,7 @@ export async function getDataDB(
   }
   return new Promise(resolve => {
     initializeEvents.once(
-      'project_data_complete',
+      'project_meta_complete',
       (
         listing: DataModel.ListingsObject,
         project: ExistingActiveDoc,
