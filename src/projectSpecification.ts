@@ -128,7 +128,7 @@ async function getOrCreateSpecDoc(
   project_name: string,
   namespace: string
 ): Promise<ProjectSchema & PouchDB.Core.IdMeta> {
-  const projdb = await getProjectDB(project_name);
+  const projdb = getProjectDB(project_name);
   try {
     const specdoc = await projdb.get(
       PROJECT_SPECIFICATION_PREFIX + '-' + namespace
@@ -251,7 +251,7 @@ export async function upsertFAIMSType(
     throw Error('failed to get document');
   }
 
-  const projdb = await getProjectDB(project_name);
+  const projdb = getProjectDB(project_name);
   try {
     return projdb.put(specdoc);
   } catch (err) {
@@ -286,7 +286,7 @@ export async function upsertFAIMSConstant(
   );
   specdoc.constants[parsedName['name']] = validatedInfo;
 
-  const projdb = await getProjectDB(project_name);
+  const projdb = getProjectDB(project_name);
   try {
     return projdb.put(specdoc);
   } catch (err) {

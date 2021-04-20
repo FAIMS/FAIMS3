@@ -821,42 +821,22 @@ async function process_project(
   emitter.emit('processing', project_info, active_project, meta_db, data_db);
 }
 
-export async function getDataDB(
+export function getDataDB(
   active_id: string
-): Promise<PouchDB.Database<DataModel.Observation>> {
+): PouchDB.Database<DataModel.EncodedObservation> {
   if (data_db_created[active_id]) {
     return data_dbs[active_id].local;
+  } else {
+    throw 'Projects not initialized yet';
   }
-  return new Promise(resolve => {
-    initializeEvents.once(
-      'project_data_complete',
-      (
-        listing: DataModel.ListingsObject,
-        project: ExistingActiveDoc,
-        data: LocalDB<DataModel.Observation>
-      ) => {
-        resolve(data.local);
-      }
-    );
-  });
 }
 
-export async function getProjectDB(
+export function getProjectDB(
   active_id: string
-): Promise<PouchDB.Database<DataModel.ProjectMetaObject>> {
+): PouchDB.Database<DataModel.ProjectMetaObject> {
   if (meta_db_created[active_id]) {
     return metadata_dbs[active_id].local;
+  } else {
+    throw 'Projects not initialized yet';
   }
-  return new Promise(resolve => {
-    initializeEvents.once(
-      'project_meta_complete',
-      (
-        listing: DataModel.ListingsObject,
-        project: ExistingActiveDoc,
-        meta: LocalDB<DataModel.ProjectMetaObject>
-      ) => {
-        resolve(meta.local);
-      }
-    );
-  });
 }
