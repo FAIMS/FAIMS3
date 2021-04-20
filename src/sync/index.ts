@@ -66,6 +66,18 @@ export const data_dbs: LocalDBList<DataModel.EncodedObservation> = {};
  */
 export const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
 
+export let is_dbs_created = false;
+/**
+ * Keyed by active_id, this specifies which of the active
+ * projects have their data synced currently (or are offline)
+ */
+export const data_db_created: {[key: string]: boolean} = {};
+/**
+ * Keyed by active_id, this specifies which of the active
+ * projects have their metadata synced currently (or are offline)
+ */
+export const meta_db_created: {[key: string]: boolean} = {};
+
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
  * @param connection_info Network address/database info to use to initialize the connection
@@ -430,18 +442,6 @@ function process_listings(
   });
   return emitter;
 }
-
-let is_dbs_created = false;
-/**
- * Keyed by active_id, this specifies which of the active
- * projects have their data synced currently (or are offline)
- */
-export const data_db_created: {[key: string]: boolean} = {};
-/**
- * Keyed by active_id, this specifies which of the active
- * projects have their metadata synced currently (or are offline)
- */
-export const meta_db_created: {[key: string]: boolean} = {};
 
 interface ListingEmitter extends EventEmitter {
   on(
