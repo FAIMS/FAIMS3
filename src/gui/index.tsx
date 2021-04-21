@@ -1,8 +1,12 @@
 import React from 'react';
-import {getAvailableProjectsMetaData, ProjectsList} from './dbHelpers';
 import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
-import {initializeEvents, projects_dbs} from '../sync';
+import {
+  initializeEvents,
+  projects_dbs,
+  getAvailableProjectsMetaData,
+  ProjectsList,
+} from '../sync';
 
 type FAIMSContainerProps = {
   // project: string;

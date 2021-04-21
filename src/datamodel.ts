@@ -42,6 +42,10 @@ export interface ProjectObject {
   metadata_db?: ConnectionInfo;
 }
 
+export type ProjectsList = {
+  [key: string]: ProjectObject;
+};
+
 /*
  * Objects that may be contained in a Project's metadata DB
  */
