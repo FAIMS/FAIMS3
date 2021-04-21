@@ -203,7 +203,7 @@ function keys(
   hasKey: (obj: object, key: string) => boolean,
 ) {
   var allKeys = (function(o) {
-    var keys = [];
+    var keys: string[] = [];
     for (var key in o) {
       if (hasKey(o, key)) {
         keys.push(key);
@@ -222,7 +222,7 @@ function keys(
     return allKeys;
   }
 
-  var extraKeys = [];
+  var extraKeys: string[] = [];
   if (allKeys.length === 0) {
     return allKeys;
   }
