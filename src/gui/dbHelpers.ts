@@ -8,7 +8,7 @@ export type ProjectsList = {
   [key: string]: ProjectObject;
 };
 
-export function getAvailableProjectsMetaData(username) : ProjectsList {
+export function getAvailableProjectsMetaData(username): ProjectsList {
   return {
     'default/projectA': {
       _id: 'projectA',
