@@ -1,0 +1,118 @@
+export const UI_SPECIFICATION_NAME = 'ui-specification';
+export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
+
+export interface ConnectionInfo {
+  proto: string;
+  host: string;
+  port: number;
+  lan?: boolean;
+  db_name: string;
+}
+
+export interface ListingsObject {
+  _id: string;
+  name: string;
+  description: string;
+  projects_db?: ConnectionInfo;
+  people_db?: ConnectionInfo;
+}
+
+export interface NonNullListingsObject extends ListingsObject {
+  projects_db: ConnectionInfo;
+  people_db: ConnectionInfo;
+}
+
+export interface ActiveDoc {
+  _id: string;
+  listing_id: string;
+  project_id: string;
+  username: string;
+  password: string;
+}
+
+/**
+ * Describes a project, with connection, name, description, and schema
+ * Part of the Projects DB
+ */
+export interface ProjectObject {
+  _id: string;
+  name: string;
+  description: string;
+  data_db?: ConnectionInfo;
+  metadata_db?: ConnectionInfo;
+}
+
+/*
+ * Objects that may be contained in a Project's metadata DB
+ */
+export interface FAIMSType {
+  [key: string]: any; // any for now until we lock down the json
+}
+
+export interface FAIMSTypeCollection {
+  [key: string]: FAIMSType;
+}
+
+export interface FAIMSConstant {
+  [key: string]: any; // any for now until we lock down the json
+}
+
+export interface FAIMSConstantCollection {
+  [key: string]: FAIMSConstant;
+}
+
+export interface ProjectSchema {
+  _id?: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
+  namespace: string;
+  constants: FAIMSConstantCollection;
+  types: FAIMSTypeCollection;
+}
+
+export interface ProjectUIModel {
+  _id: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
+  fields: Array<any>;
+  fviews: Array<any>; // conflicts with pouchdb views/indexes, hence fviews
+  start_view: string;
+}
+
+export interface ProjectPeople {
+  _id: string;
+  _rev?: string; // optional as we may want to include the raw json in places
+}
+
+// This is used within the form/ui subsystem, do not use with pouch
+export interface Observation {
+  _id?: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
+  type: string;
+  data: any;
+}
+
+// This is used within the pouch/sync subsystem, do not use with form/ui
+export interface EncodedObservation {
+  _id?: string;
+  _rev?: string; // optional as we may want to include the raw json in places
+  format_version: number;
+  type: string;
+  data: any;
+}
+
+/*
+ * Elements of a Project's metadataDB can be any one of these,
+ * discriminated by the prefix of the object's id
+ */
+export type ProjectMetaObject = ProjectSchema | ProjectUIModel | ProjectPeople;
+
+/**
+ * Document from a people DB
+ */
+export interface PeopleDoc {
+  roles: Array<string>;
+  devices: Array<string>;
+  salt: string;
+  ierations: 10;
+  derived_key: string;
+  passsword_scheme: string;
+}
