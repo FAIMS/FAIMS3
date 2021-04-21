@@ -51,6 +51,7 @@
     "@types/react": "^17.0.3",
     "@types/react-dom": "^17.0.3",
     "@types/uuid": "^8.3.0",
+    "formik": "^2.2.6",
     "jsonpointer": "^4.1.0",
     "pouchdb": "^7.2.2",
     "pouchdb-find": "^7.2.2",
