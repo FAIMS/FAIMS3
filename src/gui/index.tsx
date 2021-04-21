@@ -5,8 +5,8 @@ import {
   initializeEvents,
   projects_dbs,
   getAvailableProjectsMetaData,
-  ProjectsList,
-} from '../sync';
+} from '../sync/index';
+import {ProjectsList} from '../datamodel';
 
 type FAIMSContainerProps = {
   // project: string;

@@ -12,7 +12,7 @@ import Tab from '@material-ui/core/Tab';
 import Box from '@material-ui/core/Box';
 import {FAIMSForm} from './form';
 import grey from '@material-ui/core/colors/grey';
-import {ProjectsList} from './dbHelpers';
+import {ProjectsList} from '../datamodel';
 import {NumberSchema} from 'yup';
 
 interface TabPanelProps {

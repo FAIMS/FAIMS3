@@ -236,7 +236,7 @@ const example_ui_specs = {
       'next-view-label': 'Done!',
     },
 
-    'start-view': 'start-view',
+    start_view: 'start-view',
   },
   'default/projectB': {
     fields: {},
@@ -254,7 +254,7 @@ const example_ui_specs = {
       'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
       'next-view-label': 'Done!',
     },
-    'start-view': 'start-view',
+    start_view: 'start-view',
   },
   'default/projectC': {
     fields: {},
@@ -272,7 +272,7 @@ const example_ui_specs = {
       'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
       'next-view-label': 'Done!',
     },
-    'start-view': 'start-view',
+    start_view: 'start-view',
   },
 };
 

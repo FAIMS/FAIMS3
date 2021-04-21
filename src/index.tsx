@@ -10,6 +10,7 @@ import {setupExampleForms} from './dummyData';
 // at the same time (Making sure DB calls can handle this)
 async function initialize() {
   await Sync.populate_test_data();
+  console.log("adding directory test data")
 
   await Sync.initialize_dbs({
     proto: 'http',
@@ -17,8 +18,10 @@ async function initialize() {
     port: 5984,
     db_name: 'directory',
   });
+  console.log("initialised dbs")
 
   await setupExampleForms();
+  console.log("setting up form")
 }
 initialize()
   .then(() => {

@@ -880,7 +880,7 @@ export function getProjectDB(
   }
 }
 
-export function getAvailableProjectsMetaData(username): ProjectsList {
+export function getAvailableProjectsMetaData(username): DataModel.ProjectsList {
   return {
     'default/projectA': {
       _id: 'projectA',

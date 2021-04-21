@@ -25,7 +25,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const uiSpec = getUiSpecForProject(props.activeProjectID);
     this.state = {
       uiSpec: uiSpec,
-      currentView: uiSpec['start-view'],
+      currentView: uiSpec['start_view'],
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
