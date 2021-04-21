@@ -8,6 +8,7 @@ import {getUiSpecForProject} from '../uiSpecification';
 import {Formik, Form, Field, FormikProps} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
+import {upsertFAIMSData, lookupFAIMSDataID} from '../dataStorage';
 
 type FormProps = {
   activeProjectID: string;
@@ -37,6 +38,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   save(values) {
     console.log(values);
+    upsertFAIMSData(this.props.activeProjectID, values);
   }
 
   updateView(viewName) {
