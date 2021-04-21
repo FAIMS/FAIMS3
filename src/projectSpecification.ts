@@ -203,7 +203,7 @@ function parseTypeInformation(
 function compressTypes(typeInfo: Array<FAIMSType>): FAIMSType {
   let allowedValues = [];
   const members = {};
-  const constraints = [];
+  const constraints: any[] = [];
   for (const typ of typeInfo) {
     if (typ['allowed-values'] !== undefined) {
       allowedValues = typ['allowed-values'];
