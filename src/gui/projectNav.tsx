@@ -5,13 +5,19 @@ import {
   WithStyles,
   Theme,
 } from '@material-ui/core/styles';
-import AppBar from '@material-ui/core/AppBar';
-import Container from '@material-ui/core/Container';
-import Tabs from '@material-ui/core/Tabs';
-import Tab from '@material-ui/core/Tab';
-import Box from '@material-ui/core/Box';
-import {FAIMSForm} from './form';
+import {
+  Typography,
+  Container,
+  Tabs,
+  Tab,
+  AppBar,
+  Box,
+  Grid,
+  CircularProgress,
+} from '@material-ui/core';
+import Skeleton from '@material-ui/lab/Skeleton';
 import grey from '@material-ui/core/colors/grey';
+import {FAIMSForm} from './form';
 import {ProjectsList} from './dbHelpers';
 import {NumberSchema} from 'yup';
 
@@ -85,7 +91,42 @@ class ProjectNavTabs extends React.Component<
     if (Object.keys(this.props.projectList).length === 0) {
       // Before the projects are initialized,
       // rendering this component displays a loading screen
-      return <div>Loading</div>;
+      return (
+        <div>
+          <Box mb={3}>
+            <AppBar position="static" color="default">
+              <Box p={1} ml={2}>
+                <Grid container direction="row" alignItems="center">
+                  <Grid>
+                    <CircularProgress size={'1.5rem'} color={'primary'} />
+                  </Grid>
+                  <Grid>
+                    {/*<Typography*/}
+                    {/*  color={'textSecondary'}*/}
+                    {/*  style={{marginLeft: '20px'}}*/}
+                    {/*>*/}
+                    {/*  Loading...*/}
+                    {/*</Typography>*/}
+                  </Grid>
+                </Grid>
+              </Box>
+            </AppBar>
+          </Box>
+          <Container maxWidth="md">
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Skeleton animation="wave" variant="rect" height={100} />
+              </Grid>
+              <Grid item sm={6} xs={12}>
+                <Skeleton animation="wave" variant="rect" height={500} />
+              </Grid>
+              <Grid item sm={6} xs={12}>
+                <Skeleton animation="wave" variant="rect" height={500} />
+              </Grid>
+            </Grid>
+          </Container>
+        </div>
+      );
     } else if (this.props.projectList[activeTab] === undefined) {
       // Immediately after loading screen is finished loading, there
       // is no selected tab, so default to the first one:
