@@ -29,7 +29,7 @@ export class FAIMSContainer extends React.Component<
     };
 
     initializeEvents.on(
-      'project_processing',
+      'project_syncing',
       (listing, project, active, meta, data) => {
         projects[active._id] = project;
       }

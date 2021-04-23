@@ -37,8 +37,11 @@ export async function setUiSpecForProject(
     fviews: uiInfo.views,
     start_view: uiInfo.start_view,
   };
-  if (uiInfo['_rev'] !== undefined) {
-    encUIInfo['_rev'] = uiInfo['_rev'];
+  try {
+    const existing_encUIInfo = await projdb.get(encUIInfo._id);
+    encUIInfo._rev = existing_encUIInfo._rev;
+  } catch (err) {
+    // Probably no existing UI info
   }
 
   try {
