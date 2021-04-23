@@ -2,9 +2,7 @@ import React from 'react';
 import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
 import {
-  initializeEvents,
-  projects_dbs,
-  getAvailableProjectsMetaData,
+  initializeEvents, createdProjects
 } from '../sync/index';
 import {ProjectsList} from '../datamodel';
 
@@ -28,9 +26,13 @@ export class FAIMSContainer extends React.Component<
       projects: projects,
     };
 
+    for (const active_id in createdProjects) {
+      projects[active_id] = createdProjects[active_id].project;
+    }
+
     initializeEvents.on(
       'project_syncing',
-      (listing, project, active, meta, data) => {
+      (listing, project, active) => {
         projects[active._id] = project;
       }
     );

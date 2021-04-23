@@ -467,6 +467,21 @@ interface DirectoryEmitter extends EventEmitter {
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter('directory');
 
+/**
+ * This is appended to whenever a project has its
+ * meta & data local dbs come into existance.
+ *
+ * This is essentially accumulating 'project_syncing' events.
+ */
+export const createdProjects: {
+  [key: string]: {
+    project: DataModel.ProjectObject;
+    active: ExistingActiveDoc;
+    meta: LocalDB<DataModel.ProjectMetaObject>;
+    data: LocalDB<DataModel.EncodedObservation>;
+  };
+} = {};
+
 export function initialize_dbs(
   directory_connection: DataModel.ConnectionInfo
 ): DirectoryEmitter {
@@ -1008,6 +1023,12 @@ async function process_project(
 
   const meta_db = ensure_synced_db(active_id, meta_connection_info, metadata_dbs);
   const data_db = ensure_synced_db(active_id, data_connection_info, data_dbs);
+  createdProjects[active_id] = {
+    project: project_info,
+    active: active_project,
+    meta: meta_db,
+    data: data_db,
+  };
   emitter.emit('syncing', project_info, active_project, meta_db, data_db);
 
   function synced_callback<T>(
