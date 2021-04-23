@@ -297,6 +297,148 @@ export async function populate_test_data() {
   }
 }
 
+// class ContextualEventEmitfunction<
+//   Args extends unknown[],
+//   Context extends unknown[]
+// > extends EventEmitter {
+//   emit(event: string | Symbol, ...with_context: [...Context, ...Args]): boolean;
+
+//   contextualizeEvent(
+//     contextless_name: string | Symbol,
+//     event_from: EventEmitter & {on(string, ...args: unknown[]): EventEmitter},
+//     new_name: string | Symbol,
+//     ...context: Context
+//   ): this {
+//     event_from.on(contextless_name, (...orig_args: Args) => {
+//       this.emit(new_name, ...context, ...orig_args);
+//     });
+//     return this;
+//   }
+// }
+
+function contextualizeEvents(
+  name: string,
+  emit_to: EventEmitter,
+  mappings: [string, string][],
+  ...context: unknown[]
+): EventEmitter {
+  const event_from = new EventEmitter(name);
+
+  mappings.forEach(([new_name, contextless_name]) =>
+    event_from.on(contextless_name, (...orig_args: unknown[]) => {
+      // Emit new_name with the new arguments THEN the old arguments
+      emit_to.emit_nolog(new_name, ...context, ...orig_args);
+    })
+  );
+
+  return event_from;
+}
+
+/**
+ * When you have a lot of EventEmitters, and you want to trigger another event to run
+ * when they have all each triggered an event, use this. For each individual EventEmitter,
+ * it must have a corresponding string 'id'. After all emitters have triggered, the named event,
+ * the primary emit_to emitter has its emit_as[0] event emitted.
+ * The triggering_amount_of_identifiers is the count of the number of indiviudual EventEmitters.
+ *
+ * Currently used to trigger a 'listing_complete' when all projects in said listing
+ * have triggered their 'project_complete' event
+ *
+ * @param triggering_amount_of_identifiers Amount of unique identifires for which an event must be triggered with to cause the main event to be emitted
+ * @param emit_to Where events are emitted to after the required number of unique id's are accumulated
+ * @param emit_as Event name and event arguments emitted to emit_to
+ * @returns '*_one' function that you use on a 'contextualizedEventEmitter' to register it as one of the events that accumulates an id.
+ */
+function propagateWhenAllEmitted(
+  triggering_amount_of_identifiers: number,
+  emit_to: EventEmitter,
+  ...emit_as: [string, ...unknown[]]
+): (identifier: string, event_from: EventEmitter, event_name: string) => void {
+  const marked = new Set<string>();
+
+  const mark_one = (id: string) => {
+    marked.add(id);
+    if (marked.size === triggering_amount_of_identifiers) {
+      emit_to.emit(...emit_as);
+    }
+  };
+
+  return (identifier: string, event_from: EventEmitter, event_name: string) => {
+    event_from.once(event_name, () => mark_one(identifier));
+  };
+}
+
+/**
+ * This is appended to whenever a project has its
+ * meta & data local dbs come into existance.
+ *
+ * This is essentially accumulating 'project_syncing' events.
+ */
+export const createdProjects: {
+  [key: string]: {
+    project: DataModel.ProjectObject;
+    active: ExistingActiveDoc;
+    meta: LocalDB<DataModel.ProjectMetaObject>;
+    data: LocalDB<DataModel.EncodedObservation>;
+  };
+} = {};
+
+/**
+ * This is appended to whneever a listing has its
+ * projects_db & people_db come into existance
+ * 
+ * This is essentially accumulating 'listing_syncing' events
+ */
+export const createdListings: {
+  [key: string]: {
+    listing: DataModel.ListingsObject;
+    projects: ExistingActiveDoc[];
+  };
+} = {};
+
+export function getDataDB(
+  active_id: string
+): PouchDB.Database<DataModel.EncodedObservation> {
+  if (data_dbs[active_id] !== undefined) {
+    return data_dbs[active_id].local;
+  } else {
+    throw 'Projects not initialized yet';
+  }
+}
+
+export function getProjectDB(
+  active_id: string
+): PouchDB.Database<DataModel.ProjectMetaObject> {
+  if (metadata_dbs[active_id] !== undefined) {
+    return metadata_dbs[active_id].local;
+  } else {
+    throw 'Projects not initialized yet';
+  }
+}
+
+export function getAvailableProjectsMetaData(username): DataModel.ProjectsList {
+  return {
+    'default/projectA': {
+      _id: 'projectA',
+      name: 'Project A',
+      description: 'A dummy project',
+    },
+    'default/projectB': {
+      _id: 'projectB',
+      name: 'Project B',
+      description: 'A dummy project',
+    },
+    'default/projectC': {
+      _id: 'projectC',
+      name: 'Project C',
+      description: 'A dummy project',
+    },
+  };
+}
+
+
+export const initializeEvents: DirectoryEmitter = new EventEmitter('directory');
+
 interface DirectoryEmitter extends EventEmitter {
   on(
     event: 'project_meta_complete',
@@ -465,23 +607,6 @@ interface DirectoryEmitter extends EventEmitter {
   emit(event: 'error', err: unknown): boolean;
 }
 
-export const initializeEvents: DirectoryEmitter = new EventEmitter('directory');
-
-/**
- * This is appended to whenever a project has its
- * meta & data local dbs come into existance.
- *
- * This is essentially accumulating 'project_syncing' events.
- */
-export const createdProjects: {
-  [key: string]: {
-    project: DataModel.ProjectObject;
-    active: ExistingActiveDoc;
-    meta: LocalDB<DataModel.ProjectMetaObject>;
-    data: LocalDB<DataModel.EncodedObservation>;
-  };
-} = {};
-
 export function initialize_dbs(
   directory_connection: DataModel.ConnectionInfo
 ): DirectoryEmitter {
@@ -538,32 +663,28 @@ function process_listings(
   emitter: DirectoryEmitter,
   listing_objects: ExistingListings[]
 ) {
-  let incompleteness = listing_objects.length;
-  const complete_one = () => {
-    if ((incompleteness -= 1) === 0) {
-      emitter.emit('complete', listing_objects);
-    }
-  };
+  const one_completed = propagateWhenAllEmitted(
+    listing_objects.length,
+    emitter,
+    'complete',
+    listing_objects
+  );
+  const one_created = propagateWhenAllEmitted(
+    listing_objects.length,
+    emitter,
+    'dbs_created',
+    listing_objects
+  );
+  const one_meta = propagateWhenAllEmitted(
+    listing_objects.length,
+    emitter,
+    'metas_created',
+    listing_objects
+  );
 
-  emitter.on('listing_complete', complete_one);
-
-  let undbs_created = listing_objects.length;
-  const dbs_created_one = () => {
-    if ((undbs_created -= 1) === 0) {
-      emitter.emit('dbs_created', listing_objects);
-    }
-  };
-
-  let unmetas_created = listing_objects.length;
-  const metas_created_one = () => {
-    if ((unmetas_created -= 1) === 0) {
-      emitter.emit('metas_created', listing_objects);
-    }
-  };
-
-  listing_objects.forEach(ap => {
+  listing_objects.forEach(el => {
     const contextualizingEmitter: ListingEmitter = contextualizeEvents(
-      'listing_' + ap._id,
+      'listing_' + el._id,
       emitter,
       [
         ['project_complete', 'project_complete'],
@@ -586,13 +707,15 @@ function process_listings(
     // this is different that process_projects,
     // on(listing_dbs_created) instead of _created
 
-    contextualizingEmitter.once('dbs_created', dbs_created_one);
-    contextualizingEmitter.once('error', dbs_created_one);
+    one_created(el._id, contextualizingEmitter, 'dbs_created');
+    one_created(el._id, contextualizingEmitter, 'error');
 
-    contextualizingEmitter.once('metas_created', metas_created_one);
-    contextualizingEmitter.once('error', metas_created_one);
+    one_meta(el._id, contextualizingEmitter, 'metas_created');
+    one_meta(el._id, contextualizingEmitter, 'error');
 
-    process_listing(contextualizingEmitter, ap).catch(err =>
+    one_completed(el._id, contextualizingEmitter, 'complete');
+
+    process_listing(contextualizingEmitter, el).catch(err =>
       contextualizingEmitter.emit('error', err)
     );
   });
@@ -812,70 +935,32 @@ async function process_listing(
   synced_callback();
 }
 
-// class ContextualEventEmitfunction<
-//   Args extends unknown[],
-//   Context extends unknown[]
-// > extends EventEmitter {
-//   emit(event: string | Symbol, ...with_context: [...Context, ...Args]): boolean;
-
-//   contextualizeEvent(
-//     contextless_name: string | Symbol,
-//     event_from: EventEmitter & {on(string, ...args: unknown[]): EventEmitter},
-//     new_name: string | Symbol,
-//     ...context: Context
-//   ): this {
-//     event_from.on(contextless_name, (...orig_args: Args) => {
-//       this.emit(new_name, ...context, ...orig_args);
-//     });
-//     return this;
-//   }
-// }
-
-function contextualizeEvents(
-  name: string,
-  emit_to: EventEmitter,
-  mappings: [string, string][],
-  ...context: unknown[]
-): EventEmitter {
-  const event_from = new EventEmitter(name);
-
-  mappings.forEach(([new_name, contextless_name]) =>
-    event_from.on(contextless_name, (...orig_args: unknown[]) => {
-      // Emit new_name with the new arguments THEN the old arguments
-      emit_to.emit_nolog(new_name, ...context, ...orig_args);
-    })
-  );
-
-  return event_from;
-}
-
 function process_projects(
   emitter: ListingEmitter,
   listing: DataModel.ListingsObject,
   active_projects: ExistingActiveDoc[]
 ) {
-  let incompleteness = active_projects.length;
-  const complete_one = () => {
-    if ((incompleteness -= 1) === 0) {
-      emitter.emit('complete', listing, active_projects);
-    }
-  };
-
-  emitter.on('project_complete', complete_one);
-
-  let not_syncinc = active_projects.length;
-  const syncing_one = () => {
-    if ((not_syncinc -= 1) === 0) {
-      emitter.emit('dbs_created', listing, active_projects);
-    }
-  };
-
-  let unmetas_created = active_projects.length;
-  const metas_created_one = () => {
-    if ((unmetas_created -= 1) === 0) {
-      emitter.emit('metas_created', listing, active_projects);
-    }
-  };
+  const one_completed = propagateWhenAllEmitted(
+    active_projects.length,
+    emitter,
+    'complete',
+    listing,
+    active_projects
+  );
+  const one_created = propagateWhenAllEmitted(
+    active_projects.length,
+    emitter,
+    'dbs_created',
+    listing,
+    active_projects
+  );
+  const one_meta = propagateWhenAllEmitted(
+    active_projects.length,
+    emitter,
+    'metas_created',
+    listing,
+    active_projects
+  );
 
   active_projects.forEach(ap => {
     const contextualizingEmitter: ProjectEmitter = contextualizeEvents(
@@ -895,12 +980,13 @@ function process_projects(
     // Only once the listing has dbs_created all its own projects
     // this is different that process_projects,
     // on(listing_dbs_created) instead of _created
+    one_created(ap._id, contextualizingEmitter, 'syncing');
+    one_created(ap._id, contextualizingEmitter, 'error');
 
-    contextualizingEmitter.once('syncing', syncing_one);
-    contextualizingEmitter.once('error', syncing_one);
+    one_meta(ap._id, contextualizingEmitter, 'meta_complete');
+    one_meta(ap._id, contextualizingEmitter, 'error');
 
-    contextualizingEmitter.once('meta_complete', metas_created_one);
-    contextualizingEmitter.once('error', metas_created_one);
+    one_completed(ap._id, contextualizingEmitter, 'complete');
 
     process_project(contextualizingEmitter, ap).catch(err => {
       contextualizingEmitter.emit('error', ap, err);
@@ -995,16 +1081,33 @@ async function process_project(
   emitter: ProjectEmitter,
   active_project: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>
 ): Promise<void> {
+  /**
+   * Each project needs to know it's active_id to lookup the local
+   * metadata/data databases.
+   */
   const active_id = active_project._id;
-  const listing_id = active_project.listing_id;
   const project_id = active_project.project_id;
 
-  const projects_db = projects_dbs[listing_id];
-  const projects_connection = projects_db.remote!.info;
 
   const meta_db_localonly = ensure_local_db('metadata', active_id, metadata_dbs);
   const data_db_localonly = ensure_local_db('data', active_id, data_dbs);
   emitter.emit('created', active_project, meta_db_localonly, data_db_localonly);
+
+  /*
+  The following is now
+  Stuff that may fail due to network, or authentication, issues.
+  When this is all starting, 'syncing' event is emitted onto ProjectEmitter
+
+  Like a listing has sub-projects, a project has sub-dbs. But it's less complex:
+  Just meta & data dbs. They don't have a 'meta_syncing' event, only 'complete' events.
+
+  Errors are handled by the caller. The caller should emit 'error' on 
+  the ProjectEmitter.
+  */
+
+  const listing_id = active_project.listing_id;
+  const projects_db = projects_dbs[listing_id];
+  const projects_connection = projects_db.remote!.info;
 
   const project_info: DataModel.ProjectObject = await projects_db.local.get(
     project_id
@@ -1065,53 +1168,16 @@ async function process_project(
     synced_callback('data_complete', data_db_created, data_db)
   );
 
-  let incompleteness = 2;
-  function complete_one() {
-    if ((incompleteness -= 1) === 0) {
-      emitter.emit('complete', project_info, active_project, meta_db, data_db);
-    }
-  }
+  const complete_one = propagateWhenAllEmitted(
+    2,
+    emitter,
+    'complete',
+    project_info,
+    active_project,
+    meta_db,
+    data_db
+  );
 
-  emitter.on('meta_complete', complete_one);
-  emitter.on('data_complete', complete_one);
-}
-
-export function getDataDB(
-  active_id: string
-): PouchDB.Database<DataModel.EncodedObservation> {
-  if (data_dbs[active_id] !== undefined) {
-    return data_dbs[active_id].local;
-  } else {
-    throw 'Projects not initialized yet';
-  }
-}
-
-export function getProjectDB(
-  active_id: string
-): PouchDB.Database<DataModel.ProjectMetaObject> {
-  if (metadata_dbs[active_id] !== undefined) {
-    return metadata_dbs[active_id].local;
-  } else {
-    throw 'Projects not initialized yet';
-  }
-}
-
-export function getAvailableProjectsMetaData(username): DataModel.ProjectsList {
-  return {
-    'default/projectA': {
-      _id: 'projectA',
-      name: 'Project A',
-      description: 'A dummy project',
-    },
-    'default/projectB': {
-      _id: 'projectB',
-      name: 'Project B',
-      description: 'A dummy project',
-    },
-    'default/projectC': {
-      _id: 'projectC',
-      name: 'Project C',
-      description: 'A dummy project',
-    },
-  };
+  complete_one('meta', emitter, 'meta_complete');
+  complete_one('data', emitter, 'data_complete');
 }
