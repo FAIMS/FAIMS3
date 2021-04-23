@@ -9,23 +9,22 @@ import {Formik, Form, Field, FormikProps} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData, lookupFAIMSDataID} from '../dataStorage';
+import {ProjectUIModel} from '../datamodel';
 
 type FormProps = {
   activeProjectID: string;
+  uiSpec: ProjectUIModel;
 };
 
 type FormState = {
-  uiSpec: any;
   currentView: string;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
   constructor(props) {
     super(props);
-    const uiSpec = getUiSpecForProject(props.activeProjectID);
     this.state = {
-      uiSpec: uiSpec,
-      currentView: uiSpec['start_view'],
+      currentView: props.uiSpec['start_view'],
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
@@ -42,7 +41,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   updateView(viewName) {
-    if (viewName in this.state.uiSpec['views']) {
+    if (viewName in this.props.uiSpec['views']) {
       this.setState({currentView: viewName});
       this.forceUpdate();
       // Probably not needed, but we *know* we need to rerender when this
@@ -54,7 +53,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
     // console.log('getComponentFromField');
-    const uiSpec = this.state.uiSpec;
+    const uiSpec = this.props.uiSpec;
     const fields = uiSpec['fields'];
     return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
   }
@@ -93,7 +92,8 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   getValidationSchema() {
     // console.log('getValidationSchema');
-    const {uiSpec, currentView} = this.state;
+    const {currentView} = this.state;
+    const uiSpec = this.props.uiSpec;
     const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
     const fields = uiSpec['fields'];
     const validationSchema = Object();
@@ -105,7 +105,8 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   getInitialValues() {
     // console.log('getInitialValues');
-    const {uiSpec, currentView} = this.state;
+    const {currentView} = this.state;
+    const uiSpec = this.props.uiSpec;
     const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
     const fields = uiSpec['fields'];
     const initialValues = Object();
@@ -116,9 +117,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   render() {
-    const uiSpec = this.state.uiSpec;
-    const viewName = this.state.currentView;
-    const viewList: Array<string> = uiSpec['views'][viewName]['fields'];
+    const {currentView} = this.state;
+    const uiSpec = this.props.uiSpec;
+    const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
 
     return (
       <React.Fragment>
