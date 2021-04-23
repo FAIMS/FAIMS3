@@ -130,10 +130,10 @@ function ensure_local_db<Content extends {}>(
   if (global_dbs[local_db_id]) {
     return global_dbs[local_db_id];
   } else {
-    return global_dbs[local_db_id] = {
+    return (global_dbs[local_db_id] = {
       local: new PouchDB(prefix + '/' + local_db_id),
       remote: null,
-    };
+    });
   }
 }
 
@@ -284,7 +284,12 @@ export async function populate_test_data() {
     password: 'apple',
   };
 
-  const test_docs = [test_doc1, /* test_doc2,  */test_doc3, test_doc4, test_doc5];
+  const test_docs = [
+    test_doc1,
+    /* test_doc2,  */ test_doc3,
+    test_doc4,
+    test_doc5,
+  ];
 
   for (const doc of test_docs) {
     try {
@@ -1002,7 +1007,11 @@ async function process_project(
   const projects_db = projects_dbs[listing_id];
   const projects_connection = projects_db.remote!.info;
 
-  const meta_db_localonly = ensure_local_db('metadata', active_id, metadata_dbs);
+  const meta_db_localonly = ensure_local_db(
+    'metadata',
+    active_id,
+    metadata_dbs
+  );
   const data_db_localonly = ensure_local_db('data', active_id, data_dbs);
   emitter.emit('created', active_project, meta_db_localonly, data_db_localonly);
 
@@ -1021,7 +1030,11 @@ async function process_project(
     db_name: DATA_DBNAME_PREFIX + project_info._id,
   };
 
-  const meta_db = ensure_synced_db(active_id, meta_connection_info, metadata_dbs);
+  const meta_db = ensure_synced_db(
+    active_id,
+    meta_connection_info,
+    metadata_dbs
+  );
   const data_db = ensure_synced_db(active_id, data_connection_info, data_dbs);
   createdProjects[active_id] = {
     project: project_info,
