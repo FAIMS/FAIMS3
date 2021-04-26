@@ -40,7 +40,7 @@ class EventEmitter extends Events.EventEmitter {
     this.name = name;
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
-    console.log(this.name, event, args);
+    console.debug(this.name, event, args);
     return super.emit(event, ...args);
   }
   emit_nolog(event: string | symbol, ...args: unknown[]): boolean {
@@ -944,6 +944,9 @@ async function process_listing(
   };
   projects_db.remote.connection.on('paused', synced_callback);
   projects_db.remote.connection.on('error', synced_callback);
+  projects_db.remote.connection.on('error', err =>
+    console.log(listing_object._id, err)
+  );
   synced_callback();
 }
 
@@ -1179,6 +1182,9 @@ async function process_project(
     'error',
     synced_callback('meta_complete', meta_db_created, meta_db)
   );
+  meta_db.remote.connection.on('error', err =>
+    console.log(active_project.listing_id, project_id, 'meta', err)
+  );
 
   data_db.remote.connection.on(
     'paused',
@@ -1187,6 +1193,9 @@ async function process_project(
   data_db.remote.connection.on(
     'error',
     synced_callback('data_complete', data_db_created, data_db)
+  );
+  data_db.remote.connection.on('error', err =>
+    console.log(active_project.listing_id, project_id, 'data', err)
   );
 
   const complete_one = propagateWhenAllEmitted(
