@@ -1,5 +1,7 @@
 # FAIMS3
 
+FAIMS3 is currently in pre-alpha development. This repository is our main codebase for development. See https://faims.edu.au for updates (soon).
+
 ## Setup and development (quick-start)
 
 Before you do anything (apart from cloning this repository), you should run
