@@ -13,7 +13,7 @@ import Box from '@material-ui/core/Box';
 import {FAIMSForm} from './form';
 import grey from '@material-ui/core/colors/grey';
 import {ProjectsList, ProjectUIModel} from '../datamodel';
-import {NumberSchema} from 'yup';
+//import {NumberSchema} from 'yup';
 import {syncUISpecs, SyncingUiSpecs} from '../uiSpecification';
 
 interface TabPanelProps {
@@ -72,7 +72,7 @@ class ProjectNavTabs extends React.Component<
     this.setState({...this.state, uiSpecs: uiSpecs});
   }
 
-  constructor(props) {
+  constructor(props: ProjectNavTabsProps) {
     super(props);
     this.state = {
       activeTab: '',
@@ -81,7 +81,7 @@ class ProjectNavTabs extends React.Component<
     this.handleChange = this.handleChange.bind(this);
   }
 
-  handleChange(event, value) {
+  handleChange(event: any, value: any) {
     this.setState({activeTab: value.toString()});
   }
 
@@ -122,6 +122,7 @@ class ProjectNavTabs extends React.Component<
             aria-label="scrollable auto tabs example"
           >
             {Object.keys(this.props.projectList).map(
+              /* eslint-disable @typescript-eslint/no-unused-vars */
               (active_id, project_index) => {
                 const project = this.props.projectList[active_id];
                 return (
@@ -133,12 +134,14 @@ class ProjectNavTabs extends React.Component<
                   />
                 );
               }
+              /* eslint-enable @typescript-eslint/no-unused-vars */
             )}
           </Tabs>
         </AppBar>
 
         <Container maxWidth="md">
           {Object.keys(this.props.projectList).map(
+            /* eslint-disable @typescript-eslint/no-unused-vars */
             (active_id, project_index) => {
               const project = this.props.projectList[active_id];
               const uiSpec = this.state.uiSpecs[active_id].uiSpec;
@@ -174,6 +177,7 @@ class ProjectNavTabs extends React.Component<
                 </TabPanel>
               );
             }
+            /* eslint-enable @typescript-eslint/no-unused-vars */
           )}
         </Container>
       </div>

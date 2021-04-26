@@ -25,7 +25,9 @@ const theme = createMuiTheme({
 });
 
 function App() {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   const [listings, setListings] = React.useState('');
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   Sync.initializeEvents.on('complete', (...args) => {
     setListings(JSON.stringify(args));
