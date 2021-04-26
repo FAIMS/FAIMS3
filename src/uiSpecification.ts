@@ -44,7 +44,7 @@ export type SyncingUiSpecs = {
 export function syncUISpecs(
   projects: ProjectsList,
   onUpdate: (uiSpec: SyncingUiSpecs) => unknown,
-  existingSync: SyncingUiSpecs = {},
+  existingSync: SyncingUiSpecs = {}
 ): SyncingUiSpecs {
   for (const name in projects) {
     if (!(name in existingSync)) {
