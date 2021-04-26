@@ -1,7 +1,7 @@
 import React from 'react';
 
 type ViewProps = {
-  viewList: any;
+  viewList: Array<string>;
   form: any; //FAIMSForm; @TODO fix type
   formProps: any;
 };
@@ -11,14 +11,13 @@ type ViewState = {
 };
 
 export class ViewComponent extends React.Component<ViewProps, ViewState> {
-  constructor(props) {
+  constructor(props: ViewProps) {
     super(props);
-    const form = this.props.form;
   }
 
   componentDidMount() {}
 
-  save(values) {
+  save(values: any) {
     console.log(values);
   }
 

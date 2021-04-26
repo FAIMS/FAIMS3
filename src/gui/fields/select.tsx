@@ -4,7 +4,7 @@ import {fieldToTextField, TextFieldProps} from 'formik-material-ui';
 import {MenuItem} from '@material-ui/core';
 
 interface Props {
-  options: Array<object>;
+  options: Array<any>;
 }
 
 export class Select extends React.Component<TextFieldProps & Props> {

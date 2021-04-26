@@ -1,8 +1,8 @@
 import React from 'react';
-import {getAvailableProjectsMetaData, ProjectsList} from './dbHelpers';
 import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
-import {initializeEvents, projects_dbs} from '../sync';
+import {initializeEvents, createdProjects} from '../sync/index';
+import {ProjectsList} from '../datamodel';
 
 type FAIMSContainerProps = {
   // project: string;
@@ -16,7 +16,7 @@ export class FAIMSContainer extends React.Component<
   FAIMSContainerProps,
   FAIMSContainerState
 > {
-  constructor(props) {
+  constructor(props: FAIMSContainerProps) {
     super(props);
     const projects: ProjectsList = {};
 
@@ -24,12 +24,18 @@ export class FAIMSContainer extends React.Component<
       projects: projects,
     };
 
+    for (const active_id in createdProjects) {
+      projects[active_id] = createdProjects[active_id].project;
+    }
+
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     initializeEvents.on(
-      'project_processing',
+      'project_syncing',
       (listing, project, active, meta, data) => {
         projects[active._id] = project;
       }
     );
+    /* eslint-enable @typescript-eslint/no-unused-vars */
   }
 
   componentDidMount() {
