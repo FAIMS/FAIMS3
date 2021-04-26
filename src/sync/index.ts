@@ -1121,7 +1121,7 @@ async function process_project(
   Like a listing has sub-projects, a project has sub-dbs. But it's less complex:
   Just meta & data dbs. They don't have a 'meta_syncing' event, only 'complete' events.
 
-  Errors are handled by the caller. The caller should emit 'error' on 
+  Errors are handled by the caller. The caller should emit 'error' on
   the ProjectEmitter.
   */
 

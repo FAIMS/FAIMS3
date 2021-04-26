@@ -103,7 +103,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   getViewList() {
     const {currentView} = this.state;
     if (currentView !== null) {
-      const viewList: Array<string> = this.props.uiSpec['views'][currentView]['fields'];
+      const viewList: Array<string> = this.props.uiSpec['views'][currentView][
+        'fields'
+      ];
       return viewList;
     }
     return [];
@@ -112,7 +114,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   getFields() {
     const {currentView} = this.state;
     if (currentView !== null) {
-      const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec['fields'];
+      const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
+        'fields'
+      ];
       return fields;
     }
     return {};
