@@ -1,6 +1,6 @@
 # FAIMS3
 
-FAIMS3 is currently in pre-alpha development. This repository is our main codebase for development. See https://faims.edu.au for updates (soon).
+FAIMS3 is currently in pre-alpha development. This repository is our main codebase for development. See <https://faims.edu.au> for updates (soon).
 
 ## Setup and development (quick-start)
 
