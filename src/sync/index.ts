@@ -427,7 +427,7 @@ export function getProjectDB(
   }
 }
 
-export function getAvailableProjectsMetaData(username): DataModel.ProjectsList {
+export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
   return {
     'default/projectA': {
       _id: 'projectA',
@@ -1211,3 +1211,4 @@ async function process_project(
   complete_one('meta', emitter, 'meta_complete');
   complete_one('data', emitter, 'data_complete');
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */

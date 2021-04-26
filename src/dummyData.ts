@@ -1,6 +1,7 @@
-import {getUiSpecForProject, setUiSpecForProject} from './uiSpecification';
+import {setUiSpecForProject} from './uiSpecification';
+import {ProjectUIModel} from './datamodel';
 
-const example_ui_specs = {
+const example_ui_specs: {[key: string]: ProjectUIModel} = {
   'default/projectA': {
     fields: {
       'email-field': {

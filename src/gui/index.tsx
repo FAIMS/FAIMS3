@@ -1,9 +1,7 @@
 import React from 'react';
 import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
-import {
-  initializeEvents, createdProjects
-} from '../sync/index';
+import {initializeEvents, createdProjects} from '../sync/index';
 import {ProjectsList} from '../datamodel';
 
 type FAIMSContainerProps = {
@@ -18,7 +16,7 @@ export class FAIMSContainer extends React.Component<
   FAIMSContainerProps,
   FAIMSContainerState
 > {
-  constructor(props) {
+  constructor(props: FAIMSContainerProps) {
     super(props);
     const projects: ProjectsList = {};
 
@@ -30,9 +28,14 @@ export class FAIMSContainer extends React.Component<
       projects[active_id] = createdProjects[active_id].project;
     }
 
-    initializeEvents.on('project_syncing', (listing, project, active) => {
-      projects[active._id] = project;
-    });
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    initializeEvents.on(
+      'project_syncing',
+      (listing, project, active, meta, data) => {
+        projects[active._id] = project;
+      }
+    );
+    /* eslint-enable @typescript-eslint/no-unused-vars */
   }
 
   componentDidMount() {

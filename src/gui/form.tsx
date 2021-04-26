@@ -5,10 +5,10 @@ import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from '../uiSpecification';
-import {Formik, Form, Field, FormikProps} from 'formik';
+import {Formik, Form, Field} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
-import {upsertFAIMSData, lookupFAIMSDataID} from '../dataStorage';
+import {upsertFAIMSData} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
 
 type FormProps = {
@@ -17,11 +17,11 @@ type FormProps = {
 };
 
 type FormState = {
-  currentView: string;
+  currentView: string | null;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
-  constructor(props) {
+  constructor(props: FormProps) {
     super(props);
     this.state = {
       currentView: props.uiSpec['start_view'],
@@ -29,18 +29,28 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
     this.getInitialValues = this.getInitialValues.bind(this);
+    this.setState = this.setState.bind(this);
+    this.getViewList = this.getViewList.bind(this);
+    this.getFields = this.getFields.bind(this);
   }
 
-  componentDidMount() {
-    // get view components, render form
+  async componentDidMount() {
+    await this.setUISpec();
   }
 
-  save(values) {
+  async setUISpec() {
+    const uiSpec = await getUiSpecForProject(this.props.activeProjectID);
+    this.setState({
+      currentView: uiSpec['start_view'],
+    });
+  }
+
+  save(values: any) {
     console.log(values);
     upsertFAIMSData(this.props.activeProjectID, values);
   }
 
-  updateView(viewName) {
+  updateView(viewName: string) {
     if (viewName in this.props.uiSpec['views']) {
       this.setState({currentView: viewName});
       this.forceUpdate();
@@ -90,12 +100,28 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     );
   }
 
+  getViewList() {
+    const {currentView} = this.state;
+    if (currentView !== null) {
+      const viewList: Array<string> = this.props.uiSpec['views'][currentView]['fields'];
+      return viewList;
+    }
+    return [];
+  }
+
+  getFields() {
+    const {currentView} = this.state;
+    if (currentView !== null) {
+      const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec['fields'];
+      return fields;
+    }
+    return {};
+  }
+
   getValidationSchema() {
     // console.log('getValidationSchema');
-    const {currentView} = this.state;
-    const uiSpec = this.props.uiSpec;
-    const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
-    const fields = uiSpec['fields'];
+    const viewList = this.getViewList();
+    const fields = this.getFields();
     const validationSchema = Object();
     viewList.forEach(fieldName => {
       validationSchema[fieldName] = fields[fieldName]['validationSchema'];
@@ -105,10 +131,8 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   getInitialValues() {
     // console.log('getInitialValues');
-    const {currentView} = this.state;
-    const uiSpec = this.props.uiSpec;
-    const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
-    const fields = uiSpec['fields'];
+    const viewList = this.getViewList();
+    const fields = this.getFields();
     const initialValues = Object();
     viewList.forEach(fieldName => {
       initialValues[fieldName] = fields[fieldName]['initialValue'];
@@ -117,75 +141,83 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   render() {
-    const {currentView} = this.state;
     const uiSpec = this.props.uiSpec;
-    const viewList: Array<string> = uiSpec['views'][currentView]['fields'];
+    const viewName = this.state.currentView;
+    if (viewName !== null) {
+      const viewList: Array<string> = uiSpec['views'][viewName]['fields'];
 
-    return (
-      <React.Fragment>
-        <Formik
-          initialValues={this.getInitialValues()}
-          validationSchema={this.getValidationSchema}
-          validateOnMount={true}
-          onSubmit={(values, {setSubmitting}) => {
-            setTimeout(() => {
-              setSubmitting(false);
-              console.log(JSON.stringify(values, null, 2));
-            }, 500);
-          }}
-        >
-          {formProps => (
-            <Form>
-              <Grid container spacing={2}>
-                <Grid item sm={6} xs={12}>
-                  <ViewComponent
-                    viewList={viewList}
-                    form={this}
-                    formProps={formProps}
-                  />
-                  <br />
-                  {formProps.isValid ? (
-                    ''
-                  ) : (
-                    <Alert severity="error">
-                      Form has errors, please scroll up and make changes before
-                      re-submitting.
-                    </Alert>
-                  )}
-                  <br />
-                  <Button
-                    type="submit"
-                    color={formProps.isSubmitting ? 'default' : 'primary'}
-                    variant="contained"
-                    onClick={formProps.submitForm}
-                    disableElevation
-                    disabled={formProps.isSubmitting}
-                  >
-                    {formProps.isSubmitting ? 'Submitting...' : 'Submit'}
-                    {formProps.isSubmitting && (
-                      <CircularProgress
-                        size={24}
-                        style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          marginTop: -12,
-                          marginLeft: -12,
-                        }}
-                      />
+      return (
+        <React.Fragment>
+          <Formik
+            initialValues={this.getInitialValues()}
+            validationSchema={this.getValidationSchema}
+            validateOnMount={true}
+            onSubmit={(values, {setSubmitting}) => {
+              setTimeout(() => {
+                setSubmitting(false);
+                console.log(JSON.stringify(values, null, 2));
+              }, 500);
+            }}
+          >
+            {formProps => (
+              <Form>
+                <Grid container spacing={2}>
+                  <Grid item sm={6} xs={12}>
+                    <ViewComponent
+                      viewList={viewList}
+                      form={this}
+                      formProps={formProps}
+                    />
+                    <br />
+                    {formProps.isValid ? (
+                      ''
+                    ) : (
+                      <Alert severity="error">
+                        Form has errors, please scroll up and make changes
+                        before re-submitting.
+                      </Alert>
                     )}
-                  </Button>
+                    <br />
+                    <Button
+                      type="submit"
+                      color={formProps.isSubmitting ? 'default' : 'primary'}
+                      variant="contained"
+                      onClick={formProps.submitForm}
+                      disableElevation
+                      disabled={formProps.isSubmitting}
+                    >
+                      {formProps.isSubmitting ? 'Submitting...' : 'Submit'}
+                      {formProps.isSubmitting && (
+                        <CircularProgress
+                          size={24}
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            marginTop: -12,
+                            marginLeft: -12,
+                          }}
+                        />
+                      )}
+                    </Button>
+                  </Grid>
+                  <Grid item sm={6} xs={12}>
+                    <Box
+                      bgcolor={grey[200]}
+                      p={2}
+                      style={{overflowX: 'scroll'}}
+                    >
+                      <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                    </Box>
+                  </Grid>
                 </Grid>
-                <Grid item sm={6} xs={12}>
-                  <Box bgcolor={grey[200]} p={2} style={{overflowX: 'scroll'}}>
-                    <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Form>
-          )}
-        </Formik>
-      </React.Fragment>
-    );
+              </Form>
+            )}
+          </Formik>
+        </React.Fragment>
+      );
+    } else {
+      return <div>Loading UI...</div>;
+    }
   }
 }
