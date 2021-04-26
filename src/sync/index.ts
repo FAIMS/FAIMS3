@@ -226,21 +226,20 @@ export async function populate_test_data() {
     username: 'test1',
     password: 'apple',
   };
-  // const test_doc2: {
-  //   _rev?: string;
-  //   _id: string;
-  //   listing_id: string;
-  //   project_id: string;
-  //   auto_sync: boolean;
-  //   username: string;
-  //   password: string;
-  // } = {
-  //   _id: 'csiro/csiro-geochemistry',
-  //   listing_id: 'csiro',
-  //   project_id: 'csiro-geochemistry',
-  //   username: 'test1',
-  //   password: 'apple',
-  // };
+  const test_doc2: {
+    _rev?: string;
+    _id: string;
+    listing_id: string;
+    project_id: string;
+    username: string;
+    password: string;
+  } = {
+    _id: 'csiro/csiro-geochemistry',
+    listing_id: 'csiro',
+    project_id: 'csiro-geochemistry',
+    username: 'test1',
+    password: 'apple',
+  };
   const test_doc3: {
     _rev?: string;
     _id: string;
@@ -284,7 +283,7 @@ export async function populate_test_data() {
     password: 'apple',
   };
 
-  const test_docs = [test_doc1, /* test_doc2,  */test_doc3, test_doc4, test_doc5];
+  const test_docs = [test_doc1, test_doc2, test_doc3, test_doc4, test_doc5];
 
   for (const doc of test_docs) {
     try {
@@ -344,6 +343,11 @@ function contextualizeEvents(
  * Currently used to trigger a 'listing_complete' when all projects in said listing
  * have triggered their 'project_complete' event
  *
+ * WARNING: If triggering_amount_of_identifers == 0, then events are emitted IMMEDIATELY,
+ * So be sure to order the creation of propagateWhenAllEmitted properly.
+ * (This can be relaxed if this func is modified to use process.nextTick to emit, but
+ * this isn't necessary for current uses.)
+ *
  * @param triggering_amount_of_identifiers Amount of unique identifires for which an event must be triggered with to cause the main event to be emitted
  * @param emit_to Where events are emitted to after the required number of unique id's are accumulated
  * @param emit_as Event name and event arguments emitted to emit_to
@@ -354,6 +358,13 @@ function propagateWhenAllEmitted(
   emit_to: EventEmitter,
   ...emit_as: [string, ...unknown[]]
 ): (identifier: string, event_from: EventEmitter, event_name: string) => void {
+  if (triggering_amount_of_identifiers === 0) {
+    // The event should be triggered immediately
+    // The returned function most likely will never be called
+    emit_to.emit(...emit_as);
+  }
+
+  // All identifiers for which the event has triggered
   const marked = new Set<string>();
 
   const mark_one = (id: string) => {
@@ -663,12 +674,8 @@ function process_listings(
   emitter: DirectoryEmitter,
   listing_objects: ExistingListings[]
 ) {
-  const one_completed = propagateWhenAllEmitted(
-    listing_objects.length,
-    emitter,
-    'complete',
-    listing_objects
-  );
+  // This is the order they should be propagated in
+  // (Should there be 0 listing_objects, they are emitted immediately)
   const one_created = propagateWhenAllEmitted(
     listing_objects.length,
     emitter,
@@ -679,6 +686,12 @@ function process_listings(
     listing_objects.length,
     emitter,
     'metas_created',
+    listing_objects
+  );
+  const one_completed = propagateWhenAllEmitted(
+    listing_objects.length,
+    emitter,
+    'complete',
     listing_objects
   );
 
@@ -940,13 +953,8 @@ function process_projects(
   listing: DataModel.ListingsObject,
   active_projects: ExistingActiveDoc[]
 ) {
-  const one_completed = propagateWhenAllEmitted(
-    active_projects.length,
-    emitter,
-    'complete',
-    listing,
-    active_projects
-  );
+  // This is the order they should be propagated in
+  // (Should there be 0 listing_objects, they are emitted immediately)
   const one_created = propagateWhenAllEmitted(
     active_projects.length,
     emitter,
@@ -958,6 +966,13 @@ function process_projects(
     active_projects.length,
     emitter,
     'metas_created',
+    listing,
+    active_projects
+  );
+  const one_completed = propagateWhenAllEmitted(
+    active_projects.length,
+    emitter,
+    'complete',
     listing,
     active_projects
   );
