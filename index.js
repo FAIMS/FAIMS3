@@ -107,7 +107,7 @@ const presets = [
         }
     },
     {
-        db: 'lake_mungo',
+        db: 'data-lake_mungo',
         doc_id: '_design/permissions',
         data: {
             "validate_doc_update": add_prelude(function(newDoc, oldDoc, userCtx) {
@@ -123,7 +123,7 @@ const presets = [
         }
     },
     {
-        db: 'lake_mungo',
+        db: 'data-lake_mungo',
         doc_id: '_design/validation',
         data: {
             "validate_doc_update": add_prelude(function(newDoc, oldDoc, userCtx) {
@@ -199,9 +199,9 @@ async function sync_preset(preset, db) {
             ...preset.data
         });
 
-        console.log('synced*: ' + db.name + '/' + preset.doc_id);
-    } else {
         console.log('synced:  ' + db.name + '/' + preset.doc_id);
+    } else {
+        console.log('checked: ' + db.name + '/' + preset.doc_id);
     }
 }
 
