@@ -68,6 +68,7 @@ export interface FAIMSConstantCollection {
 export interface ProjectSchema {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
   namespace: string;
   constants: FAIMSConstantCollection;
   types: FAIMSTypeCollection;
@@ -84,6 +85,7 @@ export interface ProjectUIViews {
 export interface ProjectUIModel {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
   fields: ProjectUIFields;
   views: ProjectUIViews;
   start_view: string;
@@ -92,6 +94,7 @@ export interface ProjectUIModel {
 export interface EncodedProjectUIModel {
   _id: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
   start_view: string;
@@ -100,12 +103,14 @@ export interface EncodedProjectUIModel {
 export interface ProjectPeople {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
 }
 
 // This is used within the form/ui subsystem, do not use with pouch
 export interface Observation {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
   type: string;
   data: any;
 }
@@ -115,6 +120,7 @@ export interface EncodedObservation {
   _id?: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _revisions?: {start: number; ids: string[]};
+  _deleted?: boolean;
   format_version: number;
   type: string;
   data: any;
