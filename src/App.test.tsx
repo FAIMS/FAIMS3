@@ -2,8 +2,8 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import App from './App';
 
-test('renders form', () => {
+test('renders app', () => {
   render(<App />);
-  const linkElement = screen.getByText(/is the current project/i);
+  const linkElement = screen.getByText(/FAIMS3/i);
   expect(linkElement).toBeInTheDocument();
 });

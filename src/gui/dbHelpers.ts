@@ -41,7 +41,7 @@ export function getUiSpecForProject(active_id: string) {
             fullWidth: true,
             name: 'email-field',
             id: 'email-field',
-            helperText: 'Some helper text for email field',
+            helperText: 'Please provide a valid email address',
             variant: 'outlined',
             required: true,
             InputProps: {
@@ -72,11 +72,11 @@ export function getUiSpecForProject(active_id: string) {
             variant: 'outlined',
             required: true,
             InputProps: {
-              type: 'string',
+              type: 'text', // must be a valid html type
             },
             SelectProps: {},
             InputLabelProps: {
-              label: 'String Field Label',
+              label: 'Favourite Colour',
             },
             FormHelperTextProps: {},
           },
@@ -86,7 +86,33 @@ export function getUiSpecForProject(active_id: string) {
             ['yup.max', 50, 'Too Long!'],
             ['yup.required'],
           ],
-          initialValue: 'hello',
+          initialValue: 'yellow',
+        },
+        'multi-str-field': {
+          'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
+          'component-name': 'TextField',
+          'type-returned': 'faims-core::String', // matches a type in the Project Model
+          'component-parameters': {
+            fullWidth: true,
+            name: 'multi-str-field',
+            id: 'multi-str-field',
+            helperText: 'Textarea help',
+            variant: 'outlined',
+            required: true,
+            multiline: true,
+            InputProps: {
+              type: 'text',
+              rows: 4,
+            },
+            SelectProps: {},
+            InputLabelProps: {
+              label: 'Textarea Field Label',
+            },
+            FormHelperTextProps: {},
+          },
+          validationSchema: [['yup.string'], ['yup.required']],
+          initialValue:
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
         },
         'int-field': {
           'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
@@ -125,7 +151,7 @@ export function getUiSpecForProject(active_id: string) {
             fullWidth: true,
             name: 'select-field',
             id: 'select-field',
-            helperText: 'Choose a currency',
+            helperText: 'Choose a currency from the dropdown',
             variant: 'outlined',
             required: true,
             select: true,
@@ -153,11 +179,14 @@ export function getUiSpecForProject(active_id: string) {
               ],
             },
             InputLabelProps: {
-              label: 'Choose a currency',
+              label: 'Currency',
             },
             FormHelperTextProps: {children: 'Some helper text'},
           },
-          validationSchema: [['yup.string'], ['yup.required']],
+          validationSchema: [
+            ['yup.string'],
+            ['yup.required', 'Currency is a required field'],
+          ],
           initialValue: '',
         },
         'multi-select-field': {
@@ -168,7 +197,7 @@ export function getUiSpecForProject(active_id: string) {
             fullWidth: true,
             name: 'multi-select-field',
             id: 'multi-select-field',
-            helperText: 'Choose multiple currencies',
+            helperText: 'Choose multiple currencies from the dropdown',
             variant: 'outlined',
             required: true,
             select: true,
@@ -197,12 +226,40 @@ export function getUiSpecForProject(active_id: string) {
               ],
             },
             InputLabelProps: {
-              label: 'Choose multiple currencies',
+              label: 'Currencies',
             },
             FormHelperTextProps: {children: 'Some helper text'},
           },
-          validationSchema: [['yup.string'], ['yup.required']],
+          validationSchema: [
+            ['yup.string'],
+            ['yup.required', 'Currencies is a required field'],
+          ],
           initialValue: [],
+        },
+        'checkbox-field': {
+          'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+          'component-name': 'Checkbox',
+          'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+          'component-parameters': {
+            name: 'checkbox-field',
+            id: 'checkbox-field',
+            required: true,
+            type: 'checkbox',
+            // inputProps: {},
+            FormControlLabelProps: {
+              label: 'Terms and Conditions',
+            },
+            FormHelperTextProps: {
+              children: 'Read the terms and conditions carefully.',
+            },
+            // Label: {label: 'Terms and Conditions'},
+          },
+          validationSchema: [
+            ['yup.bool'],
+            ['yup.oneOf', [true], 'You must accept the terms and conditions'],
+            ['yup.required'],
+          ],
+          initialValue: false,
         },
         // 'bool-field': {
         //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
@@ -254,9 +311,11 @@ export function getUiSpecForProject(active_id: string) {
           fields: [
             'email-field',
             'str-field',
+            'multi-str-field',
             'int-field',
             'select-field',
             'multi-select-field',
+            'checkbox-field',
             // 'bool-field',
             // 'date-field',
             // 'time-field',

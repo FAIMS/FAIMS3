@@ -1,11 +1,11 @@
 import React from 'react';
-import {Button, Grid, Box} from '@material-ui/core';
+import {Button, Grid, Box, FormHelperText} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from './dbHelpers';
-import {Formik, Form, Field, FormikProps} from 'formik';
+import {Formik, Form, Field, ErrorMessage} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 
@@ -68,7 +68,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       fieldConfig['component-name']
     );
     const formProps = view.props.formProps;
-    const errors = formProps.errors;
     return (
       <Box mb={3} key={fieldName}>
         <Field
@@ -77,8 +76,10 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
           onChange={formProps.handleChange}
           onBlur={formProps.handleBlur}
           value={formProps.values[fieldName]}
+          // error={
+          //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
+          // }
           // view={view}
-          error={formProps.touched[fieldName] && Boolean(errors[fieldName])}
           {...fieldConfig['component-parameters']}
           {...fieldConfig['component-parameters']['InputProps']}
           {...fieldConfig['component-parameters']['SelectProps']}
@@ -123,7 +124,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         <Formik
           initialValues={this.getInitialValues()}
           validationSchema={this.getValidationSchema}
-          validateOnMount={true}
+          // validateOnMount={true}
           onSubmit={(values, {setSubmitting}) => {
             setTimeout(() => {
               setSubmitting(false);
