@@ -6,6 +6,9 @@ import * as Events from 'events';
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
+const DIRECTORY_TIMEOUT = 1000;
+const LISTINGS_TIMEOUT = 2000;
+const PROJECT_TIMEOUT = 3000;
 
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
@@ -189,7 +192,7 @@ function ensure_synced_db<Content extends {}>(
 
 async function get_default_instance(): Promise<DataModel.NonNullListingsObject> {
   if (default_instance === null) {
-    const possibly_corrupted_instance = await directory_db.get(
+    const possibly_corrupted_instance = await directory_db.local.get(
       DEFAULT_LISTING_ID
     );
     default_instance = {
@@ -408,7 +411,8 @@ interface DirectoryEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       projects: ExistingActiveDoc[],
       people_db: LocalDB<DataModel.PeopleDoc>,
-      projects_db: LocalDB<DataModel.ProjectObject>
+      projects_db: LocalDB<DataModel.ProjectObject>,
+      default_connection: DataModel.ConnectionInfo
     ) => unknown
   ): this;
   on(
@@ -417,10 +421,11 @@ interface DirectoryEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       projects: ExistingActiveDoc[],
       people_db: LocalDB<DataModel.PeopleDoc>,
-      projects_db: LocalDB<DataModel.ProjectObject>
+      projects_db: LocalDB<DataModel.ProjectObject>,
+      default_connection: DataModel.ConnectionInfo
     ) => unknown
   ): this;
-  on(event: 'listing_error', listener: (err: unknown) => unknown): this;
+  on(event: 'listing_error', listener: (listing_id: string, err: unknown) => unknown): this;
   on(
     event: 'directory_local',
     listener: (listings: Set<string>) => unknown
@@ -469,14 +474,16 @@ interface DirectoryEmitter extends EventEmitter {
     listing: DataModel.ListingsObject,
     projects: ExistingActiveDoc[],
     people_db: LocalDB<DataModel.PeopleDoc>,
-    projects_db: LocalDB<DataModel.ProjectObject>
+    projects_db: LocalDB<DataModel.ProjectObject>,
+    default_connection: DataModel.ConnectionInfo
   ): boolean;
   emit(
     event: 'listing_remote',
     listing: DataModel.ListingsObject,
     projects: ExistingActiveDoc[],
     people_db: LocalDB<DataModel.PeopleDoc>,
-    projects_db: LocalDB<DataModel.ProjectObject>
+    projects_db: LocalDB<DataModel.ProjectObject>,
+    default_connection: DataModel.ConnectionInfo
   ): boolean;
   emit(event: 'listing_error', listing_id: string, err: unknown): boolean;
   emit(event: 'directory_local', listings: Set<string>): boolean;
@@ -486,11 +493,13 @@ interface DirectoryEmitter extends EventEmitter {
   emit(
     event: 'metas_complete',
     metas: {
-      [key: string]: [
-        DataModel.ActiveDoc,
-        DataModel.ProjectObject,
-        LocalDB<DataModel.ProjectMetaObject>
-      ];
+      [key: string]:
+        | null
+        | [
+            DataModel.ActiveDoc,
+            DataModel.ProjectObject,
+            LocalDB<DataModel.ProjectMetaObject>
+          ];
     }
   ): boolean;
 }
@@ -520,16 +529,17 @@ function register_completion_detectors() {
 
   // Mapping from listing_id: (boolean) if the listing has had its projects added to known_projects yet
   const listing_statuses = new Map<string, boolean>();
-  // Return true if all listings have their projects added to known_projects yet.
-  // False if not all listings are yet synced (e.g. if directory still syncing)
-  // If this is true, projects_known should be emitting/emitted.
-  const listing_statuses_complete = () =>
-    listings_known && Array.from(listing_statuses.values()).every(v => v);
 
+  // All projects accumulated here
   const known_projects = new Set<string>();
-  const map_accounts_for_all_known_projects = (map_obj: {
-    [key: string]: unknown;
-  }) => Array.from(known_projects.values()).every(v => v in map_obj);
+  const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
+    Array.from(known_projects.values()).every(v => v in map_obj);
+
+  // Emits project_known if all listings have their projects added to known_projects.
+  const emit_if_complete = () =>
+    listings_known && Array.from(listing_statuses.values()).every(v => v)
+      ? initializeEvents.emit('projects_known', known_projects)
+      : undefined;
 
   initializeEvents.on('directory_remote', listings => {
     // Make sure listing_statuses has the key for listing
@@ -537,49 +547,69 @@ function register_completion_detectors() {
     listings.forEach(listing =>
       listing_statuses.set(listing, listing_statuses.get(listing) || false)
     );
-    listings_known = true;
-    // If all listings emitted listing_remote before directory remote finished
-    // Then once the directory is synced,  it is know that everything is known
-    if (listing_statuses_complete()) {
-      initializeEvents.emit('projects_known', known_projects);
+    for (const listing_id of Array.from(listing_statuses.keys())) {
+      if (!listings.has(listing_id)) listing_statuses.delete(listing_id);
     }
+    listings_known = true;
+
+    emit_if_complete();
   });
+  // Wait for the directory to re-sync:
+  initializeEvents.on('directory_local', () => {
+    listings_known = false;
+  });
+
   initializeEvents.on('listing_remote', (listing, active_projects) => {
     active_projects.forEach(active => known_projects.add(active._id));
     listing_statuses.set(listing._id, true);
 
-    // If the directory is already synced, and all other listings are synced
-    // Then this completes the things needed to be able to mark everything as known
-    if (listing_statuses_complete()) {
-      initializeEvents.emit('projects_known', known_projects);
-    }
+    emit_if_complete();
+  });
+  initializeEvents.on('listing_error', listing_id => {
+    // Don't hold up other things waiting for it to not be an error:
+    listing_statuses.set(listing_id, true);
+
+    emit_if_complete();
+  });
+  initializeEvents.on('listing_local', listing => {
+    // Wait for the listing_remote to come through, after a listing is re-synced
+    // TODO: This may mean the listing_statuses setting in directory_remote is unnecessary
+    listing_statuses.set(listing._id, false);
   });
 
   // The following events essentially only trigger (possibly multiple times) once
   // projects_known is true, AND once all project_meta_remotes have been triggered.
   const metas: {
-    [key: string]: [
-      DataModel.ActiveDoc,
-      DataModel.ProjectObject,
-      LocalDB<DataModel.ProjectMetaObject>
-    ];
+    [key: string]:
+      | null
+      | [
+          DataModel.ActiveDoc,
+          DataModel.ProjectObject,
+          LocalDB<DataModel.ProjectMetaObject>
+        ];
   } = {};
 
   initializeEvents.on(
     'project_meta_remote',
     (listing, active, project, meta) => {
       metas[active._id] = [active, project, meta];
-      if (map_accounts_for_all_known_projects(metas)) {
+      if (map_has_all_known_projects(metas)) {
         initializeEvents.emit('metas_complete', metas);
       }
     }
   );
-  initializeEvents.on('projects_known', () => {
-    if (map_accounts_for_all_known_projects(metas)) {
+  initializeEvents.on('project_error', (lsting, active) => {
+    metas[active._id] = null;
+    if (map_has_all_known_projects(metas)) {
       initializeEvents.emit('metas_complete', metas);
     }
   });
-}t 
+  initializeEvents.on('projects_known', () => {
+    if (map_has_all_known_projects(metas)) {
+      initializeEvents.emit('metas_complete', metas);
+    }
+  });
+}
 
 export function initialize_dbs(
   directory_connection_info: DataModel.ConnectionInfo
@@ -638,11 +668,20 @@ async function process_directory(
     info: directory_connection_info,
   };
 
+  let waiting = true;
   const synced_callback = () => {
+    waiting = false;
     initializeEvents.emit('directory_remote', listings);
   };
   directory_connection.on('error', synced_callback);
   directory_connection.on('paused', synced_callback);
+  setTimeout(() => {
+    if (waiting) {
+      // Timeout error when still waiting here
+      console.error('Timed out waiting for', directory_connection);
+      synced_callback();
+    }
+  }, DIRECTORY_TIMEOUT);
 }
 
 function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
@@ -656,6 +695,7 @@ function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
       })
       .catch(err => {
         console.log(
+          err,
           'No local (listings object) for active DB',
           listing_id,
           'yet'
@@ -693,12 +733,12 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     await active_db.find({selector: {listing_id: listing_id}})
   ).docs;
 
-  const [local_people_db] = ensure_local_db(
+  const [, local_people_db] = ensure_local_db(
     'people',
     people_local_id,
     people_dbs
   );
-  const [local_projects_db] = ensure_local_db(
+  const [, local_projects_db] = ensure_local_db(
     'projects',
     projects_db_id,
     projects_dbs
@@ -708,7 +748,8 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     listing_object,
     active_projects,
     local_people_db,
-    local_projects_db
+    local_projects_db,
+    projects_connection
   );
 
   // TODO: Ensure that when the user adds a new active project
@@ -727,19 +768,31 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     // Filters to only projects that are active
     {doc_ids: active_projects.map(v => v.project_id)}
   );
+  if (!projects_is_fresh) {
+    return;
+  }
+
+  let waiting = true;
   const synced_callback = () => {
+    waiting = false;
     initializeEvents.emit(
       'listing_remote',
       listing_object,
       active_projects,
       local_people_db,
-      local_projects_db
+      local_projects_db,
+      projects_connection
     );
   };
-  if (projects_is_fresh) {
-    projects_db.remote.connection.on('paused', synced_callback);
-    projects_db.remote.connection.on('error', synced_callback);
-  }
+  projects_db.remote.connection.on('paused', synced_callback);
+  projects_db.remote.connection.on('error', synced_callback);
+  setTimeout(() => {
+    if (waiting) {
+      // Timeout error when still waiting here
+      console.error('Timed out waiting for ', projects_db.remote);
+      synced_callback();
+    }
+  }, LISTINGS_TIMEOUT);
 }
 
 function process_projects(
@@ -747,23 +800,21 @@ function process_projects(
   active_projects: ExistingActiveDoc[],
   people_db: LocalDB<DataModel.PeopleDoc>,
   projects_db: LocalDB<DataModel.ProjectObject>,
+  default_connection: DataModel.ConnectionInfo,
   allow_nonexistant: boolean
 ) {
   active_projects.forEach(ap => {
     projects_db.local
       .get(ap.project_id)
       .then(project_object => {
-        process_project(
-          listing,
-          ap,
-          projects_db.remote!.info,
-          project_object
-        ).catch(err => {
-          initializeEvents.emit('project_error', listing, ap, err);
-        });
+        process_project(listing, ap, default_connection, project_object).catch(
+          err => {
+            initializeEvents.emit('project_error', listing, ap, err);
+          }
+        );
       })
       .catch(err => {
-        console.log('No local (project object) for active project', ap._id);
+        console.log(err, 'No', ap.project_id, 'in', projects_db.local);
         if (!allow_nonexistant) {
           initializeEvents.emit('project_error', listing, ap, err);
         }
@@ -827,7 +878,9 @@ async function process_project(
   };
 
   if (meta_is_fresh) {
-    meta_db.remote.connection.on('paused', () => {
+    let waiting = true;
+    const synced_callback = () => {
+      waiting = false;
       initializeEvents.emit(
         'project_meta_remote',
         listing,
@@ -835,20 +888,22 @@ async function process_project(
         project_object,
         meta_db
       );
-    });
-    meta_db.remote.connection.on('error', () => {
-      initializeEvents.emit(
-        'project_meta_remote',
-        listing,
-        active_project,
-        project_object,
-        meta_db
-      );
-    });
+    };
+    meta_db.remote.connection.on('paused', synced_callback);
+    meta_db.remote.connection.on('error', synced_callback);
+    setTimeout(() => {
+      if (waiting) {
+        // Timeout error when still waiting here
+        console.error('Timed out waiting for ', meta_db.remote);
+        synced_callback();
+      }
+    }, PROJECT_TIMEOUT);
   }
 
   if (data_is_fresh) {
-    data_db.remote.connection.on('paused', () => {
+    let waiting = true;
+    const synced_callback = () => {
+      waiting = false;
       initializeEvents.emit(
         'project_data_remote',
         listing,
@@ -856,16 +911,16 @@ async function process_project(
         project_object,
         data_db
       );
-    });
-    data_db.remote.connection.on('error', () => {
-      initializeEvents.emit(
-        'project_data_remote',
-        listing,
-        active_project,
-        project_object,
-        data_db
-      );
-    });
+    };
+    data_db.remote.connection.on('paused', synced_callback);
+    data_db.remote.connection.on('error', synced_callback);
+    setTimeout(() => {
+      if (waiting) {
+        // Timeout error when still waiting here
+        console.error('Timed out waiting for ', data_db.remote);
+        synced_callback();
+      }
+    }, PROJECT_TIMEOUT);
   }
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
