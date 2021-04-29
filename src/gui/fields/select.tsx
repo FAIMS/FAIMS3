@@ -10,9 +10,8 @@ interface Props {
 export class Select extends React.Component<TextFieldProps & Props> {
   render() {
     const {options, children, ...textFieldProps} = this.props;
-
     return (
-      <MuiTextField {...fieldToTextField(textFieldProps)}>
+      <MuiTextField {...fieldToTextField(textFieldProps)} select={true}>
         {children}
         {options.map(option => (
           <MenuItem

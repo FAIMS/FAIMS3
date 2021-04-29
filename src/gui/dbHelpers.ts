@@ -155,9 +155,7 @@ export function getUiSpecForProject(active_id: string) {
             variant: 'outlined',
             required: true,
             select: true,
-            InputProps: {
-              type: 'string',
-            },
+            InputProps: {},
             SelectProps: {
               options: [
                 {
@@ -181,7 +179,6 @@ export function getUiSpecForProject(active_id: string) {
             InputLabelProps: {
               label: 'Currency',
             },
-            FormHelperTextProps: {children: 'Some helper text'},
           },
           validationSchema: [
             ['yup.string'],
@@ -201,9 +198,7 @@ export function getUiSpecForProject(active_id: string) {
             variant: 'outlined',
             required: true,
             select: true,
-            InputProps: {
-              type: 'string',
-            },
+            InputProps: {},
             SelectProps: {
               multiple: true,
               options: [
