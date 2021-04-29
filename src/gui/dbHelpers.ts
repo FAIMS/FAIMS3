@@ -156,8 +156,7 @@ export function getUiSpecForProject(active_id: string) {
             required: true,
             select: true,
             InputProps: {},
-            SelectProps: {
-            },
+            SelectProps: {},
             ElementProps: {
               options: [
                 {
