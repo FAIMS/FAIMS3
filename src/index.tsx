@@ -12,28 +12,19 @@ async function initialize() {
   await Sync.populate_test_data();
   console.log('adding directory test data');
 
+  const initialized = new Promise(resolve => {
+    Sync.initializeEvents.once('metas_complete', resolve)
+  });
   Sync.initialize_dbs({
     proto: 'http',
     host: '10.80.11.44',
     port: 5984,
     db_name: 'directory',
   });
-  if (!Sync.is_dbs_created) {
-    await new Promise((resolve, reject) => {
-      Sync.initializeEvents
-        .once('dbs_created', e => {
-          console.log('dbs created');
-          resolve(e);
-        })
-        .once('error', e => {
-          console.log('error occurred');
-          reject(e);
-        });
-    });
-  }
+  await initialized;
   console.log('initialised dbs');
 
-  await setupExampleForms();
+  // await setupExampleForms();
   console.log('setting up form');
 }
 initialize()

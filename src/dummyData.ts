@@ -283,10 +283,6 @@ export async function setupExampleForms() {
     result = await setUiSpecForProject(projname, example_ui_specs[projname]);
     console.log(result);
   }
-  result = await setUiSpecForProject(
-    'default/lake_mungo',
-    example_ui_specs['default/projectA']
-  );
   console.log(result);
   result = await setUiSpecForProject(
     'csiro/csiro-geochemistry',

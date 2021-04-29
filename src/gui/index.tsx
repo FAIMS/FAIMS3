@@ -28,14 +28,10 @@ export class FAIMSContainer extends React.Component<
       projects[active_id] = createdProjects[active_id].project;
     }
 
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    initializeEvents.on(
-      'project_syncing',
-      (listing, project, active, meta, data) => {
+    initializeEvents.on('project_local', (listing, active, project) => {
         projects[active._id] = project;
       }
     );
-    /* eslint-enable @typescript-eslint/no-unused-vars */
   }
 
   componentDidMount() {
