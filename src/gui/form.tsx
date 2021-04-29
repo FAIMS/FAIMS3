@@ -1,11 +1,11 @@
 import React from 'react';
-import {Button, Grid, Box, FormHelperText} from '@material-ui/core';
+import {Button, Grid, Box} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from './dbHelpers';
-import {Formik, Form, Field, ErrorMessage} from 'formik';
+import {Formik, Form, Field} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 

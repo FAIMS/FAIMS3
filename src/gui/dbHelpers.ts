@@ -157,6 +157,8 @@ export function getUiSpecForProject(active_id: string) {
             select: true,
             InputProps: {},
             SelectProps: {
+            },
+            ElementProps: {
               options: [
                 {
                   value: 'USD',
@@ -201,6 +203,12 @@ export function getUiSpecForProject(active_id: string) {
             InputProps: {},
             SelectProps: {
               multiple: true,
+            },
+            InputLabelProps: {
+              label: 'Currencies',
+            },
+            FormHelperTextProps: {children: 'Some helper text'},
+            ElementProps: {
               options: [
                 {
                   value: 'USD',
@@ -220,10 +228,6 @@ export function getUiSpecForProject(active_id: string) {
                 },
               ],
             },
-            InputLabelProps: {
-              label: 'Currencies',
-            },
-            FormHelperTextProps: {children: 'Some helper text'},
           },
           validationSchema: [
             ['yup.string'],
@@ -240,7 +244,6 @@ export function getUiSpecForProject(active_id: string) {
             id: 'checkbox-field',
             required: true,
             type: 'checkbox',
-            // inputProps: {},
             FormControlLabelProps: {
               label: 'Terms and Conditions',
             },
@@ -256,26 +259,45 @@ export function getUiSpecForProject(active_id: string) {
           ],
           initialValue: false,
         },
-        // 'bool-field': {
-        //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
-        //   'component-name': 'Checkbox',
-        //   'type-returned': 'faims-core::Integer', // matches a type in the Project Model
-        //   'component-parameters': {
-        //     fullWidth: true,
-        //     name: project_name + 'bool-field',
-        //     id: project_name + 'bool-field',
-        //     helperText: 'Some helper text for bool field',
-        //     variant: 'outlined',
-        //     InputProps: {
-        //       type: 'checkbox',
-        //     },
-        //     SelectProps: {},
-        //     InputLabelProps: {
-        //       label: 'Bool Field Label',
-        //     },
-        //     FormHelperTextProps: {},
-        //   },
-        // },
+        'radio-group-field': {
+          'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+          'component-name': 'RadioGroup',
+          'type-returned': 'faims-core::String', // matches a type in the Project Model
+          'component-parameters': {
+            name: 'radio-group-field',
+            id: 'radio-group-field',
+            variant: 'outlined',
+            required: true,
+            ElementProps: {
+              options: [
+                {
+                  value: '1',
+                  label: '1',
+                },
+                {
+                  value: '2',
+                  label: '2',
+                },
+                {
+                  value: '3',
+                  label: '3',
+                },
+                {
+                  value: '4',
+                  label: '4',
+                },
+              ],
+            },
+            FormLabelProps: {
+              children: 'Pick a number',
+            },
+            FormHelperTextProps: {
+              children: 'Make sure you choose the right one!',
+            },
+          },
+          // validationSchema: [['yup.number'], ['yup.lessThan', 2]],
+          initialValue: '3',
+        },
         // 'date-field': {
         //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
         //   'component-name': 'TextField',
@@ -311,6 +333,7 @@ export function getUiSpecForProject(active_id: string) {
             'select-field',
             'multi-select-field',
             'checkbox-field',
+            'radio-group-field',
             // 'bool-field',
             // 'date-field',
             // 'time-field',

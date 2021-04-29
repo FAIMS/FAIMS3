@@ -16,24 +16,26 @@ test('renders as formik component', async () => {
       }}
       label={'Currency'}
       select={true}
-      options={[
-        {
-          value: 'USD',
-          label: '$',
-        },
-        {
-          value: 'EUR',
-          label: '€',
-        },
-        {
-          value: 'BTC',
-          label: '฿',
-        },
-        {
-          value: 'JPY',
-          label: '¥',
-        },
-      ]}
+      ElementProps={{
+        options: [
+          {
+            value: 'USD',
+            label: '$',
+          },
+          {
+            value: 'EUR',
+            label: '€',
+          },
+          {
+            value: 'BTC',
+            label: '฿',
+          },
+          {
+            value: 'JPY',
+            label: '¥',
+          },
+        ],
+      }}
       helperText={'Choose a currency from the dropdown'}
     />,
     {
@@ -65,24 +67,26 @@ test('displays error if field is touched and no option has been selected as per 
       }}
       label={'Currency'}
       select={true}
-      options={[
-        {
-          value: 'USD',
-          label: '$',
-        },
-        {
-          value: 'EUR',
-          label: '€',
-        },
-        {
-          value: 'BTC',
-          label: '฿',
-        },
-        {
-          value: 'JPY',
-          label: '¥',
-        },
-      ]}
+      ElementProps={{
+        options: [
+          {
+            value: 'USD',
+            label: '$',
+          },
+          {
+            value: 'EUR',
+            label: '€',
+          },
+          {
+            value: 'BTC',
+            label: '฿',
+          },
+          {
+            value: 'JPY',
+            label: '¥',
+          },
+        ],
+      }}
       helperText={'Choose a currency from the dropdown'}
     />,
     {
