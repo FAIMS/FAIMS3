@@ -13,7 +13,7 @@ async function initialize() {
   console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
-    Sync.initializeEvents.once('metas_complete', resolve)
+    Sync.initializeEvents.once('metas_complete', resolve);
   });
   Sync.initialize_dbs({
     proto: 'http',

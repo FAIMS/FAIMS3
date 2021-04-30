@@ -40,16 +40,11 @@ export const directory_db: LocalDB<DataModel.ListingsObject> = {
 };
 
 class EventEmitter extends Events.EventEmitter {
-  name: string;
-  constructor(name: string, opts?: {captureRejections?: boolean}) {
+  constructor(opts?: {captureRejections?: boolean}) {
     super(opts);
-    this.name = name;
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
-    console.debug(this.name, event, args);
-    return super.emit(event, ...args);
-  }
-  emit_nolog(event: string | symbol, ...args: unknown[]): boolean {
+    console.debug(event, args);
     return super.emit(event, ...args);
   }
 }
@@ -366,7 +361,7 @@ export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
   };
 }
 
-export const initializeEvents: DirectoryEmitter = new EventEmitter('directory');
+export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 interface DirectoryEmitter extends EventEmitter {
   on(
@@ -425,7 +420,10 @@ interface DirectoryEmitter extends EventEmitter {
       default_connection: DataModel.ConnectionInfo
     ) => unknown
   ): this;
-  on(event: 'listing_error', listener: (listing_id: string, err: unknown) => unknown): this;
+  on(
+    event: 'listing_error',
+    listener: (listing_id: string, err: unknown) => unknown
+  ): this;
   on(
     event: 'directory_local',
     listener: (listings: Set<string>) => unknown
@@ -589,25 +587,24 @@ function register_completion_detectors() {
         ];
   } = {};
 
+  const emit_if_metas_complete = () =>
+    map_has_all_known_projects(metas)
+      ? initializeEvents.emit('metas_complete', metas)
+      : undefined;
+
   initializeEvents.on(
     'project_meta_remote',
     (listing, active, project, meta) => {
       metas[active._id] = [active, project, meta];
-      if (map_has_all_known_projects(metas)) {
-        initializeEvents.emit('metas_complete', metas);
-      }
+      emit_if_metas_complete();
     }
   );
   initializeEvents.on('project_error', (lsting, active) => {
     metas[active._id] = null;
-    if (map_has_all_known_projects(metas)) {
-      initializeEvents.emit('metas_complete', metas);
-    }
+    emit_if_metas_complete();
   });
   initializeEvents.on('projects_known', () => {
-    if (map_has_all_known_projects(metas)) {
-      initializeEvents.emit('metas_complete', metas);
-    }
+    emit_if_metas_complete();
   });
 }
 
