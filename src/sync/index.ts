@@ -527,15 +527,17 @@ function register_completion_detectors() {
 
   // Mapping from listing_id: (boolean) if the listing has had its projects added to known_projects yet
   const listing_statuses = new Map<string, boolean>();
+  const listing_statuses_complete = () =>
+    listings_known && Array.from(listing_statuses.values()).every(v => v);
 
   // All projects accumulated here
   const known_projects = new Set<string>();
   const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
-    Array.from(known_projects.values()).every(v => v in map_obj);
+    listing_statuses_complete() && Array.from(known_projects.values()).every(v => v in map_obj);
 
   // Emits project_known if all listings have their projects added to known_projects.
   const emit_if_complete = () =>
-    listings_known && Array.from(listing_statuses.values()).every(v => v)
+    listing_statuses_complete()
       ? initializeEvents.emit('projects_known', known_projects)
       : undefined;
 
@@ -552,10 +554,6 @@ function register_completion_detectors() {
 
     emit_if_complete();
   });
-  // Wait for the directory to re-sync:
-  initializeEvents.on('directory_local', () => {
-    listings_known = false;
-  });
 
   initializeEvents.on('listing_remote', (listing, active_projects) => {
     active_projects.forEach(active => known_projects.add(active._id));
@@ -568,11 +566,6 @@ function register_completion_detectors() {
     listing_statuses.set(listing_id, true);
 
     emit_if_complete();
-  });
-  initializeEvents.on('listing_local', listing => {
-    // Wait for the listing_remote to come through, after a listing is re-synced
-    // TODO: This may mean the listing_statuses setting in directory_remote is unnecessary
-    listing_statuses.set(listing._id, false);
   });
 
   // The following events essentially only trigger (possibly multiple times) once
