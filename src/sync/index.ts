@@ -533,7 +533,8 @@ function register_completion_detectors() {
   // All projects accumulated here
   const known_projects = new Set<string>();
   const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
-    listing_statuses_complete() && Array.from(known_projects.values()).every(v => v in map_obj);
+    listing_statuses_complete() &&
+    Array.from(known_projects.values()).every(v => v in map_obj);
 
   // Emits project_known if all listings have their projects added to known_projects.
   const emit_if_complete = () =>
