@@ -297,7 +297,7 @@ export async function populate_test_data() {
  * This is appended to whenever a project has its
  * meta & data local dbs come into existance.
  *
- * This is essentially accumulating 'project_remote' events.
+ * This is essentially accumulating 'project_paused' events.
  */
 export const createdProjects: {
   [key: string]: {
@@ -312,7 +312,7 @@ export const createdProjects: {
  * This is appended to whneever a listing has its
  * projects_db & people_db come into existance
  *
- * This is essentially accumulating 'listing_remote' events
+ * This is essentially accumulating 'listing_paused' events
  */
 export const createdListings: {
   [key: string]: {
@@ -365,7 +365,7 @@ export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 interface DirectoryEmitter extends EventEmitter {
   on(
-    event: 'project_meta_remote',
+    event: 'project_meta_paused',
     listener: (
       listing: DataModel.ListingsObject,
       active: ExistingActiveDoc,
@@ -374,7 +374,25 @@ interface DirectoryEmitter extends EventEmitter {
     ) => unknown
   ): this;
   on(
-    event: 'project_data_remote',
+    event: 'project_meta_active',
+    listener: (
+      listing: DataModel.ListingsObject,
+      active: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      meta: LocalDB<DataModel.ProjectMetaObject>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_data_active',
+    listener: (
+      listing: DataModel.ListingsObject,
+      active: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      data: LocalDB<DataModel.EncodedObservation>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_data_paused',
     listener: (
       listing: DataModel.ListingsObject,
       active: ExistingActiveDoc,
@@ -411,7 +429,17 @@ interface DirectoryEmitter extends EventEmitter {
     ) => unknown
   ): this;
   on(
-    event: 'listing_remote',
+    event: 'listing_paused',
+    listener: (
+      listing: DataModel.ListingsObject,
+      projects: ExistingActiveDoc[],
+      people_db: LocalDB<DataModel.PeopleDoc>,
+      projects_db: LocalDB<DataModel.ProjectObject>,
+      default_connection: DataModel.ConnectionInfo
+    ) => unknown
+  ): this;
+  on(
+    event: 'listing_active',
     listener: (
       listing: DataModel.ListingsObject,
       projects: ExistingActiveDoc[],
@@ -429,7 +457,11 @@ interface DirectoryEmitter extends EventEmitter {
     listener: (listings: Set<string>) => unknown
   ): this;
   on(
-    event: 'directory_remote',
+    event: 'directory_paused',
+    listener: (listings: Set<string>) => unknown
+  ): this;
+  on(
+    event: 'directory_active',
     listener: (listings: Set<string>) => unknown
   ): this;
   on(event: 'directory_error', listener: (err: unknown) => unknown): this;
@@ -440,14 +472,28 @@ interface DirectoryEmitter extends EventEmitter {
   ): this;
 
   emit(
-    event: 'project_meta_remote',
+    event: 'project_meta_paused',
     listing: DataModel.ListingsObject,
     active: ExistingActiveDoc,
     project: DataModel.ProjectObject,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
-    event: 'project_data_remote',
+    event: 'project_meta_active',
+    listing: DataModel.ListingsObject,
+    active: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    meta: LocalDB<DataModel.ProjectMetaObject>
+  ): boolean;
+  emit(
+    event: 'project_data_paused',
+    listing: DataModel.ListingsObject,
+    active: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    data: LocalDB<DataModel.EncodedObservation>
+  ): boolean;
+  emit(
+    event: 'project_data_active',
     listing: DataModel.ListingsObject,
     active: ExistingActiveDoc,
     project: DataModel.ProjectObject,
@@ -476,7 +522,15 @@ interface DirectoryEmitter extends EventEmitter {
     default_connection: DataModel.ConnectionInfo
   ): boolean;
   emit(
-    event: 'listing_remote',
+    event: 'listing_paused',
+    listing: DataModel.ListingsObject,
+    projects: ExistingActiveDoc[],
+    people_db: LocalDB<DataModel.PeopleDoc>,
+    projects_db: LocalDB<DataModel.ProjectObject>,
+    default_connection: DataModel.ConnectionInfo
+  ): boolean;
+  emit(
+    event: 'listing_active',
     listing: DataModel.ListingsObject,
     projects: ExistingActiveDoc[],
     people_db: LocalDB<DataModel.PeopleDoc>,
@@ -485,7 +539,8 @@ interface DirectoryEmitter extends EventEmitter {
   ): boolean;
   emit(event: 'listing_error', listing_id: string, err: unknown): boolean;
   emit(event: 'directory_local', listings: Set<string>): boolean;
-  emit(event: 'directory_remote', listings: Set<string>): boolean;
+  emit(event: 'directory_paused', listings: Set<string>): boolean;
+  emit(event: 'directory_active', listings: Set<string>): boolean;
   emit(event: 'directory_error', err: unknown): boolean;
   emit(event: 'projects_known', projects: Set<string>): boolean;
   emit(
@@ -511,7 +566,7 @@ interface DirectoryEmitter extends EventEmitter {
  * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
  * all listings have errored/paused), a 'projects_known' event is emitted
  *
- * When all known projects have their project_meta_remote event triggered,
+ * When all known projects have their project_meta_paused event triggered,
  * metas_complete event is triggered with list of all projects.
  *
  * Note: All of these events may emit more than once. Use .once('event_name', ...)
@@ -542,7 +597,7 @@ function register_completion_detectors() {
       ? initializeEvents.emit('projects_known', known_projects)
       : undefined;
 
-  initializeEvents.on('directory_remote', listings => {
+  initializeEvents.on('directory_paused', listings => {
     // Make sure listing_statuses has the key for listing
     // If it's already set to true, don't set it to false
     listings.forEach(listing =>
@@ -555,8 +610,12 @@ function register_completion_detectors() {
 
     emit_if_complete();
   });
+  initializeEvents.on('directory_active', () => {
+    // Wait for all listings to be re-synced before any 'completion events' trigger
+    listings_known = false;
+  });
 
-  initializeEvents.on('listing_remote', (listing, active_projects) => {
+  initializeEvents.on('listing_paused', (listing, active_projects) => {
     active_projects.forEach(active => known_projects.add(active._id));
     listing_statuses.set(listing._id, true);
 
@@ -568,9 +627,13 @@ function register_completion_detectors() {
 
     emit_if_complete();
   });
+  initializeEvents.on('listing_active', listing => {
+    // Wait for listing to sync before everything is known.
+    listing_statuses.set(listing._id, false);
+  });
 
   // The following events essentially only trigger (possibly multiple times) once
-  // projects_known is true, AND once all project_meta_remotes have been triggered.
+  // projects_known is true, AND once all project_meta_pauseds have been triggered.
   const metas: {
     [key: string]:
       | null
@@ -587,7 +650,7 @@ function register_completion_detectors() {
       : undefined;
 
   initializeEvents.on(
-    'project_meta_remote',
+    'project_meta_paused',
     (listing, active, project, meta) => {
       metas[active._id] = [active, project, meta];
       emit_if_metas_complete();
@@ -608,9 +671,9 @@ export function initialize_dbs(
   // Main sync propagation downwards to individual projects:
   initializeEvents
     .on('directory_local', listings => process_listings(listings, true))
-    .on('directory_remote', listings => process_listings(listings, false))
+    .on('directory_paused', listings => process_listings(listings, false))
     .on('listing_local', (...args) => process_projects(...args, true))
-    .on('listing_remote', (...args) => process_projects(...args, false));
+    .on('listing_paused', (...args) => process_projects(...args, false));
 
   register_completion_detectors();
 
@@ -639,12 +702,12 @@ async function process_directory(
   if (directory_db.remote !== null) {
     return; //Already hooked up
   }
-  const directory_remote = ConnectionInfo_create_pouch<DataModel.ListingsObject>(
+  const directory_paused = ConnectionInfo_create_pouch<DataModel.ListingsObject>(
     directory_connection_info
   );
 
   const directory_connection = PouchDB.replicate(
-    directory_remote,
+    directory_paused,
     directory_db.local,
     {
       live: false,
@@ -653,7 +716,7 @@ async function process_directory(
   );
 
   directory_db.remote = {
-    db: directory_remote,
+    db: directory_paused,
     is_sync: false,
     connection: directory_connection,
     info: directory_connection_info,
@@ -662,10 +725,14 @@ async function process_directory(
   let waiting = true;
   const synced_callback = () => {
     waiting = false;
-    initializeEvents.emit('directory_remote', listings);
+    initializeEvents.emit('directory_paused', listings);
   };
   directory_connection.on('error', synced_callback);
   directory_connection.on('paused', synced_callback);
+  directory_connection.on('active', () => {
+    waiting = true;
+    initializeEvents.emit('directory_active', listings);
+  });
   setTimeout(() => {
     if (waiting) {
       // Timeout error when still waiting here
@@ -767,7 +834,7 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   const synced_callback = () => {
     waiting = false;
     initializeEvents.emit(
-      'listing_remote',
+      'listing_paused',
       listing_object,
       active_projects,
       local_people_db,
@@ -777,6 +844,17 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   };
   projects_db.remote.connection.on('paused', synced_callback);
   projects_db.remote.connection.on('error', synced_callback);
+  projects_db.remote.connection.on('active', () => {
+    waiting = true;
+    initializeEvents.emit(
+      'listing_active',
+      listing_object,
+      active_projects,
+      local_people_db,
+      local_projects_db,
+      projects_connection
+    );
+  });
   setTimeout(() => {
     if (waiting) {
       // Timeout error when still waiting here
@@ -873,7 +951,7 @@ async function process_project(
     const synced_callback = () => {
       waiting = false;
       initializeEvents.emit(
-        'project_meta_remote',
+        'project_meta_paused',
         listing,
         active_project,
         project_object,
@@ -882,6 +960,16 @@ async function process_project(
     };
     meta_db.remote.connection.on('paused', synced_callback);
     meta_db.remote.connection.on('error', synced_callback);
+    meta_db.remote.connection.on('active', () => {
+      waiting = true;
+      initializeEvents.emit(
+        'project_meta_active',
+        listing,
+        active_project,
+        project_object,
+        meta_db
+      );
+    });
     setTimeout(() => {
       if (waiting) {
         // Timeout error when still waiting here
@@ -896,7 +984,7 @@ async function process_project(
     const synced_callback = () => {
       waiting = false;
       initializeEvents.emit(
-        'project_data_remote',
+        'project_data_paused',
         listing,
         active_project,
         project_object,
@@ -905,6 +993,16 @@ async function process_project(
     };
     data_db.remote.connection.on('paused', synced_callback);
     data_db.remote.connection.on('error', synced_callback);
+    data_db.remote.connection.on('active', () => {
+      waiting = true;
+      initializeEvents.emit(
+        'project_data_active',
+        listing,
+        active_project,
+        project_object,
+        data_db
+      );
+    });
     setTimeout(() => {
       if (waiting) {
         // Timeout error when still waiting here
