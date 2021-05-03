@@ -41,7 +41,10 @@ function convertFromFormToDB(
   };
 }
 
-function convertFromDBToForm(doc: EncodedObservation): Observation {
+function convertFromDBToForm(doc: EncodedObservation): Observation | null {
+  if (doc.deleted) {
+    return null;
+  }
   return {
     _id: doc._id,
     type: doc.type,
@@ -131,10 +134,25 @@ export async function deleteFAIMSDataForID(
   const datadb = getDataDB(project_name);
   try {
     const doc = await datadb.get(dataid);
-    doc._deleted = true;
+    doc.deleted = true;
     return await datadb.put(doc);
   } catch (err) {
     console.warn(err);
     throw Error('failed to delete data with id');
+  }
+}
+
+export async function undeleteFAIMSDataForID(
+  project_name: string,
+  dataid: string
+) {
+  const datadb = getDataDB(project_name);
+  try {
+    const doc = await datadb.get(dataid);
+    doc.deleted = false;
+    return await datadb.put(doc);
+  } catch (err) {
+    console.warn(err);
+    throw Error('failed to undelete data with id');
   }
 }

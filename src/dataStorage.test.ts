@@ -7,6 +7,7 @@ import {
   lookupFAIMSDataID,
   listFAIMSProjectRevisions,
   deleteFAIMSDataForID,
+  undeleteFAIMSDataForID,
 } from './dataStorage';
 import {equals} from './utils/eqTestSupport';
 
@@ -137,6 +138,15 @@ describe('CRUD for data', () => {
         })
         .then(result => {
           expect(result).toBe(null);
+        })
+        .then(result => {
+          return undeleteFAIMSDataForID(project_name, dataid);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          expect(equals(result, new_doc)).toBe(true);
         });
     }
   );
