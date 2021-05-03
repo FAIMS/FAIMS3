@@ -4,7 +4,6 @@ import './index.css';
 import App from './App';
 //import reportWebVitals from './reportWebVitals';
 import * as Sync from './sync/index';
-import {setupExampleForms} from './dummyData';
 
 // TODO: show react (loading bar?) and Sync the DBs
 // at the same time (Making sure DB calls can handle this)

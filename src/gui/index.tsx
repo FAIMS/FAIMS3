@@ -29,9 +29,8 @@ export class FAIMSContainer extends React.Component<
     }
 
     initializeEvents.on('project_local', (listing, active, project) => {
-        projects[active._id] = project;
-      }
-    );
+      projects[active._id] = project;
+    });
   }
 
   componentDidMount() {
