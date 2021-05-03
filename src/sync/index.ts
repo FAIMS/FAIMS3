@@ -28,12 +28,12 @@ const PROJECT_TIMEOUT = 3000;
 
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
+  is_sync: boolean;
   remote: null | LocalDBRemote<Content>;
 }
 
 export interface LocalDBRemote<Content extends {}> {
   db: PouchDB.Database<Content>;
-  is_sync: boolean;
   connection:
     | PouchDB.Replication.Replication<Content>
     | PouchDB.Replication.Sync<Content>;
@@ -67,6 +67,7 @@ if (RUNNING_UNDER_TEST) {
 export const directory_db: LocalDB<DataModel.ListingsObject> = {
   local: new PouchDB('directory', local_pouch_options),
   remote: null,
+  is_sync: true,
 };
 
 class EventEmitter extends Events.EventEmitter {
@@ -168,6 +169,7 @@ function ConnectionInfo_create_pouch<Content extends {}>(
 function ensure_local_db<Content extends {}>(
   prefix: string,
   local_db_id: string,
+  start_sync: boolean,
   global_dbs: LocalDBList<Content>
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
@@ -180,6 +182,7 @@ function ensure_local_db<Content extends {}>(
           prefix + POUCH_SEPARATOR + local_db_id,
           local_pouch_options
         ),
+        is_sync: start_sync,
         remote: null,
       }),
     ];
@@ -254,9 +257,9 @@ function ensure_synced_db<Content extends {}>(
     true,
     (global_dbs[local_db_id] = {
       local: global_dbs[local_db_id].local,
+      is_sync: false,
       remote: {
         db: remote,
-        is_sync: false,
         connection: connection,
         info: connection_info,
       },
@@ -300,6 +303,34 @@ export const createdListings: {
     projects: ExistingActiveDoc[];
   };
 } = {};
+
+export function setSyncingProject(active_id: string, syncing: boolean) {
+  if (data_dbs[active_id] === undefined) {
+    throw 'Projects not initialized yet';
+  }
+
+  if (data_dbs[active_id].remote === null) {
+    throw 'Projects not yet syncing';
+  }
+
+  if (syncing === data_dbs[active_id].is_sync) {
+    return; //Nothing to do, already same value
+  }
+  data_dbs[active_id].is_sync = syncing;
+
+  if (data_dbs[active_id].remote === null) {
+    return;
+  }
+
+  if (syncing) {
+    data_dbs[active_id].remote!.connection = PouchDB.replicate(
+      data_dbs[active_id].remote!.db,
+      data_dbs[active_id].local
+    );
+  } else {
+    data_dbs[active_id].remote!.connection.cancel();
+  }
+}
 
 export function getDataDB(
   active_id: string
@@ -943,7 +974,6 @@ async function process_directory(
 
   directory_db.remote = {
     db: directory_paused,
-    is_sync: false,
     connection: directory_connection,
     info: directory_connection_info,
   };
@@ -1024,11 +1054,13 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   const [, local_people_db] = ensure_local_db(
     'people',
     people_local_id,
+    false,
     people_dbs
   );
   const [, local_projects_db] = ensure_local_db(
     'projects',
     projects_db_id,
+    false,
     projects_dbs
   );
 
@@ -1165,9 +1197,15 @@ async function process_project(
   const [, meta_db_local] = ensure_local_db(
     'metadata',
     active_id,
+    active_project.is_sync,
     metadata_dbs
   );
-  const [, data_db_local] = ensure_local_db('data', active_id, data_dbs);
+  const [, data_db_local] = ensure_local_db(
+    'data',
+    active_id,
+    active_project.is_sync,
+    data_dbs
+  );
 
   createdProjects[active_id] = {
     project: project_object,
