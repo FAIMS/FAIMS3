@@ -74,10 +74,16 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     fieldName: string
   ) {
     // console.log('getComponentFromFieldConfig');
-    const Component = getComponentByName(
-      fieldConfig['component-namespace'],
-      fieldConfig['component-name']
-    );
+    const namespace = fieldConfig['component-namespace'];
+    const name = fieldConfig['component-name'];
+    let Component;
+    try {
+      Component = getComponentByName(namespace, name);
+    } catch (err) {
+      console.debug(err);
+      console.warn(`Failed to load component ${namespace}::${name}`);
+      return undefined;
+    }
     const formProps = view.props.formProps;
     const errors = formProps.errors;
     return (

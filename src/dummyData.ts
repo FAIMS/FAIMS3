@@ -4,6 +4,33 @@ import {ProjectUIModel} from './datamodel';
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   'default/projectA': {
     fields: {
+      'bad-field': {
+        'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
+        'component-name': 'NotAComponent',
+        'type-returned': 'faims-core::Email', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'email-field',
+          id: 'email-field',
+          helperText: 'Some helper text for email field',
+          variant: 'outlined',
+          required: true,
+          InputProps: {
+            type: 'email',
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Email Address',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [
+          ['yup.string'],
+          ['yup.email', 'Enter a valid email'],
+          ['yup.required'],
+        ],
+        initialValue: '',
+      },
       'email-field': {
         'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
         'component-name': 'TextField',
@@ -223,6 +250,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     views: {
       'start-view': {
         fields: [
+          'bad-field',
           'email-field',
           'str-field',
           'int-field',
