@@ -665,7 +665,47 @@ function register_completion_detectors() {
   });
 }
 
-export function initialize_dbs(
+/**
+ * To prevent initialize() being called multiple times
+ * This is false when the app starts,
+ * True when initialize() has finished, and
+ * the initialize promise when it's still in the process of initializing
+ */
+let initialize_state: boolean | Promise<void> = false;
+
+export function initialize() {
+  if (initialize_state === true) {
+    return Promise.resolve(); //Already initialized
+  } else if (initialize_state === false) {
+    // Real initialization
+    return (initialize_state = initialize_nocheck());
+  } else {
+    // Already initializing
+    return initialize_state;
+  }
+}
+
+async function initialize_nocheck() {
+  await populate_test_data();
+  console.log('adding directory test data');
+
+  const initialized = new Promise(resolve => {
+    initializeEvents.once('metas_complete', resolve);
+  });
+  initialize_dbs({
+    proto: 'http',
+    host: '10.80.11.44',
+    port: 5984,
+    db_name: 'directory',
+  });
+  await initialized;
+  console.log('initialised dbs');
+
+  // await setupExampleForms();
+  console.log('setting up form');
+}
+
+function initialize_dbs(
   directory_connection_info: DataModel.ConnectionInfo
 ): DirectoryEmitter {
   // Main sync propagation downwards to individual projects:

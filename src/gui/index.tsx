@@ -3,6 +3,7 @@ import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
 import {initializeEvents, createdProjects} from '../sync/index';
 import {ProjectsList} from '../datamodel';
+import {initialize} from '../sync';
 
 type FAIMSContainerProps = {
   // project: string;
@@ -10,6 +11,8 @@ type FAIMSContainerProps = {
 
 type FAIMSContainerState = {
   projects: ProjectsList;
+  global_error: null | {};
+  mounted: boolean;
 };
 
 export class FAIMSContainer extends React.Component<
@@ -22,19 +25,29 @@ export class FAIMSContainer extends React.Component<
 
     this.state = {
       projects: projects,
+      global_error: null,
+      mounted: false,
     };
 
     for (const active_id in createdProjects) {
       projects[active_id] = createdProjects[active_id].project;
     }
 
-    initializeEvents.on('project_local', (listing, active, project) => {
+    initializeEvents.on('project_meta_paused', (listing, active, project) => {
       projects[active._id] = project;
+      if (this.state.mounted) {
+        this.setState(this.state);
+      }
     });
+
+    initialize().catch(err =>
+      this.setState({global_error: err, ...this.state})
+    );
   }
 
   componentDidMount() {
     // get view components, render form
+    this.setState({...this.state, mounted: true});
   }
 
   render() {
