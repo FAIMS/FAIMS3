@@ -119,6 +119,18 @@ export interface EncodedObservation {
   data: any;
 }
 
+// TODO: This needs tightening up
+export interface DesignDocument {
+  _id: string;
+  [x: string]: any;
+}
+
+/*
+ * Elements of a Project's dataDB can be any one of these,
+ * discriminated by the prefix of the object's id
+ */
+export type ProjectDataObject = EncodedObservation | DesignDocument;
+
 /*
  * Elements of a Project's metadataDB can be any one of these,
  * discriminated by the prefix of the object's id

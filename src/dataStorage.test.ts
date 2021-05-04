@@ -5,6 +5,7 @@ import {
   generateFAIMSDataID,
   upsertFAIMSData,
   lookupFAIMSDataID,
+  listFAIMSProjectRevisions,
 } from './dataStorage';
 import {equals} from './utils/eqTestSupport';
 
@@ -67,6 +68,76 @@ describe('roundtrip reading and writing to db', () => {
 
       return upsertFAIMSData(project_name, doc)
         .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return listFAIMSProjectRevisions(project_name);
+        })
+        .then(result => {
+          console.log(result);
           return lookupFAIMSDataID(project_name, dataid);
         })
         .then(result => {

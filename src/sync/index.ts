@@ -75,7 +75,7 @@ export const people_dbs: LocalDBList<DataModel.PeopleDoc> = {};
  * Contain in these databases (indexed by the active_db id's)
  * is project data.
  */
-export const data_dbs: LocalDBList<DataModel.EncodedObservation> = {};
+export const data_dbs: LocalDBList<DataModel.ProjectDataObject> = {};
 
 /**
  * Synced from the project metadatabase for each active project,
@@ -390,7 +390,7 @@ export const createdProjects: {
     project: DataModel.ProjectObject;
     active: ExistingActiveDoc;
     meta: LocalDB<DataModel.ProjectMetaObject>;
-    data: LocalDB<DataModel.EncodedObservation>;
+    data: LocalDB<DataModel.ProjectDataObject>;
   };
 } = {};
 
@@ -409,7 +409,7 @@ export const createdListings: {
 
 export function getDataDB(
   active_id: string
-): PouchDB.Database<DataModel.EncodedObservation> {
+): PouchDB.Database<DataModel.ProjectDataObject> {
   if (data_dbs[active_id] !== undefined) {
     return data_dbs[active_id].local;
   } else {
@@ -465,7 +465,7 @@ interface DirectoryEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -475,7 +475,7 @@ interface DirectoryEmitter extends EventEmitter {
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -484,7 +484,7 @@ interface DirectoryEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -494,7 +494,7 @@ interface DirectoryEmitter extends EventEmitter {
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -565,7 +565,7 @@ interface DirectoryEmitter extends EventEmitter {
     listing: DataModel.ListingsObject,
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_complete',
@@ -573,14 +573,14 @@ interface DirectoryEmitter extends EventEmitter {
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_created',
     listing: DataModel.ListingsObject,
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_error',
@@ -750,7 +750,7 @@ interface ListingEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -760,7 +760,7 @@ interface ListingEmitter extends EventEmitter {
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -769,7 +769,7 @@ interface ListingEmitter extends EventEmitter {
       listing: DataModel.ListingsObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -779,7 +779,7 @@ interface ListingEmitter extends EventEmitter {
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -836,7 +836,7 @@ interface ListingEmitter extends EventEmitter {
     listing: DataModel.ListingsObject,
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_complete',
@@ -844,14 +844,14 @@ interface ListingEmitter extends EventEmitter {
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_created',
     listing: DataModel.ListingsObject,
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_syncing',
@@ -859,7 +859,7 @@ interface ListingEmitter extends EventEmitter {
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_error',
@@ -1025,7 +1025,7 @@ interface ProjectEmitter extends EventEmitter {
     listener: (
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -1034,7 +1034,7 @@ interface ProjectEmitter extends EventEmitter {
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -1042,7 +1042,7 @@ interface ProjectEmitter extends EventEmitter {
     listener: (
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -1051,7 +1051,7 @@ interface ProjectEmitter extends EventEmitter {
       project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
+      data: LocalDB<DataModel.ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -1069,27 +1069,27 @@ interface ProjectEmitter extends EventEmitter {
     event: 'data_complete',
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'complete',
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'created',
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(
     event: 'syncing',
     project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
     meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
+    data: LocalDB<DataModel.ProjectDataObject>
   ): boolean;
   emit(event: 'error', active: ExistingActiveDoc, err: unknown): boolean;
 }
