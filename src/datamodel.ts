@@ -114,6 +114,7 @@ export interface Observation {
 export interface EncodedObservation {
   _id?: string;
   _rev?: string; // optional as we may want to include the raw json in places
+  _revisions?: {start: number; ids: string[]};
   format_version: number;
   type: string;
   data: any;

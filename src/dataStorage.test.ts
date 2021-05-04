@@ -5,6 +5,7 @@ import {
   generateFAIMSDataID,
   upsertFAIMSData,
   lookupFAIMSDataID,
+  listFAIMSProjectRevisions,
 } from './dataStorage';
 import {equals} from './utils/eqTestSupport';
 
@@ -72,6 +73,41 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           delete result['_rev'];
           expect(equals(result, doc)).toBe(true);
+        });
+    }
+  );
+});
+
+describe('listing revisions', () => {
+  testProp(
+    'listing revisions',
+    [fc.string(), fc.string(), fc.string(), fc.jsonObject()],
+    async (project_name, namespace, name, data) => {
+      fc.pre(!namespace.includes(':'));
+      fc.pre(!name.includes(':'));
+      fc.pre(namespace.trim() !== '');
+      fc.pre(name.trim() !== '');
+      await cleanDataDBS();
+      fc.pre(projdbs !== {});
+
+      const fulltype = namespace + '::' + name;
+
+      const dataid = generateFAIMSDataID();
+
+      const doc: Observation = {
+        _id: dataid,
+        type: fulltype,
+        data: data,
+      };
+
+      return upsertFAIMSData(project_name, doc)
+        .then(result => {
+          return listFAIMSProjectRevisions(project_name);
+        })
+        .then(result => {
+          expect(result[dataid]).not.toBe(undefined);
+          expect(result[dataid]).toHaveLength(1);
+          expect(result[dataid][0]).toEqual(expect.stringMatching(/^1-.*/));
         });
     }
   );
