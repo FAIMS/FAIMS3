@@ -27,7 +27,6 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [
           ['yup.string'],
           ['yup.email', 'Enter a valid email'],
-          ['yup.required'],
         ],
         initialValue: '',
       },

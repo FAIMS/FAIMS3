@@ -8,23 +8,30 @@ import {getUiSpecForProject} from '../uiSpecification';
 import {Formik, Form, Field} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
-import {upsertFAIMSData} from '../dataStorage';
+import {upsertFAIMSData, generateFAIMSDataID} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
 
 type FormProps = {
   activeProjectID: string;
   uiSpec: ProjectUIModel;
+  obsid?: string;
 };
 
 type FormState = {
   currentView: string | null;
+  obsid: string;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
   constructor(props: FormProps) {
     super(props);
+    let obsid = props.obsid;
+    if (obsid === undefined) {
+      obsid = generateFAIMSDataID();
+    }
     this.state = {
       currentView: props.uiSpec['start_view'],
+      obsid: obsid,
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
@@ -46,8 +53,13 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   save(values: any) {
-    console.log(values);
-    upsertFAIMSData(this.props.activeProjectID, values);
+    const doc = {
+      _id: this.state.obsid,
+      type: '??:??',
+      data: values,
+    };
+    console.log(doc);
+    upsertFAIMSData(this.props.activeProjectID, doc);
   }
 
   updateView(viewName: string) {
@@ -166,6 +178,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
               setTimeout(() => {
                 setSubmitting(false);
                 console.log(JSON.stringify(values, null, 2));
+                this.save(values);
               }, 500);
             }}
           >
