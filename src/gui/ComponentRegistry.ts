@@ -5,6 +5,7 @@ import TextField from '@material-ui/core/TextField';
 import {TextField as FormikTextField} from 'formik-material-ui';
 import {Select as FormikSelect} from 'formik-material-ui';
 import {Select as FAIMSSelect} from './fields/select';
+import {ActionButton} from './fields/ActionButton';
 
 const componentRegistry: {
   [namespace: string]: {[name: string]: React.Component};
@@ -55,3 +56,4 @@ registerComponent('core-material-ui', 'TextField', TextField);
 registerComponent('formik-material-ui', 'TextField', FormikTextField);
 registerComponent('formik-material-ui', 'Select', FormikSelect);
 registerComponent('faims-custom', 'Select', FAIMSSelect);
+registerComponent('faims-custom', 'ActionButton', ActionButton);

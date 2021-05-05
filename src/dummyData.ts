@@ -31,6 +31,29 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         ],
         initialValue: '',
       },
+      'action-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'ActionButton',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'action-field',
+          id: 'action-field',
+          helperText: 'Enter a string between 2 and 50 characters long',
+          variant: 'outlined',
+          required: false,
+          InputProps: {
+            type: 'string',
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'String Field Label',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string']],
+        initialValue: 'hello',
+      },
       'email-field': {
         'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
         'component-name': 'TextField',
@@ -251,6 +274,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
       'start-view': {
         fields: [
           'bad-field',
+          'action-field',
           'email-field',
           'str-field',
           'int-field',
