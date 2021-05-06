@@ -44,7 +44,7 @@ export class FAIMSContainer extends React.Component<
   render() {
     return (
       <React.Fragment>
-        <AppNavBar />
+        <AppNavBar projectList={this.state.projects} />
         <ProjectNavTabs projectList={this.state.projects} />
       </React.Fragment>
     );
