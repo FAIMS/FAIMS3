@@ -330,6 +330,11 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
   },
 };
 
-export async function setupExampleForm(projname: string, meta_db: LocalDB<ProjectMetaObject>) {
-  console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
+export async function setupExampleForm(
+  projname: string,
+  meta_db: LocalDB<ProjectMetaObject>
+) {
+  console.log(
+    await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
+  );
 }

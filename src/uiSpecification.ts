@@ -1,4 +1,5 @@
-import {getProjectDB, LocalDB} from './sync/index';
+import {getProjectDB} from './sync/index';
+import PouchDB from 'pouchdb';
 import {ProjectMetaObject} from './datamodel';
 import {
   UI_SPECIFICATION_NAME,
@@ -78,7 +79,7 @@ export function syncUISpecs(
 }
 
 export async function setUiSpecForProject(
-  projdb: LocalDB<ProjectMetaObject>,
+  projdb: PouchDB.Database<ProjectMetaObject>,
   uiInfo: ProjectUIModel
 ) {
   const encUIInfo: EncodedProjectUIModel = {
@@ -88,14 +89,14 @@ export async function setUiSpecForProject(
     start_view: uiInfo.start_view,
   };
   try {
-    const existing_encUIInfo = await projdb.local.get(encUIInfo._id);
+    const existing_encUIInfo = await projdb.get(encUIInfo._id);
     encUIInfo._rev = existing_encUIInfo._rev;
   } catch (err) {
     // Probably no existing UI info
   }
 
   try {
-    return await projdb.local.put(encUIInfo);
+    return await projdb.put(encUIInfo);
   } catch (err) {
     console.warn(err);
     throw Error('failed to set ui specification');
