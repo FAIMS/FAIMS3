@@ -1,0 +1,9 @@
+[submodule "faims_2_data/oral-history-doumanis"]
+	path = faims_2_data/oral-history-doumanis
+	url = https://github.com/FAIMS/oral-history-doumanis.git
+[submodule "faims_2_data/CSIRO-Geochemistry-Sampling"]
+	path = faims_2_data/CSIRO-Geochemistry-Sampling
+	url = https://github.com/FAIMS/CSIRO-Geochemistry-Sampling.git
+[submodule "faims_2_data/Lake-Mungo"]
+	path = faims_2_data/Lake-Mungo
+	url = https://github.com/FAIMS/Lake-Mungo.git
