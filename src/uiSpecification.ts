@@ -1,4 +1,6 @@
 import {getProjectDB} from './sync/index';
+import PouchDB from 'pouchdb';
+import {ProjectMetaObject} from './datamodel';
 import {
   UI_SPECIFICATION_NAME,
   ProjectUIModel,
@@ -77,10 +79,9 @@ export function syncUISpecs(
 }
 
 export async function setUiSpecForProject(
-  project_name: string,
+  projdb: PouchDB.Database<ProjectMetaObject>,
   uiInfo: ProjectUIModel
 ) {
-  const projdb = getProjectDB(project_name);
   const encUIInfo: EncodedProjectUIModel = {
     _id: UI_SPECIFICATION_NAME,
     fields: uiInfo.fields,

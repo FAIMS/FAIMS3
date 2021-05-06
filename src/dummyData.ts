@@ -1,8 +1,9 @@
 import {setUiSpecForProject} from './uiSpecification';
-import {ProjectUIModel} from './datamodel';
+import {ProjectUIModel, ProjectMetaObject} from './datamodel';
+import {LocalDB} from './sync';
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  'default/projectA': {
+  'default/lake_mungo': {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -354,16 +355,11 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
   },
 };
 
-export async function setupExampleForms() {
-  let result;
-  for (const projname in example_ui_specs) {
-    result = await setUiSpecForProject(projname, example_ui_specs[projname]);
-    console.log(result);
-  }
-  console.log(result);
-  result = await setUiSpecForProject(
-    'csiro/csiro-geochemistry',
-    example_ui_specs['default/projectB']
+export async function setupExampleForm(
+  projname: string,
+  meta_db: LocalDB<ProjectMetaObject>
+) {
+  console.log(
+    await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
   );
-  console.log(result);
 }
