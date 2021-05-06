@@ -147,6 +147,8 @@ test('displays error if field is touched and checkbox is false, if validation sc
   // The validation message should be shown and the label should still be present
   await findByText('Terms and Conditions');
   // check for Mui-error in classList
-  const errorText = await findByText('You must accept the terms and conditions');
+  const errorText = await findByText(
+    'You must accept the terms and conditions'
+  );
   expect(errorText).toHaveClass('Mui-error');
 });
