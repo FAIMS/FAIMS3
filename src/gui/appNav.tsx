@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Typography,
-  Button,
-  AppBar,
-  Toolbar,
-  IconButton,
-} from '@material-ui/core';
+import {Typography, AppBar, Toolbar, IconButton} from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import {
   createStyles,
@@ -25,7 +19,6 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import SettingsIcon from '@material-ui/icons/Settings';
 import MessageIcon from '@material-ui/icons/Message';
-import MailIcon from '@material-ui/icons/Mail';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
@@ -188,7 +181,7 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
             </div>
             <Divider />
             <List>
-              {topMenuItems.map((item, index) => (
+              {topMenuItems.map(item => (
                 <ListItem button key={item.title}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
@@ -197,7 +190,7 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
             </List>
             <Divider />
             <List>
-              {bottomMenuItems.map((item, index) => (
+              {bottomMenuItems.map(item => (
                 <ListItem button key={item.title}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
