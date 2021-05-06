@@ -1,5 +1,5 @@
 import {setUiSpecForProject} from './uiSpecification';
-import {ProjectUIModel, ProjectMetaObject} from './datamodel';
+import {ProjectUIModel, ProjectMetaObject, ProjectObject} from './datamodel';
 import {LocalDB} from './sync';
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
@@ -329,6 +329,61 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     start_view: 'start-view',
   },
 };
+
+const example_listings: {[listing_id: string]: ProjectObject[]} = {
+  default: [
+    {
+      name: 'Lake Mungo Archaeological Survey - 2018',
+      data_db: {
+        proto: 'http',
+        host: '10.80.11.44',
+        port: 5984,
+        lan: true,
+        db_name: 'lake_mungo',
+      },
+      description: 'Lake Mungo Archaeological Survey - 2018',
+      _id: 'lake_mungo',
+    },
+    {
+      name: "Example Project 'A'",
+      metadata_db: {
+        proto: 'http',
+        host: '10.80.11.44',
+        port: 5984,
+        lan: true,
+        db_name: 'metadata-projectb',
+      },
+      description: "Example Project 'A'",
+      _id: 'projectB',
+    },
+  ],
+};
+
+export async function setupExampleListing(
+  listing_id: string,
+  projects_db: LocalDB<ProjectObject>
+) {
+  const db = projects_db.local;
+
+  if (!(listing_id in example_listings)) {
+    return;
+  }
+
+  // For every project in the example_listings, insert into the projects db
+  for (const project of example_listings[listing_id]) {
+    let current_rev: {_rev?: undefined | string};
+    try {
+      current_rev = {_rev: (await db.get(project._id))._rev};
+    } catch (err) {
+      if (err.reason === 'missing') {
+        current_rev = {};
+      } else {
+        throw err;
+      }
+    }
+    await db.put({...project, ...current_rev});
+  }
+}
 
 export async function setupExampleForm(
   projname: string,

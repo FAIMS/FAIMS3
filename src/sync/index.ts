@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
-import {setupExampleForm} from '../dummyData';
+import {setupExampleForm, setupExampleListing} from '../dummyData';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
@@ -874,14 +874,27 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   let waiting = true;
   const synced_callback = () => {
     waiting = false;
-    initializeEvents.emit(
-      'listing_paused',
-      listing_object,
-      active_projects,
-      local_people_db,
-      local_projects_db,
-      projects_connection
-    );
+    if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+      initializeEvents.emit(
+        'listing_paused',
+        listing_object,
+        active_projects,
+        local_people_db,
+        local_projects_db,
+        projects_connection
+      );
+    } else {
+      setupExampleListing(listing_object._id, local_projects_db).then(() => {
+        initializeEvents.emit(
+          'listing_paused',
+          listing_object,
+          active_projects,
+          local_people_db,
+          local_projects_db,
+          projects_connection
+        );
+      });
+    }
   };
   projects_db.remote.connection.on('paused', synced_callback);
   projects_db.remote.connection.on('error', synced_callback);
