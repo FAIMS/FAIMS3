@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
-import { setupExampleForm } from '../dummyData';
+import {setupExampleForm} from '../dummyData';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
@@ -1008,7 +1008,7 @@ async function process_project(
             project_object,
             meta_db
           );
-        })
+        });
       }
     };
     meta_db.remote.connection.on('paused', synced_callback);
