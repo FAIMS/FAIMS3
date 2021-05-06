@@ -3,6 +3,7 @@ import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
 import {initializeEvents, createdProjects} from '../sync/index';
 import {ProjectsList} from '../datamodel';
+import {initialize} from '../sync';
 
 type FAIMSContainerProps = {
   // project: string;
@@ -10,6 +11,7 @@ type FAIMSContainerProps = {
 
 type FAIMSContainerState = {
   projects: ProjectsList;
+  global_error: null | {};
 };
 
 export class FAIMSContainer extends React.Component<
@@ -22,24 +24,22 @@ export class FAIMSContainer extends React.Component<
 
     this.state = {
       projects: projects,
+      global_error: null,
     };
 
     for (const active_id in createdProjects) {
       projects[active_id] = createdProjects[active_id].project;
     }
-
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    initializeEvents.on(
-      'project_syncing',
-      (listing, project, active, meta, data) => {
-        projects[active._id] = project;
-      }
-    );
-    /* eslint-enable @typescript-eslint/no-unused-vars */
   }
 
   componentDidMount() {
     // get view components, render form
+    initializeEvents.on('project_meta_paused', (listing, active, project) => {
+      this.state.projects[active._id] = project;
+      this.setState({projects: this.state.projects});
+    });
+
+    initialize().catch(err => this.setState({global_error: err}));
   }
 
   render() {

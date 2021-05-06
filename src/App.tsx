@@ -1,7 +1,6 @@
 import React from 'react';
 import './App.css';
 import {FAIMSContainer} from './gui';
-import * as Sync from './sync/index';
 
 import {MuiThemeProvider, createMuiTheme} from '@material-ui/core/styles';
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@material-ui/core';
@@ -25,14 +24,6 @@ const theme = createMuiTheme({
 });
 
 function App() {
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  const [listings, setListings] = React.useState('');
-  /* eslint-enable @typescript-eslint/no-unused-vars */
-
-  Sync.initializeEvents.on('complete', (...args) => {
-    setListings(JSON.stringify(args));
-  });
-
   return (
     <MuiThemeProvider theme={theme}>
       <FAIMSContainer />

@@ -6,6 +6,9 @@ import * as Events from 'events';
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
+const DIRECTORY_TIMEOUT = 1000;
+const LISTINGS_TIMEOUT = 2000;
+const PROJECT_TIMEOUT = 3000;
 
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
@@ -31,19 +34,17 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsO
 /**
  * Directory: All (public, anyways) Faims instances
  */
-export const directory_db = new PouchDB<DataModel.ListingsObject>('directory');
+export const directory_db: LocalDB<DataModel.ListingsObject> = {
+  local: new PouchDB('directory'),
+  remote: null,
+};
 
 class EventEmitter extends Events.EventEmitter {
-  name: string;
-  constructor(name: string, opts?: {captureRejections?: boolean}) {
+  constructor(opts?: {captureRejections?: boolean}) {
     super(opts);
-    this.name = name;
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
-    console.debug(this.name, event, args);
-    return super.emit(event, ...args);
-  }
-  emit_nolog(event: string | symbol, ...args: unknown[]): boolean {
+    console.debug(event, args);
     return super.emit(event, ...args);
   }
 }
@@ -84,19 +85,6 @@ export const data_dbs: LocalDBList<DataModel.EncodedObservation> = {};
  */
 export const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
 
-export let is_dbs_created = false;
-export let is_metas_created = false;
-/**
- * Keyed by active_id, this specifies which of the active
- * projects have their data synced currently (or are offline)
- */
-export const data_db_created: {[key: string]: boolean} = {};
-/**
- * Keyed by active_id, this specifies which of the active
- * projects have their metadata synced currently (or are offline)
- */
-export const meta_db_created: {[key: string]: boolean} = {};
-
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
  * @param connection_info Network address/database info to use to initialize the connection
@@ -120,20 +108,23 @@ function ConnectionInfo_create_pouch<Content extends {}>(
  * @param prefix Name to use to run new PouchDB(prefix + '/' + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
  * @param global_dbs projects_db or people_db
- * @returns The local DB
+ * @returns Flag if newly created =true, already existing=false & The local DB
  */
 function ensure_local_db<Content extends {}>(
   prefix: string,
   local_db_id: string,
   global_dbs: LocalDBList<Content>
-): LocalDB<Content> {
+): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
-    return global_dbs[local_db_id];
+    return [false, global_dbs[local_db_id]];
   } else {
-    return (global_dbs[local_db_id] = {
-      local: new PouchDB(prefix + '/' + local_db_id),
-      remote: null,
-    });
+    return [
+      true,
+      (global_dbs[local_db_id] = {
+        local: new PouchDB(prefix + '/' + local_db_id),
+        remote: null,
+      }),
+    ];
   }
 }
 
@@ -141,24 +132,27 @@ function ensure_local_db<Content extends {}>(
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
  * @param global_dbs projects_db or people_db
  * @param connection_info Info to use to connect to remote
- * @returns The local DB
+ * @returns Flag if newly created =true, already existing=false & The local DB & remote
  */
 function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: DataModel.ConnectionInfo,
   global_dbs: LocalDBList<Content>,
   options?: PouchDB.Replication.ReplicateOptions
-): LocalDB<Content> & {remote: LocalDBRemote<Content>} {
+): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
   // Already connected/connecting
   if (global_dbs[local_db_id].remote !== null) {
-    return {
-      ...global_dbs[local_db_id],
-      remote: global_dbs[local_db_id].remote!,
-    };
+    return [
+      false,
+      {
+        ...global_dbs[local_db_id],
+        remote: global_dbs[local_db_id].remote!,
+      },
+    ];
   }
   const local = global_dbs[local_db_id].local;
 
@@ -177,20 +171,23 @@ function ensure_synced_db<Content extends {}>(
     }
   );
 
-  return (global_dbs[local_db_id] = {
-    local: global_dbs[local_db_id].local,
-    remote: {
-      db: remote,
-      is_sync: false,
-      connection: connection,
-      info: connection_info,
-    },
-  });
+  return [
+    true,
+    (global_dbs[local_db_id] = {
+      local: global_dbs[local_db_id].local,
+      remote: {
+        db: remote,
+        is_sync: false,
+        connection: connection,
+        info: connection_info,
+      },
+    }),
+  ];
 }
 
 async function get_default_instance(): Promise<DataModel.NonNullListingsObject> {
   if (default_instance === null) {
-    const possibly_corrupted_instance = await directory_db.get(
+    const possibly_corrupted_instance = await directory_db.local.get(
       DEFAULT_LISTING_ID
     );
     default_instance = {
@@ -296,94 +293,11 @@ export async function populate_test_data() {
   }
 }
 
-// class ContextualEventEmitfunction<
-//   Args extends unknown[],
-//   Context extends unknown[]
-// > extends EventEmitter {
-//   emit(event: string | Symbol, ...with_context: [...Context, ...Args]): boolean;
-
-//   contextualizeEvent(
-//     contextless_name: string | Symbol,
-//     event_from: EventEmitter & {on(string, ...args: unknown[]): EventEmitter},
-//     new_name: string | Symbol,
-//     ...context: Context
-//   ): this {
-//     event_from.on(contextless_name, (...orig_args: Args) => {
-//       this.emit(new_name, ...context, ...orig_args);
-//     });
-//     return this;
-//   }
-// }
-
-function contextualizeEvents(
-  name: string,
-  emit_to: EventEmitter,
-  mappings: [string, string][],
-  ...context: unknown[]
-): EventEmitter {
-  const event_from = new EventEmitter(name);
-
-  mappings.forEach(([new_name, contextless_name]) =>
-    event_from.on(contextless_name, (...orig_args: unknown[]) => {
-      // Emit new_name with the new arguments THEN the old arguments
-      emit_to.emit_nolog(new_name, ...context, ...orig_args);
-    })
-  );
-
-  return event_from;
-}
-
-/**
- * When you have a lot of EventEmitters, and you want to trigger another event to run
- * when they have all each triggered an event, use this. For each individual EventEmitter,
- * it must have a corresponding string 'id'. After all emitters have triggered, the named event,
- * the primary emit_to emitter has its emit_as[0] event emitted.
- * The triggering_amount_of_identifiers is the count of the number of indiviudual EventEmitters.
- *
- * Currently used to trigger a 'listing_complete' when all projects in said listing
- * have triggered their 'project_complete' event
- *
- * WARNING: If triggering_amount_of_identifers == 0, then events are emitted IMMEDIATELY,
- * So be sure to order the creation of propagateWhenAllEmitted properly.
- * (This can be relaxed if this func is modified to use process.nextTick to emit, but
- * this isn't necessary for current uses.)
- *
- * @param triggering_amount_of_identifiers Amount of unique identifires for which an event must be triggered with to cause the main event to be emitted
- * @param emit_to Where events are emitted to after the required number of unique id's are accumulated
- * @param emit_as Event name and event arguments emitted to emit_to
- * @returns '*_one' function that you use on a 'contextualizedEventEmitter' to register it as one of the events that accumulates an id.
- */
-function propagateWhenAllEmitted(
-  triggering_amount_of_identifiers: number,
-  emit_to: EventEmitter,
-  ...emit_as: [string, ...unknown[]]
-): (identifier: string, event_from: EventEmitter, event_name: string) => void {
-  if (triggering_amount_of_identifiers === 0) {
-    // The event should be triggered immediately
-    // The returned function most likely will never be called
-    emit_to.emit(...emit_as);
-  }
-
-  // All identifiers for which the event has triggered
-  const marked = new Set<string>();
-
-  const mark_one = (id: string) => {
-    marked.add(id);
-    if (marked.size === triggering_amount_of_identifiers) {
-      emit_to.emit(...emit_as);
-    }
-  };
-
-  return (identifier: string, event_from: EventEmitter, event_name: string) => {
-    event_from.once(event_name, () => mark_one(identifier));
-  };
-}
-
 /**
  * This is appended to whenever a project has its
  * meta & data local dbs come into existance.
  *
- * This is essentially accumulating 'project_syncing' events.
+ * This is essentially accumulating 'project_paused' events.
  */
 export const createdProjects: {
   [key: string]: {
@@ -398,7 +312,7 @@ export const createdProjects: {
  * This is appended to whneever a listing has its
  * projects_db & people_db come into existance
  *
- * This is essentially accumulating 'listing_syncing' events
+ * This is essentially accumulating 'listing_paused' events
  */
 export const createdListings: {
   [key: string]: {
@@ -447,52 +361,51 @@ export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
   };
 }
 
-export const initializeEvents: DirectoryEmitter = new EventEmitter('directory');
+export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 interface DirectoryEmitter extends EventEmitter {
   on(
-    event: 'project_meta_complete',
+    event: 'project_meta_paused',
     listener: (
       listing: DataModel.ListingsObject,
-      project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
       meta: LocalDB<DataModel.ProjectMetaObject>
     ) => unknown
   ): this;
   on(
-    event: 'project_data_complete',
+    event: 'project_meta_active',
     listener: (
       listing: DataModel.ListingsObject,
-      project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
+      meta: LocalDB<DataModel.ProjectMetaObject>
+    ) => unknown
+  ): this;
+  on(
+    event: 'project_data_active',
+    listener: (
+      listing: DataModel.ListingsObject,
+      active: ExistingActiveDoc,
+      project: DataModel.ProjectObject,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
   on(
-    event: 'project_complete',
+    event: 'project_data_paused',
     listener: (
       listing: DataModel.ListingsObject,
-      project: DataModel.ProjectObject,
       active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
+      project: DataModel.ProjectObject,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
   ): this;
   on(
-    event: 'project_created',
+    event: 'project_local',
     listener: (
       listing: DataModel.ListingsObject,
       active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'project_syncing',
-    listener: (
-      listing: DataModel.ListingsObject,
       project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
       meta: LocalDB<DataModel.ProjectMetaObject>,
       data: LocalDB<DataModel.EncodedObservation>
     ) => unknown
@@ -506,79 +419,91 @@ interface DirectoryEmitter extends EventEmitter {
     ) => unknown
   ): this;
   on(
-    event: 'listing_complete',
+    event: 'listing_local',
     listener: (
       listing: DataModel.ListingsObject,
-      active_projects: ExistingActiveDoc[]
+      projects: ExistingActiveDoc[],
+      people_db: LocalDB<DataModel.PeopleDoc>,
+      projects_db: LocalDB<DataModel.ProjectObject>,
+      default_connection: DataModel.ConnectionInfo
     ) => unknown
   ): this;
   on(
-    event: 'listing_created',
-    listener: (listing: DataModel.ListingsObject) => unknown
-  ): this;
-  on(
-    event: 'listing_syncing',
+    event: 'listing_paused',
     listener: (
       listing: DataModel.ListingsObject,
-      projects: ExistingActiveDoc[]
+      projects: ExistingActiveDoc[],
+      people_db: LocalDB<DataModel.PeopleDoc>,
+      projects_db: LocalDB<DataModel.ProjectObject>,
+      default_connection: DataModel.ConnectionInfo
     ) => unknown
   ): this;
   on(
-    event: 'listing_dbs_created',
+    event: 'listing_active',
     listener: (
       listing: DataModel.ListingsObject,
-      active_projects: ExistingActiveDoc[]
+      projects: ExistingActiveDoc[],
+      people_db: LocalDB<DataModel.PeopleDoc>,
+      projects_db: LocalDB<DataModel.ProjectObject>,
+      default_connection: DataModel.ConnectionInfo
     ) => unknown
   ): this;
   on(
-    event: 'listing_metas_created',
-    listener: (
-      listing: DataModel.ListingsObject,
-      active_projects: ExistingActiveDoc[]
-    ) => unknown
-  ): this;
-  on(event: 'listing_error', listener: (err: unknown) => unknown): this;
-  on(
-    event: 'complete',
-    listener: (listings: ExistingListings[]) => unknown
-  ): this;
-  on(event: 'created', listener: () => unknown): this;
-  on(
-    event: 'dbs_created',
-    listener: (listings: ExistingListings[]) => unknown
+    event: 'listing_error',
+    listener: (listing_id: string, err: unknown) => unknown
   ): this;
   on(
-    event: 'metas_created',
-    listener: (listings: ExistingListings[]) => unknown
+    event: 'directory_local',
+    listener: (listings: Set<string>) => unknown
   ): this;
-  on(event: 'error', listener: (err: unknown) => unknown): this;
+  on(
+    event: 'directory_paused',
+    listener: (listings: Set<string>) => unknown
+  ): this;
+  on(
+    event: 'directory_active',
+    listener: (listings: Set<string>) => unknown
+  ): this;
+  on(event: 'directory_error', listener: (err: unknown) => unknown): this;
+
+  on(
+    event: 'projects_known',
+    listener: (projects: Set<string>) => unknown
+  ): this;
 
   emit(
-    event: 'project_meta_complete',
+    event: 'project_meta_paused',
     listing: DataModel.ListingsObject,
-    project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
     meta: LocalDB<DataModel.ProjectMetaObject>
   ): boolean;
   emit(
-    event: 'project_data_complete',
+    event: 'project_meta_active',
     listing: DataModel.ListingsObject,
-    project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
+    meta: LocalDB<DataModel.ProjectMetaObject>
+  ): boolean;
+  emit(
+    event: 'project_data_paused',
+    listing: DataModel.ListingsObject,
+    active: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
-    event: 'project_complete',
+    event: 'project_data_active',
     listing: DataModel.ListingsObject,
-    project: DataModel.ProjectObject,
     active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>,
+    project: DataModel.ProjectObject,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
   emit(
-    event: 'project_created',
+    event: 'project_local',
     listing: DataModel.ListingsObject,
     active: ExistingActiveDoc,
+    project: DataModel.ProjectObject,
     meta: LocalDB<DataModel.ProjectMetaObject>,
     data: LocalDB<DataModel.EncodedObservation>
   ): boolean;
@@ -589,47 +514,213 @@ interface DirectoryEmitter extends EventEmitter {
     err: unknown
   ): boolean;
   emit(
-    event: 'listing_complete',
+    event: 'listing_local',
     listing: DataModel.ListingsObject,
-    active_projects: ExistingActiveDoc[]
-  ): boolean;
-  emit(event: 'listing_created', listing: DataModel.ListingsObject): boolean;
-  emit(
-    event: 'listing_syncing',
-    listing: DataModel.ListingsObject,
-    projects: ExistingActiveDoc[]
+    projects: ExistingActiveDoc[],
+    people_db: LocalDB<DataModel.PeopleDoc>,
+    projects_db: LocalDB<DataModel.ProjectObject>,
+    default_connection: DataModel.ConnectionInfo
   ): boolean;
   emit(
-    event: 'listing_dbs_created',
+    event: 'listing_paused',
     listing: DataModel.ListingsObject,
-    active_projects: ExistingActiveDoc[]
+    projects: ExistingActiveDoc[],
+    people_db: LocalDB<DataModel.PeopleDoc>,
+    projects_db: LocalDB<DataModel.ProjectObject>,
+    default_connection: DataModel.ConnectionInfo
   ): boolean;
   emit(
-    event: 'listing_metas_created',
+    event: 'listing_active',
     listing: DataModel.ListingsObject,
-    active_projects: ExistingActiveDoc[]
+    projects: ExistingActiveDoc[],
+    people_db: LocalDB<DataModel.PeopleDoc>,
+    projects_db: LocalDB<DataModel.ProjectObject>,
+    default_connection: DataModel.ConnectionInfo
   ): boolean;
-  emit(event: 'listing_error', err: unknown): boolean;
-  emit(event: 'complete', listings: ExistingListings[]): boolean;
-  emit(event: 'syncing'): boolean;
-  emit(event: 'dbs_created', listings: ExistingListings[]): boolean;
-  emit(event: 'metas_created', listings: ExistingListings[]): boolean;
-  emit(event: 'error', err: unknown): boolean;
+  emit(event: 'listing_error', listing_id: string, err: unknown): boolean;
+  emit(event: 'directory_local', listings: Set<string>): boolean;
+  emit(event: 'directory_paused', listings: Set<string>): boolean;
+  emit(event: 'directory_active', listings: Set<string>): boolean;
+  emit(event: 'directory_error', err: unknown): boolean;
+  emit(event: 'projects_known', projects: Set<string>): boolean;
+  emit(
+    event: 'metas_complete',
+    metas: {
+      [key: string]:
+        | null
+        | [
+            DataModel.ActiveDoc,
+            DataModel.ProjectObject,
+            LocalDB<DataModel.ProjectMetaObject>
+          ];
+    }
+  ): boolean;
 }
 
-export function initialize_dbs(
-  directory_connection: DataModel.ConnectionInfo
+/**
+ * Adds event handlers to initializeEvents to:
+ * Enable 'Propagation' of completion of all known projects meta & other databases.
+ * Completion, here, means that the meta database has errored/paused syncing.
+ *
+ * Resulting from this funciton, initializeEvents adds the following behaviour:
+ * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
+ * all listings have errored/paused), a 'projects_known' event is emitted
+ *
+ * When all known projects have their project_meta_paused event triggered,
+ * metas_complete event is triggered with list of all projects.
+ *
+ * Note: All of these events may emit more than once. Use .once('event_name', ...)
+ * to only listen for the first trigger.
+ */
+function register_completion_detectors() {
+  // This is more complicated, as we have to first ensure that it's in a reasonable state to say
+  // that everything is known & created, before waiting for project meta downloads.
+  // (So that we don't accidentally trigger things if local DBs are empty but waiting)
+
+  // Directory has errored/paused: (so that listings_statuses will not have any more keys)
+  let listings_known = false;
+
+  // Mapping from listing_id: (boolean) if the listing has had its projects added to known_projects yet
+  const listing_statuses = new Map<string, boolean>();
+  const listing_statuses_complete = () =>
+    listings_known && Array.from(listing_statuses.values()).every(v => v);
+
+  // All projects accumulated here
+  const known_projects = new Set<string>();
+  const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
+    listing_statuses_complete() &&
+    Array.from(known_projects.values()).every(v => v in map_obj);
+
+  // Emits project_known if all listings have their projects added to known_projects.
+  const emit_if_complete = () =>
+    listing_statuses_complete()
+      ? initializeEvents.emit('projects_known', known_projects)
+      : undefined;
+
+  initializeEvents.on('directory_paused', listings => {
+    // Make sure listing_statuses has the key for listing
+    // If it's already set to true, don't set it to false
+    listings.forEach(listing =>
+      listing_statuses.set(listing, listing_statuses.get(listing) || false)
+    );
+    for (const listing_id of Array.from(listing_statuses.keys())) {
+      if (!listings.has(listing_id)) listing_statuses.delete(listing_id);
+    }
+    listings_known = true;
+
+    emit_if_complete();
+  });
+  initializeEvents.on('directory_active', () => {
+    // Wait for all listings to be re-synced before any 'completion events' trigger
+    listings_known = false;
+  });
+
+  initializeEvents.on('listing_paused', (listing, active_projects) => {
+    active_projects.forEach(active => known_projects.add(active._id));
+    listing_statuses.set(listing._id, true);
+
+    emit_if_complete();
+  });
+  initializeEvents.on('listing_error', listing_id => {
+    // Don't hold up other things waiting for it to not be an error:
+    listing_statuses.set(listing_id, true);
+
+    emit_if_complete();
+  });
+  initializeEvents.on('listing_active', listing => {
+    // Wait for listing to sync before everything is known.
+    listing_statuses.set(listing._id, false);
+  });
+
+  // The following events essentially only trigger (possibly multiple times) once
+  // projects_known is true, AND once all project_meta_pauseds have been triggered.
+  const metas: {
+    [key: string]:
+      | null
+      | [
+          DataModel.ActiveDoc,
+          DataModel.ProjectObject,
+          LocalDB<DataModel.ProjectMetaObject>
+        ];
+  } = {};
+
+  const emit_if_metas_complete = () =>
+    map_has_all_known_projects(metas)
+      ? initializeEvents.emit('metas_complete', metas)
+      : undefined;
+
+  initializeEvents.on(
+    'project_meta_paused',
+    (listing, active, project, meta) => {
+      metas[active._id] = [active, project, meta];
+      emit_if_metas_complete();
+    }
+  );
+  initializeEvents.on('project_error', (lsting, active) => {
+    metas[active._id] = null;
+    emit_if_metas_complete();
+  });
+  initializeEvents.on('projects_known', () => {
+    emit_if_metas_complete();
+  });
+}
+
+/**
+ * To prevent initialize() being called multiple times
+ * This is false when the app starts,
+ * True when initialize() has finished, and
+ * the initialize promise when it's still in the process of initializing
+ */
+let initialize_state: boolean | Promise<void> = false;
+
+export function initialize() {
+  if (initialize_state === true) {
+    return Promise.resolve(); //Already initialized
+  } else if (initialize_state === false) {
+    // Real initialization
+    return (initialize_state = initialize_nocheck());
+  } else {
+    // Already initializing
+    return initialize_state;
+  }
+}
+
+async function initialize_nocheck() {
+  await populate_test_data();
+  console.log('adding directory test data');
+
+  const initialized = new Promise(resolve => {
+    initializeEvents.once('metas_complete', resolve);
+  });
+  initialize_dbs({
+    proto: 'http',
+    host: '10.80.11.44',
+    port: 5984,
+    db_name: 'directory',
+  });
+  await initialized;
+  console.log('initialised dbs');
+
+  // await setupExampleForms();
+  console.log('setting up form');
+}
+
+function initialize_dbs(
+  directory_connection_info: DataModel.ConnectionInfo
 ): DirectoryEmitter {
-  console.log('SYNCHRONIZE START');
+  // Main sync propagation downwards to individual projects:
   initializeEvents
-    .once('dbs_created', () => {
-      is_dbs_created = true;
-    })
-    .once('metas_created', () => {
-      is_metas_created = true;
-    });
-  process_directory(directory_connection).catch(err =>
-    initializeEvents.emit('error', err)
+    .on('directory_local', listings => process_listings(listings, true))
+    .on('directory_paused', listings => process_listings(listings, false))
+    .on('listing_local', (...args) => process_projects(...args, true))
+    .on('listing_paused', (...args) => process_projects(...args, false));
+
+  register_completion_detectors();
+
+  // It all starts here, once the events are all registered
+  console.log('SYNCHRONIZE START');
+  process_directory(directory_connection_info).catch(err =>
+    initializeEvents.emit('directory_error', err)
   );
   return initializeEvents;
 }
@@ -637,287 +728,127 @@ export function initialize_dbs(
 async function process_directory(
   directory_connection_info: DataModel.ConnectionInfo
 ) {
-  const emitter = initializeEvents;
+  const listings = await active_db
+    .allDocs({include_docs: true})
+    .then(all_docs =>
+      all_docs.rows.reduce(
+        (listing, row) => listing.add(row.doc!.listing_id),
+        new Set<string>()
+      )
+    );
 
-  const directory_remote = ConnectionInfo_create_pouch<DataModel.ListingsObject>(
+  initializeEvents.emit('directory_local', listings);
+
+  if (directory_db.remote !== null) {
+    return; //Already hooked up
+  }
+  const directory_paused = ConnectionInfo_create_pouch<DataModel.ListingsObject>(
     directory_connection_info
   );
 
   const directory_connection = PouchDB.replicate(
-    directory_remote,
-    directory_db,
+    directory_paused,
+    directory_db.local,
     {
       live: false,
       retry: false,
     }
   );
 
-  const synced_callback = () => {
-    directory_db.allDocs({include_docs: true}).then(all_listings =>
-      process_listings(
-        emitter,
-        all_listings.rows
-          .map(d => d.doc!)
-          .filter(d => !d._id.startsWith('_design/'))
-      )
-    );
+  directory_db.remote = {
+    db: directory_paused,
+    is_sync: false,
+    connection: directory_connection,
+    info: directory_connection_info,
   };
 
-  directory_connection.on('paused', synced_callback);
+  let waiting = true;
+  const synced_callback = () => {
+    waiting = false;
+    initializeEvents.emit('directory_paused', listings);
+  };
   directory_connection.on('error', synced_callback);
-  synced_callback();
-  emitter.emit('syncing');
-}
-
-function process_listings(
-  emitter: DirectoryEmitter,
-  listing_objects: ExistingListings[]
-) {
-  // This is the order they should be propagated in
-  // (Should there be 0 listing_objects, they are emitted immediately)
-  const one_created = propagateWhenAllEmitted(
-    listing_objects.length,
-    emitter,
-    'dbs_created',
-    listing_objects
-  );
-  const one_meta = propagateWhenAllEmitted(
-    listing_objects.length,
-    emitter,
-    'metas_created',
-    listing_objects
-  );
-  const one_completed = propagateWhenAllEmitted(
-    listing_objects.length,
-    emitter,
-    'complete',
-    listing_objects
-  );
-
-  listing_objects.forEach(el => {
-    const contextualizingEmitter: ListingEmitter = contextualizeEvents(
-      'listing_' + el._id,
-      emitter,
-      [
-        ['project_complete', 'project_complete'],
-        ['project_created', 'project_created'],
-        ['project_syncing', 'project_syncing'],
-        ['project_data_complete', 'project_data_complete'],
-        ['project_meta_complete', 'project_meta_complete'],
-        ['project_error', 'project_error'],
-
-        ['listing_complete', 'complete'],
-        ['listing_dbs_created', 'dbs_created'],
-        ['listing_metas_created', 'metas_created'],
-        ['listing_created', 'created'],
-        ['listing_syncing', 'syncing'],
-        ['listing_error', 'error'],
-      ]
-    );
-
-    // Only once the listing has dbs_created all its own projects
-    // this is different that process_projects,
-    // on(listing_dbs_created) instead of _created
-
-    one_created(el._id, contextualizingEmitter, 'dbs_created');
-    one_created(el._id, contextualizingEmitter, 'error');
-
-    one_meta(el._id, contextualizingEmitter, 'metas_created');
-    one_meta(el._id, contextualizingEmitter, 'error');
-
-    one_completed(el._id, contextualizingEmitter, 'complete');
-
-    process_listing(contextualizingEmitter, el).catch(err =>
-      contextualizingEmitter.emit('error', err)
-    );
+  directory_connection.on('paused', synced_callback);
+  directory_connection.on('active', () => {
+    waiting = true;
+    initializeEvents.emit('directory_active', listings);
   });
-  return emitter;
+  setTimeout(() => {
+    if (waiting) {
+      // Timeout error when still waiting here
+      console.error('Timed out waiting for', directory_connection);
+      synced_callback();
+    }
+  }, DIRECTORY_TIMEOUT);
 }
 
-interface ListingEmitter extends EventEmitter {
-  on(
-    event: 'project_meta_complete',
-    listener: (
-      listing: DataModel.ListingsObject,
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>
-    ) => unknown
-  ): this;
-  on(
-    event: 'project_data_complete',
-    listener: (
-      listing: DataModel.ListingsObject,
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'project_complete',
-    listener: (
-      listing: DataModel.ListingsObject,
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'project_created',
-    listener: (
-      listing: DataModel.ListingsObject,
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'project_syncing',
-    listener: (
-      listing: DataModel.ListingsObject,
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'project_error',
-    listener: (
-      listing: DataModel.ListingsObject,
-      active: ExistingActiveDoc,
-      err: unknown
-    ) => unknown
-  ): this;
-  on(
-    event: 'complete',
-    listener: (
-      listing: DataModel.ListingsObject,
-      active_projects: ExistingActiveDoc[]
-    ) => unknown
-  ): this;
-  on(
-    event: 'created',
-    listener: (listing: DataModel.ListingsObject) => unknown
-  ): this;
-  on(
-    event: 'syncing',
-    listener: (
-      listing: DataModel.ListingsObject,
-      projects: ExistingActiveDoc[]
-    ) => unknown
-  ): this;
-  on(
-    event: 'dbs_created',
-    listener: (
-      listing: DataModel.ListingsObject,
-      active_projects: ExistingActiveDoc[]
-    ) => unknown
-  ): this;
-  on(
-    event: 'metas_created',
-    listener: (
-      listing: DataModel.ListingsObject,
-      active_projects: ExistingActiveDoc[]
-    ) => unknown
-  ): this;
-  on(event: 'error', listener: (err: unknown) => unknown): this;
-
-  emit(
-    event: 'project_meta_complete',
-    listing: DataModel.ListingsObject,
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>
-  ): boolean;
-  emit(
-    event: 'project_data_complete',
-    listing: DataModel.ListingsObject,
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(
-    event: 'project_complete',
-    listing: DataModel.ListingsObject,
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(
-    event: 'project_created',
-    listing: DataModel.ListingsObject,
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(
-    event: 'project_syncing',
-    listing: DataModel.ListingsObject,
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(
-    event: 'project_error',
-    listing: DataModel.ListingsObject,
-    active: ExistingActiveDoc,
-    err: unknown
-  ): boolean;
-  emit(
-    event: 'complete',
-    listing: DataModel.ListingsObject,
-    active_projects: ExistingActiveDoc[]
-  ): boolean;
-  emit(event: 'created', listing: DataModel.ListingsObject): boolean;
-  emit(
-    event: 'syncing',
-    listing: DataModel.ListingsObject,
-    projects: ExistingActiveDoc[]
-  ): boolean;
-  emit(
-    event: 'dbs_created',
-    listing: DataModel.ListingsObject,
-    active_projects: ExistingActiveDoc[]
-  ): boolean;
-  emit(
-    event: 'metas_created',
-    listing: DataModel.ListingsObject,
-    active_projects: ExistingActiveDoc[]
-  ): boolean;
-  emit(event: 'error', err: unknown): boolean;
+function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
+  listings.forEach(listing_id => {
+    directory_db.local
+      .get(listing_id)
+      .then(listing_object => {
+        process_listing(listing_object).catch(err => {
+          initializeEvents.emit('listing_error', listing_id, err);
+        });
+      })
+      .catch(err => {
+        console.log(
+          err,
+          'No local (listings object) for active DB',
+          listing_id,
+          'yet'
+        );
+        if (!allow_nonexistant) {
+          console.error(
+            'directory_synced emitted, but listing ',
+            listing_id,
+            'is missing'
+          );
+          initializeEvents.emit('listing_error', listing_id, err);
+        }
+      });
+  });
 }
 
-async function process_listing(
-  emitter: ListingEmitter,
-  listing_object: ExistingListings
-) {
-  // Connect to people db and projects db for this listing db
+async function process_listing(listing_object: DataModel.ListingsObject) {
+  const listing_id = listing_object._id;
 
   const projects_db_id = listing_object['projects_db']
-    ? listing_object._id
+    ? listing_id
     : DEFAULT_LISTING_ID;
   const projects_connection =
     listing_object['projects_db'] ||
     (await get_default_instance())['projects_db'];
 
   const people_local_id = listing_object['people_db']
-    ? listing_object._id
+    ? listing_id
     : DEFAULT_LISTING_ID;
   const people_connection =
     listing_object['people_db'] || (await get_default_instance())['people_db'];
 
-  ensure_local_db('people', people_local_id, people_dbs);
-  ensure_local_db('projects', projects_db_id, projects_dbs);
-  emitter.emit('created', listing_object);
-
   // Only sync active projects:
   const active_projects = (
-    await active_db.find({selector: {listing_id: listing_object._id}})
+    await active_db.find({selector: {listing_id: listing_id}})
   ).docs;
+
+  const [, local_people_db] = ensure_local_db(
+    'people',
+    people_local_id,
+    people_dbs
+  );
+  const [, local_projects_db] = ensure_local_db(
+    'projects',
+    projects_db_id,
+    projects_dbs
+  );
+  initializeEvents.emit(
+    'listing_local',
+    listing_object,
+    active_projects,
+    local_people_db,
+    local_projects_db,
+    projects_connection
+  );
 
   // TODO: Ensure that when the user adds a new active project
   // that these filters are updated.
@@ -928,287 +859,197 @@ async function process_listing(
     // Filters to only projects that are active
     {doc_ids: active_projects.map(v => v.project_id)}
   );
-
-  const projects_db = ensure_synced_db(
+  const [projects_is_fresh, projects_db] = ensure_synced_db(
     projects_db_id,
     projects_connection,
     projects_dbs,
     // Filters to only projects that are active
     {doc_ids: active_projects.map(v => v.project_id)}
   );
+  if (!projects_is_fresh) {
+    return;
+  }
 
-  emitter.emit('syncing', listing_object, active_projects);
-
+  let waiting = true;
   const synced_callback = () => {
-    process_projects(emitter, listing_object, active_projects);
+    waiting = false;
+    initializeEvents.emit(
+      'listing_paused',
+      listing_object,
+      active_projects,
+      local_people_db,
+      local_projects_db,
+      projects_connection
+    );
   };
   projects_db.remote.connection.on('paused', synced_callback);
   projects_db.remote.connection.on('error', synced_callback);
-  projects_db.remote.connection.on('error', err =>
-    console.log(listing_object._id, err)
-  );
-  synced_callback();
+  projects_db.remote.connection.on('active', () => {
+    waiting = true;
+    initializeEvents.emit(
+      'listing_active',
+      listing_object,
+      active_projects,
+      local_people_db,
+      local_projects_db,
+      projects_connection
+    );
+  });
+  setTimeout(() => {
+    if (waiting) {
+      // Timeout error when still waiting here
+      console.error('Timed out waiting for ', projects_db.remote);
+      synced_callback();
+    }
+  }, LISTINGS_TIMEOUT);
 }
 
 function process_projects(
-  emitter: ListingEmitter,
   listing: DataModel.ListingsObject,
-  active_projects: ExistingActiveDoc[]
+  active_projects: ExistingActiveDoc[],
+  people_db: LocalDB<DataModel.PeopleDoc>,
+  projects_db: LocalDB<DataModel.ProjectObject>,
+  default_connection: DataModel.ConnectionInfo,
+  allow_nonexistant: boolean
 ) {
-  // This is the order they should be propagated in
-  // (Should there be 0 listing_objects, they are emitted immediately)
-  const one_created = propagateWhenAllEmitted(
-    active_projects.length,
-    emitter,
-    'dbs_created',
-    listing,
-    active_projects
-  );
-  const one_meta = propagateWhenAllEmitted(
-    active_projects.length,
-    emitter,
-    'metas_created',
-    listing,
-    active_projects
-  );
-  const one_completed = propagateWhenAllEmitted(
-    active_projects.length,
-    emitter,
-    'complete',
-    listing,
-    active_projects
-  );
-
   active_projects.forEach(ap => {
-    const contextualizingEmitter: ProjectEmitter = contextualizeEvents(
-      'project_' + ap._id,
-      emitter,
-      [
-        ['project_complete', 'complete'],
-        ['project_created', 'created'],
-        ['project_syncing', 'syncing'],
-        ['project_data_complete', 'data_complete'],
-        ['project_meta_complete', 'meta_complete'],
-        ['project_error', 'error'],
-      ],
-      listing
-    );
-
-    // Only once the listing has dbs_created all its own projects
-    // this is different that process_projects,
-    // on(listing_dbs_created) instead of _created
-    one_created(ap._id, contextualizingEmitter, 'syncing');
-    one_created(ap._id, contextualizingEmitter, 'error');
-
-    one_meta(ap._id, contextualizingEmitter, 'meta_complete');
-    one_meta(ap._id, contextualizingEmitter, 'error');
-
-    one_completed(ap._id, contextualizingEmitter, 'complete');
-
-    process_project(contextualizingEmitter, ap).catch(err => {
-      contextualizingEmitter.emit('error', ap, err);
-    });
+    projects_db.local
+      .get(ap.project_id)
+      .then(project_object => {
+        process_project(listing, ap, default_connection, project_object).catch(
+          err => {
+            initializeEvents.emit('project_error', listing, ap, err);
+          }
+        );
+      })
+      .catch(err => {
+        console.log(err, 'No', ap.project_id, 'in', projects_db.local);
+        if (!allow_nonexistant) {
+          initializeEvents.emit('project_error', listing, ap, err);
+        }
+      });
   });
 }
 
-interface ProjectEmitter extends EventEmitter {
-  on(
-    event: 'meta_complete',
-    listener: (
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>
-    ) => unknown
-  ): this;
-  on(
-    event: 'data_complete',
-    listener: (
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'complete',
-    listener: (
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'created',
-    listener: (
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'syncing',
-    listener: (
-      project: DataModel.ProjectObject,
-      active: ExistingActiveDoc,
-      meta: LocalDB<DataModel.ProjectMetaObject>,
-      data: LocalDB<DataModel.EncodedObservation>
-    ) => unknown
-  ): this;
-  on(
-    event: 'error',
-    listener: (active: ExistingActiveDoc, err: unknown) => unknown
-  ): this;
-
-  emit(
-    event: 'meta_complete',
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>
-  ): boolean;
-  emit(
-    event: 'data_complete',
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(
-    event: 'complete',
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(
-    event: 'created',
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(
-    event: 'syncing',
-    project: DataModel.ProjectObject,
-    active: ExistingActiveDoc,
-    meta: LocalDB<DataModel.ProjectMetaObject>,
-    data: LocalDB<DataModel.EncodedObservation>
-  ): boolean;
-  emit(event: 'error', active: ExistingActiveDoc, err: unknown): boolean;
-}
-
 async function process_project(
-  emitter: ProjectEmitter,
-  active_project: PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>
+  listing: DataModel.ListingsObject,
+  active_project: ExistingActiveDoc,
+  projects_db_connection: DataModel.ConnectionInfo,
+  project_object: DataModel.ProjectObject
 ): Promise<void> {
   /**
    * Each project needs to know it's active_id to lookup the local
    * metadata/data databases.
    */
   const active_id = active_project._id;
-  const project_id = active_project.project_id;
 
-  const meta_db_localonly = ensure_local_db(
+  const [, meta_db_local] = ensure_local_db(
     'metadata',
     active_id,
     metadata_dbs
   );
-  const data_db_localonly = ensure_local_db('data', active_id, data_dbs);
-  emitter.emit('created', active_project, meta_db_localonly, data_db_localonly);
-
-  /*
-  The following is now
-  Stuff that may fail due to network, or authentication, issues.
-  When this is all starting, 'syncing' event is emitted onto ProjectEmitter
-
-  Like a listing has sub-projects, a project has sub-dbs. But it's less complex:
-  Just meta & data dbs. They don't have a 'meta_syncing' event, only 'complete' events.
-
-  Errors are handled by the caller. The caller should emit 'error' on
-  the ProjectEmitter.
-  */
-
-  const listing_id = active_project.listing_id;
-  const projects_db = projects_dbs[listing_id];
-  const projects_connection = projects_db.remote!.info;
-
-  const project_info: DataModel.ProjectObject = await projects_db.local.get(
-    project_id
+  const [, data_db_local] = ensure_local_db('data', active_id, data_dbs);
+  initializeEvents.emit(
+    'project_local',
+    listing,
+    active_project,
+    project_object,
+    meta_db_local,
+    data_db_local
   );
 
   // Defaults to the same couch as the projects db, but different database name:
-  const meta_connection_info = project_info.metadata_db || {
-    ...projects_connection,
-    db_name: METADATA_DBNAME_PREFIX + project_info._id,
+  const meta_connection_info = project_object.metadata_db || {
+    ...projects_db_connection,
+    db_name: METADATA_DBNAME_PREFIX + project_object._id,
   };
 
-  const data_connection_info = project_info.data_db || {
-    ...projects_connection,
-    db_name: DATA_DBNAME_PREFIX + project_info._id,
+  const data_connection_info = project_object.data_db || {
+    ...projects_db_connection,
+    db_name: DATA_DBNAME_PREFIX + project_object._id,
   };
 
-  const meta_db = ensure_synced_db(
+  const [meta_is_fresh, meta_db] = ensure_synced_db(
     active_id,
     meta_connection_info,
     metadata_dbs
   );
-  const data_db = ensure_synced_db(active_id, data_connection_info, data_dbs);
+  const [data_is_fresh, data_db] = ensure_synced_db(
+    active_id,
+    data_connection_info,
+    data_dbs
+  );
   createdProjects[active_id] = {
-    project: project_info,
+    project: project_object,
     active: active_project,
     meta: meta_db,
     data: data_db,
   };
-  emitter.emit('syncing', project_info, active_project, meta_db, data_db);
 
-  function synced_callback<T>(
-    evt_name: 'meta_complete' | 'data_complete',
-    complete_marker: {[key: string]: boolean},
-    db: LocalDB<T>
-  ) {
-    return () => {
-      complete_marker[active_id] = true;
-      ((emitter.emit as unknown) as (
-        evt: string,
-        project: DataModel.ProjectObject,
-        active: ExistingActiveDoc,
-        arg: LocalDB<T>
-      ) => boolean)(evt_name, project_info, active_project, db);
+  if (meta_is_fresh) {
+    let waiting = true;
+    const synced_callback = () => {
+      waiting = false;
+      initializeEvents.emit(
+        'project_meta_paused',
+        listing,
+        active_project,
+        project_object,
+        meta_db
+      );
     };
+    meta_db.remote.connection.on('paused', synced_callback);
+    meta_db.remote.connection.on('error', synced_callback);
+    meta_db.remote.connection.on('active', () => {
+      waiting = true;
+      initializeEvents.emit(
+        'project_meta_active',
+        listing,
+        active_project,
+        project_object,
+        meta_db
+      );
+    });
+    setTimeout(() => {
+      if (waiting) {
+        // Timeout error when still waiting here
+        console.error('Timed out waiting for ', meta_db.remote);
+        synced_callback();
+      }
+    }, PROJECT_TIMEOUT);
   }
 
-  meta_db.remote.connection.on(
-    'paused',
-    synced_callback('meta_complete', meta_db_created, meta_db)
-  );
-  meta_db.remote.connection.on(
-    'error',
-    synced_callback('meta_complete', meta_db_created, meta_db)
-  );
-  meta_db.remote.connection.on('error', err =>
-    console.log(active_project.listing_id, project_id, 'meta', err)
-  );
-
-  data_db.remote.connection.on(
-    'paused',
-    synced_callback('data_complete', data_db_created, data_db)
-  );
-  data_db.remote.connection.on(
-    'error',
-    synced_callback('data_complete', data_db_created, data_db)
-  );
-  data_db.remote.connection.on('error', err =>
-    console.log(active_project.listing_id, project_id, 'data', err)
-  );
-
-  const complete_one = propagateWhenAllEmitted(
-    2,
-    emitter,
-    'complete',
-    project_info,
-    active_project,
-    meta_db,
-    data_db
-  );
-
-  complete_one('meta', emitter, 'meta_complete');
-  complete_one('data', emitter, 'data_complete');
+  if (data_is_fresh) {
+    let waiting = true;
+    const synced_callback = () => {
+      waiting = false;
+      initializeEvents.emit(
+        'project_data_paused',
+        listing,
+        active_project,
+        project_object,
+        data_db
+      );
+    };
+    data_db.remote.connection.on('paused', synced_callback);
+    data_db.remote.connection.on('error', synced_callback);
+    data_db.remote.connection.on('active', () => {
+      waiting = true;
+      initializeEvents.emit(
+        'project_data_active',
+        listing,
+        active_project,
+        project_object,
+        data_db
+      );
+    });
+    setTimeout(() => {
+      if (waiting) {
+        // Timeout error when still waiting here
+        console.error('Timed out waiting for ', data_db.remote);
+        synced_callback();
+      }
+    }, PROJECT_TIMEOUT);
+  }
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */

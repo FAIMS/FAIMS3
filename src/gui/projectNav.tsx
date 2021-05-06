@@ -74,7 +74,7 @@ class ProjectNavTabs extends React.Component<
   ProjectNavTabsState
 > {
   uiSpecsUpdate(uiSpecs: SyncingUiSpecs) {
-    this.setState({...this.state, uiSpecs: uiSpecs});
+    this.setState({uiSpecs: uiSpecs});
   }
 
   constructor(props: ProjectNavTabsProps) {
