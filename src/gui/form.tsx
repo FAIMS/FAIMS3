@@ -85,7 +85,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       return undefined;
     }
     const formProps = view.props.formProps;
-    const errors = formProps.errors;
     return (
       <Box mb={3} key={fieldName}>
         <Field
@@ -94,8 +93,10 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
           onChange={formProps.handleChange}
           onBlur={formProps.handleBlur}
           value={formProps.values[fieldName]}
+          // error={
+          //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
+          // }
           // view={view}
-          error={formProps.touched[fieldName] && Boolean(errors[fieldName])}
           {...fieldConfig['component-parameters']}
           {...fieldConfig['component-parameters']['InputProps']}
           {...fieldConfig['component-parameters']['SelectProps']}
@@ -129,7 +130,10 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getValidationSchema() {
-    // console.log('getValidationSchema');
+    /***
+     * Formik requires a single object for validationSchema, collect these from the ui schema
+     * and transform via yup.ast
+     */
     const viewList = this.getViewList();
     const fields = this.getFields();
     const validationSchema = Object();
@@ -140,7 +144,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getInitialValues() {
-    // console.log('getInitialValues');
+    /***
+     * Formik requires a single object for initialValues, collect these from the ui schema
+     */
     const viewList = this.getViewList();
     const fields = this.getFields();
     const initialValues = Object();

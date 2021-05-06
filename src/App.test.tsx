@@ -12,8 +12,8 @@ jest.mock('./sync/index', () => ({
   createdProjects: {},
 }));
 
-test('renders form', async () => {
+test('renders app', () => {
   render(<App />);
-  //const linkElement = screen.getByText(/is the current project/i);
-  //expect(linkElement).toBeInTheDocument();
+  const linkElement = screen.getByText(/FAIMS3/i);
+  expect(linkElement).toBeInTheDocument();
 });

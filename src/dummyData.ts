@@ -63,7 +63,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           fullWidth: true,
           name: 'email-field',
           id: 'email-field',
-          helperText: 'Some helper text for email field',
+          helperText: 'Please provide a valid email address',
           variant: 'outlined',
           required: true,
           InputProps: {
@@ -94,11 +94,11 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           variant: 'outlined',
           required: true,
           InputProps: {
-            type: 'string',
+            type: 'text', // must be a valid html type
           },
           SelectProps: {},
           InputLabelProps: {
-            label: 'String Field Label',
+            label: 'Favourite Colour',
           },
           FormHelperTextProps: {},
         },
@@ -108,7 +108,33 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           ['yup.max', 50, 'Too Long!'],
           ['yup.required'],
         ],
-        initialValue: 'hello',
+        initialValue: 'yellow',
+      },
+      'multi-str-field': {
+        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
+        'component-name': 'TextField',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'multi-str-field',
+          id: 'multi-str-field',
+          helperText: 'Textarea help',
+          variant: 'outlined',
+          required: true,
+          multiline: true,
+          InputProps: {
+            type: 'text',
+            rows: 4,
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Textarea Field Label',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue:
+          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       'int-field': {
         'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
@@ -171,14 +197,13 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           fullWidth: true,
           name: 'select-field',
           id: 'select-field',
-          helperText: 'Choose a currency',
+          helperText: 'Choose a currency from the dropdown',
           variant: 'outlined',
           required: true,
           select: true,
-          InputProps: {
-            type: 'string',
-          },
-          SelectProps: {
+          InputProps: {},
+          SelectProps: {},
+          ElementProps: {
             options: [
               {
                 value: 'USD',
@@ -199,11 +224,13 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
             ],
           },
           InputLabelProps: {
-            label: 'Choose a currency',
+            label: 'Currency',
           },
-          FormHelperTextProps: {children: 'Some helper text'},
         },
-        validationSchema: [['yup.string'], ['yup.required']],
+        validationSchema: [
+          ['yup.string'],
+          ['yup.required', 'Currency is a required field'],
+        ],
         initialValue: '',
       },
       'multi-select-field': {
@@ -214,15 +241,19 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           fullWidth: true,
           name: 'multi-select-field',
           id: 'multi-select-field',
-          helperText: 'Choose multiple currencies',
+          helperText: 'Choose multiple currencies from the dropdown',
           variant: 'outlined',
           required: true,
           select: true,
-          InputProps: {
-            type: 'string',
-          },
+          InputProps: {},
           SelectProps: {
             multiple: true,
+          },
+          InputLabelProps: {
+            label: 'Currencies',
+          },
+          FormHelperTextProps: {children: 'Choose multiple currencies'},
+          ElementProps: {
             options: [
               {
                 value: 'USD',
@@ -242,58 +273,76 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
               },
             ],
           },
-          InputLabelProps: {
-            label: 'Choose multiple currencies',
-          },
-          FormHelperTextProps: {children: 'Some helper text'},
         },
-        validationSchema: [['yup.string'], ['yup.required']],
+        validationSchema: [
+          ['yup.string'],
+          ['yup.required', 'Currencies is a required field'],
+        ],
         initialValue: [],
       },
-      // 'bool-field': {
-      //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
-      //   'component-name': 'Checkbox',
-      //   'type-returned': 'faims-core::Integer', // matches a type in the Project Model
-      //   'component-parameters': {
-      //     fullWidth: true,
-      //     name: project_name + 'bool-field',
-      //     id: project_name + 'bool-field',
-      //     helperText: 'Some helper text for bool field',
-      //     variant: 'outlined',
-      //     InputProps: {
-      //       type: 'checkbox',
-      //     },
-      //     SelectProps: {},
-      //     InputLabelProps: {
-      //       label: 'Bool Field Label',
-      //     },
-      //     FormHelperTextProps: {},
-      //   },
-      // },
-      // 'date-field': {
-      //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
-      //   'component-name': 'TextField',
-      //   'type-returned': 'faims-core::Integer', // matches a type in the Project Model
-      //   'component-parameters': {
-      //     type: 'date',
-      //     fullWidth: true,
-      //     label: 'A date field',
-      //     helperText: 'some help text',
-      //     defaultValue: '2017-05-24T10:30',
-      //   }, // configure appearance/actions/etc. of component
-      // },
-      // 'time-field': {
-      //   'component-namespace': 'core-material-ui', // this says what web component to use to render/aquire value from
-      //   'component-name': 'TextField',
-      //   'type-returned': 'faims-core::Integer', // matches a type in the Project Model
-      //
-      //   'component-parameters': {
-      //     type: 'time',
-      //     label: 'A time field',
-      //     helperText: 'some help text',
-      //     documentation: '<p>Some HTML</p>', // the documentation on the field
-      //   }, // configure appearance/actions/etc. of component
-      // },
+      'checkbox-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'Checkbox',
+        'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+        'component-parameters': {
+          name: 'checkbox-field',
+          id: 'checkbox-field',
+          required: true,
+          type: 'checkbox',
+          FormControlLabelProps: {
+            label: 'Terms and Conditions',
+          },
+          FormHelperTextProps: {
+            children: 'Read the terms and conditions carefully.',
+          },
+          // Label: {label: 'Terms and Conditions'},
+        },
+        validationSchema: [
+          ['yup.bool'],
+          ['yup.oneOf', [true], 'You must accept the terms and conditions'],
+          ['yup.required'],
+        ],
+        initialValue: false,
+      },
+      'radio-group-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'RadioGroup',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          name: 'radio-group-field',
+          id: 'radio-group-field',
+          variant: 'outlined',
+          required: true,
+          ElementProps: {
+            options: [
+              {
+                value: '1',
+                label: '1',
+              },
+              {
+                value: '2',
+                label: '2',
+              },
+              {
+                value: '3',
+                label: '3',
+              },
+              {
+                value: '4',
+                label: '4',
+              },
+            ],
+          },
+          FormLabelProps: {
+            children: 'Pick a number',
+          },
+          FormHelperTextProps: {
+            children: 'Make sure you choose the right one!',
+          },
+        },
+        // validationSchema: [['yup.number'], ['yup.lessThan', 2]],
+        initialValue: '3',
+      },
     },
     views: {
       'start-view': {
@@ -303,9 +352,12 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'action-field',
           'email-field',
           'str-field',
+          'multi-str-field',
           'int-field',
           'select-field',
           'multi-select-field',
+          'checkbox-field',
+          'radio-group-field',
           // 'bool-field',
           // 'date-field',
           // 'time-field',

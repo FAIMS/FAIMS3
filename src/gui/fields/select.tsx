@@ -3,23 +3,33 @@ import MuiTextField from '@material-ui/core/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-material-ui';
 import {MenuItem} from '@material-ui/core';
 
+interface option {
+  key: string;
+  value: string;
+  label: string;
+}
+
+interface ElementProps {
+  options: Array<option>;
+}
+
 interface Props {
-  options: Array<any>;
+  ElementProps: ElementProps;
 }
 
 export class Select extends React.Component<TextFieldProps & Props> {
   render() {
-    const {options, children, ...textFieldProps} = this.props;
-
+    const {ElementProps, children, ...textFieldProps} = this.props;
+    console.log(ElementProps, children, textFieldProps);
     return (
-      <MuiTextField {...fieldToTextField(textFieldProps)}>
+      <MuiTextField {...fieldToTextField(textFieldProps)} select={true}>
         {children}
-        {options.map(option => (
+        {ElementProps.options.map(option => (
           <MenuItem
-            key={option['key'] ? option['key'] : option['value']}
-            value={option['value']}
+            key={option.key ? option.key : option.value}
+            value={option.value}
           >
-            {option['label']}
+            {option.label}
           </MenuItem>
         ))}
       </MuiTextField>
