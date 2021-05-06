@@ -246,7 +246,14 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
                         key={'menuItem' + item.title}
                       >
                         <ListItemIcon>{item.icon}</ListItemIcon>
-                        <ListItemText>{item.title} {item.nested.length === 0 ? <CircularProgress size={12} thickness={4}/> : ''}</ListItemText>
+                        <ListItemText>
+                          {item.title}{' '}
+                          {item.nested.length === 0 ? (
+                            <CircularProgress size={12} thickness={4} />
+                          ) : (
+                            ''
+                          )}
+                        </ListItemText>
                         {nestedMenuOpen[item.title] ? (
                           <ExpandLess />
                         ) : (
