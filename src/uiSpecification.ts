@@ -1,4 +1,4 @@
-import {getProjectDB} from './sync/index';
+import {getProjectDB} from './sync';
 import PouchDB from 'pouchdb';
 import {ProjectMetaObject} from './datamodel';
 import {
