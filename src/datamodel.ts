@@ -42,6 +42,10 @@ export interface ProjectObject {
   metadata_db?: ConnectionInfo;
 }
 
+export type ProjectsList = {
+  [key: string]: ProjectObject;
+};
+
 /*
  * Objects that may be contained in a Project's metadata DB
  */
@@ -64,22 +68,41 @@ export interface FAIMSConstantCollection {
 export interface ProjectSchema {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
   namespace: string;
   constants: FAIMSConstantCollection;
   types: FAIMSTypeCollection;
 }
 
+export interface ProjectUIFields {
+  [key: string]: any;
+}
+
+export interface ProjectUIViews {
+  [key: string]: any;
+}
+
 export interface ProjectUIModel {
+  _id?: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
+  fields: ProjectUIFields;
+  views: ProjectUIViews;
+  start_view: string;
+}
+
+export interface EncodedProjectUIModel {
   _id: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
-  fields: Array<any>;
-  fviews: Array<any>; // conflicts with pouchdb views/indexes, hence fviews
+  _deleted?: boolean;
+  fields: ProjectUIFields;
+  fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
   start_view: string;
 }
 
 export interface ProjectPeople {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
 }
 
 // This is used within the form/ui subsystem, do not use with pouch
@@ -94,6 +117,9 @@ export interface Observation {
 export interface EncodedObservation {
   _id?: string;
   _rev?: string; // optional as we may want to include the raw json in places
+  _revisions?: {start: number; ids: string[]};
+  _deleted?: boolean; // This is for couchdb deletion
+  deleted?: boolean; // This is for user-level deletion
   format_version: number;
   type: string;
   data: any;
@@ -103,7 +129,10 @@ export interface EncodedObservation {
  * Elements of a Project's metadataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
-export type ProjectMetaObject = ProjectSchema | ProjectUIModel | ProjectPeople;
+export type ProjectMetaObject =
+  | ProjectSchema
+  | EncodedProjectUIModel
+  | ProjectPeople;
 
 /**
  * Document from a people DB

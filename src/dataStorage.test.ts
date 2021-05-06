@@ -5,6 +5,9 @@ import {
   generateFAIMSDataID,
   upsertFAIMSData,
   lookupFAIMSDataID,
+  listFAIMSProjectRevisions,
+  deleteFAIMSDataForID,
+  undeleteFAIMSDataForID,
 } from './dataStorage';
 import {equals} from './utils/eqTestSupport';
 
@@ -70,8 +73,115 @@ describe('roundtrip reading and writing to db', () => {
           return lookupFAIMSDataID(project_name, dataid);
         })
         .then(result => {
-          delete result['_rev'];
           expect(equals(result, doc)).toBe(true);
+        });
+    }
+  );
+});
+
+describe('CRUD for data', () => {
+  testProp(
+    'types roundtrip',
+    [fc.string(), fc.string(), fc.string(), fc.jsonObject(), fc.jsonObject()],
+    async (project_name, namespace, name, data, new_data) => {
+      fc.pre(!namespace.includes(':'));
+      fc.pre(!name.includes(':'));
+      fc.pre(namespace.trim() !== '');
+      fc.pre(name.trim() !== '');
+      await cleanDataDBS();
+      fc.pre(projdbs !== {});
+
+      const fulltype = namespace + '::' + name;
+
+      const dataid = generateFAIMSDataID();
+
+      const doc: Observation = {
+        _id: dataid,
+        type: fulltype,
+        data: data,
+      };
+
+      const new_doc: Observation = {
+        _id: dataid,
+        type: fulltype,
+        data: new_data,
+      };
+
+      return upsertFAIMSData(project_name, doc)
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          expect(equals(result, doc)).toBe(true);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          if (result === null) {
+            throw Error('something deleted the old revision...');
+          }
+          result.data = new_data;
+          return upsertFAIMSData(project_name, result);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          expect(equals(result, new_doc)).toBe(true);
+        })
+        .then(result => {
+          return deleteFAIMSDataForID(project_name, dataid);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          expect(result).toBe(null);
+        })
+        .then(result => {
+          return undeleteFAIMSDataForID(project_name, dataid);
+        })
+        .then(result => {
+          return lookupFAIMSDataID(project_name, dataid);
+        })
+        .then(result => {
+          expect(equals(result, new_doc)).toBe(true);
+        });
+    }
+  );
+});
+
+describe('listing revisions', () => {
+  testProp(
+    'listing revisions',
+    [fc.string(), fc.string(), fc.string(), fc.jsonObject()],
+    async (project_name, namespace, name, data) => {
+      fc.pre(!namespace.includes(':'));
+      fc.pre(!name.includes(':'));
+      fc.pre(namespace.trim() !== '');
+      fc.pre(name.trim() !== '');
+      await cleanDataDBS();
+      fc.pre(projdbs !== {});
+
+      const fulltype = namespace + '::' + name;
+
+      const dataid = generateFAIMSDataID();
+
+      const doc: Observation = {
+        _id: dataid,
+        type: fulltype,
+        data: data,
+      };
+
+      return upsertFAIMSData(project_name, doc)
+        .then(result => {
+          return listFAIMSProjectRevisions(project_name);
+        })
+        .then(result => {
+          expect(result[dataid]).not.toBe(undefined);
+          expect(result[dataid]).toHaveLength(1);
+          expect(result[dataid][0]).toEqual(expect.stringMatching(/^1-.*/));
         });
     }
   );

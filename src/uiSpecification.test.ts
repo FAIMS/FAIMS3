@@ -44,8 +44,8 @@ describe('roundtrip reading and writing to db', () => {
     'ui roundtrip',
     [
       fc.string(),
-      fc.array(fc.jsonObject()), // fields
-      fc.array(fc.jsonObject()), // views
+      fc.dictionary(fc.string(), fc.jsonObject()), // fields
+      fc.dictionary(fc.string(), fc.jsonObject()), // views
       fc.string(), // start-view
     ],
     async (project_name, fields, views, start_view) => {
@@ -55,7 +55,7 @@ describe('roundtrip reading and writing to db', () => {
       const uiInfo = {
         _id: UI_SPECIFICATION_NAME,
         fields: fields,
-        fviews: views,
+        views: views,
         start_view: start_view,
       };
 

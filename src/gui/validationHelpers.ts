@@ -1,5 +1,6 @@
 /* eslint-disable */
-import {lookupFAIMSType} from './dbHelpers';
+import {createTypeContext,lookupFAIMSType} from '../projectSpecification';
+  
 
 type validationResult = {
   err: boolean;
@@ -7,11 +8,13 @@ type validationResult = {
 };
 
 export function validateData(
+    project_name: string,
   data: any,
   faimsType: string,
   membersChecked = false
 ) {
-  const ftype = lookupFAIMSType(faimsType);
+  const context = createTypeContext(project_name);
+  const ftype = lookupFAIMSType(faimsType, context);
   const allowValsResult = checkAllowedValues(data, ftype);
   if (allowValsResult.err) {
     return allowValsResult;

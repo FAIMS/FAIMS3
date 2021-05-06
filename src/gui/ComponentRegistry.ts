@@ -10,7 +10,9 @@ import {Select as FAIMSSelect} from './fields/select';
 import {Checkbox as FAIMSCheckbox} from './fields/checkbox';
 import {RadioGroup as FAIMSRadioGroup} from './fields/radio';
 
-const componentRegistry: {string?: {string: React.Component}} = {};
+const componentRegistry: {
+  [namespace: string]: {[name: string]: React.Component};
+} = {};
 
 //export function NoSuchComponentNamespace(message: string) {
 //    this.message = message;
@@ -22,7 +24,7 @@ const componentRegistry: {string?: {string: React.Component}} = {};
 //    this.name = 'NoSuchComponent';
 //}
 
-export function getComponentByName(namespace, componentName) {
+export function getComponentByName(namespace: string, componentName: string) {
   if (componentRegistry[namespace] === undefined) {
     throw new Error(`Unknown namespace ${namespace}`);
   }
@@ -32,12 +34,16 @@ export function getComponentByName(namespace, componentName) {
   return componentRegistry[namespace][componentName];
 }
 
-export function registerComponent(namespace, componentName, component) {
+export function registerComponent(
+  namespace: string,
+  componentName: string,
+  component: any
+) {
   const n = getNameSpace(namespace);
   n[componentName] = component;
 }
 
-function getNameSpace(namespace) {
+function getNameSpace(namespace: string) {
   if (componentRegistry[namespace] === undefined) {
     componentRegistry[namespace] = {};
   }
