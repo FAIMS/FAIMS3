@@ -12,7 +12,6 @@ type FAIMSContainerProps = {
 type FAIMSContainerState = {
   projects: ProjectsList;
   global_error: null | {};
-  mounted: boolean;
 };
 
 export class FAIMSContainer extends React.Component<
@@ -26,7 +25,6 @@ export class FAIMSContainer extends React.Component<
     this.state = {
       projects: projects,
       global_error: null,
-      mounted: false,
     };
 
     for (const active_id in createdProjects) {
@@ -42,8 +40,6 @@ export class FAIMSContainer extends React.Component<
     });
 
     initialize().catch(err => this.setState({global_error: err}));
-
-    this.setState({mounted: true});
   }
 
   render() {
