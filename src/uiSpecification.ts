@@ -1,4 +1,5 @@
-import {getProjectDB} from './sync/index';
+import {getProjectDB, LocalDB} from './sync/index';
+import {ProjectMetaObject} from './datamodel';
 import {
   UI_SPECIFICATION_NAME,
   ProjectUIModel,
@@ -77,10 +78,9 @@ export function syncUISpecs(
 }
 
 export async function setUiSpecForProject(
-  project_name: string,
+  projdb: LocalDB<ProjectMetaObject>,
   uiInfo: ProjectUIModel
 ) {
-  const projdb = getProjectDB(project_name);
   const encUIInfo: EncodedProjectUIModel = {
     _id: UI_SPECIFICATION_NAME,
     fields: uiInfo.fields,
@@ -88,14 +88,14 @@ export async function setUiSpecForProject(
     start_view: uiInfo.start_view,
   };
   try {
-    const existing_encUIInfo = await projdb.get(encUIInfo._id);
+    const existing_encUIInfo = await projdb.local.get(encUIInfo._id);
     encUIInfo._rev = existing_encUIInfo._rev;
   } catch (err) {
     // Probably no existing UI info
   }
 
   try {
-    return await projdb.put(encUIInfo);
+    return await projdb.local.put(encUIInfo);
   } catch (err) {
     console.warn(err);
     throw Error('failed to set ui specification');

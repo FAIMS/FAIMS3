@@ -2,6 +2,7 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
+import { setupExampleForm } from '../dummyData';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
@@ -10,6 +11,7 @@ const DIRECTORY_TIMEOUT = 1000;
 const LISTINGS_TIMEOUT = 2000;
 const PROJECT_TIMEOUT = 3000;
 
+const USE_REAL_DATA = process.env.REACT_APP_USE_REAL_DATA;
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   remote: null | LocalDBRemote<Content>;
@@ -701,7 +703,6 @@ async function initialize_nocheck() {
   await initialized;
   console.log('initialised dbs');
 
-  // await setupExampleForms();
   console.log('setting up form');
 }
 
@@ -990,13 +991,25 @@ async function process_project(
     let waiting = true;
     const synced_callback = () => {
       waiting = false;
-      initializeEvents.emit(
-        'project_meta_paused',
-        listing,
-        active_project,
-        project_object,
-        meta_db
-      );
+      if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+        initializeEvents.emit(
+          'project_meta_paused',
+          listing,
+          active_project,
+          project_object,
+          meta_db
+        );
+      } else {
+        setupExampleForm(active_project._id, meta_db).then(() => {
+          initializeEvents.emit(
+            'project_meta_paused',
+            listing,
+            active_project,
+            project_object,
+            meta_db
+          );
+        })
+      }
     };
     meta_db.remote.connection.on('paused', synced_callback);
     meta_db.remote.connection.on('error', synced_callback);
