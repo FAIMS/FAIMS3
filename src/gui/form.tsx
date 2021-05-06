@@ -130,7 +130,10 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getValidationSchema() {
-    // console.log('getValidationSchema');
+    /***
+     * Formik requires a single object for validationSchema, collect these from the ui schema
+     * and transform via yup.ast
+     */
     const viewList = this.getViewList();
     const fields = this.getFields();
     const validationSchema = Object();
@@ -141,7 +144,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getInitialValues() {
-    // console.log('getInitialValues');
+    /***
+     * Formik requires a single object for initialValues, collect these from the ui schema
+     */
     const viewList = this.getViewList();
     const fields = this.getFields();
     const initialValues = Object();

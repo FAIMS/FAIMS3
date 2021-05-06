@@ -1,4 +1,4 @@
-import {getProjectDB} from './sync/index';
+import {getProjectDB} from './sync';
 import {
   UI_SPECIFICATION_NAME,
   ProjectUIModel,

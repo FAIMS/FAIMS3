@@ -38,7 +38,6 @@ export class FAIMSContainer extends React.Component<
       this.state.projects[active._id] = project;
       this.setState({projects: this.state.projects});
     });
-
     initialize().catch(err => this.setState({global_error: err}));
   }
 

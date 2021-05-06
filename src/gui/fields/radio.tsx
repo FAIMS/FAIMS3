@@ -11,8 +11,14 @@ import {
 } from '@material-ui/core';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-material-ui';
 
+interface option {
+  key: string;
+  value: string;
+  label: string;
+}
+
 interface ElementProps {
-  options: Array<object>;
+  options: Array<option>;
 }
 
 interface Props {
@@ -42,15 +48,13 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
     return (
       <FormControl error={error}>
         <FormLabel {...FormLabelProps} />
-        <MuiRadioGroup
-          {...fieldToRadioGroup(radioGroupProps)}
-        >
+        <MuiRadioGroup {...fieldToRadioGroup(radioGroupProps)}>
           {ElementProps.options.map(option => (
             <FormControlLabel
-              key={option['key'] ? option['key'] : option['value']}
-              value={option['value']}
+              key={option.key ? option.key : option.value}
+              value={option.value}
               control={<MuiRadio />}
-              label={option['label']}
+              label={option.label}
             />
           ))}
         </MuiRadioGroup>
