@@ -40,14 +40,12 @@ export class FAIMSContainer extends React.Component<
       }
     });
 
-    initialize().catch(err =>
-      this.setState({global_error: err, ...this.state})
-    );
+    initialize().catch(err => this.setState({global_error: err}));
   }
 
   componentDidMount() {
     // get view components, render form
-    this.setState({...this.state, mounted: true});
+    this.setState({mounted: true});
   }
 
   render() {
