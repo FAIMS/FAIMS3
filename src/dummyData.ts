@@ -1,8 +1,9 @@
 import {setUiSpecForProject} from './uiSpecification';
-import {ProjectUIModel} from './datamodel';
+import {ProjectUIModel, ProjectMetaObject} from './datamodel';
+import {LocalDB} from './sync';
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  'default/projectA': {
+  'default/lake_mungo': {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -30,6 +31,29 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           ['yup.required'],
         ],
         initialValue: '',
+      },
+      'action-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'ActionButton',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'action-field',
+          id: 'action-field',
+          helperText: 'Enter a string between 2 and 50 characters long',
+          variant: 'outlined',
+          required: false,
+          InputProps: {
+            type: 'string',
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'String Field Label',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string']],
+        initialValue: 'hello',
       },
       'email-field': {
         'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
@@ -140,6 +164,30 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           ['yup.max', 20, 'Max is 20'],
         ],
         initialValue: 1,
+      },
+      'take-point-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'TakePoint',
+        'type-returned': 'faims-pos::Location', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'take-point-field',
+          id: 'take-point-field',
+          helperText: 'Get position',
+          variant: 'outlined',
+        },
+        validationSchema: [
+          ['yup.object'],
+          ['yup.nullable'],
+          [
+            'yup.shape',
+            {
+              latitude: [['yup.number'], ['yup.required']],
+              longitude: [['yup.number'], ['yup.required']],
+            },
+          ],
+        ],
+        initialValue: null,
       },
       'select-field': {
         'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
@@ -299,7 +347,9 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     views: {
       'start-view': {
         fields: [
+          'take-point-field',
           'bad-field',
+          'action-field',
           'email-field',
           'str-field',
           'multi-str-field',
@@ -357,16 +407,11 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
   },
 };
 
-export async function setupExampleForms() {
-  let result;
-  for (const projname in example_ui_specs) {
-    result = await setUiSpecForProject(projname, example_ui_specs[projname]);
-    console.log(result);
-  }
-  console.log(result);
-  result = await setUiSpecForProject(
-    'csiro/csiro-geochemistry',
-    example_ui_specs['default/projectB']
+export async function setupExampleForm(
+  projname: string,
+  meta_db: LocalDB<ProjectMetaObject>
+) {
+  console.log(
+    await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
   );
-  console.log(result);
 }
