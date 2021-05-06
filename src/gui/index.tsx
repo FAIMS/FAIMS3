@@ -32,19 +32,17 @@ export class FAIMSContainer extends React.Component<
     for (const active_id in createdProjects) {
       projects[active_id] = createdProjects[active_id].project;
     }
-
-    initializeEvents.on('project_meta_paused', (listing, active, project) => {
-      projects[active._id] = project;
-      if (this.state.mounted) {
-        this.setState(this.state);
-      }
-    });
-
-    initialize().catch(err => this.setState({global_error: err}));
   }
 
   componentDidMount() {
     // get view components, render form
+    initializeEvents.on('project_meta_paused', (listing, active, project) => {
+      this.state.projects[active._id] = project;
+      this.setState({projects: this.state.projects});
+    });
+
+    initialize().catch(err => this.setState({global_error: err}));
+
     this.setState({mounted: true});
   }
 
