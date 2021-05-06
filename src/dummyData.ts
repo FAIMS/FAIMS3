@@ -138,6 +138,30 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         ],
         initialValue: 1,
       },
+      'take-point-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'TakePoint',
+        'type-returned': 'faims-pos::Location', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'take-point-field',
+          id: 'take-point-field',
+          helperText: 'Get position',
+          variant: 'outlined',
+        },
+        validationSchema: [
+          ['yup.object'],
+          ['yup.nullable'],
+          [
+            'yup.shape',
+            {
+              latitude: [['yup.number'], ['yup.required']],
+              longitude: [['yup.number'], ['yup.required']],
+            },
+          ],
+        ],
+        initialValue: null,
+      },
       'select-field': {
         'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
         'component-name': 'Select',
@@ -273,6 +297,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     views: {
       'start-view': {
         fields: [
+          'take-point-field',
           'bad-field',
           'action-field',
           'email-field',
