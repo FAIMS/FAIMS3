@@ -9,6 +9,7 @@ import {
 } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import clsx from 'clsx';
+import {CircularProgress} from '@material-ui/core';
 import Collapse from '@material-ui/core/Collapse';
 import Drawer from '@material-ui/core/Drawer';
 import Divider from '@material-ui/core/Divider';
@@ -26,6 +27,7 @@ import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
+
 import {ProjectsList} from '../datamodel';
 
 interface AppBarProps extends WithStyles<typeof styles> {
@@ -112,21 +114,10 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
   constructor(props: AppBarProps) {
     super(props);
 
-    const projectsList: ProjectListItemProps[] = [];
-    Object.keys(this.props.projectList).map(key => {
-      projectsList.push({
-        title: this.props.projectList[key].name,
-        icon: <DescriptionIcon />,
-      });
-    });
-
+    const projectMenuItem = this.getProjectsFromProps();
     this.state = {
       topMenuItems: [
-        {
-          title: 'Projects',
-          icon: <AccountTree />,
-          nested: projectsList,
-        },
+        projectMenuItem,
         {
           title: 'Tools',
           icon: <BuildIcon />,
@@ -159,6 +150,7 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
     this.handleDrawerOpen = this.handleDrawerOpen.bind(this);
     this.handleDrawerClose = this.handleDrawerClose.bind(this);
     this.handleClick = this.handleClick.bind(this);
+    this.getProjectsFromProps = this.getProjectsFromProps.bind(this);
   }
   handleDrawerOpen() {
     this.setState({open: true});
@@ -172,6 +164,22 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
     this.setState({nestedMenuOpen: nestedMenuOpen});
   }
 
+  getProjectsFromProps() {
+    const projectList: ProjectListItemProps[] = [];
+    Object.keys(this.props.projectList).map(key => {
+      projectList.push({
+        title: this.props.projectList[key].name,
+        icon: <DescriptionIcon />,
+      });
+    });
+    return {
+      title: 'Projects',
+      icon: <AccountTree />,
+      nested: projectList,
+      open: false,
+    };
+  }
+
   render() {
     const {classes} = this.props;
     const {open, nestedMenuOpen, topMenuItems, bottomMenuItems} = this.state;
@@ -181,7 +189,7 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
         <div className={classes.root}>
           <CssBaseline />
           <AppBar
-            position="fixed"
+            position="relative"
             className={clsx(classes.appBar, {
               [classes.appBarShift]: this.state.open,
             })}
@@ -229,18 +237,16 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
                     item,
                     'nested'
                   ) ? (
-                    <React.Fragment>
+                    <>
                       <ListItem
                         button
                         onClick={() => {
                           this.handleClick(item.title);
                         }}
-                        key={item.title}
+                        key={'menuItem' + item.title}
                       >
-                        <ListItemIcon>
-                          <AccountTree />
-                        </ListItemIcon>
-                        <ListItemText primary={item.title} />
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText>{item.title} {item.nested.length === 0 ? <CircularProgress size={12} thickness={4}/> : ''}</ListItemText>
                         {nestedMenuOpen[item.title] ? (
                           <ExpandLess />
                         ) : (
@@ -251,8 +257,9 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
                         in={nestedMenuOpen[item.title]}
                         timeout="auto"
                         unmountOnExit
+                        key={'menuItemCollapse' + item.title}
                       >
-                        <List component="div" disablePadding>
+                        <List component="div" disablePadding dense={true}>
                           {item.nested.map(
                             (nestedItem: {
                               icon: React.ReactChild;
@@ -261,7 +268,11 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
                               <ListItem
                                 button
                                 className={classes.nested}
-                                key={item.title + nestedItem.title}
+                                key={
+                                  'nestedMenuItem' +
+                                  item.title +
+                                  nestedItem.title
+                                }
                               >
                                 <ListItemIcon>{nestedItem.icon}</ListItemIcon>
                                 <ListItemText primary={nestedItem.title} />
@@ -270,7 +281,7 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
                           )}
                         </List>
                       </Collapse>
-                    </React.Fragment>
+                    </>
                   ) : (
                     <ListItem button key={item.title}>
                       <ListItemIcon>{item.icon}</ListItemIcon>

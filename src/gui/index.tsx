@@ -1,7 +1,7 @@
 import React from 'react';
 import AppNavBar from './appNav';
 import ProjectNavTabs from './projectNav';
-import {initializeEvents, createdProjects} from '../sync/index';
+import {initializeEvents, createdProjects} from '../sync';
 import {ProjectsList} from '../datamodel';
 import {initialize} from '../sync';
 

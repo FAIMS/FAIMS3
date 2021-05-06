@@ -147,7 +147,7 @@ class ProjectNavTabs extends React.Component<
 
     return (
       <div className={classes.root}>
-        <AppBar position="static" color="default">
+        <AppBar position="relative" color="default">
           <Tabs
             value={activeTab}
             onChange={this.handleChange}
