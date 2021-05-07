@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
-import {setupExampleForm, setupExampleListing} from '../dummyData';
+import {setupExampleForm, setupExampleListing, setupExampleDirectory} from '../dummyData';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
@@ -766,7 +766,13 @@ async function process_directory(
   let waiting = true;
   const synced_callback = () => {
     waiting = false;
-    initializeEvents.emit('directory_paused', listings);
+    if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+      initializeEvents.emit('directory_paused', listings);
+    } else {
+      setupExampleDirectory(directory_db).then(() => {
+        initializeEvents.emit('directory_paused', listings);
+      });
+    }
   };
   directory_connection.on('error', synced_callback);
   directory_connection.on('paused', synced_callback);

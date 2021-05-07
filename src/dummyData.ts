@@ -1,5 +1,10 @@
 import {setUiSpecForProject} from './uiSpecification';
-import {ProjectUIModel, ProjectMetaObject, ProjectObject} from './datamodel';
+import {
+  ProjectUIModel,
+  ProjectMetaObject,
+  ProjectObject,
+  ListingsObject,
+} from './datamodel';
 import {LocalDB} from './sync';
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
@@ -358,6 +363,67 @@ const example_listings: {[listing_id: string]: ProjectObject[]} = {
     },
   ],
 };
+
+const example_directory: ListingsObject[] = [
+  {
+    _id: 'default',
+    name: 'AAO Internal FAIMS instance',
+    description:
+      'This FAIMS server is the instance used internally by the AAO for testing.',
+    people_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'people',
+    },
+    projects_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'projects',
+    },
+  },
+  {
+    _id: 'csiro',
+    name:
+      'Test of an independently hosted CouchDB Instance (People DB not implemented yet)',
+    description:
+      'This FAIMS server is the instance used internally by the AAO for testing.',
+    people_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'people',
+    },
+    projects_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'cisro_hosted_projects',
+    },
+  },
+];
+
+export async function setupExampleDirectory(db: LocalDB<ListingsObject>) {
+  // For every project in the example_listings, insert into the projects db
+  for (const listings_object of example_directory) {
+    let current_rev: {_rev?: undefined | string};
+    try {
+      current_rev = {_rev: (await db.local.get(listings_object._id))._rev};
+    } catch (err) {
+      if (err.reason === 'missing') {
+        current_rev = {};
+      } else {
+        throw err;
+      }
+    }
+    await db.local.put({...listings_object, ...current_rev});
+  }
+}
 
 export async function setupExampleListing(
   listing_id: string,
