@@ -2,7 +2,11 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
-import {setupExampleForm, setupExampleListing, setupExampleDirectory} from '../dummyData';
+import {
+  setupExampleForm,
+  setupExampleListing,
+  setupExampleDirectory,
+} from '../dummyData';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
