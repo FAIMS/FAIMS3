@@ -7,6 +7,10 @@ import {
 } from './datamodel';
 import {LocalDB} from './sync';
 
+export const USE_REAL_DATA =
+  process.env.REACT_APP_USE_REAL_DATA !== '' &&
+  process.env.REACT_APP_USE_REAL_DATA !== undefined;
+
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   'default/lake_mungo': {
     fields: {

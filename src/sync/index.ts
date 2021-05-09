@@ -3,6 +3,7 @@ import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
+  USE_REAL_DATA, 
   setupExampleForm,
   setupExampleListing,
   setupExampleDirectory,
@@ -14,8 +15,6 @@ const DATA_DBNAME_PREFIX = 'data-';
 const DIRECTORY_TIMEOUT = 1000;
 const LISTINGS_TIMEOUT = 2000;
 const PROJECT_TIMEOUT = 3000;
-
-const USE_REAL_DATA = process.env.REACT_APP_USE_REAL_DATA;
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   remote: null | LocalDBRemote<Content>;
@@ -770,7 +769,7 @@ async function process_directory(
   let waiting = true;
   const synced_callback = () => {
     waiting = false;
-    if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+    if (USE_REAL_DATA) {
       initializeEvents.emit('directory_paused', listings);
     } else {
       setupExampleDirectory(directory_db).then(() => {
@@ -884,7 +883,7 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   let waiting = true;
   const synced_callback = () => {
     waiting = false;
-    if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+    if (USE_REAL_DATA) {
       initializeEvents.emit(
         'listing_paused',
         listing_object,
@@ -1014,7 +1013,7 @@ async function process_project(
     let waiting = true;
     const synced_callback = () => {
       waiting = false;
-      if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+      if (USE_REAL_DATA) {
         initializeEvents.emit(
           'project_meta_paused',
           listing,
