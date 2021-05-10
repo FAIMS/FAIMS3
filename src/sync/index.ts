@@ -3,7 +3,7 @@ import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
-  USE_REAL_DATA, 
+  USE_REAL_DATA,
   setupExampleForm,
   setupExampleListing,
   setupExampleDirectory,
