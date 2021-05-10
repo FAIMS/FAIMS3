@@ -49,7 +49,12 @@ jest.mock('./sync/index', () => ({
 describe('roundtrip reading and writing to db', () => {
   testProp(
     'types roundtrip',
-    [fc.string(), fc.string(), fc.string(), fc.jsonObject()],
+    [
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.unicodeJsonObject(),
+    ],
     async (project_name, namespace, name, data) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
@@ -82,7 +87,13 @@ describe('roundtrip reading and writing to db', () => {
 describe('CRUD for data', () => {
   testProp(
     'types roundtrip',
-    [fc.string(), fc.string(), fc.string(), fc.jsonObject(), fc.jsonObject()],
+    [
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.unicodeJsonObject(),
+      fc.unicodeJsonObject(),
+    ],
     async (project_name, namespace, name, data, new_data) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
@@ -155,7 +166,12 @@ describe('CRUD for data', () => {
 describe('listing revisions', () => {
   testProp(
     'listing revisions',
-    [fc.string(), fc.string(), fc.string(), fc.jsonObject()],
+    [
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.unicodeJsonObject(),
+    ],
     async (project_name, namespace, name, data) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));

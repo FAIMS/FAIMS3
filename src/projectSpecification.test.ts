@@ -47,30 +47,38 @@ jest.mock('./sync/index', () => ({
   getProjectDB: mockProjectDB,
 }));
 
-testProp('type context caches by default', [fc.string()], project_name => {
-  return createTypeContext(project_name).use_cache;
-});
+testProp(
+  'type context caches by default',
+  [fc.fullUnicodeString()],
+  project_name => {
+    return createTypeContext(project_name).use_cache;
+  }
+);
 
-testProp('type context project name is set', [fc.string()], project_name => {
-  return createTypeContext(project_name).project_name === project_name;
-});
+testProp(
+  'type context project name is set',
+  [fc.fullUnicodeString()],
+  project_name => {
+    return createTypeContext(project_name).project_name === project_name;
+  }
+);
 
 testProp(
   'type context cache is set',
-  [fc.string(), fc.boolean()],
+  [fc.fullUnicodeString(), fc.boolean()],
   (project_name, use_cache) => {
     return createTypeContext(project_name, use_cache).use_cache === use_cache;
   }
 );
 
-testProp('unnamespaced type errors', [fc.string()], name => {
+testProp('unnamespaced type errors', [fc.fullUnicodeString()], name => {
   fc.pre(!name.includes('::'));
   expect(() => parseTypeName(name)).toThrow('Not a valid type name');
 });
 
 testProp(
   'namespaced type works',
-  [fc.string(), fc.string()],
+  [fc.fullUnicodeString(), fc.fullUnicodeString()],
   (namespace, name) => {
     fc.pre(!namespace.includes(':'));
     fc.pre(!name.includes(':'));
@@ -90,12 +98,12 @@ describe('roundtrip reading and writing to db', () => {
   testProp(
     'types roundtrip',
     [
-      fc.string(),
-      fc.string(),
-      fc.string(),
-      fc.array(fc.jsonObject()), // allowed-values
-      fc.dictionary(fc.string(), fc.jsonObject()), // additional-members
-      fc.array(fc.jsonObject()), // additional-constraints
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.array(fc.unicodeJsonObject()), // allowed-values
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // additional-members
+      fc.array(fc.unicodeJsonObject()), // additional-constraints
     ],
     async (
       project_name,
@@ -131,10 +139,10 @@ describe('roundtrip reading and writing to db', () => {
   testProp(
     'constants roundtrip',
     [
-      fc.string(),
-      fc.string(),
-      fc.string(),
-      fc.dictionary(fc.string(), fc.jsonObject()),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()),
     ],
     async (project_name, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
@@ -157,12 +165,12 @@ describe('roundtrip reading and writing to db', () => {
   testProp(
     'types roundtrip with caching',
     [
-      fc.string(),
-      fc.string(),
-      fc.string(),
-      fc.array(fc.jsonObject()), // allowed-values
-      fc.dictionary(fc.string(), fc.jsonObject()), // additional-members
-      fc.array(fc.jsonObject()), // additional-constraints
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.array(fc.unicodeJsonObject()), // allowed-values
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // additional-members
+      fc.array(fc.unicodeJsonObject()), // additional-constraints
     ],
     async (
       project_name,
@@ -203,10 +211,10 @@ describe('roundtrip reading and writing to db', () => {
   testProp(
     'constants roundtrip with caching',
     [
-      fc.string(),
-      fc.string(),
-      fc.string(),
-      fc.dictionary(fc.string(), fc.jsonObject()),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.fullUnicodeString(),
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()),
     ],
     async (project_name, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
