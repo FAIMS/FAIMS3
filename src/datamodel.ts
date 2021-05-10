@@ -28,6 +28,7 @@ export interface ActiveDoc {
   project_id: string;
   username: string;
   password: string;
+  friendly_name?: string;
 }
 
 /**
