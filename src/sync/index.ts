@@ -3,11 +3,16 @@ import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
-  USE_REAL_DATA,
   setupExampleForm,
   setupExampleListing,
   setupExampleDirectory,
 } from '../dummyData';
+import {
+  USE_REAL_DATA,
+  DIRECTORY_PROTOCOL,
+  DIRECTORY_HOST,
+  DIRECTORY_PORT,
+} from '../buildconfig';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
@@ -698,9 +703,9 @@ async function initialize_nocheck() {
     initializeEvents.once('metas_complete', resolve);
   });
   initialize_dbs({
-    proto: 'http',
-    host: '10.80.11.44',
-    port: 5984,
+    proto: DIRECTORY_PROTOCOL,
+    host: DIRECTORY_HOST,
+    port: DIRECTORY_PORT,
     db_name: 'directory',
   });
   await initialized;
