@@ -3,6 +3,12 @@ import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {setupExampleForm} from '../dummyData';
+import {
+  USE_REAL_DATA,
+  DIRECTORY_PROTOCOL,
+  DIRECTORY_HOST,
+  DIRECTORY_PORT,
+} from '../buildconfig';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
@@ -11,7 +17,6 @@ const DIRECTORY_TIMEOUT = 1000;
 const LISTINGS_TIMEOUT = 2000;
 const PROJECT_TIMEOUT = 3000;
 
-const USE_REAL_DATA = process.env.REACT_APP_USE_REAL_DATA;
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   remote: null | LocalDBRemote<Content>;
@@ -695,9 +700,9 @@ async function initialize_nocheck() {
     initializeEvents.once('metas_complete', resolve);
   });
   initialize_dbs({
-    proto: 'http',
-    host: '10.80.11.44',
-    port: 5984,
+    proto: DIRECTORY_PROTOCOL,
+    host: DIRECTORY_HOST,
+    port: DIRECTORY_PORT,
     db_name: 'directory',
   });
   await initialized;
@@ -991,7 +996,7 @@ async function process_project(
     let waiting = true;
     const synced_callback = () => {
       waiting = false;
-      if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+      if (USE_REAL_DATA) {
         initializeEvents.emit(
           'project_meta_paused',
           listing,
