@@ -12,7 +12,7 @@ export function generateFAIMSDataID(): string {
 }
 
 function convertFromFormToDB(
-  doc: Observation,
+  doc: Observation & {_id: string},
   revision: string | undefined = undefined
 ): EncodedObservation {
   if (revision !== undefined) {
@@ -73,7 +73,9 @@ export async function upsertFAIMSData(project_name: string, doc: Observation) {
   }
   try {
     const revision = await getLatestRevision(project_name, doc._id);
-    return await datadb.put(convertFromFormToDB(doc, revision));
+    return await datadb.put(
+      convertFromFormToDB(doc as Observation & {_id: string}, revision)
+    );
   } catch (err) {
     console.warn(err);
     throw Error('failed to save data');
