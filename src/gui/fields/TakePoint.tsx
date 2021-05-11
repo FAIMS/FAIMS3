@@ -21,7 +21,6 @@ export class TakePoint extends React.Component<FieldProps> {
     }
   }
   render() {
-    console.error(this.props);
     const pos = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
     let postext = <span>No point taken.</span>;
