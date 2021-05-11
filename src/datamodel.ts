@@ -9,12 +9,22 @@ export interface ConnectionInfo {
   db_name: string;
 }
 
+export type PossibleConnectionInfo =
+  | undefined
+  | {
+      proto?: string | undefined;
+      host?: string | undefined;
+      port?: number | undefined;
+      lan?: boolean | undefined;
+      db_name?: string | undefined;
+    };
+
 export interface ListingsObject {
   _id: string;
   name: string;
   description: string;
-  projects_db?: ConnectionInfo;
-  people_db?: ConnectionInfo;
+  projects_db?: PossibleConnectionInfo;
+  people_db?: PossibleConnectionInfo;
 }
 
 export interface NonNullListingsObject extends ListingsObject {
@@ -39,8 +49,8 @@ export interface ProjectObject {
   _id: string;
   name: string;
   description: string;
-  data_db?: ConnectionInfo;
-  metadata_db?: ConnectionInfo;
+  data_db?: PossibleConnectionInfo;
+  metadata_db?: PossibleConnectionInfo;
 }
 
 export type ProjectsList = {
