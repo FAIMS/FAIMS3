@@ -43,10 +43,10 @@ describe('roundtrip reading and writing to db', () => {
   testProp(
     'ui roundtrip',
     [
-      fc.string(),
-      fc.dictionary(fc.string(), fc.jsonObject()), // fields
-      fc.dictionary(fc.string(), fc.jsonObject()), // views
-      fc.string(), // start-view
+      fc.fullUnicodeString(),
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // fields
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // views
+      fc.fullUnicodeString(), // start-view
     ],
     async (project_name, fields, views, start_view) => {
       await cleanProjectDBS();

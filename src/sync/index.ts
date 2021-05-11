@@ -484,7 +484,7 @@ interface DirectoryEmitter extends EventEmitter {
  * Enable 'Propagation' of completion of all known projects meta & other databases.
  * Completion, here, means that the meta database has errored/paused syncing.
  *
- * Resulting from this funciton, initializeEvents adds the following behaviour:
+ * Resulting from this function, initializeEvents adds the following behaviour:
  * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
  * all listings have errored/paused), a 'projects_known' event is emitted
  *
