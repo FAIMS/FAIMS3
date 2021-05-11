@@ -536,7 +536,8 @@ export async function setupExampleDirectory(db: LocalDB<ListingsObject>) {
     try {
       current_rev = {_rev: (await db.local.get(listings_object._id))._rev};
     } catch (err) {
-      if (err.message !== 'missing') {//.reason may be 'deleted' or 'missing'
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
         throw err;
       }
       // Not in the DB means _rev is unnecessary for put()
@@ -560,7 +561,8 @@ export async function setupExampleActive() {
     try {
       current_rev = {_rev: (await active_db.get(doc._id))._rev};
     } catch (err) {
-      if (err.message !== 'missing') {//.reason may be 'deleted' or 'missing'
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
         throw err;
       }
       // Not in the DB means _rev is unnecessary for put()
@@ -594,7 +596,8 @@ export async function setupExampleListing(
     try {
       current_rev = {_rev: (await db.get(project._id))._rev};
     } catch (err) {
-      if (err.message !== 'missing') {//.reason may be 'deleted' or 'missing'
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
         throw err;
       }
       // Not in the DB means _rev is unnecessary for put()
