@@ -703,7 +703,7 @@ async function process_directory(
   setTimeout(() => {
     if (waiting) {
       // Timeout error when still waiting here
-      console.error('Timed out waiting for', directory_connection);
+      console.error('Timed out waiting for directory connection: ', directory_connection);
       synced_callback();
     }
   }, DIRECTORY_TIMEOUT);
@@ -838,7 +838,7 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   setTimeout(() => {
     if (waiting) {
       // Timeout error when still waiting here
-      console.error('Timed out waiting for ', projects_db.remote);
+      console.error('Timed out waiting for projects db ', projects_db.remote);
       synced_callback();
     }
   }, LISTINGS_TIMEOUT);
@@ -965,7 +965,7 @@ async function process_project(
     setTimeout(() => {
       if (waiting) {
         // Timeout error when still waiting here
-        console.error('Timed out waiting for ', meta_db.remote);
+        console.error('Timed out waiting for metadata db: ', meta_db.remote);
         synced_callback();
       }
     }, PROJECT_TIMEOUT);
@@ -1010,7 +1010,7 @@ async function process_project(
     setTimeout(() => {
       if (waiting) {
         // Timeout error when still waiting here
-        console.error('Timed out waiting for ', data_db.remote);
+        console.error('Timed out waiting for data db: ', data_db.remote);
         synced_callback();
       }
     }, PROJECT_TIMEOUT);
