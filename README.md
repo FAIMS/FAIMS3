@@ -43,4 +43,4 @@ export REACT_APP_DIRECTORY_PORT=<couchdb_port>
 will allow you to choose which couchdb instance to use. Remember to add the
 host-port pair of the system the *FAIMS* app is running on (in most cases
 `localhost:3000`) to the CORS allow list via the Fauxton running on the couchdb
-server (located at <<<<http://<couchdb_host_name>:<couchdb_port>/_utils/>>>>).
+server (located at <<<<<http://<couchdb_host_name>:<couchdb_port>/_utils/>>>>>).
