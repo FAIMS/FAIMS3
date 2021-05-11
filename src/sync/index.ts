@@ -703,7 +703,10 @@ async function process_directory(
   setTimeout(() => {
     if (waiting) {
       // Timeout error when still waiting here
-      console.error('Timed out waiting for directory connection: ', directory_connection);
+      console.error(
+        'Timed out waiting for directory connection: ',
+        directory_connection
+      );
       synced_callback();
     }
   }, DIRECTORY_TIMEOUT);
