@@ -49,8 +49,8 @@ jest.mock('./sync/index', () => ({
 describe('roundtrip reading and writing to db', () => {
   testProp(
     'types roundtrip',
-    [fc.string(), fc.string(), fc.string(), fc.jsonObject()],
-    async (project_name, namespace, name, data) => {
+    [fc.string(), fc.string(), fc.string(), fc.jsonObject(), fc.string()],
+    async (project_name, namespace, name, data, userid) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -66,6 +66,7 @@ describe('roundtrip reading and writing to db', () => {
         _id: dataid,
         type: fulltype,
         data: data,
+        userid: userid,
       };
 
       return upsertFAIMSData(project_name, doc)
@@ -82,8 +83,15 @@ describe('roundtrip reading and writing to db', () => {
 describe('CRUD for data', () => {
   testProp(
     'types roundtrip',
-    [fc.string(), fc.string(), fc.string(), fc.jsonObject(), fc.jsonObject()],
-    async (project_name, namespace, name, data, new_data) => {
+    [
+      fc.string(),
+      fc.string(),
+      fc.string(),
+      fc.jsonObject(),
+      fc.jsonObject(),
+      fc.string(),
+    ],
+    async (project_name, namespace, name, data, new_data, userid) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -99,12 +107,14 @@ describe('CRUD for data', () => {
         _id: dataid,
         type: fulltype,
         data: data,
+        userid: userid,
       };
 
       const new_doc: Observation = {
         _id: dataid,
         type: fulltype,
         data: new_data,
+        userid: userid,
       };
 
       return upsertFAIMSData(project_name, doc)
@@ -155,8 +165,8 @@ describe('CRUD for data', () => {
 describe('listing revisions', () => {
   testProp(
     'listing revisions',
-    [fc.string(), fc.string(), fc.string(), fc.jsonObject()],
-    async (project_name, namespace, name, data) => {
+    [fc.string(), fc.string(), fc.string(), fc.jsonObject(), fc.string()],
+    async (project_name, namespace, name, data, userid) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -172,6 +182,7 @@ describe('listing revisions', () => {
         _id: dataid,
         type: fulltype,
         data: data,
+        userid: userid,
       };
 
       return upsertFAIMSData(project_name, doc)

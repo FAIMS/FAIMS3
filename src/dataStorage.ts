@@ -20,6 +20,7 @@ function convertFromFormToDB(
       _id: doc._id,
       _rev: revision,
       type: doc.type,
+      userid: doc.userid,
       data: doc.data,
       format_version: 1,
     };
@@ -29,6 +30,7 @@ function convertFromFormToDB(
       _id: doc._id,
       _rev: doc._rev,
       type: doc.type,
+      userid: doc.userid,
       data: doc.data,
       format_version: 1,
     };
@@ -36,6 +38,7 @@ function convertFromFormToDB(
   return {
     _id: doc._id,
     type: doc.type,
+    userid: doc.userid,
     data: doc.data,
     format_version: 1,
   };
@@ -49,6 +52,7 @@ function convertFromDBToForm(doc: EncodedObservation): Observation | null {
     _id: doc._id,
     type: doc.type,
     data: doc.data,
+    userid: doc.userid,
   };
 }
 

@@ -112,6 +112,7 @@ export interface Observation {
   _rev?: string; // optional as we may want to include the raw json in places
   type: string;
   data: any;
+  userid: string;
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
@@ -124,6 +125,7 @@ export interface EncodedObservation {
   format_version: number;
   type: string;
   data: any;
+  userid: string;
 }
 
 /*
