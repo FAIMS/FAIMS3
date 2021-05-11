@@ -1,6 +1,17 @@
 import {setUiSpecForProject} from './uiSpecification';
-import {ProjectUIModel, ProjectMetaObject} from './datamodel';
-import {LocalDB} from './sync';
+import {
+  ProjectUIModel,
+  ProjectMetaObject,
+  ProjectObject,
+  ListingsObject,
+  ActiveDoc,
+  Observation,
+  EncodedObservation,
+} from './datamodel';
+import {active_db, LocalDB} from './sync';
+import {upsertFAIMSData} from './dataStorage';
+
+const example_datums: {[key: string]: {_id: string} & Observation[]} = {};
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   'default/lake_mungo': {
@@ -406,6 +417,225 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     start_view: 'start-view',
   },
 };
+
+const example_listings: {[listing_id: string]: ProjectObject[]} = {
+  default: [
+    {
+      name: 'Lake Mungo Archaeological Survey - 2018',
+      data_db: {
+        proto: 'http',
+        host: '10.80.11.44',
+        port: 5984,
+        lan: true,
+        db_name: 'lake_mungo',
+      },
+      description: 'Lake Mungo Archaeological Survey - 2018',
+      _id: 'lake_mungo',
+    },
+    {
+      name: "Example Project 'A'",
+      metadata_db: {
+        proto: 'http',
+        host: '10.80.11.44',
+        port: 5984,
+        lan: true,
+        db_name: 'metadata-projectb',
+      },
+      description: "Example Project 'A'",
+      _id: 'projectB',
+    },
+  ],
+};
+
+const example_directory: ListingsObject[] = [
+  {
+    _id: 'default',
+    name: 'AAO Internal FAIMS instance',
+    description:
+      'This FAIMS server is the instance used internally by the AAO for testing.',
+    people_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'people',
+    },
+    projects_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'projects',
+    },
+  },
+  {
+    _id: 'csiro',
+    name:
+      'Test of an independently hosted CouchDB Instance (People DB not implemented yet)',
+    description:
+      'This FAIMS server is the instance used internally by the AAO for testing.',
+    people_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'people',
+    },
+    projects_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'cisro_hosted_projects',
+    },
+  },
+];
+
+const example_active_db: ActiveDoc[] = [
+  {
+    _id: 'default/lake_mungo',
+    listing_id: 'default',
+    project_id: 'lake_mungo',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'csiro/csiro-geochemistry',
+    listing_id: 'csiro',
+    project_id: 'csiro-geochemistry',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'default/projectA',
+    listing_id: 'default',
+    project_id: 'projectA',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'default/projectB',
+    listing_id: 'default',
+    project_id: 'projectB',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'default/projectC',
+    listing_id: 'default',
+    project_id: 'projectC',
+    username: 'test1',
+    password: 'apple',
+  },
+];
+
+export async function setupExampleDirectory(db: LocalDB<ListingsObject>) {
+  // For every project in the example_listings, insert into the projects db
+  for (const listings_object of example_directory) {
+    let current_rev: {_rev?: undefined | string} = {};
+    try {
+      current_rev = {_rev: (await db.local.get(listings_object._id))._rev};
+    } catch (err) {
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
+        throw err;
+      }
+      // Not in the DB means _rev is unnecessary for put()
+    }
+    await db.local.put({...listings_object, ...current_rev});
+  }
+
+  const ids = example_directory.map(doc => doc._id);
+
+  // Remove anything not supposed to be there
+  for (const row of (await db.local.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await db.local.remove(row.id, row.value.rev);
+    }
+  }
+}
+
+export async function setupExampleActive() {
+  for (const doc of example_active_db) {
+    let current_rev: {_rev?: undefined | string} = {};
+    try {
+      current_rev = {_rev: (await active_db.get(doc._id))._rev};
+    } catch (err) {
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
+        throw err;
+      }
+      // Not in the DB means _rev is unnecessary for put()
+    }
+    await active_db.put({...doc, ...current_rev});
+  }
+
+  const ids = example_active_db.map(doc => doc._id);
+
+  // Remove anything not supposed to be there
+  for (const row of (await active_db.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await active_db.remove(row.id, row.value.rev);
+    }
+  }
+}
+
+export async function setupExampleListing(
+  listing_id: string,
+  projects_db: LocalDB<ProjectObject>
+) {
+  const db = projects_db.local;
+
+  if (!(listing_id in example_listings)) {
+    return;
+  }
+
+  // For every project in the example_listings, insert into the projects db
+  for (const project of example_listings[listing_id]) {
+    let current_rev: {_rev?: undefined | string} = {};
+    try {
+      current_rev = {_rev: (await db.get(project._id))._rev};
+    } catch (err) {
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
+        throw err;
+      }
+      // Not in the DB means _rev is unnecessary for put()
+    }
+    await db.put({...project, ...current_rev});
+  }
+
+  const ids = example_listings[listing_id].map(doc => doc._id);
+
+  // Remove anything not supposed to be there
+  for (const row of (await db.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await db.remove(row.id, row.value.rev);
+    }
+  }
+}
+
+export async function setupExampleData(
+  projname: string,
+  data_db: LocalDB<EncodedObservation>
+) {
+  const db = data_db.local;
+  let ids: string[] = [];
+
+  if (projname in example_datums) {
+    for (const datum of example_datums[projname]) {
+      upsertFAIMSData(projname, datum);
+    }
+    ids = example_datums[projname].map(doc => doc._id!);
+  }
+
+  // Remove anything not supposed to be there
+  for (const row of (await db.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await db.remove(row.id, row.value.rev);
+    }
+  }
+}
 
 export async function setupExampleForm(
   projname: string,
