@@ -9,7 +9,8 @@ import {Formik, Form, Field, FormikProps} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData} from '../dataStorage';
-import {ProjectUIModel} from '../datamodel';
+import {ProjectUIModel, SavedView} from '../datamodel';
+import {getStagedData, setStagedData} from '../sync/staging';
 
 type FormProps = {
   activeProjectID: string;
@@ -17,15 +18,50 @@ type FormProps = {
   observation: {_id: string; _rev: string} | null;
 };
 
+// After this many errors happen with from the staging db
+// on consequitive calls, the error is bubbled up to this
+// FormState's stagingError.
+const MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS = 5;
+
 type FormState = {
+  stagingState: ['error', unknown] | 'idle' | 'staging';
   currentView: string | null;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
+  staged: {
+    [view: string]: {
+      [fieldName: string]: {
+        /*
+        To keep syncing data to the stagedDB:
+        Every time the user changes something, the value here is updated immediately.
+
+        Then staging.setStagedData() is called. The promise is saved to setter
+        OR if setter already has a value, the promise is stored to next (overwriting).
+
+        Said promise, before it finishes, moves the next promise to setter and runs it.
+        (setting next to null).
+        This means that if a field is updated while setter Promise is still putting
+        stuff in the DB, everyone waits until it's done with the DB to avoid conflicts.
+
+        The setter promise updates _rev when it can, as a 'cache' to not need to do db.get()s 
+        */
+        value: string;
+        // setter: null | Promise<void>;
+        saving: boolean;
+        next: null | (() => Promise<void>);
+        _rev: null | string;
+      };
+    };
+  } = {};
+
+  consequtiveStagingSaveErrors = 0;
+
   constructor(props: FormProps) {
     super(props);
     this.state = {
       currentView: props.uiSpec['start_view'],
+      stagingState: 'idle',
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
@@ -41,9 +77,44 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   async setUISpec() {
     const uiSpec = await getUiSpecForProject(this.props.activeProjectID);
+    // All staged data must either be loaded or error out
+    // before we allow the user to edit it (Prevents overwriting stuff the user starts writing if they're quick)
+
+    const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
+      getStagedData(
+        this.props.activeProjectID,
+        this.state.currentView!,
+        null
+      ).then(staged_data_restore => {
+        this.staged[viewName] = {};
+        for (const fieldName in staged_data_restore) {
+          if (fieldName === '_id') continue; // _id gets caught up in this from datamodel.SavedView
+          this.staged[viewName][fieldName] = {
+            value: staged_data_restore[fieldName],
+            saving: false,
+            next: null,
+            _rev: null,
+          };
+        }
+      })
+    );
+
+    await Promise.all(viewStageLoaders);
     this.setState({
       currentView: uiSpec['start_view'],
     });
+  }
+
+  reqireCurrentView(): string {
+    if (this.state.currentView === null) {
+      // What should prevent this from happening is the lack of getInitialValues,
+      // getComponentFor, etc, function calls in the _Loading Skeleton_.
+      // And the loading skeleton is always shown if currentView === null
+      throw Error(
+        `A function requiring currentView was called before currentView instantiated`
+      );
+    }
+    return this.state.currentView;
   }
 
   save(values: any) {
@@ -68,6 +139,103 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     evt: E,
     value: string
   ): void {
+    handleChange(evt);
+    const newValues = {...values} as {[fieldName: string]: string};
+    newValues[fieldName] = value;
+
+    const stagedArgs: [string, string, null | {_id: string; _rev: string}] = [
+      this.props.activeProjectID,
+      this.reqireCurrentView(),
+      this.props.observation,
+    ];
+
+    const stagedView = this.staged[this.reqireCurrentView()];
+    // Same as prevState[prevState.currentView]
+    // These should remain the same (NOT copied) for the lifetime of a field
+    // setState isn't called when these are modified, even though they are a (nested)
+    // part of the state, because these aren't shown through to the UI,
+    // It might cause performance issues, I'm not sure if this is a good way to do it.
+    if (!(fieldName in stagedView)) {
+      console.warn(`Late instantiation of staged field ${fieldName}`);
+      stagedView[fieldName] = {
+        value: value,
+        next: null,
+        _rev: null,
+        saving: false,
+      };
+    }
+
+    const field = stagedView[fieldName];
+
+    const setterWithRev = async (_rev: null | string) => {
+      console.debug('setterWithRev');
+      const {rev} = await setStagedData(newValues, _rev, ...stagedArgs);
+      field._rev = rev;
+    };
+
+    // Called after the staged data is saved to the DB.
+    // to call any queued up setters.
+    const nextSetter = async () => {
+      console.debug('nextSetter');
+      const next_setter = field.next;
+      field.next = null;
+      this.consequtiveStagingSaveErrors = 0;
+      getStagedData(...stagedArgs).then(console.info);
+      if (next_setter !== null) {
+        console.log('Running queued stage save');
+        next_setter();
+      } else {
+        console.log('Finished staging save queue');
+        field.saving = false;
+        this.setState({stagingState: 'idle'});
+      }
+    };
+
+    // Gets _rev if not already known,
+    // Then will push the new staged data to the DB.
+    const setterFunc = async () => {
+      field.saving = true;
+      if (this.state.stagingState !== 'staging') {
+        this.setState({stagingState: 'staging'});
+      }
+      const setted =
+        field._rev === null
+          ? getStagedData(...stagedArgs).then(saved =>
+              setterWithRev(saved?._rev as null | string)
+            )
+          : setterWithRev(field._rev!);
+
+      // After set (and possible getting revision)
+      // Run the next setterFunc in the queue
+      // to put more data into the staging db.\
+      setted.then(nextSetter).catch(err => {
+        if (
+          err.constructor !== Error ||
+          err.message !== 'Running 2 staging promises at the same time!'
+        ) {
+          console.error(err);
+          this.consequtiveStagingSaveErrors += 1;
+          if (
+            this.consequtiveStagingSaveErrors ===
+            MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
+          ) {
+            this.setState({stagingState: ['error', err]});
+          }
+        } else {
+          console.debug(err);
+        }
+      });
+    };
+
+    field.value = value;
+    if (field.saving === false) {
+      //field.saving is changed at the same time as state.stagingState
+      console.log('Running stage save immediately');
+      setterFunc();
+    } else {
+      console.log('Queueing staging save');
+      field.next = setterFunc;
+    }
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
@@ -134,25 +302,19 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getViewList() {
-    const {currentView} = this.state;
-    if (currentView !== null) {
-      const viewList: Array<string> = this.props.uiSpec['views'][currentView][
-        'fields'
-      ];
-      return viewList;
-    }
-    return [];
+    const currentView = this.reqireCurrentView();
+    const viewList: Array<string> = this.props.uiSpec['views'][currentView][
+      'fields'
+    ];
+    return viewList;
   }
 
   getFields() {
-    const {currentView} = this.state;
-    if (currentView !== null) {
-      const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
-        'fields'
-      ];
-      return fields;
-    }
-    return {};
+    const currentView = this.reqireCurrentView();
+    const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
+      'fields'
+    ];
+    return fields;
   }
 
   getValidationSchema() {
@@ -173,11 +335,14 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     /***
      * Formik requires a single object for initialValues, collect these from the ui schema
      */
+    const currentView = this.reqireCurrentView();
     const viewList = this.getViewList();
     const fields = this.getFields();
     const initialValues = Object();
     viewList.forEach(fieldName => {
-      initialValues[fieldName] = fields[fieldName]['initialValue'];
+      initialValues[fieldName] =
+        this.staged[currentView][fieldName].value ||
+        fields[fieldName]['initialValue'];
     });
     return initialValues;
   }
@@ -197,7 +362,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
             onSubmit={(values, {setSubmitting}) => {
               setTimeout(() => {
                 setSubmitting(false);
-                console.log(JSON.stringify(values, null, 2));
+                console.log('SUBMITTING', JSON.stringify(values, null, 2));
               }, 500);
             }}
           >
