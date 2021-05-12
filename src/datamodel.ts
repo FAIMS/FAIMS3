@@ -1,5 +1,14 @@
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
+export const PROJECT_METADATA_PREFIX = 'project-metadata';
+
+/*
+ * This may already exist in pouchdb's typing, but lets make a temporary one for
+ * our needs
+ */
+export interface PouchAttachments {
+  [key: string]: any; // any for now until we work out what we need
+}
 
 export interface ConnectionInfo {
   proto: string;
@@ -108,6 +117,15 @@ export interface EncodedProjectUIModel {
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
   start_view: string;
+}
+
+export interface EncodedProjectMetadata {
+  _id: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
+  _attachments?: PouchAttachments;
+  is_attachment: boolean;
+  metadata: any;
 }
 
 export interface ProjectPeople {
