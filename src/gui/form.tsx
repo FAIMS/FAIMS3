@@ -5,7 +5,7 @@ import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from '../uiSpecification';
-import {Formik, Form, Field} from 'formik';
+import {Formik, Form, Field, FormikProps} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData} from '../dataStorage';
@@ -61,6 +61,14 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       throw Error(`No view ${viewName}`);
     }
   }
+  interceptChange<E>(
+    handleChange: (evt: E) => unknown,
+    values: {[key: string]: unknown},
+    fieldName: string,
+    evt: E,
+    value: string
+  ): void {
+  }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
     // console.log('getComponentFromField');
@@ -85,14 +93,31 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       console.warn(`Failed to load component ${namespace}::${name}`);
       return undefined;
     }
-    const formProps = view.props.formProps;
+    const formProps: FormikProps<{[key: string]: unknown}> =
+      view.props.formProps;
     return (
       <Box mb={3} key={fieldName}>
         <Field
           component={Component} //e.g, TextField (default <input/>)
           name={fieldName}
-          onChange={formProps.handleChange}
-          onBlur={formProps.handleBlur}
+          onChange={(evt: React.ChangeEvent, value: string) =>
+            this.interceptChange(
+              formProps.handleChange,
+              formProps.values,
+              fieldName,
+              evt,
+              value
+            )
+          }
+          onBlur={(evt: React.FocusEvent, value: string) =>
+            this.interceptChange(
+              formProps.handleBlur,
+              formProps.values,
+              fieldName,
+              evt,
+              value
+            )
+          }
           value={formProps.values[fieldName]}
           // error={
           //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
