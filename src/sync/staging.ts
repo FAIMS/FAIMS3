@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { CoreTransformationContext } from 'typescript';
+import {CoreTransformationContext} from 'typescript';
 import {SavedView} from '../datamodel';
 
 export type StagingDB = PouchDB.Database<SavedView>;
@@ -41,7 +41,7 @@ export async function setStagedData(
   _rev: string | null,
   active_id: string,
   view_name: string,
-  existing: {_id: string, _rev: string} | null
+  existing: {_id: string; _rev: string} | null
 ): Promise<PouchDB.Core.Response> {
   const _id = determineId(active_id, view_name, existing);
   try {
@@ -77,7 +77,7 @@ export async function setStagedData(
  * Used for when you're trying to save or retrieve something
  * to/from the staging area, this gives you a pouch unique _id to use.
  *
- * If you're trying to get/save data for when the user 
+ * If you're trying to get/save data for when the user
  * is creating a new document, leave out existing_observation or existing_revision
  * (the last 2 parameters)
  *
@@ -90,7 +90,7 @@ export async function setStagedData(
 function determineId(
   active_id: string,
   view_name: string,
-  existing: {_id: string, _rev: string} | null
+  existing: {_id: string; _rev: string} | null
 ): string {
   const parts: string[] =
     existing !== null
