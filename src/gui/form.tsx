@@ -75,7 +75,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     this.getValidationSchema = this.getValidationSchema.bind(this);
     this.getInitialValues = this.getInitialValues.bind(this);
     this.setState = this.setState.bind(this);
-    this.getViewList = this.getViewList.bind(this);
+    this.getFieldNames = this.getFieldNames.bind(this);
     this.getFields = this.getFields.bind(this);
   }
 
@@ -309,12 +309,12 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     );
   }
 
-  getViewList() {
+  getFieldNames() {
     const currentView = this.reqireCurrentView();
-    const viewList: Array<string> = this.props.uiSpec['views'][currentView][
+    const fieldNames: Array<string> = this.props.uiSpec['views'][currentView][
       'fields'
     ];
-    return viewList;
+    return fieldNames;
   }
 
   getFields() {
@@ -330,10 +330,10 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
      * Formik requires a single object for validationSchema, collect these from the ui schema
      * and transform via yup.ast
      */
-    const viewList = this.getViewList();
+    const fieldNames = this.getFieldNames();
     const fields = this.getFields();
     const validationSchema = Object();
-    viewList.forEach(fieldName => {
+    fieldNames.forEach(fieldName => {
       validationSchema[fieldName] = fields[fieldName]['validationSchema'];
     });
     return transformAll([['yup.object'], ['yup.shape', validationSchema]]);
@@ -344,10 +344,10 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
      * Formik requires a single object for initialValues, collect these from the ui schema
      */
     const currentView = this.reqireCurrentView();
-    const viewList = this.getViewList();
+    const fieldNames = this.getFieldNames();
     const fields = this.getFields();
     const initialValues = Object();
-    viewList.forEach(fieldName => {
+    fieldNames.forEach(fieldName => {
       initialValues[fieldName] =
         this.staged[currentView][fieldName]?.value ||
         fields[fieldName]['initialValue'];
@@ -359,7 +359,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const uiSpec = this.props.uiSpec;
     const viewName = this.state.currentView;
     if (viewName !== null) {
-      const viewList: Array<string> = uiSpec['views'][viewName]['fields'];
+      const fieldNames: Array<string> = uiSpec['views'][viewName]['fields'];
 
       return (
         <React.Fragment>
@@ -379,7 +379,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
                 <Grid container spacing={2}>
                   <Grid item sm={6} xs={12}>
                     <ViewComponent
-                      viewList={viewList}
+                      viewList={fieldNames}
                       form={this}
                       formProps={formProps}
                     />
