@@ -128,6 +128,14 @@ export interface EncodedObservation {
   userid: string;
 }
 
+export interface SavedView {
+  // ID: active_id + '/' + view_name
+  // OR: active_id + '/' + view_name + '/' + existing.observation + '/' + existing.revision
+  _id: string;
+  // Fields
+  [key: string]: string;
+}
+
 /*
  * Elements of a Project's metadataDB can be any one of these,
  * discriminated by the prefix of the object's id
