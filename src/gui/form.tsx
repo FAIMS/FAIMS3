@@ -57,10 +57,18 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   consequtiveStagingSaveErrors = 0;
 
+  componentDidUpdate(prevProps: FormProps) {
+    if (prevProps.activeProjectID !== this.props.activeProjectID) {
+      this.staged = {};
+      this.setState({currentView: null});
+      this.setUISpec();
+    }
+  }
+
   constructor(props: FormProps) {
     super(props);
     this.state = {
-      currentView: props.uiSpec['start_view'],
+      currentView: null,
       stagingState: 'idle',
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
@@ -111,7 +119,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       // getComponentFor, etc, function calls in the _Loading Skeleton_.
       // And the loading skeleton is always shown if currentView === null
       throw Error(
-        `A function requiring currentView was called before currentView instantiated`
+        'A function requiring currentView was called before currentView instantiated'
       );
     }
     return this.state.currentView;
@@ -136,12 +144,12 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     handleChange: (evt: E) => unknown,
     values: {[key: string]: unknown},
     fieldName: string,
-    evt: E,
+    evt: E & {currentTarget:{value: string}},
     value: string
   ): void {
     handleChange(evt);
     const newValues = {...values} as {[fieldName: string]: string};
-    newValues[fieldName] = value;
+    newValues[fieldName] = value || evt.currentTarget.value;
 
     const stagedArgs: [string, string, null | {_id: string; _rev: string}] = [
       this.props.activeProjectID,
@@ -268,7 +276,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         <Field
           component={Component} //e.g, TextField (default <input/>)
           name={fieldName}
-          onChange={(evt: React.ChangeEvent, value: string) =>
+          onChange={(evt: React.ChangeEvent<{value: string}>, value: string) =>
             this.interceptChange(
               formProps.handleChange,
               formProps.values,
@@ -277,7 +285,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
               value
             )
           }
-          onBlur={(evt: React.FocusEvent, value: string) =>
+          onBlur={(evt: React.FocusEvent<{value: string}>, value: string) =>
             this.interceptChange(
               formProps.handleBlur,
               formProps.values,
@@ -341,7 +349,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const initialValues = Object();
     viewList.forEach(fieldName => {
       initialValues[fieldName] =
-        this.staged[currentView][fieldName].value ||
+        this.staged[currentView][fieldName]?.value ||
         fields[fieldName]['initialValue'];
     });
     return initialValues;
