@@ -14,6 +14,7 @@ import {ProjectUIModel} from '../datamodel';
 type FormProps = {
   activeProjectID: string;
   uiSpec: ProjectUIModel;
+  observation: {_id: string; _rev: string} | null;
 };
 
 type FormState = {

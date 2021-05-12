@@ -204,6 +204,7 @@ class ProjectNavTabs extends React.Component<
                         <FAIMSForm
                           uiSpec={uiSpec}
                           activeProjectID={active_id}
+                          observation={null}
                         />
                       )
                     ) : (
