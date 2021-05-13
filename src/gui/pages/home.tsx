@@ -8,7 +8,6 @@ import {dummy_projects} from '../../dummyData';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
-    padding: theme.spacing(2),
   },
   bullet: {
     display: 'inline-block',
@@ -20,6 +19,11 @@ const useStyles = makeStyles(theme => ({
   },
   pos: {
     marginBottom: 12,
+  },
+  avatar: {
+    borderRadius: 8,
+    // backgroundColor: red[500],
+    backgroundColor: theme.palette.secondary.light,
   },
 }));
 
@@ -51,7 +55,7 @@ export default function Home() {
                 xs={12}
                 sm={4}
                 md={4}
-                key={'project-card' + project._id}
+                key={'project-list-grid' + project._id}
               >
                 <ProjectCard project={project} />
               </Grid>

@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {NavLink} from 'react-router-dom';
 import {Container, Breadcrumbs, Typography, Box, Grid} from '@material-ui/core';
-
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 import {dummy_projects} from '../../dummyData';
@@ -57,10 +56,15 @@ export default function Projects() {
           <Typography color="textPrimary">Projects</Typography>
         </Breadcrumbs>
       </Box>
+
       <div className={classes.gridRoot}>
-        <Grid container direction={'column'} spacing={2}>
+        <Grid container spacing={1}>
           {projects.map(project => {
-            return <ProjectCard project={project} />;
+            return (
+              <Grid item xs={12} key={'project-list-grid' + project._id}>
+                <ProjectCard project={project} showTopTenObs={true} />
+              </Grid>
+            );
           })}
         </Grid>
       </div>

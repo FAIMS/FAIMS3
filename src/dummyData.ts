@@ -419,8 +419,8 @@ export async function setupExampleForm(
 export const dummy_projects: Array<ProjectObject> = [
   {
     _id: '1',
-    name: 'Project 1',
-    last_updated: '1/02/2021',
+    name: 'Project One',
+    last_updated: 'September 14, 2019',
     created: '1/02/2021',
     status: 'active',
     description:
@@ -428,8 +428,8 @@ export const dummy_projects: Array<ProjectObject> = [
   },
   {
     _id: '2',
-    name: 'Project 2',
-    last_updated: '12/02/2020',
+    name: 'Project Two',
+    last_updated: 'September 10, 2020',
     created: '1/01/2019',
     status: 'closed',
     description:
@@ -437,8 +437,8 @@ export const dummy_projects: Array<ProjectObject> = [
   },
   {
     _id: '3',
-    name: 'Project 3',
-    last_updated: '3/02/2020',
+    name: 'Project Three Longer Title Field Trip',
+    last_updated: 'Jan 14, 2021',
     created: '1/01/2019',
     status: 'closed',
     description:
