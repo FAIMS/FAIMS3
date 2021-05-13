@@ -23,37 +23,25 @@ type FormProps = {
 // FormState's stagingError.
 const MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS = 5;
 
+const STAGING_SAVE_CYCLE = 2000;
+
 type FormState = {
   stagingState: ['error', unknown] | 'idle' | 'staging';
   currentView: string | null;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
+  // Staging data that is ONLY updated from setUISpec, used in getInitialValues
+  // that means this ISN'T up-to-date with the data in the form.
   staged: {
     [view: string]: {
-      [fieldName: string]: {
-        /*
-        To keep syncing data to the stagedDB:
-        Every time the user changes something, the value here is updated immediately.
-
-        Then staging.setStagedData() is called. The promise is saved to setter
-        OR if setter already has a value, the promise is stored to next (overwriting).
-
-        Said promise, before it finishes, moves the next promise to setter and runs it.
-        (setting next to null).
-        This means that if a field is updated while setter Promise is still putting
-        stuff in the DB, everyone waits until it's done with the DB to avoid conflicts.
-
-        The setter promise updates _rev when it can, as a 'cache' to not need to do db.get()s
-        */
-        value: string;
-        // setter: null | Promise<void>;
-        saving: boolean;
-        next: null | (() => Promise<void>);
-        _rev: null | string;
-      };
+      [fieldName: string]: unknown;
     };
   } = {};
+  stagingNow = false;
+  continueStaging: 0 | 1 | 2 = 0;
+  lastStagingRev: string | null = null;
+  touchedFields = new Set<string>();
 
   consequtiveStagingSaveErrors = 0;
 
@@ -91,16 +79,8 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
       getStagedData(this.props.activeProjectID, viewName, null).then(
         staged_data_restore => {
-          this.staged[viewName] = {};
-          for (const fieldName in staged_data_restore) {
-            if (fieldName === '_id') continue; // _id gets caught up in this from datamodel.SavedView
-            this.staged[viewName][fieldName] = {
-              value: staged_data_restore[fieldName],
-              saving: false,
-              next: null,
-              _rev: null,
-            };
-          }
+          if (staged_data_restore !== null)
+            this.staged[viewName] = staged_data_restore;
         }
       )
     );
@@ -138,110 +118,69 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       throw Error(`No view ${viewName}`);
     }
   }
-  interceptChange<E>(
-    handleChange: (evt: E) => unknown,
-    values: {[key: string]: unknown},
-    fieldName: string,
-    evt: E & {currentTarget: {value: string}},
-    value: string
-  ): void {
-    handleChange(evt);
-    const newValues = {...values} as {[fieldName: string]: string};
-    newValues[fieldName] = value || evt.currentTarget.value;
 
-    const stagedArgs: [string, string, null | {_id: string; _rev: string}] = [
-      this.props.activeProjectID,
-      this.reqireCurrentView(),
-      this.props.observation,
-    ];
-
-    const stagedView = this.staged[this.reqireCurrentView()];
-    // Same as prevState[prevState.currentView]
-    // These should remain the same (NOT copied) for the lifetime of a field
-    // setState isn't called when these are modified, even though they are a (nested)
-    // part of the state, because these aren't shown through to the UI,
-    // It might cause performance issues, I'm not sure if this is a good way to do it.
-    if (!(fieldName in stagedView)) {
-      console.warn(`Late instantiation of staged field ${fieldName}`);
-      stagedView[fieldName] = {
-        value: value,
-        next: null,
-        _rev: null,
-        saving: false,
-      };
+  saveToStaging(fields: string[], context: FormikContextType<any>) {
+    if (this.stagingNow) {
+      console.log('Queueing');
+      this.continueStaging = 2;
+      return;
     }
+    console.log('Freshly staging');
+    this.stagingNow = true;
 
-    const field = stagedView[fieldName];
+    const main_save_func = () => {
+      console.debug('Main save func');
+      const newValues: {[fieldName: string]: unknown} = {};
 
-    const setterWithRev = async (_rev: null | string) => {
-      console.debug('setterWithRev');
-      const {rev} = await setStagedData(newValues, _rev, ...stagedArgs);
-      field._rev = rev;
-    };
-
-    // Called after the staged data is saved to the DB.
-    // to call any queued up setters.
-    const nextSetter = async () => {
-      console.debug('nextSetter');
-      const next_setter = field.next;
-      field.next = null;
-      this.consequtiveStagingSaveErrors = 0;
-      getStagedData(...stagedArgs).then(console.info);
-      if (next_setter !== null) {
-        console.log('Running queued stage save');
-        next_setter();
-      } else {
-        console.log('Finished staging save queue');
-        field.saving = false;
-        this.setState({stagingState: 'idle'});
-      }
-    };
-
-    // Gets _rev if not already known,
-    // Then will push the new staged data to the DB.
-    const setterFunc = async () => {
-      field.saving = true;
-      if (this.state.stagingState !== 'staging') {
-        this.setState({stagingState: 'staging'});
-      }
-      const setted =
-        field._rev === null
-          ? getStagedData(...stagedArgs).then(saved =>
-              setterWithRev(saved?._rev as null | string)
-            )
-          : setterWithRev(field._rev!);
-
-      // After set (and possible getting revision)
-      // Run the next setterFunc in the queue
-      // to put more data into the staging db.\
-      setted.then(nextSetter).catch(err => {
-        if (
-          err.constructor !== Error ||
-          err.message !== 'Running 2 staging promises at the same time!'
-        ) {
-          console.error(err);
-          this.consequtiveStagingSaveErrors += 1;
-          if (
-            this.consequtiveStagingSaveErrors ===
-            MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
-          ) {
-            this.setState({stagingState: ['error', err]});
-          }
+      this.touchedFields.forEach(fieldName => {
+        const fieldValue = context.getFieldMeta(fieldName)?.value;
+        if (fieldValue !== undefined) {
+          newValues[fieldName] = fieldValue;
         } else {
-          console.debug(err);
+          console.warn("Formik didn't give a value for ", fieldName);
+        }
+      });
+
+      setStagedData(
+        newValues,
+        this.lastStagingRev,
+        this.props.activeProjectID,
+        this.reqireCurrentView(),
+        this.props.observation
+      ).then(value => {
+        this.lastStagingRev = value.rev;
+        // After data is set, there have been more data in the meantime
+        if (this.continueStaging !== 0) {
+          this.continueStaging -= 1;
+          this.stagingNow = true;
+          // Recursion is done like this so that stagingNow never has to turn false.
+          setTimeout(main_save_func, STAGING_SAVE_CYCLE);
+        } else {
+          // This last setStagedData is the most up-to-date,
+          // since no more saveToStaging() calls happened since then.
+          this.stagingNow = false;
         }
       });
     };
 
-    field.value = value;
-    if (field.saving === false) {
-      //field.saving is changed at the same time as state.stagingState
-      console.log('Running stage save immediately');
-      setterFunc();
-    } else {
-      console.log('Queueing staging save');
-      field.next = setterFunc;
-    }
+    // Since this function is run from interceptChange, a change handler
+    // We don't want it waiting for PouchDB to enter a keystroke
+    // so this is done asynchronously:
+    setTimeout(main_save_func, 100);
+  }
+
+  interceptChange<E>(
+    context: FormikContextType<any>,
+    handleChange: (evt: E) => unknown,
+    // formikProps.values. Everything except the currently 'focused' field is used from this.
+    otherValues: {[key: string]: unknown},
+    fieldName: string,
+    evt: E & {currentTarget: {name: string}}
+  ): void {
+    handleChange(evt);
+    this.touchedFields.add(fieldName);
+
+    this.saveToStaging(Object.keys(otherValues), context);
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
@@ -259,50 +198,57 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     // console.log('getComponentFromFieldConfig');
     const namespace = fieldConfig['component-namespace'];
     const name = fieldConfig['component-name'];
-    let Component;
+    let Component: React.Component;
     try {
       Component = getComponentByName(namespace, name);
     } catch (err) {
-      console.debug(err);
-      console.warn(`Failed to load component ${namespace}::${name}`);
+      // console.debug(err);
+      // console.warn(`Failed to load component ${namespace}::${name}`);
       return undefined;
     }
     const formProps: FormikProps<{[key: string]: unknown}> =
       view.props.formProps;
     return (
       <Box mb={3} key={fieldName}>
-        <Field
-          component={Component} //e.g, TextField (default <input/>)
-          name={fieldName}
-          onChange={(evt: React.ChangeEvent<{value: string}>, value: string) =>
-            this.interceptChange(
-              formProps.handleChange,
-              formProps.values,
-              fieldName,
-              evt,
-              value
-            )
-          }
-          onBlur={(evt: React.FocusEvent<{value: string}>, value: string) =>
-            this.interceptChange(
-              formProps.handleBlur,
-              formProps.values,
-              fieldName,
-              evt,
-              value
-            )
-          }
-          value={formProps.values[fieldName]}
-          // error={
-          //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
-          // }
-          // view={view}
-          {...fieldConfig['component-parameters']}
-          {...fieldConfig['component-parameters']['InputProps']}
-          {...fieldConfig['component-parameters']['SelectProps']}
-          {...fieldConfig['component-parameters']['InputLabelProps']}
-          {...fieldConfig['component-parameters']['FormHelperTextProps']}
-        />
+        <FormikContext.Consumer>
+          {formikContext => (
+            <Field
+              component={Component} //e.g, TextField (default <input/>)
+              name={fieldName}
+              onChange={(
+                evt: React.ChangeEvent<{name: string}>,
+                value: string
+              ) =>
+                this.interceptChange(
+                  formikContext,
+                  formProps.handleChange,
+                  formProps.values,
+                  fieldName,
+                  evt
+                )
+              }
+              onBlur={(evt: React.FocusEvent<{name: string}>, value: string) =>
+                this.interceptChange(
+                  formikContext,
+                  formProps.handleBlur,
+                  formProps.values,
+                  fieldName,
+                  evt
+                )
+              }
+              value={formProps.values[fieldName]}
+              // error={
+              //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
+              // }
+              // view={view}
+              {...fieldConfig['component-parameters']}
+              {...fieldConfig['component-parameters']['InputProps']}
+              {...fieldConfig['component-parameters']['SelectProps']}
+              {...fieldConfig['component-parameters']['InputLabelProps']}
+              {...fieldConfig['component-parameters']['FormHelperTextProps']}
+            />
+          )}
+        </FormikContext.Consumer>
       </Box>
     );
   }
@@ -346,7 +292,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const initialValues = Object();
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] =
-        this.staged[currentView][fieldName]?.value ||
+        this.staged[currentView][fieldName] ||
         fields[fieldName]['initialValue'];
     });
     return initialValues;
