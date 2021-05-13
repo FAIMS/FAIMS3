@@ -1,5 +1,5 @@
 import {setUiSpecForProject} from './uiSpecification';
-import {ProjectUIModel, ProjectMetaObject} from './datamodel';
+import {ProjectUIModel, ProjectMetaObject, ProjectObject} from './datamodel';
 import {LocalDB} from './sync';
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
@@ -415,3 +415,33 @@ export async function setupExampleForm(
     await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
   );
 }
+
+export const dummy_projects: Array<ProjectObject> = [
+  {
+    _id: '1',
+    name: 'Project 1',
+    last_updated: '1/02/2021',
+    created: '1/02/2021',
+    status: 'active',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  },
+  {
+    _id: '2',
+    name: 'Project 2',
+    last_updated: '12/02/2020',
+    created: '1/01/2019',
+    status: 'closed',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  },
+  {
+    _id: '3',
+    name: 'Project 3',
+    last_updated: '3/02/2020',
+    created: '1/01/2019',
+    status: 'closed',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  },
+];

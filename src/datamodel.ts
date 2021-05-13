@@ -40,6 +40,9 @@ export interface ProjectObject {
   description: string;
   data_db?: ConnectionInfo;
   metadata_db?: ConnectionInfo;
+  last_updated?: string;
+  created?: string;
+  status?: string;
 }
 
 export type ProjectsList = {

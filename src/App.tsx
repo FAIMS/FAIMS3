@@ -8,7 +8,8 @@ import {SignUp} from './gui/pages/signup';
 import {SignIn} from './gui/pages/signin';
 import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
-import {Projects} from './gui/pages/projects';
+import Projects from './gui/pages/projects';
+import Project from './gui/pages/project';
 
 import ProjectNavTabs from './gui/projectNav';
 
@@ -17,7 +18,7 @@ import {MuiThemeProvider, createMuiTheme} from '@material-ui/core/styles';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 import {Shadows} from '@material-ui/core/styles/shadows';
-import {createdProjects, initialize, initializeEvents} from './sync';
+import {createdProjects} from './sync';
 import {ProjectsList} from './datamodel';
 
 const theme = createMuiTheme({
@@ -56,21 +57,13 @@ export class App extends React.Component<AppProps, AppState> {
       projects[active_id] = createdProjects[active_id].project;
     }
   }
-  componentDidMount() {
-    // get view components, render form
-    initializeEvents.on('project_meta_paused', (listing, active, project) => {
-      this.state.projects[active._id] = project;
-      this.setState({projects: this.state.projects});
-    });
-    initialize().catch(err => this.setState({global_error: err}));
-  }
 
   render() {
     return (
       <MuiThemeProvider theme={theme}>
         {/*<FAIMSContainer />*/}
         <Router>
-          <NavBar projectList={this.state.projects} />
+          <NavBar />
           <Switch>
             <Route exact path={ROUTES.SIGN_UP} component={SignUp} />
             <Route exact path={ROUTES.SIGN_IN} component={SignIn} />
@@ -81,7 +74,12 @@ export class App extends React.Component<AppProps, AppState> {
             />
 
             <Route exact path={ROUTES.HOME} component={Home} />
-            <Route exact path={ROUTES.PROJECTS} component={Projects} />
+            <Route exact path={ROUTES.PROJECT_LIST} component={Projects} />
+            <Route
+              exact
+              path={ROUTES.PROJECT + ':project_id(\\d+)'}
+              component={Project}
+            />
             <Route
               exact
               path={ROUTES.DUMMY}

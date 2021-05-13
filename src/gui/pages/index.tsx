@@ -84,13 +84,13 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   </ListItemIcon>
                   Home
                 </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.PROJECTS}>
+                <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
                   <ListItemIcon>
                     <AccountTree fontSize="small" />
                   </ListItemIcon>
                   Projects
                 </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.OBSERVATIONS}>
+                <MenuItem component={NavLink} to={ROUTES.OBSERVATION_LIST}>
                   <ListItemIcon>
                     <DescriptionIcon fontSize="small" />
                   </ListItemIcon>

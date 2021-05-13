@@ -21,6 +21,7 @@ import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import BuildIcon from '@material-ui/icons/Build';
+import HomeIcon from '@material-ui/icons/Home';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import DescriptionIcon from '@material-ui/icons/Description';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -32,15 +33,16 @@ import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
-
-import {ProjectsList} from '../../datamodel';
+import * as ROUTES from '../../constants/routes';
+import {dummy_projects} from '../../dummyData';
+import {Link as RouterLink} from 'react-router-dom';
 
 interface NavBarProps extends WithStyles<typeof styles> {
   classes: any;
-  projectList: ProjectsList;
 }
 
 type NavBarState = {
+  projectList: typeof dummy_projects;
   topMenuItems: any;
   bottomMenuItems: any;
   open: boolean;
@@ -50,6 +52,7 @@ type NavBarState = {
 type ProjectListItemProps = {
   title: string;
   icon: any;
+  to: string;
 };
 const drawerWidth = 240;
 
@@ -119,31 +122,42 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
   constructor(props: NavBarProps) {
     super(props);
 
-    const projectMenuItem = this.getProjectsFromProps();
+    const projectMenuItem = this.getNestedProjects(dummy_projects);
     this.state = {
+      projectList: dummy_projects,
       topMenuItems: [
+        {
+          title: 'Home',
+          icon: <HomeIcon />,
+          to: ROUTES.HOME,
+        },
         projectMenuItem,
         {
           title: 'Tools',
           icon: <BuildIcon />,
+          to: '/',
         },
         {
           title: 'Notifications',
           icon: <NotificationsIcon />,
+          to: '/',
         },
       ],
       bottomMenuItems: [
         {
           title: 'Profile',
           icon: <AccountCircleIcon />,
+          to: '/',
         },
         {
           title: 'Messages',
           icon: <MessageIcon />,
+          to: '/',
         },
         {
           title: 'Settings',
           icon: <SettingsIcon />,
+          to: '/',
         },
       ],
       open: false,
@@ -155,7 +169,7 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
     this.handleDrawerOpen = this.handleDrawerOpen.bind(this);
     this.handleDrawerClose = this.handleDrawerClose.bind(this);
     this.handleClick = this.handleClick.bind(this);
-    this.getProjectsFromProps = this.getProjectsFromProps.bind(this);
+    this.getNestedProjects = this.getNestedProjects.bind(this);
   }
   handleDrawerOpen() {
     this.setState({open: true});
@@ -169,18 +183,28 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
     this.setState({nestedMenuOpen: nestedMenuOpen});
   }
 
-  getProjectsFromProps() {
-    const projectList: ProjectListItemProps[] = [];
-    Object.keys(this.props.projectList).map(key => {
-      projectList.push({
-        title: this.props.projectList[key].name,
+  componentDidMount() {
+    // // get projects from DB
+    // initializeEvents.on('project_meta_paused', (listing, active, project) => {
+    //   this.state.projects[active._id] = project;
+    //   this.setState({projects: this.state.projects});
+    // });
+    // initialize().catch(err => this.setState({global_error: err}));
+  }
+
+  getNestedProjects(projectList: typeof dummy_projects) {
+    const projectListItems: ProjectListItemProps[] = [];
+    projectList.map(project => {
+      projectListItems.push({
+        title: project.name,
         icon: <DescriptionIcon />,
+        to: ROUTES.PROJECT + project._id,
       });
     });
     return {
       title: 'Projects',
       icon: <AccountTree />,
-      nested: projectList,
+      nested: projectListItems,
       open: false,
     };
   }
@@ -236,19 +260,19 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
                 (item: {
                   nested: any;
                   title: string;
+                  to: string;
                   icon: React.ReactChild | undefined;
                 }) => {
                   return Object.prototype.hasOwnProperty.call(
                     item,
                     'nested'
                   ) ? (
-                    <>
+                    <React.Fragment key={'menuItem' + item.title}>
                       <ListItem
                         button
                         onClick={() => {
                           this.handleClick(item.title);
                         }}
-                        key={'menuItem' + item.title}
                       >
                         <ListItemIcon>{item.icon}</ListItemIcon>
                         <ListItemText>
@@ -276,6 +300,7 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
                             (nestedItem: {
                               icon: React.ReactChild;
                               title: string;
+                              to: string;
                             }) => (
                               <ListItem
                                 button
@@ -285,6 +310,8 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
                                   item.title +
                                   nestedItem.title
                                 }
+                                to={nestedItem.to}
+                                component={RouterLink}
                               >
                                 <ListItemIcon>{nestedItem.icon}</ListItemIcon>
                                 <ListItemText primary={nestedItem.title} />
@@ -293,9 +320,14 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
                           )}
                         </List>
                       </Collapse>
-                    </>
+                    </React.Fragment>
                   ) : (
-                    <ListItem button key={item.title}>
+                    <ListItem
+                      button
+                      key={item.title}
+                      to={item.to}
+                      component={RouterLink}
+                    >
                       <ListItemIcon>{item.icon}</ListItemIcon>
                       <ListItemText primary={item.title} />
                     </ListItem>
