@@ -89,22 +89,20 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     // before we allow the user to edit it (Prevents overwriting stuff the user starts writing if they're quick)
 
     const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
-      getStagedData(
-        this.props.activeProjectID,
-        this.state.currentView!,
-        null
-      ).then(staged_data_restore => {
-        this.staged[viewName] = {};
-        for (const fieldName in staged_data_restore) {
-          if (fieldName === '_id') continue; // _id gets caught up in this from datamodel.SavedView
-          this.staged[viewName][fieldName] = {
-            value: staged_data_restore[fieldName],
-            saving: false,
-            next: null,
-            _rev: null,
-          };
+      getStagedData(this.props.activeProjectID, viewName, null).then(
+        staged_data_restore => {
+          this.staged[viewName] = {};
+          for (const fieldName in staged_data_restore) {
+            if (fieldName === '_id') continue; // _id gets caught up in this from datamodel.SavedView
+            this.staged[viewName][fieldName] = {
+              value: staged_data_restore[fieldName],
+              saving: false,
+              next: null,
+              _rev: null,
+            };
+          }
         }
-      })
+      )
     );
 
     await Promise.all(viewStageLoaders);
