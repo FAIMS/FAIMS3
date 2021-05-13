@@ -5,16 +5,25 @@ import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from '../uiSpecification';
-import {Formik, Form, Field, FormikProps} from 'formik';
+import {
+  Formik,
+  Form,
+  Field,
+  FormikProps,
+  useFormikContext,
+  FormikContext,
+  FormikContextType,
+} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
 import {getStagedData, setStagedData} from '../sync/staging';
+import {TrendingUp} from '@material-ui/icons';
+import {couldStartTrivia} from 'typescript';
 
 type FormProps = {
   activeProjectID: string;
-  uiSpec: ProjectUIModel;
   observation: {_id: string; _rev: string} | null;
 };
 
@@ -26,7 +35,7 @@ const MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS = 5;
 const STAGING_SAVE_CYCLE = 2000;
 
 type FormState = {
-  stagingState: ['error', unknown] | 'idle' | 'staging';
+  stagingError: unknown | null;
   currentView: string | null;
 };
 
@@ -38,16 +47,27 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       [fieldName: string]: unknown;
     };
   } = {};
-  stagingNow = false;
-  continueStaging: 0 | 1 | 2 = 0;
-  lastStagingRev: string | null = null;
-  touchedFields = new Set<string>();
 
+  // To avoid staging saves that take more than 2 seconds overlapping,
+  // the second one stops early if it finds this true,
+  // (Set by any running staging save)
+  staging = false;
+  // Return from setInterval
+  stageInterval: null | number = null;
+  // Set to empty set when staging saves current fields
+  // Added to whenever intercept is called
+  touchedFields = new Set<string>();
+  // Incrementally increasing revision ID from staging docs.
+  lastStagingRev: null | string = null;
+  // +1 every time setStagingData errors out. Set to 0 when it doesn't error.
   consequtiveStagingSaveErrors = 0;
+
+  uiSpec: ProjectUIModel | null = null;
 
   componentDidUpdate(prevProps: FormProps) {
     if (prevProps.activeProjectID !== this.props.activeProjectID) {
       this.staged = {};
+      this.uiSpec = null;
       this.setState({currentView: null});
       this.setUISpec();
     }
@@ -57,7 +77,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     super(props);
     this.state = {
       currentView: null,
-      stagingState: 'idle',
+      stagingError: null,
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
@@ -79,16 +99,26 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
       getStagedData(this.props.activeProjectID, viewName, null).then(
         staged_data_restore => {
-          if (staged_data_restore !== null)
-            this.staged[viewName] = staged_data_restore;
+          this.staged[viewName] = staged_data_restore || {};
         }
       )
     );
 
     await Promise.all(viewStageLoaders);
+    this.uiSpec = uiSpec;
+
     this.setState({
       currentView: uiSpec['start_view'],
     });
+  }
+
+  requireUiSpec(): ProjectUIModel {
+    if (this.uiSpec === null) {
+      throw Error(
+        'A function requring currentView/uiSpe was called before setUISpec finished'
+      );
+    }
+    return this.uiSpec;
   }
 
   reqireCurrentView(): string {
@@ -97,7 +127,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       // getComponentFor, etc, function calls in the _Loading Skeleton_.
       // And the loading skeleton is always shown if currentView === null
       throw Error(
-        'A function requiring currentView was called before currentView instantiated'
+        'A function requring currentView/uiSpe was called before setUISpec finished'
       );
     }
     return this.state.currentView;
@@ -109,7 +139,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   updateView(viewName: string) {
-    if (viewName in this.props.uiSpec['views']) {
+    if (viewName in this.requireUiSpec()['views']) {
       this.setState({currentView: viewName});
       this.forceUpdate();
       // Probably not needed, but we *know* we need to rerender when this
@@ -119,73 +149,86 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     }
   }
 
-  saveToStaging(fields: string[], context: FormikContextType<any>) {
-    if (this.stagingNow) {
-      console.log('Queueing');
-      this.continueStaging = 2;
+  stopSaving() {
+    if (this.stageInterval === null) {
+      console.warn('stopSaving called when not already saving');
       return;
     }
-    console.log('Freshly staging');
-    this.stagingNow = true;
+    clearInterval(this.stageInterval);
+  }
+
+  startSaving(context: FormikContextType<any>) {
+    if (this.stageInterval !== null) {
+      console.warn('startSaving called whilst saving already');
+      return;
+      // clearInterval(this.stageInterval);
+    }
 
     const main_save_func = () => {
-      console.debug('Main save func');
-      const newValues: {[fieldName: string]: unknown} = {};
+      if (this.staging) {
+        console.warn('Last stage save took longer than ', STAGING_SAVE_CYCLE);
+        return;
+      }
+      this.staging = true;
+      if (this.state.currentView === null) {
+        console.debug('Attempt to save whilst UI is loading something else');
+        return;
+      }
+      const currentView = this.state.currentView;
 
       this.touchedFields.forEach(fieldName => {
         const fieldValue = context.getFieldMeta(fieldName)?.value;
         if (fieldValue !== undefined) {
-          newValues[fieldName] = fieldValue;
+          this.staged[currentView][fieldName] = fieldValue;
         } else {
           console.warn("Formik didn't give a value for ", fieldName);
         }
       });
 
+      // this.touchedFields.clear();
+
       setStagedData(
-        newValues,
+        this.staged[currentView],
         this.lastStagingRev,
         this.props.activeProjectID,
         this.reqireCurrentView(),
         this.props.observation
-      ).then(value => {
-        this.lastStagingRev = value.rev;
-        // After data is set, there have been more data in the meantime
-        if (this.continueStaging !== 0) {
-          this.continueStaging -= 1;
-          this.stagingNow = true;
-          // Recursion is done like this so that stagingNow never has to turn false.
-          setTimeout(main_save_func, STAGING_SAVE_CYCLE);
-        } else {
-          // This last setStagedData is the most up-to-date,
-          // since no more saveToStaging() calls happened since then.
-          this.stagingNow = false;
-        }
-      });
+      )
+        .then(set_ok => {
+          this.lastStagingRev = set_ok.rev;
+          this.consequtiveStagingSaveErrors = 0;
+        })
+        .catch(err => {
+          this.consequtiveStagingSaveErrors += 1;
+          if (
+            this.consequtiveStagingSaveErrors ===
+            MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
+          ) {
+            this.setState({
+              stagingError: err,
+            });
+          }
+        })
+        .finally(() => {
+          this.staging = false;
+        });
     };
 
-    // Since this function is run from interceptChange, a change handler
-    // We don't want it waiting for PouchDB to enter a keystroke
-    // so this is done asynchronously:
-    setTimeout(main_save_func, 100);
+    this.stageInterval = window.setInterval(main_save_func, STAGING_SAVE_CYCLE);
   }
 
   interceptChange<E>(
-    context: FormikContextType<any>,
     handleChange: (evt: E) => unknown,
-    // formikProps.values. Everything except the currently 'focused' field is used from this.
-    otherValues: {[key: string]: unknown},
     fieldName: string,
     evt: E & {currentTarget: {name: string}}
   ): void {
     handleChange(evt);
     this.touchedFields.add(fieldName);
-
-    this.saveToStaging(Object.keys(otherValues), context);
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
     // console.log('getComponentFromField');
-    const uiSpec = this.props.uiSpec;
+    const uiSpec = this.requireUiSpec();
     const fields = uiSpec['fields'];
     return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
   }
@@ -210,59 +253,40 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       view.props.formProps;
     return (
       <Box mb={3} key={fieldName}>
-        <FormikContext.Consumer>
-          {formikContext => (
-            <Field
-              component={Component} //e.g, TextField (default <input/>)
-              name={fieldName}
-              onChange={(
-                evt: React.ChangeEvent<{name: string}>,
-                value: string
-              ) =>
-                this.interceptChange(
-                  formikContext,
-                  formProps.handleChange,
-                  formProps.values,
-                  fieldName,
-                  evt
-                )
-              }
-              onBlur={(evt: React.FocusEvent<{name: string}>, value: string) =>
-                this.interceptChange(
-                  formikContext,
-                  formProps.handleBlur,
-                  formProps.values,
-                  fieldName,
-                  evt
-                )
-              }
-              value={formProps.values[fieldName]}
-              // error={
-              //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
-              // }
-              // view={view}
-              {...fieldConfig['component-parameters']}
-              {...fieldConfig['component-parameters']['InputProps']}
-              {...fieldConfig['component-parameters']['SelectProps']}
-              {...fieldConfig['component-parameters']['InputLabelProps']}
-              {...fieldConfig['component-parameters']['FormHelperTextProps']}
-            />
-          )}
-        </FormikContext.Consumer>
+        <Field
+          component={Component} //e.g, TextField (default <input/>)
+          name={fieldName}
+          onChange={(evt: React.ChangeEvent<{name: string}>) =>
+            this.interceptChange(formProps.handleChange, fieldName, evt)
+          }
+          onBlur={(evt: React.FocusEvent<{name: string}>) =>
+            this.interceptChange(formProps.handleBlur, fieldName, evt)
+          }
+          value={formProps.values[fieldName]}
+          // error={
+          //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
+          // }
+          // view={view}
+          {...fieldConfig['component-parameters']}
+          {...fieldConfig['component-parameters']['InputProps']}
+          {...fieldConfig['component-parameters']['SelectProps']}
+          {...fieldConfig['component-parameters']['InputLabelProps']}
+          {...fieldConfig['component-parameters']['FormHelperTextProps']}
+        />
       </Box>
     );
   }
 
   getFieldNames() {
     const currentView = this.reqireCurrentView();
-    const fieldNames: Array<string> = this.props.uiSpec['views'][currentView][
-      'fields'
-    ];
+    const fieldNames: Array<string> = this.requireUiSpec()['views'][
+      currentView
+    ]['fields'];
     return fieldNames;
   }
 
   getFields() {
-    const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
+    const fields: {[key: string]: {[key: string]: any}} = this.requireUiSpec()[
       'fields'
     ];
     return fields;
@@ -299,9 +323,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   render() {
-    const uiSpec = this.props.uiSpec;
+    const uiSpec = this.uiSpec;
     const viewName = this.state.currentView;
-    if (viewName !== null) {
+    if (viewName !== null && uiSpec !== null) {
       const fieldNames: Array<string> = uiSpec['views'][viewName]['fields'];
 
       return (
@@ -319,56 +343,67 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
           >
             {formProps => (
               <Form>
-                <Grid container spacing={2}>
-                  <Grid item sm={6} xs={12}>
-                    <ViewComponent
-                      viewList={fieldNames}
-                      form={this}
-                      formProps={formProps}
-                    />
-                    <br />
-                    {formProps.isValid ? (
-                      ''
-                    ) : (
-                      <Alert severity="error">
-                        Form has errors, please scroll up and make changes
-                        before re-submitting.
-                      </Alert>
-                    )}
-                    <br />
-                    <Button
-                      type="submit"
-                      color={formProps.isSubmitting ? 'default' : 'primary'}
-                      variant="contained"
-                      onClick={formProps.submitForm}
-                      disableElevation
-                      disabled={formProps.isSubmitting}
-                    >
-                      {formProps.isSubmitting ? 'Submitting...' : 'Submit'}
-                      {formProps.isSubmitting && (
-                        <CircularProgress
-                          size={24}
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            marginTop: -12,
-                            marginLeft: -12,
-                          }}
-                        />
-                      )}
-                    </Button>
-                  </Grid>
-                  <Grid item sm={6} xs={12}>
-                    <Box
-                      bgcolor={grey[200]}
-                      p={2}
-                      style={{overflowX: 'scroll'}}
-                    >
-                      <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                    </Box>
-                  </Grid>
-                </Grid>
+                <FormikContext.Consumer>
+                  {formikContext => {
+                    this.startSaving(formikContext);
+                    return (
+                      <Grid container spacing={2}>
+                        <Grid item sm={6} xs={12}>
+                          <ViewComponent
+                            viewList={fieldNames}
+                            form={this}
+                            formProps={formProps}
+                          />
+                          <br />
+                          {formProps.isValid ? (
+                            ''
+                          ) : (
+                            <Alert severity="error">
+                              Form has errors, please scroll up and make changes
+                              before re-submitting.
+                            </Alert>
+                          )}
+                          <br />
+                          <Button
+                            type="submit"
+                            color={
+                              formProps.isSubmitting ? 'default' : 'primary'
+                            }
+                            variant="contained"
+                            onClick={formProps.submitForm}
+                            disableElevation
+                            disabled={formProps.isSubmitting}
+                          >
+                            {formProps.isSubmitting
+                              ? 'Submitting...'
+                              : 'Submit'}
+                            {formProps.isSubmitting && (
+                              <CircularProgress
+                                size={24}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  marginTop: -12,
+                                  marginLeft: -12,
+                                }}
+                              />
+                            )}
+                          </Button>
+                        </Grid>
+                        <Grid item sm={6} xs={12}>
+                          <Box
+                            bgcolor={grey[200]}
+                            p={2}
+                            style={{overflowX: 'scroll'}}
+                          >
+                            <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    );
+                  }}
+                </FormikContext.Consumer>
               </Form>
             )}
           </Formik>

@@ -19,7 +19,6 @@ import grey from '@material-ui/core/colors/grey';
 import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
 //import {NumberSchema} from 'yup';
-import {syncUISpecs, SyncingUiSpecs} from '../uiSpecification';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,22 +65,16 @@ interface ProjectNavTabsProps extends WithStyles<typeof styles> {
 
 type ProjectNavTabsState = {
   activeTab: string;
-  uiSpecs: SyncingUiSpecs;
 };
 
 class ProjectNavTabs extends React.Component<
   ProjectNavTabsProps,
   ProjectNavTabsState
 > {
-  uiSpecsUpdate(uiSpecs: SyncingUiSpecs) {
-    this.setState({uiSpecs: uiSpecs});
-  }
-
   constructor(props: ProjectNavTabsProps) {
     super(props);
     this.state = {
       activeTab: '',
-      uiSpecs: syncUISpecs(props.projectList, this.uiSpecsUpdate.bind(this)),
     };
     this.handleChange = this.handleChange.bind(this);
   }
@@ -139,12 +132,6 @@ class ProjectNavTabs extends React.Component<
       activeTab = Object.keys(this.props.projectList)[0];
     }
 
-    syncUISpecs(
-      this.props.projectList,
-      this.uiSpecsUpdate.bind(this),
-      this.state.uiSpecs
-    );
-
     return (
       <div className={classes.root}>
         <AppBar position="static" color="default">
@@ -180,8 +167,6 @@ class ProjectNavTabs extends React.Component<
             /* eslint-disable @typescript-eslint/no-unused-vars */
             (active_id, project_index) => {
               const project = this.props.projectList[active_id];
-              const uiSpec = this.state.uiSpecs[active_id].uiSpec;
-              const uiSpecError = this.state.uiSpecs[active_id].error || null;
               return (
                 <TabPanel
                   index_of_active={activeTab}
@@ -196,21 +181,7 @@ class ProjectNavTabs extends React.Component<
                   <Box p={2} mb={2}>
                     <strong>VIEW STEPPER GOES HERE</strong>
                   </Box>
-                  <>
-                    {uiSpecError === null ? (
-                      uiSpec === null ? (
-                        <span>Loading UI Model...</span>
-                      ) : (
-                        <FAIMSForm
-                          uiSpec={uiSpec}
-                          activeProjectID={active_id}
-                          observation={null}
-                        />
-                      )
-                    ) : (
-                      <pre>{JSON.stringify(uiSpecError, null, 2)}</pre>
-                    )}
-                  </>
+                  <FAIMSForm activeProjectID={active_id} observation={null} />
                 </TabPanel>
               );
             }

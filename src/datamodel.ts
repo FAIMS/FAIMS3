@@ -133,7 +133,7 @@ export interface SavedView {
   // OR: active_id + '/' + view_name + '/' + existing.observation + '/' + existing.revision
   _id: string;
   // Fields
-  [key: string]: string;
+  [key: string]: unknown;
 }
 
 /*

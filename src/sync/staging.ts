@@ -36,7 +36,7 @@ export async function getStagedData(
  * @param {string|null} existing_revision Revision ID if this was editing an existing revision
  */
 export async function setStagedData(
-  new_data: {[key_not_underscore_id: string]: string},
+  new_data: {[key_not_underscore_id: string]: unknown},
   _rev: string | null,
   active_id: string,
   view_name: string,
