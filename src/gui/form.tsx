@@ -8,7 +8,11 @@ import {getUiSpecForProject} from '../uiSpecification';
 import {Formik, Form, Field} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
-import {upsertFAIMSData, generateFAIMSDataID} from '../dataStorage';
+import {
+  upsertFAIMSData,
+  generateFAIMSDataID,
+  lookupFAIMSDataID,
+} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
 import {getCurrentUserId} from '../users';
 
@@ -20,30 +24,27 @@ type FormProps = {
 
 type FormState = {
   currentView: string | null;
-  obsid: string;
+  initialValues: any;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
   constructor(props: FormProps) {
     super(props);
-    let obsid = props.obsid;
-    if (obsid === undefined) {
-      obsid = generateFAIMSDataID();
-    }
     this.state = {
       currentView: props.uiSpec['start_view'],
-      obsid: obsid,
+      initialValues: {},
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
-    this.getInitialValues = this.getInitialValues.bind(this);
     this.setState = this.setState.bind(this);
+    this.setInitialValues = this.setInitialValues.bind(this);
     this.getViewList = this.getViewList.bind(this);
     this.getFields = this.getFields.bind(this);
   }
 
   async componentDidMount() {
     await this.setUISpec();
+    await this.setInitialValues();
   }
 
   async setUISpec() {
@@ -53,11 +54,37 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     });
   }
 
+  async setInitialValues() {
+    /***
+     * Formik requires a single object for initialValues, collect these from the
+     * ui schema or from the database
+     */
+    if (this.props.obsid === undefined) {
+      const viewList = this.getViewList();
+      const fields = this.getFields();
+      const initialValues: {[key: string]: any} = {
+        _id: generateFAIMSDataID(),
+      };
+      viewList.forEach(fieldName => {
+        initialValues[fieldName] = fields[fieldName]['initialValue'];
+      });
+      this.setState({initialValues: initialValues});
+    } else {
+      const data = await lookupFAIMSDataID(
+        this.props.activeProjectID,
+        this.props.obsid
+      );
+      this.setState({initialValues: data});
+    }
+  }
+
   save(values: any) {
     getCurrentUserId(this.props.activeProjectID)
       .then(userid => {
+        const obsid = values['_id'];
+        delete values['_id'];
         const doc = {
-          _id: this.state.obsid,
+          _id: obsid,
           type: '??:??',
           data: values,
           userid: userid,
@@ -115,7 +142,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     return (
       <Box mb={3} key={fieldName}>
         <Field
-          component={Component} //e.g, TextField (default <input/>)
+          component={Component} //e.g, TextField (default <input>)
           name={fieldName}
           onChange={formProps.handleChange}
           onBlur={formProps.handleBlur}
@@ -170,19 +197,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     return transformAll([['yup.object'], ['yup.shape', validationSchema]]);
   }
 
-  getInitialValues() {
-    /***
-     * Formik requires a single object for initialValues, collect these from the ui schema
-     */
-    const viewList = this.getViewList();
-    const fields = this.getFields();
-    const initialValues = Object();
-    viewList.forEach(fieldName => {
-      initialValues[fieldName] = fields[fieldName]['initialValue'];
-    });
-    return initialValues;
-  }
-
   render() {
     const uiSpec = this.props.uiSpec;
     const viewName = this.state.currentView;
@@ -192,7 +206,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       return (
         <React.Fragment>
           <Formik
-            initialValues={this.getInitialValues()}
+            initialValues={this.state.initialValues}
             validationSchema={this.getValidationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
@@ -207,6 +221,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
               <Form>
                 <Grid container spacing={2}>
                   <Grid item sm={6} xs={12}>
+                    <Field name="_id" label="_id" type="hidden" />
                     <ViewComponent
                       viewList={viewList}
                       form={this}
