@@ -10,6 +10,7 @@ import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData, generateFAIMSDataID} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
+import {getCurrentUserId} from '../users';
 
 type FormProps = {
   activeProjectID: string;
@@ -53,13 +54,27 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   save(values: any) {
-    const doc = {
-      _id: this.state.obsid,
-      type: '??:??',
-      data: values,
-    };
-    console.log(doc);
-    upsertFAIMSData(this.props.activeProjectID, doc);
+    getCurrentUserId(this.props.activeProjectID)
+      .then(userid => {
+        const doc = {
+          _id: this.state.obsid,
+          type: '??:??',
+          data: values,
+          userid: userid,
+        };
+        console.log(doc);
+        return doc;
+      })
+      .then(doc => {
+        return upsertFAIMSData(this.props.activeProjectID, doc);
+      })
+      .then(result => {
+        console.debug(result);
+      })
+      .catch(err => {
+        console.warn(err);
+        console.error('Failed to save data');
+      });
   }
 
   updateView(viewName: string) {
