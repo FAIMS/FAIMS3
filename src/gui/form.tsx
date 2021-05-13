@@ -9,7 +9,7 @@ import {Formik, Form, Field, FormikProps} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData} from '../dataStorage';
-import {ProjectUIModel, SavedView} from '../datamodel';
+import {ProjectUIModel} from '../datamodel';
 import {getStagedData, setStagedData} from '../sync/staging';
 
 type FormProps = {
@@ -44,7 +44,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         This means that if a field is updated while setter Promise is still putting
         stuff in the DB, everyone waits until it's done with the DB to avoid conflicts.
 
-        The setter promise updates _rev when it can, as a 'cache' to not need to do db.get()s 
+        The setter promise updates _rev when it can, as a 'cache' to not need to do db.get()s
         */
         value: string;
         // setter: null | Promise<void>;
@@ -142,7 +142,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     handleChange: (evt: E) => unknown,
     values: {[key: string]: unknown},
     fieldName: string,
-    evt: E & {currentTarget:{value: string}},
+    evt: E & {currentTarget: {value: string}},
     value: string
   ): void {
     handleChange(evt);
@@ -316,7 +316,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   getFields() {
-    const currentView = this.reqireCurrentView();
     const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
       'fields'
     ];
