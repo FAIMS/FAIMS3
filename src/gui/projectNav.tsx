@@ -18,7 +18,7 @@ import Skeleton from '@material-ui/lab/Skeleton';
 import grey from '@material-ui/core/colors/grey';
 import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
-//import {NumberSchema} from 'yup';
+import {createdProjects, initialize, initializeEvents} from '../sync';
 import {syncUISpecs, SyncingUiSpecs} from '../uiSpecification';
 
 interface TabPanelProps {
@@ -66,7 +66,9 @@ interface ProjectNavTabsProps extends WithStyles<typeof styles> {
 
 type ProjectNavTabsState = {
   activeTab: string;
+  projectList: ProjectsList;
   uiSpecs: SyncingUiSpecs;
+  global_error: null | {};
 };
 
 class ProjectNavTabs extends React.Component<
@@ -80,10 +82,23 @@ class ProjectNavTabs extends React.Component<
   constructor(props: ProjectNavTabsProps) {
     super(props);
     this.state = {
+      projectList: {},
       activeTab: '',
-      uiSpecs: syncUISpecs(props.projectList, this.uiSpecsUpdate.bind(this)),
+      global_error: null,
+      uiSpecs: syncUISpecs({}, this.uiSpecsUpdate.bind(this)),
     };
     this.handleChange = this.handleChange.bind(this);
+  }
+
+  componentDidMount() {
+    // get view components, render form
+    const projectList : ProjectsList = {};
+    initializeEvents.on('project_meta_paused', (listing, active, project) => {
+      projectList[active._id] = project;
+      this.setState({projectList: projectList});
+    });
+    initialize().catch(err => this.setState({global_error: err}));
+    this.setState({uiSpecs: syncUISpecs(projectList, this.uiSpecsUpdate.bind(this)),})
   }
 
   handleChange(event: any, value: any) {
@@ -93,8 +108,9 @@ class ProjectNavTabs extends React.Component<
   render() {
     const {classes} = this.props;
     let {activeTab} = this.state;
+    const {projectList} = this.state;
 
-    if (Object.keys(this.props.projectList).length === 0) {
+    if (Object.keys(projectList).length === 0) {
       // Before the projects are initialized,
       // rendering this component displays a loading screen
       return (
@@ -133,14 +149,14 @@ class ProjectNavTabs extends React.Component<
           </Container>
         </div>
       );
-    } else if (this.props.projectList[activeTab] === undefined) {
+    } else if (projectList[activeTab] === undefined) {
       // Immediately after loading screen is finished loading, there
       // is no selected tab, so default to the first one:
-      activeTab = Object.keys(this.props.projectList)[0];
+      activeTab = Object.keys(projectList)[0];
     }
 
     syncUISpecs(
-      this.props.projectList,
+      projectList,
       this.uiSpecsUpdate.bind(this),
       this.state.uiSpecs
     );
@@ -157,10 +173,10 @@ class ProjectNavTabs extends React.Component<
             scrollButtons="auto"
             aria-label="scrollable auto tabs example"
           >
-            {Object.keys(this.props.projectList).map(
+            {Object.keys(projectList).map(
               /* eslint-disable @typescript-eslint/no-unused-vars */
               (active_id, project_index) => {
-                const project = this.props.projectList[active_id];
+                const project = projectList[active_id];
                 return (
                   <Tab
                     label={project.name}
@@ -176,10 +192,10 @@ class ProjectNavTabs extends React.Component<
         </AppBar>
 
         <Container maxWidth="md">
-          {Object.keys(this.props.projectList).map(
+          {Object.keys(projectList).map(
             /* eslint-disable @typescript-eslint/no-unused-vars */
             (active_id, project_index) => {
-              const project = this.props.projectList[active_id];
+              const project = projectList[active_id];
               const uiSpec = this.state.uiSpecs[active_id].uiSpec;
               const uiSpecError = this.state.uiSpecs[active_id].error || null;
               return (

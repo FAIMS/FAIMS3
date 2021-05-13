@@ -1,5 +1,10 @@
 import {setUiSpecForProject} from './uiSpecification';
-import {ProjectUIModel, ProjectMetaObject, ProjectObject} from './datamodel';
+import {
+  ProjectUIModel,
+  ProjectMetaObject,
+  ProjectObject,
+  Observation,
+} from './datamodel';
 import {LocalDB} from './sync';
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
@@ -443,5 +448,29 @@ export const dummy_projects: Array<ProjectObject> = [
     status: 'closed',
     description:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  },
+];
+
+export const dummy_observations: Array<Observation> = [
+  {
+    _id: '1',
+    _rev: '1',
+    type: '',
+    data: {
+      values: {
+        'take-point-field': null,
+        'bad-field': '',
+        'action-field': 'hello',
+        'email-field': '',
+        'str-field': 'yellow',
+        'multi-str-field':
+          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        'int-field': 1,
+        'select-field': '',
+        'multi-select-field': [],
+        'checkbox-field': false,
+        'radio-group-field': '2',
+      },
+    },
   },
 ];
