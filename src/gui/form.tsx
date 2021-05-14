@@ -10,17 +10,14 @@ import {
   Form,
   Field,
   FormikProps,
-  useFormikContext,
   FormikContext,
-  FormikContextType,
+  FormikValues,
 } from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
 import {getStagedData, setStagedData} from '../sync/staging';
-import {TrendingUp} from '@material-ui/icons';
-import {couldStartTrivia} from 'typescript';
 
 type FormProps = {
   activeProjectID: string;
@@ -42,6 +39,7 @@ type FormState = {
 export class FAIMSForm extends React.Component<FormProps, FormState> {
   // Staging data that is ONLY updated from setUISpec, used in getInitialValues
   // that means this ISN'T up-to-date with the data in the form.
+  // Reset when current observation/project changes
   staged: {
     [view: string]: {
       [fieldName: string]: unknown;
@@ -52,21 +50,35 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   // the second one stops early if it finds this true,
   // (Set by any running staging save)
   staging = false;
-  // Return from setInterval
+
+  // Return from setInterval, when the staging save is running.
   stageInterval: null | number = null;
-  // Set to empty set when staging saves current fields
-  // Added to whenever intercept is called
+
+  // Keeps track of any fields that have changed from their initial values
+  // This is different from formik's FormikProps.touched, in that it tracks
+  // when the values change before the blur event (i.e. listens for onChange AND onBlur)
+  // Used for determining what to save to the staging area.
+  // Starts out as empty set even if there was data loaded from the staging area.
+  // Reset when current observation/project changes
   touchedFields = new Set<string>();
+
   // Incrementally increasing revision ID from staging docs.
+  // Reset when current observation/project changes
   lastStagingRev: null | string = null;
+
   // +1 every time setStagingData errors out. Set to 0 when it doesn't error.
   consequtiveStagingSaveErrors = 0;
 
   uiSpec: ProjectUIModel | null = null;
 
   componentDidUpdate(prevProps: FormProps) {
-    if (prevProps.activeProjectID !== this.props.activeProjectID) {
+    if (
+      prevProps.activeProjectID !== this.props.activeProjectID ||
+      prevProps.observation !== this.props.observation
+    ) {
       this.staged = {};
+      this.touchedFields.clear();
+      this.lastStagingRev = null;
       this.uiSpec = null;
       this.setState({currentView: null});
       this.setUISpec();
@@ -157,13 +169,25 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     clearInterval(this.stageInterval);
   }
 
-  startSaving(context: FormikContextType<any>) {
+  lastValues: FormikValues | null = null;
+
+  updateLastValues(values: FormikValues) {
+    this.lastValues = values;
     if (this.stageInterval !== null) {
-      console.warn('startSaving called whilst saving already');
+      // It is now OK to clal updateLastValues whenever,
+      // just to update the formikProps.values
       return;
-      // clearInterval(this.stageInterval);
     }
 
+    /*
+    This main_save_func is run every 2 seconds, when this.lastValues !== null
+    It saves this.lastValues to the staging DB.
+
+    Any errors that occur within are pushed to this.state.stagingArea,
+    but only after MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS errors occurred in consequitive invokations
+
+
+    */
     const main_save_func = () => {
       if (this.staging) {
         console.warn('Last stage save took longer than ', STAGING_SAVE_CYCLE);
@@ -171,21 +195,20 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       }
       this.staging = true;
       if (this.state.currentView === null) {
+        // This may occur after the user switches tabs.
         console.debug('Attempt to save whilst UI is loading something else');
         return;
       }
       const currentView = this.state.currentView;
 
       this.touchedFields.forEach(fieldName => {
-        const fieldValue = context.getFieldMeta(fieldName)?.value;
+        const fieldValue = this.lastValues![fieldName];
         if (fieldValue !== undefined) {
           this.staged[currentView][fieldName] = fieldValue;
         } else {
           console.warn("Formik didn't give a value for ", fieldName);
         }
       });
-
-      // this.touchedFields.clear();
 
       setStagedData(
         this.staged[currentView],
@@ -219,11 +242,13 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   interceptChange<E>(
     handleChange: (evt: E) => unknown,
+    formProps: FormikProps<any>,
     fieldName: string,
     evt: E & {currentTarget: {name: string}}
   ): void {
     handleChange(evt);
     this.touchedFields.add(fieldName);
+    this.updateLastValues(formProps.values);
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
@@ -257,10 +282,20 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
           component={Component} //e.g, TextField (default <input/>)
           name={fieldName}
           onChange={(evt: React.ChangeEvent<{name: string}>) =>
-            this.interceptChange(formProps.handleChange, fieldName, evt)
+            this.interceptChange(
+              formProps.handleChange,
+              formProps,
+              fieldName,
+              evt
+            )
           }
           onBlur={(evt: React.FocusEvent<{name: string}>) =>
-            this.interceptChange(formProps.handleBlur, fieldName, evt)
+            this.interceptChange(
+              formProps.handleBlur,
+              formProps,
+              fieldName,
+              evt
+            )
           }
           value={formProps.values[fieldName]}
           // error={
@@ -341,71 +376,63 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
               }, 500);
             }}
           >
-            {formProps => (
-              <Form>
-                <FormikContext.Consumer>
-                  {formikContext => {
-                    this.startSaving(formikContext);
-                    return (
-                      <Grid container spacing={2}>
-                        <Grid item sm={6} xs={12}>
-                          <ViewComponent
-                            viewList={fieldNames}
-                            form={this}
-                            formProps={formProps}
+            {formProps => {
+              this.updateLastValues(formProps.values);
+              return (
+                <Form>
+                  <Grid container spacing={2}>
+                    <Grid item sm={6} xs={12}>
+                      <ViewComponent
+                        viewList={fieldNames}
+                        form={this}
+                        formProps={formProps}
+                      />
+                      <br />
+                      {formProps.isValid ? (
+                        ''
+                      ) : (
+                        <Alert severity="error">
+                          Form has errors, please scroll up and make changes
+                          before re-submitting.
+                        </Alert>
+                      )}
+                      <br />
+                      <Button
+                        type="submit"
+                        color={formProps.isSubmitting ? 'default' : 'primary'}
+                        variant="contained"
+                        onClick={formProps.submitForm}
+                        disableElevation
+                        disabled={formProps.isSubmitting}
+                      >
+                        {formProps.isSubmitting ? 'Submitting...' : 'Submit'}
+                        {formProps.isSubmitting && (
+                          <CircularProgress
+                            size={24}
+                            style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              marginTop: -12,
+                              marginLeft: -12,
+                            }}
                           />
-                          <br />
-                          {formProps.isValid ? (
-                            ''
-                          ) : (
-                            <Alert severity="error">
-                              Form has errors, please scroll up and make changes
-                              before re-submitting.
-                            </Alert>
-                          )}
-                          <br />
-                          <Button
-                            type="submit"
-                            color={
-                              formProps.isSubmitting ? 'default' : 'primary'
-                            }
-                            variant="contained"
-                            onClick={formProps.submitForm}
-                            disableElevation
-                            disabled={formProps.isSubmitting}
-                          >
-                            {formProps.isSubmitting
-                              ? 'Submitting...'
-                              : 'Submit'}
-                            {formProps.isSubmitting && (
-                              <CircularProgress
-                                size={24}
-                                style={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  left: '50%',
-                                  marginTop: -12,
-                                  marginLeft: -12,
-                                }}
-                              />
-                            )}
-                          </Button>
-                        </Grid>
-                        <Grid item sm={6} xs={12}>
-                          <Box
-                            bgcolor={grey[200]}
-                            p={2}
-                            style={{overflowX: 'scroll'}}
-                          >
-                            <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    );
-                  }}
-                </FormikContext.Consumer>
-              </Form>
-            )}
+                        )}
+                      </Button>
+                    </Grid>
+                    <Grid item sm={6} xs={12}>
+                      <Box
+                        bgcolor={grey[200]}
+                        p={2}
+                        style={{overflowX: 'scroll'}}
+                      >
+                        <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Form>
+              );
+            }}
           </Formik>
         </React.Fragment>
       );
