@@ -40,11 +40,11 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   // Staging data that is ONLY updated from setUISpec, used in getInitialValues
   // that means this ISN'T up-to-date with the data in the form.
   // Reset when current observation/project changes
-  staged: {
+  loadedStagedData: null | {
     [view: string]: {
       [fieldName: string]: unknown;
     };
-  } = {};
+  } = null;
 
   // To avoid staging saves that take more than 2 seconds overlapping,
   // the second one stops early if it finds this true,
@@ -76,12 +76,17 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       prevProps.activeProjectID !== this.props.activeProjectID ||
       prevProps.observation !== this.props.observation
     ) {
-      this.staged = {};
+      this.loadedStagedData = null;
       this.touchedFields.clear();
       this.lastStagingRev = null;
-      this.uiSpec = null;
-      this.setState({currentView: null});
-      this.setUISpec();
+
+      // uiSpec & currentView re-load is only necessary if activeProjectID changed.
+      if (prevProps.activeProjectID !== this.props.activeProjectID) {
+        this.uiSpec = null;
+        this.setState({currentView: null});
+      }
+
+      this.loadDataAfterPropUpdate();
     }
   }
 
@@ -100,27 +105,36 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   async componentDidMount() {
-    await this.setUISpec();
+    await this.loadDataAfterPropUpdate();
   }
 
-  async setUISpec() {
-    const uiSpec = await getUiSpecForProject(this.props.activeProjectID);
-    // All staged data must either be loaded or error out
-    // before we allow the user to edit it (Prevents overwriting stuff the user starts writing if they're quick)
+  async loadDataAfterPropUpdate() {
+    // CurrentView & loadedStagedData are assumed to need updating when this is called
+    // (They need updating if this.props.observation changes)
+    // but uiSpec might not need updating here
 
-    const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
-      getStagedData(this.props.activeProjectID, viewName, null).then(
-        staged_data_restore => {
-          this.staged[viewName] = staged_data_restore || {};
-        }
-      )
+    if (this.uiSpec === null) {
+      this.uiSpec = await getUiSpecForProject(this.props.activeProjectID);
+    }
+
+    // Load data from staging DB
+    const loadedStagedData: {[v: string]: {[fn: string]: unknown}} = {};
+
+    const viewStageLoaders = Object.entries(this.uiSpec['views']).map(
+      ([viewName]) =>
+        getStagedData(this.props.activeProjectID, viewName, null).then(
+          staged_data_restore => {
+            loadedStagedData[viewName] = staged_data_restore || {};
+          }
+        )
     );
 
+    // Wait for all data to load from staging DB before setting this.staged not null
     await Promise.all(viewStageLoaders);
-    this.uiSpec = uiSpec;
+    this.loadedStagedData = loadedStagedData;
 
     this.setState({
-      currentView: uiSpec['start_view'],
+      currentView: this.uiSpec['start_view'],
     });
   }
 
@@ -161,14 +175,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     }
   }
 
-  stopSaving() {
-    if (this.stageInterval === null) {
-      console.warn('stopSaving called when not already saving');
-      return;
-    }
-    clearInterval(this.stageInterval);
-  }
-
   lastValues: FormikValues | null = null;
 
   updateLastValues(values: FormikValues) {
@@ -185,8 +191,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
     Any errors that occur within are pushed to this.state.stagingArea,
     but only after MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS errors occurred in consequitive invokations
-
-
     */
     const main_save_func = () => {
       if (this.staging) {
@@ -194,8 +198,13 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         return;
       }
       this.staging = true;
+      // These may occur after the user switches tabs.
+      if (this.loadedStagedData === null) {
+        console.debug('Attempt to save whilst UI is loading something else');
+        return;
+      }
+      const loadedStagedData = this.loadedStagedData;
       if (this.state.currentView === null) {
-        // This may occur after the user switches tabs.
         console.debug('Attempt to save whilst UI is loading something else');
         return;
       }
@@ -204,14 +213,14 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       this.touchedFields.forEach(fieldName => {
         const fieldValue = this.lastValues![fieldName];
         if (fieldValue !== undefined) {
-          this.staged[currentView][fieldName] = fieldValue;
+          loadedStagedData[currentView][fieldName] = fieldValue;
         } else {
           console.warn("Formik didn't give a value for ", fieldName);
         }
       });
 
       setStagedData(
-        this.staged[currentView],
+        loadedStagedData[currentView],
         this.lastStagingRev,
         this.props.activeProjectID,
         this.reqireCurrentView(),
@@ -351,7 +360,8 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     const initialValues = Object();
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] =
-        this.staged[currentView][fieldName] ||
+        // Should be non-null if currentView is non-null
+        this.loadedStagedData![currentView][fieldName] ||
         fields[fieldName]['initialValue'];
     });
     return initialValues;
