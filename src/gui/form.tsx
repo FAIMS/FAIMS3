@@ -5,14 +5,7 @@ import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import {getComponentByName} from './ComponentRegistry';
 import {getUiSpecForProject} from '../uiSpecification';
-import {
-  Formik,
-  Form,
-  Field,
-  FormikProps,
-  FormikContext,
-  FormikValues,
-} from 'formik';
+import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
 import {upsertFAIMSData} from '../dataStorage';

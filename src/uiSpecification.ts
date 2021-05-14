@@ -5,7 +5,6 @@ import {
   UI_SPECIFICATION_NAME,
   ProjectUIModel,
   EncodedProjectUIModel,
-  ProjectsList,
 } from './datamodel';
 
 export async function getUiSpecForProject(
