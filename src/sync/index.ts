@@ -176,7 +176,10 @@ function ensure_synced_db<Content extends {}>(
   }
 
   // Already connected/connecting
-  if (global_dbs[local_db_id].remote !== null) {
+  if (
+    global_dbs[local_db_id].remote !== null &&
+    JSON.stringify(global_dbs[local_db_id].remote!.info) === JSON.stringify(connection_info)
+  ) {
     return [
       false,
       {
