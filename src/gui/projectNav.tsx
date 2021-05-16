@@ -18,7 +18,7 @@ import Skeleton from '@material-ui/lab/Skeleton';
 import grey from '@material-ui/core/colors/grey';
 import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
-import {createdProjects, initialize, initializeEvents} from '../sync';
+import {initialize, initializeEvents} from '../sync';
 import {syncUISpecs, SyncingUiSpecs} from '../uiSpecification';
 
 interface TabPanelProps {
@@ -92,13 +92,15 @@ class ProjectNavTabs extends React.Component<
 
   componentDidMount() {
     // get view components, render form
-    const projectList : ProjectsList = {};
+    const projectList: ProjectsList = {};
     initializeEvents.on('project_meta_paused', (listing, active, project) => {
       projectList[active._id] = project;
       this.setState({projectList: projectList});
     });
     initialize().catch(err => this.setState({global_error: err}));
-    this.setState({uiSpecs: syncUISpecs(projectList, this.uiSpecsUpdate.bind(this)),})
+    this.setState({
+      uiSpecs: syncUISpecs(projectList, this.uiSpecsUpdate.bind(this)),
+    });
   }
 
   handleChange(event: any, value: any) {
@@ -155,11 +157,7 @@ class ProjectNavTabs extends React.Component<
       activeTab = Object.keys(projectList)[0];
     }
 
-    syncUISpecs(
-      projectList,
-      this.uiSpecsUpdate.bind(this),
-      this.state.uiSpecs
-    );
+    syncUISpecs(projectList, this.uiSpecsUpdate.bind(this), this.state.uiSpecs);
 
     return (
       <div className={classes.root}>

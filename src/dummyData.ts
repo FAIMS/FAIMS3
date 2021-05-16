@@ -433,7 +433,7 @@ export const dummy_projects: Array<ProjectObject> = [
   },
   {
     _id: '2',
-    name: 'Project Two',
+    name: 'Terrific Project Two',
     last_updated: 'September 10, 2020',
     created: '1/01/2019',
     status: 'closed',
@@ -442,7 +442,7 @@ export const dummy_projects: Array<ProjectObject> = [
   },
   {
     _id: '3',
-    name: 'Project Three Longer Title Field Trip',
+    name: 'Longer Title Field Trip Project Title',
     last_updated: 'Jan 14, 2021',
     created: '1/01/2019',
     status: 'closed',

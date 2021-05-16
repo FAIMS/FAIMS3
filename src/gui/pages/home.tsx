@@ -1,10 +1,11 @@
-import React, {useState} from 'react';
+import React, {useContext} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {NavLink} from 'react-router-dom';
 import {Container, Breadcrumbs, Typography, Box, Grid} from '@material-ui/core';
+import Skeleton from '@material-ui/lab/Skeleton';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
-import {dummy_projects} from '../../dummyData';
+import {store} from '../../store';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -29,8 +30,8 @@ const useStyles = makeStyles(theme => ({
 
 export default function Home() {
   const classes = useStyles();
-  const [projects] = useState(dummy_projects);
-
+  const globalState = useContext(store);
+  const projects = globalState.state.project_list;
   return (
     <Container maxWidth="md">
       <Box
@@ -48,19 +49,39 @@ export default function Home() {
       <Typography variant="overline">Projects</Typography>
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {projects.map(project => {
-            return (
-              <Grid
-                item
-                xs={12}
-                sm={4}
-                md={4}
-                key={'project-list-grid' + project._id}
-              >
-                <ProjectCard project={project} />
-              </Grid>
-            );
-          })}
+          {projects.length === 0
+            ? [...Array(3)].map((e, i) => (
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                  md={4}
+                  key={'skeleton-project-list-grid' + i}
+                >
+                  <Skeleton animation="wave" variant="rect">
+                    <ProjectCard
+                      project={{
+                        name: 'dummy',
+                        description: 'dummy',
+                        _id: 'dummy',
+                      }}
+                    />
+                  </Skeleton>
+                </Grid>
+              ))
+            : projects.map(project => {
+                return (
+                  <Grid
+                    item
+                    xs={12}
+                    sm={4}
+                    md={4}
+                    key={'project-list-grid' + project._id}
+                  >
+                    <ProjectCard project={project} />
+                  </Grid>
+                );
+              })}
         </Grid>
       </div>
       <Typography variant="overline">Observations</Typography>

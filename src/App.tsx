@@ -3,13 +3,14 @@ import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import NavBar from './gui/components/navbar';
-import {Index} from './gui/pages/index';
+import {Index} from './gui/pages';
 import {SignUp} from './gui/pages/signup';
 import {SignIn} from './gui/pages/signin';
 import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
-import Projects from './gui/pages/projects';
+import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
+import {StateProvider} from './store';
 
 import ProjectNavTabs from './gui/projectNav';
 
@@ -60,37 +61,41 @@ export class App extends React.Component<AppProps, AppState> {
 
   render() {
     return (
-      <MuiThemeProvider theme={theme}>
-        {/*<FAIMSContainer />*/}
-        <Router>
-          <NavBar />
-          <Switch>
-            <Route exact path={ROUTES.SIGN_UP} component={SignUp} />
-            <Route exact path={ROUTES.SIGN_IN} component={SignIn} />
-            <Route
-              exact
-              path={ROUTES.FORGOT_PASSWORD}
-              component={ForgotPassword}
-            />
+      <StateProvider>
+        <MuiThemeProvider theme={theme}>
+          <Router>
+            <NavBar />
+            <Switch>
+              <Route exact path={ROUTES.SIGN_UP} component={SignUp} />
+              <Route exact path={ROUTES.SIGN_IN} component={SignIn} />
+              <Route
+                exact
+                path={ROUTES.FORGOT_PASSWORD}
+                component={ForgotPassword}
+              />
 
-            <Route exact path={ROUTES.HOME} component={Home} />
-            <Route exact path={ROUTES.PROJECT_LIST} component={Projects} />
-            <Route
-              exact
-              path={ROUTES.PROJECT + ':project_id(\\d+)'}
-              component={Project}
-            />
-            <Route
-              exact
-              path={ROUTES.DUMMY}
-              render={props => (
-                <ProjectNavTabs {...props} projectList={this.state.projects} />
-              )}
-            />
-            <Route exact path="/" component={Index} />
-          </Switch>
-        </Router>
-      </MuiThemeProvider>
+              <Route exact path={ROUTES.HOME} component={Home} />
+              <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
+              <Route
+                exact
+                path={ROUTES.PROJECT + ':project_id(\\d+)'}
+                component={Project}
+              />
+              <Route
+                exact
+                path={ROUTES.DUMMY}
+                render={props => (
+                  <ProjectNavTabs
+                    {...props}
+                    projectList={this.state.projects}
+                  />
+                )}
+              />
+              <Route exact path="/" component={Index} />
+            </Switch>
+          </Router>
+        </MuiThemeProvider>
+      </StateProvider>
     );
   }
 }

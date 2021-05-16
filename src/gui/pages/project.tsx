@@ -1,10 +1,15 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import {NavLink, useParams} from 'react-router-dom';
 import {Box, Breadcrumbs, Container, Typography} from '@material-ui/core';
+import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
+
+import {store} from '../../store';
 
 export default function Project() {
   const {project_id} = useParams<{project_id: string}>();
+  const globalState = useContext(store);
+
   return (
     <Container maxWidth="md">
       <Box
@@ -21,6 +26,8 @@ export default function Project() {
         </Breadcrumbs>
       </Box>
       <h3>project_id: {project_id}</h3>
+      {JSON.stringify(globalState)}
+      {/*<ProjectCard project={project}/>*/}
     </Container>
   );
 }

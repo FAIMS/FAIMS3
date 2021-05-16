@@ -1,4 +1,5 @@
-import React from 'react';
+import React, {useContext, useState, useEffect} from 'react';
+import {Link as RouterLink} from 'react-router-dom';
 import {
   Typography,
   AppBar as MuiAppBar,
@@ -6,12 +7,7 @@ import {
   IconButton,
 } from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
-import {
-  createStyles,
-  withStyles,
-  WithStyles,
-  Theme,
-} from '@material-ui/core/styles';
+import {makeStyles} from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import clsx from 'clsx';
 import {CircularProgress} from '@material-ui/core';
@@ -35,328 +31,286 @@ import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {dummy_projects} from '../../dummyData';
-import {Link as RouterLink} from 'react-router-dom';
 
-interface NavBarProps extends WithStyles<typeof styles> {
-  classes: any;
-}
+import {store} from '../../store';
 
-type NavBarState = {
-  projectList: typeof dummy_projects;
-  topMenuItems: any;
-  bottomMenuItems: any;
-  open: boolean;
-  nestedMenuOpen: any;
-};
+// type NavBarState = {
+//   topMenuItems: any;
+//   bottomMenuItems: any;
+//   open: boolean;
+//   nestedMenuOpen: any;
+// };
 
 type ProjectListItemProps = {
   title: string;
   icon: any;
   to: string;
 };
+type MenuItemProps = {
+  nested?: any;
+  title: string;
+  to: string;
+  icon: React.ReactChild | undefined;
+};
+
 const drawerWidth = 240;
 
-const styles = (theme: Theme) =>
-  createStyles({
-    root: {
-      display: 'flex',
-    },
-    appBar: {
-      transition: theme.transitions.create(['margin', 'width'], {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-      }),
-    },
-    appBarShift: {
-      width: `calc(100% - ${drawerWidth}px)`,
-      marginLeft: drawerWidth,
-      transition: theme.transitions.create(['margin', 'width'], {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-    },
-    menuButton: {
-      marginRight: theme.spacing(2),
-    },
-    hide: {
-      display: 'none',
-    },
-    drawer: {
-      width: drawerWidth,
-      flexShrink: 0,
-    },
-    drawerPaper: {
-      width: drawerWidth,
-    },
-    drawerHeader: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: theme.spacing(0, 1),
-      // necessary for content to be below app bar
-      minHeight: '64px',
-      // ...theme.mixins.toolbar,
-      justifyContent: 'flex-end',
-    },
-    content: {
-      flexGrow: 1,
-      padding: theme.spacing(3),
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-      }),
-      marginLeft: -drawerWidth,
-    },
-    contentShift: {
-      transition: theme.transitions.create('margin', {
-        easing: theme.transitions.easing.easeOut,
-        duration: theme.transitions.duration.enteringScreen,
-      }),
-      marginLeft: 0,
-    },
-    nested: {
-      paddingLeft: theme.spacing(4),
-    },
-  });
+const useStyles = makeStyles(theme => ({
+  root: {
+    display: 'flex',
+  },
+  appBar: {
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+  },
+  appBarShift: {
+    width: `calc(100% - ${drawerWidth}px)`,
+    marginLeft: drawerWidth,
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+  },
+  menuButton: {
+    marginRight: theme.spacing(2),
+  },
+  hide: {
+    display: 'none',
+  },
+  drawer: {
+    width: drawerWidth,
+    flexShrink: 0,
+  },
+  drawerPaper: {
+    width: drawerWidth,
+  },
+  drawerHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: theme.spacing(0, 1),
+    // necessary for content to be below app bar
+    minHeight: '64px',
+    // ...theme.mixins.toolbar,
+    justifyContent: 'flex-end',
+  },
+  content: {
+    flexGrow: 1,
+    padding: theme.spacing(3),
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginLeft: -drawerWidth,
+  },
+  contentShift: {
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.easeOut,
+      duration: theme.transitions.duration.enteringScreen,
+    }),
+    marginLeft: 0,
+  },
+  nested: {
+    paddingLeft: theme.spacing(4),
+  },
+}));
 
-class NavBar extends React.Component<NavBarProps, NavBarState> {
-  constructor(props: NavBarProps) {
-    super(props);
-
-    const projectMenuItem = this.getNestedProjects(dummy_projects);
-    this.state = {
-      projectList: dummy_projects,
-      topMenuItems: [
-        {
-          title: 'Home',
-          icon: <HomeIcon />,
-          to: ROUTES.HOME,
-        },
-        projectMenuItem,
-        {
-          title: 'Tools',
-          icon: <BuildIcon />,
-          to: '/',
-        },
-        {
-          title: 'Notifications',
-          icon: <NotificationsIcon />,
-          to: '/',
-        },
-      ],
-      bottomMenuItems: [
-        {
-          title: 'Profile',
-          icon: <AccountCircleIcon />,
-          to: '/',
-        },
-        {
-          title: 'Messages',
-          icon: <MessageIcon />,
-          to: '/',
-        },
-        {
-          title: 'Settings',
-          icon: <SettingsIcon />,
-          to: '/',
-        },
-      ],
-      open: false,
-      nestedMenuOpen: {
-        Projects: false,
-      },
-    };
-
-    this.handleDrawerOpen = this.handleDrawerOpen.bind(this);
-    this.handleDrawerClose = this.handleDrawerClose.bind(this);
-    this.handleClick = this.handleClick.bind(this);
-    this.getNestedProjects = this.getNestedProjects.bind(this);
-  }
-  handleDrawerOpen() {
-    this.setState({open: true});
-  }
-  handleDrawerClose() {
-    this.setState({open: false});
-  }
-  handleClick(menuName: string) {
-    const nestedMenuOpen = this.state.nestedMenuOpen;
-    nestedMenuOpen[menuName] = !nestedMenuOpen[menuName];
-    this.setState({nestedMenuOpen: nestedMenuOpen});
-  }
-
-  componentDidMount() {
-    // // get projects from DB
-    // initializeEvents.on('project_meta_paused', (listing, active, project) => {
-    //   this.state.projects[active._id] = project;
-    //   this.setState({projects: this.state.projects});
-    // });
-    // initialize().catch(err => this.setState({global_error: err}));
-  }
-
-  getNestedProjects(projectList: typeof dummy_projects) {
-    const projectListItems: ProjectListItemProps[] = [];
-    projectList.map(project => {
-      projectListItems.push({
-        title: project.name,
-        icon: <DescriptionIcon />,
-        to: ROUTES.PROJECT + project._id,
-      });
+function getNestedProjects(projectList: typeof dummy_projects) {
+  const projectListItems: ProjectListItemProps[] = [];
+  projectList.map(project => {
+    projectListItems.push({
+      title: project.name,
+      icon: <DescriptionIcon />,
+      to: ROUTES.PROJECT + project._id,
     });
-    return {
-      title: 'Projects',
-      icon: <AccountTree />,
-      nested: projectListItems,
-      open: false,
-    };
-  }
-
-  render() {
-    const {classes} = this.props;
-    const {open, nestedMenuOpen, topMenuItems, bottomMenuItems} = this.state;
-
-    return (
-      <React.Fragment>
-        <div className={classes.root}>
-          <CssBaseline />
-          <MuiAppBar
-            position="relative"
-            className={clsx(classes.appBar, {
-              [classes.appBarShift]: this.state.open,
-            })}
-          >
-            <Toolbar>
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                onClick={this.handleDrawerOpen}
-                edge="start"
-                className={clsx(classes.menuButton, open && classes.hide)}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h6" noWrap style={{flex: 1}}>
-                FAIMS3
-              </Typography>
-              <Typography>username</Typography>
-            </Toolbar>
-          </MuiAppBar>
-          <Drawer
-            className={classes.drawer}
-            variant="persistent"
-            anchor="left"
-            open={this.state.open}
-            classes={{
-              paper: classes.drawerPaper,
-            }}
-          >
-            <div className={classes.drawerHeader}>
-              <IconButton onClick={this.handleDrawerClose}>
-                <ChevronLeftIcon />
-              </IconButton>
-            </div>
-            <Divider />
-
-            <List>
-              {topMenuItems.map(
-                (item: {
-                  nested: any;
-                  title: string;
-                  to: string;
-                  icon: React.ReactChild | undefined;
-                }) => {
-                  return Object.prototype.hasOwnProperty.call(
-                    item,
-                    'nested'
-                  ) ? (
-                    <React.Fragment key={'menuItem' + item.title}>
-                      <ListItem
-                        button
-                        onClick={() => {
-                          this.handleClick(item.title);
-                        }}
-                      >
-                        <ListItemIcon>{item.icon}</ListItemIcon>
-                        <ListItemText>
-                          {item.title}{' '}
-                          {item.nested.length === 0 ? (
-                            <CircularProgress size={12} thickness={4} />
-                          ) : (
-                            ''
-                          )}
-                        </ListItemText>
-                        {nestedMenuOpen[item.title] ? (
-                          <ExpandLess />
-                        ) : (
-                          <ExpandMore />
-                        )}
-                      </ListItem>
-                      <Collapse
-                        in={nestedMenuOpen[item.title]}
-                        timeout="auto"
-                        unmountOnExit
-                        key={'menuItemCollapse' + item.title}
-                      >
-                        <List component="div" disablePadding dense={true}>
-                          {item.nested.map(
-                            (nestedItem: {
-                              icon: React.ReactChild;
-                              title: string;
-                              to: string;
-                            }) => (
-                              <ListItem
-                                button
-                                className={classes.nested}
-                                key={
-                                  'nestedMenuItem' +
-                                  item.title +
-                                  nestedItem.title
-                                }
-                                to={nestedItem.to}
-                                component={RouterLink}
-                              >
-                                <ListItemIcon>{nestedItem.icon}</ListItemIcon>
-                                <ListItemText primary={nestedItem.title} />
-                              </ListItem>
-                            )
-                          )}
-                        </List>
-                      </Collapse>
-                    </React.Fragment>
-                  ) : (
-                    <ListItem
-                      button
-                      key={item.title}
-                      to={item.to}
-                      component={RouterLink}
-                    >
-                      <ListItemIcon>{item.icon}</ListItemIcon>
-                      <ListItemText primary={item.title} />
-                    </ListItem>
-                  );
-                }
-              )}
-            </List>
-            <Divider />
-            <List>
-              {bottomMenuItems.map(
-                (item: {title: string; icon: React.ReactChild | undefined}) => (
-                  <ListItem button key={item.title}>
-                    <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.title} />
-                  </ListItem>
-                )
-              )}
-            </List>
-          </Drawer>
-          {/*<main*/}
-          {/*  className={clsx(classes.content, {*/}
-          {/*    [classes.contentShift]: this.state.open,*/}
-          {/*  })}*/}
-          {/*>*/}
-          {/*  <div className={classes.drawerHeader} />*/}
-          {/*</main>*/}
-        </div>
-      </React.Fragment>
-    );
-  }
+  });
+  return {
+    title: 'Projects',
+    icon: <AccountTree />,
+    nested: projectListItems,
+    to: ROUTES.PROJECT_LIST,
+  };
 }
-export default withStyles(styles)(NavBar);
+
+export default function NavbarNew() {
+  const classes = useStyles();
+  const globalState = useContext(store);
+  const {dispatch} = globalState;
+
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const toggle = () => setIsOpen(!isOpen);
+
+  const topMenuItems: Array<MenuItemProps> = [
+    {
+      title: 'Home',
+      icon: <HomeIcon />,
+      to: ROUTES.HOME,
+    },
+    getNestedProjects(globalState.state.project_list),
+    {
+      title: 'Tools',
+      icon: <BuildIcon />,
+      to: '/',
+    },
+    {
+      title: 'Notifications',
+      icon: <NotificationsIcon />,
+      to: '/',
+    },
+  ];
+  const bottomMenuItems: Array<MenuItemProps> = [
+    {
+      title: 'Profile',
+      icon: <AccountCircleIcon />,
+      to: '/',
+    },
+    {
+      title: 'Messages',
+      icon: <MessageIcon />,
+      to: '/',
+    },
+    {
+      title: 'Settings',
+      icon: <SettingsIcon />,
+      to: '/',
+    },
+  ];
+
+  const [nestedMenuOpen, setNestedMenuOpen] = useState<{
+    [key: string]: boolean;
+  }>({Projects: false});
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () => dispatch({type: 'SET_PROJECT_LIST', payload: dummy_projects}),
+      3000
+    );
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <React.Fragment>
+      <div className={classes.root}>
+        <CssBaseline />
+        <MuiAppBar
+          position="relative"
+          className={clsx(classes.appBar, {
+            [classes.appBarShift]: isOpen,
+          })}
+        >
+          <Toolbar>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              onClick={toggle}
+              edge="start"
+              className={clsx(classes.menuButton, isOpen && classes.hide)}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" noWrap style={{flex: 1}}>
+              FAIMS3
+            </Typography>
+            <Typography>username</Typography>
+          </Toolbar>
+        </MuiAppBar>
+        <Drawer
+          className={classes.drawer}
+          variant="temporary"
+          anchor="left"
+          open={isOpen}
+          ModalProps={{onBackdropClick: toggle}}
+          classes={{
+            paper: classes.drawerPaper,
+          }}
+        >
+          <div className={classes.drawerHeader}>
+            <IconButton onClick={toggle}>
+              <ChevronLeftIcon />
+            </IconButton>
+          </div>
+          <Divider />
+
+          <List>
+            {topMenuItems.map((item: MenuItemProps) => {
+              return Object.prototype.hasOwnProperty.call(item, 'nested') ? (
+                <React.Fragment key={'menuItem' + item.title}>
+                  <ListItem
+                    button
+                    onClick={() => {
+                      setNestedMenuOpen(prevNestedMenuOpen => ({
+                        ...prevNestedMenuOpen,
+                        [item.title]: !prevNestedMenuOpen[item.title],
+                      }));
+                    }}
+                  >
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText>{item.title} </ListItemText>
+                    {item.nested.length === 0 ? (
+                      <CircularProgress size={12} thickness={4} />
+                    ) : nestedMenuOpen[item.title] ? (
+                      <ExpandLess />
+                    ) : (
+                      <ExpandMore />
+                    )}
+                  </ListItem>
+                  <Collapse
+                    in={nestedMenuOpen[item.title]}
+                    timeout="auto"
+                    unmountOnExit
+                    key={'menuItemCollapse' + item.title}
+                  >
+                    <List component="div" disablePadding dense={true}>
+                      {item.nested.map(
+                        (nestedItem: {
+                          icon: React.ReactChild;
+                          title: string;
+                          to: string;
+                        }) => (
+                          <ListItem
+                            button
+                            className={classes.nested}
+                            key={
+                              'nestedMenuItem' + item.title + nestedItem.title
+                            }
+                            to={nestedItem.to}
+                            component={RouterLink}
+                          >
+                            <ListItemIcon>{nestedItem.icon}</ListItemIcon>
+                            <ListItemText primary={nestedItem.title} />
+                          </ListItem>
+                        )
+                      )}
+                    </List>
+                  </Collapse>
+                </React.Fragment>
+              ) : (
+                <ListItem
+                  button
+                  key={item.title}
+                  to={item.to}
+                  component={RouterLink}
+                >
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.title} />
+                </ListItem>
+              );
+            })}
+          </List>
+          <Divider />
+          <List>
+            {bottomMenuItems.map(
+              (item: {title: string; icon: React.ReactChild | undefined}) => (
+                <ListItem button key={item.title}>
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.title} />
+                </ListItem>
+              )
+            )}
+          </List>
+        </Drawer>
+      </div>
+    </React.Fragment>
+  );
+}

@@ -69,10 +69,10 @@ export default function ProjectCard(props: ProjectCardProps) {
   const getShare = async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const shareRet = await Share.share({
-      title: 'See cool stuff',
-      text: 'Really awesome thing you need to see right meow',
-      url: 'http://ionicframework.com/',
-      dialogTitle: 'Share with buddies',
+      title: 'FAIMS Project: ' + project.name,
+      text: 'Really awesome project you need to see right now',
+      url: project_url,
+      dialogTitle: 'Share ' + project.name,
     });
   };
 
