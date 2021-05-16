@@ -1,22 +1,21 @@
 import React, {createContext, useReducer, Dispatch} from 'react';
-import {ProjectObject} from './datamodel';
+import {ObservationList, ProjectsList} from './datamodel';
+import {ProjectActions, ObservationActions, ActionType} from './actions';
 
 interface InitialStateProps {
-  project_list: Array<ProjectObject>;
+  project_list: ProjectsList;
+  observation_list: {[project_id: string]: ObservationList};
 }
 
-type ActionProps = {
-  type: 'SET_PROJECT_LIST';
-  payload: Array<ProjectObject>;
-};
-
 const InitialState = {
-  project_list: [],
+  project_list: {},
+  observation_list: {},
+  active_project: null,
 };
 
 interface ContextType {
   state: InitialStateProps;
-  dispatch: Dispatch<ActionProps>;
+  dispatch: Dispatch<ProjectActions | ObservationActions>;
 }
 
 const store = createContext<ContextType>({
@@ -28,11 +27,26 @@ const {Provider} = store;
 
 const StateProvider = (props: any) => {
   const [state, dispatch] = useReducer(
-    (state: InitialStateProps, action: ActionProps) => {
+    (state: InitialStateProps, action: ProjectActions | ObservationActions) => {
       switch (action.type) {
-        case 'SET_PROJECT_LIST': {
-          // console.log('GET_PROJECT_LIST reducer PAYLOAD', action.payload);
+        case ActionType.GET_PROJECT_LIST: {
           return {...state, project_list: action.payload};
+        }
+        case ActionType.GET_PROJECT: {
+          return {...state, active_project: action.payload};
+        }
+        case ActionType.DROP_PROJECT: {
+          return {...state, active_project: null};
+        }
+        case ActionType.GET_OBSERVATION_LIST: {
+          return {
+            ...state,
+            observation_list: {
+              ...state.observation_list,
+              [action.payload.project_id]: action.payload.data,
+            },
+          };
+          // return {...state, observation_list: action.payload};
         }
         default:
           throw new Error();

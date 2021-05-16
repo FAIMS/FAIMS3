@@ -31,7 +31,7 @@ const useStyles = makeStyles(theme => ({
 export default function Home() {
   const classes = useStyles();
   const globalState = useContext(store);
-  const projects = globalState.state.project_list;
+  const projectList = globalState.state.project_list;
   return (
     <Container maxWidth="md">
       <Box
@@ -46,10 +46,10 @@ export default function Home() {
           <Typography color="textPrimary">Home</Typography>
         </Breadcrumbs>
       </Box>
-      <Typography variant="overline">Projects</Typography>
+      <Typography variant="overline">Latest Projects</Typography>
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {projects.length === 0
+          {Object.keys(projectList).length === 0
             ? [...Array(3)].map((e, i) => (
                 <Grid
                   item
@@ -69,22 +69,22 @@ export default function Home() {
                   </Skeleton>
                 </Grid>
               ))
-            : projects.map(project => {
+            : Object.keys(projectList).map(key => {
                 return (
                   <Grid
                     item
                     xs={12}
                     sm={4}
                     md={4}
-                    key={'project-list-grid' + project._id}
+                    key={'project-list-grid' + projectList[key]._id}
                   >
-                    <ProjectCard project={project} />
+                    <ProjectCard project={projectList[key]} />
                   </Grid>
                 );
               })}
         </Grid>
       </div>
-      <Typography variant="overline">Observations</Typography>
+      <Typography variant="overline">Recent Observations</Typography>
     </Container>
   );
 }

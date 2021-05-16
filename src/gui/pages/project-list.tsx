@@ -42,7 +42,7 @@ export default function ProjectList() {
   const classes = useStyles();
 
   const globalState = useContext(store);
-  const projects = globalState.state.project_list;
+  const projectList = globalState.state.project_list;
 
   return (
     <Container maxWidth="md">
@@ -61,7 +61,7 @@ export default function ProjectList() {
 
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {projects.length === 0
+          {Object.keys(projectList).length === 0
             ? [...Array(3)].map((e, i) => (
                 <Grid item xs={12} key={'skeleton-project-list-grid' + i}>
                   <Skeleton animation="wave" variant="rect">
@@ -71,15 +71,22 @@ export default function ProjectList() {
                         description: 'dummy',
                         _id: 'dummy',
                       }}
-                      showTopTenObs={true}
+                      showObservations={true}
                     />
                   </Skeleton>
                 </Grid>
               ))
-            : projects.map(project => {
+            : Object.keys(projectList).map(key => {
                 return (
-                  <Grid item xs={12} key={'project-list-grid' + project._id}>
-                    <ProjectCard project={project} showTopTenObs={true} />
+                  <Grid
+                    item
+                    xs={12}
+                    key={'project-list-grid' + projectList[key]._id}
+                  >
+                    <ProjectCard
+                      project={projectList[key]}
+                      showObservations={true}
+                    />
                   </Grid>
                 );
               })}

@@ -2,8 +2,8 @@ import {setUiSpecForProject} from './uiSpecification';
 import {
   ProjectUIModel,
   ProjectMetaObject,
-  ProjectObject,
-  Observation,
+  ObservationList,
+  ProjectsList,
 } from './datamodel';
 import {LocalDB} from './sync';
 
@@ -421,8 +421,8 @@ export async function setupExampleForm(
   );
 }
 
-export const dummy_projects: Array<ProjectObject> = [
-  {
+export const dummy_projects: ProjectsList = {
+  '1': {
     _id: '1',
     name: 'Project One',
     last_updated: 'September 14, 2019',
@@ -431,7 +431,7 @@ export const dummy_projects: Array<ProjectObject> = [
     description:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
   },
-  {
+  '2': {
     _id: '2',
     name: 'Terrific Project Two',
     last_updated: 'September 10, 2020',
@@ -440,7 +440,7 @@ export const dummy_projects: Array<ProjectObject> = [
     description:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
   },
-  {
+  '3': {
     _id: '3',
     name: 'Longer Title Field Trip Project Title',
     last_updated: 'Jan 14, 2021',
@@ -449,17 +449,16 @@ export const dummy_projects: Array<ProjectObject> = [
     description:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
   },
-];
-
-export const dummy_observations: Array<Observation> = [
-  {
+};
+export const dummy_observations: ObservationList = {
+  '1': {
     _id: '1',
     _rev: '1',
+    _project_id: '1',
     type: '',
     data: {
       values: {
         'take-point-field': null,
-        'bad-field': '',
         'action-field': 'hello',
         'email-field': '',
         'str-field': 'yellow',
@@ -473,4 +472,60 @@ export const dummy_observations: Array<Observation> = [
       },
     },
   },
-];
+  '2': {
+    _id: '2',
+    _rev: '1',
+    _project_id: '1',
+    type: '',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello',
+        'email-field': '',
+        'str-field': 'red',
+      },
+    },
+  },
+  '3': {
+    _id: '3',
+    _rev: '1',
+    _project_id: '1',
+    type: '',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello',
+        'email-field': '',
+        'str-field': 'yellow',
+      },
+    },
+  },
+  '4': {
+    _id: '4',
+    _rev: '1',
+    _project_id: '2',
+    type: '',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello there',
+        'email-field': '',
+        'str-field': 'green',
+      },
+    },
+  },
+  '5': {
+    _id: '4',
+    _rev: '1',
+    _project_id: '2',
+    type: '',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello there general',
+        'email-field': '',
+        'str-field': 'blue',
+      },
+    },
+  },
+};

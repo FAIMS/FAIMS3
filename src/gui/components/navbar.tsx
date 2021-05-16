@@ -1,16 +1,16 @@
-import React, {useContext, useState, useEffect} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
-  Typography,
   AppBar as MuiAppBar,
-  Toolbar,
+  CircularProgress,
   IconButton,
+  Toolbar,
+  Typography,
 } from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import {makeStyles} from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import clsx from 'clsx';
-import {CircularProgress} from '@material-ui/core';
 import Collapse from '@material-ui/core/Collapse';
 import Drawer from '@material-ui/core/Drawer';
 import Divider from '@material-ui/core/Divider';
@@ -30,7 +30,9 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {dummy_projects} from '../../dummyData';
+import {getProjectList} from '../../databaseAccess';
+import {ProjectsList} from '../../datamodel';
+import {ActionType} from '../../actions';
 
 import {store} from '../../store';
 
@@ -116,13 +118,13 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-function getNestedProjects(projectList: typeof dummy_projects) {
+function getNestedProjects(projectList: ProjectsList) {
   const projectListItems: ProjectListItemProps[] = [];
-  projectList.map(project => {
+  Object.keys(projectList).map(key => {
     projectListItems.push({
-      title: project.name,
+      title: projectList[key].name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + project._id,
+      to: ROUTES.PROJECT + projectList[key]._id,
     });
   });
   return {
@@ -182,10 +184,10 @@ export default function NavbarNew() {
   }>({Projects: false});
 
   useEffect(() => {
-    const timer = setTimeout(
-      () => dispatch({type: 'SET_PROJECT_LIST', payload: dummy_projects}),
-      3000
-    );
+    const timer = setTimeout(() => {
+      const data = getProjectList();
+      dispatch({type: ActionType.GET_PROJECT_LIST, payload: data});
+    }, 3000);
     return () => clearTimeout(timer);
   }, []);
 

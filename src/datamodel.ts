@@ -112,9 +112,14 @@ export interface ProjectPeople {
 export interface Observation {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
+  _project_id?: string;
   type: string;
   data: any;
 }
+
+export type ObservationList = {
+  [key: string]: Observation;
+};
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
 export interface EncodedObservation {
@@ -123,6 +128,7 @@ export interface EncodedObservation {
   _revisions?: {start: number; ids: string[]};
   _deleted?: boolean; // This is for couchdb deletion
   deleted?: boolean; // This is for user-level deletion
+  _project_id?: string;
   format_version: number;
   type: string;
   data: any;
