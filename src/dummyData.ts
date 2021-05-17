@@ -11,7 +11,30 @@ import {
 import {active_db, LocalDB} from './sync';
 import {upsertFAIMSData} from './dataStorage';
 
-const example_datums: {[key: string]: {_id: string} & Observation[]} = {};
+const example_datums: {[key: string]: ({_id: string} & Observation)[]} = {
+  'default/lake_mungo': [
+    {
+      _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
+      type: '??:??',
+      userid: 'test1',
+      data: {
+        'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
+        'bad-field': '',
+        'action-field': 'hello',
+        'email-field': 'MY-EMAIL-ADDRESS@example.com',
+        'str-field': 'blurple',
+        'multi-str-field':
+          'Warning: This is modified from the direct output of the submit button to workaround select-field outputting a string, inputting an array.',
+        'int-field': 20,
+        'select-field': ['EUR'],
+        'multi-select-field': ['JPY'],
+        'checkbox-field': true,
+        'radio-group-field': '1',
+      },
+      // format_version: 1,
+    },
+  ],
+};
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   'default/lake_mungo': {

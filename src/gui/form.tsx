@@ -8,7 +8,11 @@ import {getUiSpecForProject} from '../uiSpecification';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
-import {upsertFAIMSData, generateFAIMSDataID} from '../dataStorage';
+import {
+  upsertFAIMSData,
+  generateFAIMSDataID,
+  lookupFAIMSDataID,
+} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
 import {getStagedData, setStagedData} from '../sync/staging';
 import {getCurrentUserId} from '../users';
@@ -28,6 +32,7 @@ const STAGING_SAVE_CYCLE = 2000;
 type FormState = {
   stagingError: unknown | null;
   currentView: string | null;
+  initialValues: {[fieldName: string]: unknown} | null;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
@@ -35,9 +40,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   // that means this ISN'T up-to-date with the data in the form.
   // Reset when current observation/project changes
   loadedStagedData: null | {
-    [view: string]: {
-      [fieldName: string]: unknown;
-    };
+    [fieldName: string]: unknown;
   } = null;
 
   // To avoid staging saves that take more than 2 seconds overlapping,
@@ -78,19 +81,24 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
     if (
       prevProps.activeProjectID !== this.props.activeProjectID ||
-      prevProps.observation !== this.props.observation
+      prevProps.observation?._rev !== this.props.observation?._rev ||
+      prevProps.observation?._id !== this.props.observation?._id
     ) {
       this.loadedStagedData = null;
       this.touchedFields.clear();
       this.lastStagingRev = null;
 
+      const cb = () => this.setStagedValues().then(this.setInitialValues);
+
       // uiSpec & currentView re-load is only necessary if activeProjectID changed.
       if (prevProps.activeProjectID !== this.props.activeProjectID) {
         this.uiSpec = null;
-        this.setState({currentView: null});
+        this.setState({currentView: null, initialValues: null});
+        this.setUISpec().then(cb);
+      } else {
+        this.setState({initialValues: null});
+        cb();
       }
-
-      this.loadDataAfterPropUpdate();
     }
   }
 
@@ -100,20 +108,23 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     this.state = {
       currentView: null,
       stagingError: null,
+      initialValues: null,
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
-    this.getInitialValues = this.getInitialValues.bind(this);
     this.setState = this.setState.bind(this);
+    this.setInitialValues = this.setInitialValues.bind(this);
     this.getFieldNames = this.getFieldNames.bind(this);
     this.getFields = this.getFields.bind(this);
   }
 
   async componentDidMount() {
-    await this.loadDataAfterPropUpdate();
+    await this.setUISpec();
+    await this.setStagedValues();
+    await this.setInitialValues();
   }
 
-  async loadDataAfterPropUpdate() {
+  async setUISpec() {
     // CurrentView & loadedStagedData are assumed to need updating when this is called
     // (They need updating if this.props.observation changes)
     // but uiSpec might not need updating here
@@ -122,25 +133,55 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       this.uiSpec = await getUiSpecForProject(this.props.activeProjectID);
     }
 
-    // Load data from staging DB
-    const loadedStagedData: {[v: string]: {[fn: string]: unknown}} = {};
+    this.setState({
+      currentView: this.uiSpec['start_view'],
+    });
+  }
 
-    const viewStageLoaders = Object.entries(this.uiSpec['views']).map(
-      ([viewName]) =>
-        getStagedData(this.props.activeProjectID, viewName, null).then(
-          staged_data_restore => {
-            loadedStagedData[viewName] = staged_data_restore || {};
-          }
-        )
+  async setStagedValues() {
+    const uiSpec = this.requireUiSpec();
+    // Load data from staging DB
+    let loadedStagedData: {[fn: string]: unknown} = {};
+
+    const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
+      getStagedData(this.props.activeProjectID, viewName, null).then(
+        staged_data_restore => {
+          loadedStagedData = {
+            ...loadedStagedData,
+            ...(staged_data_restore || {}),
+          };
+        }
+      )
     );
 
     // Wait for all data to load from staging DB before setting this.staged not null
     await Promise.all(viewStageLoaders);
     this.loadedStagedData = loadedStagedData;
+  }
 
-    this.setState({
-      currentView: this.uiSpec['start_view'],
+  async setInitialValues() {
+    /***
+     * Formik requires a single object for initialValues, collect these from the
+     * ui schema or from the database
+     */
+    const existingData: {
+      [viewName: string]: {[fieldName: string]: unknown};
+    } = (this.props.observation === undefined
+      ? {}
+      : await lookupFAIMSDataID(this.props.activeProjectID, this.obsid)
+    )?.data;
+    const fieldNames = this.getFieldNames();
+    const fields = this.getFields();
+    const initialValues: {[key: string]: any} = {
+      _id: this.obsid!,
+    };
+    fieldNames.forEach(fieldName => {
+      initialValues[fieldName] =
+        this.loadedStagedData![fieldName] ||
+        existingData?.[fieldName] ||
+        fields[fieldName]['initialValue'];
     });
+    this.setState({initialValues: initialValues});
   }
 
   requireUiSpec(): ProjectUIModel {
@@ -167,6 +208,8 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   save(values: any) {
     getCurrentUserId(this.props.activeProjectID)
       .then(userid => {
+        console.assert(values['_id'] === this.obsid);
+        delete values['_id'];
         const doc = {
           _id: this.obsid,
           _rev: undefined as undefined | string,
@@ -236,19 +279,18 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         console.debug('Attempt to save whilst UI is loading something else');
         return;
       }
-      const currentView = this.state.currentView;
 
       this.touchedFields.forEach(fieldName => {
         const fieldValue = this.lastValues![fieldName];
         if (fieldValue !== undefined) {
-          loadedStagedData[currentView][fieldName] = fieldValue;
+          loadedStagedData[fieldName] = fieldValue;
         } else {
           console.warn("Formik didn't give a value for ", fieldName);
         }
       });
 
       setStagedData(
-        loadedStagedData[currentView],
+        loadedStagedData,
         this.lastStagingRev,
         this.props.activeProjectID,
         this.reqireCurrentView(),
@@ -316,7 +358,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     return (
       <Box mb={3} key={fieldName}>
         <Field
-          component={Component} //e.g, TextField (default <input/>)
+          component={Component} //e.g, TextField (default <input>)
           name={fieldName}
           onChange={(evt: React.ChangeEvent<{name: string}>) =>
             this.interceptChange(
@@ -378,33 +420,20 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     return transformAll([['yup.object'], ['yup.shape', validationSchema]]);
   }
 
-  getInitialValues() {
-    /***
-     * Formik requires a single object for initialValues, collect these from the ui schema
-     */
-    const currentView = this.reqireCurrentView();
-    const fieldNames = this.getFieldNames();
-    const fields = this.getFields();
-    const initialValues = Object();
-    fieldNames.forEach(fieldName => {
-      initialValues[fieldName] =
-        // Should be non-null if currentView is non-null
-        this.loadedStagedData![currentView][fieldName] ||
-        fields[fieldName]['initialValue'];
-    });
-    return initialValues;
-  }
-
   render() {
     const uiSpec = this.uiSpec;
     const viewName = this.state.currentView;
-    if (viewName !== null && uiSpec !== null) {
-      const fieldNames: Array<string> = uiSpec['views'][viewName]['fields'];
+    if (
+      viewName !== null &&
+      this.state.initialValues !== null &&
+      uiSpec !== null
+    ) {
+      const fieldNames = this.getFieldNames();
 
       return (
         <React.Fragment>
           <Formik
-            initialValues={this.getInitialValues()}
+            initialValues={this.state.initialValues}
             validationSchema={this.getValidationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
