@@ -72,7 +72,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   obsid: string;
 
   componentDidUpdate(prevProps: FormProps) {
-    this.obsid = this.props.observation || this.obsid || generateFAIMSDataID();
+    // Only generate a new ID when obsid is not already generated.
+    this.obsid =
+      this.props.observation?._id || this.obsid || generateFAIMSDataID();
 
     if (
       prevProps.activeProjectID !== this.props.activeProjectID ||
@@ -167,7 +169,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       .then(userid => {
         const doc = {
           _id: this.obsid,
-          _rev: undefined as (undefined | string),
+          _rev: undefined as undefined | string,
           type: '??:??',
           data: values,
           userid: userid,

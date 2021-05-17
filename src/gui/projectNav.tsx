@@ -181,7 +181,7 @@ class ProjectNavTabs extends React.Component<
                   <Box p={2} mb={2}>
                     <strong>VIEW STEPPER GOES HERE</strong>
                   </Box>
-                  <FAIMSForm activeProjectID={active_id} observation={null} />
+                  <FAIMSForm activeProjectID={active_id} />
                 </TabPanel>
               );
             }
