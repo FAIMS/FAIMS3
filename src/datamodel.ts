@@ -115,6 +115,10 @@ export interface Observation {
   _project_id?: string;
   type: string;
   data: any;
+  created: Date;
+  created_by: string;
+  updated: Date;
+  updated_by: string;
 }
 
 export type ObservationList = {
@@ -132,6 +136,10 @@ export interface EncodedObservation {
   format_version: number;
   type: string;
   data: any;
+  created: string;
+  created_by: string;
+  updated: string;
+  updated_by: string;
 }
 
 /*

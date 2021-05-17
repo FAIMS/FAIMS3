@@ -7,6 +7,12 @@ import {
 } from './datamodel';
 import {LocalDB} from './sync';
 
+function randomDate(start: Date, end: Date) {
+  return new Date(
+    start.getTime() + Math.random() * (end.getTime() - start.getTime())
+  );
+}
+
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   'default/lake_mungo': {
     fields: {
@@ -456,6 +462,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'Emma Smith',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Sally Jones',
     data: {
       values: {
         'take-point-field': null,
@@ -477,6 +487,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'John Smith',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Sarah Jones',
     data: {
       values: {
         'take-point-field': null,
@@ -491,6 +505,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'John Davis',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Emily Jones',
     data: {
       values: {
         'take-point-field': null,
@@ -505,6 +523,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'Yoda',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Ben Kenobi',
     data: {
       values: {
         'take-point-field': null,
@@ -515,10 +537,14 @@ export const dummy_observations: ObservationList = {
     },
   },
   '5': {
-    _id: '4',
+    _id: '5',
     _rev: '1',
     _project_id: '2',
     type: '',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'John Smith',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Yoda',
     data: {
       values: {
         'take-point-field': null,

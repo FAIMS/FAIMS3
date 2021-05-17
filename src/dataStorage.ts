@@ -21,6 +21,10 @@ function convertFromFormToDB(
       _rev: revision,
       type: doc.type,
       data: doc.data,
+      created: doc.created.toISOString(),
+      created_by: doc.created_by,
+      updated: doc.updated.toISOString(),
+      updated_by: doc.updated_by,
       format_version: 1,
     };
   }
@@ -30,6 +34,10 @@ function convertFromFormToDB(
       _rev: doc._rev,
       type: doc.type,
       data: doc.data,
+      created: doc.created.toISOString(),
+      created_by: doc.created_by,
+      updated: doc.updated.toISOString(),
+      updated_by: doc.updated_by,
       format_version: 1,
     };
   }
@@ -37,6 +45,10 @@ function convertFromFormToDB(
     _id: doc._id,
     type: doc.type,
     data: doc.data,
+    created: doc.created.toString(),
+    created_by: doc.created_by,
+    updated: doc.updated.toString(),
+    updated_by: doc.updated_by,
     format_version: 1,
   };
 }
@@ -49,6 +61,10 @@ function convertFromDBToForm(doc: EncodedObservation): Observation | null {
     _id: doc._id,
     type: doc.type,
     data: doc.data,
+    created: new Date(doc.created),
+    created_by: doc.created_by,
+    updated: new Date(doc.updated),
+    updated_by: doc.updated_by,
   };
 }
 
