@@ -1,9 +1,10 @@
+import {FormikProps} from 'formik';
 import React from 'react';
 
 type ViewProps = {
   viewList: Array<string>;
   form: any; //FAIMSForm; @TODO fix type
-  formProps: any;
+  formProps: FormikProps<{[key: string]: unknown}>;
 };
 
 type ViewState = {
