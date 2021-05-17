@@ -184,34 +184,6 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
   render() {
     const {classes} = this.props;
     const {open, nestedMenuOpen, topMenuItems, bottomMenuItems} = this.state;
-    const topMenuItems = [
-      {
-        title: 'Projects',
-        icon: <AccountTree />,
-      },
-      {
-        title: 'Tools',
-        icon: <BuildIcon />,
-      },
-      {
-        title: 'Notifications',
-        icon: <NotificationsIcon />,
-      },
-    ];
-    const bottomMenuItems = [
-      {
-        title: 'Profile',
-        icon: <AccountCircleIcon />,
-      },
-      {
-        title: 'Messages',
-        icon: <MessageIcon />,
-      },
-      {
-        title: 'Settings',
-        icon: <SettingsIcon />,
-      },
-    ];
     return (
       <React.Fragment>
         <div className={classes.root}>

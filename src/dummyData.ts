@@ -682,6 +682,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    userid: 'fake-user',
     data: {
       values: {
         'take-point-field': null,
@@ -703,6 +704,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    userid: 'fake-user',
     data: {
       values: {
         'take-point-field': null,
@@ -717,6 +719,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    userid: 'fake-user',
     data: {
       values: {
         'take-point-field': null,
@@ -731,6 +734,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
+    userid: 'fake-user',
     data: {
       values: {
         'take-point-field': null,
@@ -745,6 +749,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
+    userid: 'fake-user',
     data: {
       values: {
         'take-point-field': null,
