@@ -1,5 +1,14 @@
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
+export const PROJECT_METADATA_PREFIX = 'project-metadata';
+
+/*
+ * This may already exist in pouchdb's typing, but lets make a temporary one for
+ * our needs
+ */
+export interface PouchAttachments {
+  [key: string]: any; // any for now until we work out what we need
+}
 
 export interface ConnectionInfo {
   proto: string;
@@ -9,12 +18,22 @@ export interface ConnectionInfo {
   db_name: string;
 }
 
+export type PossibleConnectionInfo =
+  | undefined
+  | {
+      proto?: string | undefined;
+      host?: string | undefined;
+      port?: number | undefined;
+      lan?: boolean | undefined;
+      db_name?: string | undefined;
+    };
+
 export interface ListingsObject {
   _id: string;
   name: string;
   description: string;
-  projects_db?: ConnectionInfo;
-  people_db?: ConnectionInfo;
+  projects_db?: PossibleConnectionInfo;
+  people_db?: PossibleConnectionInfo;
 }
 
 export interface NonNullListingsObject extends ListingsObject {
@@ -39,8 +58,8 @@ export interface ProjectObject {
   _id: string;
   name: string;
   description: string;
-  data_db?: ConnectionInfo;
-  metadata_db?: ConnectionInfo;
+  data_db?: PossibleConnectionInfo;
+  metadata_db?: PossibleConnectionInfo;
 }
 
 export type ProjectsList = {
@@ -100,6 +119,15 @@ export interface EncodedProjectUIModel {
   start_view: string;
 }
 
+export interface EncodedProjectMetadata {
+  _id: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
+  _attachments?: PouchAttachments;
+  is_attachment: boolean;
+  metadata: any;
+}
+
 export interface ProjectPeople {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
@@ -126,6 +154,14 @@ export interface EncodedObservation {
   type: string;
   data: any;
   userid: string;
+}
+
+export interface SavedView {
+  // ID: active_id + '/' + view_name
+  // OR: active_id + '/' + view_name + '/' + existing.observation + '/' + existing.revision
+  _id: string;
+  // Fields
+  [key: string]: unknown;
 }
 
 /*
