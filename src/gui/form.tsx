@@ -32,7 +32,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     super(props);
     this.state = {
       currentView: props.uiSpec['start_view'],
-      initialValues: {},
+      initialValues: null,
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
@@ -200,7 +200,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   render() {
     const uiSpec = this.props.uiSpec;
     const viewName = this.state.currentView;
-    if (viewName !== null) {
+    if (viewName !== null && this.state.initialValues !== null) {
       const viewList: Array<string> = uiSpec['views'][viewName]['fields'];
 
       return (
