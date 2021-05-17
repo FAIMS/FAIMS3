@@ -279,7 +279,6 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         console.debug('Attempt to save whilst UI is loading something else');
         return;
       }
-      const currentView = this.state.currentView;
 
       this.touchedFields.forEach(fieldName => {
         const fieldValue = this.lastValues![fieldName];
