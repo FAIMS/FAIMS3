@@ -144,7 +144,6 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
         <div className={classes.root}>
           <CssBaseline />
           <AppBar
-            position="fixed"
             className={clsx(classes.appBar, {
               [classes.appBarShift]: this.state.open,
             })}
