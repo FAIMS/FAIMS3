@@ -9,28 +9,43 @@ import {
 } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import clsx from 'clsx';
-import Drawer from '@material-ui/core/Drawer';
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import {CircularProgress} from '@material-ui/core';
+import Collapse from '@material-ui/core/Collapse';
 import Divider from '@material-ui/core/Divider';
+import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
-import BuildIcon from '@material-ui/icons/Build';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import SettingsIcon from '@material-ui/icons/Settings';
+import AccountTree from '@material-ui/icons/AccountTree';
+import BuildIcon from '@material-ui/icons/Build';
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import DescriptionIcon from '@material-ui/icons/Description';
+import ExpandLess from '@material-ui/icons/ExpandLess';
+import ExpandMore from '@material-ui/icons/ExpandMore';
+import ListItemText from '@material-ui/core/ListItemText';
 import MessageIcon from '@material-ui/icons/Message';
 import NotificationsIcon from '@material-ui/icons/Notifications';
-import AccountTree from '@material-ui/icons/AccountTree';
-import ListItemText from '@material-ui/core/ListItemText';
+import SettingsIcon from '@material-ui/icons/Settings';
+
+import {ProjectsList} from '../datamodel';
 
 interface AppBarProps extends WithStyles<typeof styles> {
   classes: any;
+  projectList: ProjectsList;
 }
 
 type AppBarState = {
+  topMenuItems: any;
+  bottomMenuItems: any;
   open: boolean;
+  nestedMenuOpen: any;
 };
 
+type ProjectListItemProps = {
+  title: string;
+  icon: any;
+};
 const drawerWidth = 240;
 
 const styles = (theme: Theme) =>
@@ -90,16 +105,52 @@ const styles = (theme: Theme) =>
       }),
       marginLeft: 0,
     },
+    nested: {
+      paddingLeft: theme.spacing(4),
+    },
   });
 
 class AppNavBar extends React.Component<AppBarProps, AppBarState> {
   constructor(props: AppBarProps) {
     super(props);
+
+    const projectMenuItem = this.getProjectsFromProps();
     this.state = {
+      topMenuItems: [
+        projectMenuItem,
+        {
+          title: 'Tools',
+          icon: <BuildIcon />,
+        },
+        {
+          title: 'Notifications',
+          icon: <NotificationsIcon />,
+        },
+      ],
+      bottomMenuItems: [
+        {
+          title: 'Profile',
+          icon: <AccountCircleIcon />,
+        },
+        {
+          title: 'Messages',
+          icon: <MessageIcon />,
+        },
+        {
+          title: 'Settings',
+          icon: <SettingsIcon />,
+        },
+      ],
       open: false,
+      nestedMenuOpen: {
+        Projects: false,
+      },
     };
+
     this.handleDrawerOpen = this.handleDrawerOpen.bind(this);
     this.handleDrawerClose = this.handleDrawerClose.bind(this);
+    this.handleClick = this.handleClick.bind(this);
+    this.getProjectsFromProps = this.getProjectsFromProps.bind(this);
   }
   handleDrawerOpen() {
     this.setState({open: true});
@@ -108,42 +159,37 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
     this.setState({open: false});
   }
 
+  handleClick(menuName: string) {
+    const nestedMenuOpen = this.state.nestedMenuOpen;
+    nestedMenuOpen[menuName] = !nestedMenuOpen[menuName];
+    this.setState({nestedMenuOpen: nestedMenuOpen});
+  }
+
+  getProjectsFromProps() {
+    const projectList: ProjectListItemProps[] = [];
+    Object.keys(this.props.projectList).map(key => {
+      projectList.push({
+        title: this.props.projectList[key].name,
+        icon: <DescriptionIcon />,
+      });
+    });
+    return {
+      title: 'Projects',
+      icon: <AccountTree />,
+      nested: projectList,
+      open: false,
+    };
+  }
+
   render() {
     const {classes} = this.props;
-    const {open} = this.state;
-    const topMenuItems = [
-      {
-        title: 'Projects',
-        icon: <AccountTree />,
-      },
-      {
-        title: 'Tools',
-        icon: <BuildIcon />,
-      },
-      {
-        title: 'Notifications',
-        icon: <NotificationsIcon />,
-      },
-    ];
-    const bottomMenuItems = [
-      {
-        title: 'Profile',
-        icon: <AccountCircleIcon />,
-      },
-      {
-        title: 'Messages',
-        icon: <MessageIcon />,
-      },
-      {
-        title: 'Settings',
-        icon: <SettingsIcon />,
-      },
-    ];
+    const {open, nestedMenuOpen, topMenuItems, bottomMenuItems} = this.state;
     return (
       <React.Fragment>
         <div className={classes.root}>
           <CssBaseline />
           <AppBar
+            position="relative"
             className={clsx(classes.appBar, {
               [classes.appBarShift]: this.state.open,
             })}
@@ -179,22 +225,89 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
               </IconButton>
             </div>
             <Divider />
+
             <List>
-              {topMenuItems.map(item => (
-                <ListItem button key={item.title}>
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
-                </ListItem>
-              ))}
+              {topMenuItems.map(
+                (item: {
+                  nested: any;
+                  title: string;
+                  icon: React.ReactChild | undefined;
+                }) => {
+                  return Object.prototype.hasOwnProperty.call(
+                    item,
+                    'nested'
+                  ) ? (
+                    <>
+                      <ListItem
+                        button
+                        onClick={() => {
+                          this.handleClick(item.title);
+                        }}
+                        key={'menuItem' + item.title}
+                      >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText>
+                          {item.title}{' '}
+                          {item.nested.length === 0 ? (
+                            <CircularProgress size={12} thickness={4} />
+                          ) : (
+                            ''
+                          )}
+                        </ListItemText>
+                        {nestedMenuOpen[item.title] ? (
+                          <ExpandLess />
+                        ) : (
+                          <ExpandMore />
+                        )}
+                      </ListItem>
+                      <Collapse
+                        in={nestedMenuOpen[item.title]}
+                        timeout="auto"
+                        unmountOnExit
+                        key={'menuItemCollapse' + item.title}
+                      >
+                        <List component="div" disablePadding dense={true}>
+                          {item.nested.map(
+                            (nestedItem: {
+                              icon: React.ReactChild;
+                              title: string;
+                            }) => (
+                              <ListItem
+                                button
+                                className={classes.nested}
+                                key={
+                                  'nestedMenuItem' +
+                                  item.title +
+                                  nestedItem.title
+                                }
+                              >
+                                <ListItemIcon>{nestedItem.icon}</ListItemIcon>
+                                <ListItemText primary={nestedItem.title} />
+                              </ListItem>
+                            )
+                          )}
+                        </List>
+                      </Collapse>
+                    </>
+                  ) : (
+                    <ListItem button key={item.title}>
+                      <ListItemIcon>{item.icon}</ListItemIcon>
+                      <ListItemText primary={item.title} />
+                    </ListItem>
+                  );
+                }
+              )}
             </List>
             <Divider />
             <List>
-              {bottomMenuItems.map(item => (
-                <ListItem button key={item.title}>
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.title} />
-                </ListItem>
-              ))}
+              {bottomMenuItems.map(
+                (item: {title: string; icon: React.ReactChild | undefined}) => (
+                  <ListItem button key={item.title}>
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.title} />
+                  </ListItem>
+                )
+              )}
             </List>
           </Drawer>
           {/*<main*/}

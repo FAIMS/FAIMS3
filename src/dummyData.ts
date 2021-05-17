@@ -1,12 +1,14 @@
 import {setUiSpecForProject} from './uiSpecification';
 import {
-  ProjectUIModel,
+  ActiveDoc,
+  EncodedObservation,
+  ListingsObject,
+  Observation,
+  ObservationList,
   ProjectMetaObject,
   ProjectObject,
-  ListingsObject,
-  ActiveDoc,
-  Observation,
-  EncodedObservation,
+  ProjectsList,
+  ProjectUIModel,
 } from './datamodel';
 import {active_db, LocalDB} from './sync';
 import {upsertFAIMSData} from './dataStorage';
@@ -667,3 +669,117 @@ export async function setupExampleForm(
     await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
   );
 }
+
+export const dummy_projects: ProjectsList = {
+  '1': {
+    _id: '1',
+    name: 'Project One',
+    last_updated: 'September 14, 2019',
+    created: '1/02/2021',
+    status: 'active',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  },
+  '2': {
+    _id: '2',
+    name: 'Terrific Project Two',
+    last_updated: 'September 10, 2020',
+    created: '1/01/2019',
+    status: 'closed',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  },
+  '3': {
+    _id: '3',
+    name: 'Longer Title Field Trip Project Title',
+    last_updated: 'Jan 14, 2021',
+    created: '1/01/2019',
+    status: 'closed',
+    description:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  },
+};
+export const dummy_observations: ObservationList = {
+  '1': {
+    _id: '1',
+    _rev: '1',
+    _project_id: '1',
+    type: '',
+    userid: 'fake-user',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello',
+        'email-field': '',
+        'str-field': 'yellow',
+        'multi-str-field':
+          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+        'int-field': 1,
+        'select-field': '',
+        'multi-select-field': [],
+        'checkbox-field': false,
+        'radio-group-field': '2',
+      },
+    },
+  },
+  '2': {
+    _id: '2',
+    _rev: '1',
+    _project_id: '1',
+    type: '',
+    userid: 'fake-user',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello',
+        'email-field': '',
+        'str-field': 'red',
+      },
+    },
+  },
+  '3': {
+    _id: '3',
+    _rev: '1',
+    _project_id: '1',
+    type: '',
+    userid: 'fake-user',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello',
+        'email-field': '',
+        'str-field': 'yellow',
+      },
+    },
+  },
+  '4': {
+    _id: '4',
+    _rev: '1',
+    _project_id: '2',
+    type: '',
+    userid: 'fake-user',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello there',
+        'email-field': '',
+        'str-field': 'green',
+      },
+    },
+  },
+  '5': {
+    _id: '4',
+    _rev: '1',
+    _project_id: '2',
+    type: '',
+    userid: 'fake-user',
+    data: {
+      values: {
+        'take-point-field': null,
+        'action-field': 'hello there general',
+        'email-field': '',
+        'str-field': 'blue',
+      },
+    },
+  },
+};
