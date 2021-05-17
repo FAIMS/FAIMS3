@@ -24,6 +24,17 @@ jobs:
   build:
     # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     runs-on: ubuntu-latest
+    services:
+      couchdb:
+        image: couchdb:3
+        env:
+          COUCHDB_USER: admin
+          COUCHDB_PASSWORD: password
+    env:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+      REACT_APP_DIRECTORY_HOST: couchdb
+      REACT_APP_USE_REAL_DATA: true
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
