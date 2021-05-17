@@ -24,7 +24,7 @@ type FormProps = {
 
 type FormState = {
   currentView: string | null;
-  initialValues: any;
+  initialValues: {[fieldName: string]: unknown} | null;
 };
 
 export class FAIMSForm extends React.Component<FormProps, FormState> {
