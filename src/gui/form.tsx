@@ -74,7 +74,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         this.props.activeProjectID,
         this.props.obsid
       );
-      this.setState({initialValues: data});
+      this.setState({initialValues: data?.data || {}});
     }
   }
 
