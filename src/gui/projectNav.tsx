@@ -19,7 +19,6 @@ import grey from '@material-ui/core/colors/grey';
 import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
 import {initialize, initializeEvents} from '../sync';
-import {syncUISpecs, SyncingUiSpecs} from '../uiSpecification';
 //import {NumberSchema} from 'yup';
 
 interface TabPanelProps {
@@ -68,7 +67,6 @@ interface ProjectNavTabsProps extends WithStyles<typeof styles> {
 type ProjectNavTabsState = {
   activeTab: string;
   projectList: ProjectsList;
-  uiSpecs: SyncingUiSpecs;
   global_error: null | {};
 };
 
@@ -82,7 +80,6 @@ class ProjectNavTabs extends React.Component<
       projectList: {},
       activeTab: '',
       global_error: null,
-      uiSpecs: syncUISpecs({}, this.uiSpecsUpdate.bind(this)),
     };
     this.handleChange = this.handleChange.bind(this);
   }
@@ -95,9 +92,6 @@ class ProjectNavTabs extends React.Component<
       this.setState({projectList: projectList});
     });
     initialize().catch(err => this.setState({global_error: err}));
-    this.setState({
-      uiSpecs: syncUISpecs(projectList, this.uiSpecsUpdate.bind(this)),
-    });
   }
 
   handleChange(event: any, value: any) {
@@ -106,8 +100,8 @@ class ProjectNavTabs extends React.Component<
 
   render() {
     const {classes} = this.props;
-    let {activeTab} = this.state;
-    const {projectList} = this.state;
+    let activeTab = this.state.activeTab;
+    const projectList = this.state.projectList;
 
     if (Object.keys(projectList).length === 0) {
       // Before the projects are initialized,
@@ -154,8 +148,6 @@ class ProjectNavTabs extends React.Component<
       activeTab = Object.keys(projectList)[0];
     }
 
-    syncUISpecs(projectList, this.uiSpecsUpdate.bind(this), this.state.uiSpecs);
-
     return (
       <div className={classes.root}>
         <AppBar position="relative" color="default">
@@ -191,8 +183,6 @@ class ProjectNavTabs extends React.Component<
             /* eslint-disable @typescript-eslint/no-unused-vars */
             (active_id, project_index) => {
               const project = projectList[active_id];
-              const uiSpec = this.state.uiSpecs[active_id].uiSpec;
-              const uiSpecError = this.state.uiSpecs[active_id].error || null;
               return (
                 <TabPanel
                   index_of_active={activeTab}
