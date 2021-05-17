@@ -8,13 +8,14 @@ import {getUiSpecForProject} from '../uiSpecification';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from './view';
-import {upsertFAIMSData} from '../dataStorage';
+import {upsertFAIMSData, generateFAIMSDataID} from '../dataStorage';
 import {ProjectUIModel} from '../datamodel';
 import {getStagedData, setStagedData} from '../sync/staging';
+import {getCurrentUserId} from '../users';
 
 type FormProps = {
   activeProjectID: string;
-  observation: {_id: string; _rev: string} | null;
+  observation?: {_id: string; _rev: string};
 };
 
 // After this many errors happen with from the staging db
@@ -64,7 +65,15 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   uiSpec: ProjectUIModel | null = null;
 
+  // When this.props.observation === undefined, then this is generated to be the ID
+  // of this forms document.
+  // Otherwise it is a copy of this.props.observation
+  // Maintained by componentDidUpdate.
+  obsid: string;
+
   componentDidUpdate(prevProps: FormProps) {
+    this.obsid = this.props.observation || this.obsid || generateFAIMSDataID();
+
     if (
       prevProps.activeProjectID !== this.props.activeProjectID ||
       prevProps.observation !== this.props.observation
@@ -85,6 +94,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
 
   constructor(props: FormProps) {
     super(props);
+    this.obsid = this.props.observation?._id || generateFAIMSDataID();
     this.state = {
       currentView: null,
       stagingError: null,
@@ -153,8 +163,31 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
   }
 
   save(values: any) {
-    console.log(values);
-    upsertFAIMSData(this.props.activeProjectID, values);
+    getCurrentUserId(this.props.activeProjectID)
+      .then(userid => {
+        const doc = {
+          _id: this.obsid,
+          _rev: undefined as (undefined | string),
+          type: '??:??',
+          data: values,
+          userid: userid,
+        };
+        if (this.props.observation) {
+          doc._rev = this.props.observation._rev;
+        }
+        console.log(doc);
+        return doc;
+      })
+      .then(doc => {
+        return upsertFAIMSData(this.props.activeProjectID, doc);
+      })
+      .then(result => {
+        console.debug(result);
+      })
+      .catch(err => {
+        console.warn(err);
+        console.error('Failed to save data');
+      });
   }
 
   updateView(viewName: string) {
@@ -217,7 +250,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         this.lastStagingRev,
         this.props.activeProjectID,
         this.reqireCurrentView(),
-        this.props.observation
+        this.props.observation || null
       )
         .then(set_ok => {
           this.lastStagingRev = set_ok.rev;
@@ -375,7 +408,8 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
             onSubmit={(values, {setSubmitting}) => {
               setTimeout(() => {
                 setSubmitting(false);
-                console.log('SUBMITTING', JSON.stringify(values, null, 2));
+                console.log(JSON.stringify(values, null, 2));
+                this.save(values);
               }, 500);
             }}
           >
