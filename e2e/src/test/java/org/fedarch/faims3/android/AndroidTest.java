@@ -9,7 +9,7 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
 
 public class AndroidTest {
-	protected AndroidDriver<AndroidElement> driver;
+	protected static AndroidDriver<AndroidElement> driver;
 
 	/**
 	 * Setup the AndroidDriver based on parameter.
@@ -17,15 +17,15 @@ public class AndroidTest {
 	 * @return an AndroidDriver instance
 	 * @throws MalformedURLException
 	 */
-	public void setup(boolean localTest) throws MalformedURLException {
+	public static void setup(boolean localTest) throws MalformedURLException {
 		if (localTest) {
-			this.localConnectionSetup();
+			localConnectionSetup();
 		} else {
-		    this.browserstackSetup();
+		    browserstackSetup();
 		}
 	}
 
-	private void localConnectionSetup() throws MalformedURLException {
+	private static void localConnectionSetup() throws MalformedURLException {
 		DesiredCapabilities caps = new DesiredCapabilities();
 	    caps.setCapability("platformName", "Android");
 	    caps.setCapability("platformVersion", "10.0");
@@ -34,10 +34,10 @@ public class AndroidTest {
 	    caps.setCapability("adbExecTimeout", "1200000");
 	    caps.setCapability("app", "C:\\github\\FAIMS3\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk");
 
-	    this.driver = new AndroidDriver<AndroidElement>(new URL("http://127.0.0.1:4723/wd/hub"), caps);
+	    driver = new AndroidDriver<AndroidElement>(new URL("http://127.0.0.1:4723/wd/hub"), caps);
 	}
 
-	private void browserstackSetup() throws MalformedURLException {
+	private static void browserstackSetup() throws MalformedURLException {
 		DesiredCapabilities caps = new DesiredCapabilities();
 
 	    caps.setCapability("project", "My First Project");
@@ -55,7 +55,7 @@ public class AndroidTest {
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
 	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
 
-	    this.driver = new AndroidDriver<AndroidElement>(
+	    driver = new AndroidDriver<AndroidElement>(
 	            new URL("http://hub.browserstack.com/wd/hub"), caps);
 
 	}

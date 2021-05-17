@@ -25,10 +25,10 @@ import io.appium.java_client.android.AndroidElement;
 public class TestPopulateForm extends AndroidTest {
 
   @BeforeClass
-  public void setup() throws MalformedURLException {
+  public static void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  this.setup(false);
+	  AndroidTest.setup(false);
   }
 
   /**
@@ -107,7 +107,7 @@ public class TestPopulateForm extends AndroidTest {
     submit.click();
 
     // Validate json with expected values
-    AndroidElement json = (AndroidElement) driver.findElements(MobileBy.xpath("//*[@resource-id='root']/android.view.View")).get(15)
+    AndroidElement json = (AndroidElement) driver.findElements(MobileBy.xpath("//*[@resource-id='root']//android.view.View")).get(15)
     		.findElement(MobileBy.className("android.view.View"));
     json.getText().contentEquals(
     		"{\r\n" +
@@ -173,7 +173,7 @@ public class TestPopulateForm extends AndroidTest {
   //TODO: test module selection
 
   @AfterClass
-  public void tearDown() {
+  public static void tearDown() {
 	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.
 	 driver.quit();
   }
