@@ -1,7 +1,6 @@
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
-import {getUiSpecForProject, setUiSpecForProject} from './uiSpecification';
-import {UI_SPECIFICATION_NAME} from './datamodel';
+import {getProjectMetadata, setProjectMetadata} from './projectMetadata';
 import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';
@@ -43,31 +42,20 @@ describe('roundtrip reading and writing to db', () => {
   testProp(
     'ui roundtrip',
     [
-      fc.fullUnicodeString(),
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // fields
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // views
-      fc.fullUnicodeString(), // start-view
+      fc.fullUnicodeString(), // project name
+      fc.fullUnicodeString(), // metadata_key
+      fc.unicodeJsonObject(), // metadata
     ],
-    async (project_name, fields, views, start_view) => {
+    async (project_name, metadata_key, metadata) => {
       await cleanProjectDBS();
       fc.pre(projdbs !== {});
 
-      const uiInfo = {
-        _id: UI_SPECIFICATION_NAME,
-        fields: fields,
-        views: views,
-        start_view: start_view,
-      };
-
-      const meta_db = getProjectDB(project_name);
-
-      return setUiSpecForProject(meta_db, uiInfo)
+      return setProjectMetadata(project_name, metadata_key, metadata)
         .then(result => {
-          return getUiSpecForProject(project_name);
+          return getProjectMetadata(project_name, metadata_key);
         })
         .then(result => {
-          delete result['_rev'];
-          expect(equals(result, uiInfo)).toBe(true);
+          expect(equals(result, metadata)).toBe(true);
         });
     }
   );

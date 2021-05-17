@@ -1,6 +1,7 @@
 # FAIMS3
 
-FAIMS3 is currently in pre-alpha development. This repository is our main codebase for development. See <https://faims.edu.au> for updates (soon).
+FAIMS3 is currently in pre-alpha development. This repository is our main
+codebase for development. See <https://faims.edu.au> for updates (soon).
 
 ## Setup and development (quick-start)
 
@@ -28,3 +29,16 @@ You should also be aware of the
 [cli interface to capacitor](https://capacitorjs.com/docs/cli), as that does the
 building/management of the Android/iOS
 apps.
+
+## Choosing couchdb instances
+
+The `server_configs` directory contains sourcable scripts for some of the
+development servers, but primarily exporting:
+```!shell
+export REACT_APP_DIRECTORY_HOST=<couchdb_host_name>
+export REACT_APP_DIRECTORY_PORT=<couchdb_port>
+```
+will allow you to choose which couchdb instance to use. Remember to add the
+host-port pair of the system the *FAIMS* app is running on (in most cases
+`localhost:3000`) to the CORS allow list via the Fauxton running on the couchdb
+server (located at http://<couchdb_host_name>:<couchdb_port>/_utils/).

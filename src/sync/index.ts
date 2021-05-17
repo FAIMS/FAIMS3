@@ -2,7 +2,19 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
-import {setupExampleForm} from '../dummyData';
+import {
+  setupExampleForm,
+  setupExampleListing,
+  setupExampleDirectory,
+  setupExampleActive,
+  setupExampleData,
+} from '../dummyData';
+import {
+  USE_REAL_DATA,
+  DIRECTORY_PROTOCOL,
+  DIRECTORY_HOST,
+  DIRECTORY_PORT,
+} from '../buildconfig';
 
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
@@ -10,8 +22,6 @@ const DATA_DBNAME_PREFIX = 'data-';
 const DIRECTORY_TIMEOUT = 1000;
 const LISTINGS_TIMEOUT = 2000;
 const PROJECT_TIMEOUT = 3000;
-
-const USE_REAL_DATA = process.env.REACT_APP_USE_REAL_DATA;
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   remote: null | LocalDBRemote<Content>;
@@ -86,6 +96,17 @@ export const data_dbs: LocalDBList<DataModel.EncodedObservation> = {};
  * GUI Models, and a Prople database.
  */
 export const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
+
+export function materializeConnectionInfo(
+  base_info: DataModel.ConnectionInfo,
+  ...overlays: DataModel.PossibleConnectionInfo[]
+): DataModel.ConnectionInfo {
+  let ret = {...base_info};
+  for (const overlay of overlays) {
+    ret = {...ret, ...overlay};
+  }
+  return ret;
+}
 
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
@@ -196,104 +217,20 @@ async function get_default_instance(): Promise<DataModel.NonNullListingsObject> 
       _id: possibly_corrupted_instance._id,
       name: possibly_corrupted_instance.name,
       description: possibly_corrupted_instance.description,
-      projects_db: possibly_corrupted_instance.projects_db!,
-      people_db: possibly_corrupted_instance.people_db!,
+      projects_db: materializeConnectionInfo(
+        directory_connection_info,
+        possibly_corrupted_instance.projects_db
+      ),
+      people_db: materializeConnectionInfo(
+        directory_connection_info,
+        possibly_corrupted_instance.people_db
+      ),
     };
   }
   return default_instance;
 }
 
 PouchDB.plugin(PouchDBFind);
-
-/**
- * Creates & Populates the active_projects database.
- *
- * Call before initialize_db
- */
-export async function populate_test_data() {
-  const test_doc1: {
-    _rev?: string;
-    _id: string;
-    listing_id: string;
-    project_id: string;
-    username: string;
-    password: string;
-  } = {
-    _id: 'default/lake_mungo',
-    listing_id: 'default',
-    project_id: 'lake_mungo',
-    username: 'test1',
-    password: 'apple',
-  };
-  const test_doc2: {
-    _rev?: string;
-    _id: string;
-    listing_id: string;
-    project_id: string;
-    username: string;
-    password: string;
-  } = {
-    _id: 'csiro/csiro-geochemistry',
-    listing_id: 'csiro',
-    project_id: 'csiro-geochemistry',
-    username: 'test1',
-    password: 'apple',
-  };
-  const test_doc3: {
-    _rev?: string;
-    _id: string;
-    listing_id: string;
-    project_id: string;
-    username: string;
-    password: string;
-  } = {
-    _id: 'default/projectA',
-    listing_id: 'default',
-    project_id: 'projectA',
-    username: 'test1',
-    password: 'apple',
-  };
-  const test_doc4: {
-    _rev?: string;
-    _id: string;
-    listing_id: string;
-    project_id: string;
-    username: string;
-    password: string;
-  } = {
-    _id: 'default/projectB',
-    listing_id: 'default',
-    project_id: 'projectB',
-    username: 'test1',
-    password: 'apple',
-  };
-  const test_doc5: {
-    _rev?: string;
-    _id: string;
-    listing_id: string;
-    project_id: string;
-    username: string;
-    password: string;
-  } = {
-    _id: 'default/projectC',
-    listing_id: 'default',
-    project_id: 'projectC',
-    username: 'test1',
-    password: 'apple',
-  };
-
-  const test_docs = [test_doc1, test_doc2, test_doc3, test_doc4, test_doc5];
-
-  for (const doc of test_docs) {
-    try {
-      const current_test_doc = await active_db.get(doc._id);
-      doc._rev = current_test_doc._rev;
-    } catch (err) {
-      // Not in the DB means _rev is unnecessary for put()
-    }
-    await active_db.put(doc);
-  }
-}
 
 /**
  * This is appended to whenever a project has its
@@ -564,7 +501,7 @@ interface DirectoryEmitter extends EventEmitter {
  * Enable 'Propagation' of completion of all known projects meta & other databases.
  * Completion, here, means that the meta database has errored/paused syncing.
  *
- * Resulting from this funciton, initializeEvents adds the following behaviour:
+ * Resulting from this function, initializeEvents adds the following behaviour:
  * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
  * all listings have errored/paused), a 'projects_known' event is emitted
  *
@@ -688,27 +625,27 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  await populate_test_data();
+  await setupExampleActive();
   console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
     initializeEvents.once('metas_complete', resolve);
   });
-  initialize_dbs({
-    proto: 'http',
-    host: '10.80.11.44',
-    port: 5984,
-    db_name: 'directory',
-  });
+  initialize_dbs();
   await initialized;
   console.log('initialised dbs');
 
   console.log('setting up form');
 }
 
-function initialize_dbs(
-  directory_connection_info: DataModel.ConnectionInfo
-): DirectoryEmitter {
+const directory_connection_info: DataModel.ConnectionInfo = {
+  proto: DIRECTORY_PROTOCOL,
+  host: DIRECTORY_HOST,
+  port: DIRECTORY_PORT,
+  db_name: 'directory',
+};
+
+function initialize_dbs(): DirectoryEmitter {
   // Main sync propagation downwards to individual projects:
   initializeEvents
     .on('directory_local', listings => process_listings(listings, true))
@@ -766,7 +703,13 @@ async function process_directory(
   let waiting = true;
   const synced_callback = () => {
     waiting = false;
-    initializeEvents.emit('directory_paused', listings);
+    if (USE_REAL_DATA) {
+      initializeEvents.emit('directory_paused', listings);
+    } else {
+      setupExampleDirectory(directory_db).then(() => {
+        initializeEvents.emit('directory_paused', listings);
+      });
+    }
   };
   directory_connection.on('error', synced_callback);
   directory_connection.on('paused', synced_callback);
@@ -777,7 +720,10 @@ async function process_directory(
   setTimeout(() => {
     if (waiting) {
       // Timeout error when still waiting here
-      console.error('Timed out waiting for', directory_connection);
+      console.error(
+        'Timed out waiting for directory connection: ',
+        directory_connection
+      );
       synced_callback();
     }
   }, DIRECTORY_TIMEOUT);
@@ -817,15 +763,20 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   const projects_db_id = listing_object['projects_db']
     ? listing_id
     : DEFAULT_LISTING_ID;
-  const projects_connection =
-    listing_object['projects_db'] ||
-    (await get_default_instance())['projects_db'];
+
+  const projects_connection = materializeConnectionInfo(
+    (await get_default_instance())['projects_db'],
+    listing_object['projects_db']
+  );
 
   const people_local_id = listing_object['people_db']
     ? listing_id
     : DEFAULT_LISTING_ID;
-  const people_connection =
-    listing_object['people_db'] || (await get_default_instance())['people_db'];
+
+  const people_connection = materializeConnectionInfo(
+    (await get_default_instance())['people_db'],
+    listing_object['people_db']
+  );
 
   // Only sync active projects:
   const active_projects = (
@@ -874,14 +825,27 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   let waiting = true;
   const synced_callback = () => {
     waiting = false;
-    initializeEvents.emit(
-      'listing_paused',
-      listing_object,
-      active_projects,
-      local_people_db,
-      local_projects_db,
-      projects_connection
-    );
+    if (USE_REAL_DATA) {
+      initializeEvents.emit(
+        'listing_paused',
+        listing_object,
+        active_projects,
+        local_people_db,
+        local_projects_db,
+        projects_connection
+      );
+    } else {
+      setupExampleListing(listing_object._id, local_projects_db).then(() => {
+        initializeEvents.emit(
+          'listing_paused',
+          listing_object,
+          active_projects,
+          local_people_db,
+          local_projects_db,
+          projects_connection
+        );
+      });
+    }
   };
   projects_db.remote.connection.on('paused', synced_callback);
   projects_db.remote.connection.on('error', synced_callback);
@@ -899,7 +863,7 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   setTimeout(() => {
     if (waiting) {
       // Timeout error when still waiting here
-      console.error('Timed out waiting for ', projects_db.remote);
+      console.error('Timed out waiting for projects db ', projects_db.remote);
       synced_callback();
     }
   }, LISTINGS_TIMEOUT);
@@ -960,15 +924,21 @@ async function process_project(
   );
 
   // Defaults to the same couch as the projects db, but different database name:
-  const meta_connection_info = project_object.metadata_db || {
-    ...projects_db_connection,
-    db_name: METADATA_DBNAME_PREFIX + project_object._id,
-  };
+  const meta_connection_info = materializeConnectionInfo(
+    {
+      ...projects_db_connection,
+      db_name: METADATA_DBNAME_PREFIX + project_object._id,
+    },
+    project_object.metadata_db
+  );
 
-  const data_connection_info = project_object.data_db || {
-    ...projects_db_connection,
-    db_name: DATA_DBNAME_PREFIX + project_object._id,
-  };
+  const data_connection_info = materializeConnectionInfo(
+    {
+      ...projects_db_connection,
+      db_name: DATA_DBNAME_PREFIX + project_object._id,
+    },
+    project_object.data_db
+  );
 
   const [meta_is_fresh, meta_db] = ensure_synced_db(
     active_id,
@@ -991,7 +961,7 @@ async function process_project(
     let waiting = true;
     const synced_callback = () => {
       waiting = false;
-      if (USE_REAL_DATA !== '' && USE_REAL_DATA !== undefined) {
+      if (USE_REAL_DATA) {
         initializeEvents.emit(
           'project_meta_paused',
           listing,
@@ -1026,7 +996,7 @@ async function process_project(
     setTimeout(() => {
       if (waiting) {
         // Timeout error when still waiting here
-        console.error('Timed out waiting for ', meta_db.remote);
+        console.error('Timed out waiting for metadata db: ', meta_db.remote);
         synced_callback();
       }
     }, PROJECT_TIMEOUT);
@@ -1036,13 +1006,25 @@ async function process_project(
     let waiting = true;
     const synced_callback = () => {
       waiting = false;
-      initializeEvents.emit(
-        'project_data_paused',
-        listing,
-        active_project,
-        project_object,
-        data_db
-      );
+      if (USE_REAL_DATA) {
+        initializeEvents.emit(
+          'project_data_paused',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        );
+      } else {
+        setupExampleData(active_project._id, data_db).then(() => {
+          initializeEvents.emit(
+            'project_data_paused',
+            listing,
+            active_project,
+            project_object,
+            data_db
+          );
+        });
+      }
     };
     data_db.remote.connection.on('paused', synced_callback);
     data_db.remote.connection.on('error', synced_callback);
@@ -1059,7 +1041,7 @@ async function process_project(
     setTimeout(() => {
       if (waiting) {
         // Timeout error when still waiting here
-        console.error('Timed out waiting for ', data_db.remote);
+        console.error('Timed out waiting for data db: ', data_db.remote);
         synced_callback();
       }
     }, PROJECT_TIMEOUT);

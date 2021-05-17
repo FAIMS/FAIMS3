@@ -20,6 +20,7 @@ import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
 import {initialize, initializeEvents} from '../sync';
 import {syncUISpecs, SyncingUiSpecs} from '../uiSpecification';
+//import {NumberSchema} from 'yup';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -75,10 +76,6 @@ class ProjectNavTabs extends React.Component<
   ProjectNavTabsProps,
   ProjectNavTabsState
 > {
-  uiSpecsUpdate(uiSpecs: SyncingUiSpecs) {
-    this.setState({uiSpecs: uiSpecs});
-  }
-
   constructor(props: ProjectNavTabsProps) {
     super(props);
     this.state = {
@@ -210,20 +207,7 @@ class ProjectNavTabs extends React.Component<
                   <Box p={2} mb={2}>
                     <strong>VIEW STEPPER GOES HERE</strong>
                   </Box>
-                  <>
-                    {uiSpecError === null ? (
-                      uiSpec === null ? (
-                        <span>Loading UI Model...</span>
-                      ) : (
-                        <FAIMSForm
-                          uiSpec={uiSpec}
-                          activeProjectID={active_id}
-                        />
-                      )
-                    ) : (
-                      <pre>{JSON.stringify(uiSpecError, null, 2)}</pre>
-                    )}
-                  </>
+                  <FAIMSForm activeProjectID={active_id} />
                 </TabPanel>
               );
             }
