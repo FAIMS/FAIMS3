@@ -23,7 +23,8 @@ const example_datums: {[key: string]: ({_id: string} & Observation)[]} = {
         'action-field': 'hello',
         'email-field': 'MY-EMAIL-ADDRESS@example.com',
         'str-field': 'blurple',
-        'multi-str-field': 'Warning: This is modified from the direct output of the submit button to workaround select-field outputting a string, inputting an array.',
+        'multi-str-field':
+          'Warning: This is modified from the direct output of the submit button to workaround select-field outputting a string, inputting an array.',
         'int-field': 20,
         'select-field': ['EUR'],
         'multi-select-field': ['JPY'],
