@@ -37,6 +37,7 @@ jobs:
       COUCHDB_PASSWORD: password
       REACT_APP_DIRECTORY_HOST: localhost
       REACT_APP_USE_REAL_DATA: true
+      COUCHDB_CURL_HOST: http://admin:password@localhost:5984
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -52,6 +53,13 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    # setup CORS for couchdb
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_config/httpd/enable_cors -d '"true"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/origins -d '"*"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/credentials -d '"true"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
+    # do the npm stuff
     - run: npm ci
     - run: npm run lint
     - run: npm run build --if-present
