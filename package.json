@@ -23,7 +23,12 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "pretest": "npm run compile",
+    "test": "react-scripts test --testPathIgnorePatterns=integration_tests",
+    "posttest": "npm run lint",
+    "preintegration": "npm run compile",
+    "integration": "react-scripts test src/integration_tests",
+    "postintegration": "npm run lint",
     "eject": "react-scripts eject",
     "preserve": "npm run build",
     "serve": "npx cap serve",
@@ -31,9 +36,7 @@
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "prepare": "npm run compile",
-    "pretest": "npm run compile",
-    "posttest": "npm run lint"
+    "prepare": "npm run compile"
   },
   "dependencies": {
     "@capacitor/android": "^2.4.7",
