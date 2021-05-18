@@ -155,20 +155,32 @@ function ensure_local_db<Content extends {}>(
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
  * @param global_dbs projects_db or people_db
  * @param connection_info Info to use to connect to remote
+ * @param options PouchDB options. Defaults to live: true, retry: true.
+ *                if options.sync is defined, then this turns into ensuring the DB
+ *                is pushing to the remote as well as pulling.
  * @returns Flag if newly created =true, already existing=false & The local DB & remote
  */
 function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: DataModel.ConnectionInfo,
   global_dbs: LocalDBList<Content>,
-  options?: PouchDB.Replication.ReplicateOptions
+  options:
+    | PouchDB.Replication.ReplicateOptions
+    | {
+        pull?: PouchDB.Replication.ReplicateOptions;
+        push: PouchDB.Replication.ReplicateOptions;
+      } = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
   // Already connected/connecting
-  if (global_dbs[local_db_id].remote !== null) {
+  if (
+    global_dbs[local_db_id].remote !== null &&
+    JSON.stringify(global_dbs[local_db_id].remote!.info) ===
+      JSON.stringify(connection_info)
+  ) {
     return [
       false,
       {
@@ -183,16 +195,25 @@ function ensure_synced_db<Content extends {}>(
     connection_info
   );
 
-  const connection: PouchDB.Replication.Replication<Content> = /* ASYNC UNAWAITED */ PouchDB.replicate(
-    remote,
-    local,
-    {
+  const push_too = (options as {push?: unknown}).push !== undefined;
+
+  let connection:
+    | PouchDB.Replication.Replication<Content>
+    | PouchDB.Replication.Sync<Content>;
+
+  if (push_too) {
+    const options_sync = options as PouchDB.Replication.SyncOptions;
+    connection = PouchDB.sync(remote, local, {
+      push: {live: true, retry: true, ...options_sync.push},
+      pull: {live: true, retry: true, ...(options_sync.pull || {})},
+    });
+  } else {
+    connection = PouchDB.replicate(remote, local, {
       live: true,
-      retry: false,
-      // TODO: Re-fresh database when options are different
-      ...options, //live & retry can be overwritten
-    }
-  );
+      retry: true,
+      ...options,
+    });
+  }
 
   return [
     true,
@@ -948,7 +969,8 @@ async function process_project(
   const [data_is_fresh, data_db] = ensure_synced_db(
     active_id,
     data_connection_info,
-    data_dbs
+    data_dbs,
+    {push: {}}
   );
   createdProjects[active_id] = {
     project: project_object,
