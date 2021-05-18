@@ -1,7 +1,14 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {getDataDB} from './sync/index';
-import {Observation, EncodedObservation} from './datamodel';
+import {getDataDB, add_initial_listener} from './sync/index';
+import PouchDB from 'pouchdb';
+import {
+  Observation,
+  EncodedObservation,
+  ProjectMetaObject,
+  ProjectObject,
+} from './datamodel';
+import EventEmitter from 'events';
 
 export interface DataListing {
   [_id: string]: string[];
@@ -161,4 +168,52 @@ export async function undeleteFAIMSDataForID(
     console.warn(err);
     throw Error('failed to undelete data with id');
   }
+}
+
+export type ProjectMetaList = {
+  [active_id: string]: [ProjectObject, PouchDB.Database<ProjectMetaObject>];
+};
+
+export const projectEvents: ProjectsEvents = new EventEmitter();
+export const projectState = {
+  stabilized: false,
+  project_metas: {} as ProjectMetaList,
+};
+
+// Listen for events from sync and convert them to ProjectsEvents events
+add_initial_listener(initializeEvents => {
+  initializeEvents.on('project_local', (_listing, active, project, meta) => {
+    const added: ProjectMetaList = {};
+    if (!(active._id in projectState.project_metas)) {
+      added[active._id] = [project, meta.local];
+      projectState.project_metas[active._id] = [project, meta.local];
+    }
+
+    projectEvents.emit(
+      'project_meta_update',
+      projectState.project_metas,
+      added,
+      []
+    );
+  });
+});
+export interface ProjectsEvents extends EventEmitter {
+  /**
+   * This event is emitted when the directory & all listings stop syncing
+   * So a good way to tell
+   * @param event project_meta_stabilize
+   * @param listener Called with all currently known projects
+   */
+  on(
+    event: 'project_meta_stabilize',
+    listener: (project_metas: ProjectMetaList) => unknown
+  ): this;
+  on(
+    event: 'project_meta_update',
+    listener: (
+      project_metas: ProjectMetaList,
+      added: ProjectMetaList,
+      removed: string[]
+    ) => unknown
+  ): this;
 }
