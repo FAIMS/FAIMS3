@@ -85,22 +85,6 @@ export default function ProjectCard(props: ProjectCardProps) {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (showObservations) {
-        // fetch top ten observations for this project
-        dispatch({
-          type: ActionType.GET_OBSERVATION_LIST,
-          payload: {
-            project_id: project._id,
-            data: getObservationList(project._id),
-          },
-        });
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       setLoading(false);
     }

@@ -183,14 +183,6 @@ export default function NavbarNew() {
     [key: string]: boolean;
   }>({Projects: false});
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const data = getProjectList();
-      dispatch({type: ActionType.GET_PROJECT_LIST, payload: data});
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <React.Fragment>
       <div className={classes.root}>
