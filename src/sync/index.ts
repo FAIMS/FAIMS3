@@ -482,126 +482,7 @@ interface DirectoryEmitter extends EventEmitter {
   emit(event: 'directory_active', listings: Set<string>): boolean;
   emit(event: 'directory_error', err: unknown): boolean;
   emit(event: 'projects_known', projects: Set<string>): boolean;
-  emit(
-    event: 'metas_complete',
-    metas: {
-      [key: string]:
-        | null
-        | [
-            DataModel.ActiveDoc,
-            DataModel.ProjectObject,
-            LocalDB<DataModel.ProjectMetaObject>
-          ];
-    }
-  ): boolean;
-}
-
-/**
- * Adds event handlers to initializeEvents to:
- * Enable 'Propagation' of completion of all known projects meta & other databases.
- * Completion, here, means that the meta database has errored/paused syncing.
- *
- * Resulting from this function, initializeEvents adds the following behaviour:
- * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
- * all listings have errored/paused), a 'projects_known' event is emitted
- *
- * When all known projects have their project_meta_paused event triggered,
- * metas_complete event is triggered with list of all projects.
- *
- * Note: All of these events may emit more than once. Use .once('event_name', ...)
- * to only listen for the first trigger.
- */
-function register_completion_detectors() {
-  // This is more complicated, as we have to first ensure that it's in a reasonable state to say
-  // that everything is known & created, before waiting for project meta downloads.
-  // (So that we don't accidentally trigger things if local DBs are empty but waiting)
-
-  // Directory has errored/paused: (so that listings_statuses will not have any more keys)
-  let listings_known = false;
-
-  // Mapping from listing_id: (boolean) if the listing has had its projects added to known_projects yet
-  const listing_statuses = new Map<string, boolean>();
-  const listing_statuses_complete = () =>
-    listings_known && Array.from(listing_statuses.values()).every(v => v);
-
-  // All projects accumulated here
-  const known_projects = new Set<string>();
-  const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
-    listing_statuses_complete() &&
-    Array.from(known_projects.values()).every(v => v in map_obj);
-
-  // Emits project_known if all listings have their projects added to known_projects.
-  const emit_if_complete = () =>
-    listing_statuses_complete()
-      ? initializeEvents.emit('projects_known', known_projects)
-      : undefined;
-
-  initializeEvents.on('directory_paused', listings => {
-    // Make sure listing_statuses has the key for listing
-    // If it's already set to true, don't set it to false
-    listings.forEach(listing =>
-      listing_statuses.set(listing, listing_statuses.get(listing) || false)
-    );
-    for (const listing_id of Array.from(listing_statuses.keys())) {
-      if (!listings.has(listing_id)) listing_statuses.delete(listing_id);
-    }
-    listings_known = true;
-
-    emit_if_complete();
-  });
-  initializeEvents.on('directory_active', () => {
-    // Wait for all listings to be re-synced before any 'completion events' trigger
-    listings_known = false;
-  });
-
-  initializeEvents.on('listing_paused', (listing, active_projects) => {
-    active_projects.forEach(active => known_projects.add(active._id));
-    listing_statuses.set(listing._id, true);
-
-    emit_if_complete();
-  });
-  initializeEvents.on('listing_error', listing_id => {
-    // Don't hold up other things waiting for it to not be an error:
-    listing_statuses.set(listing_id, true);
-
-    emit_if_complete();
-  });
-  initializeEvents.on('listing_active', listing => {
-    // Wait for listing to sync before everything is known.
-    listing_statuses.set(listing._id, false);
-  });
-
-  // The following events essentially only trigger (possibly multiple times) once
-  // projects_known is true, AND once all project_meta_pauseds have been triggered.
-  const metas: {
-    [key: string]:
-      | null
-      | [
-          DataModel.ActiveDoc,
-          DataModel.ProjectObject,
-          LocalDB<DataModel.ProjectMetaObject>
-        ];
-  } = {};
-
-  const emit_if_metas_complete = () =>
-    map_has_all_known_projects(metas)
-      ? initializeEvents.emit('metas_complete', metas)
-      : undefined;
-
-  initializeEvents.on(
-    'project_meta_paused',
-    (listing, active, project, meta) => {
-      metas[active._id] = [active, project, meta];
-      emit_if_metas_complete();
-    }
-  );
-  initializeEvents.on('project_error', (lsting, active) => {
-    metas[active._id] = null;
-    emit_if_metas_complete();
-  });
-  initializeEvents.on('projects_known', () => {
-    emit_if_metas_complete();
-  });
+  emit(event: 'metas_complete', metas: MetasCompleteType): boolean;
 }
 
 /**
@@ -645,6 +526,35 @@ const directory_connection_info: DataModel.ConnectionInfo = {
   db_name: 'directory',
 };
 
+/**
+ * List of functions to call before  the initialization starts
+ * I.e. initialize_dbs() calls each one of these, once only, before
+ * the first 'directory_local' event even starts.
+ */
+const registering_funcs: ((emitter: DirectoryEmitter) => unknown)[] = [];
+
+/**
+ * Allows external modules to register listeners onto initializeEvents that are
+ * guaranteed to be registered before any events are emitted onto the emitter.
+ *
+ * This allows, for example, to register 'project_meta_paused' listener, and you
+ * know *for sure* that you have all project metas available.
+ *
+ * This throws an error it it's called after initialization has alreayd run
+ *
+ * @param registering_function Function to call to register event listeners onto given emitter
+ */
+export function add_initial_listener(
+  registering_function: (emitter: DirectoryEmitter) => unknown
+) {
+  if (initialize_state !== false) {
+    throw Error(
+      'add_initialize_listener was called too late, initialization has already started!'
+    );
+  }
+  registering_funcs.push(registering_function);
+}
+
 function initialize_dbs(): DirectoryEmitter {
   // Main sync propagation downwards to individual projects:
   initializeEvents
@@ -653,7 +563,7 @@ function initialize_dbs(): DirectoryEmitter {
     .on('listing_local', (...args) => process_projects(...args, true))
     .on('listing_paused', (...args) => process_projects(...args, false));
 
-  register_completion_detectors();
+  registering_funcs.forEach(func => func(initializeEvents));
 
   // It all starts here, once the events are all registered
   console.log('SYNCHRONIZE START');
@@ -661,6 +571,141 @@ function initialize_dbs(): DirectoryEmitter {
     initializeEvents.emit('directory_error', err)
   );
   return initializeEvents;
+}
+
+add_initial_listener(register_projects_known);
+/**
+ * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
+ * all listings have errored/paused), this is set to the set of known project active ids
+ *
+ * This is set to just before 'projects_known' event is emitted.
+ */
+export let projects_known: null | Set<string> = null;
+/**
+ * Adds event handlers to initializeEvents to:
+ * Enable 'Propagation' of completion of all known projects meta & other databases.
+ * Completion, here, means that the meta database has errored/paused syncing.
+ *
+ * Resulting from this function, initializeEvents adds the following behaviour:
+ * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
+ * all listings have errored/paused), a 'projects_known' event is emitted
+ *
+ * Note: All of these events may emit more than once. Use .once('event_name', ...)
+ * to only listen for the first trigger.
+ */
+function register_projects_known(initializeEvents: DirectoryEmitter) {
+  // This is more complicated, as we have to first ensure that it's in a reasonable state to say
+  // that everything is known & created, before waiting for project meta downloads.
+  // (So that we don't accidentally trigger things if local DBs are empty but waiting)
+
+  // Directory has errored/paused: (so that listings_statuses will not have any more keys)
+  let listings_known = false;
+
+  // Mapping from listing_id: (boolean) if the listing has had its projects added to known_projects yet
+  const listing_statuses = new Map<string, boolean>();
+  const listing_statuses_complete = () =>
+    listings_known && Array.from(listing_statuses.values()).every(v => v);
+
+  // All projects accumulated here
+  const known_projects = new Set<string>();
+
+  // Emits project_known if all listings have their projects added to known_projects.
+  const emit_if_complete = () => {
+    if (listing_statuses_complete()) {
+      projects_known = known_projects;
+      initializeEvents.emit('projects_known', known_projects);
+    }
+  };
+
+  initializeEvents.on('directory_paused', listings => {
+    // Make sure listing_statuses has the key for listing
+    // If it's already set to true, don't set it to false
+    listings.forEach(listing =>
+      listing_statuses.set(listing, listing_statuses.get(listing) || false)
+    );
+    for (const listing_id of Array.from(listing_statuses.keys())) {
+      if (!listings.has(listing_id)) listing_statuses.delete(listing_id);
+    }
+    listings_known = true;
+
+    emit_if_complete();
+  });
+  initializeEvents.on('directory_active', () => {
+    // Wait for all listings to be re-synced before any 'completion events' trigger
+    listings_known = false;
+  });
+
+  initializeEvents.on('listing_paused', (listing, active_projects) => {
+    active_projects.forEach(active => known_projects.add(active._id));
+    listing_statuses.set(listing._id, true);
+
+    emit_if_complete();
+  });
+  initializeEvents.on('listing_error', listing_id => {
+    // Don't hold up other things waiting for it to not be an error:
+    listing_statuses.set(listing_id, true);
+
+    emit_if_complete();
+  });
+  initializeEvents.on('listing_active', listing => {
+    // Wait for listing to sync before everything is known.
+    listing_statuses.set(listing._id, false);
+  });
+}
+
+add_initial_listener(register_metas_complete);
+export type MetasCompleteType = {
+  [active_id: string]:
+    | [
+        DataModel.ActiveDoc,
+        DataModel.ProjectObject,
+        LocalDB<DataModel.ProjectMetaObject>
+      ]
+    // Error'd out metadata db
+    | [DataModel.ActiveDoc, unknown]
+};
+
+/**
+ * When all known projects have their project_meta_paused event triggered,
+ * and when all projects are known (see register_projects_known)
+ * This is filled with metadata dbs of all known projects
+ */
+export let metas_complete: null | MetasCompleteType = null;
+/**
+ * When all known projects have their project_meta_paused event triggered,
+ * and when all projects are known (see register_projects_known)
+ * metas_complete event is triggered with list of all projects.
+ */
+function register_metas_complete(initializeEvents: DirectoryEmitter) {
+  const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
+    projects_known !== null &&
+    Array.from(projects_known.values()).every(v => v in map_obj);
+
+  // The following events essentially only trigger (possibly multiple times) once
+  // projects_known is true, AND once all project_meta_pauseds have been triggered.
+  const metas: MetasCompleteType = {};
+
+  const emit_if_metas_complete = () => {
+    if (map_has_all_known_projects(metas)) {
+      metas_complete = metas;
+      initializeEvents.emit('metas_complete', metas);
+    }
+  };
+
+  initializeEvents.on(
+    'project_meta_paused',
+    (listing, active, project, meta) => {
+      metas[active._id] = [active, project, meta];
+      emit_if_metas_complete();
+    }
+  );
+  initializeEvents.on('project_error', (listing, active, err) => {
+    metas[active._id] = [active, err];
+    emit_if_metas_complete();
+  });
+  initializeEvents.on('projects_known', () => {
+    emit_if_metas_complete();
+  });
 }
 
 async function process_directory(
