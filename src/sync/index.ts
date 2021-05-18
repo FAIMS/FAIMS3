@@ -97,6 +97,17 @@ export const data_dbs: LocalDBList<DataModel.EncodedObservation> = {};
  */
 export const metadata_dbs: LocalDBList<DataModel.ProjectMetaObject> = {};
 
+export function materializeConnectionInfo(
+  base_info: DataModel.ConnectionInfo,
+  ...overlays: DataModel.PossibleConnectionInfo[]
+): DataModel.ConnectionInfo {
+  let ret = {...base_info};
+  for (const overlay of overlays) {
+    ret = {...ret, ...overlay};
+  }
+  return ret;
+}
+
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
  * @param connection_info Network address/database info to use to initialize the connection
@@ -206,8 +217,14 @@ async function get_default_instance(): Promise<DataModel.NonNullListingsObject> 
       _id: possibly_corrupted_instance._id,
       name: possibly_corrupted_instance.name,
       description: possibly_corrupted_instance.description,
-      projects_db: possibly_corrupted_instance.projects_db!,
-      people_db: possibly_corrupted_instance.people_db!,
+      projects_db: materializeConnectionInfo(
+        directory_connection_info,
+        possibly_corrupted_instance.projects_db
+      ),
+      people_db: materializeConnectionInfo(
+        directory_connection_info,
+        possibly_corrupted_instance.people_db
+      ),
     };
   }
   return default_instance;
@@ -614,21 +631,21 @@ async function initialize_nocheck() {
   const initialized = new Promise(resolve => {
     initializeEvents.once('metas_complete', resolve);
   });
-  initialize_dbs({
-    proto: DIRECTORY_PROTOCOL,
-    host: DIRECTORY_HOST,
-    port: DIRECTORY_PORT,
-    db_name: 'directory',
-  });
+  initialize_dbs();
   await initialized;
   console.log('initialised dbs');
 
   console.log('setting up form');
 }
 
-function initialize_dbs(
-  directory_connection_info: DataModel.ConnectionInfo
-): DirectoryEmitter {
+const directory_connection_info: DataModel.ConnectionInfo = {
+  proto: DIRECTORY_PROTOCOL,
+  host: DIRECTORY_HOST,
+  port: DIRECTORY_PORT,
+  db_name: 'directory',
+};
+
+function initialize_dbs(): DirectoryEmitter {
   // Main sync propagation downwards to individual projects:
   initializeEvents
     .on('directory_local', listings => process_listings(listings, true))
@@ -746,15 +763,20 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   const projects_db_id = listing_object['projects_db']
     ? listing_id
     : DEFAULT_LISTING_ID;
-  const projects_connection =
-    listing_object['projects_db'] ||
-    (await get_default_instance())['projects_db'];
+
+  const projects_connection = materializeConnectionInfo(
+    (await get_default_instance())['projects_db'],
+    listing_object['projects_db']
+  );
 
   const people_local_id = listing_object['people_db']
     ? listing_id
     : DEFAULT_LISTING_ID;
-  const people_connection =
-    listing_object['people_db'] || (await get_default_instance())['people_db'];
+
+  const people_connection = materializeConnectionInfo(
+    (await get_default_instance())['people_db'],
+    listing_object['people_db']
+  );
 
   // Only sync active projects:
   const active_projects = (
@@ -902,15 +924,21 @@ async function process_project(
   );
 
   // Defaults to the same couch as the projects db, but different database name:
-  const meta_connection_info = project_object.metadata_db || {
-    ...projects_db_connection,
-    db_name: METADATA_DBNAME_PREFIX + project_object._id,
-  };
+  const meta_connection_info = materializeConnectionInfo(
+    {
+      ...projects_db_connection,
+      db_name: METADATA_DBNAME_PREFIX + project_object._id,
+    },
+    project_object.metadata_db
+  );
 
-  const data_connection_info = project_object.data_db || {
-    ...projects_db_connection,
-    db_name: DATA_DBNAME_PREFIX + project_object._id,
-  };
+  const data_connection_info = materializeConnectionInfo(
+    {
+      ...projects_db_connection,
+      db_name: DATA_DBNAME_PREFIX + project_object._id,
+    },
+    project_object.data_db
+  );
 
   const [meta_is_fresh, meta_db] = ensure_synced_db(
     active_id,

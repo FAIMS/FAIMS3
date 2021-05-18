@@ -20,7 +20,6 @@ interface Props {
 export class Select extends React.Component<TextFieldProps & Props> {
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
-    console.log(ElementProps, children, textFieldProps);
     return (
       <MuiTextField {...fieldToTextField(textFieldProps)} select={true}>
         {children}

@@ -1,4 +1,5 @@
 #!/bin/sh
 
-export REACT_APP_DIRECTORY_HOST=10.70.80.8
-export REACT_APP_DIRECTORY_PORT=5985
+export REACT_APP_DIRECTORY_HOST=testing.db.faims.edu.au
+export REACT_APP_DIRECTORY_PORT=443
+export REACT_APP_USE_HTTPS=true

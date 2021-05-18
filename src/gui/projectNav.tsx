@@ -18,8 +18,8 @@ import Skeleton from '@material-ui/lab/Skeleton';
 import grey from '@material-ui/core/colors/grey';
 import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
+import {initialize, initializeEvents} from '../sync';
 //import {NumberSchema} from 'yup';
-import {syncUISpecs, SyncingUiSpecs} from '../uiSpecification';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,24 +66,32 @@ interface ProjectNavTabsProps extends WithStyles<typeof styles> {
 
 type ProjectNavTabsState = {
   activeTab: string;
-  uiSpecs: SyncingUiSpecs;
+  projectList: ProjectsList;
+  global_error: null | {};
 };
 
 class ProjectNavTabs extends React.Component<
   ProjectNavTabsProps,
   ProjectNavTabsState
 > {
-  uiSpecsUpdate(uiSpecs: SyncingUiSpecs) {
-    this.setState({uiSpecs: uiSpecs});
-  }
-
   constructor(props: ProjectNavTabsProps) {
     super(props);
     this.state = {
+      projectList: {},
       activeTab: '',
-      uiSpecs: syncUISpecs(props.projectList, this.uiSpecsUpdate.bind(this)),
+      global_error: null,
     };
     this.handleChange = this.handleChange.bind(this);
+  }
+
+  componentDidMount() {
+    // get view components, render form
+    const projectList: ProjectsList = {};
+    initializeEvents.on('project_meta_paused', (listing, active, project) => {
+      projectList[active._id] = project;
+      this.setState({projectList: projectList});
+    });
+    initialize().catch(err => this.setState({global_error: err}));
   }
 
   handleChange(event: any, value: any) {
@@ -92,9 +100,10 @@ class ProjectNavTabs extends React.Component<
 
   render() {
     const {classes} = this.props;
-    let {activeTab} = this.state;
+    let activeTab = this.state.activeTab;
+    const projectList = this.state.projectList;
 
-    if (Object.keys(this.props.projectList).length === 0) {
+    if (Object.keys(projectList).length === 0) {
       // Before the projects are initialized,
       // rendering this component displays a loading screen
       return (
@@ -133,21 +142,15 @@ class ProjectNavTabs extends React.Component<
           </Container>
         </div>
       );
-    } else if (this.props.projectList[activeTab] === undefined) {
+    } else if (projectList[activeTab] === undefined) {
       // Immediately after loading screen is finished loading, there
       // is no selected tab, so default to the first one:
-      activeTab = Object.keys(this.props.projectList)[0];
+      activeTab = Object.keys(projectList)[0];
     }
-
-    syncUISpecs(
-      this.props.projectList,
-      this.uiSpecsUpdate.bind(this),
-      this.state.uiSpecs
-    );
 
     return (
       <div className={classes.root}>
-        <AppBar position="static" color="default">
+        <AppBar position="relative" color="default">
           <Tabs
             value={activeTab}
             onChange={this.handleChange}
@@ -157,10 +160,10 @@ class ProjectNavTabs extends React.Component<
             scrollButtons="auto"
             aria-label="scrollable auto tabs example"
           >
-            {Object.keys(this.props.projectList).map(
+            {Object.keys(projectList).map(
               /* eslint-disable @typescript-eslint/no-unused-vars */
               (active_id, project_index) => {
-                const project = this.props.projectList[active_id];
+                const project = projectList[active_id];
                 return (
                   <Tab
                     label={project.name}
@@ -176,12 +179,10 @@ class ProjectNavTabs extends React.Component<
         </AppBar>
 
         <Container maxWidth="md">
-          {Object.keys(this.props.projectList).map(
+          {Object.keys(projectList).map(
             /* eslint-disable @typescript-eslint/no-unused-vars */
             (active_id, project_index) => {
-              const project = this.props.projectList[active_id];
-              const uiSpec = this.state.uiSpecs[active_id].uiSpec;
-              const uiSpecError = this.state.uiSpecs[active_id].error || null;
+              const project = projectList[active_id];
               return (
                 <TabPanel
                   index_of_active={activeTab}
@@ -196,20 +197,7 @@ class ProjectNavTabs extends React.Component<
                   <Box p={2} mb={2}>
                     <strong>VIEW STEPPER GOES HERE</strong>
                   </Box>
-                  <>
-                    {uiSpecError === null ? (
-                      uiSpec === null ? (
-                        <span>Loading UI Model...</span>
-                      ) : (
-                        <FAIMSForm
-                          uiSpec={uiSpec}
-                          activeProjectID={active_id}
-                        />
-                      )
-                    ) : (
-                      <pre>{JSON.stringify(uiSpecError, null, 2)}</pre>
-                    )}
-                  </>
+                  <FAIMSForm activeProjectID={active_id} />
                 </TabPanel>
               );
             }
