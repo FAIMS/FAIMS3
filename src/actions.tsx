@@ -3,6 +3,7 @@ import {
   ProjectsList,
   Observation,
   ObservationList,
+  ProjectUIModel,
 } from './datamodel';
 
 export enum ActionType {
@@ -10,6 +11,7 @@ export enum ActionType {
   GET_PROJECT,
   UPDATE_PROJECT,
   DROP_PROJECT,
+  UPDATE_UI_SPEC,
   GET_OBSERVATION_LIST,
   GET_OBSERVATION,
   UPDATE_OBSERVATION,
@@ -28,6 +30,11 @@ export interface GET_PROJECT {
 export interface UPDATE_PROJECT {
   type: ActionType.UPDATE_PROJECT;
   payload: ProjectObject | null;
+}
+
+export interface UPDATE_UI_SPEC {
+  type: ActionType.UPDATE_UI_SPEC;
+  payload: ProjectUIModel | null;
 }
 export interface DROP_PROJECT {
   type: ActionType.DROP_PROJECT;

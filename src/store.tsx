@@ -1,6 +1,7 @@
 import React, {createContext, useReducer, Dispatch} from 'react';
 import {ObservationList, ProjectsList} from './datamodel';
 import {ProjectActions, ObservationActions, ActionType} from './actions';
+import {add_initial_listener} from './sync';
 
 interface InitialStateProps {
   project_list: ProjectsList;
@@ -54,6 +55,13 @@ const StateProvider = (props: any) => {
     },
     InitialState
   );
+
+  add_initial_listener(initializeEvents => {
+    initializeEvents.on('project_local', (listing, active, project) =>
+      dispatch({type: ActionType.GET_PROJECT, payload: project})
+    );
+    
+  });
 
   return <Provider value={{state, dispatch}}>{props.children}</Provider>;
 };
