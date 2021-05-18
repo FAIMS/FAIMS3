@@ -27,13 +27,15 @@ jobs:
     services:
       couchdb:
         image: couchdb:3
+        ports:
+          - 5984:5984
         env:
           COUCHDB_USER: admin
           COUCHDB_PASSWORD: password
     env:
       COUCHDB_USER: admin
       COUCHDB_PASSWORD: password
-      REACT_APP_DIRECTORY_HOST: couchdb
+      REACT_APP_DIRECTORY_HOST: localhost
       REACT_APP_USE_REAL_DATA: true
     continue-on-error: ${{ matrix.experimental }}
     strategy:
