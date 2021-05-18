@@ -662,7 +662,7 @@ export type MetasCompleteType = {
         LocalDB<DataModel.ProjectMetaObject>
       ]
     // Error'd out metadata db
-    | [DataModel.ActiveDoc, unknown]
+    | [DataModel.ActiveDoc, unknown];
 };
 
 /**
