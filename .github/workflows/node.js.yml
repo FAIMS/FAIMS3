@@ -56,6 +56,7 @@ jobs:
     # setup CORS for couchdb
     - run: curl -X PUT $COUCHDB_CURL_HOST/_config/httpd/enable_cors -d '"true"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/origins -d '"*"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/origins -d '"http://localhost"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/credentials -d '"true"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
