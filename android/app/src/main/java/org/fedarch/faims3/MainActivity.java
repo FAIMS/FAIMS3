@@ -1,6 +1,7 @@
 package org.fedarch.faims3;
 
 import android.os.Bundle;
+import android.webkit.WebView;
 
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
@@ -17,5 +18,7 @@ public class MainActivity extends BridgeActivity {
       // Additional plugins you've installed go here
       // Ex: add(TotallyAwesomePlugin.class);
     }});
+    // enable webview debugging
+    WebView.setWebContentsDebuggingEnabled(true);
   }
 }
