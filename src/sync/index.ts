@@ -506,7 +506,7 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  await setupExampleActive();
+  await setupExampleActive(active_db);
   console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
@@ -751,7 +751,7 @@ async function process_directory(
     if (USE_REAL_DATA) {
       initializeEvents.emit('directory_paused', listings);
     } else {
-      setupExampleDirectory(directory_db).then(() => {
+      setupExampleDirectory(directory_db.local).then(() => {
         initializeEvents.emit('directory_paused', listings);
       });
     }
@@ -880,16 +880,18 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
         projects_connection
       );
     } else {
-      setupExampleListing(listing_object._id, local_projects_db).then(() => {
-        initializeEvents.emit(
-          'listing_paused',
-          listing_object,
-          active_projects,
-          local_people_db,
-          local_projects_db,
-          projects_connection
-        );
-      });
+      setupExampleListing(listing_object._id, local_projects_db.local).then(
+        () => {
+          initializeEvents.emit(
+            'listing_paused',
+            listing_object,
+            active_projects,
+            local_people_db,
+            local_projects_db,
+            projects_connection
+          );
+        }
+      );
     }
   };
   projects_db.remote.connection.on('paused', synced_callback);
@@ -1015,7 +1017,7 @@ async function process_project(
           meta_db
         );
       } else {
-        setupExampleForm(active_project._id, meta_db).then(() => {
+        setupExampleForm(active_project._id, meta_db.local).then(() => {
           initializeEvents.emit(
             'project_meta_paused',
             listing,
@@ -1060,7 +1062,7 @@ async function process_project(
           data_db
         );
       } else {
-        setupExampleData(active_project._id, data_db).then(() => {
+        setupExampleData(active_project._id, data_db.local).then(() => {
           initializeEvents.emit(
             'project_data_paused',
             listing,

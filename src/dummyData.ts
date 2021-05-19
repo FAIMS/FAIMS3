@@ -10,7 +10,6 @@ import {
   ProjectsList,
   ProjectUIModel,
 } from './datamodel';
-import {active_db, LocalDB} from './sync';
 import {upsertFAIMSData} from './dataStorage';
 
 const example_datums: {[key: string]: ({_id: string} & Observation)[]} = {
@@ -553,12 +552,14 @@ const example_active_db: ActiveDoc[] = [
   },
 ];
 
-export async function setupExampleDirectory(db: LocalDB<ListingsObject>) {
+export async function setupExampleDirectory(
+  directory_db: PouchDB.Database<ListingsObject>
+) {
   // For every project in the example_listings, insert into the projects db
   for (const listings_object of example_directory) {
     let current_rev: {_rev?: undefined | string} = {};
     try {
-      current_rev = {_rev: (await db.local.get(listings_object._id))._rev};
+      current_rev = {_rev: (await directory_db.get(listings_object._id))._rev};
     } catch (err) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
@@ -566,20 +567,22 @@ export async function setupExampleDirectory(db: LocalDB<ListingsObject>) {
       }
       // Not in the DB means _rev is unnecessary for put()
     }
-    await db.local.put({...listings_object, ...current_rev});
+    await directory_db.put({...listings_object, ...current_rev});
   }
 
   const ids = example_directory.map(doc => doc._id);
 
   // Remove anything not supposed to be there
-  for (const row of (await db.local.allDocs()).rows) {
+  for (const row of (await directory_db.allDocs()).rows) {
     if (ids.indexOf(row.id) < 0) {
-      await db.local.remove(row.id, row.value.rev);
+      await directory_db.remove(row.id, row.value.rev);
     }
   }
 }
 
-export async function setupExampleActive() {
+export async function setupExampleActive(
+  active_db: PouchDB.Database<ActiveDoc>
+) {
   for (const doc of example_active_db) {
     let current_rev: {_rev?: undefined | string} = {};
     try {
@@ -606,10 +609,8 @@ export async function setupExampleActive() {
 
 export async function setupExampleListing(
   listing_id: string,
-  projects_db: LocalDB<ProjectObject>
+  projects_db: PouchDB.Database<ProjectObject>
 ) {
-  const db = projects_db.local;
-
   if (!(listing_id in example_listings)) {
     return;
   }
@@ -618,7 +619,7 @@ export async function setupExampleListing(
   for (const project of example_listings[listing_id]) {
     let current_rev: {_rev?: undefined | string} = {};
     try {
-      current_rev = {_rev: (await db.get(project._id))._rev};
+      current_rev = {_rev: (await projects_db.get(project._id))._rev};
     } catch (err) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
@@ -626,24 +627,23 @@ export async function setupExampleListing(
       }
       // Not in the DB means _rev is unnecessary for put()
     }
-    await db.put({...project, ...current_rev});
+    await projects_db.put({...project, ...current_rev});
   }
 
   const ids = example_listings[listing_id].map(doc => doc._id);
 
   // Remove anything not supposed to be there
-  for (const row of (await db.allDocs()).rows) {
+  for (const row of (await projects_db.allDocs()).rows) {
     if (ids.indexOf(row.id) < 0) {
-      await db.remove(row.id, row.value.rev);
+      await projects_db.remove(row.id, row.value.rev);
     }
   }
 }
 
 export async function setupExampleData(
   projname: string,
-  data_db: LocalDB<EncodedObservation>
+  data_db: PouchDB.Database<EncodedObservation>
 ) {
-  const db = data_db.local;
   let ids: string[] = [];
 
   if (projname in example_datums) {
@@ -654,20 +654,18 @@ export async function setupExampleData(
   }
 
   // Remove anything not supposed to be there
-  for (const row of (await db.allDocs()).rows) {
+  for (const row of (await data_db.allDocs()).rows) {
     if (ids.indexOf(row.id) < 0) {
-      await db.remove(row.id, row.value.rev);
+      await data_db.remove(row.id, row.value.rev);
     }
   }
 }
 
 export async function setupExampleForm(
   projname: string,
-  meta_db: LocalDB<ProjectMetaObject>
+  meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
-  console.log(
-    await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
-  );
+  console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
 }
 
 export const dummy_projects: ProjectsList = {
