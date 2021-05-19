@@ -153,7 +153,9 @@ const StateProvider = (props: any) => {
     );
   }, 'store');
 
-  initialize().catch(err => {console.error(err)});
+  initialize().catch(err => {
+    console.error(err);
+  });
 
   return <Provider value={{state, dispatch}}>{props.children}</Provider>;
 };

@@ -80,18 +80,18 @@ export default function ProjectList() {
             : Object.keys(projectList).map(key => {
                 const project_info = getProjectInfo(key);
                 if (project_info !== null) {
-                return (
-                  <Grid
-                    item
-                    xs={12}
-                    key={'project-list-grid' + project_info.project_id}
-                  >
-                    <ProjectCard
-                      project={project_info}
-                      showObservations={true}
-                    />
-                  </Grid>
-                );
+                  return (
+                    <Grid
+                      item
+                      xs={12}
+                      key={'project-list-grid' + project_info.project_id}
+                    >
+                      <ProjectCard
+                        project={project_info}
+                        showObservations={true}
+                      />
+                    </Grid>
+                  );
                 }
                 return <React.Fragment />;
               })}

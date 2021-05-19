@@ -118,7 +118,10 @@ export default function ProjectCard(props: ProjectCardProps) {
 
             {showObservations ? (
               <Box mt={1} mb={2}>
-                <ObservationsTable project_id={project.project_id} restrictRows={10} />
+                <ObservationsTable
+                  project_id={project.project_id}
+                  restrictRows={10}
+                />
               </Box>
             ) : (
               ''

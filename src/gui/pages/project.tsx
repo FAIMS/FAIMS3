@@ -34,7 +34,7 @@ export default function Project() {
         </Breadcrumbs>
       </Box>
       <h3>project_id: {project_id}</h3>
-      {project_info ===null ? (
+      {project_info === null ? (
         <p>No project with project id {project_id}</p>
       ) : (
         <ProjectCard project={project_info} showObservations={true} />

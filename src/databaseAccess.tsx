@@ -11,10 +11,10 @@ export function getProjectInfo(project_id: string): ProjectInformation | null {
   return {
     project_id: project_id,
     name: proj.name,
-    description: proj.description || "No description",
-    last_updated: proj.last_updated || "Unknown",
-    created: proj.created || "Unknown",
-    status: proj.status || "Unknown",
+    description: proj.description || 'No description',
+    last_updated: proj.last_updated || 'Unknown',
+    created: proj.created || 'Unknown',
+    status: proj.status || 'Unknown',
   };
 }
 
