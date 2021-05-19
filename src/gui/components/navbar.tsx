@@ -30,7 +30,6 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {getProjectList} from '../../databaseAccess';
 import {ProjectsList} from '../../datamodel';
 import {ActionType} from '../../actions';
 

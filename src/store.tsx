@@ -153,7 +153,7 @@ const StateProvider = (props: any) => {
     );
   }, 'store');
 
-  setTimeout(initialize, 10);
+  initialize().catch(err => {console.error(err)});
 
   return <Provider value={{state, dispatch}}>{props.children}</Provider>;
 };

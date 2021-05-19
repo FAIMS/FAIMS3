@@ -6,6 +6,7 @@ import Skeleton from '@material-ui/lab/Skeleton';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 import {store} from '../../store';
+import {getProjectInfo} from '../../databaseAccess';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -63,24 +64,28 @@ export default function Home() {
                       project={{
                         name: 'dummy',
                         description: 'dummy',
-                        _id: 'dummy',
+                        project_id: 'dummy',
                       }}
                     />
                   </Skeleton>
                 </Grid>
               ))
             : Object.keys(projectList).map(key => {
+                const project_info = getProjectInfo(key);
+                if (project_info !== null) {
                 return (
                   <Grid
                     item
                     xs={12}
                     sm={4}
                     md={4}
-                    key={'project-list-grid' + projectList[key]._id}
+                    key={'project-list-grid' + project_info.project_id}
                   >
-                    <ProjectCard project={projectList[key]} />
+                    <ProjectCard project={project_info} />
                   </Grid>
                 );
+                }
+                return <React.Fragment />;
               })}
         </Grid>
       </div>

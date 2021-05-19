@@ -12,17 +12,17 @@ export const state = {
 };
 
 // Listen for events from sync and convert them to ProjectsEvents events
-add_initial_listener(initializeEvents => {
-  initializeEvents.on('project_local', (_listing, active, project, meta) => {
-    const added: ProjectMetaList = {};
-    if (!(active._id in state.project_metas)) {
-      added[active._id] = [project, meta.local];
-      state.project_metas[active._id] = [project, meta.local];
-    }
-
-    events.emit('project_meta_update', state.project_metas, added, []);
-  });
-}, 'state');
+//add_initial_listener(initializeEvents => {
+//  initializeEvents.on('project_local', (_listing, active, project, meta) => {
+//    const added: ProjectMetaList = {};
+//    if (!(active._id in state.project_metas)) {
+//      added[active._id] = [project, meta.local];
+//      state.project_metas[active._id] = [project, meta.local];
+//    }
+//
+//    events.emit('project_meta_update', state.project_metas, added, []);
+//  });
+//}, 'state');
 
 export const events: StatefulEvents = new EventEmitter();
 export interface StatefulEvents extends EventEmitter {

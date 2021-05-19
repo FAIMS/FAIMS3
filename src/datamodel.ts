@@ -57,7 +57,7 @@ export interface ActiveDoc {
 export interface ProjectObject {
   _id: string;
   name: string;
-  description: string;
+  description?: string;
   data_db?: PossibleConnectionInfo;
   metadata_db?: PossibleConnectionInfo;
   last_updated?: string;
@@ -68,6 +68,18 @@ export interface ProjectObject {
 export type ProjectsList = {
   [key: string]: ProjectObject;
 };
+
+/**
+ * User readable information about a project
+ */
+export interface ProjectInformation {
+  project_id: string;
+  name: string;
+  description?: string;
+  last_updated?: string;
+  created?: string;
+  status?: string;
+}
 
 /*
  * Objects that may be contained in a Project's metadata DB
