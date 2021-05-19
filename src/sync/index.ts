@@ -16,6 +16,7 @@ import {
   DIRECTORY_PORT,
 } from '../buildconfig';
 
+const POUCH_SEPARATOR = '_';
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
@@ -128,7 +129,7 @@ function ConnectionInfo_create_pouch<Content extends {}>(
 }
 
 /**
- * @param prefix Name to use to run new PouchDB(prefix + '/' + id), objects of the same type have the same prefix
+ * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
  * @param global_dbs projects_db or people_db
  * @returns Flag if newly created =true, already existing=false & The local DB
@@ -144,7 +145,7 @@ function ensure_local_db<Content extends {}>(
     return [
       true,
       (global_dbs[local_db_id] = {
-        local: new PouchDB(prefix + '/' + local_db_id),
+        local: new PouchDB(prefix + POUCH_SEPARATOR + local_db_id),
         remote: null,
       }),
     ];
