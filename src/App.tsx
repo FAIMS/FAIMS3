@@ -10,6 +10,7 @@ import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
+import Observation from './gui/pages/observation';
 import {StateProvider} from './store';
 
 import ProjectNavTabs from './gui/projectNav';
@@ -80,6 +81,16 @@ export class App extends React.Component<AppProps, AppState> {
                 exact
                 path={ROUTES.PROJECT + ':project_id(\\d+)'}
                 component={Project}
+              />
+              <Route
+                exact
+                path={
+                  ROUTES.PROJECT +
+                  ':project_id(\\d+)' +
+                  ROUTES.OBSERVATION +
+                  ':observation_id(\\d+)'
+                }
+                component={Observation}
               />
               <Route
                 exact
