@@ -3,16 +3,16 @@ import {
   ActiveDoc,
   EncodedObservation,
   ListingsObject,
-  Observation,
   ObservationList,
   ProjectMetaObject,
   ProjectObject,
   ProjectsList,
   ProjectUIModel,
 } from './datamodel';
-import {upsertFAIMSData} from './dataStorage';
 
-const example_datums: {[key: string]: ({_id: string} & Observation)[]} = {
+const example_datums: {
+  [key: string]: ({_id: string} & EncodedObservation)[];
+} = {
   'default/lake_mungo': [
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
@@ -32,7 +32,7 @@ const example_datums: {[key: string]: ({_id: string} & Observation)[]} = {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
-      // format_version: 1,
+      format_version: 1,
     },
   ],
 };
@@ -648,7 +648,17 @@ export async function setupExampleData(
 
   if (projname in example_datums) {
     for (const datum of example_datums[projname]) {
-      upsertFAIMSData(projname, datum);
+      let current_rev: {_rev?: undefined | string} = {};
+      try {
+        current_rev = {_rev: (await data_db.get(datum._id))._rev};
+      } catch (err) {
+        if (err.message !== 'missing') {
+          //.reason may be 'deleted' or 'missing'
+          throw err;
+        }
+        // Not in the DB means _rev is unnecessary for put()
+      }
+      await data_db.put({...datum, ...current_rev});
     }
     ids = example_datums[projname].map(doc => doc._id!);
   }
