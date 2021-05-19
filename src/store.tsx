@@ -7,7 +7,7 @@ import {
   ProjectsList,
 } from './datamodel';
 import {ProjectActions, ObservationActions, ActionType} from './actions';
-import {add_initial_listener} from './sync';
+import {add_initial_listener, initialize} from './sync';
 import {lookupFAIMSDataID} from './dataStorage';
 
 interface InitialStateProps {
@@ -151,7 +151,9 @@ const StateProvider = (props: any) => {
       (listing, active, project, data_db) =>
         observations_update_listener(active, data_db.local)
     );
-  });
+  }, 'store');
+
+  setTimeout(initialize, 10);
 
   return <Provider value={{state, dispatch}}>{props.children}</Provider>;
 };

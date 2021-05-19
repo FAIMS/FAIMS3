@@ -532,6 +532,7 @@ const directory_connection_info: DataModel.ConnectionInfo = {
  * the first 'directory_local' event even starts.
  */
 const registering_funcs: ((emitter: DirectoryEmitter) => unknown)[] = [];
+const registered_unique_ids: Set<unknown> = new Set();
 
 /**
  * Allows external modules to register listeners onto initializeEvents that are
@@ -545,14 +546,19 @@ const registering_funcs: ((emitter: DirectoryEmitter) => unknown)[] = [];
  * @param registering_function Function to call to register event listeners onto given emitter
  */
 export function add_initial_listener(
-  registering_function: (emitter: DirectoryEmitter) => unknown
+  registering_function: (emitter: DirectoryEmitter) => unknown,
+  unique_id?: unknown | undefined
 ) {
-  if (initialize_state !== false) {
+  if (initialize_state !== false && !registered_unique_ids.has(unique_id)) {
+    // It is OK to call this late if the functions' already been added.
     throw Error(
       'add_initialize_listener was called too late, initialization has already started!'
     );
   }
   registering_funcs.push(registering_function);
+  if (unique_id !== undefined) {
+    registered_unique_ids.add(unique_id);
+  }
 }
 
 function initialize_dbs(): DirectoryEmitter {

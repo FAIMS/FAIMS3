@@ -22,7 +22,7 @@ add_initial_listener(initializeEvents => {
 
     events.emit('project_meta_update', state.project_metas, added, []);
   });
-});
+}, 'state');
 
 export const events: StatefulEvents = new EventEmitter();
 export interface StatefulEvents extends EventEmitter {

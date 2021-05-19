@@ -91,7 +91,7 @@ class ProjectNavTabs extends React.Component<
       projectList[active._id] = project;
       this.setState({projectList: projectList});
     });
-    initialize().catch(err => this.setState({global_error: err}));
+    // initialize().catch(err => this.setState({global_error: err}));
   }
 
   handleChange(event: any, value: any) {
