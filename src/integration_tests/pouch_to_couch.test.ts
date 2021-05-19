@@ -3,9 +3,18 @@ import {
   DIRECTORY_HOST,
   DIRECTORY_PORT,
 } from '../buildconfig';
+import {
+  initialize,
+  projects_dbs,
+  people_dbs,
+  data_dbs,
+  metadata_dbs,
+} from '../sync';
 
 const COUCHDB_USER = String(process.env.COUCHDB_USER);
 const COUCHDB_PASSWORD = String(process.env.COUCHDB_PASSWORD);
+
+jest.setTimeout(1000 * 10);
 
 test('talk to couch', async () => {
   const url =
@@ -48,4 +57,16 @@ test('send to couch', async () => {
     method: 'DELETE',
   });
   expect(response.ok).toBe(true);
+});
+
+test('run initialization', async () => {
+  expect(projects_dbs).toStrictEqual({});
+  expect(people_dbs).toStrictEqual({});
+  expect(metadata_dbs).toStrictEqual({});
+  expect(data_dbs).toStrictEqual({});
+  await initialize();
+  expect(projects_dbs).not.toStrictEqual({});
+  expect(people_dbs).not.toStrictEqual({});
+  //expect(metadata_dbs).not.toStrictEqual({});
+  //expect(data_dbs).not.toStrictEqual({});
 });
