@@ -738,16 +738,30 @@ function register_metas_complete(initializeEvents: DirectoryEmitter) {
 async function process_directory(
   directory_connection_info: DataModel.ConnectionInfo
 ) {
-  const listings = await active_db
-    .allDocs({include_docs: true})
-    .then(all_docs =>
-      all_docs.rows.reduce(
-        (listing, row) => listing.add(row.doc!.listing_id),
-        new Set<string>()
-      )
-    );
+  // Only sync active listings:
+  const get_active_listings_in_this_directory = async () => {
+    const all_listing_ids_in_this_directory = (
+      await directory_db.local.allDocs()
+    ).rows.map(row => row.id);
 
-  initializeEvents.emit('directory_local', listings);
+    const active_listings_in_this_directory = (
+      await active_db.find({
+        selector: {
+          listing_id: {$in: all_listing_ids_in_this_directory},
+        },
+      })
+    ).docs;
+
+    return new Set(
+      active_listings_in_this_directory.map(doc => doc.listing_id)
+    );
+  };
+  const unupdated_listings_in_this_directory = await get_active_listings_in_this_directory();
+
+  initializeEvents.emit(
+    'directory_local',
+    unupdated_listings_in_this_directory
+  );
 
   if (directory_db.remote !== null) {
     return; //Already hooked up
@@ -773,21 +787,30 @@ async function process_directory(
   };
 
   let waiting = true;
-  const synced_callback = () => {
+  const synced_callback = async () => {
     waiting = false;
     if (USE_REAL_DATA) {
-      initializeEvents.emit('directory_paused', listings);
+      initializeEvents.emit(
+        'directory_paused',
+        await get_active_listings_in_this_directory()
+      );
     } else {
-      setupExampleDirectory(directory_db.local).then(() => {
-        initializeEvents.emit('directory_paused', listings);
+      setupExampleDirectory(directory_db.local).then(async () => {
+        initializeEvents.emit(
+          'directory_paused',
+          await get_active_listings_in_this_directory()
+        );
       });
     }
   };
   directory_connection.on('error', synced_callback);
   directory_connection.on('paused', synced_callback);
-  directory_connection.on('active', () => {
+  directory_connection.on('active', async () => {
     waiting = true;
-    initializeEvents.emit('directory_active', listings);
+    initializeEvents.emit(
+      'directory_active',
+      await get_active_listings_in_this_directory()
+    );
   });
   setTimeout(() => {
     if (waiting) {
@@ -850,11 +873,6 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     listing_object['people_db']
   );
 
-  // Only sync active projects:
-  const active_projects = (
-    await active_db.find({selector: {listing_id: listing_id}})
-  ).docs;
-
   const [, local_people_db] = ensure_local_db(
     'people',
     people_local_id,
@@ -865,10 +883,35 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     projects_db_id,
     projects_dbs
   );
+
+  // Only sync active projects:
+  const get_active_projects_in_this_listing = async () => {
+    const all_project_ids_in_this_listing = (
+      await local_projects_db.local.allDocs()
+    ).rows.map(row => row.id);
+
+    const active_projects_in_this_listing = (
+      await active_db.find({
+        selector: {
+          listing_id: listing_id,
+          project_id: {$in: all_project_ids_in_this_listing},
+        },
+      })
+    ).docs;
+
+    return active_projects_in_this_listing;
+  };
+  /**
+   * List of projects in this listing that are also in the active DB
+   * NOTE: This isn't updated, call get_active_projects_in_this_listing
+   * after sufficient time (i.e. if the code you're writing is in a pause handler)
+   */
+  const unupdated_projects_in_this_listing = await get_active_projects_in_this_listing();
+
   initializeEvents.emit(
     'listing_local',
     listing_object,
-    active_projects,
+    unupdated_projects_in_this_listing,
     local_people_db,
     local_projects_db,
     projects_connection
@@ -881,38 +924,38 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     people_connection,
     people_dbs,
     // Filters to only projects that are active
-    {doc_ids: active_projects.map(v => v.project_id)}
+    unupdated_projects_in_this_listing.map(v => v._id)
   );
   const [projects_is_fresh, projects_db] = ensure_synced_db(
     projects_db_id,
     projects_connection,
     projects_dbs,
     // Filters to only projects that are active
-    {doc_ids: active_projects.map(v => v.project_id)}
+    unupdated_projects_in_this_listing.map(v => v._id)
   );
   if (!projects_is_fresh) {
     return;
   }
 
   let waiting = true;
-  const synced_callback = () => {
+  const synced_callback = async () => {
     waiting = false;
     if (USE_REAL_DATA) {
       initializeEvents.emit(
         'listing_paused',
         listing_object,
-        active_projects,
+        await get_active_projects_in_this_listing(),
         local_people_db,
         local_projects_db,
         projects_connection
       );
     } else {
       setupExampleListing(listing_object._id, local_projects_db.local).then(
-        () => {
+        async () => {
           initializeEvents.emit(
             'listing_paused',
             listing_object,
-            active_projects,
+            await get_active_projects_in_this_listing(),
             local_people_db,
             local_projects_db,
             projects_connection
@@ -923,12 +966,12 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   };
   projects_db.remote.connection.on('paused', synced_callback);
   projects_db.remote.connection.on('error', synced_callback);
-  projects_db.remote.connection.on('active', () => {
+  projects_db.remote.connection.on('active', async () => {
     waiting = true;
     initializeEvents.emit(
       'listing_active',
       listing_object,
-      active_projects,
+      await get_active_projects_in_this_listing(),
       local_people_db,
       local_projects_db,
       projects_connection
