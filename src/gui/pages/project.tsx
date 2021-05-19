@@ -1,17 +1,9 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React from 'react';
 import {NavLink, useParams} from 'react-router-dom';
-import {
-  Box,
-  Breadcrumbs,
-  CircularProgress,
-  Container,
-  Typography,
-} from '@material-ui/core';
+import {Box, Breadcrumbs, Container, Typography} from '@material-ui/core';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 
-import {store} from '../../store';
-import {ActionType} from '../../actions';
 import {getProjectInfo} from '../../databaseAccess';
 
 export default function Project() {

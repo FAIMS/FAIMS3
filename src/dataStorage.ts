@@ -1,14 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {getDataDB, add_initial_listener} from './sync/index';
-import PouchDB from 'pouchdb';
-import {
-  Observation,
-  EncodedObservation,
-  ProjectMetaObject,
-  ProjectObject,
-} from './datamodel';
-import EventEmitter from 'events';
+import {getDataDB} from './sync/index';
+import {Observation, EncodedObservation} from './datamodel';
 
 export interface DataListing {
   [_id: string]: string[];

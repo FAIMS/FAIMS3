@@ -3,7 +3,6 @@ import {
   ActiveDoc,
   EncodedObservation,
   ObservationList,
-  ProjectObject,
   ProjectsList,
 } from './datamodel';
 import {ProjectActions, ObservationActions, ActionType} from './actions';

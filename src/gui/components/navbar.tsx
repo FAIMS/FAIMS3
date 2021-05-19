@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -31,7 +31,6 @@ import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {ProjectsList} from '../../datamodel';
-import {ActionType} from '../../actions';
 
 import {store} from '../../store';
 
@@ -137,7 +136,6 @@ function getNestedProjects(projectList: ProjectsList) {
 export default function NavbarNew() {
   const classes = useStyles();
   const globalState = useContext(store);
-  const {dispatch} = globalState;
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggle = () => setIsOpen(!isOpen);

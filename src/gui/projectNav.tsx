@@ -18,7 +18,7 @@ import Skeleton from '@material-ui/lab/Skeleton';
 import grey from '@material-ui/core/colors/grey';
 import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
-import {initialize, initializeEvents} from '../sync';
+import {initializeEvents} from '../sync';
 //import {NumberSchema} from 'yup';
 
 interface TabPanelProps {

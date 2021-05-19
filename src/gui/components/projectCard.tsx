@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Avatar,
   Box,
@@ -20,10 +20,8 @@ import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation} from '../../datamodel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
-import {ActionType} from '../../actions';
-import {store} from '../../store';
-import {getObservationList} from '../../databaseAccess';
 import ObservationsTable from './observationsTable';
+
 type ProjectCardProps = {
   project: ProjectInformation;
   showObservations: boolean;
@@ -68,8 +66,6 @@ export default function ProjectCard(props: ProjectCardProps) {
   const {project, showObservations} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
 
   const bull = <span className={classes.bullet}>•</span>;
   const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
