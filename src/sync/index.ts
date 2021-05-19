@@ -301,26 +301,6 @@ export function getProjectDB(
   }
 }
 
-export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
-  return {
-    'default/projectA': {
-      _id: 'projectA',
-      name: 'Project A',
-      description: 'A dummy project',
-    },
-    'default/projectB': {
-      _id: 'projectB',
-      name: 'Project B',
-      description: 'A dummy project',
-    },
-    'default/projectC': {
-      _id: 'projectC',
-      name: 'Project C',
-      description: 'A dummy project',
-    },
-  };
-}
-
 export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 interface DirectoryEmitter extends EventEmitter {
