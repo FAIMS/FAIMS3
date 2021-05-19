@@ -626,8 +626,8 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  await setupExampleActive();
-  console.log('adding directory test data');
+  //await setupExampleActive();
+  //console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
     initializeEvents.once('metas_complete', resolve);
