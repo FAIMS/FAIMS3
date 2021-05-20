@@ -13,7 +13,7 @@ import {
 const example_datums: {
   [key: string]: ({_id: string} & EncodedObservation)[];
 } = {
-  'default/lake_mungo': [
+  'default_lake_mungo': [
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       type: '??:??',
@@ -38,7 +38,7 @@ const example_datums: {
 };
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  'default/lake_mungo': {
+  'default_lake_mungo': {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -403,7 +403,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
 
     start_view: 'start-view',
   },
-  'default/projectB': {
+  'default_projectB': {
     fields: {},
     views: {
       'start-view': {
@@ -421,7 +421,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     },
     start_view: 'start-view',
   },
-  'default/projectC': {
+  'default_projectC': {
     fields: {},
     views: {
       'start-view': {
@@ -516,35 +516,35 @@ const example_directory: ListingsObject[] = [
 
 const example_active_db: ActiveDoc[] = [
   {
-    _id: 'default/lake_mungo',
+    _id: 'default_lake_mungo',
     listing_id: 'default',
     project_id: 'lake_mungo',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'csiro/csiro-geochemistry',
+    _id: 'csiro_csiro-geochemistry',
     listing_id: 'csiro',
     project_id: 'csiro-geochemistry',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'default/projectA',
+    _id: 'default_projectA',
     listing_id: 'default',
     project_id: 'projectA',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'default/projectB',
+    _id: 'default_projectB',
     listing_id: 'default',
     project_id: 'projectB',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'default/projectC',
+    _id: 'default_projectC',
     listing_id: 'default',
     project_id: 'projectC',
     username: 'test1',
