@@ -3,22 +3,39 @@ import {
   ProjectsList,
   Observation,
   ObservationList,
+  ProjectUIModel,
 } from './datamodel';
 
 export enum ActionType {
-  GET_PROJECT_LIST,
+  INITIALIZED,
+  APPEND_PROJECT_LIST,
+  POP_PROJECT_LIST,
   GET_PROJECT,
   UPDATE_PROJECT,
   DROP_PROJECT,
-  GET_OBSERVATION_LIST,
+  UPDATE_UI_SPEC,
+  APPEND_OBSERVATION_LIST,
+  POP_OBSERVATION_LIST,
   GET_OBSERVATION,
   UPDATE_OBSERVATION,
   DROP_OBSERVATION,
 }
 
-export interface GET_PROJECT_LIST {
-  type: ActionType.GET_PROJECT_LIST;
+export interface INITIALIZED {
+  type: ActionType.INITIALIZED;
+  payload: undefined;
+}
+
+export type InitializeActions = INITIALIZED;
+
+export interface APPEND_PROJECT_LIST {
+  type: ActionType.APPEND_PROJECT_LIST;
   payload: ProjectsList;
+}
+
+export interface POP_PROJECT_LIST {
+  type: ActionType.POP_PROJECT_LIST;
+  payload: Set<string>;
 }
 
 export interface GET_PROJECT {
@@ -29,19 +46,30 @@ export interface UPDATE_PROJECT {
   type: ActionType.UPDATE_PROJECT;
   payload: ProjectObject | null;
 }
+
+export interface UPDATE_UI_SPEC {
+  type: ActionType.UPDATE_UI_SPEC;
+  payload: ProjectUIModel | null;
+}
 export interface DROP_PROJECT {
   type: ActionType.DROP_PROJECT;
 }
 
 export type ProjectActions =
-  | GET_PROJECT_LIST
+  | APPEND_PROJECT_LIST
+  | POP_PROJECT_LIST
   | GET_PROJECT
   | UPDATE_PROJECT
   | DROP_PROJECT;
 
-export interface GET_OBSERVATION_LIST {
-  type: ActionType.GET_OBSERVATION_LIST;
+export interface APPEND_OBSERVATION_LIST {
+  type: ActionType.APPEND_OBSERVATION_LIST;
   payload: {project_id: string; data: ObservationList};
+}
+
+export interface POP_OBSERVATION_LIST {
+  type: ActionType.POP_OBSERVATION_LIST;
+  payload: {project_id: string; data_ids: Set<string>};
 }
 
 export interface GET_OBSERVATION {
@@ -59,7 +87,8 @@ export interface DROP_OBSERVATION {
 }
 
 export type ObservationActions =
-  | GET_OBSERVATION_LIST
+  | APPEND_OBSERVATION_LIST
+  | POP_OBSERVATION_LIST
   | GET_OBSERVATION
   | UPDATE_OBSERVATION
   | DROP_OBSERVATION;

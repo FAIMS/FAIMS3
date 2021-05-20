@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Avatar,
   Box,
@@ -18,14 +18,13 @@ const {Share} = Plugins;
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectObject} from '../../datamodel';
+import {ProjectInformation} from '../../datamodel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
-import {ActionType} from '../../actions';
-import {store} from '../../store';
-import {getObservationList} from '../../databaseAccess';
 import ObservationsTable from './observationsTable';
+import MetadataRenderer from './metadataRenderer';
+
 type ProjectCardProps = {
-  project: ProjectObject;
+  project: ProjectInformation;
   showObservations: boolean;
 };
 
@@ -68,8 +67,6 @@ export default function ProjectCard(props: ProjectCardProps) {
   const {project, showObservations} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
 
   const bull = <span className={classes.bullet}>•</span>;
   const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
@@ -79,26 +76,10 @@ export default function ProjectCard(props: ProjectCardProps) {
     const shareRet = await Share.share({
       title: 'FAIMS Project: ' + project.name,
       text: 'Really awesome project you need to see right now',
-      url: ROUTES.PROJECT + project._id,
+      url: ROUTES.PROJECT + project.project_id,
       dialogTitle: 'Share ' + project.name,
     });
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (showObservations) {
-        // fetch top ten observations for this project
-        dispatch({
-          type: ActionType.GET_OBSERVATION_LIST,
-          payload: {
-            project_id: project._id,
-            data: getObservationList(project._id),
-          },
-        });
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
@@ -134,7 +115,10 @@ export default function ProjectCard(props: ProjectCardProps) {
 
             {showObservations ? (
               <Box mt={1} mb={2}>
-                <ObservationsTable project_id={project._id} restrictRows={10} />
+                <ObservationsTable
+                  project_id={project.project_id}
+                  restrictRows={10}
+                />
               </Box>
             ) : (
               ''
@@ -146,14 +130,25 @@ export default function ProjectCard(props: ProjectCardProps) {
               style={{marginTop: '20px'}}
             >
               10 team members {bull} status: {project.status} {bull} Last
-              updated {project.last_updated}
+              updated {project.last_updated} {bull}
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'project_lead'}
+                metadata_label={'Project Lead'}
+              />{' '}
+              {bull}
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'lead_institution'}
+                metadata_label={'Lead Institution'}
+              />
             </Typography>
           </CardContent>
           <CardActions>
             <Button
               size="small"
               color="primary"
-              to={ROUTES.PROJECT + project._id}
+              to={ROUTES.PROJECT + project.project_id}
               component={RouterLink}
             >
               View
@@ -164,7 +159,7 @@ export default function ProjectCard(props: ProjectCardProps) {
               </Button>
             ) : (
               <EmailShareButton
-                url={ROUTES.PROJECT + project._id}
+                url={ROUTES.PROJECT + project.project_id}
                 subject={'FAIMS Project: ' + project.name}
                 body={"I'd like to share this FAIMS project with you "}
                 resetButtonStyle={false}
