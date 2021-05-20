@@ -7,6 +7,7 @@ import {
 } from './datamodel';
 
 export enum ActionType {
+  INITIALIZED,
   APPEND_PROJECT_LIST,
   POP_PROJECT_LIST,
   GET_PROJECT,
@@ -19,6 +20,13 @@ export enum ActionType {
   UPDATE_OBSERVATION,
   DROP_OBSERVATION,
 }
+
+export interface INITIALIZED {
+  type: ActionType.INITIALIZED;
+  payload: undefined;
+}
+
+export type InitializeActions = INITIALIZED;
 
 export interface APPEND_PROJECT_LIST {
   type: ActionType.APPEND_PROJECT_LIST;

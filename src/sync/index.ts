@@ -510,7 +510,7 @@ async function initialize_nocheck() {
   console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
-    initializeEvents.once('metas_complete', resolve);
+    initializeEvents.once('projects_known', resolve);
   });
   initialize_dbs();
   await initialized;

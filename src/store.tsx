@@ -1,28 +1,35 @@
-import React, {createContext, useReducer, Dispatch} from 'react';
+import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
 import {
   ActiveDoc,
   EncodedObservation,
   ObservationList,
   ProjectsList,
 } from './datamodel';
-import {ProjectActions, ObservationActions, ActionType} from './actions';
+import {
+  ProjectActions,
+  ObservationActions,
+  InitializeActions,
+  ActionType,
+} from './actions';
 import {add_initial_listener, initialize} from './sync/index';
 import {lookupFAIMSDataID} from './dataStorage';
 
 interface InitialStateProps {
   project_list: ProjectsList;
   observation_list: {[project_id: string]: ObservationList};
+  initialized: boolean;
 }
 
 const InitialState = {
   project_list: {},
   observation_list: {},
   active_project: null,
+  initialized: false,
 };
 
 interface ContextType {
   state: InitialStateProps;
-  dispatch: Dispatch<ProjectActions | ObservationActions>;
+  dispatch: Dispatch<ProjectActions | ObservationActions | InitializeActions>;
 }
 
 const store = createContext<ContextType>({
@@ -34,8 +41,17 @@ const {Provider} = store;
 
 const StateProvider = (props: any) => {
   const [state, dispatch] = useReducer(
-    (state: InitialStateProps, action: ProjectActions | ObservationActions) => {
+    (
+      state: InitialStateProps,
+      action: ProjectActions | ObservationActions | InitializeActions
+    ) => {
       switch (action.type) {
+        case ActionType.INITIALIZED: {
+          return {
+            ...state,
+            initialized: true,
+          };
+        }
         case ActionType.APPEND_PROJECT_LIST: {
           return {
             ...state,
@@ -152,11 +168,24 @@ const StateProvider = (props: any) => {
     );
   }, 'store');
 
-  initialize().catch(err => {
-    console.error(err);
-  });
+  useEffect(() => {
+    initialize()
+      .catch(err => {
+        console.error(err);
+      })
+      .then(() =>
+        dispatch({
+          type: ActionType.INITIALIZED,
+          payload: undefined,
+        })
+      );
+  }, []);
 
-  return <Provider value={{state, dispatch}}>{props.children}</Provider>;
+  if (state.initialized) {
+    return <Provider value={{state, dispatch}}>{props.children}</Provider>;
+  } else {
+    return <div>Loading</div>;
+  }
 };
 
 export {store, StateProvider};
