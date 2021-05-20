@@ -3,10 +3,10 @@ import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
-  setupExampleForm,
   setupExampleListing,
   setupExampleDirectory,
   setupExampleActive,
+  setupExampleProjectMetadata,
   setupExampleData,
 } from '../dummyData';
 import {
@@ -1045,15 +1045,17 @@ async function process_project(
           meta_db
         );
       } else {
-        setupExampleForm(active_project._id, meta_db.local).then(() => {
-          initializeEvents.emit(
-            'project_meta_paused',
-            listing,
-            active_project,
-            project_object,
-            meta_db
-          );
-        });
+        setupExampleProjectMetadata(active_project._id, meta_db.local).then(
+          () => {
+            initializeEvents.emit(
+              'project_meta_paused',
+              listing,
+              active_project,
+              project_object,
+              meta_db
+            );
+          }
+        );
       }
     };
     meta_db.remote.connection.on('paused', synced_callback);
