@@ -45,7 +45,7 @@ export default function ProjectList() {
   const projectList = globalState.state.project_list;
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box
         display="flex"
         flexDirection="row-reverse"

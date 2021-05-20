@@ -45,7 +45,7 @@ export default function Project() {
   }, [project]);
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box
         display="flex"
         flexDirection="row-reverse"
