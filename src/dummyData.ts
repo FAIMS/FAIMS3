@@ -13,7 +13,7 @@ import {
 const example_datums: {
   [key: string]: ({_id: string} & EncodedObservation)[];
 } = {
-  'default_lake_mungo': [
+  default_lake_mungo: [
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       type: '??:??',
@@ -38,7 +38,7 @@ const example_datums: {
 };
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  'default_lake_mungo': {
+  default_lake_mungo: {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -403,7 +403,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
 
     start_view: 'start-view',
   },
-  'default_projectB': {
+  default_projectB: {
     fields: {},
     views: {
       'start-view': {
@@ -421,7 +421,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     },
     start_view: 'start-view',
   },
-  'default_projectC': {
+  default_projectC: {
     fields: {},
     views: {
       'start-view': {

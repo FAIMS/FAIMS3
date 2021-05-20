@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {act} from 'react-dom/test-utils';
 import App from './App';
 
 // No projects created or to be created during init.
@@ -14,8 +15,20 @@ jest.mock('./sync/index', () => ({
     }),
 }));
 
-test('renders app', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/FAIMS3/i);
-  expect(linkElement).toBeInTheDocument();
+test('renders app', async () => {
+  act(() => {
+    render(<App />);
+  });
+  // I'm entirely unsure of how to wait for a bit till the state.initialized is set true
+  return await new Promise((resolve, reject) => {
+    setTimeout(() => {
+      try {
+        const linkElement = screen.getByText(/FAIMS/i);
+        expect(linkElement).toBeInTheDocument();
+      } catch (err) {
+        reject(err);
+      }
+      resolve(undefined);
+    }, 1000);
+  });
 });
