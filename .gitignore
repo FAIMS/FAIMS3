@@ -109,3 +109,5 @@ dist
 build
 active
 directory
+.DS_Store
+staging

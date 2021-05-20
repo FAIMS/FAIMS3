@@ -1,11 +1,45 @@
 import {setUiSpecForProject} from './uiSpecification';
 import {
-  ProjectUIModel,
-  ProjectMetaObject,
+  ActiveDoc,
+  EncodedObservation,
+  ListingsObject,
   ObservationList,
+  ProjectMetaObject,
+  ProjectObject,
   ProjectsList,
+  ProjectUIModel,
 } from './datamodel';
-import {LocalDB} from './sync';
+
+const example_datums: {
+  [key: string]: ({_id: string} & EncodedObservation)[];
+} = {
+  default_lake_mungo: [
+    {
+      _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
+      type: '??:??',
+      userid: 'test1',
+      created: randomDate(new Date(2012, 0, 1), new Date()).toISOString(),
+      created_by: 'John Smith',
+      updated: randomDate(new Date(2021, 0, 1), new Date()).toISOString(),
+      updated_by: 'Yoda',
+      data: {
+        'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
+        'bad-field': '',
+        'action-field': 'hello',
+        'email-field': 'MY-EMAIL-ADDRESS@example.com',
+        'str-field': 'blurple',
+        'multi-str-field':
+            'Warning: This is modified from the direct output of the submit button to workaround select-field outputting a string, inputting an array.',
+        'int-field': 20,
+        'select-field': ['EUR'],
+        'multi-select-field': ['JPY'],
+        'checkbox-field': true,
+        'radio-group-field': '1',
+      },
+      format_version: 1,
+    },
+  ],
+};
 
 function randomDate(start: Date, end: Date) {
   return new Date(
@@ -14,7 +48,7 @@ function randomDate(start: Date, end: Date) {
 }
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  'default/lake_mungo': {
+  default_lake_mungo: {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -39,7 +73,6 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [
           ['yup.string'],
           ['yup.email', 'Enter a valid email'],
-          ['yup.required'],
         ],
         initialValue: '',
       },
@@ -380,7 +413,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
 
     start_view: 'start-view',
   },
-  'default/projectB': {
+  default_projectB: {
     fields: {},
     views: {
       'start-view': {
@@ -398,7 +431,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     },
     start_view: 'start-view',
   },
-  'default/projectC': {
+  default_projectC: {
     fields: {},
     views: {
       'start-view': {
@@ -418,13 +451,241 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
   },
 };
 
+const example_listings: {[listing_id: string]: ProjectObject[]} = {
+  default: [
+    {
+      name: 'Lake Mungo Archaeological Survey - 2018',
+      data_db: {
+        proto: 'http',
+        host: '10.80.11.44',
+        port: 5984,
+        lan: true,
+        db_name: 'lake_mungo',
+      },
+      description: 'Lake Mungo Archaeological Survey - 2018',
+      _id: 'lake_mungo',
+    },
+    {
+      name: "Example Project 'A'",
+      metadata_db: {
+        proto: 'http',
+        host: '10.80.11.44',
+        port: 5984,
+        lan: true,
+        db_name: 'metadata-projectb',
+      },
+      description: "Example Project 'A'",
+      _id: 'projectB',
+    },
+  ],
+};
+
+const example_directory: ListingsObject[] = [
+  {
+    _id: 'default',
+    name: 'AAO Internal FAIMS instance',
+    description:
+      'This FAIMS server is the instance used internally by the AAO for testing.',
+    people_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'people',
+    },
+    projects_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'projects',
+    },
+  },
+  {
+    _id: 'csiro',
+    name:
+      'Test of an independently hosted CouchDB Instance (People DB not implemented yet)',
+    description:
+      'This FAIMS server is the instance used internally by the AAO for testing.',
+    people_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'people',
+    },
+    projects_db: {
+      proto: 'http',
+      host: '10.80.11.44',
+      port: 5984,
+      lan: true,
+      db_name: 'cisro_hosted_projects',
+    },
+  },
+];
+
+const example_active_db: ActiveDoc[] = [
+  {
+    _id: 'default_lake_mungo',
+    listing_id: 'default',
+    project_id: 'lake_mungo',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'csiro_csiro-geochemistry',
+    listing_id: 'csiro',
+    project_id: 'csiro-geochemistry',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'default_projectA',
+    listing_id: 'default',
+    project_id: 'projectA',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'default_projectB',
+    listing_id: 'default',
+    project_id: 'projectB',
+    username: 'test1',
+    password: 'apple',
+  },
+  {
+    _id: 'default_projectC',
+    listing_id: 'default',
+    project_id: 'projectC',
+    username: 'test1',
+    password: 'apple',
+  },
+];
+
+export async function setupExampleDirectory(
+  directory_db: PouchDB.Database<ListingsObject>
+) {
+  // For every project in the example_listings, insert into the projects db
+  for (const listings_object of example_directory) {
+    let current_rev: {_rev?: undefined | string} = {};
+    try {
+      current_rev = {_rev: (await directory_db.get(listings_object._id))._rev};
+    } catch (err) {
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
+        throw err;
+      }
+      // Not in the DB means _rev is unnecessary for put()
+    }
+    await directory_db.put({...listings_object, ...current_rev});
+  }
+
+  const ids = example_directory.map(doc => doc._id);
+
+  // Remove anything not supposed to be there
+  for (const row of (await directory_db.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await directory_db.remove(row.id, row.value.rev);
+    }
+  }
+}
+
+export async function setupExampleActive(
+  active_db: PouchDB.Database<ActiveDoc>
+) {
+  for (const doc of example_active_db) {
+    let current_rev: {_rev?: undefined | string} = {};
+    try {
+      current_rev = {_rev: (await active_db.get(doc._id))._rev};
+    } catch (err) {
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
+        throw err;
+      }
+      // Not in the DB means _rev is unnecessary for put()
+    }
+    await active_db.put({...doc, ...current_rev});
+  }
+
+  const ids = example_active_db.map(doc => doc._id);
+
+  // Remove anything not supposed to be there
+  for (const row of (await active_db.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await active_db.remove(row.id, row.value.rev);
+    }
+  }
+}
+
+export async function setupExampleListing(
+  listing_id: string,
+  projects_db: PouchDB.Database<ProjectObject>
+) {
+  if (!(listing_id in example_listings)) {
+    return;
+  }
+
+  // For every project in the example_listings, insert into the projects db
+  for (const project of example_listings[listing_id]) {
+    let current_rev: {_rev?: undefined | string} = {};
+    try {
+      current_rev = {_rev: (await projects_db.get(project._id))._rev};
+    } catch (err) {
+      if (err.message !== 'missing') {
+        //.reason may be 'deleted' or 'missing'
+        throw err;
+      }
+      // Not in the DB means _rev is unnecessary for put()
+    }
+    await projects_db.put({...project, ...current_rev});
+  }
+
+  const ids = example_listings[listing_id].map(doc => doc._id);
+
+  // Remove anything not supposed to be there
+  for (const row of (await projects_db.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await projects_db.remove(row.id, row.value.rev);
+    }
+  }
+}
+
+export async function setupExampleData(
+  projname: string,
+  data_db: PouchDB.Database<EncodedObservation>
+) {
+  let ids: string[] = [];
+
+  if (projname in example_datums) {
+    for (const datum of example_datums[projname]) {
+      let current_rev: {_rev?: undefined | string} = {};
+      try {
+        current_rev = {_rev: (await data_db.get(datum._id))._rev};
+      } catch (err) {
+        if (err.message !== 'missing') {
+          //.reason may be 'deleted' or 'missing'
+          throw err;
+        }
+        // Not in the DB means _rev is unnecessary for put()
+      }
+      await data_db.put({...datum, ...current_rev});
+    }
+    ids = example_datums[projname].map(doc => doc._id!);
+  }
+
+  // Remove anything not supposed to be there
+  for (const row of (await data_db.allDocs()).rows) {
+    if (ids.indexOf(row.id) < 0) {
+      await data_db.remove(row.id, row.value.rev);
+    }
+  }
+}
+
 export async function setupExampleForm(
   projname: string,
-  meta_db: LocalDB<ProjectMetaObject>
+  meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
-  console.log(
-    await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
-  );
+  console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
 }
 
 export const dummy_projects: ProjectsList = {
@@ -462,6 +723,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'Emma Smith',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -487,6 +749,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'John Smith',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -505,6 +768,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
+    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'John Davis',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -523,6 +787,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
+    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'Yoda',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -541,6 +806,7 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
+    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'John Smith',
     updated: randomDate(new Date(2021, 0, 1), new Date()),

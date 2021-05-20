@@ -12,7 +12,7 @@ export function generateFAIMSDataID(): string {
 }
 
 function convertFromFormToDB(
-  doc: Observation,
+  doc: Observation & {_id: string},
   revision: string | undefined = undefined
 ): EncodedObservation {
   if (revision !== undefined) {
@@ -20,6 +20,7 @@ function convertFromFormToDB(
       _id: doc._id,
       _rev: revision,
       type: doc.type,
+      userid: doc.userid,
       data: doc.data,
       created: doc.created.toISOString(),
       created_by: doc.created_by,
@@ -33,6 +34,7 @@ function convertFromFormToDB(
       _id: doc._id,
       _rev: doc._rev,
       type: doc.type,
+      userid: doc.userid,
       data: doc.data,
       created: doc.created.toISOString(),
       created_by: doc.created_by,
@@ -44,6 +46,7 @@ function convertFromFormToDB(
   return {
     _id: doc._id,
     type: doc.type,
+    userid: doc.userid,
     data: doc.data,
     created: doc.created.toString(),
     created_by: doc.created_by,
@@ -61,6 +64,7 @@ function convertFromDBToForm(doc: EncodedObservation): Observation | null {
     _id: doc._id,
     type: doc.type,
     data: doc.data,
+    userid: doc.userid,
     created: new Date(doc.created),
     created_by: doc.created_by,
     updated: new Date(doc.updated),
@@ -89,7 +93,9 @@ export async function upsertFAIMSData(project_name: string, doc: Observation) {
   }
   try {
     const revision = await getLatestRevision(project_name, doc._id);
-    return await datadb.put(convertFromFormToDB(doc, revision));
+    return await datadb.put(
+      convertFromFormToDB(doc as Observation & {_id: string}, revision)
+    );
   } catch (err) {
     console.warn(err);
     throw Error('failed to save data');

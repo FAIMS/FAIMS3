@@ -1,5 +1,14 @@
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
+export const PROJECT_METADATA_PREFIX = 'project-metadata';
+
+/*
+ * This may already exist in pouchdb's typing, but lets make a temporary one for
+ * our needs
+ */
+export interface PouchAttachments {
+  [key: string]: any; // any for now until we work out what we need
+}
 
 export interface ConnectionInfo {
   proto: string;
@@ -9,12 +18,22 @@ export interface ConnectionInfo {
   db_name: string;
 }
 
+export type PossibleConnectionInfo =
+  | undefined
+  | {
+      proto?: string | undefined;
+      host?: string | undefined;
+      port?: number | undefined;
+      lan?: boolean | undefined;
+      db_name?: string | undefined;
+    };
+
 export interface ListingsObject {
   _id: string;
   name: string;
   description: string;
-  projects_db?: ConnectionInfo;
-  people_db?: ConnectionInfo;
+  projects_db?: PossibleConnectionInfo;
+  people_db?: PossibleConnectionInfo;
 }
 
 export interface NonNullListingsObject extends ListingsObject {
@@ -28,6 +47,7 @@ export interface ActiveDoc {
   project_id: string;
   username: string;
   password: string;
+  friendly_name?: string;
 }
 
 /**
@@ -37,9 +57,9 @@ export interface ActiveDoc {
 export interface ProjectObject {
   _id: string;
   name: string;
-  description: string;
-  data_db?: ConnectionInfo;
-  metadata_db?: ConnectionInfo;
+  description?: string;
+  data_db?: PossibleConnectionInfo;
+  metadata_db?: PossibleConnectionInfo;
   last_updated?: string;
   created?: string;
   status?: string;
@@ -48,6 +68,18 @@ export interface ProjectObject {
 export type ProjectsList = {
   [key: string]: ProjectObject;
 };
+
+/**
+ * User readable information about a project
+ */
+export interface ProjectInformation {
+  project_id: string;
+  name: string;
+  description?: string;
+  last_updated?: string;
+  created?: string;
+  status?: string;
+}
 
 /*
  * Objects that may be contained in a Project's metadata DB
@@ -102,6 +134,15 @@ export interface EncodedProjectUIModel {
   start_view: string;
 }
 
+export interface EncodedProjectMetadata {
+  _id: string; // optional as we may want to include the raw json in places
+  _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean;
+  _attachments?: PouchAttachments;
+  is_attachment: boolean;
+  metadata: any;
+}
+
 export interface ProjectPeople {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
@@ -115,6 +156,7 @@ export interface Observation {
   _project_id?: string;
   type: string;
   data: any;
+  userid: string;
   created: Date;
   created_by: string;
   updated: Date;
@@ -127,7 +169,7 @@ export type ObservationList = {
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
 export interface EncodedObservation {
-  _id?: string;
+  _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _revisions?: {start: number; ids: string[]};
   _deleted?: boolean; // This is for couchdb deletion
@@ -136,10 +178,19 @@ export interface EncodedObservation {
   format_version: number;
   type: string;
   data: any;
+  userid: string;
   created: string;
   created_by: string;
   updated: string;
   updated_by: string;
+}
+
+export interface SavedView {
+  // ID: active_id + '/' + view_name
+  // OR: active_id + '/' + view_name + '/' + existing.observation + '/' + existing.revision
+  _id: string;
+  // Fields
+  [key: string]: unknown;
 }
 
 /*

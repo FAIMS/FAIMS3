@@ -24,6 +24,20 @@ jobs:
   build:
     # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     runs-on: ubuntu-latest
+    services:
+      couchdb:
+        image: couchdb:3
+        ports:
+          - 5984:5984
+        env:
+          COUCHDB_USER: admin
+          COUCHDB_PASSWORD: password
+    env:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+      REACT_APP_DIRECTORY_HOST: localhost
+      REACT_APP_USE_REAL_DATA: true
+      COUCHDB_CURL_HOST: http://admin:password@localhost:5984
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
@@ -39,9 +53,18 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    # setup CORS for couchdb
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/httpd/enable_cors -d '"true"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"*"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"http://localhost"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/credentials -d '"true"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
+    # do the npm stuff
     - run: npm ci
     - run: npm run lint
     - run: npm run build --if-present
-    - run: npm test
+    - run: npm run test
+    - run: npm run integration
     - run: npx cap copy
     - run: npx cap doctor android # ios requires xcode

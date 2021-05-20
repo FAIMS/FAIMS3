@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -30,12 +30,9 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {getProjectList} from '../../databaseAccess';
 import {ProjectsList} from '../../datamodel';
-import {ActionType} from '../../actions';
-import {initialize,} from '../../sync';
+
 import {store} from '../../store';
-import {syncUISpecs} from '../../uiSpecification';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -139,7 +136,6 @@ function getNestedProjects(projectList: ProjectsList) {
 export default function Navbar() {
   const classes = useStyles();
   const globalState = useContext(store);
-  const {dispatch} = globalState;
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -187,18 +183,6 @@ export default function Navbar() {
     [key: string]: boolean;
   }>({Projects: false});
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const data = getProjectList();
-      dispatch({type: ActionType.GET_PROJECT_LIST, payload: data});
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(()=>{
-    initialize().catch(err => setError(err));
-  }, []);
-
   return (
     <React.Fragment>
       <div className={classes.root}>
@@ -231,7 +215,6 @@ export default function Navbar() {
                 ''
               )}
             </Typography>
-
             <Typography>username</Typography>
           </Toolbar>
         </MuiAppBar>

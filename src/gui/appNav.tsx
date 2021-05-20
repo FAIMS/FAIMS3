@@ -11,22 +11,22 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import clsx from 'clsx';
 import {CircularProgress} from '@material-ui/core';
 import Collapse from '@material-ui/core/Collapse';
-import Drawer from '@material-ui/core/Drawer';
 import Divider from '@material-ui/core/Divider';
+import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import AccountCircleIcon from '@material-ui/icons/AccountCircle';
+import AccountTree from '@material-ui/icons/AccountTree';
 import BuildIcon from '@material-ui/icons/Build';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import DescriptionIcon from '@material-ui/icons/Description';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import SettingsIcon from '@material-ui/icons/Settings';
-import MessageIcon from '@material-ui/icons/Message';
-import NotificationsIcon from '@material-ui/icons/Notifications';
 import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
-import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
+import MessageIcon from '@material-ui/icons/Message';
+import NotificationsIcon from '@material-ui/icons/Notifications';
+import SettingsIcon from '@material-ui/icons/Settings';
 
 import {ProjectsList} from '../datamodel';
 
@@ -158,6 +158,7 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
   handleDrawerClose() {
     this.setState({open: false});
   }
+
   handleClick(menuName: string) {
     const nestedMenuOpen = this.state.nestedMenuOpen;
     nestedMenuOpen[menuName] = !nestedMenuOpen[menuName];
@@ -183,7 +184,6 @@ class AppNavBar extends React.Component<AppBarProps, AppBarState> {
   render() {
     const {classes} = this.props;
     const {open, nestedMenuOpen, topMenuItems, bottomMenuItems} = this.state;
-
     return (
       <React.Fragment>
         <div className={classes.root}>
