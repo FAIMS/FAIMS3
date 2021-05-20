@@ -5,6 +5,7 @@ import {Container, Breadcrumbs, Typography, Box, Grid} from '@material-ui/core';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 import {store} from '../../store';
+import {getProjectInfo} from '../../databaseAccess';
 import Skeleton from '@material-ui/lab/Skeleton';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
@@ -69,7 +70,7 @@ export default function ProjectList() {
                       project={{
                         name: 'dummy',
                         description: 'dummy',
-                        _id: 'dummy',
+                        project_id: 'dummy',
                       }}
                       showObservations={true}
                     />
@@ -77,18 +78,22 @@ export default function ProjectList() {
                 </Grid>
               ))
             : Object.keys(projectList).map(key => {
-                return (
-                  <Grid
-                    item
-                    xs={12}
-                    key={'project-list-grid' + projectList[key]._id}
-                  >
-                    <ProjectCard
-                      project={projectList[key]}
-                      showObservations={true}
-                    />
-                  </Grid>
-                );
+                const project_info = getProjectInfo(key);
+                if (project_info !== null) {
+                  return (
+                    <Grid
+                      item
+                      xs={12}
+                      key={'project-list-grid' + project_info.project_id}
+                    >
+                      <ProjectCard
+                        project={project_info}
+                        showObservations={true}
+                      />
+                    </Grid>
+                  );
+                }
+                return <React.Fragment />;
               })}
         </Grid>
       </div>

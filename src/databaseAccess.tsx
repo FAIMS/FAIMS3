@@ -1,13 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {dummy_observations, dummy_projects} from './dummyData';
-import {ProjectsList, ObservationList} from './datamodel';
+import {dummy_observations} from './dummyData';
+import {ObservationList, ProjectInformation} from './datamodel';
+import {createdProjects} from './sync';
 
-export function getProjectList(): ProjectsList {
-  return dummy_projects;
-}
-
-export function getProject(project_id: string) {
-  return dummy_projects[project_id];
+export function getProjectInfo(project_id: string): ProjectInformation | null {
+  const proj = createdProjects[project_id].project;
+  if (proj === undefined) {
+    return null;
+  }
+  return {
+    project_id: project_id,
+    name: proj.name,
+    description: proj.description || 'No description',
+    last_updated: proj.last_updated || 'Unknown',
+    created: proj.created || 'Unknown',
+    status: proj.status || 'Unknown',
+  };
 }
 
 export function updateProject(project_id: string) {}
