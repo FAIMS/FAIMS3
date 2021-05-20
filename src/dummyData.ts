@@ -18,7 +18,10 @@ const example_datums: {
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       type: '??:??',
-      userid: 'test1',
+      created_by: 'test1',
+      updated_by: 'test1',
+      created: '1990-01-01',
+      updated: '1990-01-01',
       data: {
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
@@ -722,7 +725,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
+    created_by: 'test1',
+    updated_by: 'test1',
+    created: '1990-01-01',
+    updated: '1990-01-01',
     data: {
       values: {
         'take-point-field': null,
@@ -744,7 +750,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
+    created_by: 'test1',
+    updated_by: 'test1',
+    created: '1990-01-01',
+    updated: '1990-01-01',
     data: {
       values: {
         'take-point-field': null,
@@ -759,7 +768,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
+    created_by: 'test1',
+    updated_by: 'test1',
+    created: '1990-01-01',
+    updated: '1990-01-01',
     data: {
       values: {
         'take-point-field': null,
@@ -774,7 +786,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
-    userid: 'fake-user',
+    created_by: 'test1',
+    updated_by: 'test1',
+    created: '1990-01-01',
+    updated: '1990-01-01',
     data: {
       values: {
         'take-point-field': null,
@@ -789,7 +804,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
-    userid: 'fake-user',
+    created_by: 'test1',
+    updated_by: 'test1',
+    created: '1990-01-01',
+    updated: '1990-01-01',
     data: {
       values: {
         'take-point-field': null,

@@ -215,7 +215,10 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
           _rev: undefined as undefined | string,
           type: '??:??',
           data: values,
-          userid: userid,
+          created_by: userid, // get this from the form
+          updated_by: userid,
+          created: '1990-01-01', // FIXME
+          updated: '1990-01-01', // FIXME
         };
         if (this.props.observation) {
           doc._rev = this.props.observation._rev;

@@ -156,7 +156,10 @@ export interface Observation {
   _project_id?: string;
   type: string;
   data: any;
-  userid: string;
+  created: string;
+  created_by: string;
+  updated: string;
+  updated_by: string;
 }
 
 export type ObservationList = {
@@ -174,7 +177,10 @@ export interface EncodedObservation {
   format_version: number;
   type: string;
   data: any;
-  userid: string;
+  created: string;
+  created_by: string;
+  updated: string;
+  updated_by: string;
 }
 
 export interface SavedView {
