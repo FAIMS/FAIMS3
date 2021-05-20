@@ -6,7 +6,7 @@ import {
   ProjectsList,
 } from './datamodel';
 import {ProjectActions, ObservationActions, ActionType} from './actions';
-import {add_initial_listener, initialize} from './sync';
+import {add_initial_listener, initialize} from './sync/index';
 import {lookupFAIMSDataID} from './dataStorage';
 
 interface InitialStateProps {

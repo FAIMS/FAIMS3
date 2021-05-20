@@ -5,11 +5,13 @@ import App from './App';
 // No projects created or to be created during init.
 jest.mock('./sync/index', () => ({
   initialize: () => Promise.resolve(),
-  initializeEvents: {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    on(event: string, listener: (...args: unknown[]) => unknown) {},
-  },
-  createdProjects: {},
+  add_initial_listener: (
+    registering_func: (initialEvents: unknown) => unknown
+  ) =>
+    registering_func({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      on: (_event_name: string, ..._args: unknown[]) => {},
+    }),
 }));
 
 test('renders app', () => {
