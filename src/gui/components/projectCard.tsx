@@ -18,12 +18,13 @@ const {Share} = Plugins;
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectInformation} from '../../datamodel';
+import {ProjectInformation, ProjectObject} from '../../datamodel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import ObservationsTable from './observationsTable';
 
 type ProjectCardProps = {
-  project: ProjectInformation;
+  project: ProjectObject | ProjectInformation;
+  listing_id_project_id: string;
   showObservations: boolean;
 };
 
@@ -63,19 +64,20 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export default function ProjectCard(props: ProjectCardProps) {
-  const {project, showObservations} = props;
+  const {project, listing_id_project_id, showObservations} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
 
   const bull = <span className={classes.bullet}>•</span>;
   const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
+  const project_url = ROUTES.PROJECT + listing_id_project_id;
 
   const getShare = async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const shareRet = await Share.share({
       title: 'FAIMS Project: ' + project.name,
       text: 'Really awesome project you need to see right now',
-      url: ROUTES.PROJECT + project.project_id,
+      url: project_url,
       dialogTitle: 'Share ' + project.name,
     });
   };
@@ -115,7 +117,7 @@ export default function ProjectCard(props: ProjectCardProps) {
             {showObservations ? (
               <Box mt={1} mb={2}>
                 <ObservationsTable
-                  project_id={project.project_id}
+                  listing_id_project_id={listing_id_project_id}
                   restrictRows={10}
                 />
               </Box>
@@ -136,7 +138,7 @@ export default function ProjectCard(props: ProjectCardProps) {
             <Button
               size="small"
               color="primary"
-              to={ROUTES.PROJECT + project.project_id}
+              to={project_url}
               component={RouterLink}
             >
               View
@@ -147,7 +149,7 @@ export default function ProjectCard(props: ProjectCardProps) {
               </Button>
             ) : (
               <EmailShareButton
-                url={ROUTES.PROJECT + project.project_id}
+                url={project_url}
                 subject={'FAIMS Project: ' + project.name}
                 body={"I'd like to share this FAIMS project with you "}
                 resetButtonStyle={false}

@@ -259,6 +259,13 @@ PouchDB.plugin(PouchDBFind);
  *
  * This is essentially accumulating 'project_paused' events.
  */
+export type createdProjectsInterface = {
+  project: DataModel.ProjectObject;
+  active: ExistingActiveDoc;
+  meta: LocalDB<DataModel.ProjectMetaObject>;
+  data: LocalDB<DataModel.EncodedObservation>;
+};
+
 export const createdProjects: {
   [key: string]: {
     project: DataModel.ProjectObject;

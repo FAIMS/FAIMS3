@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {DataGrid, GridColDef, GridCellParams} from '@material-ui/data-grid';
 import {CircularProgress, Typography, Button} from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
@@ -6,19 +6,20 @@ import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
 import {Observation} from '../../datamodel';
-import {store} from '../../store';
 import * as ROUTES from '../../constants/routes';
+import {getObservationList} from '../../databaseAccess';
 
 type ObservationsTableProps = {
-  project_id: string;
+  listing_id_project_id: string;
   restrictRows: number;
 };
 
 export default function ObservationsTable(props: ObservationsTableProps) {
-  const globalState = useContext(store);
-  const {project_id} = props;
+  const {listing_id_project_id} = props;
   const [loading, setLoading] = useState(true);
-  const observation_list = globalState.state.observation_list[props.project_id];
+  const pouchObservationList = getObservationList(listing_id_project_id);
+  console.log(pouchObservationList);
+  // const observation_list = globalState.state.observation_list[props.project_id];
   const [rows, setRows] = useState<Array<Observation>>([]);
   const columns: GridColDef[] = [
     {
@@ -31,7 +32,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         <Link
           component={RouterLink}
           to={ROUTES.getObservationRoute(
-            project_id,
+            listing_id_project_id,
             (params.getValue('_id') || '').toString()
           )}
         >
@@ -53,7 +54,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
           variant="outlined"
           component={RouterLink}
           to={ROUTES.getObservationRoute(
-            project_id,
+            listing_id_project_id,
             (params.getValue('_id') || '').toString()
           )}
         >
@@ -65,13 +66,13 @@ export default function ObservationsTable(props: ObservationsTableProps) {
   ];
   useEffect(() => {
     if (
-      typeof observation_list !== 'undefined' &&
-      Object.keys(observation_list).length > 0
+      typeof pouchObservationList !== 'undefined' &&
+      Object.keys(pouchObservationList).length > 0
     ) {
       setLoading(false);
-      setRows(Object.values(observation_list));
+      setRows(Object.values(pouchObservationList));
     }
-  }, [observation_list]);
+  }, [pouchObservationList]);
 
   return (
     <div>

@@ -1,4 +1,4 @@
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -30,9 +30,8 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {ProjectsList} from '../../datamodel';
-
-import {store} from '../../store';
+import {getProjectList} from '../../databaseAccess';
+import {createdProjects} from '../../sync';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -116,13 +115,13 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-function getNestedProjects(projectList: ProjectsList) {
+function getNestedProjects(pouchProjectList: typeof createdProjects) {
   const projectListItems: ProjectListItemProps[] = [];
-  Object.keys(projectList).map(key => {
+  Object.keys(pouchProjectList).map(key => {
     projectListItems.push({
-      title: projectList[key].name,
+      title: pouchProjectList[key].project.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + projectList[key]._id,
+      to: ROUTES.PROJECT + pouchProjectList[key].project._id,
     });
   });
   return {
@@ -135,13 +134,16 @@ function getNestedProjects(projectList: ProjectsList) {
 
 export default function Navbar() {
   const classes = useStyles();
-  const globalState = useContext(store);
+  // const globalState = useContext(store);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [projectList, setProjectList] = useState<ProjectsList>({});
-  const [error, setError] = useState<string | null>(null);
+  const isSyncing = false;
+  // const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  // const [projectList, setProjectList] = useState<ProjectsList>({});
+  // const [error, setError] = useState<string | null>(null);
   const toggle = () => setIsOpen(!isOpen);
+
+  const pouchProjectList = getProjectList();
 
   const topMenuItems: Array<MenuItemProps> = [
     {
@@ -149,7 +151,7 @@ export default function Navbar() {
       icon: <HomeIcon />,
       to: ROUTES.HOME,
     },
-    getNestedProjects(globalState.state.project_list),
+    getNestedProjects(pouchProjectList),
     {
       title: 'Tools',
       icon: <BuildIcon />,

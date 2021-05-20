@@ -73,7 +73,7 @@ export type ProjectsList = {
  * User readable information about a project
  */
 export interface ProjectInformation {
-  project_id: string;
+  _id: string;
   name: string;
   description?: string;
   last_updated?: string;
@@ -157,10 +157,10 @@ export interface Observation {
   type: string;
   data: any;
   userid: string;
-  created: Date;
-  created_by: string;
-  updated: Date;
-  updated_by: string;
+  created?: Date | null;
+  created_by?: string;
+  updated?: Date | null;
+  updated_by?: string;
 }
 
 export type ObservationList = {
@@ -179,10 +179,10 @@ export interface EncodedObservation {
   type: string;
   data: any;
   userid: string;
-  created: string;
-  created_by: string;
-  updated: string;
-  updated_by: string;
+  created?: string;
+  created_by?: string;
+  updated?: string;
+  updated_by?: string;
 }
 
 export interface SavedView {

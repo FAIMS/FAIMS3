@@ -3,43 +3,38 @@ import {
   ActiveDoc,
   EncodedObservation,
   ObservationList,
-  ProjectsList,
-    Observation, ProjectObject
+  Observation,
+  ProjectObject,
 } from './datamodel';
 import {
   ProjectActions,
   ObservationActions,
-  InitializeActions,
+  SyncingActions,
   ActionType,
 } from './actions';
+import LoadingApp from './gui/components/loadingApp';
 import {add_initial_listener, initialize} from './sync/index';
 import {lookupFAIMSDataID} from './dataStorage';
 
 interface InitialStateProps {
-  project_list: ProjectsList;
-  observation_list: {[project_id: string]: ObservationList};
   initialized: boolean;
+  isSyncing: boolean;
 
-  isLoadingProjectMeta: boolean;
-  project_meta: ProjectsList;
   active_project: ProjectObject | null;
   active_observation: Observation | null;
 }
 
 const InitialState = {
-  project_list: {},
-  observation_list: {},
+  initialized: false,
+  isSyncing: false,
 
-  isLoadingProjectMeta: false,
-  project_meta: {},
   active_project: null,
   active_observation: null,
-  initialized: false,
 };
 
 interface ContextType {
   state: InitialStateProps;
-  dispatch: Dispatch<ProjectActions | ObservationActions | InitializeActions>;
+  dispatch: Dispatch<ProjectActions | ObservationActions | SyncingActions>;
 }
 
 const store = createContext<ContextType>({
@@ -53,7 +48,7 @@ const StateProvider = (props: any) => {
   const [state, dispatch] = useReducer(
     (
       state: InitialStateProps,
-      action: ProjectActions | ObservationActions | InitializeActions
+      action: ProjectActions | ObservationActions | SyncingActions
     ) => {
       switch (action.type) {
         case ActionType.INITIALIZED: {
@@ -62,50 +57,45 @@ const StateProvider = (props: any) => {
             initialized: true,
           };
         }
-        case ActionType.APPEND_PROJECT_LIST: {
+        case ActionType.IS_SYNCING: {
           return {
             ...state,
-            project_list: {...state.project_list, ...action.payload},
+            isSyncing: action.payload,
           };
         }
-        case ActionType.POP_PROJECT_LIST: {
-          const new_project_list = {...state.project_list};
-          action.payload.forEach(
-            project_id => delete new_project_list[project_id]
-          );
-          return {...state, project_list: new_project_list};
-        }
-        case ActionType.GET_PROJECT: {
+
+        case ActionType.GET_ACTIVE_PROJECT: {
           return {...state, active_project: action.payload};
         }
-        case ActionType.DROP_PROJECT: {
+        case ActionType.DROP_ACTIVE_PROJECT: {
           return {...state, active_project: null};
         }
-        case ActionType.APPEND_OBSERVATION_LIST: {
-          return {
-            ...state,
-            observation_list: {
-              ...state.observation_list,
-              [action.payload.project_id]: action.payload.data,
-            },
-          };
-          // return {...state, observation_list: action.payload};
-        }
-        case ActionType.POP_OBSERVATION_LIST: {
-          const new_observation_list = {
-            ...state.observation_list[action.payload.project_id],
-          };
-          action.payload.data_ids.forEach(
-            data_id => delete new_observation_list[data_id]
-          );
-          return {
-            ...state,
-            observation_list: {
-              ...state.observation_list,
-              [action.payload.project_id]: new_observation_list,
-            },
-          };
-        }
+
+        // case ActionType.APPEND_OBSERVATION_LIST: {
+        //   return {
+        //     ...state,
+        //     observation_list: {
+        //       ...state.observation_list,
+        //       [action.payload.project_id]: action.payload.data,
+        //     },
+        //   };
+        //   // return {...state, observation_list: action.payload};
+        // }
+        // case ActionType.POP_OBSERVATION_LIST: {
+        //   const new_observation_list = {
+        //     ...state.observation_list[action.payload.project_id],
+        //   };
+        //   action.payload.data_ids.forEach(
+        //     data_id => delete new_observation_list[data_id]
+        //   );
+        //   return {
+        //     ...state,
+        //     observation_list: {
+        //       ...state.observation_list,
+        //       [action.payload.project_id]: new_observation_list,
+        //     },
+        //   };
+        // }
         default:
           throw new Error();
       }
@@ -114,13 +104,6 @@ const StateProvider = (props: any) => {
   );
 
   add_initial_listener(initializeEvents => {
-    initializeEvents.on('project_local', (listing, active, project) =>
-      dispatch({
-        type: ActionType.APPEND_PROJECT_LIST,
-        payload: {[active._id]: project},
-      })
-    );
-
     const observations_update_listener = (
       active: ActiveDoc,
       data_db: PouchDB.Database<EncodedObservation>
@@ -134,6 +117,7 @@ const StateProvider = (props: any) => {
           // Wait for all those lookups to return
           // Then dispatch the APPEND_OBSERVATION_LIST
           const data_acc: ObservationList = {};
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const promises = docs.rows.map(({id: doc_id}) =>
             lookupFAIMSDataID(active._id, doc_id).then(decoded =>
               decoded !== null
@@ -145,20 +129,20 @@ const StateProvider = (props: any) => {
                   )
             )
           );
-          Promise.all(promises)
-            .then(() =>
-              dispatch({
-                type: ActionType.APPEND_OBSERVATION_LIST,
-                payload: {
-                  project_id: active._id,
-                  data: data_acc,
-                },
-              })
-            )
-            .catch(err => {
-              //TODO
-              console.error(err);
-            });
+          // Promise.all(promises)
+          //   .then(() =>
+          //     // dispatch({
+          //     //   type: ActionType.APPEND_OBSERVATION_LIST,
+          //     //   payload: {
+          //     //     project_id: active._id,
+          //     //     data: data_acc,
+          //     //   },
+          //     // });
+          //   )
+          //   .catch(err => {
+          //     //TODO
+          //     console.error(err);
+          //   });
         })
         .catch(err => {
           // TODO
@@ -194,7 +178,7 @@ const StateProvider = (props: any) => {
   if (state.initialized) {
     return <Provider value={{state, dispatch}}>{props.children}</Provider>;
   } else {
-    return <div>Loading</div>;
+    return <LoadingApp />;
   }
 };
 

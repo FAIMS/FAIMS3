@@ -1,11 +1,11 @@
-import React, {useContext} from 'react';
+import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {NavLink} from 'react-router-dom';
 import {Container, Breadcrumbs, Typography, Box, Grid} from '@material-ui/core';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
-import {store} from '../../store';
-import {getProjectInfo} from '../../databaseAccess';
+// import {store} from '../../store';
+import {getProjectList} from '../../databaseAccess';
 import Skeleton from '@material-ui/lab/Skeleton';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
@@ -41,19 +41,12 @@ const useStyles = makeStyles(theme => ({
 
 export default function ProjectList() {
   const classes = useStyles();
-
-  const globalState = useContext(store);
-  const projectList = globalState.state.project_list;
+  // const globalState = useContext(store);
+  const pouchProjectList = getProjectList();
 
   return (
     <Container maxWidth="lg">
-      <Box
-        display="flex"
-        flexDirection="row-reverse"
-        p={1}
-        m={1}
-        // bgcolor="background.paper"
-      >
+      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
         <Breadcrumbs aria-label="breadcrumb">
           <NavLink to={ROUTES.INDEX}>Index</NavLink>
           <Typography color="textPrimary">Projects</Typography>
@@ -62,38 +55,49 @@ export default function ProjectList() {
 
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {Object.keys(projectList).length === 0
+          {Object.keys(pouchProjectList).length === 0
             ? [...Array(3)].map((e, i) => (
                 <Grid item xs={12} key={'skeleton-project-list-grid' + i}>
                   <Skeleton animation="wave" variant="rect">
                     <ProjectCard
                       project={{
+                        _id: 'dummy',
                         name: 'dummy',
                         description: 'dummy',
-                        project_id: 'dummy',
                       }}
                       showObservations={true}
+                      listing_id_project_id={'dummy'}
                     />
                   </Skeleton>
                 </Grid>
               ))
-            : Object.keys(projectList).map(key => {
-                const project_info = getProjectInfo(key);
-                if (project_info !== null) {
+            : Object.keys(pouchProjectList).map(listing_id_project_id => {
+                const pouchProject = pouchProjectList[listing_id_project_id];
+                if (pouchProject !== null) {
                   return (
                     <Grid
                       item
                       xs={12}
-                      key={'project-list-grid' + project_info.project_id}
+                      key={'project-list-grid' + pouchProject.project._id}
                     >
                       <ProjectCard
-                        project={project_info}
+                        project={pouchProject.project}
+                        listing_id_project_id={listing_id_project_id}
                         showObservations={true}
                       />
                     </Grid>
                   );
+                } else {
+                  return (
+                    <Grid
+                      item
+                      xs={12}
+                      key={'project-list-grid' + listing_id_project_id}
+                    >
+                      Project could not be loaded
+                    </Grid>
+                  );
                 }
-                return <React.Fragment />;
               })}
         </Grid>
       </div>

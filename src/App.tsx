@@ -13,10 +13,8 @@ import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
 import Observation from './gui/pages/observation';
 import NotFound404 from './gui/pages/404';
-import {StateProvider} from './store';
-import {initialize} from './sync';
-
 import ProjectNavTabs from './gui/projectNav';
+import {StateProvider} from './store';
 
 import {MuiThemeProvider, createMuiTheme} from '@material-ui/core/styles';
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@material-ui/core';
@@ -82,14 +80,14 @@ export class App extends React.Component<AppProps, AppState> {
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
               <Route
                 exact
-                path={ROUTES.PROJECT + ':project_id'}
+                path={ROUTES.PROJECT + ':listing_id_project_id'}
                 component={Project}
               />
               <Route
                 exact
                 path={
                   ROUTES.PROJECT +
-                  ':project_id(\\d+)' +
+                  ':listing_id_project_id(\\d+)' +
                   ROUTES.OBSERVATION +
                   ':observation_id(\\d+)'
                 }
@@ -108,7 +106,7 @@ export class App extends React.Component<AppProps, AppState> {
               <Route exact path="/" component={Index} />
               <Route component={NotFound404} />
             </Switch>
-<Footer/>
+            <Footer />
           </Router>
         </MuiThemeProvider>
       </StateProvider>

@@ -6,7 +6,6 @@ import {
   Container,
   Typography,
   Paper,
-  Tabs,
   Tab,
 } from '@material-ui/core';
 import TabContext from '@material-ui/lab/TabContext';
@@ -14,8 +13,6 @@ import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
 import {NavLink, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
-import grey from '@material-ui/core/colors/grey';
-import {FAIMSForm} from '../form';
 
 export default function Observation() {
   const {project_id, observation_id} = useParams<{

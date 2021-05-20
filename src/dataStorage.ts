@@ -1,6 +1,6 @@
 import {v4 as uuidv4} from 'uuid';
 
-import {getDataDB} from './sync/index';
+import {getDataDB} from './sync';
 import {Observation, EncodedObservation} from './datamodel';
 
 export interface DataListing {
@@ -22,9 +22,9 @@ function convertFromFormToDB(
       type: doc.type,
       userid: doc.userid,
       data: doc.data,
-      created: doc.created.toISOString(),
+      created: doc.created ? doc.created.toISOString() : '',
       created_by: doc.created_by,
-      updated: doc.updated.toISOString(),
+      updated: doc.updated ? doc.updated.toISOString() : '',
       updated_by: doc.updated_by,
       format_version: 1,
     };
@@ -36,9 +36,9 @@ function convertFromFormToDB(
       type: doc.type,
       userid: doc.userid,
       data: doc.data,
-      created: doc.created.toISOString(),
+      created: doc.created ? doc.created.toISOString() : '',
       created_by: doc.created_by,
-      updated: doc.updated.toISOString(),
+      updated: doc.updated ? doc.updated.toISOString() : '',
       updated_by: doc.updated_by,
       format_version: 1,
     };
@@ -48,15 +48,17 @@ function convertFromFormToDB(
     type: doc.type,
     userid: doc.userid,
     data: doc.data,
-    created: doc.created.toString(),
+    created: doc.created ? doc.created.toISOString() : '',
     created_by: doc.created_by,
-    updated: doc.updated.toString(),
+    updated: doc.updated ? doc.updated.toISOString() : '',
     updated_by: doc.updated_by,
     format_version: 1,
   };
 }
 
-function convertFromDBToForm(doc: EncodedObservation): Observation | null {
+export function convertFromDBToForm(
+  doc: EncodedObservation
+): Observation | null {
   if (doc.deleted) {
     return null;
   }
@@ -65,9 +67,9 @@ function convertFromDBToForm(doc: EncodedObservation): Observation | null {
     type: doc.type,
     data: doc.data,
     userid: doc.userid,
-    created: new Date(doc.created),
+    created: doc.created ? new Date(doc.created) : null,
     created_by: doc.created_by,
-    updated: new Date(doc.updated),
+    updated: doc.updated ? new Date(doc.updated) : null,
     updated_by: doc.updated_by,
   };
 }
