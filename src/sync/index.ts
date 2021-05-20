@@ -627,7 +627,7 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  //await setupExampleActive();
+  await setupExampleActive();
   //console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
