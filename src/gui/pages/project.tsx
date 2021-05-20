@@ -59,7 +59,6 @@ export default function Project() {
           <Typography color="textPrimary">{project_id}</Typography>
         </Breadcrumbs>
       </Box>
-      <h3>project_id: {project_id}</h3>
       {loading ? (
         <CircularProgress size={12} thickness={4} />
       ) : (

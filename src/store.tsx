@@ -1,16 +1,25 @@
 import React, {createContext, useReducer, Dispatch} from 'react';
-import {ObservationList, ProjectsList} from './datamodel';
+import {Observation, ObservationList, ProjectObject, ProjectsList} from './datamodel';
 import {ProjectActions, ObservationActions, ActionType} from './actions';
 
 interface InitialStateProps {
   project_list: ProjectsList;
   observation_list: {[project_id: string]: ObservationList};
+
+  isLoadingProjectMeta: boolean;
+  project_meta: ProjectsList;
+  active_project: ProjectObject | null;
+  active_observation: Observation | null;
 }
 
 const InitialState = {
   project_list: {},
   observation_list: {},
+
+  isLoadingProjectMeta: false,
+  project_meta: {},
   active_project: null,
+  active_observation: null,
 };
 
 interface ContextType {

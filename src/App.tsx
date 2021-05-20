@@ -3,6 +3,7 @@ import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import NavBar from './gui/components/navbar';
+import Footer from './gui/components/footer';
 import {Index} from './gui/pages';
 import {SignUp} from './gui/pages/signup';
 import {SignIn} from './gui/pages/signin';
@@ -13,6 +14,7 @@ import Project from './gui/pages/project';
 import Observation from './gui/pages/observation';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './store';
+import {initialize} from './sync';
 
 import ProjectNavTabs from './gui/projectNav';
 
@@ -106,6 +108,7 @@ export class App extends React.Component<AppProps, AppState> {
               <Route exact path="/" component={Index} />
               <Route component={NotFound404} />
             </Switch>
+<Footer/>
           </Router>
         </MuiThemeProvider>
       </StateProvider>

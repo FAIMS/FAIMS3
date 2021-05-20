@@ -33,8 +33,9 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
 import {ProjectsList} from '../../datamodel';
 import {ActionType} from '../../actions';
-
+import {initialize,} from '../../sync';
 import {store} from '../../store';
+import {syncUISpecs} from '../../uiSpecification';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -135,12 +136,15 @@ function getNestedProjects(projectList: ProjectsList) {
   };
 }
 
-export default function NavbarNew() {
+export default function Navbar() {
   const classes = useStyles();
   const globalState = useContext(store);
   const {dispatch} = globalState;
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [projectList, setProjectList] = useState<ProjectsList>({});
+  const [error, setError] = useState<string | null>(null);
   const toggle = () => setIsOpen(!isOpen);
 
   const topMenuItems: Array<MenuItemProps> = [
@@ -191,6 +195,10 @@ export default function NavbarNew() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(()=>{
+    initialize().catch(err => setError(err));
+  }, []);
+
   return (
     <React.Fragment>
       <div className={classes.root}>
@@ -212,8 +220,18 @@ export default function NavbarNew() {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap style={{flex: 1}}>
-              FAIMS3
+              FAIMS3{' '}
+              {isSyncing ? (
+                <CircularProgress
+                  color={'secondary'}
+                  size={'1rem'}
+                  thickness={5}
+                />
+              ) : (
+                ''
+              )}
             </Typography>
+
             <Typography>username</Typography>
           </Toolbar>
         </MuiAppBar>
