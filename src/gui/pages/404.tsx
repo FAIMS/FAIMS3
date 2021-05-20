@@ -1,0 +1,89 @@
+import React from 'react';
+// import {makeStyles} from '@material-ui/core/styles';
+import {
+  Box,
+  Breadcrumbs,
+  Link,
+  Typography,
+  Grid,
+  Container,
+} from '@material-ui/core';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import {Link as RouterLink, NavLink} from 'react-router-dom';
+import * as ROUTES from '../../constants/routes';
+
+// const useStyles = makeStyles(theme => ({
+//   root: {
+//     flexGrow: 1,
+//   },
+// }));
+
+export default function NotFound404() {
+  // const classes = useStyles();
+  return (
+    <Container maxWidth={false}>
+      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
+        <Breadcrumbs aria-label="breadcrumb">
+          <NavLink to={ROUTES.INDEX}>Index</NavLink>
+          <Typography color="textPrimary">Not Found</Typography>
+        </Breadcrumbs>
+      </Box>
+
+      <Grid
+        container
+        spacing={0}
+        direction="column"
+        alignItems="center"
+        justify="center"
+        style={{minHeight: '80vh'}}
+      >
+        <Grid item xs={12}>
+          <Grid container>
+            <Grid item xs={6}>
+              <Box mt={1}>
+                <Typography
+                  variant={'overline'}
+                  color={'textSecondary'}
+                  align={'center'}
+                >
+                  Image TBD
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={6}>
+              <Box mb={1}>
+                <Typography variant="h1">
+                  <b>404</b>
+                </Typography>
+              </Box>
+              <Box mb={1}>
+                <Typography variant="subtitle2">
+                  <b>Something's missing.</b>
+                </Typography>
+              </Box>
+              <Box mb={2}>
+                <Typography variant={'body1'}>
+                  The page you are looking for does not exist.
+                </Typography>
+              </Box>
+              <Box>
+                <Link
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                  component={RouterLink}
+                  to={ROUTES.HOME}
+                >
+                  <b>Go home</b>
+                  <ChevronRightIcon />
+                </Link>
+              </Box>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Container>
+  );
+}

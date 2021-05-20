@@ -11,6 +11,7 @@ import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
 import Observation from './gui/pages/observation';
+import NotFound404 from './gui/pages/404';
 import {StateProvider} from './store';
 
 import ProjectNavTabs from './gui/projectNav';
@@ -103,6 +104,7 @@ export class App extends React.Component<AppProps, AppState> {
                 )}
               />
               <Route exact path="/" component={Index} />
+              <Route component={NotFound404} />
             </Switch>
           </Router>
         </MuiThemeProvider>
