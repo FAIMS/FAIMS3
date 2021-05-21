@@ -7,7 +7,12 @@ import {
   ProjectObject,
 } from './datamodel';
 import {convertFromDBToForm, lookupFAIMSDataID} from './dataStorage';
-import {createdProjects, createdProjectsInterface} from './sync';
+import {
+  add_initial_listener,
+  createdProjects,
+  createdProjectsInterface,
+  initializeEvents,
+} from './sync';
 
 export function getProjectList(user_id?: string): typeof createdProjects {
   /**

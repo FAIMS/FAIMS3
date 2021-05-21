@@ -5,19 +5,29 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
-import {Observation} from '../../datamodel';
+import {Observation, ObservationList} from '../../datamodel';
 import * as ROUTES from '../../constants/routes';
 import {getObservationList} from '../../databaseAccess';
+import {EventStateTracker} from '../../sync/state';
+import {ExistingActiveDoc} from '../../sync';
 
 type ObservationsTableProps = {
   listing_id_project_id: string;
   restrictRows: number;
 };
 
+const pouchObservationsLists = new EventStateTracker<string, boolean>([
+  {
+    event_name: 'project_data_paused',
+    key_getter: [1, '_id'], //active arg's id
+    state_getter: true,
+  },
+]);
+
 export default function ObservationsTable(props: ObservationsTableProps) {
   const {listing_id_project_id} = props;
   const [loading, setLoading] = useState(true);
-  const pouchObservationList = getObservationList(listing_id_project_id);
+  const pouchObservationList: ObservationList | Array<any> = [];
   console.log(pouchObservationList);
   // const observation_list = globalState.state.observation_list[props.project_id];
   const [rows, setRows] = useState<Array<Observation>>([]);
@@ -65,14 +75,15 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     },
   ];
   useEffect(() => {
-    if (
-      typeof pouchObservationList !== 'undefined' &&
-      Object.keys(pouchObservationList).length > 0
-    ) {
+    const trigger = () => {
       setLoading(false);
-      setRows(Object.values(pouchObservationList));
+      setRows(Object.values(getObservationList(listing_id_project_id)));
+    };
+    if (pouchObservationsLists.state.get(listing_id_project_id)) {
+      trigger();
     }
-  }, [pouchObservationList]);
+    pouchObservationsLists.on_update(listing_id_project_id, trigger);
+  }, []);
 
   return (
     <div>
