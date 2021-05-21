@@ -8,6 +8,7 @@ import Link from '@material-ui/core/Link';
 import {Observation} from '../../datamodel';
 import * as ROUTES from '../../constants/routes';
 import {getObservationList} from '../../databaseAccess';
+import {initializeEvents} from '../../sync';
 
 type ObservationsTableProps = {
   listing_id_project_id: string;
@@ -64,11 +65,15 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     },
   ];
   useEffect(() => {
-    getObservationList(listing_id_project_id).then(newObservationList => {
-      setLoading(false);
-      Object.assign(pouchObservationList, newObservationList);
-      setRows(Object.values(pouchObservationList));
-    });
+    const trigger = () => {
+      getObservationList(listing_id_project_id).then(newObservationList => {
+        setLoading(false);
+        Object.assign(pouchObservationList, newObservationList);
+        setRows(Object.values(pouchObservationList));
+      });
+    };
+    initializeEvents.on('project_data_paused', trigger);
+    trigger();
   }, [pouchObservationList]);
 
   return (
