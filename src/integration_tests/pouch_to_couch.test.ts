@@ -11,8 +11,8 @@ import {
   metadata_dbs,
 } from '../sync';
 
-const COUCHDB_USER = String(process.env.COUCHDB_USER);
-const COUCHDB_PASSWORD = String(process.env.COUCHDB_PASSWORD);
+const COUCHDB_USER = process.env.COUCHDB_USER || null;
+const COUCHDB_PASSWORD = process.env.COUCHDB_PASSWORD || null;
 
 jest.setTimeout(1000 * 10);
 
@@ -31,10 +31,13 @@ test('send to couch', async () => {
   const base_url =
     encodeURIComponent(DIRECTORY_PROTOCOL) +
     '://' +
-    encodeURIComponent(COUCHDB_USER) +
-    ':' +
-    encodeURIComponent(COUCHDB_PASSWORD) +
-    '@' +
+    (COUCHDB_USER === null
+      ? ''
+      : encodeURIComponent(COUCHDB_USER) +
+        (COUCHDB_PASSWORD === null
+          ? ''
+          : ':' + encodeURIComponent(COUCHDB_PASSWORD)) +
+        '@') +
     encodeURIComponent(DIRECTORY_HOST) +
     ':' +
     encodeURIComponent(DIRECTORY_PORT);
