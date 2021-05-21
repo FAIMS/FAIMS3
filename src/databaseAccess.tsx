@@ -6,8 +6,13 @@ import {
   ProjectsList,
   ProjectObject,
 } from './datamodel';
-import {convertFromDBToForm, lookupFAIMSDataID} from './dataStorage';
-import {createdProjects, createdProjectsInterface} from './sync';
+import {listFAIMSData} from './dataStorage';
+import {
+  add_initial_listener,
+  createdProjects,
+  createdProjectsInterface,
+  initializeEvents,
+} from './sync';
 
 export function getProjectList(user_id?: string): typeof createdProjects {
   /**
@@ -53,9 +58,9 @@ export function updateProject(project_id: string) {}
 
 export function removeProject(project_id: string) {}
 
-export function getObservationList(
+export async function getObservationList(
   listing_id_project_id: string
-): ObservationList | Array<any> {
+): Promise<ObservationList> {
   /**
    * Return all observations for a given project_id.
    * TODO project_id could be optional and return recently updated for home page
@@ -68,12 +73,34 @@ export function getObservationList(
   //   (obj, key) => ({...obj, [key]: dummy_observations[key]}),
   //   {}
   // );
-  const observations = getProject(listing_id_project_id);
+  return listFAIMSData(listing_id_project_id);
+}
 
-  console.log(observations);
-  return [];
-  // return observations.data ? convertFromDBToForm(observations.data) : []
-  // return observations.map(obs => convertFromDBToForm(obs));
+const observationsUpdated: {[listing_id_project_id: string]: boolean} = {};
+
+add_initial_listener(initializeEvents => {
+  initializeEvents.on('project_data_paused', (listing, active) => {
+    observationsUpdated[active._id] = true;
+  });
+});
+
+export function listenObservationsList(
+  listing_id_project_id: string,
+  callback: (observationList: ObservationList) => unknown
+) {
+  const runCallback = () =>
+    getObservationList(listing_id_project_id)
+      .then(callback)
+      .catch(err => console.error('Uncaught observation list error'));
+
+  initializeEvents.on(
+    'project_data_paused',
+    (listing, active, project, data) => {
+      if (active._id === listing_id_project_id) runCallback();
+    }
+  );
+
+  if (observationsUpdated[listing_id_project_id]) runCallback();
 }
 
 export function updateObservation(observation_id: string) {}

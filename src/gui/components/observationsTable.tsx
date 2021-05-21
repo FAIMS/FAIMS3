@@ -17,8 +17,7 @@ type ObservationsTableProps = {
 export default function ObservationsTable(props: ObservationsTableProps) {
   const {listing_id_project_id} = props;
   const [loading, setLoading] = useState(true);
-  const pouchObservationList = getObservationList(listing_id_project_id);
-  console.log(pouchObservationList);
+  const pouchObservationList = {};
   // const observation_list = globalState.state.observation_list[props.project_id];
   const [rows, setRows] = useState<Array<Observation>>([]);
   const columns: GridColDef[] = [
@@ -65,13 +64,11 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     },
   ];
   useEffect(() => {
-    if (
-      typeof pouchObservationList !== 'undefined' &&
-      Object.keys(pouchObservationList).length > 0
-    ) {
+    getObservationList(listing_id_project_id).then(newObservationList => {
       setLoading(false);
+      Object.assign(pouchObservationList, newObservationList);
       setRows(Object.values(pouchObservationList));
-    }
+    });
   }, [pouchObservationList]);
 
   return (
