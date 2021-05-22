@@ -3,10 +3,10 @@ import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
-  setupExampleForm,
   setupExampleListing,
   setupExampleDirectory,
   setupExampleActive,
+  setupExampleProjectMetadata,
   setupExampleData,
 } from '../dummyData';
 import {
@@ -155,20 +155,32 @@ function ensure_local_db<Content extends {}>(
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
  * @param global_dbs projects_db or people_db
  * @param connection_info Info to use to connect to remote
+ * @param options PouchDB options. Defaults to live: true, retry: true.
+ *                if options.sync is defined, then this turns into ensuring the DB
+ *                is pushing to the remote as well as pulling.
  * @returns Flag if newly created =true, already existing=false & The local DB & remote
  */
 function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: DataModel.ConnectionInfo,
   global_dbs: LocalDBList<Content>,
-  options?: PouchDB.Replication.ReplicateOptions
+  options:
+    | PouchDB.Replication.ReplicateOptions
+    | {
+        pull?: PouchDB.Replication.ReplicateOptions;
+        push: PouchDB.Replication.ReplicateOptions;
+      } = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
   // Already connected/connecting
-  if (global_dbs[local_db_id].remote !== null) {
+  if (
+    global_dbs[local_db_id].remote !== null &&
+    JSON.stringify(global_dbs[local_db_id].remote!.info) ===
+      JSON.stringify(connection_info)
+  ) {
     return [
       false,
       {
@@ -183,16 +195,25 @@ function ensure_synced_db<Content extends {}>(
     connection_info
   );
 
-  const connection: PouchDB.Replication.Replication<Content> = /* ASYNC UNAWAITED */ PouchDB.replicate(
-    remote,
-    local,
-    {
+  const push_too = (options as {push?: unknown}).push !== undefined;
+
+  let connection:
+    | PouchDB.Replication.Replication<Content>
+    | PouchDB.Replication.Sync<Content>;
+
+  if (push_too) {
+    const options_sync = options as PouchDB.Replication.SyncOptions;
+    connection = PouchDB.sync(remote, local, {
+      push: {live: true, retry: true, ...options_sync.push},
+      pull: {live: true, retry: true, ...(options_sync.pull || {})},
+    });
+  } else {
+    connection = PouchDB.replicate(remote, local, {
       live: true,
-      retry: false,
-      // TODO: Re-fresh database when options are different
-      ...options, //live & retry can be overwritten
-    }
-  );
+      retry: true,
+      ...options,
+    });
+  }
 
   return [
     true,
@@ -482,20 +503,111 @@ interface DirectoryEmitter extends EventEmitter {
   emit(event: 'directory_active', listings: Set<string>): boolean;
   emit(event: 'directory_error', err: unknown): boolean;
   emit(event: 'projects_known', projects: Set<string>): boolean;
-  emit(
-    event: 'metas_complete',
-    metas: {
-      [key: string]:
-        | null
-        | [
-            DataModel.ActiveDoc,
-            DataModel.ProjectObject,
-            LocalDB<DataModel.ProjectMetaObject>
-          ];
-    }
-  ): boolean;
+  emit(event: 'metas_complete', metas: MetasCompleteType): boolean;
 }
 
+/**
+ * To prevent initialize() being called multiple times
+ * This is false when the app starts,
+ * True when initialize() has finished, and
+ * the initialize promise when it's still in the process of initializing
+ */
+let initialize_state: boolean | Promise<void> = false;
+
+export function initialize() {
+  if (initialize_state === true) {
+    return Promise.resolve(); //Already initialized
+  } else if (initialize_state === false) {
+    // Real initialization
+    return (initialize_state = initialize_nocheck());
+  } else {
+    // Already initializing
+    return initialize_state;
+  }
+}
+
+async function initialize_nocheck() {
+  await setupExampleActive(active_db);
+  console.log('adding directory test data');
+
+  const initialized = new Promise(resolve => {
+    initializeEvents.once('projects_known', resolve);
+  });
+  initialize_dbs();
+  await initialized;
+  console.log('initialised dbs');
+
+  console.log('setting up form');
+}
+
+const directory_connection_info: DataModel.ConnectionInfo = {
+  proto: DIRECTORY_PROTOCOL,
+  host: DIRECTORY_HOST,
+  port: DIRECTORY_PORT,
+  db_name: 'directory',
+};
+
+/**
+ * List of functions to call before  the initialization starts
+ * I.e. initialize_dbs() calls each one of these, once only, before
+ * the first 'directory_local' event even starts.
+ */
+const registering_funcs: ((emitter: DirectoryEmitter) => unknown)[] = [];
+const registered_unique_ids: Set<unknown> = new Set();
+
+/**
+ * Allows external modules to register listeners onto initializeEvents that are
+ * guaranteed to be registered before any events are emitted onto the emitter.
+ *
+ * This allows, for example, to register 'project_meta_paused' listener, and you
+ * know *for sure* that you have all project metas available.
+ *
+ * This throws an error it it's called after initialization has alreayd run
+ *
+ * @param registering_function Function to call to register event listeners onto given emitter
+ */
+export function add_initial_listener(
+  registering_function: (emitter: DirectoryEmitter) => unknown,
+  unique_id?: unknown | undefined
+) {
+  if (initialize_state !== false && !registered_unique_ids.has(unique_id)) {
+    // It is OK to call this late if the functions' already been added.
+    throw Error(
+      'add_initialize_listener was called too late, initialization has already started!'
+    );
+  }
+  registering_funcs.push(registering_function);
+  if (unique_id !== undefined) {
+    registered_unique_ids.add(unique_id);
+  }
+}
+
+function initialize_dbs(): DirectoryEmitter {
+  // Main sync propagation downwards to individual projects:
+  initializeEvents
+    .on('directory_local', listings => process_listings(listings, true))
+    .on('directory_paused', listings => process_listings(listings, false))
+    .on('listing_local', (...args) => process_projects(...args, true))
+    .on('listing_paused', (...args) => process_projects(...args, false));
+
+  registering_funcs.forEach(func => func(initializeEvents));
+
+  // It all starts here, once the events are all registered
+  console.log('SYNCHRONIZE START');
+  process_directory(directory_connection_info).catch(err =>
+    initializeEvents.emit('directory_error', err)
+  );
+  return initializeEvents;
+}
+
+add_initial_listener(register_projects_known);
+/**
+ * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
+ * all listings have errored/paused), this is set to the set of known project active ids
+ *
+ * This is set to just before 'projects_known' event is emitted.
+ */
+export let projects_known: null | Set<string> = null;
 /**
  * Adds event handlers to initializeEvents to:
  * Enable 'Propagation' of completion of all known projects meta & other databases.
@@ -505,13 +617,10 @@ interface DirectoryEmitter extends EventEmitter {
  * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
  * all listings have errored/paused), a 'projects_known' event is emitted
  *
- * When all known projects have their project_meta_paused event triggered,
- * metas_complete event is triggered with list of all projects.
- *
  * Note: All of these events may emit more than once. Use .once('event_name', ...)
  * to only listen for the first trigger.
  */
-function register_completion_detectors() {
+function register_projects_known(initializeEvents: DirectoryEmitter) {
   // This is more complicated, as we have to first ensure that it's in a reasonable state to say
   // that everything is known & created, before waiting for project meta downloads.
   // (So that we don't accidentally trigger things if local DBs are empty but waiting)
@@ -526,15 +635,14 @@ function register_completion_detectors() {
 
   // All projects accumulated here
   const known_projects = new Set<string>();
-  const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
-    listing_statuses_complete() &&
-    Array.from(known_projects.values()).every(v => v in map_obj);
 
   // Emits project_known if all listings have their projects added to known_projects.
-  const emit_if_complete = () =>
-    listing_statuses_complete()
-      ? initializeEvents.emit('projects_known', known_projects)
-      : undefined;
+  const emit_if_complete = () => {
+    if (listing_statuses_complete()) {
+      projects_known = known_projects;
+      initializeEvents.emit('projects_known', known_projects);
+    }
+  };
 
   initializeEvents.on('directory_paused', listings => {
     // Make sure listing_statuses has the key for listing
@@ -570,23 +678,46 @@ function register_completion_detectors() {
     // Wait for listing to sync before everything is known.
     listing_statuses.set(listing._id, false);
   });
+}
+
+add_initial_listener(register_metas_complete);
+export type MetasCompleteType = {
+  [active_id: string]:
+    | [
+        DataModel.ActiveDoc,
+        DataModel.ProjectObject,
+        LocalDB<DataModel.ProjectMetaObject>
+      ]
+    // Error'd out metadata db
+    | [DataModel.ActiveDoc, unknown];
+};
+
+/**
+ * When all known projects have their project_meta_paused event triggered,
+ * and when all projects are known (see register_projects_known)
+ * This is filled with metadata dbs of all known projects
+ */
+export let metas_complete: null | MetasCompleteType = null;
+/**
+ * When all known projects have their project_meta_paused event triggered,
+ * and when all projects are known (see register_projects_known)
+ * metas_complete event is triggered with list of all projects.
+ */
+function register_metas_complete(initializeEvents: DirectoryEmitter) {
+  const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
+    projects_known !== null &&
+    Array.from(projects_known.values()).every(v => v in map_obj);
 
   // The following events essentially only trigger (possibly multiple times) once
   // projects_known is true, AND once all project_meta_pauseds have been triggered.
-  const metas: {
-    [key: string]:
-      | null
-      | [
-          DataModel.ActiveDoc,
-          DataModel.ProjectObject,
-          LocalDB<DataModel.ProjectMetaObject>
-        ];
-  } = {};
+  const metas: MetasCompleteType = {};
 
-  const emit_if_metas_complete = () =>
-    map_has_all_known_projects(metas)
-      ? initializeEvents.emit('metas_complete', metas)
-      : undefined;
+  const emit_if_metas_complete = () => {
+    if (map_has_all_known_projects(metas)) {
+      metas_complete = metas;
+      initializeEvents.emit('metas_complete', metas);
+    }
+  };
 
   initializeEvents.on(
     'project_meta_paused',
@@ -595,72 +726,13 @@ function register_completion_detectors() {
       emit_if_metas_complete();
     }
   );
-  initializeEvents.on('project_error', (lsting, active) => {
-    metas[active._id] = null;
+  initializeEvents.on('project_error', (listing, active, err) => {
+    metas[active._id] = [active, err];
     emit_if_metas_complete();
   });
   initializeEvents.on('projects_known', () => {
     emit_if_metas_complete();
   });
-}
-
-/**
- * To prevent initialize() being called multiple times
- * This is false when the app starts,
- * True when initialize() has finished, and
- * the initialize promise when it's still in the process of initializing
- */
-let initialize_state: boolean | Promise<void> = false;
-
-export function initialize() {
-  if (initialize_state === true) {
-    return Promise.resolve(); //Already initialized
-  } else if (initialize_state === false) {
-    // Real initialization
-    return (initialize_state = initialize_nocheck());
-  } else {
-    // Already initializing
-    return initialize_state;
-  }
-}
-
-async function initialize_nocheck() {
-  await setupExampleActive();
-  console.log('adding directory test data');
-
-  const initialized = new Promise(resolve => {
-    initializeEvents.once('metas_complete', resolve);
-  });
-  initialize_dbs();
-  await initialized;
-  console.log('initialised dbs');
-
-  console.log('setting up form');
-}
-
-const directory_connection_info: DataModel.ConnectionInfo = {
-  proto: DIRECTORY_PROTOCOL,
-  host: DIRECTORY_HOST,
-  port: DIRECTORY_PORT,
-  db_name: 'directory',
-};
-
-function initialize_dbs(): DirectoryEmitter {
-  // Main sync propagation downwards to individual projects:
-  initializeEvents
-    .on('directory_local', listings => process_listings(listings, true))
-    .on('directory_paused', listings => process_listings(listings, false))
-    .on('listing_local', (...args) => process_projects(...args, true))
-    .on('listing_paused', (...args) => process_projects(...args, false));
-
-  register_completion_detectors();
-
-  // It all starts here, once the events are all registered
-  console.log('SYNCHRONIZE START');
-  process_directory(directory_connection_info).catch(err =>
-    initializeEvents.emit('directory_error', err)
-  );
-  return initializeEvents;
 }
 
 async function process_directory(
@@ -706,7 +778,7 @@ async function process_directory(
     if (USE_REAL_DATA) {
       initializeEvents.emit('directory_paused', listings);
     } else {
-      setupExampleDirectory(directory_db).then(() => {
+      setupExampleDirectory(directory_db.local).then(() => {
         initializeEvents.emit('directory_paused', listings);
       });
     }
@@ -835,16 +907,18 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
         projects_connection
       );
     } else {
-      setupExampleListing(listing_object._id, local_projects_db).then(() => {
-        initializeEvents.emit(
-          'listing_paused',
-          listing_object,
-          active_projects,
-          local_people_db,
-          local_projects_db,
-          projects_connection
-        );
-      });
+      setupExampleListing(listing_object._id, local_projects_db.local).then(
+        () => {
+          initializeEvents.emit(
+            'listing_paused',
+            listing_object,
+            active_projects,
+            local_people_db,
+            local_projects_db,
+            projects_connection
+          );
+        }
+      );
     }
   };
   projects_db.remote.connection.on('paused', synced_callback);
@@ -948,7 +1022,8 @@ async function process_project(
   const [data_is_fresh, data_db] = ensure_synced_db(
     active_id,
     data_connection_info,
-    data_dbs
+    data_dbs,
+    {push: {}}
   );
   createdProjects[active_id] = {
     project: project_object,
@@ -970,15 +1045,17 @@ async function process_project(
           meta_db
         );
       } else {
-        setupExampleForm(active_project._id, meta_db).then(() => {
-          initializeEvents.emit(
-            'project_meta_paused',
-            listing,
-            active_project,
-            project_object,
-            meta_db
-          );
-        });
+        setupExampleProjectMetadata(active_project._id, meta_db.local).then(
+          () => {
+            initializeEvents.emit(
+              'project_meta_paused',
+              listing,
+              active_project,
+              project_object,
+              meta_db
+            );
+          }
+        );
       }
     };
     meta_db.remote.connection.on('paused', synced_callback);
@@ -1015,7 +1092,7 @@ async function process_project(
           data_db
         );
       } else {
-        setupExampleData(active_project._id, data_db).then(() => {
+        setupExampleData(active_project._id, data_db.local).then(() => {
           initializeEvents.emit(
             'project_data_paused',
             listing,

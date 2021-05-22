@@ -3,18 +3,18 @@ import {
   ActiveDoc,
   EncodedObservation,
   ListingsObject,
-  Observation,
   ObservationList,
   ProjectMetaObject,
   ProjectObject,
   ProjectsList,
   ProjectUIModel,
 } from './datamodel';
-import {active_db, LocalDB} from './sync';
-import {upsertFAIMSData} from './dataStorage';
+import {setProjectMetadata} from './projectMetadata';
 
-const example_datums: {[key: string]: ({_id: string} & Observation)[]} = {
-  'default/lake_mungo': [
+const example_datums: {
+  [key: string]: ({_id: string} & EncodedObservation)[];
+} = {
+  default_lake_mungo: [
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       type: '??:??',
@@ -33,13 +33,13 @@ const example_datums: {[key: string]: ({_id: string} & Observation)[]} = {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
-      // format_version: 1,
+      format_version: 1,
     },
   ],
 };
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  'default/lake_mungo': {
+  default_lake_mungo: {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -404,7 +404,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
 
     start_view: 'start-view',
   },
-  'default/projectB': {
+  default_projectB: {
     fields: {},
     views: {
       'start-view': {
@@ -422,7 +422,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
     },
     start_view: 'start-view',
   },
-  'default/projectC': {
+  default_projectC: {
     fields: {},
     views: {
       'start-view': {
@@ -517,35 +517,35 @@ const example_directory: ListingsObject[] = [
 
 const example_active_db: ActiveDoc[] = [
   {
-    _id: 'default/lake_mungo',
+    _id: 'default_lake_mungo',
     listing_id: 'default',
     project_id: 'lake_mungo',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'csiro/csiro-geochemistry',
+    _id: 'csiro_csiro-geochemistry',
     listing_id: 'csiro',
     project_id: 'csiro-geochemistry',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'default/projectA',
+    _id: 'default_projectA',
     listing_id: 'default',
     project_id: 'projectA',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'default/projectB',
+    _id: 'default_projectB',
     listing_id: 'default',
     project_id: 'projectB',
     username: 'test1',
     password: 'apple',
   },
   {
-    _id: 'default/projectC',
+    _id: 'default_projectC',
     listing_id: 'default',
     project_id: 'projectC',
     username: 'test1',
@@ -553,12 +553,19 @@ const example_active_db: ActiveDoc[] = [
   },
 ];
 
-export async function setupExampleDirectory(db: LocalDB<ListingsObject>) {
+const example_project_metadata: {[key: string]: string} = {
+  project_lead: "Robert'); DROP TABLE Students;--",
+  lead_institution: 'אוניברסיטת בן-גוריון בנגב',
+};
+
+export async function setupExampleDirectory(
+  directory_db: PouchDB.Database<ListingsObject>
+) {
   // For every project in the example_listings, insert into the projects db
   for (const listings_object of example_directory) {
     let current_rev: {_rev?: undefined | string} = {};
     try {
-      current_rev = {_rev: (await db.local.get(listings_object._id))._rev};
+      current_rev = {_rev: (await directory_db.get(listings_object._id))._rev};
     } catch (err) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
@@ -566,20 +573,22 @@ export async function setupExampleDirectory(db: LocalDB<ListingsObject>) {
       }
       // Not in the DB means _rev is unnecessary for put()
     }
-    await db.local.put({...listings_object, ...current_rev});
+    await directory_db.put({...listings_object, ...current_rev});
   }
 
   const ids = example_directory.map(doc => doc._id);
 
   // Remove anything not supposed to be there
-  for (const row of (await db.local.allDocs()).rows) {
+  for (const row of (await directory_db.allDocs()).rows) {
     if (ids.indexOf(row.id) < 0) {
-      await db.local.remove(row.id, row.value.rev);
+      await directory_db.remove(row.id, row.value.rev);
     }
   }
 }
 
-export async function setupExampleActive() {
+export async function setupExampleActive(
+  active_db: PouchDB.Database<ActiveDoc>
+) {
   for (const doc of example_active_db) {
     let current_rev: {_rev?: undefined | string} = {};
     try {
@@ -606,10 +615,8 @@ export async function setupExampleActive() {
 
 export async function setupExampleListing(
   listing_id: string,
-  projects_db: LocalDB<ProjectObject>
+  projects_db: PouchDB.Database<ProjectObject>
 ) {
-  const db = projects_db.local;
-
   if (!(listing_id in example_listings)) {
     return;
   }
@@ -618,7 +625,7 @@ export async function setupExampleListing(
   for (const project of example_listings[listing_id]) {
     let current_rev: {_rev?: undefined | string} = {};
     try {
-      current_rev = {_rev: (await db.get(project._id))._rev};
+      current_rev = {_rev: (await projects_db.get(project._id))._rev};
     } catch (err) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
@@ -626,48 +633,58 @@ export async function setupExampleListing(
       }
       // Not in the DB means _rev is unnecessary for put()
     }
-    await db.put({...project, ...current_rev});
+    await projects_db.put({...project, ...current_rev});
   }
 
   const ids = example_listings[listing_id].map(doc => doc._id);
 
   // Remove anything not supposed to be there
-  for (const row of (await db.allDocs()).rows) {
+  for (const row of (await projects_db.allDocs()).rows) {
     if (ids.indexOf(row.id) < 0) {
-      await db.remove(row.id, row.value.rev);
+      await projects_db.remove(row.id, row.value.rev);
     }
   }
 }
 
 export async function setupExampleData(
   projname: string,
-  data_db: LocalDB<EncodedObservation>
+  data_db: PouchDB.Database<EncodedObservation>
 ) {
-  const db = data_db.local;
   let ids: string[] = [];
 
   if (projname in example_datums) {
     for (const datum of example_datums[projname]) {
-      upsertFAIMSData(projname, datum);
+      let current_rev: {_rev?: undefined | string} = {};
+      try {
+        current_rev = {_rev: (await data_db.get(datum._id))._rev};
+      } catch (err) {
+        if (err.message !== 'missing') {
+          //.reason may be 'deleted' or 'missing'
+          throw err;
+        }
+        // Not in the DB means _rev is unnecessary for put()
+      }
+      await data_db.put({...datum, ...current_rev});
     }
     ids = example_datums[projname].map(doc => doc._id!);
   }
 
   // Remove anything not supposed to be there
-  for (const row of (await db.allDocs()).rows) {
+  for (const row of (await data_db.allDocs()).rows) {
     if (ids.indexOf(row.id) < 0) {
-      await db.remove(row.id, row.value.rev);
+      await data_db.remove(row.id, row.value.rev);
     }
   }
 }
 
-export async function setupExampleForm(
+export async function setupExampleProjectMetadata(
   projname: string,
-  meta_db: LocalDB<ProjectMetaObject>
+  meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
-  console.log(
-    await setUiSpecForProject(meta_db.local, example_ui_specs[projname])
-  );
+  console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
+  for (const key in example_project_metadata) {
+    await setProjectMetadata(projname, key, example_project_metadata[key]);
+  }
 }
 
 export const dummy_projects: ProjectsList = {

@@ -18,7 +18,7 @@ import Skeleton from '@material-ui/lab/Skeleton';
 import grey from '@material-ui/core/colors/grey';
 import {FAIMSForm} from './form';
 import {ProjectsList} from '../datamodel';
-import {initialize, initializeEvents} from '../sync';
+import {initializeEvents} from '../sync';
 //import {NumberSchema} from 'yup';
 
 interface TabPanelProps {
@@ -91,7 +91,7 @@ class ProjectNavTabs extends React.Component<
       projectList[active._id] = project;
       this.setState({projectList: projectList});
     });
-    initialize().catch(err => this.setState({global_error: err}));
+    // initialize().catch(err => this.setState({global_error: err}));
   }
 
   handleChange(event: any, value: any) {

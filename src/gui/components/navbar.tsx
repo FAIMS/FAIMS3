@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -30,9 +30,7 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {getProjectList} from '../../databaseAccess';
 import {ProjectsList} from '../../datamodel';
-import {ActionType} from '../../actions';
 
 import {store} from '../../store';
 
@@ -138,7 +136,6 @@ function getNestedProjects(projectList: ProjectsList) {
 export default function NavbarNew() {
   const classes = useStyles();
   const globalState = useContext(store);
-  const {dispatch} = globalState;
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggle = () => setIsOpen(!isOpen);
@@ -182,14 +179,6 @@ export default function NavbarNew() {
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
     [key: string]: boolean;
   }>({Projects: false});
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const data = getProjectList();
-      dispatch({type: ActionType.GET_PROJECT_LIST, payload: data});
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
 
   return (
     <React.Fragment>

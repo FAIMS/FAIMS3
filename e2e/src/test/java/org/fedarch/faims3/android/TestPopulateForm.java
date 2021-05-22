@@ -3,11 +3,16 @@ package org.fedarch.faims3.android;
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.LakeMungo;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import io.appium.java_client.MobileBy;
 import io.appium.java_client.android.AndroidElement;
 
 /**
@@ -51,7 +56,7 @@ public class TestPopulateForm extends AndroidTest {
 	  }
       TestUtils.markBrowserstackTestResult(driver, true, "Android - TestPopulateForm.testNoErrors() passed!");
   }
-
+  
   @AfterClass
   public static void tearDown() {
 	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.

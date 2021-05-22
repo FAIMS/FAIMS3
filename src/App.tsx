@@ -78,7 +78,7 @@ export class App extends React.Component<AppProps, AppState> {
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
               <Route
                 exact
-                path={ROUTES.PROJECT + ':project_id(\\d+)'}
+                path={ROUTES.PROJECT + ':project_id'}
                 component={Project}
               />
               <Route
