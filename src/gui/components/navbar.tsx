@@ -44,11 +44,13 @@ type ProjectListItemProps = {
   title: string;
   icon: any;
   to: string;
+  disabled: boolean;
 };
 type MenuItemProps = {
   nested?: any;
   title: string;
   to: string;
+  disabled: boolean;
   icon: React.ReactChild | undefined;
 };
 
@@ -117,11 +119,12 @@ const useStyles = makeStyles(theme => ({
 
 function getNestedProjects(pouchProjectList: typeof createdProjects) {
   const projectListItems: ProjectListItemProps[] = [];
-  Object.keys(pouchProjectList).map(key => {
+  Object.keys(pouchProjectList).map(listing_id_project_id => {
     projectListItems.push({
-      title: pouchProjectList[key].project.name,
+      title: pouchProjectList[listing_id_project_id].project.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + pouchProjectList[key].project._id,
+      to: ROUTES.PROJECT + listing_id_project_id,
+      disabled: false,
     });
   });
   return {
@@ -129,6 +132,7 @@ function getNestedProjects(pouchProjectList: typeof createdProjects) {
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.PROJECT_LIST,
+    disabled: false,
   };
 }
 
@@ -150,17 +154,20 @@ export default function Navbar() {
       title: 'Home',
       icon: <HomeIcon />,
       to: ROUTES.HOME,
+      disabled: false,
     },
     getNestedProjects(pouchProjectList),
     {
       title: 'Tools',
       icon: <BuildIcon />,
       to: '/',
+      disabled: true,
     },
     {
       title: 'Notifications',
       icon: <NotificationsIcon />,
       to: '/',
+      disabled: true,
     },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
@@ -168,16 +175,19 @@ export default function Navbar() {
       title: 'Profile',
       icon: <AccountCircleIcon />,
       to: '/',
+      disabled: true,
     },
     {
       title: 'Messages',
       icon: <MessageIcon />,
       to: '/',
+      disabled: true,
     },
     {
       title: 'Settings',
       icon: <SettingsIcon />,
       to: '/',
+      disabled: true,
     },
   ];
 
@@ -249,6 +259,7 @@ export default function Navbar() {
                         [item.title]: !prevNestedMenuOpen[item.title],
                       }));
                     }}
+                    disabled={item.disabled}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
                     <ListItemText>{item.title} </ListItemText>
@@ -281,6 +292,7 @@ export default function Navbar() {
                             }
                             to={nestedItem.to}
                             component={RouterLink}
+                            disabled={item.disabled}
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
                             <ListItemText primary={nestedItem.title} />
@@ -296,6 +308,7 @@ export default function Navbar() {
                   key={item.title}
                   to={item.to}
                   component={RouterLink}
+                  disabled={item.disabled}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
@@ -306,8 +319,12 @@ export default function Navbar() {
           <Divider />
           <List>
             {bottomMenuItems.map(
-              (item: {title: string; icon: React.ReactChild | undefined}) => (
-                <ListItem button key={item.title}>
+              (item: {
+                title: string;
+                icon: React.ReactChild | undefined;
+                disabled: boolean;
+              }) => (
+                <ListItem button key={item.title} disabled={item.disabled}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
                 </ListItem>
