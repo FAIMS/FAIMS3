@@ -1,9 +1,12 @@
-import React from 'react';
+import React, {useContext, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {NavLink} from 'react-router-dom';
-import {Container, Breadcrumbs, Typography, Box, Grid} from '@material-ui/core';
+import {Box, Breadcrumbs, Container, Grid, Typography} from '@material-ui/core';
 import * as ROUTES from '../../constants/routes';
+import {store} from '../../store';
 import Skeleton from '@material-ui/lab/Skeleton';
+import {ActionType} from '../../actions';
+
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -38,7 +41,31 @@ const useStyles = makeStyles(theme => ({
 
 export default function ObservationList() {
   const classes = useStyles();
-  // const globalState = useContext(store);
+  const globalState = useContext(store);
+  const {dispatch} = globalState;
+  useEffect(() => {
+    dispatch({
+      type: ActionType.ADD_ALERT,
+      payload: {
+        message: 'Test: this is a global error message',
+        severity: 'error',
+      },
+    });
+    dispatch({
+      type: ActionType.ADD_ALERT,
+      payload: {
+        message: 'Test: this is a global success message',
+        severity: 'success',
+      },
+    });
+    dispatch({
+      type: ActionType.ADD_ALERT,
+      payload: {
+        message: 'Test: this is a global info message',
+        severity: 'info',
+      },
+    });
+  }, []);
   const pouchObservationList = {};
 
   return (
@@ -53,11 +80,11 @@ export default function ObservationList() {
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
           <Grid item xs={12} key={'skeleton-observation-list-grid'}>
-            <Skeleton animation="wave" variant="rect" height={100}/>
+            <Skeleton animation="wave" variant="rect" height={100} />
           </Grid>
-          To be implemented... Observation list component - list of observation user has access to: -
-          shows most recent (top 100) - allows for filtering by meta data
-          (owner, last_updated by, project etc)
+          To be implemented... Observation list component - list of observation
+          user has access to: - shows most recent (top 100) - allows for
+          filtering by meta data (owner, last_updated by, project etc)
         </Grid>
       </div>
     </Container>

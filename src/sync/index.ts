@@ -542,6 +542,7 @@ async function initialize_nocheck() {
   });
   initialize_dbs();
   await initialized;
+
   console.log('initialised dbs');
 
   console.log('setting up form');

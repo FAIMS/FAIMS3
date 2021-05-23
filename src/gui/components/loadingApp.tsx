@@ -6,6 +6,7 @@ import {
   Grid,
   Container,
 } from '@material-ui/core';
+import SystemAlert from './alert';
 
 export default function LoadingApp() {
   return (
@@ -40,6 +41,7 @@ export default function LoadingApp() {
           </Box>
         </Grid>
       </Grid>
+      <SystemAlert />
     </Container>
   );
 }

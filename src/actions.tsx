@@ -1,4 +1,5 @@
 import {ProjectObject, Observation} from './datamodel';
+import {Color} from '@material-ui/lab/Alert';
 
 export enum ActionType {
   IS_SYNCING,
@@ -9,6 +10,9 @@ export enum ActionType {
 
   GET_ACTIVE_OBSERVATION,
   DROP_ACTIVE_OBSERVATION,
+
+  ADD_ALERT,
+  DELETE_ALERT,
 }
 
 export interface IS_SYNCING {
@@ -46,3 +50,18 @@ export interface DROP_ACTIVE_OBSERVATION {
 export type ObservationActions =
   | GET_ACTIVE_OBSERVATION
   | DROP_ACTIVE_OBSERVATION;
+
+export interface ADD_ALERT {
+  type: ActionType.ADD_ALERT;
+  payload: {
+    message: string;
+    severity: Color;
+  };
+}
+
+export interface DELETE_ALERT {
+  type: ActionType.DELETE_ALERT;
+  payload: {key: string};
+}
+
+export type AlertActions = ADD_ALERT | DELETE_ALERT;
