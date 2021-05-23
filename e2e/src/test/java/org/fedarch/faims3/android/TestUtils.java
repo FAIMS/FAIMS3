@@ -7,8 +7,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import io.appium.java_client.MobileBy;
-import org.openqa.selenium.NoSuchElementException;
-
 import io.appium.java_client.TouchAction;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
@@ -127,7 +125,7 @@ public class TestUtils {
 	    TouchAction touchAction = new TouchAction(driver);
 	    touchAction.longPress(PointOption.point(fromX, fromY)).moveTo(PointOption.point(toX, toY)).release().perform();
 	}
-  
+
 	/**
 	 * Click on "Previous Dev Content" on the landing page.
 	 *

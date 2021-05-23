@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.LakeMungo;
+import org.json.JSONException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,6 +36,7 @@ public class TestStagingForm extends AndroidTest {
    * This test scenario is when you put in all the mandatory fields and switch to another project on the top tab.
    * When you open the form again, it should have saved the previous values.
    *
+   * @throws JSONException
    * @throws MalformedURLException
    * @throws NoSuchMethodException
    * @throws SecurityException
@@ -43,12 +45,13 @@ public class TestStagingForm extends AndroidTest {
    * @throws InvocationTargetException
    */
   @Test
-  public void testSwitchTab() {
+  public void testSwitchTab() throws JSONException {
 	  try {
 			// Go to Lake Mungo form
 			TestUtils.loadPreviousDevContent(driver);
 			// Fill out all fields
 			LakeMungo.fillOutFormWithValidFields(driver);
+			TestUtils.scrollDown(driver);
 			// validate JSON values
 			LakeMungo.validateJSON(driver);
 			// scroll up and click on the "Example Project A" tab
@@ -67,7 +70,7 @@ public class TestStagingForm extends AndroidTest {
 
 			TestUtils.scrollDown(driver);
 
-			assertEquals(LakeMungo.INTEGER, driver.findElement(MobileBy.xpath("//*[@resource-id='int-field']")).getText());
+			assertEquals("16.0", driver.findElement(MobileBy.xpath("//*[@resource-id='int-field']")).getText());
 			assertEquals("Currency €", driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']")).getText());
 			assertEquals("Currencies $, €, ¥", driver.findElement(MobileBy.xpath("//*[@resource-id='multi-select-field']")).getText());
 			assertEquals("true", driver.findElement(MobileBy.xpath("//*[@resource-id='checkbox-field']")).getAttribute("checked"));
@@ -79,6 +82,9 @@ public class TestStagingForm extends AndroidTest {
 					assertEquals("false", radioButton.getAttribute("checked"));
 				}
 			}
+
+			TestUtils.scrollDown(driver);
+
 			// Make sure JSON is still the same
 			if (!LakeMungo.validateJSON(driver)) {
 				TestUtils.markBrowserstackTestResult(driver, false, "Android - TestStagingForm.testSwitchTab() fails because JSON values don't match.");
@@ -86,6 +92,9 @@ public class TestStagingForm extends AndroidTest {
 			}
 	  } catch (Exception e) {
 	      TestUtils.markBrowserstackTestResult(driver, false, "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
+	      throw e;
+	  } catch (AssertionError e) {
+		  TestUtils.markBrowserstackTestResult(driver, false, "Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
 	      throw e;
 	  }
 	  // if we make it to the end with no exceptions, that means we passed!

@@ -1,15 +1,18 @@
 package org.fedarch.faims3;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.List;
 
 import org.fedarch.faims3.android.TestUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import io.appium.java_client.MobileBy;
-import io.appium.java_client.MobileElement;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
 
@@ -21,7 +24,7 @@ public class LakeMungo {
     public static final String EMAIL = "jane.doe@csiro.au";
     public static final String COLOUR = "Pink";
     public static final String UNICODE = "いろはにほへとちりぬるを Pchnąć w tę łódź jeża lub ośm skrzyń fig จงฝ่าฟันพัฒนาวิชาการ    côté de l'alcôve ovoïde größeren";
-    public static final String INTEGER = "16.0";
+    public static final String INTEGER = "16";
 
 	/**
 	 * Fill out all fields in test Lake Mungo form with valid values.
@@ -92,71 +95,29 @@ public class LakeMungo {
 	 * Validate JSON at the end of the form with input values.
 	 * @param driver Android driver
 	 * @return True if JSON is valid, false otherwise.
+	 * @throws JSONException
 	 */
-	public static boolean validateJSON(AndroidDriver<AndroidElement> driver) {
-	    // Find JSON
-		AndroidElement lakeMungoTab = driver.findElement(MobileBy.xpath("//*[@resource-id='scrollable-auto-tabpanel-default/lake_mungo']"));
-		AndroidElement root = (AndroidElement) lakeMungoTab.findElements(MobileBy.xpath("//android.view.View")).get(2);
-		List<MobileElement> children = root.findElements(MobileBy.xpath("//android.view.View"));
-		AndroidElement json = (AndroidElement) children.get(children.size() - 1).findElement(MobileBy.className("android.view.View"));
-	    String jsonText =
-	    		"{\r\n" +
-	    		"  \"values\": {\r\n" +
-	    		"    \"take-point-field\": null,\r\n" +
-	    		"    \"bad-field\": \"\",\r\n" +
-	    		"    \"action-field\": \"hello\",\r\n" +
-	    		"    \"email-field\": " + LakeMungo.EMAIL + ",\r\n" +
-	    		"    \"str-field\": " + LakeMungo.COLOUR + ",\r\n" +
-	    		"    \"multi-str-field\": "+ LakeMungo.UNICODE + "\",\r\n" +
-	    		"    \"int-field\": " + LakeMungo.INTEGER + ",\r\n" +
-	    		"    \"select-field\": \"EUR\",\r\n" +
-	    		"    \"multi-select-field\": [\"USD\", \"EUR\", \"JPY\"],\r\n" +
-	    		"    \"checkbox-field\": true,\r\n" +
-	    		"    \"radio-group-field\": \"4\"\r\n" +
-	    		"  },\r\n" +
-	    		"  \"errors\": {},\r\n" +
-	    		"  \"touched\": {\r\n" +
-	    		"    \"take-point-field\": true,\r\n" +
-	    		"    \"bad-field\": true,\r\n" +
-	    		"    \"action-field\": true,\r\n" +
-	    		"    \"email-field\": true,\r\n" +
-	    		"    \"str-field\": true,\r\n" +
-	    		"    \"multi-str-field\": true,\r\n" +
-	    		"    \"int-field\": true,\r\n" +
-	    		"    \"select-field\": true,\r\n" +
-	    		"    \"multi-select-field\": [\r\n" +
-	    		"      true,\r\n" +
-	    		"      true,\r\n" +
-	    		"      false,\r\n" +
-	    		"      true\r\n" +
-	    		"    ],\r\n" +
-	    		"    \"checkbox-field\": true,\r\n" +
-	    		"    \"radio-group-field\": true\r\n" +
-	    		"  },\r\n" +
-	    		"  \"isSubmitting\": false,\r\n" +
-	    		"  \"isValidating\": false,\r\n" +
-	    		"  \"submitCount\": 1,\r\n" +
-	    		"  \"initialValues\": {\r\n" +
-	    		"    \"take-point-field\": null,\r\n" +
-	    		"    \"bad-field\": \"\",\r\n" +
-	    		"    \"action-field\": \"hello\",\r\n" +
-	    		"    \"email-field\": " + LakeMungo.EMAIL + ",\r\n" +
-	    		"    \"str-field\": " + LakeMungo.COLOUR + ",\r\n" +
-	    		"    \"multi-str-field\": "+ LakeMungo.UNICODE + "\",\r\n" +
-	    		"    \"int-field\": " + LakeMungo.INTEGER + ",\r\n" +
-	    		"    \"select-field\": \"EUR\",\r\n" +
-	    		"    \"multi-select-field\": [\"USD\", \"EUR\", \"JPY\"],\r\n" +
-	    		"    \"checkbox-field\": true,\r\n" +
-	    		"    \"radio-group-field\": \"4\"\r\n" +
-	    		"  },\r\n" +
-	    		"  \"initialErrors\": {},\r\n" +
-	    		"  \"initialTouched\": {},\r\n" +
-	    		"  \"isValid\": true,\r\n" +
-	    		"  \"dirty\": true,\r\n" +
-	    		"  \"validateOnBlur\": true,\r\n" +
-	    		"  \"validateOnChange\": true,\r\n" +
-	    		"  \"validateOnMount\": true\r\n" +
-	    		"}";
-	    return json.getText().contentEquals(jsonText);
+	public static boolean validateJSON(AndroidDriver<AndroidElement> driver) throws JSONException, AssertionError {
+		// Find JSON
+		WebDriverWait wait = new WebDriverWait(driver, 10);
+		// wait for Submit to finish
+		wait.until(ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@text='SUBMIT']")));
+		AndroidElement json = (AndroidElement) wait.until(ExpectedConditions.visibilityOf(
+				driver.findElement(MobileBy.xpath("//*[@text='SUBMIT']/following-sibling::android.view.View/android.view.View"))));
+		JSONObject jsonObject = new JSONObject(json.getText());
+		JSONObject values = jsonObject.getJSONObject("values");
+
+		assertEquals(EMAIL, values.get("email-field").toString());
+        assertEquals(COLOUR, values.get("str-field").toString());
+        assertEquals(UNICODE, values.get("multi-str-field").toString());
+        assertEquals(INTEGER, values.get("int-field").toString());
+        assertEquals("EUR", values.get("select-field").toString());
+        assertEquals("[\"USD\",\"EUR\",\"JPY\"]", values.get("multi-select-field").toString());
+        assertEquals("true", values.get("checkbox-field").toString());
+        assertEquals("4", values.get("radio-group-field").toString());
+        // no errors
+        assertEquals("{}", jsonObject.get("errors").toString());
+
+	    return true;
 	}
 }

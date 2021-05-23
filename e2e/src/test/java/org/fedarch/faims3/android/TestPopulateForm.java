@@ -3,16 +3,12 @@ package org.fedarch.faims3.android;
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.LakeMungo;
-
+import org.json.JSONException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
-import io.appium.java_client.MobileBy;
 import io.appium.java_client.android.AndroidElement;
 
 /**
@@ -33,9 +29,10 @@ public class TestPopulateForm extends AndroidTest {
 
   /**
    * This test scenario is when you put in all the mandatory fields correctly and then click submit successfully.
+ * @throws JSONException
    */
   @Test
-  public void testNoErrors() {
+  public void testNoErrors() throws JSONException {
       try {
 			// Load up Lake Mungo form
 			TestUtils.loadPreviousDevContent(driver);
@@ -53,10 +50,13 @@ public class TestPopulateForm extends AndroidTest {
 	  } catch (Exception e) {
 	      TestUtils.markBrowserstackTestResult(driver, false, "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
 	      throw e;
+	  } catch (AssertionError e) {
+		  TestUtils.markBrowserstackTestResult(driver, false, "Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
+	      throw e;
 	  }
       TestUtils.markBrowserstackTestResult(driver, true, "Android - TestPopulateForm.testNoErrors() passed!");
   }
-  
+
   @AfterClass
   public static void tearDown() {
 	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.
