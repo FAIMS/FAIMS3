@@ -14,6 +14,7 @@ import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
+  RUNNING_UNDER_TEST,
 } from '../buildconfig';
 
 const POUCH_SEPARATOR = '_';
@@ -51,7 +52,10 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsO
  * logic to this
  */
 
-const local_pouch_options = {};
+const local_pouch_options: any = {};
+if (RUNNING_UNDER_TEST) {
+  local_pouch_options['adaptor'] = 'memory';
+}
 
 /**
  * Directory: All (public, anyways) Faims instances
