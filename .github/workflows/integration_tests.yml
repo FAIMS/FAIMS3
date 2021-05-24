@@ -1,0 +1,98 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Lint, build, test, cap doctor
+
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  # Also trigger on page_build, as well as release created events
+  page_build:
+  release:
+    types: # This configuration does not affect the page_build event above
+      - created
+
+
+jobs:
+  build:
+    # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
+    runs-on: ubuntu-latest
+    services:
+      couchdb:
+        image: couchdb:3
+        ports:
+          - 5984:5984
+        env:
+          COUCHDB_USER: admin
+          COUCHDB_PASSWORD: password
+    env:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+      REACT_APP_DIRECTORY_HOST: localhost
+      REACT_APP_USE_REAL_DATA: true
+      COUCHDB_CURL_HOST: http://admin:password@localhost:5984
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        node-version: [14.x]
+        experimental: [false]
+        include:
+          - node-version: 15.x
+            experimental: true
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    # setup CORS for couchdb
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/httpd/enable_cors -d '"true"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"*"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/origins -d '"http://localhost"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/credentials -d '"true"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
+    # setup basic db content
+    - run: curl -X PUT $COUCHDB_CURL_HOST/directory/default -d '{
+        "_id": "default",
+        "name": "Default instance",
+        "description": "Default FAIMS instance",
+        "people_db": {
+            "lan": true,
+            "db_name": "people"
+        }, "projects_db": {
+            "lan": true,
+            "db_name": "projects"
+        }
+    }'
+    - run: curl -X PUT $COUCHDB_CURL_HOST/people
+    - run: curl -X PUT $COUCHDB_CURL_HOST/projects/test_proj -d '{
+        "_id": "test_proj",
+        "name": "Test Project",
+        "metadata_db": {
+          "lan": true,
+          "db_name": "metadata-test_proj"
+        },
+        "data_db": {
+          "lan": true,
+          "db_name": "data-test_proj"
+        }
+    }'
+    # Not including actual metadata for now, tests shouldn't need any yet
+    - run: curl -X PUT $COUCHDB_CURL_HOST/metadata-test_proj
+    - run: curl -X PUT $COUCHDB_CURL_HOST/data-test_proj
+    # do the npm stuff
+    - run: npm ci
+    - run: npm run lint
+    - run: npm run build --if-present
+    - run: npm run integration
+    - run: npx cap copy
+    - run: npx cap doctor android # ios requires xcode
