@@ -16,7 +16,7 @@
   <br>}</blockquote>
 
 2. Run the app from android studio:
-<blockquote><br> npx cap open android</blockquote>
+<blockquote>npx cap open android</blockquote>
 <br>From android studio, build and run the app with appropriate device.
 <br><br>
 
@@ -41,10 +41,10 @@ In browserstackSetup(), update the "app" with the app URL:
 e.g. <blockquote>caps.setCapability("app", 'bs://87f241809661b3baa5fe15f6ad97322fd28b0a0e');</blockquote>
 
 2. Set access credentials in browserstackSetup:
-* caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
-* caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
+<blockquote>caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
+	<br>caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));</blockquote>
 
 3. Run the tests either as JUnit tests via your IDE (I use Eclipse), or via command line:
 * Make sure you're on the same directory as e2e this folder. 
-* Run: mvn install
+* Run: <blockquote>mvn install</blockquote>
   
