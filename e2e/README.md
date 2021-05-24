@@ -15,12 +15,16 @@
 	  <br>    AndroidTest.setup(true, "Test Form Staging - Android");
   <br>}</blockquote>
 
-2. Run the app from android studio:
-<blockquote>npx cap open android</blockquote>
-<br>From android studio, build and run the app with appropriate device.
+2. Run the device emulator (Tools -> AVD Manager -> select and start device) from android studio.
+<br><br>To set up Android Studio the first time:
+- Download Android Studio.
+- Tools -> AVD Manager -> create new Virtual Device
+- Tools -> SDK Manager -> make sure appropriate SDK has been downloaded.
+- Setup ANDROID_HOME and ANDROID_SDK_ROOT in environment variables. You can find ANDROID location in SDK Manager. Restart
+- Start device in AVD Manager
 <br><br>
 
-3. Make sure appium has been installed.
+3. Make sure appium has been installed, before running it.
 <blockquote>npm install -g appium 
 <br>install wd</blockquote>
 Run appium in command line: 
