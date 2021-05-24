@@ -1,9 +1,14 @@
 #!/bin/sh
 
+set -e
+
 initialise_couchdb() {
     # setup directory with default
     local base_url="$1://$2:$3"
     local curl_cmd="curl -X PUT -u $4:$5"
+
+    # setup directory
+    $curl_cmd "$base_url/directory"
     $curl_cmd "$base_url/directory/default" -d "{
         \"_id\": \"default\",
         \"name\": \"Default instance\",
@@ -28,6 +33,7 @@ initialise_couchdb() {
     $curl_cmd "$base_url/people"
 
     # setup test_proj with default
+    $curl_cmd "$base_url/projects"
     $curl_cmd "$base_url/projects/test_proj" -d "{
         \"_id\": \"test_proj\",
         \"name\": \"Test Project\",
@@ -48,6 +54,7 @@ initialise_couchdb() {
     }"
 
     # setup directory with default
+    $curl_cmd "$base_url/metadata-test_proj"
     $curl_cmd "$base_url/metadata-test_proj/default" -d "{
         \"_id\": \"ui-specification\",
         \"fields\": {
