@@ -91,8 +91,4 @@ jobs:
     - run: curl -X PUT $COUCHDB_CURL_HOST/data-test_proj
     # do the npm stuff
     - run: npm ci
-    - run: npm run lint
-    - run: npm run build --if-present
     - run: npm run integration
-    - run: npx cap copy
-    - run: npx cap doctor android # ios requires xcode
