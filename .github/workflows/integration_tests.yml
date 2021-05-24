@@ -63,8 +63,8 @@ jobs:
     # setup basic db content
     - name: Initialise couchdb
       run: |
-      source bin/couchdb_initialisation.sh
-      initialise_couchdb http localhost 5984 $COUCHDB_USER $COUCHDB_PASSWORD
+        source bin/couchdb_initialisation.sh
+        initialise_couchdb http localhost 5984 $COUCHDB_USER $COUCHDB_PASSWORD
     # do the npm stuff
     - run: npm ci
     - run: npm run integration
