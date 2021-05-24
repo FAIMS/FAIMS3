@@ -61,7 +61,8 @@ jobs:
     - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
     # setup basic db content
-    - run: |
+    - name: Initialise couchdb
+      run: |
       source bin/couchdb_initialisation.sh
       initialise_couchdb http localhost 5984 $COUCHDB_USER $COUCHDB_PASSWORD
     # do the npm stuff
