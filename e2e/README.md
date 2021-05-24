@@ -2,8 +2,8 @@
   
 <h3>Pre-requisites:</h3>
 
-Install maven
-Install java (I use OpenJDK 13)
+* Install maven
+* Install java (I use OpenJDK 13)
 
 <h3>Steps:</h3>
 <h4>Test with local Android web driver</h4>
