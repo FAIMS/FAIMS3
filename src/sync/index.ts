@@ -330,6 +330,169 @@ export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
+interface SyncHandlerEmissions {
+  active(): unknown;
+  paused(err?: {}): unknown;
+  error(err: {}): unknown;
+}
+
+type ConciseEmissionsArg = [
+  EventEmitter,
+  (evt_name: string) => Promise<string>,
+  ...unknown[]
+];
+
+type EmissionsArg =
+  /*
+  These functions are called when the DB starts
+  pulling in new documents, and 2 seconds after the last document
+  is pullsed (or the timeout occurs after this SyncHandler is
+  created)
+  Also, unrecoverable errors are called here too
+  */
+  | [SyncHandlerEmissions]
+  /*
+  Instead of calling functions matching the above spec,
+  Emitter to emit on('event_name', ...args, err?) is called,
+  where event_name is the return of the function, and
+  ...args is exactly the rest of this array:
+  */
+  | ConciseEmissionsArg;
+class SyncHandler {
+  lastActive?: ReturnType<typeof Date.now>;
+  timeout: number;
+  timeout_track?: ReturnType<typeof setTimeout>;
+  emissions: SyncHandlerEmissions;
+
+  static emissionsArgToEmissions(
+    emissions: ConciseEmissionsArg
+  ): SyncHandlerEmissions {
+    // These are async so that setupExampleData
+    // can (very ugly in terms of code, but this is quite a
+    // concise way to do it, TODO: Refactor to be better) do the setupExampleData()
+    // when the event name conversion is being done (Event name conversion
+    // *just so happens* to run every time an active/paused/error
+    // is called.)
+    return {
+      active: async () =>
+        emissions[0].emit(await emissions[1]('active'), ...emissions.slice(2)),
+      paused: async err =>
+        emissions[0].emit(
+          await emissions[1]('paused'),
+          ...emissions.slice(2),
+          err
+        ),
+      error: async err =>
+        emissions[0].emit(
+          await emissions[1]('error'),
+          ...emissions.slice(2),
+          err
+        ),
+    };
+  }
+
+  constructor(timeout: number, ...emissions: EmissionsArg) {
+    this.timeout = timeout;
+
+    const emissionArg = (
+      emissions: EmissionsArg
+    ): emissions is [SyncHandlerEmissions] => {
+      return (emissions as unknown[]).length === 1;
+    };
+
+    if (emissionArg(emissions)) {
+      this.emissions = emissions[0];
+    } else {
+      this.emissions = SyncHandler.emissionsArgToEmissions(emissions);
+    }
+
+    this.setTimeout().then(() => {
+      // After 2 seconds of no initial activity,
+      // Mark the data as stopped coming in
+      this.emissions.paused();
+    });
+  }
+  _inactiveCheckLoop() {
+    if (this.lastActive! + this.timeout - 20 <= Date.now()) {
+      // Timeout (minus wiggle room) (or more) has elapsed since being active
+      this.lastActive = undefined;
+      this.emissions.paused();
+    } else {
+      // Set a new timeout for the remaining time of the 2 seconds.
+      this.setTimeout(this.lastActive! + this.timeout - Date.now()).then(
+        this._inactiveCheckLoop.bind(this)
+      );
+    }
+  }
+
+  listen(
+    db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
+  ) {
+    db.on('paused', (err?: {}) => {
+      /*
+      This event fires when the replication is paused, either because a live
+      replication is waiting for changes, or replication has temporarily
+      failed, with err, and is attempting to resume.
+      */
+      this.lastActive = undefined;
+      this.clearTimeout();
+      this.emissions.paused(err);
+    });
+    db.on('change', () => {
+      /*
+      This event fires when the replication starts actively processing changes;
+      e.g. when it recovers from an error or new changes are available.
+      */
+
+      if (
+        this.lastActive !== undefined &&
+        this.lastActive! + this.timeout - 20 <= Date.now()
+      ) {
+        console.warn(
+          "someone didn't clear the lastActive when clearTimeout called"
+        );
+        this.lastActive = undefined;
+      }
+
+      if (this.lastActive === undefined) {
+        this.lastActive = Date.now();
+        this.clearTimeout();
+        this.emissions.active();
+
+        // After 2 seconds of no more 'active' events,
+        // assume it's up to date
+        // (Otherwise, if it's still active, keep checking until it's not)
+        this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+      } else {
+        this.lastActive = Date.now();
+      }
+    });
+    db.on('error', err => {
+      /*
+      This event is fired when the replication is stopped due to an
+      unrecoverable failure.
+      */
+      // Prevent any further events
+      this.lastActive = undefined;
+      this.clearTimeout();
+      this.emissions.error(err);
+    });
+  }
+  clearTimeout() {
+    if (this.timeout_track !== undefined) {
+      clearTimeout(this.timeout_track);
+      this.timeout_track = undefined;
+    }
+  }
+  setTimeout(time?: number): Promise<void> {
+    return new Promise(resolve => {
+      this.timeout_track = setTimeout(() => {
+        resolve();
+      }, time || this.timeout);
+    });
+  }
+}
+
 interface DirectoryEmitter extends EventEmitter {
   on(
     event: 'project_meta_paused',
@@ -779,33 +942,19 @@ async function process_directory(
     info: directory_connection_info,
   };
 
-  let waiting = true;
-  const synced_callback = () => {
-    waiting = false;
-    if (USE_REAL_DATA) {
-      initializeEvents.emit('directory_paused', listings);
-    } else {
-      setupExampleDirectory(directory_db.local).then(() => {
-        initializeEvents.emit('directory_paused', listings);
-      });
-    }
-  };
-  directory_connection.on('error', synced_callback);
-  directory_connection.on('paused', synced_callback);
-  directory_connection.on('active', () => {
-    waiting = true;
-    initializeEvents.emit('directory_active', listings);
-  });
-  setTimeout(() => {
-    if (waiting) {
-      // Timeout error when still waiting here
-      console.error(
-        'Timed out waiting for directory connection: ',
-        directory_connection
-      );
-      synced_callback();
-    }
-  }, DIRECTORY_TIMEOUT);
+  const sync_handler = new SyncHandler(
+    DIRECTORY_TIMEOUT,
+    initializeEvents,
+    async evt_name => {
+      if (evt_name === 'error') evt_name = 'paused';
+      if (evt_name === 'paused' && !USE_REAL_DATA) {
+        await setupExampleDirectory(directory_db.local);
+      }
+      return 'directory_' + evt_name;
+    },
+    listings
+  );
+  sync_handler.listen(directory_connection);
 }
 
 function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
@@ -901,53 +1050,23 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     return;
   }
 
-  let waiting = true;
-  const synced_callback = () => {
-    waiting = false;
-    if (USE_REAL_DATA) {
-      initializeEvents.emit(
-        'listing_paused',
-        listing_object,
-        active_projects,
-        local_people_db,
-        local_projects_db,
-        projects_connection
-      );
-    } else {
-      setupExampleListing(listing_object._id, local_projects_db.local).then(
-        () => {
-          initializeEvents.emit(
-            'listing_paused',
-            listing_object,
-            active_projects,
-            local_people_db,
-            local_projects_db,
-            projects_connection
-          );
-        }
-      );
-    }
-  };
-  projects_db.remote.connection.on('paused', synced_callback);
-  projects_db.remote.connection.on('error', synced_callback);
-  projects_db.remote.connection.on('active', () => {
-    waiting = true;
-    initializeEvents.emit(
-      'listing_active',
-      listing_object,
-      active_projects,
-      local_people_db,
-      local_projects_db,
-      projects_connection
-    );
-  });
-  setTimeout(() => {
-    if (waiting) {
-      // Timeout error when still waiting here
-      console.error('Timed out waiting for projects db ', projects_db.remote);
-      synced_callback();
-    }
-  }, LISTINGS_TIMEOUT);
+  const sync_handler = new SyncHandler(
+    LISTINGS_TIMEOUT,
+    initializeEvents,
+    async evt_name => {
+      if (evt_name === 'error') evt_name = 'paused';
+      if (evt_name === 'paused' && !USE_REAL_DATA) {
+        await setupExampleListing(listing_object._id, local_projects_db.local);
+      }
+      return 'listing_' + evt_name;
+    },
+    listing_object,
+    active_projects,
+    local_people_db,
+    local_projects_db,
+    projects_connection
+  );
+  sync_handler.listen(projects_db.remote.connection);
 }
 
 function process_projects(
@@ -1040,93 +1159,43 @@ async function process_project(
   };
 
   if (meta_is_fresh) {
-    let waiting = true;
-    const synced_callback = () => {
-      waiting = false;
-      if (USE_REAL_DATA) {
-        initializeEvents.emit(
-          'project_meta_paused',
-          listing,
-          active_project,
-          project_object,
-          meta_db
-        );
-      } else {
-        setupExampleForm(active_project._id, meta_db.local).then(() => {
-          initializeEvents.emit(
-            'project_meta_paused',
-            listing,
-            active_project,
-            project_object,
-            meta_db
-          );
-        });
-      }
-    };
-    meta_db.remote.connection.on('paused', synced_callback);
-    meta_db.remote.connection.on('error', synced_callback);
-    meta_db.remote.connection.on('active', () => {
-      waiting = true;
-      initializeEvents.emit(
-        'project_meta_active',
-        listing,
-        active_project,
-        project_object,
-        meta_db
-      );
-    });
-    setTimeout(() => {
-      if (waiting) {
-        // Timeout error when still waiting here
-        console.error('Timed out waiting for metadata db: ', meta_db.remote);
-        synced_callback();
-      }
-    }, PROJECT_TIMEOUT);
+    const meta_sync_handler = new SyncHandler(
+      PROJECT_TIMEOUT,
+      initializeEvents,
+      async evt_name => {
+        if (evt_name === 'error') evt_name = 'paused';
+        if (evt_name === 'paused' && !USE_REAL_DATA) {
+          await setupExampleForm(active_project._id, data_db.local);
+        }
+        // Convert SyncHandler's name for events to InitializeEvents
+        return 'project_meta_' + evt_name;
+      },
+      listing,
+      active_project,
+      project_object,
+      meta_db
+    );
+    meta_sync_handler.listen(meta_db.remote.connection);
   }
 
   if (data_is_fresh) {
-    let waiting = true;
-    const synced_callback = () => {
-      waiting = false;
-      if (USE_REAL_DATA) {
-        initializeEvents.emit(
-          'project_data_paused',
-          listing,
-          active_project,
-          project_object,
-          data_db
-        );
-      } else {
-        setupExampleData(active_project._id, data_db.local).then(() => {
-          initializeEvents.emit(
-            'project_data_paused',
-            listing,
-            active_project,
-            project_object,
-            data_db
-          );
-        });
-      }
-    };
-    data_db.remote.connection.on('paused', synced_callback);
-    data_db.remote.connection.on('error', synced_callback);
-    data_db.remote.connection.on('active', () => {
-      waiting = true;
-      initializeEvents.emit(
-        'project_data_active',
-        listing,
-        active_project,
-        project_object,
-        data_db
-      );
-    });
-    setTimeout(() => {
-      if (waiting) {
-        // Timeout error when still waiting here
-        console.error('Timed out waiting for data db: ', data_db.remote);
-        synced_callback();
-      }
-    }, PROJECT_TIMEOUT);
+    const data_sync_handler = new SyncHandler(
+      PROJECT_TIMEOUT,
+      initializeEvents,
+      async evt_name => {
+        if (evt_name === 'error') evt_name = 'paused';
+        if (evt_name === 'paused' && !USE_REAL_DATA) {
+          await setupExampleData(active_project._id, data_db.local);
+        }
+        // Convert SyncHandler's name for events to InitializeEvents
+        return 'project_data_' + evt_name;
+      },
+      listing,
+      active_project,
+      project_object,
+      data_db
+    );
+    data_sync_handler.listen(data_db.remote.connection);
   }
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
