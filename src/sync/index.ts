@@ -23,6 +23,7 @@ const DATA_DBNAME_PREFIX = 'data-';
 const DIRECTORY_TIMEOUT = 1000;
 const LISTINGS_TIMEOUT = 2000;
 const PROJECT_TIMEOUT = 3000;
+
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   remote: null | LocalDBRemote<Content>;
@@ -45,10 +46,18 @@ export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<DataModel.ActiveDo
 export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsObject>;
 
 /**
+ * Configure local pouchdb settings; note that this applies to *ALL* local
+ * databases (remote ones are handled separately), so don't add db-specific
+ * logic to this
+ */
+
+const local_pouch_options = {};
+
+/**
  * Directory: All (public, anyways) Faims instances
  */
 export const directory_db: LocalDB<DataModel.ListingsObject> = {
-  local: new PouchDB('directory'),
+  local: new PouchDB('directory', local_pouch_options),
   remote: null,
 };
 
@@ -72,7 +81,10 @@ let default_instance: null | DataModel.NonNullListingsObject = null; //Set to di
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
  *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
  */
-export const active_db = new PouchDB<DataModel.ActiveDoc>('active');
+export const active_db = new PouchDB<DataModel.ActiveDoc>(
+  'active',
+  local_pouch_options
+);
 
 /**
  * Each listing has a Projects database and Users/People DBs
@@ -117,6 +129,7 @@ export function materializeConnectionInfo(
 function ConnectionInfo_create_pouch<Content extends {}>(
   connection_info: DataModel.ConnectionInfo
 ): PouchDB.Database<Content> {
+  const pouch_options = {};
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +
@@ -124,7 +137,8 @@ function ConnectionInfo_create_pouch<Content extends {}>(
       ':' +
       encodeURIComponent(connection_info.port) +
       '/' +
-      encodeURIComponent(connection_info.db_name)
+      encodeURIComponent(connection_info.db_name),
+    pouch_options
   );
 }
 
@@ -145,7 +159,10 @@ function ensure_local_db<Content extends {}>(
     return [
       true,
       (global_dbs[local_db_id] = {
-        local: new PouchDB(prefix + POUCH_SEPARATOR + local_db_id),
+        local: new PouchDB(
+          prefix + POUCH_SEPARATOR + local_db_id,
+          local_pouch_options
+        ),
         remote: null,
       }),
     ];
