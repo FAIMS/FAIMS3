@@ -61,34 +61,9 @@ jobs:
     - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
     # setup basic db content
-    - run: curl -X PUT $COUCHDB_CURL_HOST/directory/default -d '{
-        "_id": "default",
-        "name": "Default instance",
-        "description": "Default FAIMS instance",
-        "people_db": {
-            "lan": true,
-            "db_name": "people"
-        }, "projects_db": {
-            "lan": true,
-            "db_name": "projects"
-        }
-    }'
-    - run: curl -X PUT $COUCHDB_CURL_HOST/people
-    - run: curl -X PUT $COUCHDB_CURL_HOST/projects/test_proj -d '{
-        "_id": "test_proj",
-        "name": "Test Project",
-        "metadata_db": {
-          "lan": true,
-          "db_name": "metadata-test_proj"
-        },
-        "data_db": {
-          "lan": true,
-          "db_name": "data-test_proj"
-        }
-    }'
-    # Not including actual metadata for now, tests shouldn't need any yet
-    - run: curl -X PUT $COUCHDB_CURL_HOST/metadata-test_proj
-    - run: curl -X PUT $COUCHDB_CURL_HOST/data-test_proj
+    - run: |
+      source bin/couchdb_initialisation.sh
+      initialise_couchdb http localhost 5984 $COUCHDB_USER $COUCHDB_PASSWORD
     # do the npm stuff
     - run: npm ci
     - run: npm run integration
