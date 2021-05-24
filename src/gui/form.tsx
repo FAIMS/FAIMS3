@@ -209,7 +209,9 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
     getCurrentUserId(this.props.activeProjectID)
       .then(userid => {
         console.assert(values['_id'] === this.obsid);
+        const current_time = new Date();
         delete values['_id'];
+
         const doc = {
           _id: this.obsid,
           _rev: undefined as undefined | string,
@@ -218,7 +220,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
           created_by: userid, // get this from the form
           updated_by: userid,
           created: '1990-01-01', // FIXME
-          updated: '1990-01-01', // FIXME
+          updated: current_time.toISOString(),
         };
         if (this.props.observation) {
           doc._rev = this.props.observation._rev;
