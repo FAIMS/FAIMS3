@@ -65,9 +65,12 @@ test('run initialization', async () => {
   expect(metadata_dbs).toStrictEqual({});
   expect(data_dbs).toStrictEqual({});
   await initialize();
+  console.error('projects_dbs', projects_dbs);
+  console.error('people_dbs', people_dbs);
+  console.error('metadata_dbs', metadata_dbs);
+  console.error('data_dbs', data_dbs);
   expect(projects_dbs).not.toStrictEqual({});
   expect(people_dbs).not.toStrictEqual({});
-  console.error(metadata_dbs);
-  expect(metadata_dbs).not.toStrictEqual({});
+  //expect(metadata_dbs).not.toStrictEqual({});
   //expect(data_dbs).not.toStrictEqual({});
 });
