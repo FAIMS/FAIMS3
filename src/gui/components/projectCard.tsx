@@ -24,7 +24,7 @@ import ObservationsTable from './observationsTable';
 
 type ProjectCardProps = {
   project: ProjectObject | ProjectInformation;
-  listing_id_project_id: string;
+  listing_id_project_id?: string;
   showObservations: boolean;
 };
 
@@ -70,7 +70,7 @@ export default function ProjectCard(props: ProjectCardProps) {
 
   const bull = <span className={classes.bullet}>•</span>;
   const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
-  const project_url = ROUTES.PROJECT + listing_id_project_id;
+  const project_url = ROUTES.PROJECT + (listing_id_project_id || 'dummy');
 
   const getShare = async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

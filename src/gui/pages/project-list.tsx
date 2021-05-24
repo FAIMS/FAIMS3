@@ -66,7 +66,6 @@ export default function ProjectList() {
                         description: 'dummy',
                       }}
                       showObservations={true}
-                      listing_id_project_id={'dummy'}
                     />
                   </Skeleton>
                 </Grid>

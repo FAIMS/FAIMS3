@@ -19,11 +19,7 @@ export default function Project() {
           <Typography color="textPrimary">{project_info.name}</Typography>
         </Breadcrumbs>
       </Box>
-      <ProjectCard
-        project={project_info}
-        showObservations={true}
-        listing_id_project_id={'dummy'}
-      />
+      <ProjectCard project={project_info} showObservations={true} />
     </Container>
   ) : (
     <Redirect to="/404" />

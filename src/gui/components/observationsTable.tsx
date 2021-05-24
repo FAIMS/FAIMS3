@@ -11,7 +11,7 @@ import {getObservationList} from '../../databaseAccess';
 import {initializeEvents} from '../../sync';
 
 type ObservationsTableProps = {
-  listing_id_project_id: string;
+  listing_id_project_id?: string;
   restrictRows: number;
 };
 
@@ -32,7 +32,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         <Link
           component={RouterLink}
           to={ROUTES.getObservationRoute(
-            listing_id_project_id,
+            listing_id_project_id || 'dummy',
             (params.getValue('_id') || '').toString()
           )}
         >
@@ -54,7 +54,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
           variant="outlined"
           component={RouterLink}
           to={ROUTES.getObservationRoute(
-            listing_id_project_id,
+            listing_id_project_id || 'dummy',
             (params.getValue('_id') || '').toString()
           )}
         >
@@ -65,16 +65,22 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     },
   ];
   useEffect(() => {
+    if (listing_id_project_id === undefined) return; //dummy project
     const trigger = () => {
-      getObservationList(listing_id_project_id).then(newObservationList => {
-        setLoading(false);
-        Object.assign(pouchObservationList, newObservationList);
-        setRows(Object.values(pouchObservationList));
-      });
+      getObservationList(listing_id_project_id)
+        .then(newObservationList => {
+          setLoading(false);
+          Object.assign(pouchObservationList, newObservationList);
+          setRows(Object.values(pouchObservationList));
+        })
+        .catch((err) => {
+          // TODO: Set global error
+          console.error(err);
+        });
     };
     initializeEvents.on('project_data_paused', trigger);
     trigger();
-  }, [pouchObservationList]);
+  }, []);
 
   return (
     <div>
