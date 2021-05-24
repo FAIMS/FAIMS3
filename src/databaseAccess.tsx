@@ -5,6 +5,7 @@ import {
   ProjectInformation,
   ProjectsList,
   ProjectObject,
+  ActiveDoc,
 } from './datamodel';
 import {listFAIMSData} from './dataStorage';
 import {
@@ -84,23 +85,33 @@ add_initial_listener(initializeEvents => {
   });
 });
 
+/**
+ * Registers a callback to be run whenever observationList is updated.
+ * If the observationList already updated before this function is called, the callback is also run immediately.
+ *
+ * @param listing_id_project_id listing_id & project_id (active doc ._id) to get observations of
+ * @param callback Run whenever the list of observations might have changed, called with the list.
+ * @returns 'Destructor' that removes the listener that this function added.
+ */
 export function listenObservationsList(
   listing_id_project_id: string,
   callback: (observationList: ObservationList) => unknown
-) {
+): () => void {
   const runCallback = () =>
     getObservationList(listing_id_project_id)
       .then(callback)
       .catch(err => console.error('Uncaught observation list error'));
 
-  initializeEvents.on(
-    'project_data_paused',
-    (listing, active, project, data) => {
-      if (active._id === listing_id_project_id) runCallback();
-    }
-  );
+  const listener_func = (listing: unknown, active: ActiveDoc) => {
+    if (active._id === listing_id_project_id) runCallback();
+  };
+
+  initializeEvents.on('project_data_paused', listener_func);
 
   if (observationsUpdated[listing_id_project_id]) runCallback();
+
+  return () =>
+    initializeEvents.removeListener('project_data_paused', listener_func);
 }
 
 export function updateObservation(observation_id: string) {}

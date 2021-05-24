@@ -7,7 +7,7 @@ import Link from '@material-ui/core/Link';
 
 import {Observation} from '../../datamodel';
 import * as ROUTES from '../../constants/routes';
-import {getObservationList} from '../../databaseAccess';
+import {getObservationList, listenObservationsList} from '../../databaseAccess';
 import {initializeEvents} from '../../sync';
 
 type ObservationsTableProps = {
@@ -66,20 +66,15 @@ export default function ObservationsTable(props: ObservationsTableProps) {
   ];
   useEffect(() => {
     if (listing_id_project_id === undefined) return; //dummy project
-    const trigger = () => {
-      getObservationList(listing_id_project_id)
-        .then(newObservationList => {
-          setLoading(false);
-          Object.assign(pouchObservationList, newObservationList);
-          setRows(Object.values(pouchObservationList));
-        })
-        .catch((err) => {
-          // TODO: Set global error
-          console.error(err);
-        });
-    };
-    initializeEvents.on('project_data_paused', trigger);
-    trigger();
+    const destroyListener = listenObservationsList(
+      listing_id_project_id,
+      newObservationList => {
+        setLoading(false);
+        Object.assign(pouchObservationList, newObservationList);
+        setRows(Object.values(pouchObservationList));
+      }
+    );
+    return destroyListener; // destroyListener called when this component unmounts.
   }, []);
 
   return (
