@@ -1166,7 +1166,7 @@ async function process_project(
       async evt_name => {
         if (evt_name === 'error') evt_name = 'paused';
         if (evt_name === 'paused' && !USE_REAL_DATA) {
-          await setupExampleForm(active_project._id, data_db.local);
+          await setupExampleForm(active_project._id, meta_db.local);
         }
         // Convert SyncHandler's name for events to InitializeEvents
         return 'project_meta_' + evt_name;
