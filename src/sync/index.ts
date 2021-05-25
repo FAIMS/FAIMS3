@@ -131,9 +131,18 @@ export function materializeConnectionInfo(
  * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
  */
 function ConnectionInfo_create_pouch<Content extends {}>(
-  connection_info: DataModel.ConnectionInfo
+  connection_info: DataModel.ConnectionInfo,
+  username: string | null = null,
+  password: string | null = null,
+  skip_setup = false
 ): PouchDB.Database<Content> {
-  const pouch_options = {};
+  const pouch_options: any = {skip_setup: skip_setup};
+  if (username !== null && password !== null) {
+    pouch_options.auth = {
+      username: username,
+      password: password,
+    };
+  }
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +
