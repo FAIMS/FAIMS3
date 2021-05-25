@@ -7,6 +7,7 @@ export const PROJECT_LIST = '/projects';
 export const PROJECT = '/projects/';
 export const OBSERVATION_LIST = '/observations';
 export const OBSERVATION = '/observations/';
+export const OBSERVATION_CREATE = '/new-observation';
 export const DUMMY = '/dummy';
 
 export function getObservationRoute(

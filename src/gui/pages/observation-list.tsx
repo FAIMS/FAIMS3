@@ -66,7 +66,7 @@ export default function ObservationList() {
       },
     });
   }, []);
-  const pouchObservationList = {};
+  // const pouchObservationList = {};
 
   return (
     <Container maxWidth="lg">

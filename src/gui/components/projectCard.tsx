@@ -7,9 +7,12 @@ import {
   CardContent,
   CardHeader,
   Button,
-  IconButton,
   Typography,
   CircularProgress,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
 } from '@material-ui/core';
 import {EmailShareButton} from 'react-share';
 import MailOutlineIcon from '@material-ui/icons/MailOutline';
@@ -19,13 +22,13 @@ import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation, ProjectObject} from '../../datamodel';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
 import ObservationsTable from './observationsTable';
 
 type ProjectCardProps = {
   project: ProjectObject | ProjectInformation;
   listing_id_project_id: string;
   showObservations: boolean;
+  dashboard: boolean;
 };
 
 const useStyles = makeStyles(theme => ({
@@ -50,7 +53,7 @@ const useStyles = makeStyles(theme => ({
   avatar: {
     borderRadius: 8,
     // backgroundColor: red[500],
-    backgroundColor: theme.palette.secondary.light,
+    backgroundColor: theme.palette.primary.light,
   },
   overline: {
     fontSize: 11,
@@ -61,10 +64,14 @@ const useStyles = makeStyles(theme => ({
     fontSize: 14,
     fontWeight: 500,
   },
+  status: {
+    display: 'inline',
+    // fontSize: '0.8rem',
+  },
 }));
 
 export default function ProjectCard(props: ProjectCardProps) {
-  const {project, listing_id_project_id, showObservations} = props;
+  const {project, listing_id_project_id, showObservations, dashboard} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
 
@@ -92,6 +99,45 @@ export default function ProjectCard(props: ProjectCardProps) {
     <React.Fragment>
       {loading ? (
         <CircularProgress size={12} thickness={4} />
+      ) : dashboard ? (
+        <List style={{padding: 0}}>
+          <ListItem
+            button
+            alignItems="flex-start"
+            component={RouterLink}
+            to={project_url}
+          >
+            <ListItemAvatar>
+              <Avatar aria-label={project.name} className={classes.avatar}>
+                {project.name.charAt(0)}
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={project.name}
+              secondary={
+                <React.Fragment>
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    className={classes.status}
+                    color="textSecondary"
+                  >
+                    Last updated {project.last_updated}
+                  </Typography>
+                  <br />
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    className={classes.status}
+                    color="textPrimary"
+                  >
+                    {project.description}
+                  </Typography>
+                </React.Fragment>
+              }
+            />
+          </ListItem>
+        </List>
       ) : (
         <Card>
           <CardHeader
@@ -101,17 +147,26 @@ export default function ProjectCard(props: ProjectCardProps) {
                 {project.name.charAt(0)}
               </Avatar>
             }
-            action={
-              <IconButton aria-label="settings">
-                <MoreVertIcon />
-              </IconButton>
-            }
+            // action={
+            //   <IconButton aria-label="settings">
+            //     <MoreVertIcon />
+            //   </IconButton>
+            // }
             title={project.name}
             subheader={project.last_updated}
           />
           <CardContent>
             <Typography variant="body2" color="textSecondary" component="p">
               {project.description}
+            </Typography>
+
+            <Typography
+              className={classes.pos}
+              color="textSecondary"
+              variant="subtitle2"
+            >
+              10 team members {bull} status: {project.status} {bull} Last
+              updated {project.last_updated}
             </Typography>
 
             {showObservations ? (
@@ -124,52 +179,47 @@ export default function ProjectCard(props: ProjectCardProps) {
             ) : (
               ''
             )}
-            <Typography
-              className={classes.pos}
-              color="textSecondary"
-              variant="subtitle2"
-              style={{marginTop: '20px'}}
-            >
-              10 team members {bull} status: {project.status} {bull} Last
-              updated {project.last_updated}
-            </Typography>
           </CardContent>
-          <CardActions>
-            <Button
-              size="small"
-              color="primary"
-              to={project_url}
-              component={RouterLink}
-            >
-              View
-            </Button>
-            {webShare ? (
-              <Button size="small" color="primary" onClick={getShare}>
-                Share
-              </Button>
-            ) : (
-              <EmailShareButton
-                url={project_url}
-                subject={'FAIMS Project: ' + project.name}
-                body={"I'd like to share this FAIMS project with you "}
-                resetButtonStyle={false}
-                className={
-                  'MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-textSizeSmall MuiButton-sizeSmall'
-                }
+          {dashboard ? (
+            ''
+          ) : (
+            <CardActions>
+              <Button
+                size="small"
+                color="primary"
+                to={project_url}
+                component={RouterLink}
               >
-                <span className="MuiButton-label">
-                  <span className="MuiButton-startIcon MuiButton-iconSizeSmall">
-                    <MailOutlineIcon
-                      className="MuiSvgIcon-root"
-                      viewBox={'0 0 24 24'}
-                    />
-                  </span>
+                View
+              </Button>
+              {webShare ? (
+                <Button size="small" color="primary" onClick={getShare}>
                   Share
-                </span>
-                <span className="MuiTouchRipple-root" />
-              </EmailShareButton>
-            )}
-          </CardActions>
+                </Button>
+              ) : (
+                <EmailShareButton
+                  url={project_url}
+                  subject={'FAIMS Project: ' + project.name}
+                  body={"I'd like to share this FAIMS project with you "}
+                  resetButtonStyle={false}
+                  className={
+                    'MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-textSizeSmall MuiButton-sizeSmall'
+                  }
+                >
+                  <span className="MuiButton-label">
+                    <span className="MuiButton-startIcon MuiButton-iconSizeSmall">
+                      <MailOutlineIcon
+                        className="MuiSvgIcon-root"
+                        viewBox={'0 0 24 24'}
+                      />
+                    </span>
+                    Share
+                  </span>
+                  <span className="MuiTouchRipple-root" />
+                </EmailShareButton>
+              )}
+            </CardActions>
+          )}
         </Card>
       )}
     </React.Fragment>
@@ -177,4 +227,5 @@ export default function ProjectCard(props: ProjectCardProps) {
 }
 ProjectCard.defaultProps = {
   showObservations: false,
+  dashboard: false,
 };

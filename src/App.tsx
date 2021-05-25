@@ -13,32 +13,20 @@ import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
 import ObservationList from './gui/pages/observation-list';
 import Observation from './gui/pages/observation';
+import ObservationCreate from './gui/pages/observation-create';
 import NotFound404 from './gui/pages/404';
 import ProjectNavTabs from './gui/projectNav';
 import {StateProvider} from './store';
 
-import {MuiThemeProvider, createMuiTheme} from '@material-ui/core/styles';
+import {MuiThemeProvider} from '@material-ui/core/styles';
+
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@material-ui/core';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
-import {Shadows} from '@material-ui/core/styles/shadows';
+
 import {createdProjects} from './sync';
 import {ProjectsList} from './datamodel';
-
-const theme = createMuiTheme({
-  palette: {
-    primary: {
-      main: '#1B3E93',
-    },
-    secondary: {
-      main: '#F68E1E',
-    },
-  },
-  typography: {
-    fontFamily: "'Open Sans', sans-serif",
-  },
-  shadows: Array(25).fill('none') as Shadows,
-});
+import theme from './gui/theme';
 
 type AppProps = {};
 
@@ -78,6 +66,11 @@ export class App extends React.Component<AppProps, AppState> {
               />
 
               <Route exact path={ROUTES.HOME} component={Home} />
+              <Route
+                exact
+                path={ROUTES.OBSERVATION_LIST}
+                component={ObservationList}
+              />
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
               <Route
                 exact
@@ -86,18 +79,22 @@ export class App extends React.Component<AppProps, AppState> {
               />
               <Route
                 exact
-                path={ROUTES.OBSERVATION_LIST}
-                component={ObservationList}
+                path={
+                  ROUTES.PROJECT +
+                  ':listing_id_project_id' +
+                  ROUTES.OBSERVATION +
+                  ':observation_id'
+                }
+                component={Observation}
               />
               <Route
                 exact
                 path={
                   ROUTES.PROJECT +
-                  ':listing_id_project_id(\\d+)' +
-                  ROUTES.OBSERVATION +
-                  ':observation_id(\\d+)'
+                  ':listing_id_project_id' +
+                  ROUTES.OBSERVATION_CREATE
                 }
-                component={Observation}
+                component={ObservationCreate}
               />
               <Route
                 exact

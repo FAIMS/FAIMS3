@@ -32,7 +32,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
 import {createdProjects} from '../../sync';
-import SystemAlert from "./alert";
+import SystemAlert from './alert';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -216,7 +216,7 @@ export default function Navbar() {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap style={{flex: 1}}>
+            <Typography variant="h4" noWrap style={{flex: 1}}>
               FAIMS3{' '}
               {isSyncing ? (
                 <CircularProgress
@@ -334,7 +334,7 @@ export default function Navbar() {
           </List>
         </Drawer>
       </div>
-      <SystemAlert/>
+      <SystemAlert />
     </React.Fragment>
   );
 }
