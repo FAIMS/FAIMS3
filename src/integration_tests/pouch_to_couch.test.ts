@@ -60,7 +60,7 @@ test('send to couch', async () => {
   expect(response.ok).toBe(true);
 });
 
-test('run initialization', async () => {
+test('run initialization', async done => {
   expect(projects_dbs).toStrictEqual({});
   expect(people_dbs).toStrictEqual({});
   expect(metadata_dbs).toStrictEqual({});
