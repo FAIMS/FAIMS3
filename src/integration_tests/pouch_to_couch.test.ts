@@ -9,6 +9,7 @@ import {
   people_dbs,
   data_dbs,
   metadata_dbs,
+  directory_db,
 } from '../sync';
 
 const COUCHDB_USER = String(process.env.COUCHDB_USER);
@@ -65,6 +66,8 @@ test('run initialization', async () => {
   expect(metadata_dbs).toStrictEqual({});
   expect(data_dbs).toStrictEqual({});
   await initialize();
+  const docs = await directory_db.local.allDocs();
+  console.error('directory', docs);
   console.error('projects_dbs', projects_dbs);
   console.error('people_dbs', people_dbs);
   console.error('metadata_dbs', metadata_dbs);
