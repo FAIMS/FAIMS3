@@ -24,7 +24,7 @@ import ObservationsTable from './observationsTable';
 import MetadataRenderer from './metadataRenderer';
 
 type ProjectCardProps = {
-  project: ProjectObject | ProjectInformation;
+  project: ProjectObject;
   listing_id_project_id?: string;
   showObservations: boolean;
 };
@@ -134,13 +134,13 @@ export default function ProjectCard(props: ProjectCardProps) {
               10 team members {bull} status: {project.status} {bull} Last
               updated {project.last_updated} {bull}
               <MetadataRenderer
-                project_id={project.project_id}
+                project_id={project._id}
                 metadata_key={'project_lead'}
                 metadata_label={'Project Lead'}
               />{' '}
               {bull}
               <MetadataRenderer
-                project_id={project.project_id}
+                project_id={project._id}
                 metadata_key={'lead_institution'}
                 metadata_label={'Lead Institution'}
               />
