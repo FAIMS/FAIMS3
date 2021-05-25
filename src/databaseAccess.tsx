@@ -114,6 +114,8 @@ export function listenObservationsList(
     initializeEvents.removeListener('project_data_paused', listener_func);
 }
 
+export function listenObservation(observation_id: string) {}
+
 export function updateObservation(observation_id: string) {}
 
 export function removeObservation(observation_id: string) {}

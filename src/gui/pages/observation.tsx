@@ -15,8 +15,8 @@ import {NavLink, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 
 export default function Observation() {
-  const {project_id, observation_id} = useParams<{
-    project_id: string;
+  const {listing_id_project_id, observation_id} = useParams<{
+    listing_id_project_id: string;
     observation_id: string;
   }>();
   const [value, setValue] = React.useState('1');
@@ -31,12 +31,10 @@ export default function Observation() {
         <Breadcrumbs aria-label="breadcrumb">
           <NavLink to={ROUTES.INDEX}>Index</NavLink>
           <NavLink to={ROUTES.PROJECT_LIST}>Projects</NavLink>
-          <NavLink to={ROUTES.PROJECT + project_id}>
-            Project {project_id}
+          <NavLink to={ROUTES.PROJECT + listing_id_project_id}>
+            {listing_id_project_id}
           </NavLink>
-          <Typography color="textPrimary">
-            Observation {observation_id}
-          </Typography>
+          <Typography color="textPrimary">{observation_id}</Typography>
         </Breadcrumbs>
       </Box>
       <Paper square>

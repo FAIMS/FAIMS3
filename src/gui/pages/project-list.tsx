@@ -65,7 +65,10 @@ export default function ProjectList() {
                         name: 'dummy',
                         description: 'dummy',
                       }}
+                      listing_id_project_id={'dummy'}
                       showObservations={true}
+                      listView={true}
+                      dashboard={false}
                     />
                   </Skeleton>
                 </Grid>
@@ -82,7 +85,9 @@ export default function ProjectList() {
                       <ProjectCard
                         project={pouchProject.project}
                         listing_id_project_id={listing_id_project_id}
+                        listView={true}
                         showObservations={true}
+                        dashboard={false}
                       />
                     </Grid>
                   );

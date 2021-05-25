@@ -3,33 +3,36 @@ import {
   Avatar,
   Box,
   Card,
+  Chip,
   CardActions,
   CardContent,
   CardHeader,
-  Button,
+  // Button,
   Typography,
   CircularProgress,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
+  Link,
 } from '@material-ui/core';
-import {EmailShareButton} from 'react-share';
-import MailOutlineIcon from '@material-ui/icons/MailOutline';
-import {Plugins} from '@capacitor/core';
-const {Share} = Plugins;
+// import {EmailShareButton} from 'react-share';
+// import MailOutlineIcon from '@material-ui/icons/MailOutline';
+// import {Plugins} from '@capacitor/core';
+// const {Share} = Plugins;
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectInformation, ProjectObject} from '../../datamodel';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
+import {ProjectObject} from '../../datamodel';
 import ObservationsTable from './observationsTable';
 import MetadataRenderer from './metadataRenderer';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 type ProjectCardProps = {
   project: ProjectObject;
-  listing_id_project_id?: string;
+  listing_id_project_id: string;
   showObservations: boolean;
+  listView: boolean;
   dashboard: boolean;
 };
 
@@ -73,23 +76,27 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export default function ProjectCard(props: ProjectCardProps) {
-  const {project, listing_id_project_id, showObservations, dashboard} = props;
+  const {
+    project,
+    listing_id_project_id,
+    showObservations,
+    listView,
+    dashboard,
+  } = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
-
-  const bull = <span className={classes.bullet}>•</span>;
-  const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
+  // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
   const project_url = ROUTES.PROJECT + (listing_id_project_id || 'dummy');
 
-  const getShare = async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const shareRet = await Share.share({
-      title: 'FAIMS Project: ' + project.name,
-      text: 'Really awesome project you need to see right now',
-      url: project_url,
-      dialogTitle: 'Share ' + project.name,
-    });
-  };
+  // const getShare = async () => {
+  //   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  //   const shareRet = await Share.share({
+  //     title: 'FAIMS Project: ' + project.name,
+  //     text: 'Really awesome project you need to see right now',
+  //     url: project_url,
+  //     dialogTitle: 'Share ' + project.name,
+  //   });
+  // };
 
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
@@ -154,85 +161,132 @@ export default function ProjectCard(props: ProjectCardProps) {
             //     <MoreVertIcon />
             //   </IconButton>
             // }
-            title={project.name}
-            subheader={project.last_updated}
+            title={
+              <React.Fragment>
+                <b>{project.name}</b>&nbsp;
+                {listView ? (
+                  ''
+                ) : (
+                  <Typography
+                    variant={'caption'}
+                    style={{cursor: 'not-allowed'}}
+                    color={'textSecondary'}
+                  >
+                    <i>edit title</i>
+                  </Typography>
+                )}
+              </React.Fragment>
+            }
+            subheader={
+              'Created:' +
+              project.created +
+              ', last updated: ' +
+              project.last_updated
+            }
           />
-          <CardContent>
-            <Typography variant="body2" color="textSecondary" component="p">
-              {project.description}
-            </Typography>
-
-            <Typography
-              className={classes.pos}
-              color="textSecondary"
-              variant="subtitle2"
-            >
-              10 team members {bull} status: {project.status} {bull} Last
-              updated {project.last_updated} {bull}
+          <CardContent style={{paddingTop: 0}}>
+            <Box mb={2}>
+              <Chip
+                size={'small'}
+                label={'Active team members: 10'}
+                style={{marginRight: '5px'}}
+              />
+              <Chip
+                size={'small'}
+                label={'Status: active'}
+                style={{marginRight: '5px'}}
+              />
               <MetadataRenderer
                 project_id={project._id}
                 metadata_key={'project_lead'}
                 metadata_label={'Project Lead'}
               />{' '}
-              {bull}
               <MetadataRenderer
                 project_id={project._id}
                 metadata_key={'lead_institution'}
                 metadata_label={'Lead Institution'}
               />
+            </Box>
+
+            <Typography variant="body2" color="textPrimary" component="p">
+              {project.description}&nbsp;
+              {listView ? (
+                ''
+              ) : (
+                <Typography
+                  variant={'caption'}
+                  style={{cursor: 'not-allowed'}}
+                  color={'textSecondary'}
+                >
+                  <i>edit description</i>
+                </Typography>
+              )}
             </Typography>
 
             {showObservations ? (
-              <Box mt={1} mb={2}>
+              <Box mt={1}>
                 <ObservationsTable
                   listing_id_project_id={listing_id_project_id}
                   restrictRows={10}
+                  compact={listView}
                 />
               </Box>
             ) : (
               ''
             )}
           </CardContent>
-          {dashboard ? (
-            ''
-          ) : (
+          {listView ? (
             <CardActions>
-              <Button
-                size="small"
-                color="primary"
-                to={project_url}
-                component={RouterLink}
-              >
-                View
-              </Button>
-              {webShare ? (
-                <Button size="small" color="primary" onClick={getShare}>
-                  Share
-                </Button>
-              ) : (
-                <EmailShareButton
-                  url={project_url}
-                  subject={'FAIMS Project: ' + project.name}
-                  body={"I'd like to share this FAIMS project with you "}
-                  resetButtonStyle={false}
-                  className={
-                    'MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-textSizeSmall MuiButton-sizeSmall'
-                  }
+              <Box pl={1}>
+                <Link
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                  component={RouterLink}
+                  to={project_url}
                 >
-                  <span className="MuiButton-label">
-                    <span className="MuiButton-startIcon MuiButton-iconSizeSmall">
-                      <MailOutlineIcon
-                        className="MuiSvgIcon-root"
-                        viewBox={'0 0 24 24'}
-                      />
-                    </span>
-                    Share
-                  </span>
-                  <span className="MuiTouchRipple-root" />
-                </EmailShareButton>
-              )}
+                  View Project
+                  <ChevronRightIcon />
+                </Link>
+              </Box>
             </CardActions>
+          ) : (
+            ''
           )}
+          {/*{listView ? (*/}
+          {/*  ''*/}
+          {/*) : (*/}
+          {/*  <CardActions>*/}
+          {/*    {webShare ? (*/}
+          {/*      <Button size="small" color="primary" onClick={getShare}>*/}
+          {/*        Share*/}
+          {/*      </Button>*/}
+          {/*    ) : (*/}
+          {/*      <EmailShareButton*/}
+          {/*        url={project_url}*/}
+          {/*        subject={'FAIMS Project: ' + project.name}*/}
+          {/*        body={"I'd like to share this FAIMS project with you "}*/}
+          {/*        resetButtonStyle={false}*/}
+          {/*        className={*/}
+          {/*          'MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-textSizeSmall MuiButton-sizeSmall'*/}
+          {/*        }*/}
+          {/*      >*/}
+          {/*        <span className="MuiButton-label">*/}
+          {/*          <span className="MuiButton-startIcon MuiButton-iconSizeSmall">*/}
+          {/*            <MailOutlineIcon*/}
+          {/*              className="MuiSvgIcon-root"*/}
+          {/*              viewBox={'0 0 24 24'}*/}
+          {/*            />*/}
+          {/*          </span>*/}
+          {/*          Share*/}
+          {/*        </span>*/}
+          {/*        <span className="MuiTouchRipple-root" />*/}
+          {/*      </EmailShareButton>*/}
+          {/*    )}*/}
+          {/*  </CardActions>*/}
+          {/*)}*/}
         </Card>
       )}
     </React.Fragment>
@@ -240,5 +294,6 @@ export default function ProjectCard(props: ProjectCardProps) {
 }
 ProjectCard.defaultProps = {
   showObservations: false,
+  listView: false,
   dashboard: false,
 };

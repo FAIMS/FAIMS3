@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {CircularProgress} from '@material-ui/core';
+import {CircularProgress, Chip} from '@material-ui/core';
 import {getProjectMetadata} from '../../projectMetadata';
 
 type MetadataProps = {
@@ -23,13 +23,23 @@ export default function MetadataRenderer(props: MetadataProps) {
   });
 
   return (
-    <React.Fragment>
-      {metadata_label ? <span>{metadata_label}: </span> : <React.Fragment />}
-      {metadata_value ? (
-        <span>{metadata_value}</span>
-      ) : (
-        <CircularProgress size={12} thickness={4} />
-      )}
-    </React.Fragment>
+    <Chip
+      size={'small'}
+      style={{marginRight: '5px'}}
+      label={
+        <React.Fragment>
+          {metadata_label ? (
+            <span>{metadata_label}: </span>
+          ) : (
+            <React.Fragment />
+          )}
+          {metadata_value ? (
+            <span>{metadata_value}</span>
+          ) : (
+            <CircularProgress size={12} thickness={4} />
+          )}
+        </React.Fragment>
+      }
+    />
   );
 }
