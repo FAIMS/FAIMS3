@@ -29,6 +29,16 @@ export async function setProjectMetadata(
       is_attachment: false,
       metadata: metadata,
     };
+
+    try {
+      const existing_metaDoc = await projdb.get(
+        PROJECT_METADATA_PREFIX + '-' + metadata_key
+      );
+      doc._rev = existing_metaDoc._rev;
+    } catch (err) {
+      // Probably no existing UI info
+    }
+
     await projdb.put(doc);
   } catch (err) {
     console.warn(err);
