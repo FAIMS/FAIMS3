@@ -84,7 +84,15 @@ function directory_port(): number {
   }
 }
 
+function is_testing() {
+  const jest_worker_is_running = process.env.JEST_WORKER_ID !== undefined;
+  const jest_imported = typeof jest !== 'undefined';
+  const test_node_env = process.env.NODE_ENV === 'test';
+  return jest_worker_is_running || jest_imported || test_node_env;
+}
+
 export const USE_REAL_DATA = PROD_BUILD || use_real_data();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
+export const RUNNING_UNDER_TEST = is_testing();
