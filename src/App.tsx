@@ -93,9 +93,9 @@ export class App extends React.Component<AppProps, AppState> {
                 exact
                 path={
                   ROUTES.PROJECT +
-                  ':listing_id_project_id(\\d+)' +
+                  ':listing_id_project_id' +
                   ROUTES.OBSERVATION +
-                  ':observation_id(\\d+)'
+                  ':observation_id'
                 }
                 component={Observation}
               />

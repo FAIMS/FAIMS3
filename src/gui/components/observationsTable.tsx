@@ -7,18 +7,18 @@ import Link from '@material-ui/core/Link';
 
 import {Observation} from '../../datamodel';
 import * as ROUTES from '../../constants/routes';
-import {getObservationList} from '../../databaseAccess';
+import {getObservationList, listenObservationsList} from '../../databaseAccess';
+import {initializeEvents} from '../../sync';
 
 type ObservationsTableProps = {
-  listing_id_project_id: string;
+  listing_id_project_id?: string;
   restrictRows: number;
 };
 
 export default function ObservationsTable(props: ObservationsTableProps) {
   const {listing_id_project_id} = props;
   const [loading, setLoading] = useState(true);
-  const pouchObservationList = getObservationList(listing_id_project_id);
-  console.log(pouchObservationList);
+  const pouchObservationList = {};
   // const observation_list = globalState.state.observation_list[props.project_id];
   const [rows, setRows] = useState<Array<Observation>>([]);
   const columns: GridColDef[] = [
@@ -32,7 +32,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         <Link
           component={RouterLink}
           to={ROUTES.getObservationRoute(
-            listing_id_project_id,
+            listing_id_project_id || 'dummy',
             (params.getValue('_id') || '').toString()
           )}
         >
@@ -54,7 +54,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
           variant="outlined"
           component={RouterLink}
           to={ROUTES.getObservationRoute(
-            listing_id_project_id,
+            listing_id_project_id || 'dummy',
             (params.getValue('_id') || '').toString()
           )}
         >
@@ -65,14 +65,17 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     },
   ];
   useEffect(() => {
-    if (
-      typeof pouchObservationList !== 'undefined' &&
-      Object.keys(pouchObservationList).length > 0
-    ) {
-      setLoading(false);
-      setRows(Object.values(pouchObservationList));
-    }
-  }, [pouchObservationList]);
+    if (listing_id_project_id === undefined) return; //dummy project
+    const destroyListener = listenObservationsList(
+      listing_id_project_id,
+      newObservationList => {
+        setLoading(false);
+        Object.assign(pouchObservationList, newObservationList);
+        setRows(Object.values(pouchObservationList));
+      }
+    );
+    return destroyListener; // destroyListener called when this component unmounts.
+  }, []);
 
   return (
     <div>

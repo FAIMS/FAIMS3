@@ -67,7 +67,6 @@ export default function Home() {
                         description: 'dummy',
                         _id: 'dummy',
                       }}
-                      listing_id_project_id={'dummy'}
                     />
                   </Skeleton>
                 </Grid>

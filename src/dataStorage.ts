@@ -1,7 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from './sync';
-import {Observation, EncodedObservation} from './datamodel';
+import {Observation, EncodedObservation, ObservationList} from './datamodel';
 
 export interface DataListing {
   [_id: string]: string[];
@@ -118,6 +118,26 @@ export async function lookupFAIMSDataID(
     }
     console.warn(err);
     throw Error('failed to find data with id');
+  }
+}
+
+export async function listFAIMSData(
+  project_name: string,
+  options:
+    | PouchDB.Core.AllDocsWithKeyOptions
+    | PouchDB.Core.AllDocsWithKeysOptions
+    | PouchDB.Core.AllDocsWithinRangeOptions
+    | PouchDB.Core.AllDocsOptions = {}
+): Promise<ObservationList> {
+  const datadb = getDataDB(project_name);
+  try {
+    const all = await datadb.allDocs({...options, include_docs: true});
+    const retval: ObservationList = {};
+    all.rows.forEach(row => (retval[row.id] = convertFromDBToForm(row.doc!)!));
+    return retval;
+  } catch (err) {
+    console.warn(err);
+    throw Error('failed to get data');
   }
 }
 
