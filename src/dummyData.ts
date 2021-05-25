@@ -9,6 +9,7 @@ import {
   ProjectsList,
   ProjectUIModel,
 } from './datamodel';
+import {setProjectMetadata} from './projectMetadata';
 
 const example_datums: {
   [key: string]: ({_id: string} & EncodedObservation)[];
@@ -586,6 +587,11 @@ const example_active_db: ActiveDoc[] = [
   },
 ];
 
+const example_project_metadata: {[key: string]: string} = {
+  project_lead: "Robert'); DROP TABLE Students;--",
+  lead_institution: 'אוניברסיטת בן-גוריון בנגב',
+};
+
 export async function setupExampleDirectory(
   directory_db: PouchDB.Database<ListingsObject>
 ) {
@@ -705,11 +711,14 @@ export async function setupExampleData(
   }
 }
 
-export async function setupExampleForm(
+export async function setupExampleProjectMetadata(
   projname: string,
   meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
   console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
+  for (const key in example_project_metadata) {
+    await setProjectMetadata(projname, key, example_project_metadata[key]);
+  }
 }
 
 export const dummy_projects: ProjectsList = {
