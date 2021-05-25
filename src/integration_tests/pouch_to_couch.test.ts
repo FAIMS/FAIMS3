@@ -1,3 +1,4 @@
+import PouchDB from 'pouchdb';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -15,6 +16,7 @@ import {
 const COUCHDB_USER = String(process.env.COUCHDB_USER);
 const COUCHDB_PASSWORD = String(process.env.COUCHDB_PASSWORD);
 
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 jest.setTimeout(1000 * 10);
 
 test('talk to couch', async () => {
@@ -60,7 +62,7 @@ test('send to couch', async () => {
   expect(response.ok).toBe(true);
 });
 
-test('run initialization', async done => {
+test('run initialization', async () => {
   expect(projects_dbs).toStrictEqual({});
   expect(people_dbs).toStrictEqual({});
   expect(metadata_dbs).toStrictEqual({});
@@ -76,5 +78,4 @@ test('run initialization', async done => {
   expect(people_dbs).not.toStrictEqual({});
   //expect(metadata_dbs).not.toStrictEqual({});
   //expect(data_dbs).not.toStrictEqual({});
-  done();
 });

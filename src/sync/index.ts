@@ -54,7 +54,10 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsO
 
 const local_pouch_options: any = {};
 if (RUNNING_UNDER_TEST) {
-  local_pouch_options['adaptor'] = 'memory';
+  // enable memory adapter for testing
+  console.error('Using memory store');
+  PouchDB.plugin(require('pouchdb-adapter-memory'));
+  local_pouch_options['adapter'] = 'memory';
 }
 
 /**
