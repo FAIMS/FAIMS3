@@ -330,81 +330,21 @@ export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
-interface SyncHandlerEmissions {
+interface EmissionsArg {
   active(): unknown;
   paused(err?: {}): unknown;
   error(err: {}): unknown;
 }
-
-type ConciseEmissionsArg = [
-  EventEmitter,
-  (evt_name: string) => Promise<string>,
-  ...unknown[]
-];
-
-type EmissionsArg =
-  /*
-  These functions are called when the DB starts
-  pulling in new documents, and 2 seconds after the last document
-  is pullsed (or the timeout occurs after this SyncHandler is
-  created)
-  Also, unrecoverable errors are called here too
-  */
-  | [SyncHandlerEmissions]
-  /*
-  Instead of calling functions matching the above spec,
-  Emitter to emit on('event_name', ...args, err?) is called,
-  where event_name is the return of the function, and
-  ...args is exactly the rest of this array:
-  */
-  | ConciseEmissionsArg;
 class SyncHandler {
   lastActive?: ReturnType<typeof Date.now>;
   timeout: number;
   timeout_track?: ReturnType<typeof setTimeout>;
-  emissions: SyncHandlerEmissions;
+  emissions: EmissionsArg;
 
-  static emissionsArgToEmissions(
-    emissions: ConciseEmissionsArg
-  ): SyncHandlerEmissions {
-    // These are async so that setupExampleData
-    // can (very ugly in terms of code, but this is quite a
-    // concise way to do it, TODO: Refactor to be better) do the setupExampleData()
-    // when the event name conversion is being done (Event name conversion
-    // *just so happens* to run every time an active/paused/error
-    // is called.)
-    return {
-      active: async () =>
-        emissions[0].emit(await emissions[1]('active'), ...emissions.slice(2)),
-      paused: async err =>
-        emissions[0].emit(
-          await emissions[1]('paused'),
-          ...emissions.slice(2),
-          err
-        ),
-      error: async err =>
-        emissions[0].emit(
-          await emissions[1]('error'),
-          ...emissions.slice(2),
-          err
-        ),
-    };
-  }
-
-  constructor(timeout: number, ...emissions: EmissionsArg) {
+  constructor(timeout: number, emissions: EmissionsArg) {
     this.timeout = timeout;
 
-    const emissionArg = (
-      emissions: EmissionsArg
-    ): emissions is [SyncHandlerEmissions] => {
-      return (emissions as unknown[]).length === 1;
-    };
-
-    if (emissionArg(emissions)) {
-      this.emissions = emissions[0];
-    } else {
-      this.emissions = SyncHandler.emissionsArgToEmissions(emissions);
-    }
+    this.emissions = emissions;
 
     this.setTimeout().then(() => {
       // After 2 seconds of no initial activity,
@@ -943,18 +883,17 @@ async function process_directory(
     info: directory_connection_info,
   };
 
-  const sync_handler = new SyncHandler(
-    DIRECTORY_TIMEOUT,
-    initializeEvents,
-    async evt_name => {
-      if (evt_name === 'error') evt_name = 'paused';
-      if (evt_name === 'paused' && !USE_REAL_DATA) {
-        await setupExampleDirectory(directory_db.local);
-      }
-      return 'directory_' + evt_name;
+  const sync_handler = new SyncHandler(DIRECTORY_TIMEOUT, {
+    active: () => initializeEvents.emit('directory_active', listings),
+    paused: async () => {
+      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+      initializeEvents.emit('directory_paused', listings);
     },
-    listings
-  );
+    error: async () => {
+      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+      initializeEvents.emit('directory_paused', listings);
+    },
+  });
   sync_handler.listen(directory_connection);
 }
 
@@ -1051,22 +990,41 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     return;
   }
 
-  const sync_handler = new SyncHandler(
-    LISTINGS_TIMEOUT,
-    initializeEvents,
-    async evt_name => {
-      if (evt_name === 'error') evt_name = 'paused';
-      if (evt_name === 'paused' && !USE_REAL_DATA) {
+  const sync_handler = new SyncHandler(LISTINGS_TIMEOUT, {
+    active: () =>
+      initializeEvents.emit(
+        'listing_active',
+        listing_object,
+        active_projects,
+        local_people_db,
+        local_projects_db,
+        projects_connection
+      ),
+    paused: async () => {
+      if (!USE_REAL_DATA)
         await setupExampleListing(listing_object._id, local_projects_db.local);
-      }
-      return 'listing_' + evt_name;
+      initializeEvents.emit(
+        'listing_paused',
+        listing_object,
+        active_projects,
+        local_people_db,
+        local_projects_db,
+        projects_connection
+      );
     },
-    listing_object,
-    active_projects,
-    local_people_db,
-    local_projects_db,
-    projects_connection
-  );
+    error: async () => {
+      if (!USE_REAL_DATA)
+        await setupExampleListing(listing_object._id, local_projects_db.local);
+      initializeEvents.emit(
+        'listing_paused',
+        listing_object,
+        active_projects,
+        local_people_db,
+        local_projects_db,
+        projects_connection
+      );
+    },
+  });
   sync_handler.listen(projects_db.remote.connection);
 }
 
@@ -1160,42 +1118,74 @@ async function process_project(
   };
 
   if (meta_is_fresh) {
-    const meta_sync_handler = new SyncHandler(
-      PROJECT_TIMEOUT,
-      initializeEvents,
-      async evt_name => {
-        if (evt_name === 'error') evt_name = 'paused';
-        if (evt_name === 'paused' && !USE_REAL_DATA) {
+    const meta_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+      active: () =>
+        initializeEvents.emit(
+          'project_meta_active',
+          listing,
+          active_project,
+          project_object,
+          meta_db
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA)
           await setupExampleForm(active_project._id, meta_db.local);
-        }
-        // Convert SyncHandler's name for events to InitializeEvents
-        return 'project_meta_' + evt_name;
+        initializeEvents.emit(
+          'project_meta_paused',
+          listing,
+          active_project,
+          project_object,
+          meta_db
+        );
       },
-      listing,
-      active_project,
-      project_object,
-      meta_db
-    );
+      error: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleForm(active_project._id, meta_db.local);
+        initializeEvents.emit(
+          'project_meta_paused',
+          listing,
+          active_project,
+          project_object,
+          meta_db
+        );
+      },
+    });
     meta_sync_handler.listen(meta_db.remote.connection);
   }
 
   if (data_is_fresh) {
-    const data_sync_handler = new SyncHandler(
-      PROJECT_TIMEOUT,
-      initializeEvents,
-      async evt_name => {
-        if (evt_name === 'error') evt_name = 'paused';
-        if (evt_name === 'paused' && !USE_REAL_DATA) {
+    const data_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+      active: () =>
+        initializeEvents.emit(
+          'project_data_active',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA)
           await setupExampleData(active_project._id, data_db.local);
-        }
-        // Convert SyncHandler's name for events to InitializeEvents
-        return 'project_data_' + evt_name;
+        initializeEvents.emit(
+          'project_data_paused',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        );
       },
-      listing,
-      active_project,
-      project_object,
-      data_db
-    );
+      error: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleData(active_project._id, data_db.local);
+        initializeEvents.emit(
+          'project_data_paused',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        );
+      },
+    });
     data_sync_handler.listen(data_db.remote.connection);
   }
 }
