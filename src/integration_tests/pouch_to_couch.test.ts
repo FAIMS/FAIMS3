@@ -76,4 +76,5 @@ test('run initialization', async () => {
   expect(people_dbs).not.toStrictEqual({});
   //expect(metadata_dbs).not.toStrictEqual({});
   //expect(data_dbs).not.toStrictEqual({});
+  done();
 });
