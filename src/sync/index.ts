@@ -920,14 +920,24 @@ async function process_directory(
   };
 
   const sync_handler = new SyncHandler(DIRECTORY_TIMEOUT, {
-    active: async () => initializeEvents.emit('directory_active', await get_active_listings_in_this_directory()),
+    active: async () =>
+      initializeEvents.emit(
+        'directory_active',
+        await get_active_listings_in_this_directory()
+      ),
     paused: async () => {
       if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-      initializeEvents.emit('directory_paused', await get_active_listings_in_this_directory());
+      initializeEvents.emit(
+        'directory_paused',
+        await get_active_listings_in_this_directory()
+      );
     },
     error: async () => {
       if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-      initializeEvents.emit('directory_paused', await get_active_listings_in_this_directory());
+      initializeEvents.emit(
+        'directory_paused',
+        await get_active_listings_in_this_directory()
+      );
     },
   });
   sync_handler.listen(directory_connection);

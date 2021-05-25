@@ -7,8 +7,7 @@ import Link from '@material-ui/core/Link';
 
 import {Observation} from '../../datamodel';
 import * as ROUTES from '../../constants/routes';
-import {getObservationList, listenObservationsList} from '../../databaseAccess';
-import {initializeEvents} from '../../sync';
+import {listenObservationsList} from '../../databaseAccess';
 
 type ObservationsTableProps = {
   listing_id_project_id?: string;

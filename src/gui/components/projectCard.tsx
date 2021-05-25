@@ -18,7 +18,7 @@ const {Share} = Plugins;
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectInformation, ProjectObject} from '../../datamodel';
+import {ProjectObject} from '../../datamodel';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import ObservationsTable from './observationsTable';
 import MetadataRenderer from './metadataRenderer';
