@@ -1,7 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from './sync';
-import {Observation, EncodedObservation} from './datamodel';
+import {Observation, EncodedObservation, ObservationList} from './datamodel';
 
 export interface DataListing {
   [_id: string]: string[];
@@ -20,11 +20,10 @@ function convertFromFormToDB(
       _id: doc._id,
       _rev: revision,
       type: doc.type,
-      userid: doc.userid,
       data: doc.data,
-      created: doc.created ? doc.created.toISOString() : '',
+      created: doc.created.toISOString(),
       created_by: doc.created_by,
-      updated: doc.updated ? doc.updated.toISOString() : '',
+      updated: doc.updated.toISOString(),
       updated_by: doc.updated_by,
       format_version: 1,
     };
@@ -34,11 +33,10 @@ function convertFromFormToDB(
       _id: doc._id,
       _rev: doc._rev,
       type: doc.type,
-      userid: doc.userid,
       data: doc.data,
-      created: doc.created ? doc.created.toISOString() : '',
+      created: doc.created.toISOString(),
       created_by: doc.created_by,
-      updated: doc.updated ? doc.updated.toISOString() : '',
+      updated: doc.updated.toISOString(),
       updated_by: doc.updated_by,
       format_version: 1,
     };
@@ -46,11 +44,10 @@ function convertFromFormToDB(
   return {
     _id: doc._id,
     type: doc.type,
-    userid: doc.userid,
     data: doc.data,
-    created: doc.created ? doc.created.toISOString() : '',
+    created: doc.created.toISOString(),
     created_by: doc.created_by,
-    updated: doc.updated ? doc.updated.toISOString() : '',
+    updated: doc.updated.toISOString(),
     updated_by: doc.updated_by,
     format_version: 1,
   };
@@ -66,10 +63,9 @@ export function convertFromDBToForm(
     _id: doc._id,
     type: doc.type,
     data: doc.data,
-    userid: doc.userid,
-    created: doc.created ? new Date(doc.created) : null,
+    created: new Date(doc.created),
     created_by: doc.created_by,
-    updated: doc.updated ? new Date(doc.updated) : null,
+    updated: new Date(doc.updated),
     updated_by: doc.updated_by,
   };
 }
@@ -118,6 +114,26 @@ export async function lookupFAIMSDataID(
     }
     console.warn(err);
     throw Error('failed to find data with id');
+  }
+}
+
+export async function listFAIMSData(
+  project_name: string,
+  options:
+    | PouchDB.Core.AllDocsWithKeyOptions
+    | PouchDB.Core.AllDocsWithKeysOptions
+    | PouchDB.Core.AllDocsWithinRangeOptions
+    | PouchDB.Core.AllDocsOptions = {}
+): Promise<ObservationList> {
+  const datadb = getDataDB(project_name);
+  try {
+    const all = await datadb.allDocs({...options, include_docs: true});
+    const retval: ObservationList = {};
+    all.rows.forEach(row => (retval[row.id] = convertFromDBToForm(row.doc!)!));
+    return retval;
+  } catch (err) {
+    console.warn(err);
+    throw Error('failed to get data');
   }
 }
 

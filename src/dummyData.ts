@@ -9,6 +9,7 @@ import {
   ProjectsList,
   ProjectUIModel,
 } from './datamodel';
+import {setProjectMetadata} from './projectMetadata';
 
 const example_datums: {
   [key: string]: ({_id: string} & EncodedObservation)[];
@@ -17,7 +18,6 @@ const example_datums: {
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       type: '??:??',
-      userid: 'test1',
       created: randomDate(new Date(2012, 0, 1), new Date()).toISOString(),
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()).toISOString(),
@@ -41,7 +41,6 @@ const example_datums: {
     {
       _id: '020948f4-79b8-435f-9db6-9clksjdf900a',
       type: '??:??',
-      userid: 'test2',
       created: randomDate(new Date(2012, 0, 1), new Date()).toISOString(),
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()).toISOString(),
@@ -586,6 +585,11 @@ const example_active_db: ActiveDoc[] = [
   },
 ];
 
+const example_project_metadata: {[key: string]: string} = {
+  project_lead: "Robert'); DROP TABLE Students;--",
+  lead_institution: 'אוניברסיטת בן-גוריון בנגב',
+};
+
 export async function setupExampleDirectory(
   directory_db: PouchDB.Database<ListingsObject>
 ) {
@@ -705,11 +709,14 @@ export async function setupExampleData(
   }
 }
 
-export async function setupExampleForm(
+export async function setupExampleProjectMetadata(
   projname: string,
   meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
   console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
+  for (const key in example_project_metadata) {
+    await setProjectMetadata(projname, key, example_project_metadata[key]);
+  }
 }
 
 export const dummy_projects: ProjectsList = {
@@ -747,7 +754,6 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'Emma Smith',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -773,7 +779,6 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'John Smith',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -792,7 +797,6 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'John Davis',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -811,7 +815,6 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
-    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'Yoda',
     updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -830,7 +833,6 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
-    userid: 'fake-user',
     created: randomDate(new Date(2012, 0, 1), new Date()),
     created_by: 'John Smith',
     updated: randomDate(new Date(2021, 0, 1), new Date()),

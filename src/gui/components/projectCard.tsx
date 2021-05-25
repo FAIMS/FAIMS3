@@ -22,11 +22,13 @@ import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation, ProjectObject} from '../../datamodel';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
 import ObservationsTable from './observationsTable';
+import MetadataRenderer from './metadataRenderer';
 
 type ProjectCardProps = {
-  project: ProjectObject | ProjectInformation;
-  listing_id_project_id: string;
+  project: ProjectObject;
+  listing_id_project_id?: string;
   showObservations: boolean;
   dashboard: boolean;
 };
@@ -77,7 +79,7 @@ export default function ProjectCard(props: ProjectCardProps) {
 
   const bull = <span className={classes.bullet}>•</span>;
   const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
-  const project_url = ROUTES.PROJECT + listing_id_project_id;
+  const project_url = ROUTES.PROJECT + (listing_id_project_id || 'dummy');
 
   const getShare = async () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -166,7 +168,18 @@ export default function ProjectCard(props: ProjectCardProps) {
               variant="subtitle2"
             >
               10 team members {bull} status: {project.status} {bull} Last
-              updated {project.last_updated}
+              updated {project.last_updated} {bull}
+              <MetadataRenderer
+                project_id={project._id}
+                metadata_key={'project_lead'}
+                metadata_label={'Project Lead'}
+              />{' '}
+              {bull}
+              <MetadataRenderer
+                project_id={project._id}
+                metadata_key={'lead_institution'}
+                metadata_label={'Lead Institution'}
+              />
             </Typography>
 
             {showObservations ? (

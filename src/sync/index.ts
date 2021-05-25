@@ -3,10 +3,10 @@ import PouchDBFind from 'pouchdb-find';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
-  setupExampleForm,
   setupExampleListing,
   setupExampleDirectory,
   setupExampleActive,
+  setupExampleProjectMetadata,
   setupExampleData,
 } from '../dummyData';
 import {
@@ -14,14 +14,17 @@ import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
+  RUNNING_UNDER_TEST,
 } from '../buildconfig';
 
+const POUCH_SEPARATOR = '_';
 const DEFAULT_LISTING_ID = 'default';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
 const DIRECTORY_TIMEOUT = 1000;
 const LISTINGS_TIMEOUT = 2000;
 const PROJECT_TIMEOUT = 3000;
+
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   remote: null | LocalDBRemote<Content>;
@@ -44,10 +47,21 @@ export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<DataModel.ActiveDo
 export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsObject>;
 
 /**
+ * Configure local pouchdb settings; note that this applies to *ALL* local
+ * databases (remote ones are handled separately), so don't add db-specific
+ * logic to this
+ */
+
+const local_pouch_options: any = {};
+if (RUNNING_UNDER_TEST) {
+  local_pouch_options['adaptor'] = 'memory';
+}
+
+/**
  * Directory: All (public, anyways) Faims instances
  */
 export const directory_db: LocalDB<DataModel.ListingsObject> = {
-  local: new PouchDB('directory'),
+  local: new PouchDB('directory', local_pouch_options),
   remote: null,
 };
 
@@ -71,7 +85,10 @@ let default_instance: null | DataModel.NonNullListingsObject = null; //Set to di
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
  *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
  */
-export const active_db = new PouchDB<DataModel.ActiveDoc>('active');
+export const active_db = new PouchDB<DataModel.ActiveDoc>(
+  'active',
+  local_pouch_options
+);
 
 /**
  * Each listing has a Projects database and Users/People DBs
@@ -116,6 +133,7 @@ export function materializeConnectionInfo(
 function ConnectionInfo_create_pouch<Content extends {}>(
   connection_info: DataModel.ConnectionInfo
 ): PouchDB.Database<Content> {
+  const pouch_options = {};
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +
@@ -123,12 +141,13 @@ function ConnectionInfo_create_pouch<Content extends {}>(
       ':' +
       encodeURIComponent(connection_info.port) +
       '/' +
-      encodeURIComponent(connection_info.db_name)
+      encodeURIComponent(connection_info.db_name),
+    pouch_options
   );
 }
 
 /**
- * @param prefix Name to use to run new PouchDB(prefix + '/' + id), objects of the same type have the same prefix
+ * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
  * @param global_dbs projects_db or people_db
  * @returns Flag if newly created =true, already existing=false & The local DB
@@ -144,7 +163,10 @@ function ensure_local_db<Content extends {}>(
     return [
       true,
       (global_dbs[local_db_id] = {
-        local: new PouchDB(prefix + '/' + local_db_id),
+        local: new PouchDB(
+          prefix + POUCH_SEPARATOR + local_db_id,
+          local_pouch_options
+        ),
         remote: null,
       }),
     ];
@@ -329,6 +351,109 @@ export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
 }
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();
+
+interface EmissionsArg {
+  active(): unknown;
+  paused(err?: {}): unknown;
+  error(err: {}): unknown;
+}
+class SyncHandler {
+  lastActive?: ReturnType<typeof Date.now>;
+  timeout: number;
+  timeout_track?: ReturnType<typeof setTimeout>;
+  emissions: EmissionsArg;
+
+  constructor(timeout: number, emissions: EmissionsArg) {
+    this.timeout = timeout;
+
+    this.emissions = emissions;
+
+    this.setTimeout().then(() => {
+      // After 2 seconds of no initial activity,
+      // Mark the data as stopped coming in
+      this.emissions.paused();
+    });
+  }
+  _inactiveCheckLoop() {
+    if (this.lastActive! + this.timeout - 20 <= Date.now()) {
+      // Timeout (minus wiggle room) (or more) has elapsed since being active
+      this.lastActive = undefined;
+      this.emissions.paused();
+    } else {
+      // Set a new timeout for the remaining time of the 2 seconds.
+      this.setTimeout(this.lastActive! + this.timeout - Date.now()).then(
+        this._inactiveCheckLoop.bind(this)
+      );
+    }
+  }
+
+  listen(
+    db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
+  ) {
+    db.on('paused', (err?: {}) => {
+      /*
+      This event fires when the replication is paused, either because a live
+      replication is waiting for changes, or replication has temporarily
+      failed, with err, and is attempting to resume.
+      */
+      this.lastActive = undefined;
+      this.clearTimeout();
+      this.emissions.paused(err);
+    });
+    db.on('change', () => {
+      /*
+      This event fires when the replication starts actively processing changes;
+      e.g. when it recovers from an error or new changes are available.
+      */
+
+      if (
+        this.lastActive !== undefined &&
+        this.lastActive! + this.timeout - 20 <= Date.now()
+      ) {
+        console.warn(
+          "someone didn't clear the lastActive when clearTimeout called"
+        );
+        this.lastActive = undefined;
+      }
+
+      if (this.lastActive === undefined) {
+        this.lastActive = Date.now();
+        this.clearTimeout();
+        this.emissions.active();
+
+        // After 2 seconds of no more 'active' events,
+        // assume it's up to date
+        // (Otherwise, if it's still active, keep checking until it's not)
+        this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+      } else {
+        this.lastActive = Date.now();
+      }
+    });
+    db.on('error', err => {
+      /*
+      This event is fired when the replication is stopped due to an
+      unrecoverable failure.
+      */
+      // Prevent any further events
+      this.lastActive = undefined;
+      this.clearTimeout();
+      this.emissions.error(err);
+    });
+  }
+  clearTimeout() {
+    if (this.timeout_track !== undefined) {
+      clearTimeout(this.timeout_track);
+      this.timeout_track = undefined;
+    }
+  }
+  setTimeout(time?: number): Promise<void> {
+    return new Promise(resolve => {
+      this.timeout_track = setTimeout(() => {
+        resolve();
+      }, time || this.timeout);
+    });
+  }
+}
 
 interface DirectoryEmitter extends EventEmitter {
   on(
@@ -746,16 +871,30 @@ function register_metas_complete(initializeEvents: DirectoryEmitter) {
 async function process_directory(
   directory_connection_info: DataModel.ConnectionInfo
 ) {
-  const listings = await active_db
-    .allDocs({include_docs: true})
-    .then(all_docs =>
-      all_docs.rows.reduce(
-        (listing, row) => listing.add(row.doc!.listing_id),
-        new Set<string>()
-      )
-    );
+  // Only sync active listings:
+  const get_active_listings_in_this_directory = async () => {
+    const all_listing_ids_in_this_directory = (
+      await directory_db.local.allDocs()
+    ).rows.map(row => row.id);
 
-  initializeEvents.emit('directory_local', listings);
+    const active_listings_in_this_directory = (
+      await active_db.find({
+        selector: {
+          listing_id: {$in: all_listing_ids_in_this_directory},
+        },
+      })
+    ).docs;
+
+    return new Set(
+      active_listings_in_this_directory.map(doc => doc.listing_id)
+    );
+  };
+  const unupdated_listings_in_this_directory = await get_active_listings_in_this_directory();
+
+  initializeEvents.emit(
+    'directory_local',
+    unupdated_listings_in_this_directory
+  );
 
   if (directory_db.remote !== null) {
     return; //Already hooked up
@@ -780,33 +919,28 @@ async function process_directory(
     info: directory_connection_info,
   };
 
-  let waiting = true;
-  const synced_callback = () => {
-    waiting = false;
-    if (USE_REAL_DATA) {
-      initializeEvents.emit('directory_paused', listings);
-    } else {
-      setupExampleDirectory(directory_db.local).then(() => {
-        initializeEvents.emit('directory_paused', listings);
-      });
-    }
-  };
-  directory_connection.on('error', synced_callback);
-  directory_connection.on('paused', synced_callback);
-  directory_connection.on('active', () => {
-    waiting = true;
-    initializeEvents.emit('directory_active', listings);
-  });
-  setTimeout(() => {
-    if (waiting) {
-      // Timeout error when still waiting here
-      console.error(
-        'Timed out waiting for directory connection: ',
-        directory_connection
+  const sync_handler = new SyncHandler(DIRECTORY_TIMEOUT, {
+    active: async () =>
+      initializeEvents.emit(
+        'directory_active',
+        await get_active_listings_in_this_directory()
+      ),
+    paused: async () => {
+      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+      initializeEvents.emit(
+        'directory_paused',
+        await get_active_listings_in_this_directory()
       );
-      synced_callback();
-    }
-  }, DIRECTORY_TIMEOUT);
+    },
+    error: async () => {
+      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+      initializeEvents.emit(
+        'directory_paused',
+        await get_active_listings_in_this_directory()
+      );
+    },
+  });
+  sync_handler.listen(directory_connection);
 }
 
 function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
@@ -858,11 +992,6 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     listing_object['people_db']
   );
 
-  // Only sync active projects:
-  const active_projects = (
-    await active_db.find({selector: {listing_id: listing_id}})
-  ).docs;
-
   const [, local_people_db] = ensure_local_db(
     'people',
     people_local_id,
@@ -873,10 +1002,35 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     projects_db_id,
     projects_dbs
   );
+
+  // Only sync active projects:
+  const get_active_projects_in_this_listing = async () => {
+    const all_project_ids_in_this_listing = (
+      await local_projects_db.local.allDocs()
+    ).rows.map(row => row.id);
+
+    const active_projects_in_this_listing = (
+      await active_db.find({
+        selector: {
+          listing_id: listing_id,
+          project_id: {$in: all_project_ids_in_this_listing},
+        },
+      })
+    ).docs;
+
+    return active_projects_in_this_listing;
+  };
+  /**
+   * List of projects in this listing that are also in the active DB
+   * NOTE: This isn't updated, call get_active_projects_in_this_listing
+   * after sufficient time (i.e. if the code you're writing is in a pause handler)
+   */
+  const unupdated_projects_in_this_listing = await get_active_projects_in_this_listing();
+
   initializeEvents.emit(
     'listing_local',
     listing_object,
-    active_projects,
+    unupdated_projects_in_this_listing,
     local_people_db,
     local_projects_db,
     projects_connection
@@ -889,66 +1043,55 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     people_connection,
     people_dbs,
     // Filters to only projects that are active
-    {doc_ids: active_projects.map(v => v.project_id)}
+    unupdated_projects_in_this_listing.map(v => v._id)
   );
   const [projects_is_fresh, projects_db] = ensure_synced_db(
     projects_db_id,
     projects_connection,
     projects_dbs,
     // Filters to only projects that are active
-    {doc_ids: active_projects.map(v => v.project_id)}
+    unupdated_projects_in_this_listing.map(v => v._id)
   );
   if (!projects_is_fresh) {
     return;
   }
 
-  let waiting = true;
-  const synced_callback = () => {
-    waiting = false;
-    if (USE_REAL_DATA) {
+  const sync_handler = new SyncHandler(LISTINGS_TIMEOUT, {
+    active: async () =>
+      initializeEvents.emit(
+        'listing_active',
+        listing_object,
+        await get_active_projects_in_this_listing(),
+        local_people_db,
+        local_projects_db,
+        projects_connection
+      ),
+    paused: async () => {
+      if (!USE_REAL_DATA)
+        await setupExampleListing(listing_object._id, local_projects_db.local);
       initializeEvents.emit(
         'listing_paused',
         listing_object,
-        active_projects,
+        await get_active_projects_in_this_listing(),
         local_people_db,
         local_projects_db,
         projects_connection
       );
-    } else {
-      setupExampleListing(listing_object._id, local_projects_db.local).then(
-        () => {
-          initializeEvents.emit(
-            'listing_paused',
-            listing_object,
-            active_projects,
-            local_people_db,
-            local_projects_db,
-            projects_connection
-          );
-        }
+    },
+    error: async () => {
+      if (!USE_REAL_DATA)
+        await setupExampleListing(listing_object._id, local_projects_db.local);
+      initializeEvents.emit(
+        'listing_paused',
+        listing_object,
+        await get_active_projects_in_this_listing(),
+        local_people_db,
+        local_projects_db,
+        projects_connection
       );
-    }
-  };
-  projects_db.remote.connection.on('paused', synced_callback);
-  projects_db.remote.connection.on('error', synced_callback);
-  projects_db.remote.connection.on('active', () => {
-    waiting = true;
-    initializeEvents.emit(
-      'listing_active',
-      listing_object,
-      active_projects,
-      local_people_db,
-      local_projects_db,
-      projects_connection
-    );
+    },
   });
-  setTimeout(() => {
-    if (waiting) {
-      // Timeout error when still waiting here
-      console.error('Timed out waiting for projects db ', projects_db.remote);
-      synced_callback();
-    }
-  }, LISTINGS_TIMEOUT);
+  sync_handler.listen(projects_db.remote.connection);
 }
 
 function process_projects(
@@ -1041,10 +1184,18 @@ async function process_project(
   };
 
   if (meta_is_fresh) {
-    let waiting = true;
-    const synced_callback = () => {
-      waiting = false;
-      if (USE_REAL_DATA) {
+    const meta_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+      active: async () =>
+        initializeEvents.emit(
+          'project_meta_active',
+          listing,
+          active_project,
+          project_object,
+          meta_db
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleProjectMetadata(active_project._id, meta_db.local);
         initializeEvents.emit(
           'project_meta_paused',
           listing,
@@ -1052,44 +1203,35 @@ async function process_project(
           project_object,
           meta_db
         );
-      } else {
-        setupExampleForm(active_project._id, meta_db.local).then(() => {
-          initializeEvents.emit(
-            'project_meta_paused',
-            listing,
-            active_project,
-            project_object,
-            meta_db
-          );
-        });
-      }
-    };
-    meta_db.remote.connection.on('paused', synced_callback);
-    meta_db.remote.connection.on('error', synced_callback);
-    meta_db.remote.connection.on('active', () => {
-      waiting = true;
-      initializeEvents.emit(
-        'project_meta_active',
-        listing,
-        active_project,
-        project_object,
-        meta_db
-      );
+      },
+      error: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleProjectMetadata(active_project._id, meta_db.local);
+        initializeEvents.emit(
+          'project_meta_paused',
+          listing,
+          active_project,
+          project_object,
+          meta_db
+        );
+      },
     });
-    setTimeout(() => {
-      if (waiting) {
-        // Timeout error when still waiting here
-        console.error('Timed out waiting for metadata db: ', meta_db.remote);
-        synced_callback();
-      }
-    }, PROJECT_TIMEOUT);
+    meta_sync_handler.listen(meta_db.remote.connection);
   }
 
   if (data_is_fresh) {
-    let waiting = true;
-    const synced_callback = () => {
-      waiting = false;
-      if (USE_REAL_DATA) {
+    const data_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+      active: async () =>
+        initializeEvents.emit(
+          'project_data_active',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleData(active_project._id, data_db.local);
         initializeEvents.emit(
           'project_data_paused',
           listing,
@@ -1097,37 +1239,20 @@ async function process_project(
           project_object,
           data_db
         );
-      } else {
-        setupExampleData(active_project._id, data_db.local).then(() => {
-          initializeEvents.emit(
-            'project_data_paused',
-            listing,
-            active_project,
-            project_object,
-            data_db
-          );
-        });
-      }
-    };
-    data_db.remote.connection.on('paused', synced_callback);
-    data_db.remote.connection.on('error', synced_callback);
-    data_db.remote.connection.on('active', () => {
-      waiting = true;
-      initializeEvents.emit(
-        'project_data_active',
-        listing,
-        active_project,
-        project_object,
-        data_db
-      );
+      },
+      error: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleData(active_project._id, data_db.local);
+        initializeEvents.emit(
+          'project_data_paused',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        );
+      },
     });
-    setTimeout(() => {
-      if (waiting) {
-        // Timeout error when still waiting here
-        console.error('Timed out waiting for data db: ', data_db.remote);
-        synced_callback();
-      }
-    }, PROJECT_TIMEOUT);
+    data_sync_handler.listen(data_db.remote.connection);
   }
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
