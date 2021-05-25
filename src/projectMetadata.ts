@@ -32,6 +32,6 @@ export async function setProjectMetadata(
     await projdb.put(doc);
   } catch (err) {
     console.warn(err);
-    throw Error('failed to find metadata');
+    throw Error('failed to set metadata');
   }
 }
