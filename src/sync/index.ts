@@ -1,5 +1,6 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
@@ -56,7 +57,7 @@ const local_pouch_options: any = {};
 if (RUNNING_UNDER_TEST) {
   // enable memory adapter for testing
   console.error('Using memory store');
-  PouchDB.plugin(require('pouchdb-adapter-memory'));
+  PouchDB.plugin(PouchDBAdaptorMemory);
   local_pouch_options['adapter'] = 'memory';
 }
 
