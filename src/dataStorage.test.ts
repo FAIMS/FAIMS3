@@ -70,7 +70,7 @@ describe('roundtrip reading and writing to db', () => {
       const dataid = generateFAIMSDataID();
 
       const doc: Observation = {
-        _id: dataid,
+        observation_id: dataid,
         type: fulltype,
         data: data,
         created_by: userid,
@@ -115,7 +115,7 @@ describe('CRUD for data', () => {
       const dataid = generateFAIMSDataID();
 
       const doc: Observation = {
-        _id: dataid,
+        observation_id: dataid,
         type: fulltype,
         data: data,
         created_by: userid,
@@ -125,7 +125,7 @@ describe('CRUD for data', () => {
       };
 
       const new_doc: Observation = {
-        _id: dataid,
+        observation_id: dataid,
         type: fulltype,
         data: new_data,
         created_by: userid,
@@ -203,7 +203,7 @@ describe('listing revisions', () => {
       const dataid = generateFAIMSDataID();
 
       const doc: Observation = {
-        _id: dataid,
+        observation_id: dataid,
         type: fulltype,
         data: data,
         created_by: userid,
