@@ -12,12 +12,18 @@ export default function MetadataRenderer(props: MetadataProps) {
   const project_id = props.project_id;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
-  const [metadata_value, setMetadata] = useState(null);
+  const [metadata_value, setMetadata] = useState(null as string | null);
 
   useEffect(() => {
     const getMeta = async () => {
-      const meta = await getProjectMetadata(project_id, metadata_key);
-      setMetadata(meta);
+      try {
+        const meta = await getProjectMetadata(project_id, metadata_key);
+        setMetadata(meta);
+      } catch (err) {
+        // TODO: Possibly style/i18l this string, or push it to a global error state
+        // (Although that would be a bit extreme for this simple metadata)
+        setMetadata('[Missing]');
+      }
     };
     getMeta();
   });
