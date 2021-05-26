@@ -13,6 +13,7 @@ import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
 import {NavLink, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import {ObservationForm} from '../components/observationForm';
 
 export default function Observation() {
   const {listing_id_project_id, observation_id} = useParams<{
@@ -41,16 +42,19 @@ export default function Observation() {
         <TabContext value={value}>
           <AppBar position="static" color={'transparent'}>
             <TabList onChange={handleChange} aria-label="simple tabs example">
-              <Tab label="View" value="1" />
-              <Tab label="Edit" value="2" />
-              <Tab label="Revisions" value="3" />
-              <Tab label="Meta" value="4" />
+              <Tab label="Edit" value="1" />
+              <Tab label="Revisions" value="2" />
+              <Tab label="Meta" value="3" />
             </TabList>
           </AppBar>
-          <TabPanel value="1">View</TabPanel>
-          <TabPanel value="2">Edit</TabPanel>
-          <TabPanel value="3">Revisions</TabPanel>
-          <TabPanel value="4">Meta</TabPanel>
+          <TabPanel value="1">
+            <ObservationForm
+              listing_id_project_id={listing_id_project_id}
+              observation_id={observation_id}
+            />
+          </TabPanel>
+          <TabPanel value="2">Revisions</TabPanel>
+          <TabPanel value="3">Meta</TabPanel>
         </TabContext>
       </Paper>
     </Container>

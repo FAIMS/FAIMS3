@@ -38,10 +38,12 @@ export class TakePoint extends React.Component<FieldProps> {
     return (
       <div>
         <Button
-          variant="contained"
+          variant="outlined"
+          color={'primary'}
           onClick={async () => {
             await this.takePoint();
           }}
+          style={{marginRight: '10px'}}
         >
           Take Point
         </Button>
