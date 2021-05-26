@@ -1,7 +1,12 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from './sync';
-import {Observation, EncodedObservation, ObservationList} from './datamodel';
+import {
+  Observation,
+  EncodedObservation,
+  ObservationList,
+  ProjectID,
+} from './datamodel';
 
 export interface DataListing {
   [_id: string]: string[];
@@ -71,10 +76,10 @@ export function convertFromDBToForm(
 }
 
 async function getLatestRevision(
-  project_name: string,
+  project_id: ProjectID,
   docid: string
 ): Promise<string | undefined> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const doc = await datadb.get(docid);
     return doc._rev;
@@ -84,13 +89,13 @@ async function getLatestRevision(
   }
 }
 
-export async function upsertFAIMSData(project_name: string, doc: Observation) {
-  const datadb = getDataDB(project_name);
+export async function upsertFAIMSData(project_id: ProjectID, doc: Observation) {
+  const datadb = getDataDB(project_id);
   if (doc._id === undefined) {
     throw Error('_id required to save observation');
   }
   try {
-    const revision = await getLatestRevision(project_name, doc._id);
+    const revision = await getLatestRevision(project_id, doc._id);
     return await datadb.put(
       convertFromFormToDB(doc as Observation & {_id: string}, revision)
     );
@@ -101,10 +106,10 @@ export async function upsertFAIMSData(project_name: string, doc: Observation) {
 }
 
 export async function lookupFAIMSDataID(
-  project_name: string,
+  project_id: ProjectID,
   dataid: string
 ): Promise<Observation | null> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const doc = await datadb.get(dataid);
     return convertFromDBToForm(doc);
@@ -118,14 +123,14 @@ export async function lookupFAIMSDataID(
 }
 
 export async function listFAIMSData(
-  project_name: string,
+  project_id: ProjectID,
   options:
     | PouchDB.Core.AllDocsWithKeyOptions
     | PouchDB.Core.AllDocsWithKeysOptions
     | PouchDB.Core.AllDocsWithinRangeOptions
     | PouchDB.Core.AllDocsOptions = {}
 ): Promise<ObservationList> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const all = await datadb.allDocs({...options, include_docs: true});
     const retval: ObservationList = {};
@@ -138,9 +143,9 @@ export async function listFAIMSData(
 }
 
 export async function listFAIMSProjectRevisions(
-  project_name: string
+  project_id: ProjectID
 ): Promise<DataListing> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const result = await datadb.allDocs();
     const revmap: DataListing = {};
@@ -168,10 +173,10 @@ export async function listFAIMSProjectRevisions(
 }
 
 export async function deleteFAIMSDataForID(
-  project_name: string,
+  project_id: ProjectID,
   dataid: string
 ) {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const doc = await datadb.get(dataid);
     doc.deleted = true;
@@ -183,10 +188,10 @@ export async function deleteFAIMSDataForID(
 }
 
 export async function undeleteFAIMSDataForID(
-  project_name: string,
+  project_id: ProjectID,
   dataid: string
 ) {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const doc = await datadb.get(dataid);
     doc.deleted = false;

@@ -1,6 +1,7 @@
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 import {getProjectMetadata, setProjectMetadata} from './projectMetadata';
+import {ProjectID} from './datamodel';
 import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';
@@ -9,19 +10,19 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adaptor for 
 
 const projdbs: any = {};
 
-function mockProjectDB(project_name: string) {
-  if (projdbs[project_name] === undefined) {
-    const db = new PouchDB(project_name, {adapter: 'memory'});
-    projdbs[project_name] = db;
+function mockProjectDB(project_id: ProjectID) {
+  if (projdbs[project_id] === undefined) {
+    const db = new PouchDB(project_id, {adapter: 'memory'});
+    projdbs[project_id] = db;
   }
-  return projdbs[project_name];
+  return projdbs[project_id];
 }
 
 async function cleanProjectDBS() {
   let db;
-  for (const project_name in projdbs) {
-    db = projdbs[project_name];
-    delete projdbs[project_name];
+  for (const project_id in projdbs) {
+    db = projdbs[project_id];
+    delete projdbs[project_id];
 
     if (db !== undefined) {
       try {
@@ -46,13 +47,13 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(), // metadata_key
       fc.unicodeJsonObject(), // metadata
     ],
-    async (project_name, metadata_key, metadata) => {
+    async (project_id, metadata_key, metadata) => {
       await cleanProjectDBS();
       fc.pre(projdbs !== {});
 
-      return setProjectMetadata(project_name, metadata_key, metadata)
+      return setProjectMetadata(project_id, metadata_key, metadata)
         .then(result => {
-          return getProjectMetadata(project_name, metadata_key);
+          return getProjectMetadata(project_id, metadata_key);
         })
         .then(result => {
           expect(equals(result, metadata)).toBe(true);

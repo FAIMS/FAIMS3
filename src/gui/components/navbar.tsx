@@ -120,11 +120,11 @@ const useStyles = makeStyles(theme => ({
 
 function getNestedProjects(pouchProjectList: typeof createdProjects) {
   const projectListItems: ProjectListItemProps[] = [];
-  Object.keys(pouchProjectList).map(listing_id_project_id => {
+  Object.keys(pouchProjectList).map(project_id => {
     projectListItems.push({
-      title: pouchProjectList[listing_id_project_id].project.name,
+      title: pouchProjectList[project_id].project.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + listing_id_project_id,
+      to: ROUTES.PROJECT + project_id,
       disabled: false,
     });
   });

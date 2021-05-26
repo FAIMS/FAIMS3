@@ -53,6 +53,7 @@ export interface ActiveDoc {
 /**
  * Describes a project, with connection, name, description, and schema
  * Part of the Projects DB
+ * Do not use with UI code; sync code only
  */
 export interface ProjectObject {
   _id: string;
@@ -71,9 +72,12 @@ export type ProjectsList = {
 
 /**
  * User readable information about a project
+ * Do not use with sync code; UI code only
  */
+export type ProjectID = string;
+
 export interface ProjectInformation {
-  _id: string;
+  project_id: ProjectID;
   name: string;
   description?: string;
   last_updated?: string;

@@ -19,9 +19,9 @@ export default function DashboardActions(props: DashboardActionProps) {
   const {pouchProjectList} = props;
   const classes = useStyles();
   const history = useHistory();
-  const options = Object.keys(pouchProjectList).map(listing_id_project_id => ({
-    title: pouchProjectList[listing_id_project_id].project.name,
-    url: ROUTES.PROJECT + listing_id_project_id,
+  const options = Object.keys(pouchProjectList).map(project_id => ({
+    title: pouchProjectList[project_id].project.name,
+    url: ROUTES.PROJECT + project_id,
   }));
   const [value, setValue] = React.useState(
     options.length > 0 ? options[0] : null

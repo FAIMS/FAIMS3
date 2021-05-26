@@ -103,32 +103,18 @@ export default function Home() {
           <Paper className={classes.paper}>
             <Grid container spacing={1}>
               {Object.keys(pouchProjectList).length === 0
-                ? [...Array(3)].map((e, i) => (
-                    <Grid item xs={12} key={'skeleton-project-list-grid' + i}>
-                      <Skeleton animation="wave" variant="rect">
-                        <ProjectCard
-                          project={{
-                            name: 'dummy',
-                            description: 'dummy',
-                            _id: 'dummy',
-                          }}
-                          listing_id_project_id={'dummy'}
-                        />
-                      </Skeleton>
-                    </Grid>
-                  ))
-                : Object.keys(pouchProjectList).map(listing_id_project_id => {
-                    const pouchProject = getProjectInfo(listing_id_project_id);
-                    if (pouchProject !== null) {
+                ? <span>No projects found</span>
+                : Object.keys(pouchProjectList).map(project_id => {
+                    const project_info = getProjectInfo(project_id);
+                    if (project_info !== null) {
                       return (
                         <Grid
                           item
                           xs={12}
-                          key={'project-list-grid' + pouchProject._id}
+                          key={'project-list-grid' + project_id}
                         >
                           <ProjectCard
-                            project={pouchProject}
-                            listing_id_project_id={listing_id_project_id}
+                            project={project_info}
                             dashboard={true}
                           />
                         </Grid>
@@ -138,7 +124,7 @@ export default function Home() {
                         <Grid
                           item
                           xs={12}
-                          key={'project-list-grid' + listing_id_project_id}
+                          key={'project-list-grid' + project_id}
                         >
                           Project could not be loaded
                         </Grid>

@@ -4,18 +4,18 @@ import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
-import {Observation} from '../../datamodel';
+import {Observation, ProjectID} from '../../datamodel';
 import * as ROUTES from '../../constants/routes';
 import {listenObservationsList} from '../../databaseAccess';
 
 type ObservationsTableProps = {
-  listing_id_project_id: string;
+  project_id: ProjectID;
   restrictRows: number;
   compact: boolean;
 };
 
 export default function ObservationsTable(props: ObservationsTableProps) {
-  const {listing_id_project_id, compact} = props;
+  const {project_id, compact} = props;
   const [loading, setLoading] = useState(true);
   const pouchObservationList = {};
   const [rows, setRows] = useState<Array<Observation>>([]);
@@ -30,7 +30,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         <Link
           component={RouterLink}
           to={ROUTES.getObservationRoute(
-            listing_id_project_id || 'dummy',
+            project_id || 'dummy',
             (params.getValue('_id') || '').toString()
           )}
         >
@@ -44,9 +44,9 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     {field: 'updated_by', headerName: 'Updated by', type: 'string', flex: 1},
   ];
   useEffect(() => {
-    if (listing_id_project_id === undefined) return; //dummy project
+    if (project_id === undefined) return; //dummy project
     const destroyListener = listenObservationsList(
-      listing_id_project_id,
+      project_id,
       newObservationList => {
         setLoading(false);
         Object.assign(pouchObservationList, newObservationList);

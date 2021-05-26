@@ -6,6 +6,7 @@ import {
   ProjectsList,
   ProjectObject,
   ActiveDoc,
+  ProjectID,
 } from './datamodel';
 import {listFAIMSData} from './dataStorage';
 import {
@@ -29,15 +30,15 @@ export function getProjectList(user_id?: string): typeof createdProjects {
 }
 
 export function getProjectInfo(
-  listing_id_project_id: string
+  project_id: ProjectID
 ): ProjectInformation | null {
-  const proj = createdProjects[listing_id_project_id];
+  const proj = createdProjects[project_id];
   if (proj === undefined) {
     return null;
   }
 
   return {
-    _id: proj.project._id,
+    project_id: project_id,
     name: proj.project.name,
     description: proj.project.description || 'No description',
     last_updated: proj.project.last_updated || 'Unknown',
@@ -46,21 +47,19 @@ export function getProjectInfo(
   };
 }
 
-export function getProject(
-  listing_id_project_id: string
-): createdProjectsInterface {
+export function getProject(project_id: ProjectID): createdProjectsInterface {
   /**
    * Return entire project object (project, active, meta, data).
    */
-  return createdProjects[listing_id_project_id];
+  return createdProjects[project_id];
 }
 
-export function updateProject(project_id: string) {}
+export function updateProject(project_id: ProjectID) {}
 
-export function removeProject(project_id: string) {}
+export function removeProject(project_id: ProjectID) {}
 
 export async function getObservationList(
-  listing_id_project_id: string
+  project_id: ProjectID
 ): Promise<ObservationList> {
   /**
    * Return all observations for a given project_id.
@@ -74,10 +73,12 @@ export async function getObservationList(
   //   (obj, key) => ({...obj, [key]: dummy_observations[key]}),
   //   {}
   // );
-  return listFAIMSData(listing_id_project_id);
+  return listFAIMSData(project_id);
 }
 
-const observationsUpdated: {[listing_id_project_id: string]: boolean} = {};
+// note the string below is a ProjectID, but typescript is kinda silly and
+// doesn't let us do that
+const observationsUpdated: {[project_id: string]: boolean} = {};
 
 add_initial_listener(initializeEvents => {
   initializeEvents.on('project_data_paused', (listing, active) => {
@@ -89,26 +90,26 @@ add_initial_listener(initializeEvents => {
  * Registers a callback to be run whenever observationList is updated.
  * If the observationList already updated before this function is called, the callback is also run immediately.
  *
- * @param listing_id_project_id listing_id & project_id (active doc ._id) to get observations of
+ * @param project_id listing_id & project_id (active doc ._id) to get observations of
  * @param callback Run whenever the list of observations might have changed, called with the list.
  * @returns 'Destructor' that removes the listener that this function added.
  */
 export function listenObservationsList(
-  listing_id_project_id: string,
+  project_id: ProjectID,
   callback: (observationList: ObservationList) => unknown
 ): () => void {
   const runCallback = () =>
-    getObservationList(listing_id_project_id)
+    getObservationList(project_id)
       .then(callback)
       .catch(err => console.error('Uncaught observation list error'));
 
   const listener_func = (listing: unknown, active: ActiveDoc) => {
-    if (active._id === listing_id_project_id) runCallback();
+    if (active._id === project_id) runCallback();
   };
 
   initializeEvents.on('project_data_paused', listener_func);
 
-  if (observationsUpdated[listing_id_project_id]) runCallback();
+  if (observationsUpdated[project_id]) runCallback();
 
   return () =>
     initializeEvents.removeListener('project_data_paused', listener_func);

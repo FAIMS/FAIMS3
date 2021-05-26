@@ -13,10 +13,11 @@ import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
 import {NavLink, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import {ProjectID} from '../../datamodel';
 
 export default function Observation() {
-  const {listing_id_project_id, observation_id} = useParams<{
-    listing_id_project_id: string;
+  const {project_id, observation_id} = useParams<{
+    project_id: ProjectID;
     observation_id: string;
   }>();
   const [value, setValue] = React.useState('1');
@@ -31,9 +32,7 @@ export default function Observation() {
         <Breadcrumbs aria-label="breadcrumb">
           <NavLink to={ROUTES.INDEX}>Index</NavLink>
           <NavLink to={ROUTES.PROJECT_LIST}>Projects</NavLink>
-          <NavLink to={ROUTES.PROJECT + listing_id_project_id}>
-            {listing_id_project_id}
-          </NavLink>
+          <NavLink to={ROUTES.PROJECT + project_id}>{project_id}</NavLink>
           <Typography color="textPrimary">{observation_id}</Typography>
         </Breadcrumbs>
       </Box>
