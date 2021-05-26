@@ -22,7 +22,7 @@ export default function MetadataRenderer(props: MetadataProps) {
       } catch (err) {
         // TODO: Possibly style/i18l this string, or push it to a global error state
         // (Although that would be a bit extreme for this simple metadata)
-        setMetadata('[Missing]');
+        setMetadata(null);
       }
     };
     getMeta();
