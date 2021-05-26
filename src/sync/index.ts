@@ -1,5 +1,6 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
@@ -54,7 +55,10 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsO
 
 const local_pouch_options: any = {};
 if (RUNNING_UNDER_TEST) {
-  local_pouch_options['adaptor'] = 'memory';
+  // enable memory adapter for testing
+  console.error('Using memory store');
+  PouchDB.plugin(PouchDBAdaptorMemory);
+  local_pouch_options['adapter'] = 'memory';
 }
 
 /**
@@ -315,26 +319,6 @@ export function getProjectDB(
   } else {
     throw 'Projects not initialized yet';
   }
-}
-
-export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
-  return {
-    'default/projectA': {
-      _id: 'projectA',
-      name: 'Project A',
-      description: 'A dummy project',
-    },
-    'default/projectB': {
-      _id: 'projectB',
-      name: 'Project B',
-      description: 'A dummy project',
-    },
-    'default/projectC': {
-      _id: 'projectC',
-      name: 'Project C',
-      description: 'A dummy project',
-    },
-  };
 }
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();

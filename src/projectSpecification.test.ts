@@ -13,7 +13,7 @@ import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';
 
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adaptor for testing
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 const projdbs: any = {};
 
