@@ -1,48 +1,77 @@
-import React, {useContext, useEffect, useState} from 'react';
-// import { DataGrid,  } from '@material-ui/data-grid';
-// import {ObservationList} from '../../datamodel';
-import {store} from '../../store';
-import {CircularProgress, Typography} from '@material-ui/core';
+import React, {useEffect, useState} from 'react';
+import {DataGrid, GridColDef, GridCellParams} from '@material-ui/data-grid';
+import {Typography} from '@material-ui/core';
+import {Link as RouterLink} from 'react-router-dom';
+import Link from '@material-ui/core/Link';
+
+import {Observation} from '../../datamodel';
+import * as ROUTES from '../../constants/routes';
+import {listenObservationsList} from '../../databaseAccess';
+
 type ObservationsTableProps = {
-  project_id: string;
+  listing_id_project_id: string;
   restrictRows: number;
+  compact: boolean;
 };
+
 export default function ObservationsTable(props: ObservationsTableProps) {
-  const globalState = useContext(store);
+  const {listing_id_project_id, compact} = props;
   const [loading, setLoading] = useState(true);
-  const observation_list = globalState.state.observation_list[props.project_id];
-
+  const pouchObservationList = {};
+  const [rows, setRows] = useState<Array<Observation>>([]);
+  const columns: GridColDef[] = [
+    {
+      field: '_id',
+      headerName: 'Obs ID',
+      description: 'Observation ID',
+      type: 'string',
+      flex: 1,
+      renderCell: (params: GridCellParams) => (
+        <Link
+          component={RouterLink}
+          to={ROUTES.getObservationRoute(
+            listing_id_project_id || 'dummy',
+            (params.getValue('_id') || '').toString()
+          )}
+        >
+          {params.value}
+        </Link>
+      ),
+    },
+    {field: 'created', headerName: 'Created', type: 'dateTime', flex: 1},
+    {field: 'created_by', headerName: 'Created by', type: 'string', flex: 1},
+    {field: 'updated', headerName: 'Updated', type: 'dateTime', flex: 1},
+    {field: 'updated_by', headerName: 'Updated by', type: 'string', flex: 1},
+  ];
   useEffect(() => {
-    if (
-      typeof observation_list !== 'undefined' &&
-      Object.keys(observation_list).length > 0
-    ) {
-      setLoading(false);
-    }
-  }, [observation_list]);
-
-  // if (Object.keys(observation_list).length > 0) {
-  //   setLoading(false);
-  // //   const rows = Object.keys(observation_list).map(key => {
-  // //     return (Object.values(observation_list[key].data.values))
-  // //   })
-  // //   console.log(rows)
-  // // } else {
-  // //   setLoading(true)
-  // //   // try to re-fetch observation list
-  // //
-  // }
+    if (listing_id_project_id === undefined) return; //dummy project
+    const destroyListener = listenObservationsList(
+      listing_id_project_id,
+      newObservationList => {
+        setLoading(false);
+        Object.assign(pouchObservationList, newObservationList);
+        setRows(Object.values(pouchObservationList));
+      }
+    );
+    return destroyListener; // destroyListener called when this component unmounts.
+  }, []);
 
   return (
     <div>
-      <Typography variant="overline">Recent Observations </Typography>
-      {loading ? (
-        <CircularProgress size={12} thickness={4} />
-      ) : (
-        JSON.stringify(observation_list)
-      )}
-
-      {/*<DataGrid rows={rows} columns={columns} pageSize={5} checkboxSelection />*/}
+      <Typography variant="overline">Recent Observations</Typography>
+      <div style={{height: compact ? 250 : 400, width: '100%'}}>
+        <DataGrid
+          rows={rows}
+          loading={loading}
+          getRowId={r => r._id}
+          columns={columns}
+          pageSize={5}
+          checkboxSelection
+        />
+      </div>
     </div>
   );
 }
+ObservationsTable.defaultProps = {
+  compact: false,
+};

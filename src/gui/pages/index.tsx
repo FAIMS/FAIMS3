@@ -34,7 +34,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
 
   render() {
     return (
-      <Container maxWidth="md">
+      <Container maxWidth="lg">
         <Box
           display="flex"
           flexDirection="row-reverse"

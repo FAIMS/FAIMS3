@@ -18,7 +18,10 @@ const example_datums: {
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       type: '??:??',
-      userid: 'test1',
+      created: randomDate(new Date(2012, 0, 1), new Date()).toISOString(),
+      created_by: 'John Smith',
+      updated: randomDate(new Date(2021, 0, 1), new Date()).toISOString(),
+      updated_by: 'Yoda',
       data: {
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
@@ -35,8 +38,37 @@ const example_datums: {
       },
       format_version: 1,
     },
+    {
+      _id: '020948f4-79b8-435f-9db6-9clksjdf900a',
+      type: '??:??',
+      created: randomDate(new Date(2012, 0, 1), new Date()).toISOString(),
+      created_by: 'John Smith',
+      updated: randomDate(new Date(2021, 0, 1), new Date()).toISOString(),
+      updated_by: 'Yoda',
+      data: {
+        'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
+        'bad-field': '',
+        'action-field': 'hello',
+        'email-field': 'MY-EMAIL-ADDRESS@example.com',
+        'str-field': 'green',
+        'multi-str-field':
+          'Warning: This is modified from the direct output of the submit button to workaround select-field outputting a string, inputting an array.',
+        'int-field': 20,
+        'select-field': ['EUR'],
+        'multi-select-field': ['JPY'],
+        'checkbox-field': true,
+        'radio-group-field': '1',
+      },
+      format_version: 1,
+    },
   ],
 };
+
+function randomDate(start: Date, end: Date) {
+  return new Date(
+    start.getTime() + Math.random() * (end.getTime() - start.getTime())
+  );
+}
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   default_lake_mungo: {
@@ -722,7 +754,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'Emma Smith',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Sally Jones',
     data: {
       values: {
         'take-point-field': null,
@@ -744,7 +779,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'John Smith',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Sarah Jones',
     data: {
       values: {
         'take-point-field': null,
@@ -759,7 +797,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '1',
     type: '',
-    userid: 'fake-user',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'John Davis',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Emily Jones',
     data: {
       values: {
         'take-point-field': null,
@@ -774,7 +815,10 @@ export const dummy_observations: ObservationList = {
     _rev: '1',
     _project_id: '2',
     type: '',
-    userid: 'fake-user',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'Yoda',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Ben Kenobi',
     data: {
       values: {
         'take-point-field': null,
@@ -785,11 +829,14 @@ export const dummy_observations: ObservationList = {
     },
   },
   '5': {
-    _id: '4',
+    _id: '5',
     _rev: '1',
     _project_id: '2',
     type: '',
-    userid: 'fake-user',
+    created: randomDate(new Date(2012, 0, 1), new Date()),
+    created_by: 'John Smith',
+    updated: randomDate(new Date(2021, 0, 1), new Date()),
+    updated_by: 'Yoda',
     data: {
       values: {
         'take-point-field': null,

@@ -285,21 +285,6 @@ async function get_default_instance(): Promise<DataModel.NonNullListingsObject> 
 PouchDB.plugin(PouchDBFind);
 
 /**
- * This is appended to whenever a project has its
- * meta & data local dbs come into existance.
- *
- * This is essentially accumulating 'project_paused' events.
- */
-export const createdProjects: {
-  [key: string]: {
-    project: DataModel.ProjectObject;
-    active: ExistingActiveDoc;
-    meta: LocalDB<DataModel.ProjectMetaObject>;
-    data: LocalDB<DataModel.EncodedObservation>;
-  };
-} = {};
-
-/**
  * This is appended to whneever a listing has its
  * projects_db & people_db come into existance
  *
@@ -353,6 +338,109 @@ export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
 }
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();
+
+interface EmissionsArg {
+  active(): unknown;
+  paused(err?: {}): unknown;
+  error(err: {}): unknown;
+}
+class SyncHandler {
+  lastActive?: ReturnType<typeof Date.now>;
+  timeout: number;
+  timeout_track?: ReturnType<typeof setTimeout>;
+  emissions: EmissionsArg;
+
+  constructor(timeout: number, emissions: EmissionsArg) {
+    this.timeout = timeout;
+
+    this.emissions = emissions;
+
+    this.setTimeout().then(() => {
+      // After 2 seconds of no initial activity,
+      // Mark the data as stopped coming in
+      this.emissions.paused();
+    });
+  }
+  _inactiveCheckLoop() {
+    if (this.lastActive! + this.timeout - 20 <= Date.now()) {
+      // Timeout (minus wiggle room) (or more) has elapsed since being active
+      this.lastActive = undefined;
+      this.emissions.paused();
+    } else {
+      // Set a new timeout for the remaining time of the 2 seconds.
+      this.setTimeout(this.lastActive! + this.timeout - Date.now()).then(
+        this._inactiveCheckLoop.bind(this)
+      );
+    }
+  }
+
+  listen(
+    db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
+  ) {
+    db.on('paused', (err?: {}) => {
+      /*
+      This event fires when the replication is paused, either because a live
+      replication is waiting for changes, or replication has temporarily
+      failed, with err, and is attempting to resume.
+      */
+      this.lastActive = undefined;
+      this.clearTimeout();
+      this.emissions.paused(err);
+    });
+    db.on('change', () => {
+      /*
+      This event fires when the replication starts actively processing changes;
+      e.g. when it recovers from an error or new changes are available.
+      */
+
+      if (
+        this.lastActive !== undefined &&
+        this.lastActive! + this.timeout - 20 <= Date.now()
+      ) {
+        console.warn(
+          "someone didn't clear the lastActive when clearTimeout called"
+        );
+        this.lastActive = undefined;
+      }
+
+      if (this.lastActive === undefined) {
+        this.lastActive = Date.now();
+        this.clearTimeout();
+        this.emissions.active();
+
+        // After 2 seconds of no more 'active' events,
+        // assume it's up to date
+        // (Otherwise, if it's still active, keep checking until it's not)
+        this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+      } else {
+        this.lastActive = Date.now();
+      }
+    });
+    db.on('error', err => {
+      /*
+      This event is fired when the replication is stopped due to an
+      unrecoverable failure.
+      */
+      // Prevent any further events
+      this.lastActive = undefined;
+      this.clearTimeout();
+      this.emissions.error(err);
+    });
+  }
+  clearTimeout() {
+    if (this.timeout_track !== undefined) {
+      clearTimeout(this.timeout_track);
+      this.timeout_track = undefined;
+    }
+  }
+  setTimeout(time?: number): Promise<void> {
+    return new Promise(resolve => {
+      this.timeout_track = setTimeout(() => {
+        resolve();
+      }, time || this.timeout);
+    });
+  }
+}
 
 interface DirectoryEmitter extends EventEmitter {
   on(
@@ -461,6 +549,7 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'projects_known',
     listener: (projects: Set<string>) => unknown
   ): this;
+  on(event: 'projects_created', listener: () => unknown): this;
 
   emit(
     event: 'project_meta_paused',
@@ -535,6 +624,7 @@ interface DirectoryEmitter extends EventEmitter {
   emit(event: 'directory_error', err: unknown): boolean;
   emit(event: 'projects_known', projects: Set<string>): boolean;
   emit(event: 'metas_complete', metas: MetasCompleteType): boolean;
+  emit(event: 'projects_created'): boolean;
 }
 
 /**
@@ -562,10 +652,11 @@ async function initialize_nocheck() {
   console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
-    initializeEvents.once('projects_known', resolve);
+    initializeEvents.once('projects_created', resolve);
   });
   initialize_dbs();
   await initialized;
+
   console.log('initialised dbs');
 
   console.log('setting up form');
@@ -639,6 +730,7 @@ add_initial_listener(register_projects_known);
  * This is set to just before 'projects_known' event is emitted.
  */
 export let projects_known: null | Set<string> = null;
+
 /**
  * Adds event handlers to initializeEvents to:
  * Enable 'Propagation' of completion of all known projects meta & other databases.
@@ -711,7 +803,60 @@ function register_projects_known(initializeEvents: DirectoryEmitter) {
   });
 }
 
+/**
+ * This is appended to whenever a project has its
+ * meta & data local dbs come into existance.
+ *
+ * This is essentially accumulating 'project_paused' events.
+ */
+export type createdProjectsInterface = {
+  project: DataModel.ProjectObject;
+  active: ExistingActiveDoc;
+  meta: LocalDB<DataModel.ProjectMetaObject>;
+  data: LocalDB<DataModel.EncodedObservation>;
+};
+
+export const createdProjects: {
+  [key: string]: {
+    project: DataModel.ProjectObject;
+    active: ExistingActiveDoc;
+    meta: LocalDB<DataModel.ProjectMetaObject>;
+    data: LocalDB<DataModel.EncodedObservation>;
+  };
+} = {};
+
+export let projects_created = false;
+
 add_initial_listener(register_metas_complete);
+
+function register_projects_created(initializeEvents: DirectoryEmitter) {
+  const project_statuses = new Map<string, boolean>();
+
+  const emit_if_complete = () => {
+    if (projects_known && Array.from(project_statuses.values()).every(v => v)) {
+      projects_created = true;
+      initializeEvents.emit('projects_created');
+    }
+  };
+
+  initializeEvents.on('project_local', (listing, active) => {
+    project_statuses.set(active._id, true);
+    emit_if_complete();
+  });
+
+  initializeEvents.on('projects_known', projects => {
+    projects.forEach(project_id => {
+      if (!project_statuses.has(project_id)) {
+        // Add a project that hasn't triggered its project_local yet
+        project_statuses.set(project_id, false);
+      }
+    });
+    emit_if_complete();
+  });
+}
+
+add_initial_listener(register_projects_created);
+
 export type MetasCompleteType = {
   [active_id: string]:
     | [
@@ -817,42 +962,28 @@ async function process_directory(
     info: directory_connection_info,
   };
 
-  let waiting = true;
-  const synced_callback = async () => {
-    waiting = false;
-    if (USE_REAL_DATA) {
+  const sync_handler = new SyncHandler(DIRECTORY_TIMEOUT, {
+    active: async () =>
+      initializeEvents.emit(
+        'directory_active',
+        await get_active_listings_in_this_directory()
+      ),
+    paused: async () => {
+      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
       initializeEvents.emit(
         'directory_paused',
         await get_active_listings_in_this_directory()
       );
-    } else {
-      setupExampleDirectory(directory_db.local).then(async () => {
-        initializeEvents.emit(
-          'directory_paused',
-          await get_active_listings_in_this_directory()
-        );
-      });
-    }
-  };
-  directory_connection.on('error', synced_callback);
-  directory_connection.on('paused', synced_callback);
-  directory_connection.on('active', async () => {
-    waiting = true;
-    initializeEvents.emit(
-      'directory_active',
-      await get_active_listings_in_this_directory()
-    );
-  });
-  setTimeout(() => {
-    if (waiting) {
-      // Timeout error when still waiting here
-      console.error(
-        'Timed out waiting for directory connection: ',
-        directory_connection
+    },
+    error: async () => {
+      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+      initializeEvents.emit(
+        'directory_paused',
+        await get_active_listings_in_this_directory()
       );
-      synced_callback();
-    }
-  }, DIRECTORY_TIMEOUT);
+    },
+  });
+  sync_handler.listen(directory_connection);
 }
 
 function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
@@ -968,10 +1099,19 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     return;
   }
 
-  let waiting = true;
-  const synced_callback = async () => {
-    waiting = false;
-    if (USE_REAL_DATA) {
+  const sync_handler = new SyncHandler(LISTINGS_TIMEOUT, {
+    active: async () =>
+      initializeEvents.emit(
+        'listing_active',
+        listing_object,
+        await get_active_projects_in_this_listing(),
+        local_people_db,
+        local_projects_db,
+        projects_connection
+      ),
+    paused: async () => {
+      if (!USE_REAL_DATA)
+        await setupExampleListing(listing_object._id, local_projects_db.local);
       initializeEvents.emit(
         'listing_paused',
         listing_object,
@@ -980,41 +1120,21 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
         local_projects_db,
         projects_connection
       );
-    } else {
-      setupExampleListing(listing_object._id, local_projects_db.local).then(
-        async () => {
-          initializeEvents.emit(
-            'listing_paused',
-            listing_object,
-            await get_active_projects_in_this_listing(),
-            local_people_db,
-            local_projects_db,
-            projects_connection
-          );
-        }
+    },
+    error: async () => {
+      if (!USE_REAL_DATA)
+        await setupExampleListing(listing_object._id, local_projects_db.local);
+      initializeEvents.emit(
+        'listing_paused',
+        listing_object,
+        await get_active_projects_in_this_listing(),
+        local_people_db,
+        local_projects_db,
+        projects_connection
       );
-    }
-  };
-  projects_db.remote.connection.on('paused', synced_callback);
-  projects_db.remote.connection.on('error', synced_callback);
-  projects_db.remote.connection.on('active', async () => {
-    waiting = true;
-    initializeEvents.emit(
-      'listing_active',
-      listing_object,
-      await get_active_projects_in_this_listing(),
-      local_people_db,
-      local_projects_db,
-      projects_connection
-    );
+    },
   });
-  setTimeout(() => {
-    if (waiting) {
-      // Timeout error when still waiting here
-      console.error('Timed out waiting for projects db ', projects_db.remote);
-      synced_callback();
-    }
-  }, LISTINGS_TIMEOUT);
+  sync_handler.listen(projects_db.remote.connection);
 }
 
 function process_projects(
@@ -1062,6 +1182,14 @@ async function process_project(
     metadata_dbs
   );
   const [, data_db_local] = ensure_local_db('data', active_id, data_dbs);
+
+  createdProjects[active_id] = {
+    project: project_object,
+    active: active_project,
+    meta: meta_db_local,
+    data: data_db_local,
+  };
+
   initializeEvents.emit(
     'project_local',
     listing,
@@ -1099,18 +1227,20 @@ async function process_project(
     data_dbs,
     {push: {}}
   );
-  createdProjects[active_id] = {
-    project: project_object,
-    active: active_project,
-    meta: meta_db,
-    data: data_db,
-  };
 
   if (meta_is_fresh) {
-    let waiting = true;
-    const synced_callback = () => {
-      waiting = false;
-      if (USE_REAL_DATA) {
+    const meta_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+      active: async () =>
+        initializeEvents.emit(
+          'project_meta_active',
+          listing,
+          active_project,
+          project_object,
+          meta_db
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleProjectMetadata(active_project._id, meta_db.local);
         initializeEvents.emit(
           'project_meta_paused',
           listing,
@@ -1118,46 +1248,35 @@ async function process_project(
           project_object,
           meta_db
         );
-      } else {
-        setupExampleProjectMetadata(active_project._id, meta_db.local).then(
-          () => {
-            initializeEvents.emit(
-              'project_meta_paused',
-              listing,
-              active_project,
-              project_object,
-              meta_db
-            );
-          }
+      },
+      error: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleProjectMetadata(active_project._id, meta_db.local);
+        initializeEvents.emit(
+          'project_meta_paused',
+          listing,
+          active_project,
+          project_object,
+          meta_db
         );
-      }
-    };
-    meta_db.remote.connection.on('paused', synced_callback);
-    meta_db.remote.connection.on('error', synced_callback);
-    meta_db.remote.connection.on('active', () => {
-      waiting = true;
-      initializeEvents.emit(
-        'project_meta_active',
-        listing,
-        active_project,
-        project_object,
-        meta_db
-      );
+      },
     });
-    setTimeout(() => {
-      if (waiting) {
-        // Timeout error when still waiting here
-        console.error('Timed out waiting for metadata db: ', meta_db.remote);
-        synced_callback();
-      }
-    }, PROJECT_TIMEOUT);
+    meta_sync_handler.listen(meta_db.remote.connection);
   }
 
   if (data_is_fresh) {
-    let waiting = true;
-    const synced_callback = () => {
-      waiting = false;
-      if (USE_REAL_DATA) {
+    const data_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+      active: async () =>
+        initializeEvents.emit(
+          'project_data_active',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleData(active_project._id, data_db.local);
         initializeEvents.emit(
           'project_data_paused',
           listing,
@@ -1165,37 +1284,20 @@ async function process_project(
           project_object,
           data_db
         );
-      } else {
-        setupExampleData(active_project._id, data_db.local).then(() => {
-          initializeEvents.emit(
-            'project_data_paused',
-            listing,
-            active_project,
-            project_object,
-            data_db
-          );
-        });
-      }
-    };
-    data_db.remote.connection.on('paused', synced_callback);
-    data_db.remote.connection.on('error', synced_callback);
-    data_db.remote.connection.on('active', () => {
-      waiting = true;
-      initializeEvents.emit(
-        'project_data_active',
-        listing,
-        active_project,
-        project_object,
-        data_db
-      );
+      },
+      error: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleData(active_project._id, data_db.local);
+        initializeEvents.emit(
+          'project_data_paused',
+          listing,
+          active_project,
+          project_object,
+          data_db
+        );
+      },
     });
-    setTimeout(() => {
-      if (waiting) {
-        // Timeout error when still waiting here
-        console.error('Timed out waiting for data db: ', data_db.remote);
-        synced_callback();
-      }
-    }, PROJECT_TIMEOUT);
+    data_sync_handler.listen(data_db.remote.connection);
   }
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */

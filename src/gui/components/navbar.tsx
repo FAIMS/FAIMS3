@@ -1,4 +1,4 @@
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -30,9 +30,9 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {ProjectsList} from '../../datamodel';
-
-import {store} from '../../store';
+import {getProjectList} from '../../databaseAccess';
+import {createdProjects} from '../../sync';
+import SystemAlert from './alert';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -45,11 +45,13 @@ type ProjectListItemProps = {
   title: string;
   icon: any;
   to: string;
+  disabled: boolean;
 };
 type MenuItemProps = {
   nested?: any;
   title: string;
   to: string;
+  disabled: boolean;
   icon: React.ReactChild | undefined;
 };
 
@@ -116,13 +118,14 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-function getNestedProjects(projectList: ProjectsList) {
+function getNestedProjects(pouchProjectList: typeof createdProjects) {
   const projectListItems: ProjectListItemProps[] = [];
-  Object.keys(projectList).map(key => {
+  Object.keys(pouchProjectList).map(listing_id_project_id => {
     projectListItems.push({
-      title: projectList[key].name,
+      title: pouchProjectList[listing_id_project_id].project.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + projectList[key]._id,
+      to: ROUTES.PROJECT + listing_id_project_id,
+      disabled: false,
     });
   });
   return {
@@ -130,32 +133,42 @@ function getNestedProjects(projectList: ProjectsList) {
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.PROJECT_LIST,
+    disabled: false,
   };
 }
 
-export default function NavbarNew() {
+export default function Navbar() {
   const classes = useStyles();
-  const globalState = useContext(store);
+  // const globalState = useContext(store);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const isSyncing = false;
+  // const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  // const [projectList, setProjectList] = useState<ProjectsList>({});
+  // const [error, setError] = useState<string | null>(null);
   const toggle = () => setIsOpen(!isOpen);
+
+  const pouchProjectList = getProjectList();
 
   const topMenuItems: Array<MenuItemProps> = [
     {
       title: 'Home',
       icon: <HomeIcon />,
       to: ROUTES.HOME,
+      disabled: false,
     },
-    getNestedProjects(globalState.state.project_list),
+    getNestedProjects(pouchProjectList),
     {
       title: 'Tools',
       icon: <BuildIcon />,
       to: '/',
+      disabled: true,
     },
     {
       title: 'Notifications',
       icon: <NotificationsIcon />,
       to: '/',
+      disabled: true,
     },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
@@ -163,16 +176,19 @@ export default function NavbarNew() {
       title: 'Profile',
       icon: <AccountCircleIcon />,
       to: '/',
+      disabled: true,
     },
     {
       title: 'Messages',
       icon: <MessageIcon />,
       to: '/',
+      disabled: true,
     },
     {
       title: 'Settings',
       icon: <SettingsIcon />,
       to: '/',
+      disabled: true,
     },
   ];
 
@@ -200,8 +216,17 @@ export default function NavbarNew() {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap style={{flex: 1}}>
-              FAIMS3
+            <Typography variant="h4" noWrap style={{flex: 1}}>
+              FAIMS3{' '}
+              {isSyncing ? (
+                <CircularProgress
+                  color={'secondary'}
+                  size={'1rem'}
+                  thickness={5}
+                />
+              ) : (
+                ''
+              )}
             </Typography>
             <Typography>username</Typography>
           </Toolbar>
@@ -235,6 +260,7 @@ export default function NavbarNew() {
                         [item.title]: !prevNestedMenuOpen[item.title],
                       }));
                     }}
+                    disabled={item.disabled}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
                     <ListItemText>{item.title} </ListItemText>
@@ -267,6 +293,7 @@ export default function NavbarNew() {
                             }
                             to={nestedItem.to}
                             component={RouterLink}
+                            disabled={item.disabled}
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
                             <ListItemText primary={nestedItem.title} />
@@ -282,6 +309,7 @@ export default function NavbarNew() {
                   key={item.title}
                   to={item.to}
                   component={RouterLink}
+                  disabled={item.disabled}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
@@ -292,8 +320,12 @@ export default function NavbarNew() {
           <Divider />
           <List>
             {bottomMenuItems.map(
-              (item: {title: string; icon: React.ReactChild | undefined}) => (
-                <ListItem button key={item.title}>
+              (item: {
+                title: string;
+                icon: React.ReactChild | undefined;
+                disabled: boolean;
+              }) => (
+                <ListItem button key={item.title} disabled={item.disabled}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
                 </ListItem>
@@ -302,6 +334,7 @@ export default function NavbarNew() {
           </List>
         </Drawer>
       </div>
+      <SystemAlert />
     </React.Fragment>
   );
 }

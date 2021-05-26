@@ -210,12 +210,17 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
       .then(userid => {
         console.assert(values['_id'] === this.obsid);
         delete values['_id'];
+        const created = new Date('1990-01-01'); // FIXME
+        const now = new Date();
         const doc = {
           _id: this.obsid,
           _rev: undefined as undefined | string,
           type: '??:??',
           data: values,
-          userid: userid,
+          created_by: userid, // get this from the form
+          updated_by: userid,
+          created: created,
+          updated: now,
         };
         if (this.props.observation) {
           doc._rev = this.props.observation._rev;
