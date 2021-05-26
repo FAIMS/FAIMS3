@@ -7,9 +7,12 @@ import org.openqa.selenium.remote.DesiredCapabilities;
 
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
+import io.appium.java_client.remote.AndroidMobileCapabilityType;
 
 public class AndroidTest {
 	protected static AndroidDriver<AndroidElement> driver;
+
+	private static boolean isLocal;
 
 	/**
 	 * Setup the AndroidDriver based on parameter.
@@ -19,10 +22,19 @@ public class AndroidTest {
 	 * @throws MalformedURLException
 	 */
 	public static void setup(boolean localTest, String testDesc) throws MalformedURLException {
+		DesiredCapabilities caps = new DesiredCapabilities();
+		// allow location services
+	    caps.setCapability(AndroidMobileCapabilityType.GPS_ENABLED, "true");
+	    // allow everything else so we don't get permission popups
+	    caps.setCapability(AndroidMobileCapabilityType.AUTO_GRANT_PERMISSIONS, "true");
+	    // Use UIAutomator2 for devices higher than 7
+	    caps.setCapability("automationName", "UiAutomator2");
 		if (localTest) {
-			localConnectionSetup();
+			localConnectionSetup(caps);
+			isLocal = true;
 		} else {
-		    browserstackSetup(testDesc);
+		    browserstackSetup(caps, testDesc);
+		    isLocal = false;
 		}
 	}
 
@@ -30,13 +42,10 @@ public class AndroidTest {
 	 * Localhost setup for Rini's machine.
 	 * @throws MalformedURLException
 	 */
-	private static void localConnectionSetup() throws MalformedURLException {
-		DesiredCapabilities caps = new DesiredCapabilities();
+	private static void localConnectionSetup(DesiredCapabilities caps) throws MalformedURLException {
 	    caps.setCapability("platformName", "Android");
 	    caps.setCapability("platformVersion", "10.0");
 	    caps.setCapability("deviceName", "Android Emulator");
-	    // Use UIAutomator2 for devices higher than 7
-	    caps.setCapability("automationName", "UiAutomator2");
 	    caps.setCapability("adbExecTimeout", "1200000");
 	    caps.setCapability("app", "C:\\github\\FAIMS3\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk");
 
@@ -48,17 +57,16 @@ public class AndroidTest {
 	 * @param testDescription Test scenario. Link to JIRA if possible.
 	 * @throws MalformedURLException
 	 */
-	private static void browserstackSetup(String testDescription) throws MalformedURLException {
-		DesiredCapabilities caps = new DesiredCapabilities();
-
+	private static void browserstackSetup(DesiredCapabilities caps, String testDescription) throws MalformedURLException {
 	    caps.setCapability("project", "FAIMS3 - Android Tests");
 	    caps.setCapability("build", "Alpha");
 	    caps.setCapability("name", testDescription);
-	    caps.setCapability("automationName", "Appium");
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "Google Pixel 3");
-	    caps.setCapability("os_version", "9.0");
+	    caps.setCapability("os_version", "10.0");
+	    // Latest Appium browserstack version with correct geolocation
+	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
         // TODO: will this work against Brian's Github script?
 	    caps.setCapability("app", System.getenv("BROWSERSTACK_LOCAL_IDENTIFIER"));
@@ -68,5 +76,13 @@ public class AndroidTest {
 	    driver = new AndroidDriver<AndroidElement>(
 	            new URL("http://hub.browserstack.com/wd/hub"), caps);
 
+	}
+
+	/**
+	 * True if this is connected to Browserstack.
+	 * @return
+	 */
+	public static boolean isUsingBrowserstack() {
+		return !isLocal;
 	}
 }
