@@ -276,28 +276,6 @@ async function get_default_instance(): Promise<DataModel.NonNullListingsObject> 
 PouchDB.plugin(PouchDBFind);
 
 /**
- * This is appended to whenever a project has its
- * meta & data local dbs come into existance.
- *
- * This is essentially accumulating 'project_paused' events.
- */
-export type createdProjectsInterface = {
-  project: DataModel.ProjectObject;
-  active: ExistingActiveDoc;
-  meta: LocalDB<DataModel.ProjectMetaObject>;
-  data: LocalDB<DataModel.EncodedObservation>;
-};
-
-export const createdProjects: {
-  [key: string]: {
-    project: DataModel.ProjectObject;
-    active: ExistingActiveDoc;
-    meta: LocalDB<DataModel.ProjectMetaObject>;
-    data: LocalDB<DataModel.EncodedObservation>;
-  };
-} = {};
-
-/**
  * This is appended to whneever a listing has its
  * projects_db & people_db come into existance
  *
@@ -562,6 +540,7 @@ interface DirectoryEmitter extends EventEmitter {
     event: 'projects_known',
     listener: (projects: Set<string>) => unknown
   ): this;
+  on(event: 'projects_created', listener: () => unknown): this;
 
   emit(
     event: 'project_meta_paused',
@@ -636,6 +615,7 @@ interface DirectoryEmitter extends EventEmitter {
   emit(event: 'directory_error', err: unknown): boolean;
   emit(event: 'projects_known', projects: Set<string>): boolean;
   emit(event: 'metas_complete', metas: MetasCompleteType): boolean;
+  emit(event: 'projects_created'): boolean;
 }
 
 /**
@@ -663,7 +643,7 @@ async function initialize_nocheck() {
   console.log('adding directory test data');
 
   const initialized = new Promise(resolve => {
-    initializeEvents.once('projects_known', resolve);
+    initializeEvents.once('projects_created', resolve);
   });
   initialize_dbs();
   await initialized;
@@ -741,6 +721,7 @@ add_initial_listener(register_projects_known);
  * This is set to just before 'projects_known' event is emitted.
  */
 export let projects_known: null | Set<string> = null;
+
 /**
  * Adds event handlers to initializeEvents to:
  * Enable 'Propagation' of completion of all known projects meta & other databases.
@@ -813,7 +794,60 @@ function register_projects_known(initializeEvents: DirectoryEmitter) {
   });
 }
 
+/**
+ * This is appended to whenever a project has its
+ * meta & data local dbs come into existance.
+ *
+ * This is essentially accumulating 'project_paused' events.
+ */
+export type createdProjectsInterface = {
+  project: DataModel.ProjectObject;
+  active: ExistingActiveDoc;
+  meta: LocalDB<DataModel.ProjectMetaObject>;
+  data: LocalDB<DataModel.EncodedObservation>;
+};
+
+export const createdProjects: {
+  [key: string]: {
+    project: DataModel.ProjectObject;
+    active: ExistingActiveDoc;
+    meta: LocalDB<DataModel.ProjectMetaObject>;
+    data: LocalDB<DataModel.EncodedObservation>;
+  };
+} = {};
+
+export let projects_created = false;
+
 add_initial_listener(register_metas_complete);
+
+function register_projects_created(initializeEvents: DirectoryEmitter) {
+  const project_statuses = new Map<string, boolean>();
+
+  const emit_if_complete = () => {
+    if (projects_known && Array.from(project_statuses.values()).every(v => v)) {
+      projects_created = true;
+      initializeEvents.emit('projects_created');
+    }
+  };
+
+  initializeEvents.on('project_local', (listing, active) => {
+    project_statuses.set(active._id, true);
+    emit_if_complete();
+  });
+
+  initializeEvents.on('projects_known', projects => {
+    projects.forEach(project_id => {
+      if (!project_statuses.has(project_id)) {
+        // Add a project that hasn't triggered its project_local yet
+        project_statuses.set(project_id, false);
+      }
+    });
+    emit_if_complete();
+  });
+}
+
+add_initial_listener(register_projects_created);
+
 export type MetasCompleteType = {
   [active_id: string]:
     | [
@@ -1139,6 +1173,14 @@ async function process_project(
     metadata_dbs
   );
   const [, data_db_local] = ensure_local_db('data', active_id, data_dbs);
+
+  createdProjects[active_id] = {
+    project: project_object,
+    active: active_project,
+    meta: meta_db_local,
+    data: data_db_local,
+  };
+
   initializeEvents.emit(
     'project_local',
     listing,
@@ -1176,12 +1218,6 @@ async function process_project(
     data_dbs,
     {push: {}}
   );
-  createdProjects[active_id] = {
-    project: project_object,
-    active: active_project,
-    meta: meta_db,
-    data: data_db,
-  };
 
   if (meta_is_fresh) {
     const meta_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
