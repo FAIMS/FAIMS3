@@ -33,7 +33,7 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
 import {createdProjects} from '../../sync';
 import SystemAlert from './alert';
-import { ProjectInformation } from '../../datamodel';
+import {ProjectInformation} from '../../datamodel';
 
 // type NavBarState = {
 //   topMenuItems: any;
