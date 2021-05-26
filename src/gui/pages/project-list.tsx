@@ -64,8 +64,8 @@ export default function ProjectList() {
                         _id: 'dummy',
                         name: 'dummy',
                         description: 'dummy',
+                        project_id: 'dummy',
                       }}
-                      listing_id_project_id={'dummy'}
                       showObservations={true}
                       listView={true}
                       dashboard={false}
@@ -73,35 +73,21 @@ export default function ProjectList() {
                   </Skeleton>
                 </Grid>
               ))
-            : Object.keys(pouchProjectList).map(listing_id_project_id => {
-                const pouchProject = pouchProjectList[listing_id_project_id];
-                if (pouchProject !== null) {
-                  return (
-                    <Grid
-                      item
-                      xs={12}
-                      key={'project-list-grid' + pouchProject.project._id}
-                    >
-                      <ProjectCard
-                        project={pouchProject.project}
-                        listing_id_project_id={listing_id_project_id}
-                        listView={true}
-                        showObservations={true}
-                        dashboard={false}
-                      />
-                    </Grid>
-                  );
-                } else {
-                  return (
-                    <Grid
-                      item
-                      xs={12}
-                      key={'project-list-grid' + listing_id_project_id}
-                    >
-                      Project could not be loaded
-                    </Grid>
-                  );
-                }
+            : pouchProjectList.map(pouchProject => {
+                return (
+                  <Grid
+                    item
+                    xs={12}
+                    key={'project-list-grid' + pouchProject.project_id}
+                  >
+                    <ProjectCard
+                      project={pouchProject}
+                      listView={true}
+                      showObservations={true}
+                      dashboard={false}
+                    />
+                  </Grid>
+                );
               })}
         </Grid>
       </div>

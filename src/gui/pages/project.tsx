@@ -23,7 +23,6 @@ export default function Project() {
         project={project_info}
         showObservations={true}
         listView={false}
-        listing_id_project_id={listing_id_project_id}
       />
     </Container>
   ) : (

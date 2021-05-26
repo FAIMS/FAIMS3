@@ -23,14 +23,13 @@ import {
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectObject} from '../../datamodel';
+import {ProjectInformation} from '../../datamodel';
 import ObservationsTable from './observationsTable';
 import MetadataRenderer from './metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 type ProjectCardProps = {
-  project: ProjectObject;
-  listing_id_project_id: string;
+  project: ProjectInformation;
   showObservations: boolean;
   listView: boolean;
   dashboard: boolean;
@@ -78,7 +77,6 @@ const useStyles = makeStyles(theme => ({
 export default function ProjectCard(props: ProjectCardProps) {
   const {
     project,
-    listing_id_project_id,
     showObservations,
     listView,
     dashboard,
@@ -86,7 +84,7 @@ export default function ProjectCard(props: ProjectCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
-  const project_url = ROUTES.PROJECT + (listing_id_project_id || 'dummy');
+  const project_url = ROUTES.PROJECT + (project.project_id || 'dummy');
 
   // const getShare = async () => {
   //   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -197,12 +195,12 @@ export default function ProjectCard(props: ProjectCardProps) {
                 style={{marginRight: '5px'}}
               />
               <MetadataRenderer
-                project_id={project._id}
+                project_id={project.project_id}
                 metadata_key={'project_lead'}
                 metadata_label={'Project Lead'}
               />{' '}
               <MetadataRenderer
-                project_id={project._id}
+                project_id={project.project_id}
                 metadata_key={'lead_institution'}
                 metadata_label={'Lead Institution'}
               />
@@ -226,7 +224,7 @@ export default function ProjectCard(props: ProjectCardProps) {
             {showObservations ? (
               <Box mt={1}>
                 <ObservationsTable
-                  listing_id_project_id={listing_id_project_id}
+                  listing_id_project_id={project.project_id}
                   restrictRows={10}
                   compact={listView}
                 />

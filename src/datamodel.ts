@@ -74,6 +74,7 @@ export type ProjectsList = {
  */
 export interface ProjectInformation {
   _id: string;
+  project_id: string;
   name: string;
   description?: string;
   last_updated?: string;

@@ -111,8 +111,8 @@ export default function Home() {
                             name: 'dummy',
                             description: 'dummy',
                             _id: 'dummy',
+                            project_id: 'dummy',
                           }}
-                          listing_id_project_id={'dummy'}
                         />
                       </Skeleton>
                     </Grid>
@@ -128,7 +128,6 @@ export default function Home() {
                         >
                           <ProjectCard
                             project={pouchProject}
-                            listing_id_project_id={listing_id_project_id}
                             dashboard={true}
                           />
                         </Grid>
