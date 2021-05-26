@@ -2,7 +2,11 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {act} from 'react-dom/test-utils';
 import App from '../App';
-//
+
+test('temp test as file cannot be empty', () => {
+  expect(true).toBe(true);
+});
+
 //// No projects created or to be created during init.
 //jest.mock('./sync/index', () => ({
 //  initialize: () => Promise.resolve(),
