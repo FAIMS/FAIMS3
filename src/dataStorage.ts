@@ -12,12 +12,12 @@ export function generateFAIMSDataID(): string {
 }
 
 function convertFromFormToDB(
-  doc: Observation & {_id: string},
+  doc: Observation,
   revision: string | undefined = undefined
 ): EncodedObservation {
   if (revision !== undefined) {
     return {
-      _id: doc._id,
+      _id: doc.observation_id,
       _rev: revision,
       type: doc.type,
       data: doc.data,
@@ -30,7 +30,7 @@ function convertFromFormToDB(
   }
   if (doc._rev !== undefined) {
     return {
-      _id: doc._id,
+      _id: doc.observation_id,
       _rev: doc._rev,
       type: doc.type,
       data: doc.data,
@@ -42,7 +42,7 @@ function convertFromFormToDB(
     };
   }
   return {
-    _id: doc._id,
+    _id: doc.observation_id,
     type: doc.type,
     data: doc.data,
     created: doc.created.toISOString(),
@@ -60,7 +60,7 @@ export function convertFromDBToForm(
     return null;
   }
   return {
-    _id: doc._id,
+    observation_id: doc._id,
     type: doc.type,
     data: doc.data,
     created: new Date(doc.created),
@@ -86,14 +86,12 @@ async function getLatestRevision(
 
 export async function upsertFAIMSData(project_name: string, doc: Observation) {
   const datadb = getDataDB(project_name);
-  if (doc._id === undefined) {
-    throw Error('_id required to save observation');
+  if (doc.observation_id === undefined) {
+    throw Error('observation_id required to save observation');
   }
   try {
-    const revision = await getLatestRevision(project_name, doc._id);
-    return await datadb.put(
-      convertFromFormToDB(doc as Observation & {_id: string}, revision)
-    );
+    const revision = await getLatestRevision(project_name, doc.observation_id);
+    return await datadb.put(convertFromFormToDB(doc, revision));
   } catch (err) {
     console.warn(err);
     throw Error('failed to save data');

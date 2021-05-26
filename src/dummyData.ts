@@ -12,7 +12,7 @@ import {
 import {setProjectMetadata} from './projectMetadata';
 
 const example_datums: {
-  [key: string]: ({_id: string} & EncodedObservation)[];
+  [key: string]: EncodedObservation[];
 } = {
   default_lake_mungo: [
     {
@@ -750,7 +750,7 @@ export const dummy_projects: ProjectsList = {
 };
 export const dummy_observations: ObservationList = {
   '1': {
-    _id: '1',
+    observation_id: '1',
     _rev: '1',
     _project_id: '1',
     type: '',
@@ -775,7 +775,7 @@ export const dummy_observations: ObservationList = {
     },
   },
   '2': {
-    _id: '2',
+    observation_id: '2',
     _rev: '1',
     _project_id: '1',
     type: '',
@@ -793,7 +793,7 @@ export const dummy_observations: ObservationList = {
     },
   },
   '3': {
-    _id: '3',
+    observation_id: '3',
     _rev: '1',
     _project_id: '1',
     type: '',
@@ -811,7 +811,7 @@ export const dummy_observations: ObservationList = {
     },
   },
   '4': {
-    _id: '4',
+    observation_id: '4',
     _rev: '1',
     _project_id: '2',
     type: '',
@@ -829,7 +829,7 @@ export const dummy_observations: ObservationList = {
     },
   },
   '5': {
-    _id: '5',
+    observation_id: '5',
     _rev: '1',
     _project_id: '2',
     type: '',

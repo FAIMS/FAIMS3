@@ -149,9 +149,14 @@ export interface ProjectPeople {
   _deleted?: boolean;
 }
 
+// There are two internal ID for observations, the former is unique to a
+// project, the latter unique to the system (i.e. includes project_id)
+export type ObservationID = string;
+export type FullyResolvedObservationID = string;
+
 // This is used within the form/ui subsystem, do not use with pouch
 export interface Observation {
-  _id?: string; // optional as we may want to include the raw json in places
+  observation_id: ObservationID;
   _rev?: string; // optional as we may want to include the raw json in places
   _project_id?: string;
   type: string;
