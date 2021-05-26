@@ -55,29 +55,26 @@ export default function ProjectList() {
 
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {Object.keys(pouchProjectList).length === 0
-            ? <span>No projects found</span>
-            : Object.keys(pouchProjectList).map(project_id => {
-                const project_info = getProjectInfo(project_id);
-                if (project_info !== null) {
-                  return (
-                    <Grid item xs={12} key={'project-list-grid' + project_id}>
-                      <ProjectCard
-                        project={project_info}
-                        listView={true}
-                        showObservations={true}
-                        dashboard={false}
-                      />
-                    </Grid>
-                  );
-                } else {
-                  return (
-                    <Grid item xs={12} key={'project-list-grid' + project_id}>
-                      Project could not be loaded
-                    </Grid>
-                  );
-                }
-              })}
+          {Object.keys(pouchProjectList).length === 0 ? (
+            <span>No projects found</span>
+          ) : (
+            pouchProjectList.map(pouchProject => {
+              return (
+                <Grid
+                  item
+                  xs={12}
+                  key={'project-list-grid' + pouchProject.project_id}
+                >
+                  <ProjectCard
+                    project={pouchProject}
+                    listView={true}
+                    showObservations={true}
+                    dashboard={false}
+                  />
+                </Grid>
+              );
+            })
+          )}
         </Grid>
       </div>
     </Container>

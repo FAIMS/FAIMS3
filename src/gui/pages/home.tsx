@@ -102,35 +102,26 @@ export default function Home() {
           <Typography variant="overline">My Projects</Typography>
           <Paper className={classes.paper}>
             <Grid container spacing={1}>
-              {Object.keys(pouchProjectList).length === 0
-                ? <span>No projects found</span>
-                : Object.keys(pouchProjectList).map(project_id => {
-                    const project_info = getProjectInfo(project_id);
-                    if (project_info !== null) {
-                      return (
-                        <Grid
-                          item
-                          xs={12}
-                          key={'project-list-grid' + project_id}
-                        >
-                          <ProjectCard
-                            project={project_info}
-                            dashboard={true}
-                          />
-                        </Grid>
-                      );
-                    } else {
-                      return (
-                        <Grid
-                          item
-                          xs={12}
-                          key={'project-list-grid' + project_id}
-                        >
-                          Project could not be loaded
-                        </Grid>
-                      );
-                    }
-                  })}
+              {Object.keys(pouchProjectList).length === 0 ? (
+                <span>No projects found</span>
+              ) : (
+                Object.keys(pouchProjectList).map(project_id => {
+                  const project_info = getProjectInfo(project_id);
+                  if (project_info !== null) {
+                    return (
+                      <Grid item xs={12} key={'project-list-grid' + project_id}>
+                        <ProjectCard project={project_info} dashboard={true} />
+                      </Grid>
+                    );
+                  } else {
+                    return (
+                      <Grid item xs={12} key={'project-list-grid' + project_id}>
+                        Project could not be loaded
+                      </Grid>
+                    );
+                  }
+                })
+              )}
             </Grid>
             <Box mt={2}>
               <Link

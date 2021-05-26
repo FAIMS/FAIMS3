@@ -16,7 +16,7 @@ import {
   initializeEvents,
 } from './sync';
 
-export function getProjectList(user_id?: string): typeof createdProjects {
+export function getProjectList(user_id?: string): ProjectInformation[] {
   /**
    * Return all active projects the user has access to, including the
    * top 30 most recently updated observations.
@@ -25,8 +25,19 @@ export function getProjectList(user_id?: string): typeof createdProjects {
   // TODO filter by active projects
   // TODO filter data by top 30 entries, sorted by most recently updated
   // TODO decode .data
-  const decodedProjects = [];
-  return createdProjects;
+  const output: ProjectInformation[] = [];
+  for (const listing_id_project_id in createdProjects) {
+    output.push({
+      _id: createdProjects[listing_id_project_id].project._id,
+      name: createdProjects[listing_id_project_id].project.name,
+      description: createdProjects[listing_id_project_id].project.description,
+      last_updated: createdProjects[listing_id_project_id].project.last_updated,
+      created: createdProjects[listing_id_project_id].project.created,
+      status: createdProjects[listing_id_project_id].project.status,
+      project_id: listing_id_project_id,
+    });
+  }
+  return output;
 }
 
 export function getProjectInfo(
@@ -38,6 +49,7 @@ export function getProjectInfo(
   }
 
   return {
+    _id: proj.project._id,
     project_id: project_id,
     name: proj.project.name,
     description: proj.project.description || 'No description',
