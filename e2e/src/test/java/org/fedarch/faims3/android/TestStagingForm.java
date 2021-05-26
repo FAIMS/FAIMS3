@@ -29,7 +29,7 @@ public class TestStagingForm extends AndroidTest {
   public static void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  AndroidTest.setup(true, "Test Form Staging - Android");
+	  AndroidTest.setup(false, "Test Form Staging - Android");
   }
 
   /**
