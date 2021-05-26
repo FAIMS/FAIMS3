@@ -17,7 +17,13 @@ export default function MetadataRenderer(props: MetadataProps) {
 
   useEffect(() => {
     const getMeta = async () => {
-      const meta = await getProjectMetadata(project_id, metadata_key);
+      let meta;
+      try {
+        meta = await getProjectMetadata(project_id, metadata_key);
+      } catch (err) {
+        console.debug(err);
+        meta = 'Unknown';
+      }
       setMetadata(meta);
     };
     getMeta();

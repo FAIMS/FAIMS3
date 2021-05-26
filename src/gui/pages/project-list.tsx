@@ -6,7 +6,6 @@ import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectList, getProjectInfo} from '../../databaseAccess';
-import Skeleton from '@material-ui/lab/Skeleton';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -55,29 +54,31 @@ export default function ProjectList() {
 
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {Object.keys(pouchProjectList).length === 0
-            ? <span>No projects found</span>
-            : Object.keys(pouchProjectList).map(project_id => {
-                const project_info = getProjectInfo(project_id);
-                if (project_info !== null) {
-                  return (
-                    <Grid item xs={12} key={'project-list-grid' + project_id}>
-                      <ProjectCard
-                        project={project_info}
-                        listView={true}
-                        showObservations={true}
-                        dashboard={false}
-                      />
-                    </Grid>
-                  );
-                } else {
-                  return (
-                    <Grid item xs={12} key={'project-list-grid' + project_id}>
-                      Project could not be loaded
-                    </Grid>
-                  );
-                }
-              })}
+          {Object.keys(pouchProjectList).length === 0 ? (
+            <span>No projects found</span>
+          ) : (
+            Object.keys(pouchProjectList).map(project_id => {
+              const project_info = getProjectInfo(project_id);
+              if (project_info !== null) {
+                return (
+                  <Grid item xs={12} key={'project-list-grid' + project_id}>
+                    <ProjectCard
+                      project={project_info}
+                      listView={true}
+                      showObservations={true}
+                      dashboard={false}
+                    />
+                  </Grid>
+                );
+              } else {
+                return (
+                  <Grid item xs={12} key={'project-list-grid' + project_id}>
+                    Project could not be loaded
+                  </Grid>
+                );
+              }
+            })
+          )}
         </Grid>
       </div>
     </Container>

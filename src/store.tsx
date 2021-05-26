@@ -155,11 +155,7 @@ const StateProvider = (props: any) => {
             lookupFAIMSDataID(active._id, doc_id).then(decoded =>
               decoded !== null
                 ? (data_acc[doc_id] = decoded)
-                : Promise.reject(
-                    Error(
-                      'lookupFAIMSDataID returned null even though doc is in local DB'
-                    )
-                  )
+                : console.debug(`${doc_id} was deleted, skipping`)
             )
           );
           // Promise.all(promises)
