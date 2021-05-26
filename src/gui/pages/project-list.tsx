@@ -58,15 +58,15 @@ export default function ProjectList() {
           {Object.keys(pouchProjectList).length === 0 ? (
             <span>No projects found</span>
           ) : (
-            pouchProjectList.map(pouchProject => {
+            pouchProjectList.map(project_info => {
               return (
                 <Grid
                   item
                   xs={12}
-                  key={'project-list-grid' + pouchProject.project_id}
+                  key={'project-list-grid' + project_info.project_id}
                 >
                   <ProjectCard
-                    project={pouchProject}
+                    project={project_info}
                     listView={true}
                     showObservations={true}
                     dashboard={false}
