@@ -303,6 +303,7 @@ export function getDataDB(
   if (data_dbs[active_id] !== undefined) {
     return data_dbs[active_id].local;
   } else {
+    console.warn(`Failed to look up ${active_id}`);
     throw 'Projects not initialized yet';
   }
 }
@@ -313,6 +314,7 @@ export function getProjectDB(
   if (metadata_dbs[active_id] !== undefined) {
     return metadata_dbs[active_id].local;
   } else {
+    console.warn(`Failed to look up ${active_id}`);
     throw 'Projects not initialized yet';
   }
 }
