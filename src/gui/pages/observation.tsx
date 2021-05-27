@@ -8,12 +8,13 @@ import {
   Paper,
   Tab,
   Button,
+  Link,
 } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
-import {NavLink, useHistory, useParams} from 'react-router-dom';
+import {Link as RouterLink, useHistory, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {ObservationForm} from '../components/observationForm';
 import InProgress from '../components/inProgress';
@@ -21,6 +22,7 @@ import {Alert} from '@material-ui/lab';
 import {deleteFAIMSDataForID} from '../../dataStorage';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
+import {getProjectInfo} from '../../databaseAccess';
 export default function Observation() {
   const {listing_id_project_id, observation_id} = useParams<{
     listing_id_project_id: string;
@@ -30,6 +32,7 @@ export default function Observation() {
   const history = useHistory();
   const globalState = useContext(store);
   const {dispatch} = globalState;
+  const project_info = getProjectInfo(listing_id_project_id);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
@@ -63,17 +66,33 @@ export default function Observation() {
     <Container maxWidth="lg">
       <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
         <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
-          <NavLink to={ROUTES.PROJECT_LIST}>Projects</NavLink>
-          <NavLink to={ROUTES.PROJECT + listing_id_project_id}>
-            {listing_id_project_id}
-          </NavLink>
+          <Link component={RouterLink} to={ROUTES.INDEX}>
+            Index
+          </Link>
+          <Link component={RouterLink} to={ROUTES.PROJECT_LIST}>
+            Projects
+          </Link>
+          <Link
+            component={RouterLink}
+            to={ROUTES.PROJECT + listing_id_project_id}
+          >
+            {project_info !== null ? project_info.name : listing_id_project_id}
+          </Link>
           <Typography color="textPrimary">{observation_id}</Typography>
         </Breadcrumbs>
       </Box>
+      <Box mb={2}>
+        <Typography variant={'h2'} component={'h1'}>
+          Update Observation
+        </Typography>
+        <Typography variant={'subtitle1'} gutterBottom>
+          Edit data for this observation. If you need to, you can also revisit
+          previous revisions.
+        </Typography>
+      </Box>
       <Paper square>
         <TabContext value={value}>
-          <AppBar position="static" color={'transparent'}>
+          <AppBar position="static" color={'primary'}>
             <TabList onChange={handleChange} aria-label="simple tabs example">
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />

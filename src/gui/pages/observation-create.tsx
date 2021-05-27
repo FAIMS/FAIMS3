@@ -6,18 +6,19 @@ import {
   Typography,
   Paper,
   Link,
-  Divider,
 } from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {generateFAIMSDataID} from '../../dataStorage';
 import {ObservationForm} from '../components/observationForm';
+import {getProjectInfo} from '../../databaseAccess';
 
 export default function ObservationCreate() {
   const {listing_id_project_id} = useParams<{
     listing_id_project_id: string;
   }>();
+  const project_info = getProjectInfo(listing_id_project_id);
 
   return (
     <Container maxWidth="lg">
@@ -38,28 +39,23 @@ export default function ObservationCreate() {
           <Typography color="textPrimary">New Observation</Typography>
         </Breadcrumbs>
       </Box>
-
+      <Box mb={2}>
+        <Typography variant={'h2'} component={'h1'}>
+          Record Observation
+        </Typography>
+        <Typography variant={'subtitle1'} gutterBottom>
+          Add an observation for the{' '}
+          {project_info !== null ? project_info.name : listing_id_project_id}{' '}
+          project.
+        </Typography>
+      </Box>
       <Paper square>
         <Box p={3}>
-          <Typography variant={'h2'} component={'h1'}>
-            Record Observation
-          </Typography>
-          <Typography variant={'subtitle1'} gutterBottom>
-            Add data for the {} project. If you need to, you can also edit
-            existing observations.{' '}
-            <i>
-              Information about staging procedure and what user can expect about
-              autosave here
-            </i>
-          </Typography>
-          <Divider />
-          <Box mt={5}>
-            <ObservationForm
-              listing_id_project_id={listing_id_project_id}
-              observation_id={generateFAIMSDataID()}
-              is_fresh={true}
-            />
-          </Box>
+          <ObservationForm
+            listing_id_project_id={listing_id_project_id}
+            observation_id={generateFAIMSDataID()}
+            is_fresh={true}
+          />
         </Box>
       </Paper>
     </Container>

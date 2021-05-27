@@ -1,6 +1,6 @@
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import {
   Container,
   Breadcrumbs,
@@ -65,7 +65,9 @@ export default function Home() {
         // bgcolor="background.paper"
       >
         <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
+          <Link component={RouterLink} to={ROUTES.INDEX}>
+            Index
+          </Link>
           <Typography color="textPrimary">Home</Typography>
         </Breadcrumbs>
       </Box>

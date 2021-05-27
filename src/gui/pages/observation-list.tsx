@@ -1,7 +1,14 @@
 import React, {useContext, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {NavLink} from 'react-router-dom';
-import {Box, Breadcrumbs, Container, Grid, Typography} from '@material-ui/core';
+import {Link as RouterLink} from 'react-router-dom';
+import {
+  Box,
+  Breadcrumbs,
+  Container,
+  Grid,
+  Link,
+  Typography,
+} from '@material-ui/core';
 import * as ROUTES from '../../constants/routes';
 import {store} from '../../store';
 import Skeleton from '@material-ui/lab/Skeleton';
@@ -72,7 +79,9 @@ export default function ObservationList() {
     <Container maxWidth="lg">
       <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
         <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
+          <Link component={RouterLink} to={ROUTES.INDEX}>
+            Index
+          </Link>
           <Typography color="textPrimary">Observations</Typography>
         </Breadcrumbs>
       </Box>

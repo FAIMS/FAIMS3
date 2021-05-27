@@ -1,7 +1,14 @@
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {NavLink} from 'react-router-dom';
-import {Container, Breadcrumbs, Typography, Box, Grid} from '@material-ui/core';
+import {Link as RouterLink} from 'react-router-dom';
+import {
+  Container,
+  Breadcrumbs,
+  Typography,
+  Box,
+  Grid,
+  Link,
+} from '@material-ui/core';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
@@ -48,7 +55,9 @@ export default function ProjectList() {
     <Container maxWidth="lg">
       <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
         <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
+          <Link component={RouterLink} to={ROUTES.INDEX}>
+            Index
+          </Link>
           <Typography color="textPrimary">Projects</Typography>
         </Breadcrumbs>
       </Box>
