@@ -6,8 +6,9 @@ name: Nightly Compile APK, Electron, and Test on BrowserStack
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 on:
   # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule
+  # This is UTC. For dev timing look at https://www.worldtimebuddy.com/?pl=1&lid=2147714,100,2063523&h=2147714&hf=1
   schedule:
-    - cron: '55 0 * * *'
+    - cron: '10 1 * * *'
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -27,6 +28,9 @@ jobs:
         if: ${{ github.event_name == 'schedule' }}
         run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
   node-deb-android-job:
+    # https://github.community/t/trigger-action-on-schedule-only-if-there-are-changes-to-the-branch/17887/4
+    needs: check_date
+    if: ${{ needs.check_date.outputs.should_run != 'false' }}
     # The type of runner that the job will run on
     # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
     runs-on: ubuntu-latest
@@ -34,8 +38,6 @@ jobs:
     strategy:
       matrix:
         node-version: [14.x]
-    needs: check_date
-    if: ${{ needs.check_date.outputs.should_run != 'false' }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
