@@ -28,7 +28,6 @@ export function getProjectList(user_id?: string): ProjectInformation[] {
   const output: ProjectInformation[] = [];
   for (const listing_id_project_id in createdProjects) {
     output.push({
-      _id: createdProjects[listing_id_project_id].project._id,
       name: createdProjects[listing_id_project_id].project.name,
       description: createdProjects[listing_id_project_id].project.description,
       last_updated: createdProjects[listing_id_project_id].project.last_updated,
@@ -49,7 +48,6 @@ export function getProjectInfo(
   }
 
   return {
-    _id: proj.project._id,
     project_id: project_id,
     name: proj.project.name,
     description: proj.project.description || 'No description',
