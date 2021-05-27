@@ -12,7 +12,7 @@ import {upsertFAIMSData, lookupFAIMSDataID} from '../../dataStorage';
 import {ProjectUIModel} from '../../datamodel';
 import {getStagedData, setStagedData} from '../../sync/staging';
 import {getCurrentUserId} from '../../users';
-import BoxTab from './boxTab';
+import BoxTab from './ui/boxTab';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
 

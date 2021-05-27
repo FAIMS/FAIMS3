@@ -19,7 +19,8 @@ import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel';
 
 import {ObservationForm} from '../components/observationForm';
-import InProgress from '../components/inProgress';
+import InProgress from '../components/ui/inProgress';
+import BoxTab from '../components/ui/boxTab';
 import {Alert} from '@material-ui/lab';
 import {
   deleteFAIMSDataForID,
@@ -29,7 +30,7 @@ import {ActionType} from '../../actions';
 import {store} from '../../store';
 import {getProjectInfo} from '../../databaseAccess';
 import grey from '@material-ui/core/colors/grey';
-import BoxTab from '../components/boxTab';
+import ObservationMeta from '../components/observation/meta';
 
 export default function Observation() {
   const {project_id, observation_id} = useParams<{
@@ -102,7 +103,6 @@ export default function Observation() {
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
               <Tab label="Meta" value="3" />
-              <Tab label="Settings" value="4" />
             </TabList>
           </AppBar>
           <TabPanel value="1">
@@ -126,22 +126,25 @@ export default function Observation() {
             </Box>
           </TabPanel>
           <TabPanel value="3">
-            <InProgress />
-          </TabPanel>
-          <TabPanel value="4">
-            <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<DeleteIcon />}
-              onClick={handleDelete}
-            >
-              Delete Observation
-            </Button>
+            <ObservationMeta
+              project_id={project_id}
+              observation_id={observation_id}
+            />
             <Box mt={2}>
-              <Alert severity="warning">
-                You cannot reverse this action! Be sure you wish to delete this
-                observation.
-              </Alert>
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<DeleteIcon />}
+                onClick={handleDelete}
+              >
+                Delete Observation
+              </Button>
+              <Box mt={2}>
+                <Alert severity="warning">
+                  You cannot reverse this action! Be sure you wish to delete
+                  this observation.
+                </Alert>
+              </Box>
             </Box>
           </TabPanel>
         </TabContext>

@@ -3,8 +3,8 @@ import packageJson from '../../../package.json';
 import {Box, Grid, Typography} from '@material-ui/core';
 import {store} from '../../store';
 import grey from '@material-ui/core/colors/grey';
-import InProgress from './inProgress';
-import BoxTab from './boxTab';
+import InProgress from './ui/inProgress';
+import BoxTab from './ui/boxTab';
 
 export default function Footer() {
   const globalState = useContext(store);
