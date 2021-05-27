@@ -67,10 +67,10 @@ describe('roundtrip reading and writing to db', () => {
 
       const fulltype = namespace + '::' + name;
 
-      const dataid = generateFAIMSDataID();
+      const observation_id = generateFAIMSDataID();
 
       const doc: Observation = {
-        observation_id: dataid,
+        observation_id: observation_id,
         type: fulltype,
         data: data,
         created_by: userid,
@@ -81,7 +81,7 @@ describe('roundtrip reading and writing to db', () => {
 
       return upsertFAIMSData(project_id, doc)
         .then(result => {
-          return lookupFAIMSDataID(project_id, dataid);
+          return lookupFAIMSDataID(project_id, observation_id);
         })
         .then(result => {
           expect(equals(result, doc)).toBe(true);
@@ -112,10 +112,10 @@ describe('CRUD for data', () => {
 
       const fulltype = namespace + '::' + name;
 
-      const dataid = generateFAIMSDataID();
+      const observation_id = generateFAIMSDataID();
 
       const doc: Observation = {
-        observation_id: dataid,
+        observation_id: observation_id,
         type: fulltype,
         data: data,
         created_by: userid,
@@ -125,7 +125,7 @@ describe('CRUD for data', () => {
       };
 
       const new_doc: Observation = {
-        observation_id: dataid,
+        observation_id: observation_id,
         type: fulltype,
         data: new_data,
         created_by: userid,
@@ -136,13 +136,13 @@ describe('CRUD for data', () => {
 
       return upsertFAIMSData(project_id, doc)
         .then(result => {
-          return lookupFAIMSDataID(project_id, dataid);
+          return lookupFAIMSDataID(project_id, observation_id);
         })
         .then(result => {
           expect(equals(result, doc)).toBe(true);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_id, dataid);
+          return lookupFAIMSDataID(project_id, observation_id);
         })
         .then(result => {
           if (result === null) {
@@ -152,25 +152,25 @@ describe('CRUD for data', () => {
           return upsertFAIMSData(project_id, result);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_id, dataid);
+          return lookupFAIMSDataID(project_id, observation_id);
         })
         .then(result => {
           expect(equals(result, new_doc)).toBe(true);
         })
         .then(result => {
-          return deleteFAIMSDataForID(project_id, dataid);
+          return deleteFAIMSDataForID(project_id, observation_id);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_id, dataid);
+          return lookupFAIMSDataID(project_id, observation_id);
         })
         .then(result => {
           expect(result).toBe(null);
         })
         .then(result => {
-          return undeleteFAIMSDataForID(project_id, dataid);
+          return undeleteFAIMSDataForID(project_id, observation_id);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_id, dataid);
+          return lookupFAIMSDataID(project_id, observation_id);
         })
         .then(result => {
           expect(equals(result, new_doc)).toBe(true);
@@ -200,10 +200,10 @@ describe('listing revisions', () => {
 
       const fulltype = namespace + '::' + name;
 
-      const dataid = generateFAIMSDataID();
+      const observation_id = generateFAIMSDataID();
 
       const doc: Observation = {
-        observation_id: dataid,
+        observation_id: observation_id,
         type: fulltype,
         data: data,
         created_by: userid,
@@ -217,9 +217,11 @@ describe('listing revisions', () => {
           return listFAIMSProjectRevisions(project_id);
         })
         .then(result => {
-          expect(result[dataid]).not.toBe(undefined);
-          expect(result[dataid]).toHaveLength(1);
-          expect(result[dataid][0]).toEqual(expect.stringMatching(/^1-.*/));
+          expect(result[observation_id]).not.toBe(undefined);
+          expect(result[observation_id]).toHaveLength(1);
+          expect(result[observation_id][0]).toEqual(
+            expect.stringMatching(/^1-.*/)
+          );
         });
     }
   );

@@ -21,7 +21,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
   const [rows, setRows] = useState<Array<Observation>>([]);
   const columns: GridColDef[] = [
     {
-      field: '_id',
+      field: 'observation_id',
       headerName: 'Obs ID',
       description: 'Observation ID',
       type: 'string',
@@ -31,7 +31,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
           component={RouterLink}
           to={ROUTES.getObservationRoute(
             project_id || 'dummy',
-            (params.getValue('_id') || '').toString()
+            (params.getValue('observation_id') || '').toString()
           )}
         >
           {params.value}
@@ -63,7 +63,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         <DataGrid
           rows={rows}
           loading={loading}
-          getRowId={r => r._id}
+          getRowId={r => r.observation_id}
           columns={columns}
           pageSize={5}
           checkboxSelection
