@@ -109,7 +109,7 @@ export default function ProjectCard(props: ProjectCardProps) {
 
   useEffect(() => {
     return listenSyncingProject(project.project_id, setIsSyncing);
-  });
+  }, [project.project_id]);
 
   return (
     <React.Fragment>
