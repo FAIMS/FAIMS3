@@ -1,25 +1,31 @@
 ---
-# This is a basic workflow to help you get started with Actions
-name: Compile APK, Electron, and Test on BrowserStack
+# Nightly compile for e2e testing
+name: Nightly Compile APK, Electron, and Test on BrowserStack
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the main branch
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  # Also trigger on page_build, as well as release created events
-  page_build:
-  release:
-    types: # This configuration does not affect the page_build event above
-      - created
+  # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule
+  schedule:
+    - cron: '55 0 * * *'
+  
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  check_date:
+    runs-on: ubuntu-latest
+    name: Check latest commit
+    outputs:
+      should_run: ${{ steps.should_run.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: print latest_commit
+        run: echo ${{ github.sha }}
+
+      - id: should_run
+        continue-on-error: true
+        name: check latest commit is less than a day
+        if: ${{ github.event_name == 'schedule' }}
+        run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
   node-deb-android-job:
     # The type of runner that the job will run on
     # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
@@ -28,6 +34,8 @@ jobs:
     strategy:
       matrix:
         node-version: [14.x]
+    needs: check_date
+    if: ${{ needs.check_date.outputs.should_run != 'false' }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -64,7 +72,7 @@ jobs:
           java-version: 1.8
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
-        uses: FAIMS/setup-android@v2.1.0-prerelease
+        uses: android-actions/setup-android@v2.0.6
       
       - run: npm install
       - run: npm run build
