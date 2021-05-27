@@ -13,6 +13,8 @@ import {ProjectUIModel} from '../../datamodel';
 import {getStagedData, setStagedData} from '../../sync/staging';
 import {getCurrentUserId} from '../../users';
 import BoxTab from './boxTab';
+import {ActionType} from '../../actions';
+import {store} from '../../store';
 
 type ObservationFormProps = {
   project_id: string;
@@ -238,8 +240,28 @@ export class ObservationForm extends React.Component<
       })
       .then(result => {
         console.debug(result);
+        const message = this.props.is_fresh
+          ? 'Observation successfully created'
+          : 'Observation successfully updated';
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: message,
+            severity: 'success',
+          },
+        });
       })
       .catch(err => {
+        const message = this.props.is_fresh
+          ? 'Could not create observation'
+          : 'Could not update observation';
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: message,
+            severity: 'error',
+          },
+        });
         console.warn(err);
         console.error('Failed to save data');
       });
@@ -540,3 +562,4 @@ export class ObservationForm extends React.Component<
     }
   }
 }
+ObservationForm.contextType = store;
