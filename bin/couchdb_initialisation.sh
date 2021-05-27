@@ -507,5 +507,9 @@ initialise_couchdb() {
     # setup datadb with default
     $curl_cmd "$base_url/data-test_proj"
 
+    $curl_cmd -H 'Content-Type: application/json' "$base_url/directory/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
+    $curl_cmd -H 'Content-Type: application/json' "$base_url/projects/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
+    $curl_cmd -H 'Content-Type: application/json' "$base_url/people/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
+    $curl_cmd -H 'Content-Type: application/json' "$base_url/metadata-test_proj/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
     $curl_cmd -H 'Content-Type: application/json' "$base_url/data-test_proj/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
 }

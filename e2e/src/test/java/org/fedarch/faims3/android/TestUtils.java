@@ -1,8 +1,6 @@
 package org.fedarch.faims3.android;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -19,38 +17,6 @@ import io.appium.java_client.touch.offset.PointOption;
  */
 public class TestUtils {
 	/**
-	 * Scroll down until condition is satisfied.
-	 * @param condition Condition to satisfy
-	 * @param driver AndroidDriver
-	 */
-	public static AndroidElement scrollDownUntilVisible(By condition, AndroidDriver<AndroidElement> driver) {
-		return TestUtils.scrollDownUntilVisible(condition, driver, 0);
-	}
-	/**
-	 * Scroll down until condition is satisfied.
-	 * @param condition Condition to satisfy
-	 * @param driver AndroidDriver
-	 * @param count The number of times the scroll has been done.
-	 */
-	private static AndroidElement scrollDownUntilVisible(By condition, AndroidDriver<AndroidElement> driver, int count) {
-		AndroidElement element = null;
-		try {
-		    element = driver.findElement(condition);
-	    } catch (NoSuchElementException e) {
-	    	// Element not visible. Catch error, scroll down and try again
-	    	// Ugly, I know.. but there are no other ways!
-	    	TestUtils.scrollDown(driver);
-	    	count++;
-	    	if (count < 5) {
-	    		// Try to fail fast rather than waiting for timeout if we keep scrolling in the same spot
-	    	    element = TestUtils.scrollDownUntilVisible(condition, driver, count);
-	    	} else {
-	    		throw e;
-	    	}
-	    }
-		return element;
-	}
-	/**
 	 * Scroll down a little bit at a time.
 	 * @param driver AndroidDriver
 	 */
@@ -63,39 +29,6 @@ public class TestUtils {
 	    int topY = driver.manage().window().getSize().height / 8;
 	    //scroll with TouchAction by itself
 	    TestUtils.scroll(driver, pressX, bottomY, pressX, topY);
-	}
-
-	/**
-	 * Scroll down until condition is satisfied.
-	 * @param condition Condition to satisfy
-	 * @param driver AndroidDriver
-	 */
-	public static AndroidElement scrollUpUntilVisible(By condition, AndroidDriver<AndroidElement> driver) {
-		return TestUtils.scrollUpUntilVisible(condition, driver, 0);
-	}
-	/**
-	 * Scroll up until condition is satisfied.
-	 * @param condition Condition to satisfy
-	 * @param driver AndroidDriver
-	 * @param count How many times the scroll has been performed
-	 */
-	public static AndroidElement scrollUpUntilVisible(By condition, AndroidDriver<AndroidElement> driver, int count) {
-		AndroidElement element = null;
-		try {
-		    element = driver.findElement(condition);
-	    } catch (NoSuchElementException e) {
-	    	// Element not visible. Catch error, scroll down and try again
-	    	// Ugly, I know.. but there are no other ways!
-	    	TestUtils.scrollUp(driver);
-	    	count++;
-	    	if (count < 5) {
-	    		// Try to fail fast rather than waiting for timeout if we keep scrolling in the same spot
-	    	    element = TestUtils.scrollUpUntilVisible(condition, driver, count);
-	    	} else {
-	    		throw e;
-	    	}
-	    }
-		return element;
 	}
 
 	/**
@@ -127,6 +60,26 @@ public class TestUtils {
 	}
 
 	/**
+	 * Scroll to an element by text
+	 * @param driver
+	 * @param elementText The text on the element to be found
+	 */
+	public static AndroidElement scrollToText(AndroidDriver<AndroidElement> driver, String elementText) {
+	    return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
+            + "new UiSelector().text(\"" + elementText + "\"));"));
+	}
+
+	/**
+	 * Scroll to an element by resource id
+	 * @param driver
+	 * @param resourceId Resource id on the element to be found
+	 */
+	public static AndroidElement scrollToResourceId(AndroidDriver<AndroidElement> driver, String resourceId) {
+	    return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
+            + "new UiSelector().resourceIdMatches(\"" + resourceId + "\"));"));
+	}
+
+	/**
 	 * Click on "Previous Dev Content" on the landing page.
 	 *
 	 * @param driver AndroidDriver
@@ -146,7 +99,11 @@ public class TestUtils {
 	 * @param passed True if the test passed. False otherwise.
 	 * @param message Reason it passed/failed.
 	 */
-	public static void markBrowserstackTestResult(AndroidDriver<AndroidElement> driver, boolean passed, String message) {
+	public static void markBrowserstackTestResult(AndroidDriver<AndroidElement> driver, boolean isBrowserstackConnected, boolean passed, String message) {
+		if (!isBrowserstackConnected) {
+			// only for browserstack
+			return;
+		}
 	    JavascriptExecutor jse = driver;
 	    // Setting the status of test as 'passed' or 'failed' based on the condition
 	    if (passed) {
@@ -154,5 +111,23 @@ public class TestUtils {
 	    } else {
 	        jse.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\":\"failed\", \"reason\": \"" + message + "\"}}");
 	    }
+	}
+
+	/**
+	 * Get a string representation of the driver's location latitude.
+	 * @param driver
+	 * @return Latitude string
+	 */
+	public static String getLatitude(AndroidDriver<AndroidElement> driver) {
+		return String.valueOf(driver.location().getLatitude());
+	}
+
+	/**
+	 * Get a string representation of the driver's location longitude.
+	 * @param driver
+	 * @return Longitude string
+	 */
+	public static String getLongitude(AndroidDriver<AndroidElement> driver) {
+		return String.valueOf(driver.location().getLongitude());
 	}
 }

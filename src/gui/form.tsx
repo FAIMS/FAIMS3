@@ -213,7 +213,7 @@ export class FAIMSForm extends React.Component<FormProps, FormState> {
         const created = new Date('1990-01-01'); // FIXME
         const now = new Date();
         const doc = {
-          _id: this.obsid,
+          observation_id: this.obsid,
           _rev: undefined as undefined | string,
           type: '??:??',
           data: values,
