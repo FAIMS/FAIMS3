@@ -217,6 +217,17 @@ jobs:
         with:
           java-version: '13'
           distribution: 'adopt'
+      - name: Restore Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: restore
+      - name: Get maven deps
+        run: |
+          mvn dependency:go-offline
+      - name: Save Maven cache
+        uses: skjolber/maven-cache-github-action@v1
+        with:
+          step: save
       - name: Build with Maven
         run: |
           cd e2e
