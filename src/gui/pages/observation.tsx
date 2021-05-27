@@ -105,7 +105,7 @@ export default function Observation() {
           </AppBar>
           <TabPanel value="1">
             <ObservationForm
-              listing_id_project_id={project_id}
+              project_id={project_id}
               observation_id={observation_id}
               is_fresh={observation_id === 'new-observation'}
             />

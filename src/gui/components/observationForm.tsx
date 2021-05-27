@@ -15,7 +15,7 @@ import {getCurrentUserId} from '../../users';
 import BoxTab from './boxTab';
 
 type ObservationFormProps = {
-  listing_id_project_id: string;
+  project_id: string;
   observation_id: string;
   revision_id?: string;
   is_fresh: boolean;
@@ -112,7 +112,7 @@ export class ObservationForm extends React.Component<
     // but uiSpec might not need updating here
 
     if (this.uiSpec === null) {
-      this.uiSpec = await getUiSpecForProject(this.props.listing_id_project_id);
+      this.uiSpec = await getUiSpecForProject(this.props.project_id);
     }
 
     this.setState({
@@ -128,7 +128,7 @@ export class ObservationForm extends React.Component<
     const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
       this.nullCoalesceRevision().then(obsid_revid =>
         getStagedData(
-          this.props.listing_id_project_id,
+          this.props.project_id,
           viewName,
           obsid_revid
         ).then(staged_data_restore => {
@@ -155,7 +155,7 @@ export class ObservationForm extends React.Component<
     } = (this.props.is_fresh
       ? {}
       : await lookupFAIMSDataID(
-          this.props.listing_id_project_id,
+          this.props.project_id,
           this.props.observation_id
         )
     )?.data;
@@ -182,7 +182,7 @@ export class ObservationForm extends React.Component<
         _rev:
           this.props.revision_id ||
           (await lookupFAIMSDataID(
-            this.props.listing_id_project_id,
+            this.props.project_id,
             this.props.observation_id
           ))!._rev!,
       };
@@ -211,7 +211,7 @@ export class ObservationForm extends React.Component<
   }
 
   save(values: any) {
-    getCurrentUserId(this.props.listing_id_project_id)
+    getCurrentUserId(this.props.project_id)
       .then(userid => {
         console.assert(values['_id'] === this.props.observation_id);
         delete values['_id'];
@@ -234,7 +234,7 @@ export class ObservationForm extends React.Component<
         return doc;
       })
       .then(doc => {
-        return upsertFAIMSData(this.props.listing_id_project_id, doc);
+        return upsertFAIMSData(this.props.project_id, doc);
       })
       .then(result => {
         console.debug(result);
@@ -303,7 +303,7 @@ export class ObservationForm extends React.Component<
         setStagedData(
           loadedStagedData,
           this.lastStagingRev,
-          this.props.listing_id_project_id,
+          this.props.project_id,
           this.reqireCurrentView(),
           obsid_revid
         )

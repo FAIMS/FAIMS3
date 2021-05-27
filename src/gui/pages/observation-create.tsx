@@ -32,7 +32,7 @@ export default function ObservationCreate() {
             Projects
           </Link>
           <Link component={RouterLink} to={ROUTES.PROJECT + project_id}>
-            Project {project_id}
+            Project {project_info !== null ? project_info.name : project_id}
           </Link>
           <Typography color="textPrimary">New Observation</Typography>
         </Breadcrumbs>
@@ -49,7 +49,7 @@ export default function ObservationCreate() {
       <Paper square>
         <Box p={3}>
           <ObservationForm
-            listing_id_project_id={project_id}
+            project_id={project_id}
             observation_id={generateFAIMSDataID()}
             is_fresh={true}
           />
