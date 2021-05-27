@@ -7,8 +7,10 @@ name: Nightly Compile APK, Electron, and Test on BrowserStack
 on:
   # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule
   # This is UTC. For dev timing look at https://www.worldtimebuddy.com/?pl=1&lid=2147714,100,2063523&h=2147714&hf=1
+  # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
+  # Note: The schedule event can be delayed during periods of high loads of GitHub Actions workflow runs. High load times include the start of every hour. To decrease the chance of delay, schedule your workflow to run at a different time of the hour.
   schedule:
-    - cron: '10 1 * * *'
+    - cron: '20 5 * * *'
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -82,15 +84,17 @@ jobs:
       
       - run: npx cap sync android
       
-      # build local deb
-      - run: npm run dist
-      - run: cp "$(find . -name '*.deb')" .
-      - name: Archive deb
-        uses: actions/upload-artifact@v2
-        with:
-          name: ubuntu-deb
-          path: |
-            ./*.deb         
+      # Builds for debian, presently out of scope.
+
+      # # build local deb
+      # - run: npm run dist
+      # - run: cp "$(find . -name '*.deb')" .
+      # - name: Archive deb
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: ubuntu-deb
+      #     path: |
+      #       ./*.deb         
       - name: Archive build
         uses: actions/upload-artifact@v2
         with:
