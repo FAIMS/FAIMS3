@@ -15,6 +15,7 @@ import {
   ListItemAvatar,
   ListItemText,
   Link,
+  Switch,
 } from '@material-ui/core';
 // import {EmailShareButton} from 'react-share';
 // import MailOutlineIcon from '@material-ui/icons/MailOutline';
@@ -27,6 +28,11 @@ import {ProjectInformation} from '../../datamodel';
 import ObservationsTable from './observationsTable';
 import MetadataRenderer from './metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import {
+  isSyncingProject,
+  listenSyncingProject,
+  setSyncingProject,
+} from '../../sync';
 
 type ProjectCardProps = {
   project: ProjectInformation;
@@ -79,6 +85,9 @@ export default function ProjectCard(props: ProjectCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
+  const [isSyncing, setIsSyncing] = useState(
+    isSyncingProject(project.project_id)
+  );
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 
@@ -97,6 +106,10 @@ export default function ProjectCard(props: ProjectCardProps) {
       setLoading(false);
     }
   }, [project]);
+
+  useEffect(() => {
+    return listenSyncingProject(project.project_id, setIsSyncing);
+  });
 
   return (
     <React.Fragment>
@@ -149,6 +162,15 @@ export default function ProjectCard(props: ProjectCardProps) {
               <Avatar aria-label={project.name} className={classes.avatar}>
                 {project.name.charAt(0)}
               </Avatar>
+            }
+            action={
+              // TODO (For β) Liz: add more settings here
+              <Switch
+                checked={isSyncing}
+                onChange={(event, checked) =>
+                  setSyncingProject(project.project_id, checked)
+                }
+              />
             }
             // action={
             //   <IconButton aria-label="settings">
