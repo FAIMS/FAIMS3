@@ -1,11 +1,5 @@
 import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
-import {
-  ActiveDoc,
-  EncodedObservation,
-  ObservationList,
-  Observation,
-  ProjectObject,
-} from './datamodel';
+import {Observation, ProjectObject} from './datamodel';
 import {
   ProjectActions,
   ObservationActions,
@@ -15,8 +9,7 @@ import {
 } from './actions';
 import {Color} from '@material-ui/lab/Alert';
 import LoadingApp from './gui/components/loadingApp';
-import {add_initial_listener, initialize} from './sync';
-import {lookupFAIMSDataID} from './dataStorage';
+import {initialize} from './sync';
 import {v4 as uuidv4} from 'uuid';
 
 interface InitialStateProps {

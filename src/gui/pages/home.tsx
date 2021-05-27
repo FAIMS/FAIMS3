@@ -10,7 +10,6 @@ import {
   Paper,
   Link,
 } from '@material-ui/core';
-import Skeleton from '@material-ui/lab/Skeleton';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';

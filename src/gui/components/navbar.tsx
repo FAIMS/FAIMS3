@@ -31,7 +31,6 @@ import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
-import {createdProjects} from '../../sync';
 import SystemAlert from './alert';
 import {ProjectInformation} from '../../datamodel';
 

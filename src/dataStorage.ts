@@ -96,9 +96,7 @@ export async function upsertFAIMSData(project_id: ProjectID, doc: Observation) {
   }
   try {
     const revision = await getLatestRevision(project_id, doc.observation_id);
-    return await datadb.put(
-      convertFromFormToDB(doc, revision)
-    );
+    return await datadb.put(convertFromFormToDB(doc, revision));
   } catch (err) {
     console.warn(err);
     throw Error('failed to save data');

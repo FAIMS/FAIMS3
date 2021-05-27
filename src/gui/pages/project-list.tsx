@@ -5,8 +5,7 @@ import {Container, Breadcrumbs, Typography, Box, Grid} from '@material-ui/core';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
-import {getProjectList, getProjectInfo} from '../../databaseAccess';
-import Skeleton from '@material-ui/lab/Skeleton';
+import {getProjectList} from '../../databaseAccess';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
