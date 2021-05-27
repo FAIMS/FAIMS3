@@ -18,7 +18,7 @@ import DescriptionIcon from '@material-ui/icons/Description';
 import LockOpenIcon from '@material-ui/icons/LockOpen';
 import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
-import DeveloperModeIcon from '@material-ui/icons/DeveloperMode';
+// import DeveloperModeIcon from '@material-ui/icons/DeveloperMode';
 type IndexProps = {
   // project: string;
 };
@@ -48,12 +48,6 @@ export class Index extends React.Component<IndexProps, IndexState> {
           </Breadcrumbs>
         </Box>
         <Grid container spacing={3}>
-          <Grid item xs={6} sm={4}>
-            <img
-              src="static/logo/Faims-medium.jpg"
-              style={{maxWidth: '100%'}}
-            />
-          </Grid>
           <Grid item xs={6} sm={4}>
             <Paper>
               <MenuList>
@@ -101,18 +95,6 @@ export class Index extends React.Component<IndexProps, IndexState> {
                 </MenuItem>
               </MenuList>
             </Paper>
-            <Box mt={2}>
-              <Paper>
-                <MenuList>
-                  <MenuItem component={NavLink} to={ROUTES.DUMMY}>
-                    <ListItemIcon>
-                      <DeveloperModeIcon fontSize="small" />
-                    </ListItemIcon>
-                    Previous dev content
-                  </MenuItem>
-                </MenuList>
-              </Paper>
-            </Box>
           </Grid>
         </Grid>
       </Container>

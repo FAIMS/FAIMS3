@@ -15,7 +15,7 @@ import ObservationList from './gui/pages/observation-list';
 import Observation from './gui/pages/observation';
 import ObservationCreate from './gui/pages/observation-create';
 import NotFound404 from './gui/pages/404';
-import ProjectNavTabs from './gui/projectNav';
+// import ProjectNavTabs from './gui/projectNav';
 import {StateProvider} from './store';
 
 import {MuiThemeProvider} from '@material-ui/core/styles';
@@ -96,16 +96,16 @@ export class App extends React.Component<AppProps, AppState> {
                 }
                 component={ObservationCreate}
               />
-              <Route
-                exact
-                path={ROUTES.DUMMY}
-                render={props => (
-                  <ProjectNavTabs
-                    {...props}
-                    projectList={this.state.projects}
-                  />
-                )}
-              />
+              {/*<Route*/}
+              {/*  exact*/}
+              {/*  path={ROUTES.DUMMY}*/}
+              {/*  render={props => (*/}
+              {/*    <ProjectNavTabs*/}
+              {/*      {...props}*/}
+              {/*      projectList={this.state.projects}*/}
+              {/*    />*/}
+              {/*  )}*/}
+              {/*/>*/}
               <Route exact path="/" component={Index} />
               <Route component={NotFound404} />
             </Switch>
