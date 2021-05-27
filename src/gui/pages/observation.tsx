@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import {
   AppBar,
   Box,
@@ -7,23 +7,56 @@ import {
   Typography,
   Paper,
   Tab,
+  Button,
 } from '@material-ui/core';
+import DeleteIcon from '@material-ui/icons/Delete';
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
-import {NavLink, useParams} from 'react-router-dom';
+import {NavLink, useHistory, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {ObservationForm} from '../components/observationForm';
 import InProgress from '../components/inProgress';
+import {Alert} from '@material-ui/lab';
+import {deleteFAIMSDataForID} from '../../dataStorage';
+import {ActionType} from '../../actions';
+import {store} from '../../store';
 export default function Observation() {
   const {listing_id_project_id, observation_id} = useParams<{
     listing_id_project_id: string;
     observation_id: string;
   }>();
   const [value, setValue] = React.useState('1');
+  const history = useHistory();
+  const globalState = useContext(store);
+  const {dispatch} = globalState;
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
+  };
+
+  const handleDelete = () => {
+    deleteFAIMSDataForID(listing_id_project_id, observation_id)
+      .then(() => {
+        dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Observation ' + observation_id + ' deleted',
+            severity: 'success',
+          },
+        });
+        history.push(ROUTES.PROJECT + listing_id_project_id);
+      })
+      .catch(err => {
+        console.log('Could not delete observation: ' + observation_id, err);
+        dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Could not delete observation: ' + observation_id,
+            severity: 'error',
+          },
+        });
+      });
   };
 
   return (
@@ -45,6 +78,7 @@ export default function Observation() {
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
               <Tab label="Meta" value="3" />
+              <Tab label="Settings" value="4" />
             </TabList>
           </AppBar>
           <TabPanel value="1">
@@ -59,6 +93,22 @@ export default function Observation() {
           </TabPanel>
           <TabPanel value="3">
             <InProgress />
+          </TabPanel>
+          <TabPanel value="4">
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<DeleteIcon />}
+              onClick={handleDelete}
+            >
+              Delete Observation
+            </Button>
+            <Box mt={2}>
+              <Alert severity="warning">
+                You cannot reverse this action! Be sure you wish to delete this
+                observation.
+              </Alert>
+            </Box>
           </TabPanel>
         </TabContext>
       </Paper>
