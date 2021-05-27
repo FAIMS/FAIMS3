@@ -8,11 +8,7 @@ import {getUiSpecForProject} from '../../uiSpecification';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from '../view';
-import {
-  upsertFAIMSData,
-  generateFAIMSDataID,
-  lookupFAIMSDataID,
-} from '../../dataStorage';
+import {upsertFAIMSData, lookupFAIMSDataID} from '../../dataStorage';
 import {ProjectUIModel} from '../../datamodel';
 import {getStagedData, setStagedData} from '../../sync/staging';
 import {getCurrentUserId} from '../../users';
@@ -20,7 +16,8 @@ import {getCurrentUserId} from '../../users';
 type ObservationFormProps = {
   listing_id_project_id: string;
   observation_id: string;
-  observation?: {_id: string; _rev: string};
+  revision_id?: string;
+  is_fresh: boolean;
 };
 
 // After this many errors happen with from the staging db
@@ -72,48 +69,23 @@ export class ObservationForm extends React.Component<
 
   uiSpec: ProjectUIModel | null = null;
 
-  // When this.props.observation === undefined, then this is generated to be the ID
-  // of this forms document.
-  // Otherwise it is a copy of this.props.observation
-  // Maintained by componentDidUpdate.
-  obsid: string;
-
   componentDidUpdate(prevProps: ObservationFormProps) {
-    //  I don't think this is needed here - there will always be
-    //  an observation_id passed from the url parameter
-
-    // // Only generate a new ID when obsid is not already generated.
-    // this.obsid =
-    //   this.props.observation?._id || this.obsid || generateFAIMSDataID();
-
-    if (prevProps.observation?._rev !== this.props.observation?._rev) {
+    if (
+      prevProps.observation_id !== this.props.observation_id ||
+      prevProps.revision_id !== this.props.revision_id ||
+      prevProps.is_fresh !== this.props.is_fresh
+    ) {
       this.loadedStagedData = null;
       this.touchedFields.clear();
       this.lastStagingRev = null;
 
-      const cb = () => this.setStagedValues().then(this.setInitialValues);
-
-      // uiSpec & currentView re-load is only necessary if activeProjectID changed.
-      // Again - the listing_id_project_id will not change.
-      // if (
-      //   prevProps.listing_id_project_id !== this.props.listing_id_project_id
-      // ) {
-      //   // this.uiSpec = null;
-      //   // this.setState({currentView: null, initialValues: null});
-      //   // this.setUISpec().then(cb);
-      // } else {
-      //   this.setState({initialValues: null});
-      //   cb();
-      // }
       this.setState({initialValues: null});
-      cb();
+      this.setStagedValues().then(this.setInitialValues);
     }
   }
 
   constructor(props: ObservationFormProps) {
     super(props);
-
-    this.obsid = this.props.observation?._id || generateFAIMSDataID();
     this.state = {
       currentView: null,
       stagingError: null,
@@ -153,13 +125,17 @@ export class ObservationForm extends React.Component<
     let loadedStagedData: {[fn: string]: unknown} = {};
 
     const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
-      getStagedData(this.props.listing_id_project_id, viewName, null).then(
-        staged_data_restore => {
+      this.nullCoalesceRevision().then(obsid_revid =>
+        getStagedData(
+          this.props.listing_id_project_id,
+          viewName,
+          obsid_revid
+        ).then(staged_data_restore => {
           loadedStagedData = {
             ...loadedStagedData,
             ...(staged_data_restore || {}),
           };
-        }
+        })
       )
     );
 
@@ -175,14 +151,17 @@ export class ObservationForm extends React.Component<
      */
     const existingData: {
       [viewName: string]: {[fieldName: string]: unknown};
-    } = (this.props.observation === undefined
+    } = (this.props.is_fresh
       ? {}
-      : await lookupFAIMSDataID(this.props.listing_id_project_id, this.obsid)
+      : await lookupFAIMSDataID(
+          this.props.listing_id_project_id,
+          this.props.observation_id
+        )
     )?.data;
     const fieldNames = this.getFieldNames();
     const fields = this.getFields();
     const initialValues: {[key: string]: any} = {
-      _id: this.obsid!,
+      _id: this.props.observation_id!,
     };
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] =
@@ -191,6 +170,22 @@ export class ObservationForm extends React.Component<
         fields[fieldName]['initialValue'];
     });
     this.setState({initialValues: initialValues});
+  }
+
+  async nullCoalesceRevision(): Promise<null | {_id: string; _rev: string}> {
+    if (this.props.is_fresh) {
+      return null;
+    } else {
+      return {
+        _id: this.props.observation_id,
+        _rev:
+          this.props.revision_id ||
+          (await lookupFAIMSDataID(
+            this.props.listing_id_project_id,
+            this.props.observation_id
+          ))!._rev!,
+      };
+    }
   }
 
   requireUiSpec(): ProjectUIModel {
@@ -217,12 +212,12 @@ export class ObservationForm extends React.Component<
   save(values: any) {
     getCurrentUserId(this.props.listing_id_project_id)
       .then(userid => {
-        console.assert(values['_id'] === this.obsid);
+        console.assert(values['_id'] === this.props.observation_id);
         delete values['_id'];
         const created = new Date('1990-01-01'); // FIXME
         const now = new Date();
         const doc = {
-          _id: this.obsid,
+          observation_id: this.props.observation_id,
           _rev: undefined as undefined | string,
           type: '??:??',
           data: values,
@@ -231,8 +226,8 @@ export class ObservationForm extends React.Component<
           created: created,
           updated: now,
         };
-        if (this.props.observation) {
-          doc._rev = this.props.observation._rev;
+        if (!this.props.revision_id !== null) {
+          doc._rev = this.props.revision_id;
         }
         console.log(doc);
         return doc;
@@ -303,31 +298,33 @@ export class ObservationForm extends React.Component<
         }
       });
 
-      setStagedData(
-        loadedStagedData,
-        this.lastStagingRev,
-        this.props.listing_id_project_id,
-        this.reqireCurrentView(),
-        this.props.observation || null
-      )
-        .then(set_ok => {
-          this.lastStagingRev = set_ok.rev;
-          this.consequtiveStagingSaveErrors = 0;
-        })
-        .catch(err => {
-          this.consequtiveStagingSaveErrors += 1;
-          if (
-            this.consequtiveStagingSaveErrors ===
-            MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
-          ) {
-            this.setState({
-              stagingError: err,
-            });
-          }
-        })
-        .finally(() => {
-          this.staging = false;
-        });
+      this.nullCoalesceRevision().then(obsid_revid => {
+        setStagedData(
+          loadedStagedData,
+          this.lastStagingRev,
+          this.props.listing_id_project_id,
+          this.reqireCurrentView(),
+          obsid_revid
+        )
+          .then(set_ok => {
+            this.lastStagingRev = set_ok.rev;
+            this.consequtiveStagingSaveErrors = 0;
+          })
+          .catch(err => {
+            this.consequtiveStagingSaveErrors += 1;
+            if (
+              this.consequtiveStagingSaveErrors ===
+              MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
+            ) {
+              this.setState({
+                stagingError: err,
+              });
+            }
+          })
+          .finally(() => {
+            this.staging = false;
+          });
+      });
     };
 
     this.stageInterval = window.setInterval(main_save_func, STAGING_SAVE_CYCLE);

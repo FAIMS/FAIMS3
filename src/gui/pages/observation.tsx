@@ -51,6 +51,7 @@ export default function Observation() {
             <ObservationForm
               listing_id_project_id={listing_id_project_id}
               observation_id={observation_id}
+              is_fresh={observation_id === 'new-observation'}
             />
           </TabPanel>
           <TabPanel value="2">Revisions</TabPanel>
