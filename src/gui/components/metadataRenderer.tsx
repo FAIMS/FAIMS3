@@ -21,9 +21,7 @@ export default function MetadataRenderer(props: MetadataProps) {
         const meta = await getProjectMetadata(project_id, metadata_key);
         setMetadata(meta);
       } catch (err) {
-        // TODO: Possibly style/i18l this string, or push it to a global error state
-        // (Although that would be a bit extreme for this simple metadata)
-        setMetadata(null);
+        setMetadata('Unknown');
       }
     };
     getMeta();
