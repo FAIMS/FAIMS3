@@ -82,30 +82,20 @@ export class App extends React.Component<AppProps, AppState> {
                 path={
                   ROUTES.PROJECT +
                   ':listing_id_project_id' +
-                  ROUTES.OBSERVATION +
-                  ':observation_id'
+                  ROUTES.OBSERVATION_CREATE
                 }
-                component={Observation}
+                component={ObservationCreate}
               />
               <Route
                 exact
                 path={
                   ROUTES.PROJECT +
                   ':listing_id_project_id' +
-                  ROUTES.OBSERVATION_CREATE
+                  ROUTES.OBSERVATION +
+                  ':observation_id'
                 }
-                component={ObservationCreate}
+                component={Observation}
               />
-              {/*<Route*/}
-              {/*  exact*/}
-              {/*  path={ROUTES.DUMMY}*/}
-              {/*  render={props => (*/}
-              {/*    <ProjectNavTabs*/}
-              {/*      {...props}*/}
-              {/*      projectList={this.state.projects}*/}
-              {/*    />*/}
-              {/*  )}*/}
-              {/*/>*/}
               <Route exact path="/" component={Index} />
               <Route component={NotFound404} />
             </Switch>

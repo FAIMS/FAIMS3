@@ -16,6 +16,7 @@ import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectInfo, getProjectList} from '../../databaseAccess';
 import DashboardActions from '../components/dashboard/actions';
+import TimelapseIcon from '@material-ui/icons/Timelapse';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -78,7 +79,19 @@ export default function Home() {
         </Grid>
         {/* Recent Observations */}
         <Grid item xs={12} md={8} lg={9}>
-          <Typography variant="overline">Recent Observations</Typography>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography variant="overline" display={'inline'}>
+              Recent Observations&nbsp;&nbsp;
+            </Typography>
+            <TimelapseIcon color={'secondary'} style={{fontSize: '1.1rem'}} />
+          </div>
+
           <Paper className={classes.paper}>
             {/*<Observations />*/}
             <Box mt={2}>

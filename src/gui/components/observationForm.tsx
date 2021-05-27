@@ -12,6 +12,7 @@ import {upsertFAIMSData, lookupFAIMSDataID} from '../../dataStorage';
 import {ProjectUIModel} from '../../datamodel';
 import {getStagedData, setStagedData} from '../../sync/staging';
 import {getCurrentUserId} from '../../users';
+import BoxTab from './boxTab';
 
 type ObservationFormProps = {
   listing_id_project_id: string;
@@ -21,7 +22,7 @@ type ObservationFormProps = {
 };
 
 // After this many errors happen with from the staging db
-// on consequitive calls, the error is bubbled up to this
+// on consecutive calls, the error is bubbled up to this
 // FormState's stagingError.
 const MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS = 5;
 
@@ -459,6 +460,13 @@ export class ObservationForm extends React.Component<
               this.updateLastValues(formProps.values);
               return (
                 <Form>
+                  {this.state.stagingError ? (
+                    <Alert severity="error">
+                      {JSON.stringify(this.state.stagingError)}
+                    </Alert>
+                  ) : (
+                    ''
+                  )}
                   <Grid container spacing={2}>
                     <Grid item sm={6} xs={12}>
                       <ViewComponent
@@ -484,7 +492,13 @@ export class ObservationForm extends React.Component<
                         disableElevation
                         disabled={formProps.isSubmitting}
                       >
-                        {formProps.isSubmitting ? 'Submitting...' : 'Submit'}
+                        {formProps.isSubmitting
+                          ? !this.props.is_fresh
+                            ? 'Saving...'
+                            : 'Adding'
+                          : !this.props.is_fresh
+                          ? 'Save'
+                          : 'Add'}
                         {formProps.isSubmitting && (
                           <CircularProgress
                             size={24}
@@ -500,9 +514,11 @@ export class ObservationForm extends React.Component<
                       </Button>
                     </Grid>
                     <Grid item sm={6} xs={12}>
+                      <BoxTab title={'Developer tool: form state'} />
                       <Box
                         bgcolor={grey[200]}
-                        p={2}
+                        pl={2}
+                        pr={2}
                         style={{overflowX: 'scroll'}}
                       >
                         <pre>{JSON.stringify(formProps, null, 2)}</pre>

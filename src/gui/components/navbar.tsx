@@ -216,7 +216,7 @@ export default function Navbar() {
               <MenuIcon />
             </IconButton>
             <img
-              src="static/logo/Faims-white-small.png"
+              src="/static/logo/Faims-white-small.png"
               style={{maxWidth: '70px', flex: 1}}
             />
             {isSyncing ? (

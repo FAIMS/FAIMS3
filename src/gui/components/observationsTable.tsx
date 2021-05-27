@@ -41,7 +41,12 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     {field: 'created', headerName: 'Created', type: 'dateTime', flex: 1},
     {field: 'created_by', headerName: 'Created by', type: 'string', flex: 1},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', flex: 1},
-    {field: 'updated_by', headerName: 'Updated by', type: 'string', flex: 1},
+    {
+      field: 'updated_by',
+      headerName: 'Last updated by',
+      type: 'string',
+      flex: 1,
+    },
   ];
   useEffect(() => {
     if (listing_id_project_id === undefined) return; //dummy project

@@ -14,7 +14,7 @@ import TabPanel from '@material-ui/lab/TabPanel';
 import {NavLink, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {ObservationForm} from '../components/observationForm';
-
+import InProgress from '../components/inProgress';
 export default function Observation() {
   const {listing_id_project_id, observation_id} = useParams<{
     listing_id_project_id: string;
@@ -54,8 +54,12 @@ export default function Observation() {
               is_fresh={observation_id === 'new-observation'}
             />
           </TabPanel>
-          <TabPanel value="2">Revisions</TabPanel>
-          <TabPanel value="3">Meta</TabPanel>
+          <TabPanel value="2">
+            <InProgress />
+          </TabPanel>
+          <TabPanel value="3">
+            <InProgress />
+          </TabPanel>
         </TabContext>
       </Paper>
     </Container>
