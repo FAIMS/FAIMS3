@@ -1,6 +1,7 @@
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
 export const PROJECT_METADATA_PREFIX = 'project-metadata';
+export const OBSERVATION_INDEX_NAME = 'observation-version-index';
 
 /*
  * This may already exist in pouchdb's typing, but lets make a temporary one for

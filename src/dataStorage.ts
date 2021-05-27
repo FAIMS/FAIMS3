@@ -6,15 +6,33 @@ import {
   EncodedObservation,
   ObservationList,
   ProjectID,
+  ObservationID,
+  //  OBSERVATION_INDEX_NAME,
 } from './datamodel';
 
 export interface DataListing {
   [_id: string]: string[];
 }
 
-export function generateFAIMSDataID(): string {
+export function generateFAIMSDataID(): ObservationID {
   return uuidv4();
 }
+
+// Commented as this does not work with the find below for some unknown reason
+//async function ensureObservationIndex(project_id: ProjectID) {
+//  const datadb = getDataDB(project_id);
+//  try {
+//    return datadb.createIndex({
+//      index: {
+//        fields: ['format_version'],
+//        name: OBSERVATION_INDEX_NAME,
+//      },
+//    });
+//  } catch (err) {
+//    console.error(err);
+//    throw Error('Failed to create observation index');
+//  }
+//}
 
 function convertFromFormToDB(
   doc: Observation,
@@ -105,34 +123,33 @@ export async function upsertFAIMSData(project_id: ProjectID, doc: Observation) {
 
 export async function lookupFAIMSDataID(
   project_id: ProjectID,
-  dataid: string
+  observation_id: ObservationID
 ): Promise<Observation | null> {
   const datadb = getDataDB(project_id);
   try {
-    const doc = await datadb.get(dataid);
+    const doc = await datadb.get(observation_id);
     return convertFromDBToForm(doc);
   } catch (err) {
     if (err.status === 404 && err.reason === 'deleted') {
       return null;
     }
     console.warn(err);
-    throw Error('failed to find data with id');
+    throw Error(`failed to find data with id ${observation_id}`);
   }
 }
 
 export async function listFAIMSData(
-  project_id: ProjectID,
-  options:
-    | PouchDB.Core.AllDocsWithKeyOptions
-    | PouchDB.Core.AllDocsWithKeysOptions
-    | PouchDB.Core.AllDocsWithinRangeOptions
-    | PouchDB.Core.AllDocsOptions = {}
+  project_id: ProjectID
 ): Promise<ObservationList> {
   const datadb = getDataDB(project_id);
   try {
-    const all = await datadb.allDocs({...options, include_docs: true});
+    //await ensureObservationIndex(project_id);
+    const all = await datadb.find({
+      selector: {format_version: {$eq: 1}},
+      //use_index: OBSERVATION_INDEX_NAME,
+    });
     const retval: ObservationList = {};
-    all.rows.forEach(row => (retval[row.id] = convertFromDBToForm(row.doc!)!));
+    all.docs.forEach(row => (retval[row._id] = convertFromDBToForm(row)!));
     return retval;
   } catch (err) {
     console.warn(err);
@@ -172,11 +189,11 @@ export async function listFAIMSProjectRevisions(
 
 export async function deleteFAIMSDataForID(
   project_id: ProjectID,
-  dataid: string
+  observation_id: ObservationID
 ) {
   const datadb = getDataDB(project_id);
   try {
-    const doc = await datadb.get(dataid);
+    const doc = await datadb.get(observation_id);
     doc.deleted = true;
     return await datadb.put(doc);
   } catch (err) {
@@ -187,11 +204,11 @@ export async function deleteFAIMSDataForID(
 
 export async function undeleteFAIMSDataForID(
   project_id: ProjectID,
-  dataid: string
+  observation_id: ObservationID
 ) {
   const datadb = getDataDB(project_id);
   try {
-    const doc = await datadb.get(dataid);
+    const doc = await datadb.get(observation_id);
     doc.deleted = false;
     return await datadb.put(doc);
   } catch (err) {
