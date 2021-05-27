@@ -13,7 +13,6 @@ import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectList} from '../../databaseAccess';
-import Skeleton from '@material-ui/lab/Skeleton';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -64,54 +63,26 @@ export default function ProjectList() {
 
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {Object.keys(pouchProjectList).length === 0
-            ? [...Array(3)].map((e, i) => (
-                <Grid item xs={12} key={'skeleton-project-list-grid' + i}>
-                  <Skeleton animation="wave" variant="rect">
-                    <ProjectCard
-                      project={{
-                        _id: 'dummy',
-                        name: 'dummy',
-                        description: 'dummy',
-                      }}
-                      listing_id_project_id={'dummy'}
-                      showObservations={true}
-                      listView={true}
-                      dashboard={false}
-                    />
-                  </Skeleton>
+          {Object.keys(pouchProjectList).length === 0 ? (
+            <span>No projects found</span>
+          ) : (
+            pouchProjectList.map(project_info => {
+              return (
+                <Grid
+                  item
+                  xs={12}
+                  key={'project-list-grid' + project_info.project_id}
+                >
+                  <ProjectCard
+                    project={project_info}
+                    listView={true}
+                    showObservations={true}
+                    dashboard={false}
+                  />
                 </Grid>
-              ))
-            : Object.keys(pouchProjectList).map(listing_id_project_id => {
-                const pouchProject = pouchProjectList[listing_id_project_id];
-                if (pouchProject !== null) {
-                  return (
-                    <Grid
-                      item
-                      xs={12}
-                      key={'project-list-grid' + pouchProject.project._id}
-                    >
-                      <ProjectCard
-                        project={pouchProject.project}
-                        listing_id_project_id={listing_id_project_id}
-                        listView={true}
-                        showObservations={true}
-                        dashboard={false}
-                      />
-                    </Grid>
-                  );
-                } else {
-                  return (
-                    <Grid
-                      item
-                      xs={12}
-                      key={'project-list-grid' + listing_id_project_id}
-                    >
-                      Project could not be loaded
-                    </Grid>
-                  );
-                }
-              })}
+              );
+            })
+          )}
         </Grid>
       </div>
     </Container>

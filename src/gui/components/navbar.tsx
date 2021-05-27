@@ -30,8 +30,8 @@ import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
-import {createdProjects} from '../../sync';
 import SystemAlert from './alert';
+import {ProjectInformation} from '../../datamodel';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -117,13 +117,13 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-function getNestedProjects(pouchProjectList: typeof createdProjects) {
+function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   const projectListItems: ProjectListItemProps[] = [];
-  Object.keys(pouchProjectList).map(listing_id_project_id => {
+  pouchProjectList.map(project_info => {
     projectListItems.push({
-      title: pouchProjectList[listing_id_project_id].project.name,
+      title: project_info.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + listing_id_project_id,
+      to: ROUTES.PROJECT + project_info.project_id,
       disabled: false,
     });
   });

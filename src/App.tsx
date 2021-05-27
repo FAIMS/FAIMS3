@@ -74,14 +74,14 @@ export class App extends React.Component<AppProps, AppState> {
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
               <Route
                 exact
-                path={ROUTES.PROJECT + ':listing_id_project_id'}
+                path={ROUTES.PROJECT + ':project_id'}
                 component={Project}
               />
               <Route
                 exact
                 path={
                   ROUTES.PROJECT +
-                  ':listing_id_project_id' +
+                  ':project_id' +
                   ROUTES.OBSERVATION_CREATE
                 }
                 component={ObservationCreate}
@@ -90,7 +90,7 @@ export class App extends React.Component<AppProps, AppState> {
                 exact
                 path={
                   ROUTES.PROJECT +
-                  ':listing_id_project_id' +
+                  ':project_id' +
                   ROUTES.OBSERVATION +
                   ':observation_id'
                 }

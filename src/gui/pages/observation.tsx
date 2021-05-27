@@ -16,6 +16,8 @@ import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
 import {Link as RouterLink, useHistory, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import {ProjectID} from '../../datamodel';
+
 import {ObservationForm} from '../components/observationForm';
 import InProgress from '../components/inProgress';
 import {Alert} from '@material-ui/lab';
@@ -23,23 +25,24 @@ import {deleteFAIMSDataForID} from '../../dataStorage';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
 import {getProjectInfo} from '../../databaseAccess';
+
 export default function Observation() {
-  const {listing_id_project_id, observation_id} = useParams<{
-    listing_id_project_id: string;
+  const {project_id, observation_id} = useParams<{
+    project_id: ProjectID;
     observation_id: string;
   }>();
   const [value, setValue] = React.useState('1');
   const history = useHistory();
   const globalState = useContext(store);
   const {dispatch} = globalState;
-  const project_info = getProjectInfo(listing_id_project_id);
+  const project_info = getProjectInfo(project_id);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
 
   const handleDelete = () => {
-    deleteFAIMSDataForID(listing_id_project_id, observation_id)
+    deleteFAIMSDataForID(project_id, observation_id)
       .then(() => {
         dispatch({
           type: ActionType.ADD_ALERT,
@@ -48,7 +51,7 @@ export default function Observation() {
             severity: 'success',
           },
         });
-        history.push(ROUTES.PROJECT + listing_id_project_id);
+        history.push(ROUTES.PROJECT + project_id);
       })
       .catch(err => {
         console.log('Could not delete observation: ' + observation_id, err);
@@ -74,9 +77,9 @@ export default function Observation() {
           </Link>
           <Link
             component={RouterLink}
-            to={ROUTES.PROJECT + listing_id_project_id}
+            to={ROUTES.PROJECT + project_id}
           >
-            {project_info !== null ? project_info.name : listing_id_project_id}
+            {project_info !== null ? project_info.name : project_id}
           </Link>
           <Typography color="textPrimary">{observation_id}</Typography>
         </Breadcrumbs>
@@ -102,7 +105,7 @@ export default function Observation() {
           </AppBar>
           <TabPanel value="1">
             <ObservationForm
-              listing_id_project_id={listing_id_project_id}
+              listing_id_project_id={project_id}
               observation_id={observation_id}
               is_fresh={observation_id === 'new-observation'}
             />

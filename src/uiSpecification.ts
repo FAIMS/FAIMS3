@@ -1,6 +1,6 @@
 import {getProjectDB} from './sync';
 import PouchDB from 'pouchdb';
-import {ProjectMetaObject} from './datamodel';
+import {ProjectMetaObject, ProjectID} from './datamodel';
 import {
   UI_SPECIFICATION_NAME,
   ProjectUIModel,
@@ -8,9 +8,9 @@ import {
 } from './datamodel';
 
 export async function getUiSpecForProject(
-  project_name: string
+  project_id: ProjectID
 ): Promise<ProjectUIModel> {
-  const projdb = getProjectDB(project_name);
+  const projdb = getProjectDB(project_id);
   try {
     const encUIInfo: EncodedProjectUIModel = await projdb.get(
       UI_SPECIFICATION_NAME

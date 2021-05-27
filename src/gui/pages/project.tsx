@@ -5,10 +5,11 @@ import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';
+import {ProjectID} from '../../datamodel';
 
 export default function Project() {
-  const {listing_id_project_id} = useParams<{listing_id_project_id: string}>();
-  const project_info = getProjectInfo(listing_id_project_id);
+  const {project_id} = useParams<{project_id: ProjectID}>();
+  const project_info = getProjectInfo(project_id);
 
   return project_info ? (
     <Container maxWidth="lg">
@@ -27,7 +28,6 @@ export default function Project() {
         project={project_info}
         showObservations={true}
         listView={false}
-        listing_id_project_id={listing_id_project_id}
       />
     </Container>
   ) : (

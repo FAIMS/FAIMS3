@@ -10,7 +10,6 @@ import {
   Paper,
   Link,
 } from '@material-ui/core';
-import Skeleton from '@material-ui/lab/Skeleton';
 import ProjectCard from '../components/projectCard';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
@@ -117,49 +116,26 @@ export default function Home() {
           <Typography variant="overline">My Projects</Typography>
           <Paper className={classes.paper}>
             <Grid container spacing={1}>
-              {Object.keys(pouchProjectList).length === 0
-                ? [...Array(3)].map((e, i) => (
-                    <Grid item xs={12} key={'skeleton-project-list-grid' + i}>
-                      <Skeleton animation="wave" variant="rect">
-                        <ProjectCard
-                          project={{
-                            name: 'dummy',
-                            description: 'dummy',
-                            _id: 'dummy',
-                          }}
-                          listing_id_project_id={'dummy'}
-                        />
-                      </Skeleton>
-                    </Grid>
-                  ))
-                : Object.keys(pouchProjectList).map(listing_id_project_id => {
-                    const pouchProject = getProjectInfo(listing_id_project_id);
-                    if (pouchProject !== null) {
-                      return (
-                        <Grid
-                          item
-                          xs={12}
-                          key={'project-list-grid' + pouchProject._id}
-                        >
-                          <ProjectCard
-                            project={pouchProject}
-                            listing_id_project_id={listing_id_project_id}
-                            dashboard={true}
-                          />
-                        </Grid>
-                      );
-                    } else {
-                      return (
-                        <Grid
-                          item
-                          xs={12}
-                          key={'project-list-grid' + listing_id_project_id}
-                        >
-                          Project could not be loaded
-                        </Grid>
-                      );
-                    }
-                  })}
+              {Object.keys(pouchProjectList).length === 0 ? (
+                <span>No projects found</span>
+              ) : (
+                Object.keys(pouchProjectList).map(project_id => {
+                  const project_info = getProjectInfo(project_id);
+                  if (project_info !== null) {
+                    return (
+                      <Grid item xs={12} key={'project-list-grid' + project_id}>
+                        <ProjectCard project={project_info} dashboard={true} />
+                      </Grid>
+                    );
+                  } else {
+                    return (
+                      <Grid item xs={12} key={'project-list-grid' + project_id}>
+                        Project could not be loaded
+                      </Grid>
+                    );
+                  }
+                })
+              )}
             </Grid>
             <Box mt={2}>
               <Link

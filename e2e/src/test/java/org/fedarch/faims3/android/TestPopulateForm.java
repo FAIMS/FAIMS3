@@ -44,17 +44,17 @@ public class TestPopulateForm extends AndroidTest {
 			submit.click();
 			// validate JSON
 			if(!LakeMungo.validateJSON(driver)) {
-				TestUtils.markBrowserstackTestResult(driver, false, "Android - TestPopulateForm.testNoErrors() failed because JSON values don't match!");
+				TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false, "Android - TestPopulateForm.testNoErrors() failed because JSON values don't match!");
 				return;
 			}
 	  } catch (Exception e) {
-	      TestUtils.markBrowserstackTestResult(driver, false, "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
+	      TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false, "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
 	      throw e;
 	  } catch (AssertionError e) {
-		  TestUtils.markBrowserstackTestResult(driver, false, "Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
+		  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false, "Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
 	      throw e;
 	  }
-      TestUtils.markBrowserstackTestResult(driver, true, "Android - TestPopulateForm.testNoErrors() passed!");
+      TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "Android - TestPopulateForm.testNoErrors() passed!");
   }
 
   @AfterClass

@@ -1,11 +1,15 @@
 import {getProjectDB} from './sync/index';
-import {PROJECT_METADATA_PREFIX, EncodedProjectMetadata} from './datamodel';
+import {
+  PROJECT_METADATA_PREFIX,
+  EncodedProjectMetadata,
+  ProjectID,
+} from './datamodel';
 
 export async function getProjectMetadata(
-  project_name: string,
+  project_id: ProjectID,
   metadata_key: string
 ): Promise<any> {
-  const projdb = getProjectDB(project_name);
+  const projdb = getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = await projdb.get(
       PROJECT_METADATA_PREFIX + '-' + metadata_key
@@ -18,11 +22,11 @@ export async function getProjectMetadata(
 }
 
 export async function setProjectMetadata(
-  project_name: string,
+  project_id: ProjectID,
   metadata_key: string,
   metadata: any
 ) {
-  const projdb = getProjectDB(project_name);
+  const projdb = getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = {
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,
@@ -42,6 +46,6 @@ export async function setProjectMetadata(
     await projdb.put(doc);
   } catch (err) {
     console.warn(err);
-    throw Error('failed to find metadata');
+    throw Error('failed to set metadata');
   }
 }

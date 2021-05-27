@@ -13,12 +13,13 @@ import * as ROUTES from '../../constants/routes';
 import {generateFAIMSDataID} from '../../dataStorage';
 import {ObservationForm} from '../components/observationForm';
 import {getProjectInfo} from '../../databaseAccess';
+import {ProjectID} from '../../datamodel';
 
 export default function ObservationCreate() {
-  const {listing_id_project_id} = useParams<{
-    listing_id_project_id: string;
+  const {project_id} = useParams<{
+    project_id: ProjectID;
   }>();
-  const project_info = getProjectInfo(listing_id_project_id);
+  const project_info = getProjectInfo(project_id);
 
   return (
     <Container maxWidth="lg">
@@ -30,11 +31,8 @@ export default function ObservationCreate() {
           <Link component={RouterLink} to={ROUTES.PROJECT_LIST}>
             Projects
           </Link>
-          <Link
-            component={RouterLink}
-            to={ROUTES.PROJECT + listing_id_project_id}
-          >
-            Project {listing_id_project_id}
+          <Link component={RouterLink} to={ROUTES.PROJECT + project_id}>
+            Project {project_id}
           </Link>
           <Typography color="textPrimary">New Observation</Typography>
         </Breadcrumbs>
@@ -45,14 +43,13 @@ export default function ObservationCreate() {
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Add an observation for the{' '}
-          {project_info !== null ? project_info.name : listing_id_project_id}{' '}
-          project.
+          {project_info !== null ? project_info.name : project_id} project.
         </Typography>
       </Box>
       <Paper square>
         <Box p={3}>
           <ObservationForm
-            listing_id_project_id={listing_id_project_id}
+            listing_id_project_id={project_id}
             observation_id={generateFAIMSDataID()}
             is_fresh={true}
           />

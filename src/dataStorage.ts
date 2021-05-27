@@ -1,23 +1,46 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from './sync';
-import {Observation, EncodedObservation, ObservationList} from './datamodel';
+import {
+  Observation,
+  EncodedObservation,
+  ObservationList,
+  ProjectID,
+  ObservationID,
+  //  OBSERVATION_INDEX_NAME,
+} from './datamodel';
 
 export interface DataListing {
   [_id: string]: string[];
 }
 
-export function generateFAIMSDataID(): string {
+export function generateFAIMSDataID(): ObservationID {
   return uuidv4();
 }
 
+// Commented as this does not work with the find below for some unknown reason
+//async function ensureObservationIndex(project_id: ProjectID) {
+//  const datadb = getDataDB(project_id);
+//  try {
+//    return datadb.createIndex({
+//      index: {
+//        fields: ['format_version'],
+//        name: OBSERVATION_INDEX_NAME,
+//      },
+//    });
+//  } catch (err) {
+//    console.error(err);
+//    throw Error('Failed to create observation index');
+//  }
+//}
+
 function convertFromFormToDB(
-  doc: Observation & {_id: string},
+  doc: Observation,
   revision: string | undefined = undefined
 ): EncodedObservation {
   if (revision !== undefined) {
     return {
-      _id: doc._id,
+      _id: doc.observation_id,
       _rev: revision,
       type: doc.type,
       data: doc.data,
@@ -30,7 +53,7 @@ function convertFromFormToDB(
   }
   if (doc._rev !== undefined) {
     return {
-      _id: doc._id,
+      _id: doc.observation_id,
       _rev: doc._rev,
       type: doc.type,
       data: doc.data,
@@ -42,7 +65,7 @@ function convertFromFormToDB(
     };
   }
   return {
-    _id: doc._id,
+    _id: doc.observation_id,
     type: doc.type,
     data: doc.data,
     created: doc.created.toISOString(),
@@ -60,7 +83,7 @@ export function convertFromDBToForm(
     return null;
   }
   return {
-    _id: doc._id,
+    observation_id: doc._id,
     type: doc.type,
     data: doc.data,
     created: new Date(doc.created),
@@ -71,10 +94,10 @@ export function convertFromDBToForm(
 }
 
 async function getLatestRevision(
-  project_name: string,
+  project_id: ProjectID,
   docid: string
 ): Promise<string | undefined> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const doc = await datadb.get(docid);
     return doc._rev;
@@ -84,16 +107,14 @@ async function getLatestRevision(
   }
 }
 
-export async function upsertFAIMSData(project_name: string, doc: Observation) {
-  const datadb = getDataDB(project_name);
-  if (doc._id === undefined) {
-    throw Error('_id required to save observation');
+export async function upsertFAIMSData(project_id: ProjectID, doc: Observation) {
+  const datadb = getDataDB(project_id);
+  if (doc.observation_id === undefined) {
+    throw Error('observation_id required to save observation');
   }
   try {
-    const revision = await getLatestRevision(project_name, doc._id);
-    return await datadb.put(
-      convertFromFormToDB(doc as Observation & {_id: string}, revision)
-    );
+    const revision = await getLatestRevision(project_id, doc.observation_id);
+    return await datadb.put(convertFromFormToDB(doc, revision));
   } catch (err) {
     console.warn(err);
     throw Error('failed to save data');
@@ -101,35 +122,34 @@ export async function upsertFAIMSData(project_name: string, doc: Observation) {
 }
 
 export async function lookupFAIMSDataID(
-  project_name: string,
-  dataid: string
+  project_id: ProjectID,
+  observation_id: ObservationID
 ): Promise<Observation | null> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
-    const doc = await datadb.get(dataid);
+    const doc = await datadb.get(observation_id);
     return convertFromDBToForm(doc);
   } catch (err) {
     if (err.status === 404 && err.reason === 'deleted') {
       return null;
     }
     console.warn(err);
-    throw Error('failed to find data with id');
+    throw Error(`failed to find data with id ${observation_id}`);
   }
 }
 
 export async function listFAIMSData(
-  project_name: string,
-  options:
-    | PouchDB.Core.AllDocsWithKeyOptions
-    | PouchDB.Core.AllDocsWithKeysOptions
-    | PouchDB.Core.AllDocsWithinRangeOptions
-    | PouchDB.Core.AllDocsOptions = {}
+  project_id: ProjectID
 ): Promise<ObservationList> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
-    const all = await datadb.allDocs({...options, include_docs: true});
+    //await ensureObservationIndex(project_id);
+    const all = await datadb.find({
+      selector: {format_version: {$eq: 1}},
+      //use_index: OBSERVATION_INDEX_NAME,
+    });
     const retval: ObservationList = {};
-    all.rows.forEach(row => (retval[row.id] = convertFromDBToForm(row.doc!)!));
+    all.docs.forEach(row => (retval[row._id] = convertFromDBToForm(row)!));
     return retval;
   } catch (err) {
     console.warn(err);
@@ -138,9 +158,9 @@ export async function listFAIMSData(
 }
 
 export async function listFAIMSProjectRevisions(
-  project_name: string
+  project_id: ProjectID
 ): Promise<DataListing> {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
     const result = await datadb.allDocs();
     const revmap: DataListing = {};
@@ -168,12 +188,12 @@ export async function listFAIMSProjectRevisions(
 }
 
 export async function deleteFAIMSDataForID(
-  project_name: string,
-  dataid: string
+  project_id: ProjectID,
+  observation_id: ObservationID
 ) {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
-    const doc = await datadb.get(dataid);
+    const doc = await datadb.get(observation_id);
     doc.deleted = true;
     return await datadb.put(doc);
   } catch (err) {
@@ -183,12 +203,12 @@ export async function deleteFAIMSDataForID(
 }
 
 export async function undeleteFAIMSDataForID(
-  project_name: string,
-  dataid: string
+  project_id: ProjectID,
+  observation_id: ObservationID
 ) {
-  const datadb = getDataDB(project_name);
+  const datadb = getDataDB(project_id);
   try {
-    const doc = await datadb.get(dataid);
+    const doc = await datadb.get(observation_id);
     doc.deleted = false;
     return await datadb.put(doc);
   } catch (err) {

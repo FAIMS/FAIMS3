@@ -1,5 +1,6 @@
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
 import {
@@ -54,7 +55,10 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsO
 
 const local_pouch_options: any = {};
 if (RUNNING_UNDER_TEST) {
-  local_pouch_options['adaptor'] = 'memory';
+  // enable memory adapter for testing
+  console.error('Using memory store');
+  PouchDB.plugin(PouchDBAdaptorMemory);
+  local_pouch_options['adapter'] = 'memory';
 }
 
 /**
@@ -131,9 +135,18 @@ export function materializeConnectionInfo(
  * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
  */
 function ConnectionInfo_create_pouch<Content extends {}>(
-  connection_info: DataModel.ConnectionInfo
+  connection_info: DataModel.ConnectionInfo,
+  username: string | null = null,
+  password: string | null = null,
+  skip_setup = false
 ): PouchDB.Database<Content> {
-  const pouch_options = {};
+  const pouch_options: any = {skip_setup: skip_setup};
+  if (username !== null && password !== null) {
+    pouch_options.auth = {
+      username: username,
+      password: password,
+    };
+  }
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +
@@ -294,6 +307,7 @@ export function getDataDB(
   if (data_dbs[active_id] !== undefined) {
     return data_dbs[active_id].local;
   } else {
+    console.warn(`Failed to look up ${active_id}`);
     throw 'Projects not initialized yet';
   }
 }
@@ -304,28 +318,9 @@ export function getProjectDB(
   if (metadata_dbs[active_id] !== undefined) {
     return metadata_dbs[active_id].local;
   } else {
+    console.warn(`Failed to look up ${active_id}`);
     throw 'Projects not initialized yet';
   }
-}
-
-export function getAvailableProjectsMetaData(): DataModel.ProjectsList {
-  return {
-    'default/projectA': {
-      _id: 'projectA',
-      name: 'Project A',
-      description: 'A dummy project',
-    },
-    'default/projectB': {
-      _id: 'projectB',
-      name: 'Project B',
-      description: 'A dummy project',
-    },
-    'default/projectC': {
-      _id: 'projectC',
-      name: 'Project C',
-      description: 'A dummy project',
-    },
-  };
 }
 
 export const initializeEvents: DirectoryEmitter = new EventEmitter();

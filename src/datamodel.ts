@@ -1,6 +1,7 @@
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
 export const PROJECT_METADATA_PREFIX = 'project-metadata';
+export const OBSERVATION_INDEX_NAME = 'observation-version-index';
 
 /*
  * This may already exist in pouchdb's typing, but lets make a temporary one for
@@ -53,6 +54,7 @@ export interface ActiveDoc {
 /**
  * Describes a project, with connection, name, description, and schema
  * Part of the Projects DB
+ * Do not use with UI code; sync code only
  */
 export interface ProjectObject {
   _id: string;
@@ -71,9 +73,12 @@ export type ProjectsList = {
 
 /**
  * User readable information about a project
+ * Do not use with sync code; UI code only
  */
+export type ProjectID = string;
+
 export interface ProjectInformation {
-  _id: string;
+  project_id: ProjectID;
   name: string;
   description?: string;
   last_updated?: string;
@@ -149,9 +154,14 @@ export interface ProjectPeople {
   _deleted?: boolean;
 }
 
+// There are two internal ID for observations, the former is unique to a
+// project, the latter unique to the system (i.e. includes project_id)
+export type ObservationID = string;
+export type FullyResolvedObservationID = string;
+
 // This is used within the form/ui subsystem, do not use with pouch
 export interface Observation {
-  _id?: string; // optional as we may want to include the raw json in places
+  observation_id: ObservationID;
   _rev?: string; // optional as we may want to include the raw json in places
   _project_id?: string;
   type: string;
