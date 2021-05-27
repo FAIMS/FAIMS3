@@ -1,6 +1,6 @@
 ---
 # Nightly compile for e2e testing
-name: Nightly Compile APK, Electron, and Test on BrowserStack
+name: Nightly Compile APK to BrowserStack
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
@@ -223,6 +223,7 @@ jobs:
           step: restore
       - name: Get maven deps
         run: |
+          cd e2e
           mvn dependency:go-offline
       - name: Save Maven cache
         uses: skjolber/maven-cache-github-action@v1
