@@ -149,7 +149,7 @@ jobs:
       - run: cd android && ./gradlew assembleDebug
       - run: cp "$(find . -name '*.apk')" .
       - name: "Upload APK to Browserstack with curl"
-        run: curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=ElaborationApp"
+        run: curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=FAIMS3-Nightly"
       - name: Archive apks
         uses: actions/upload-artifact@v2
         with:
@@ -164,24 +164,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Cache node modules
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-node-modules
-        with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.node-version }}   
-      # run it every time... 
-      - run: npm install
+      
+        # - name: Cache node modules
+        #   uses: actions/cache@v2
+        #   env:
+        #     cache-name: cache-node-modules
+        #   with:
+        #     # npm cache files are stored in `~/.npm` on Linux/macOS
+        #     path: ~/.npm
+        #     key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        #     restore-keys: |
+        #       ${{ runner.os }}-build-${{ env.cache-name }}-
+        #       ${{ runner.os }}-build-
+        #       ${{ runner.os }}-
+        # - name: Use Node.js ${{ matrix.node-version }}
+        #   uses: actions/setup-node@v1
+        #   with:
+        #     node-version: ${{ matrix.node-version }}   
+        # # run it every time... 
+        # - run: npm install
       # # Final part of the path is the custom id above. Should be a variable. Will fix later.
       # - name: Get App Metadata
       #   uses: satak/webrequest-action@master
@@ -210,7 +211,14 @@ jobs:
           local-identifier: random
           local-logging-level: all-logs
           local-args: --log-file '$GITHUB_WORKSPACE/browserstack.log'
-        
+      # https://docs.github.com/en/actions/guides/building-and-testing-java-with-maven
+      - name: Set up JDK 13
+        uses: actions/setup-java@v2
+        with:
+          java-version: '13'
+          distribution: 'adopt'
+      - name: Build with Maven
+        run: mvn install
       # https://blog.mindorks.com/github-actions-for-android
       
       # curl -u "<username>:<password>" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@/path/to/app/file/Application-debug.apk"
@@ -231,13 +239,13 @@ jobs:
       
       # - run: pwd
       # - run: ls -alR 
-      - name: 'Running test on BrowserStack'  # Invokes the actual test script that would run on BrowserStack browsers
-        run: npm run browserstack 
-        env:
-          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          GITHUB_COMMIT_MESSAGE: '${{ github.event.head_commit.message }} - ${{ github.sha}}'
-          BUILD: ${{ github.repository }}
+      # - name: 'Running test on BrowserStack'  # Invokes the actual test script that would run on BrowserStack browsers
+      #   run: npm run browserstack 
+      #   env:
+      #     BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+      #     BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+      #     GITHUB_COMMIT_MESSAGE: '${{ github.event.head_commit.message }} - ${{ github.sha}}'
+      #     BUILD: ${{ github.repository }}
       #   # Running it from the npm runner rather than node might fix path issues?
       # # ***IMPORTANT***
       # # If you do not stop the binary after the completion of your tests, the logs will not be uploaded as artifacts.
@@ -255,37 +263,37 @@ jobs:
       #     basic-auth:  "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
       # - name: 'Use response'
       #     run: echo ${{ steps.api.outputs.response }}
-      - name: "Install jq to parse curl output"
-        run: sudo apt install jq -y 
-      - name: "get build id"
-        run: curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"  -X GET "https://api-cloud.browserstack.com/app-automate/builds.json" | jq -cr '.[][] | select(.name=="${{ github.repository }}") | .hashed_id' |  xargs -I{} echo ::set-output name=BUILD_ID::{}
-        id: build-id
+      # - name: "Install jq to parse curl output"
+      #   run: sudo apt install jq -y 
+      # - name: "get build id"
+      #   run: curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"  -X GET "https://api-cloud.browserstack.com/app-automate/builds.json" | jq -cr '.[][] | select(.name=="${{ github.repository }}") | .hashed_id' |  xargs -I{} echo ::set-output name=BUILD_ID::{}
+      #   id: build-id
       # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions
       # - run: echo "${{ steps.build-id.outputs.BUILD_ID}}"
-      - name: "Get Sessions of build: ${{ github.repository }}"
-        run: curl --silent --show-error --fail  -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X GET "https://api-cloud.browserstack.com/app-automate/builds/${{steps.build-id.outputs.BUILD_ID}}/sessions.json" > sessions.json
-      - run: cat sessions.json | jq -cr '.[][] | .appium_logs_url' | xargs -I{} echo ::set-output name=appium_log::{}
-        id: appium-log-url
-      - name: "fetching appium log from:  ${{steps.appium-log-url.outputs.appium_log}}"
-        run: curl --silent --show-error --fail  -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X GET ${{steps.appium-log-url.outputs.appium_log}} > appium.log
-      - run: cat sessions.json | jq -cr '.[][] | .public_url' | xargs -I{} echo ::set-output name=public_url::{}
-        id: sessions-json
-      - name: Archive appium log
-        uses: actions/upload-artifact@v2
-        with:
-          name: logs
-          path: |
-            ./*.log
-            ./*.json
-      - name: "Find errors in appium log"
-        run: |
-          echo ::set-output name=error-count::$(grep -i "Error" appium.log | wc -l)
-        id: error-count
-      - run: |
-          echo "Public build URL: ${{steps.sessions-json.outputs.public_url}}"
-      - name: "List errors"
-        run: |
-          echo "::error::${{steps.error-count.outputs.error-count}} testing-errors encountered on Browserstack run."
-          grep "Encountered internal error" appium.log
-          echo "::error::For details: ${{steps.sessions-json.outputs.public_url}}"
-        if: ${{ steps.error-count.outputs.error-count > 0}}
+      # - name: "Get Sessions of build: ${{ github.repository }}"
+      #   run: curl --silent --show-error --fail  -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X GET "https://api-cloud.browserstack.com/app-automate/builds/${{steps.build-id.outputs.BUILD_ID}}/sessions.json" > sessions.json
+      # - run: cat sessions.json | jq -cr '.[][] | .appium_logs_url' | xargs -I{} echo ::set-output name=appium_log::{}
+      #   id: appium-log-url
+      # - name: "fetching appium log from:  ${{steps.appium-log-url.outputs.appium_log}}"
+      #   run: curl --silent --show-error --fail  -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X GET ${{steps.appium-log-url.outputs.appium_log}} > appium.log
+      # - run: cat sessions.json | jq -cr '.[][] | .public_url' | xargs -I{} echo ::set-output name=public_url::{}
+      #   id: sessions-json
+      # - name: Archive appium log
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: logs
+      #     path: |
+      #       ./*.log
+      #       ./*.json
+      # - name: "Find errors in appium log"
+      #   run: |
+      #     echo ::set-output name=error-count::$(grep -i "Error" appium.log | wc -l)
+      #   id: error-count
+      # - run: |
+      #     echo "Public build URL: ${{steps.sessions-json.outputs.public_url}}"
+      # - name: "List errors"
+      #   run: |
+      #     echo "::error::${{steps.error-count.outputs.error-count}} testing-errors encountered on Browserstack run."
+      #     grep "Encountered internal error" appium.log
+      #     echo "::error::For details: ${{steps.sessions-json.outputs.public_url}}"
+      #   if: ${{ steps.error-count.outputs.error-count > 0}}
