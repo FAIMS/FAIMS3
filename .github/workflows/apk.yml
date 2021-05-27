@@ -18,10 +18,10 @@ on:
   # but only for the main branch
   push:
     branches:
-      - main
+      - e2e
   pull_request:
     branches:
-      - main
+      - e2e
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
