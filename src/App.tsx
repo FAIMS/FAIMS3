@@ -80,9 +80,7 @@ export class App extends React.Component<AppProps, AppState> {
               <Route
                 exact
                 path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.OBSERVATION_CREATE
+                  ROUTES.PROJECT + ':project_id' + ROUTES.OBSERVATION_CREATE
                 }
                 component={ObservationCreate}
               />

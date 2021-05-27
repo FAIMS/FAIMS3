@@ -129,16 +129,14 @@ export class ObservationForm extends React.Component<
 
     const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
       this.nullCoalesceRevision().then(obsid_revid =>
-        getStagedData(
-          this.props.project_id,
-          viewName,
-          obsid_revid
-        ).then(staged_data_restore => {
-          loadedStagedData = {
-            ...loadedStagedData,
-            ...(staged_data_restore || {}),
-          };
-        })
+        getStagedData(this.props.project_id, viewName, obsid_revid).then(
+          staged_data_restore => {
+            loadedStagedData = {
+              ...loadedStagedData,
+              ...(staged_data_restore || {}),
+            };
+          }
+        )
       )
     );
 

@@ -21,10 +21,15 @@ import {ProjectID} from '../../datamodel';
 import {ObservationForm} from '../components/observationForm';
 import InProgress from '../components/inProgress';
 import {Alert} from '@material-ui/lab';
-import {deleteFAIMSDataForID} from '../../dataStorage';
+import {
+  deleteFAIMSDataForID,
+  listFAIMSProjectRevisions,
+} from '../../dataStorage';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
 import {getProjectInfo} from '../../databaseAccess';
+import grey from '@material-ui/core/colors/grey';
+import BoxTab from '../components/boxTab';
 
 export default function Observation() {
   const {project_id, observation_id} = useParams<{
@@ -36,7 +41,7 @@ export default function Observation() {
   const globalState = useContext(store);
   const {dispatch} = globalState;
   const project_info = getProjectInfo(project_id);
-
+  const revisions = listFAIMSProjectRevisions(project_id);
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
@@ -75,10 +80,7 @@ export default function Observation() {
           <Link component={RouterLink} to={ROUTES.PROJECT_LIST}>
             Projects
           </Link>
-          <Link
-            component={RouterLink}
-            to={ROUTES.PROJECT + project_id}
-          >
+          <Link component={RouterLink} to={ROUTES.PROJECT + project_id}>
             {project_info !== null ? project_info.name : project_id}
           </Link>
           <Typography color="textPrimary">{observation_id}</Typography>
@@ -112,6 +114,16 @@ export default function Observation() {
           </TabPanel>
           <TabPanel value="2">
             <InProgress />
+            <Box p={2} />
+            <BoxTab title={'Developer tool: observation revisions'} />
+            <Box
+              bgcolor={grey[200]}
+              pl={2}
+              pr={2}
+              style={{overflowX: 'scroll'}}
+            >
+              <pre>{JSON.stringify(revisions, null, 2)}</pre>
+            </Box>
           </TabPanel>
           <TabPanel value="3">
             <InProgress />
