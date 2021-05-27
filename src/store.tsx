@@ -136,61 +136,6 @@ const StateProvider = (props: any) => {
     InitialState
   );
 
-  add_initial_listener(initializeEvents => {
-    const observations_update_listener = (
-      active: ActiveDoc,
-      data_db: PouchDB.Database<EncodedObservation>
-    ) =>
-      data_db
-        .allDocs() // FIXME: include_docs here might be more efficient, but requires convertFromDBToForm be public
-        .then(docs => {
-          // To generate, from a data_db database, a list of observations,
-          // this is what has to happen:
-          // For each doc ID in the data's db, use lookupFAIMSDataID
-          // Wait for all those lookups to return
-          // Then dispatch the APPEND_OBSERVATION_LIST
-          const data_acc: ObservationList = {};
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const promises = docs.rows.map(({id: doc_id}) =>
-            lookupFAIMSDataID(active._id, doc_id).then(decoded =>
-              decoded !== null
-                ? (data_acc[doc_id] = decoded)
-                : console.debug(`${doc_id} was deleted, skipping`)
-            )
-          );
-          // Promise.all(promises)
-          //   .then(() =>
-          //     // dispatch({
-          //     //   type: ActionType.APPEND_OBSERVATION_LIST,
-          //     //   payload: {
-          //     //     project_id: active._id,
-          //     //     data: data_acc,
-          //     //   },
-          //     // });
-          //   )
-          //   .catch(err => {
-          //     //TODO
-          //     console.error(err);
-          //   });
-        })
-        .catch(err => {
-          // TODO
-          console.error(err);
-        });
-
-    initializeEvents.on(
-      'project_local',
-      (listing, active, project, meta_db, data_db) =>
-        observations_update_listener(active, data_db.local)
-    );
-
-    initializeEvents.on(
-      'project_data_paused',
-      (listing, active, project, data_db) =>
-        observations_update_listener(active, data_db.local)
-    );
-  }, 'store');
-
   useEffect(() => {
     initialize()
       .then(() =>

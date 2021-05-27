@@ -5,9 +5,9 @@ import {Grid, Button, TextField} from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 // import Skeleton from '@material-ui/lab/Skeleton';
 import * as ROUTES from '../../../constants/routes';
-import {createdProjects} from '../../../sync';
+import {ProjectInformation} from '../../../datamodel';
 type DashboardActionProps = {
-  pouchProjectList: typeof createdProjects;
+  pouchProjectList: ProjectInformation[];
 };
 const useStyles = makeStyles(() => ({
   fullHeightButton: {
@@ -19,9 +19,9 @@ export default function DashboardActions(props: DashboardActionProps) {
   const {pouchProjectList} = props;
   const classes = useStyles();
   const history = useHistory();
-  const options = Object.keys(pouchProjectList).map(project_id => ({
-    title: pouchProjectList[project_id].project.name,
-    url: ROUTES.PROJECT + project_id,
+  const options = pouchProjectList.map(project_info => ({
+    title: project_info.name,
+    url: ROUTES.PROJECT + project_info.project_id,
   }));
   const [value, setValue] = React.useState(
     options.length > 0 ? options[0] : null

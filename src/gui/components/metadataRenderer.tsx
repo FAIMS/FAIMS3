@@ -13,18 +13,16 @@ export default function MetadataRenderer(props: MetadataProps) {
   const project_id = props.project_id;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
-  const [metadata_value, setMetadata] = useState(null);
+  const [metadata_value, setMetadata] = useState(null as string | null);
 
   useEffect(() => {
     const getMeta = async () => {
-      let meta;
       try {
-        meta = await getProjectMetadata(project_id, metadata_key);
+        const meta = await getProjectMetadata(project_id, metadata_key);
+        setMetadata(meta);
       } catch (err) {
-        console.debug(err);
-        meta = 'Unknown';
+        setMetadata('Unknown');
       }
-      setMetadata(meta);
     };
     getMeta();
   });
