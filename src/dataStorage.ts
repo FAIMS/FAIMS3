@@ -138,6 +138,11 @@ export async function lookupFAIMSDataID(
   }
 }
 
+/**
+ * Returns a list of not deleted observations
+ * @param project_id Project ID to get list of observation for
+ * @returns key: observation id, value: observation (NOT NULL)
+ */
 export async function listFAIMSData(
   project_id: ProjectID
 ): Promise<ObservationList> {
@@ -149,7 +154,12 @@ export async function listFAIMSData(
       //use_index: OBSERVATION_INDEX_NAME,
     });
     const retval: ObservationList = {};
-    all.docs.forEach(row => (retval[row._id] = convertFromDBToForm(row)!));
+    all.docs.forEach(row => {
+      const converted = convertFromDBToForm(row);
+      if (converted !== null) {
+        retval[row._id] = converted;
+      }
+    });
     return retval;
   } catch (err) {
     console.warn(err);
