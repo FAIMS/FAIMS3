@@ -4,9 +4,9 @@ import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
-import {Observation, ProjectID} from '../../datamodel';
-import * as ROUTES from '../../constants/routes';
-import {listenObservationsList} from '../../databaseAccess';
+import {Observation, ProjectID} from '../../../datamodel';
+import * as ROUTES from '../../../constants/routes';
+import {listenObservationsList} from '../../../databaseAccess';
 
 type ObservationsTableProps = {
   project_id: ProjectID;

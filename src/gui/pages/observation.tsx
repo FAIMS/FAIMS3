@@ -18,7 +18,7 @@ import {Link as RouterLink, useHistory, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel';
 
-import {ObservationForm} from '../components/observationForm';
+import {ObservationForm} from '../components/observation/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
 import {Alert} from '@material-ui/lab';

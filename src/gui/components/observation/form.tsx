@@ -3,18 +3,18 @@ import {Button, Grid, Box} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import {getComponentByName} from '../ComponentRegistry';
-import {getUiSpecForProject} from '../../uiSpecification';
+import {getComponentByName} from '../../ComponentRegistry';
+import {getUiSpecForProject} from '../../../uiSpecification';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
-import {ViewComponent} from '../view';
-import {upsertFAIMSData, lookupFAIMSDataID} from '../../dataStorage';
-import {ProjectUIModel} from '../../datamodel';
-import {getStagedData, setStagedData} from '../../sync/staging';
-import {getCurrentUserId} from '../../users';
-import BoxTab from './ui/boxTab';
-import {ActionType} from '../../actions';
-import {store} from '../../store';
+import {ViewComponent} from '../../view';
+import {upsertFAIMSData, lookupFAIMSDataID} from '../../../dataStorage';
+import {ProjectUIModel} from '../../../datamodel';
+import {getStagedData, setStagedData} from '../../../sync/staging';
+import {getCurrentUserId} from '../../../users';
+import BoxTab from '../ui/boxTab';
+import {ActionType} from '../../../actions';
+import {store} from '../../../store';
 
 type ObservationFormProps = {
   project_id: string;

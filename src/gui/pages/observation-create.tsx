@@ -11,7 +11,7 @@ import {Link as RouterLink} from 'react-router-dom';
 import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {generateFAIMSDataID} from '../../dataStorage';
-import {ObservationForm} from '../components/observationForm';
+import {ObservationForm} from '../components/observation/form';
 import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel';
 
