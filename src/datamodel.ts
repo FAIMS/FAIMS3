@@ -78,7 +78,6 @@ export type ProjectID = string;
 
 export interface ProjectInformation {
   project_id: ProjectID;
-  _id: string;
   name: string;
   description?: string;
   last_updated?: string;
