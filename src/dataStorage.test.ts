@@ -1,6 +1,6 @@
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
-import {Observation} from './datamodel';
+import {Observation, ProjectID} from './datamodel';
 import {
   generateFAIMSDataID,
   upsertFAIMSData,
@@ -17,19 +17,19 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockDataDB(project_name: string) {
-  if (projdbs[project_name] === undefined) {
-    const db = new PouchDB(project_name, {adapter: 'memory'});
-    projdbs[project_name] = db;
+function mockDataDB(project_id: ProjectID) {
+  if (projdbs[project_id] === undefined) {
+    const db = new PouchDB(project_id, {adapter: 'memory'});
+    projdbs[project_id] = db;
   }
-  return projdbs[project_name];
+  return projdbs[project_id];
 }
 
 async function cleanDataDBS() {
   let db;
-  for (const project_name in projdbs) {
-    db = projdbs[project_name];
-    delete projdbs[project_name];
+  for (const project_id in projdbs) {
+    db = projdbs[project_id];
+    delete projdbs[project_id];
 
     if (db !== undefined) {
       try {
@@ -57,7 +57,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(),
       fc.date(),
     ],
-    async (project_name, namespace, name, data, userid, time) => {
+    async (project_id, namespace, name, data, userid, time) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -79,9 +79,9 @@ describe('roundtrip reading and writing to db', () => {
         updated: time,
       };
 
-      return upsertFAIMSData(project_name, doc)
+      return upsertFAIMSData(project_id, doc)
         .then(result => {
-          return lookupFAIMSDataID(project_name, dataid);
+          return lookupFAIMSDataID(project_id, dataid);
         })
         .then(result => {
           expect(equals(result, doc)).toBe(true);
@@ -102,7 +102,7 @@ describe('CRUD for data', () => {
       fc.fullUnicodeString(),
       fc.date(),
     ],
-    async (project_name, namespace, name, data, new_data, userid, time) => {
+    async (project_id, namespace, name, data, new_data, userid, time) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -134,43 +134,43 @@ describe('CRUD for data', () => {
         updated: time,
       };
 
-      return upsertFAIMSData(project_name, doc)
+      return upsertFAIMSData(project_id, doc)
         .then(result => {
-          return lookupFAIMSDataID(project_name, dataid);
+          return lookupFAIMSDataID(project_id, dataid);
         })
         .then(result => {
           expect(equals(result, doc)).toBe(true);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_name, dataid);
+          return lookupFAIMSDataID(project_id, dataid);
         })
         .then(result => {
           if (result === null) {
             throw Error('something deleted the old revision...');
           }
           result.data = new_data;
-          return upsertFAIMSData(project_name, result);
+          return upsertFAIMSData(project_id, result);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_name, dataid);
+          return lookupFAIMSDataID(project_id, dataid);
         })
         .then(result => {
           expect(equals(result, new_doc)).toBe(true);
         })
         .then(result => {
-          return deleteFAIMSDataForID(project_name, dataid);
+          return deleteFAIMSDataForID(project_id, dataid);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_name, dataid);
+          return lookupFAIMSDataID(project_id, dataid);
         })
         .then(result => {
           expect(result).toBe(null);
         })
         .then(result => {
-          return undeleteFAIMSDataForID(project_name, dataid);
+          return undeleteFAIMSDataForID(project_id, dataid);
         })
         .then(result => {
-          return lookupFAIMSDataID(project_name, dataid);
+          return lookupFAIMSDataID(project_id, dataid);
         })
         .then(result => {
           expect(equals(result, new_doc)).toBe(true);
@@ -190,7 +190,7 @@ describe('listing revisions', () => {
       fc.fullUnicodeString(),
       fc.date(),
     ],
-    async (project_name, namespace, name, data, userid, time) => {
+    async (project_id, namespace, name, data, userid, time) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -212,9 +212,9 @@ describe('listing revisions', () => {
         updated: time,
       };
 
-      return upsertFAIMSData(project_name, doc)
+      return upsertFAIMSData(project_id, doc)
         .then(result => {
-          return listFAIMSProjectRevisions(project_name);
+          return listFAIMSProjectRevisions(project_id);
         })
         .then(result => {
           expect(result[dataid]).not.toBe(undefined);

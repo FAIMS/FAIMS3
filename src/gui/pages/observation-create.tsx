@@ -8,10 +8,11 @@ import {
 } from '@material-ui/core';
 import {NavLink, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import {ProjectID} from '../../datamodel';
 
 export default function ObservationCreate() {
   const {project_id} = useParams<{
-    project_id: string;
+    project_id: ProjectID;
   }>();
 
   return (

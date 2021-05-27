@@ -1,7 +1,7 @@
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 import {getUiSpecForProject, setUiSpecForProject} from './uiSpecification';
-import {UI_SPECIFICATION_NAME} from './datamodel';
+import {UI_SPECIFICATION_NAME, ProjectID} from './datamodel';
 import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';
@@ -10,19 +10,19 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockProjectDB(project_name: string) {
-  if (projdbs[project_name] === undefined) {
-    const db = new PouchDB(project_name, {adapter: 'memory'});
-    projdbs[project_name] = db;
+function mockProjectDB(project_id: ProjectID) {
+  if (projdbs[project_id] === undefined) {
+    const db = new PouchDB(project_id, {adapter: 'memory'});
+    projdbs[project_id] = db;
   }
-  return projdbs[project_name];
+  return projdbs[project_id];
 }
 
 async function cleanProjectDBS() {
   let db;
-  for (const project_name in projdbs) {
-    db = projdbs[project_name];
-    delete projdbs[project_name];
+  for (const project_id in projdbs) {
+    db = projdbs[project_id];
+    delete projdbs[project_id];
 
     if (db !== undefined) {
       try {
@@ -48,7 +48,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // views
       fc.fullUnicodeString(), // start-view
     ],
-    async (project_name, fields, views, start_view) => {
+    async (project_id, fields, views, start_view) => {
       await cleanProjectDBS();
       fc.pre(projdbs !== {});
 
@@ -59,11 +59,11 @@ describe('roundtrip reading and writing to db', () => {
         start_view: start_view,
       };
 
-      const meta_db = getProjectDB(project_name);
+      const meta_db = getProjectDB(project_id);
 
       return setUiSpecForProject(meta_db, uiInfo)
         .then(result => {
-          return getUiSpecForProject(project_name);
+          return getUiSpecForProject(project_id);
         })
         .then(result => {
           delete result['_rev'];

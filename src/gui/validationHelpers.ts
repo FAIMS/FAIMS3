@@ -1,6 +1,6 @@
 /* eslint-disable */
 import {createTypeContext,lookupFAIMSType} from '../projectSpecification';
-  
+import {ProjectID} from '../datamodel';
 
 type validationResult = {
   err: boolean;
@@ -8,12 +8,12 @@ type validationResult = {
 };
 
 export function validateData(
-    project_name: string,
+  project_id: ProjectID,
   data: any,
   faimsType: string,
   membersChecked = false
 ) {
-  const context = createTypeContext(project_name);
+  const context = createTypeContext(project_id);
   const ftype = lookupFAIMSType(faimsType, context);
   const allowValsResult = checkAllowedValues(data, ftype);
   if (allowValsResult.err) {

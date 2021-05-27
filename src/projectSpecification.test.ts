@@ -9,6 +9,7 @@ import {
   upsertFAIMSConstant,
   clearAllCaches,
 } from './projectSpecification';
+import {ProjectID} from './datamodel';
 import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';
@@ -17,19 +18,19 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockProjectDB(project_name: string) {
-  if (projdbs[project_name] === undefined) {
-    const db = new PouchDB(project_name, {adapter: 'memory'});
-    projdbs[project_name] = db;
+function mockProjectDB(project_id: ProjectID) {
+  if (projdbs[project_id] === undefined) {
+    const db = new PouchDB(project_id, {adapter: 'memory'});
+    projdbs[project_id] = db;
   }
-  return projdbs[project_name];
+  return projdbs[project_id];
 }
 
 async function cleanProjectDBS() {
   let db;
-  for (const project_name in projdbs) {
-    db = projdbs[project_name];
-    delete projdbs[project_name];
+  for (const project_id in projdbs) {
+    db = projdbs[project_id];
+    delete projdbs[project_id];
 
     if (db !== undefined) {
       try {
@@ -50,24 +51,24 @@ jest.mock('./sync/index', () => ({
 testProp(
   'type context caches by default',
   [fc.fullUnicodeString()],
-  project_name => {
-    return createTypeContext(project_name).use_cache;
+  project_id => {
+    return createTypeContext(project_id).use_cache;
   }
 );
 
 testProp(
   'type context project name is set',
   [fc.fullUnicodeString()],
-  project_name => {
-    return createTypeContext(project_name).project_name === project_name;
+  project_id => {
+    return createTypeContext(project_id).project_id === project_id;
   }
 );
 
 testProp(
   'type context cache is set',
   [fc.fullUnicodeString(), fc.boolean()],
-  (project_name, use_cache) => {
-    return createTypeContext(project_name, use_cache).use_cache === use_cache;
+  (project_id, use_cache) => {
+    return createTypeContext(project_id, use_cache).use_cache === use_cache;
   }
 );
 
@@ -106,7 +107,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.array(fc.unicodeJsonObject()), // additional-constraints
     ],
     async (
-      project_name,
+      project_id,
       namespace,
       name,
       allowedValues,
@@ -121,7 +122,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
-      const context = createTypeContext(project_name, false);
+      const context = createTypeContext(project_id, false);
 
       const typeInfo = {
         'allowed-values': allowedValues,
@@ -144,7 +145,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(),
       fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()),
     ],
-    async (project_name, namespace, name, constInfo) => {
+    async (project_id, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -153,7 +154,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(projdbs !== {});
 
       const fullconst = namespace + '::' + name;
-      const context = createTypeContext(project_name, false);
+      const context = createTypeContext(project_id, false);
 
       return upsertFAIMSConstant(fullconst, constInfo, context)
         .then(result => {
@@ -173,7 +174,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.array(fc.unicodeJsonObject()), // additional-constraints
     ],
     async (
-      project_name,
+      project_id,
       namespace,
       name,
       allowedValues,
@@ -189,7 +190,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
-      const context = createTypeContext(project_name);
+      const context = createTypeContext(project_id);
 
       const typeInfo = {
         'allowed-values': allowedValues,
@@ -216,7 +217,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(),
       fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()),
     ],
-    async (project_name, namespace, name, constInfo) => {
+    async (project_id, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
@@ -226,7 +227,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(projdbs !== {});
 
       const fullconst = namespace + '::' + name;
-      const context = createTypeContext(project_name);
+      const context = createTypeContext(project_id);
 
       return upsertFAIMSConstant(fullconst, constInfo, context)
         .then(result => {

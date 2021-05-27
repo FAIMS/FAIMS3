@@ -5,6 +5,7 @@ import {
   ProjectSchema,
   FAIMSType,
   FAIMSConstant,
+  ProjectID,
 } from './datamodel';
 
 export const FAIMS_NAMESPACES = [
@@ -24,7 +25,7 @@ interface TypeReference {
 }
 
 interface TypeContext {
-  project_name: string;
+  project_id: ProjectID;
   use_cache: boolean;
 }
 
@@ -34,11 +35,11 @@ enum ProjectSpecOptions {
 }
 
 export function createTypeContext(
-  project_name: string,
+  project_id: ProjectID,
   use_cache = true
 ): TypeContext {
   return {
-    project_name: project_name,
+    project_id: project_id,
     use_cache: use_cache,
   };
 }
@@ -125,10 +126,10 @@ async function lookupBuiltinReference(
 }
 
 async function getOrCreateSpecDoc(
-  project_name: string,
+  project_id: ProjectID,
   namespace: string
 ): Promise<ProjectSchema & PouchDB.Core.IdMeta> {
-  const projdb = getProjectDB(project_name);
+  const projdb = getProjectDB(project_id);
   try {
     const specdoc = (await projdb.get(
       PROJECT_SPECIFICATION_PREFIX + '-' + namespace
@@ -155,12 +156,9 @@ async function lookupProjectReference(
   context: TypeContext,
   specOpt: ProjectSpecOptions
 ): Promise<FAIMSConstant | FAIMSType> {
-  const project_name = context.project_name;
+  const project_id = context.project_id;
   try {
-    const specdoc = await getOrCreateSpecDoc(
-      project_name,
-      faimsRef['namespace']
-    );
+    const specdoc = await getOrCreateSpecDoc(project_id, faimsRef['namespace']);
     if (specOpt === ProjectSpecOptions.constants) {
       const refVal = specdoc.constants[faimsRef['name']];
       if (refVal === undefined) {
@@ -227,7 +225,7 @@ export async function upsertFAIMSType(
   typeInfo: FAIMSType,
   context: TypeContext
 ) {
-  const project_name = context.project_name;
+  const project_id = context.project_id;
   const parsedName = parseTypeName(qualname);
 
   if (!allowedProjectSpecUpsertPermissions(parsedName, context)) {
@@ -244,14 +242,14 @@ export async function upsertFAIMSType(
 
   let specdoc: ProjectSchema & PouchDB.Core.IdMeta;
   try {
-    specdoc = await getOrCreateSpecDoc(project_name, parsedName['namespace']);
+    specdoc = await getOrCreateSpecDoc(project_id, parsedName['namespace']);
     specdoc.types[parsedName['name']] = validatedInfo;
   } catch (err) {
     console.warn(err);
     throw Error('failed to get document');
   }
 
-  const projdb = getProjectDB(project_name);
+  const projdb = getProjectDB(project_id);
   try {
     return projdb.put(specdoc);
   } catch (err) {
@@ -265,7 +263,7 @@ export async function upsertFAIMSConstant(
   constInfo: any,
   context: TypeContext
 ) {
-  const project_name = context.project_name;
+  const project_id = context.project_id;
   const parsedName = parseTypeName(qualname);
 
   if (!allowedProjectSpecUpsertPermissions(parsedName, context)) {
@@ -280,13 +278,10 @@ export async function upsertFAIMSConstant(
     throw Error('invalid type information');
   }
 
-  const specdoc = await getOrCreateSpecDoc(
-    project_name,
-    parsedName['namespace']
-  );
+  const specdoc = await getOrCreateSpecDoc(project_id, parsedName['namespace']);
   specdoc.constants[parsedName['name']] = validatedInfo;
 
-  const projdb = getProjectDB(project_name);
+  const projdb = getProjectDB(project_id);
   try {
     return projdb.put(specdoc);
   } catch (err) {

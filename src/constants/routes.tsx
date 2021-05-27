@@ -1,3 +1,5 @@
+import {ProjectID} from '../datamodel';
+
 export const INDEX = '/';
 export const SIGN_UP = '/signup';
 export const SIGN_IN = '/signin';
@@ -11,7 +13,7 @@ export const OBSERVATION_CREATE = '/new-observation';
 export const DUMMY = '/dummy';
 
 export function getObservationRoute(
-  project_id: string,
+  project_id: ProjectID,
   observation_id: string
 ) {
   if (!!project_id && !!observation_id) {
