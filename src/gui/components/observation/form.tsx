@@ -15,6 +15,7 @@ import {getCurrentUserId} from '../../../users';
 import BoxTab from '../ui/boxTab';
 import {ActionType} from '../../../actions';
 import {store} from '../../../store';
+import AutoSave from './autosave';
 
 type ObservationFormProps = {
   project_id: string;
@@ -28,12 +29,14 @@ type ObservationFormProps = {
 // FormState's stagingError.
 const MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS = 5;
 
-const STAGING_SAVE_CYCLE = 2000;
+const STAGING_SAVE_CYCLE = 5000;
 
 type ObservationFormState = {
-  stagingError: unknown | null;
+  stagingError: string | null;
   currentView: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
+  is_saving: boolean;
+  last_saved: Date;
 };
 
 export class ObservationForm extends React.Component<
@@ -93,6 +96,8 @@ export class ObservationForm extends React.Component<
       currentView: null,
       stagingError: null,
       initialValues: null,
+      is_saving: false,
+      last_saved: new Date(),
     };
     this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
@@ -320,6 +325,7 @@ export class ObservationForm extends React.Component<
       });
 
       this.nullCoalesceRevision().then(obsid_revid => {
+        this.setState({is_saving: true});
         setStagedData(
           loadedStagedData,
           this.lastStagingRev,
@@ -330,6 +336,9 @@ export class ObservationForm extends React.Component<
           .then(set_ok => {
             this.lastStagingRev = set_ok.rev;
             this.consequtiveStagingSaveErrors = 0;
+            setTimeout(() => {
+              this.setState({is_saving: false, last_saved: new Date()});
+            }, 1000);
           })
           .catch(err => {
             this.consequtiveStagingSaveErrors += 1;
@@ -338,7 +347,8 @@ export class ObservationForm extends React.Component<
               MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
             ) {
               this.setState({
-                stagingError: err,
+                stagingError: JSON.stringify(err),
+                is_saving: false,
               });
             }
           })
@@ -480,14 +490,14 @@ export class ObservationForm extends React.Component<
               this.updateLastValues(formProps.values);
               return (
                 <Form>
-                  {this.state.stagingError ? (
-                    <Alert severity="error">
-                      {JSON.stringify(this.state.stagingError)}
-                    </Alert>
-                  ) : (
-                    ''
-                  )}
                   <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <AutoSave
+                        last_saved={this.state.last_saved}
+                        is_saving={this.state.is_saving}
+                        error={this.state.stagingError}
+                      />
+                    </Grid>
                     <Grid item sm={6} xs={12}>
                       <ViewComponent
                         viewList={fieldNames}
