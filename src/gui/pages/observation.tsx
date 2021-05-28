@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext} from 'react';
+import React, {useContext, useEffect} from 'react';
 import {
   AppBar,
   Box,
@@ -62,7 +62,14 @@ export default function Observation() {
   const globalState = useContext(store);
   const {dispatch} = globalState;
   const project_info = getProjectInfo(project_id);
-  const revisions = listFAIMSProjectRevisions(project_id);
+  const [revisions, setRevisions] = React.useState([] as string[]);
+  useEffect(() => {
+    listFAIMSProjectRevisions(project_id)
+      .then(all_revisions_in_project => {
+        setRevisions(all_revisions_in_project[observation_id]);
+      })
+      .catch(console.error /*TODO*/);
+  });
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
