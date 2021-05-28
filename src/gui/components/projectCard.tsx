@@ -7,7 +7,7 @@ import {
   CardActions,
   CardContent,
   CardHeader,
-  // Button,
+  Button,
   Typography,
   CircularProgress,
   List,
@@ -16,6 +16,7 @@ import {
   ListItemText,
   Link,
 } from '@material-ui/core';
+import AddIcon from '@material-ui/icons/Add';
 // import {EmailShareButton} from 'react-share';
 // import MailOutlineIcon from '@material-ui/icons/MailOutline';
 // import {Plugins} from '@capacitor/core';
@@ -24,9 +25,10 @@ import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation} from '../../datamodel';
-import ObservationsTable from './observationsTable';
+import ObservationsTable from './observation/table';
 import MetadataRenderer from './metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import TimelapseIcon from '@material-ui/icons/Timelapse';
 
 type ProjectCardProps = {
   project: ProjectInformation;
@@ -150,31 +152,53 @@ export default function ProjectCard(props: ProjectCardProps) {
                 {project.name.charAt(0)}
               </Avatar>
             }
-            // action={
-            //   <IconButton aria-label="settings">
-            //     <MoreVertIcon />
-            //   </IconButton>
-            // }
+            action={
+              <Box p={1}>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<AddIcon />}
+                  component={RouterLink}
+                  to={project_url + ROUTES.OBSERVATION_CREATE}
+                >
+                  New Observation
+                </Button>
+              </Box>
+            }
             title={
               <React.Fragment>
-                <b>{project.name}</b>&nbsp;
-                {listView ? (
-                  ''
-                ) : (
-                  <Typography
-                    variant={'caption'}
-                    style={{cursor: 'not-allowed'}}
-                    color={'textSecondary'}
-                  >
-                    <i>edit title</i>
-                  </Typography>
-                )}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <b>{project.name}</b>&nbsp;
+                  {!listView ? (
+                    <React.Fragment>
+                      <Typography
+                        variant={'caption'}
+                        style={{cursor: 'not-allowed'}}
+                        color={'textSecondary'}
+                      >
+                        <i>edit title&nbsp;&nbsp;</i>
+                      </Typography>
+                      <TimelapseIcon
+                        color={'secondary'}
+                        style={{fontSize: '13px'}}
+                      />
+                    </React.Fragment>
+                  ) : (
+                    ''
+                  )}
+                </div>
               </React.Fragment>
             }
             subheader={
-              'Created:' +
+              'Created' +
               project.created +
-              ', last updated: ' +
+              ', last observation updated ' +
               project.last_updated
             }
           />
@@ -182,12 +206,40 @@ export default function ProjectCard(props: ProjectCardProps) {
             <Box mb={2}>
               <Chip
                 size={'small'}
-                label={'Active team members: 10'}
+                label={
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>Active team members: 10</span>&nbsp;{' '}
+                    <TimelapseIcon
+                      color={'secondary'}
+                      style={{fontSize: '13px'}}
+                    />
+                  </div>
+                }
                 style={{marginRight: '5px'}}
               />
               <Chip
                 size={'small'}
-                label={'Status: active'}
+                label={
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>Status: active</span>&nbsp;{' '}
+                    <TimelapseIcon
+                      color={'secondary'}
+                      style={{fontSize: '13px'}}
+                    />
+                  </div>
+                }
                 style={{marginRight: '5px'}}
               />
               <MetadataRenderer
@@ -204,16 +256,29 @@ export default function ProjectCard(props: ProjectCardProps) {
 
             <Typography variant="body2" color="textPrimary" component="p">
               {project.description}&nbsp;
+              <br />
               {listView ? (
                 ''
               ) : (
-                <Typography
-                  variant={'caption'}
-                  style={{cursor: 'not-allowed'}}
-                  color={'textSecondary'}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
                 >
-                  <i>edit description</i>
-                </Typography>
+                  <Typography
+                    variant={'caption'}
+                    style={{cursor: 'not-allowed'}}
+                    color={'textSecondary'}
+                  >
+                    <i>edit description&nbsp;&nbsp;</i>
+                  </Typography>
+                  <TimelapseIcon
+                    color={'secondary'}
+                    style={{fontSize: '14px'}}
+                  />
+                </div>
               )}
             </Typography>
 
