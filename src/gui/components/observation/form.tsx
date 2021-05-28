@@ -16,6 +16,9 @@ import BoxTab from '../ui/boxTab';
 import {ActionType} from '../../../actions';
 import {store} from '../../../store';
 import AutoSave from './autosave';
+import * as ROUTES from '../../../constants/routes';
+import {withRouter} from 'react-router-dom';
+import {RouteComponentProps} from 'react-router';
 
 type ObservationFormProps = {
   project_id: string;
@@ -39,8 +42,8 @@ type ObservationFormState = {
   last_saved: Date;
 };
 
-export class ObservationForm extends React.Component<
-  ObservationFormProps,
+class ObservationForm extends React.Component<
+  ObservationFormProps & RouteComponentProps,
   ObservationFormState
 > {
   // Staging data that is ONLY updated from setUISpec, used in getInitialValues
@@ -90,7 +93,7 @@ export class ObservationForm extends React.Component<
     }
   }
 
-  constructor(props: ObservationFormProps) {
+  constructor(props: ObservationFormProps & RouteComponentProps) {
     super(props);
     this.state = {
       currentView: null,
@@ -111,6 +114,10 @@ export class ObservationForm extends React.Component<
     await this.setUISpec();
     await this.setStagedValues();
     await this.setInitialValues();
+  }
+
+  componentWillUnmount() {
+    //FIXME ensure cleanup to prevent memory leak
   }
 
   async setUISpec() {
@@ -253,6 +260,10 @@ export class ObservationForm extends React.Component<
             severity: 'success',
           },
         });
+        // if a new observation, redirect back to the project page
+        this.props.is_fresh
+          ? this.props.history.push(ROUTES.PROJECT + this.props.project_id)
+          : '';
       })
       .catch(err => {
         const message = this.props.is_fresh
@@ -571,3 +582,4 @@ export class ObservationForm extends React.Component<
   }
 }
 ObservationForm.contextType = store;
+export default withRouter(ObservationForm);
