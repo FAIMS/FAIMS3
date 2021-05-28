@@ -4,9 +4,9 @@ import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
-import {Observation, ProjectID} from '../../datamodel';
-import * as ROUTES from '../../constants/routes';
-import {listenObservationsList} from '../../databaseAccess';
+import {Observation, ProjectID} from '../../../datamodel';
+import * as ROUTES from '../../../constants/routes';
+import {listenObservationsList} from '../../../databaseAccess';
 
 type ObservationsTableProps = {
   project_id: ProjectID;
@@ -41,7 +41,12 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     {field: 'created', headerName: 'Created', type: 'dateTime', flex: 1},
     {field: 'created_by', headerName: 'Created by', type: 'string', flex: 1},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', flex: 1},
-    {field: 'updated_by', headerName: 'Updated by', type: 'string', flex: 1},
+    {
+      field: 'updated_by',
+      headerName: 'Last updated by',
+      type: 'string',
+      flex: 1,
+    },
   ];
   useEffect(() => {
     if (project_id === undefined) return; //dummy project

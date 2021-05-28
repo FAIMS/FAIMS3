@@ -1,6 +1,6 @@
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import {
   Container,
   Breadcrumbs,
@@ -15,6 +15,7 @@ import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectInfo, getProjectList} from '../../databaseAccess';
 import DashboardActions from '../components/dashboard/actions';
+import TimelapseIcon from '@material-ui/icons/Timelapse';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -63,7 +64,9 @@ export default function Home() {
         // bgcolor="background.paper"
       >
         <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
+          <Link component={RouterLink} to={ROUTES.INDEX}>
+            Index
+          </Link>
           <Typography color="textPrimary">Home</Typography>
         </Breadcrumbs>
       </Box>
@@ -77,7 +80,19 @@ export default function Home() {
         </Grid>
         {/* Recent Observations */}
         <Grid item xs={12} md={8} lg={9}>
-          <Typography variant="overline">Recent Observations</Typography>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography variant="overline" display={'inline'}>
+              Recent Observations&nbsp;&nbsp;
+            </Typography>
+            <TimelapseIcon color={'secondary'} style={{fontSize: '1.1rem'}} />
+          </div>
+
           <Paper className={classes.paper}>
             {/*<Observations />*/}
             <Box mt={2}>
