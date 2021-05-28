@@ -33,6 +33,7 @@ import {
   listenSyncingProject,
   setSyncingProject,
 } from '../../sync';
+import {FormControlLabel} from '@material-ui/core';
 
 type ProjectCardProps = {
   project: ProjectInformation;
@@ -165,11 +166,16 @@ export default function ProjectCard(props: ProjectCardProps) {
             }
             action={
               // TODO (For β) Liz: add more settings here
-              <Switch
-                checked={isSyncing}
-                onChange={(event, checked) =>
-                  setSyncingProject(project.project_id, checked)
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={isSyncing}
+                    onChange={(event, checked) =>
+                      setSyncingProject(project.project_id, checked)
+                    }
+                  />
                 }
+                label="Sync"
               />
             }
             // action={
