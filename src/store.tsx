@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: store.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
 import {Observation, ProjectObject} from './datamodel';
 import {

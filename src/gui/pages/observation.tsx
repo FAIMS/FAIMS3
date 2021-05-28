@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: observation.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useContext} from 'react';
 import {
   AppBar,

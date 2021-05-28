@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: project.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
 import {Box, Breadcrumbs, Container, Link, Typography} from '@material-ui/core';

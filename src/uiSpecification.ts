@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: uiSpecification.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {getProjectDB} from './sync';
 import PouchDB from 'pouchdb';
 import {ProjectMetaObject, ProjectID} from './datamodel';

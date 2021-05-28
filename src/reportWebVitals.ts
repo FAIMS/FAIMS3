@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: reportWebVitals.ts
- * Description: 
+ * Description:
  *   TODO
  */
 import {ReportHandler} from 'web-vitals';

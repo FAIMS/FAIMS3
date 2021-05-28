@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: footer.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useContext} from 'react';
 import packageJson from '../../../package.json';
 import {Box, Grid, Typography} from '@material-ui/core';

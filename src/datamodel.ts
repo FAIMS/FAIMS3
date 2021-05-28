@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: datamodel.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
 export const PROJECT_METADATA_PREFIX = 'project-metadata';

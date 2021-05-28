@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: index.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';

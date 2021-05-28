@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: alert.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useContext} from 'react';
 import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: projectSpecification.test.js
- * Description: 
+ * Description:
  *   TODO
  */
 

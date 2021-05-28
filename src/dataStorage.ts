@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: dataStorage.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from './sync';

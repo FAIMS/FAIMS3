@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: uiSpecification.test.js
- * Description: 
+ * Description:
  *   TODO
  */
 

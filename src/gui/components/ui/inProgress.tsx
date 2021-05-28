@@ -14,10 +14,9 @@
  * limitations under the License.
  *
  * Filename: inProgress.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
 
 import TimelapseIcon from '@material-ui/icons/Timelapse';
 import React from 'react';

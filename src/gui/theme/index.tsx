@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: index.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {createMuiTheme, colors} from '@material-ui/core';
 import {Shadows} from '@material-ui/core/styles/shadows';
 import typography from './typography';

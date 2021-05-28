@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: projectNav.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {
   createStyles,

@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: index.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';

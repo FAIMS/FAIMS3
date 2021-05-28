@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: forgot-password.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 
 type ForgotPasswordProps = {

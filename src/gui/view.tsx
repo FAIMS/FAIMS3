@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: view.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {FormikProps} from 'formik';
 import React from 'react';
 

@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: checkbox.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import MuiCheckbox from '@material-ui/core/Checkbox';
 import FormControl from '@material-ui/core/FormControl';

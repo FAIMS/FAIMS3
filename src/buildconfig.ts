@@ -14,12 +14,10 @@
  * limitations under the License.
  *
  * Filename: reportWebVitals.ts
- * Description: 
+ * Description:
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
-
-
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];

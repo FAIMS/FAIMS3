@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: users.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {active_db} from './sync/index';
 import {ProjectID} from './datamodel';
 

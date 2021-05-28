@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: index.tsx
- * Description: 
+ * Description:
  *   TODO
  */
 import React from 'react';

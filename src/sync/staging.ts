@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: staging.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import PouchDB from 'pouchdb';
 import {SavedView} from '../datamodel';
 

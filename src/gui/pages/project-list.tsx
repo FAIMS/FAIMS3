@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: project-list.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {Link as RouterLink} from 'react-router-dom';

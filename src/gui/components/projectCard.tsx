@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: projectCard.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useEffect, useState} from 'react';
 import {
   Avatar,

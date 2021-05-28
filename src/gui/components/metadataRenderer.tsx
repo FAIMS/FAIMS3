@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: metadataRenderer.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useEffect, useState} from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
 import {getProjectMetadata} from '../../projectMetadata';

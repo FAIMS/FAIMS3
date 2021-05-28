@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: autosave.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {Box, CircularProgress} from '@material-ui/core';
 import MuiAlert from '@material-ui/lab/Alert';

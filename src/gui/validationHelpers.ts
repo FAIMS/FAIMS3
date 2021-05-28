@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: validationHelpers.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 /* eslint-disable */
 import {createTypeContext,lookupFAIMSType} from '../projectSpecification';
 import {ProjectID} from '../datamodel';

@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: dataStorage.test.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 import {Observation, ProjectID} from './datamodel';

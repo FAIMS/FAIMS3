@@ -14,10 +14,9 @@
  * limitations under the License.
  *
  * Filename: actions.ts
- * Description: 
+ * Description:
  *   TODO
  */
-
 
 import {ProjectObject, Observation} from './datamodel';
 import {Color} from '@material-ui/lab/Alert';

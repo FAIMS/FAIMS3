@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: ComponentRegistry.test.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import Input from '@material-ui/core/Input';
 
 import {getComponentByName, registerComponent} from './ComponentRegistry';

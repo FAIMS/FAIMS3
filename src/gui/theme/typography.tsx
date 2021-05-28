@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: typography.tsx
- * Description: 
+ * Description:
  *   TODO
  */
 

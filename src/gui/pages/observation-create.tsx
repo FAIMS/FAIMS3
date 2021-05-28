@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: observation-create.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {
   Box,

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: projectMetadata.test.js
- * Description: 
+ * Description:
  *   TODO
  */
 

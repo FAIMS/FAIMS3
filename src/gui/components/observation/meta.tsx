@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: meta.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useEffect} from 'react';
 import {ProjectID} from '../../../datamodel';
 import {

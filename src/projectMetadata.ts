@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: projectMetadata.ts
- * Description: 
+ * Description:
  *   TODO
  */
 import {getProjectDB} from './sync/index';

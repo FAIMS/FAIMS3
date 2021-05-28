@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: pouch_to_couch.test.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import PouchDB from 'pouchdb';
 import {
   DIRECTORY_PROTOCOL,

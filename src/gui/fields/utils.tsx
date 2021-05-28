@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: utils.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import * as React from 'react';
 import {render, RenderOptions} from '@testing-library/react';
 import {Formik, Form, FormikConfig} from 'formik';

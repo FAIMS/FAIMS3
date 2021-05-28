@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: dummyData.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {setUiSpecForProject} from './uiSpecification';
 import {
   ActiveDoc,

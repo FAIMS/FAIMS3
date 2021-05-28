@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: signin.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 
 type SignInProps = {

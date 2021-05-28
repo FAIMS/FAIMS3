@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: App.test.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {act} from 'react-dom/test-utils';

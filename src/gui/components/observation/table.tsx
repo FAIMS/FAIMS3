@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: table.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useEffect, useState} from 'react';
 import {DataGrid, GridColDef, GridCellParams} from '@material-ui/data-grid';
 import {Typography} from '@material-ui/core';

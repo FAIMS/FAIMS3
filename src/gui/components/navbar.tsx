@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: navbar.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {

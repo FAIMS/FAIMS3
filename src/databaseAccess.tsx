@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: databaseAccess.tsx
- * Description: 
+ * Description:
  *   TODO
  */
 

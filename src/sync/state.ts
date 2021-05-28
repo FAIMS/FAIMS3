@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: state.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import EventEmitter from 'events';
 import {ProjectObject, ProjectMetaObject} from '../datamodel';
 

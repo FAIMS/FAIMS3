@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: App.tsx
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import React from 'react';
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
