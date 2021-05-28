@@ -1,2 +1,16 @@
-- name: License Checker
-  uses: kt3k/license_checker@v1.0.1
+name: "Apache 2 License Checker"
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: License Checker
+        uses: kt3k/license_checker@v1.0.1
