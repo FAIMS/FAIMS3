@@ -256,8 +256,7 @@ function ensure_synced_db<Content extends {}>(
   return [
     true,
     (global_dbs[local_db_id] = {
-      local: global_dbs[local_db_id].local,
-      is_sync: false,
+      ...global_dbs[local_db_id],
       remote: {
         db: remote,
         connection: connection,
