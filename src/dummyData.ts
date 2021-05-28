@@ -554,6 +554,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'lake_mungo',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'csiro_csiro-geochemistry',
@@ -561,6 +562,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'csiro-geochemistry',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'default_projectA',
@@ -568,6 +570,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'projectA',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'default_projectB',
@@ -575,6 +578,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'projectB',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'default_projectC',
@@ -582,6 +586,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'projectC',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
 ];
 

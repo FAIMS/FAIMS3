@@ -49,6 +49,7 @@ export interface ActiveDoc {
   username: string;
   password: string;
   friendly_name?: string;
+  is_sync: boolean;
 }
 
 /**
