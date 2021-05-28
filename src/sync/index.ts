@@ -39,11 +39,19 @@ export interface LocalDBRemote<Content extends {}> {
     | PouchDB.Replication.Replication<Content>
     | PouchDB.Replication.Sync<Content>;
   info: DataModel.ConnectionInfo;
+  options: DBReplicateOptions;
 }
 
 export interface LocalDBList<Content extends {}> {
   [key: string]: LocalDB<Content>;
 }
+
+type DBReplicateOptions =
+  | PouchDB.Replication.ReplicateOptions
+  | {
+      pull?: PouchDB.Replication.ReplicateOptions;
+      push: PouchDB.Replication.ReplicateOptions;
+    };
 
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<DataModel.ActiveDoc>;
 export type ExistingListings = PouchDB.Core.ExistingDocument<DataModel.ListingsObject>;
@@ -208,12 +216,7 @@ function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: DataModel.ConnectionInfo,
   global_dbs: LocalDBList<Content>,
-  options:
-    | PouchDB.Replication.ReplicateOptions
-    | {
-        pull?: PouchDB.Replication.ReplicateOptions;
-        push: PouchDB.Replication.ReplicateOptions;
-      } = {}
+  options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
@@ -223,7 +226,9 @@ function ensure_synced_db<Content extends {}>(
   if (
     global_dbs[local_db_id].remote !== null &&
     JSON.stringify(global_dbs[local_db_id].remote!.info) ===
-      JSON.stringify(connection_info)
+      JSON.stringify(connection_info) &&
+    JSON.stringify(global_dbs[local_db_id].remote!.options) ===
+      JSON.stringify(options)
   ) {
     return [
       false,
@@ -267,6 +272,7 @@ function ensure_synced_db<Content extends {}>(
         db: remote,
         connection: connection,
         info: connection_info,
+        options: options,
       },
     }),
   ];
@@ -1013,6 +1019,7 @@ async function process_directory(
     db: directory_paused,
     connection: directory_connection,
     info: directory_connection_info,
+    options: {},
   };
 
   const sync_handler = new SyncHandler(DIRECTORY_TIMEOUT, {
