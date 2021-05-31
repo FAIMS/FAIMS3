@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: datamodel.test.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 import {testProp, fc} from 'jest-fast-check';
 import {
   resolve_observation_id,
