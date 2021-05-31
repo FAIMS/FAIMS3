@@ -69,7 +69,7 @@ public class AndroidTest {
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
         // TODO: will this work against Brian's Github script?
-	    caps.setCapability("app", System.getenv("BROWSERSTACK_LOCAL_IDENTIFIER"));
+	    caps.setCapability("app", System.getenv("app_url"));
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
 	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
 
