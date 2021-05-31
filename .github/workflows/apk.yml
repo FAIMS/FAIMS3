@@ -146,12 +146,13 @@ jobs:
       # limiting scope to only android here.
       # - run: sudo npm install -g cordova
       # https://forum.ionicframework.com/t/how-to-build-apk-from-capacitor-ionic-poject-without-using-android-studio/177814/7
+        # setting the environment variable app_url with the output of this cURL.
+        # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-output-parameter
       - run: cd android && ./gradlew assembleDebug
       - run: cp "$(find . -name '*.apk')" .
       - name: "Upload APK to Browserstack with curl"
         run: |
-          curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=Alpha" | jq .app_url -M | xargs -I{} echo echo "::set-output name=app_url::{}"
-        # setting the environment variable app_url with the output of this cURL.
+          curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=Alpha-Github-Actions" | jq .app_url -M | xargs -I{} echo "::set-output name=app_url::{}"
       - name: Archive apks
         uses: actions/upload-artifact@v2
         with:
@@ -219,18 +220,13 @@ jobs:
         with:
           java-version: '13'
           distribution: 'adopt'
-      - name: Restore Maven cache
-        uses: skjolber/maven-cache-github-action@v1
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
         with:
-          step: restore
-      - name: Get maven deps
-        run: |
-          cd e2e
-          mvn dependency:go-offline
-      - name: Save Maven cache
-        uses: skjolber/maven-cache-github-action@v1
-        with:
-          step: save
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - name: Build with Maven
         run: |
           cd e2e
