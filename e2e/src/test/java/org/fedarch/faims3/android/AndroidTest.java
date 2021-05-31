@@ -70,9 +70,14 @@ public class AndroidTest {
 
         // TODO: will this work against Brian's Github script?
 	    caps.setCapability("app", System.getenv("app_url"));
+            System.out.println("app_url is" + System.getenv("app_url"));
+	    
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
-	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
-
+	    System.out.println("browserstack.user is" + System.getenv("BROWSERSTACK_USERNAME"));
+	    
+            caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
+            System.out.println("browserstack.key is" + System.getenv("BROWSERSTACK_ACCESS_KEY"));
+	    
 	    driver = new AndroidDriver<AndroidElement>(
 	            new URL("http://hub.browserstack.com/wd/hub"), caps);
 
