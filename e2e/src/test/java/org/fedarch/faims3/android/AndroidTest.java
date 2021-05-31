@@ -21,7 +21,7 @@ public class AndroidTest {
 	 * @return an AndroidDriver instance
 	 * @throws MalformedURLException
 	 */
-	public static void setup(boolean localTest, String testDesc) throws MalformedURLException {
+	public static void setup(boolean localTest) throws MalformedURLException {
 		DesiredCapabilities caps = new DesiredCapabilities();
 		// allow location services
 	    caps.setCapability(AndroidMobileCapabilityType.GPS_ENABLED, "true");
@@ -33,7 +33,7 @@ public class AndroidTest {
 			localConnectionSetup(caps);
 			isLocal = true;
 		} else {
-		    browserstackSetup(caps, testDesc);
+		    browserstackSetup(caps);
 		    isLocal = false;
 		}
 	}
@@ -57,10 +57,16 @@ public class AndroidTest {
 	 * @param testDescription Test scenario. Link to JIRA if possible.
 	 * @throws MalformedURLException
 	 */
-	private static void browserstackSetup(DesiredCapabilities caps, String testDescription) throws MalformedURLException {
+	private static void browserstackSetup(DesiredCapabilities caps) throws MalformedURLException {
 	    caps.setCapability("project", "FAIMS3 - Android Tests");
 	    caps.setCapability("build", "Alpha");
-	    caps.setCapability("name", testDescription);
+
+	    //Set commit message as session name
+	    String description = System.getenv("BROWSERSTACK_BUILD_NAME");
+	    if (description == null || description.isEmpty()) {
+	    	description = "Manual run";
+	    }
+	    caps.setCapability("name", description);
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "Google Pixel 3");
@@ -68,16 +74,11 @@ public class AndroidTest {
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
-        // TODO: will this work against Brian's Github script?
+	    // Below works with FAIMS Github Action. Customise with your own values if running manually.
 	    caps.setCapability("app", System.getenv("app_url"));
-            System.out.println("app_url is" + System.getenv("app_url"));
-	    
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
-	    System.out.println("browserstack.user is" + System.getenv("BROWSERSTACK_USERNAME"));
-	    
-            caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
-            System.out.println("browserstack.key is" + System.getenv("BROWSERSTACK_ACCESS_KEY"));
-	    
+        caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
+
 	    driver = new AndroidDriver<AndroidElement>(
 	            new URL("http://hub.browserstack.com/wd/hub"), caps);
 
