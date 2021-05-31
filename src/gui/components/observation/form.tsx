@@ -535,11 +535,11 @@ class ObservationForm extends React.Component<
                       >
                         {formProps.isSubmitting
                           ? !this.props.is_fresh
-                            ? 'Saving...'
-                            : 'Adding'
+                            ? 'Working...'
+                            : 'Working...'
                           : !this.props.is_fresh
-                          ? 'Save'
-                          : 'Add'}
+                          ? '[Alpha] Perform Validation and mark as syncable (New Observation) '
+                          : '[Alpha] Perform Validation and mark as syncable (Existing Observation) '}
                         {formProps.isSubmitting && (
                           <CircularProgress
                             size={24}
