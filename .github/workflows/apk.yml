@@ -233,7 +233,9 @@ jobs:
           echo "::group::Mvn Install"
           mvn install -Dskiptests
           echo "::endgroup::"
+          echo "::group::Mvn Tests"
           mvn test
+          echo "::endgroup::"
       # https://blog.mindorks.com/github-actions-for-android
       
       # curl -u "<username>:<password>" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@/path/to/app/file/Application-debug.apk"
