@@ -162,11 +162,11 @@ jobs:
       # https://www.browserstack.com/docs/automate/selenium/github-actions#set-up-a-github-workflow-to-run-browserstack-tests
       # Thereafter, invoke setup-env BrowserStack Action to set up 
       # environment variables in the runner
-  browserstack_job:
-    needs: node-deb-android-job
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+  # browserstack_job:
+  #   needs: [node-deb-android-job, check_date]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
       
         # - name: Cache node modules
         #   uses: actions/cache@v2
