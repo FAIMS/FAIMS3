@@ -17,16 +17,16 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
 
 /**
- * Utilities and constants used in Lake Mungo test form
+ * Utilities and constants used in AsTRoSkY test form
  * @author Rini Angreani, CSIRO
  */
-public class LakeMungo {
+public class AstroSky {
     public static final String EMAIL = "jane.doe@csiro.au";
     public static final String COLOUR = "Pink";
     public static final String UNICODE = "いろはにほへとちりぬるを Pchnąć w tę łódź jeża lub ośm skrzyń fig จงฝ่าฟันพัฒนาวิชาการ    côté de l'alcôve ovoïde größeren";
     //public static final String INTEGER = "16";
 	/**
-	 * Fill out all fields in test Lake Mungo form with valid values.
+	 * Fill out all fields in test AsTRoSkY form with valid values.
 	 * @param driver AndroidDriver
 	 */
 	public static void fillOutFormWithValidFields(AndroidDriver<AndroidElement> driver) {
@@ -48,17 +48,17 @@ public class LakeMungo {
 
 	    // Email field
 	    AndroidElement emailField = driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']"));
-	    emailField.sendKeys(LakeMungo.EMAIL);
+	    emailField.sendKeys(AstroSky.EMAIL);
 
 	    TestUtils.scrollDown(driver);
 
 	    // Colour field
 	    AndroidElement strField = driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']"));
-	    strField.sendKeys(LakeMungo.COLOUR);
+	    strField.sendKeys(AstroSky.COLOUR);
 
 	    // Text area - test unicode
 	    AndroidElement textField = driver.findElement(MobileBy.xpath("//*[@resource-id='multi-str-field']"));
-	    textField.sendKeys(LakeMungo.UNICODE);
+	    textField.sendKeys(AstroSky.UNICODE);
 
 	    TestUtils.scrollDown(driver);
 
@@ -67,7 +67,7 @@ public class LakeMungo {
 	    // so we just use the default number for now. It's now expecting you to enter the numbers from the
 	    // keyboard, which is not showing properly.
 	    AndroidElement intField = driver.findElement(By.xpath("//*[@resource-id='int-field']"));
-	    //intField.sendKeys(LakeMungo.INTEGER);
+	    //intField.sendKeys(AstroSky.INTEGER);
 
 	    // Currency field
 	    AndroidElement currencyField = driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']"));
