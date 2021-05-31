@@ -112,3 +112,4 @@ export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
 export const RUNNING_UNDER_TEST = is_testing();
+export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
