@@ -554,6 +554,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'lake_mungo',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'csiro_csiro-geochemistry',
@@ -561,6 +562,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'csiro-geochemistry',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'default_projectA',
@@ -568,6 +570,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'projectA',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'default_projectB',
@@ -575,6 +578,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'projectB',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
   {
     _id: 'default_projectC',
@@ -582,6 +586,7 @@ const example_active_db: ActiveDoc[] = [
     project_id: 'projectC',
     username: 'test1',
     password: 'apple',
+    is_sync: true,
   },
 ];
 
@@ -682,7 +687,7 @@ export async function setupExampleData(
   projname: string,
   data_db: PouchDB.Database<EncodedObservation>
 ) {
-  let ids: string[] = [];
+  // let ids: string[] = [];
 
   if (projname in example_datums) {
     for (const datum of example_datums[projname]) {
@@ -698,15 +703,15 @@ export async function setupExampleData(
       }
       await data_db.put({...datum, ...current_rev});
     }
-    ids = example_datums[projname].map(doc => doc._id!);
+    // ids = example_datums[projname].map(doc => doc._id!);
   }
 
   // Remove anything not supposed to be there
-  for (const row of (await data_db.allDocs()).rows) {
-    if (ids.indexOf(row.id) < 0) {
-      await data_db.remove(row.id, row.value.rev);
-    }
-  }
+  // for (const row of (await data_db.allDocs()).rows) {
+  //   if (ids.indexOf(row.id) < 0) {
+  //     await data_db.remove(row.id, row.value.rev);
+  //   }
+  // }
 }
 
 export async function setupExampleProjectMetadata(

@@ -9,7 +9,8 @@ export class ActionButton extends React.Component<FieldProps> {
   render() {
     return (
       <Button
-        variant="contained"
+        variant="outlined"
+        color={'primary'}
         onClick={() => {
           this.clickThis();
         }}

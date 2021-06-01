@@ -5,7 +5,6 @@ import {
   CircularProgress,
   IconButton,
   Toolbar,
-  Typography,
 } from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import {makeStyles} from '@material-ui/core/styles';
@@ -216,19 +215,19 @@ export default function Navbar() {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h4" noWrap style={{flex: 1}}>
-              FAIMS3{' '}
-              {isSyncing ? (
-                <CircularProgress
-                  color={'secondary'}
-                  size={'1rem'}
-                  thickness={5}
-                />
-              ) : (
-                ''
-              )}
-            </Typography>
-            <Typography>username</Typography>
+            <img
+              src="/static/logo/Faims-white-small.png"
+              style={{maxWidth: '70px', flex: 1}}
+            />
+            {isSyncing ? (
+              <CircularProgress
+                color={'secondary'}
+                size={'1rem'}
+                thickness={5}
+              />
+            ) : (
+              ''
+            )}
           </Toolbar>
         </MuiAppBar>
         <Drawer

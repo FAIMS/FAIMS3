@@ -20,7 +20,7 @@ export default function LoadingApp() {
         style={{minHeight: '100vh'}}
       >
         <Grid item xs={3} sm={2} md={1}>
-          <img src="static/FAIMS.png" style={{maxWidth: '100%'}} />
+          <img src="/static/logo/Faims-medium.jpg" style={{maxWidth: '100%'}} />
         </Grid>
         <Grid item xs={3}>
           <Box mb={1} mt={2}>
