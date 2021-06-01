@@ -1231,23 +1231,45 @@ async function autoactivate_projects(
   project_ids: string[]
 ) {
   for (const project_id of project_ids) {
-    const active_id = listing_id + POUCH_SEPARATOR + project_id;
     try {
-      await active_db.get(active_id);
-      console.debug('Have already activated', active_id);
+      await activate_project(listing_id, project_id, null, null);
     } catch (err) {
-      if (err.status === 404) {
-        // TODO: work out a better way to do this
-        await active_db.put({
-          _id: active_id,
-          listing_id: listing_id,
-          project_id: project_id,
-          username: 'not-real',
-          password: 'not-real',
-          is_sync: true,
-        });
-      }
+      const active_id = listing_id + POUCH_SEPARATOR + project_id;
       console.debug('Unable to autoactivate', active_id);
+    }
+  }
+}
+
+async function activate_project(
+  listing_id: string,
+  project_id: string,
+  username: string| null,
+  password: string| null,
+  is_sync = true
+) {
+  if (project_id.startsWith('_design/')) {
+    throw Error(`Cannot activate design document ${project_id}`);
+  }
+  if (project_id.startsWith('_')) {
+    console.error('Projects should not start with a underscore: ', project_id);
+  }
+  const active_id = listing_id + POUCH_SEPARATOR + project_id;
+  try {
+    await active_db.get(active_id);
+    console.debug('Have already activated', active_id);
+  } catch (err) {
+    if (err.status === 404) {
+      // TODO: work out a better way to do this
+      await active_db.put({
+        _id: active_id,
+        listing_id: listing_id,
+        project_id: project_id,
+        username: username,
+        password: password,
+        is_sync: is_sync,
+      });
+    } else {
+        throw err;
     }
   }
 }
