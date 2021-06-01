@@ -78,6 +78,9 @@ class ObservationForm extends React.Component<
 
   uiSpec: ProjectUIModel | null = null;
 
+  // List of timeouts that unmount must cancel
+  timeouts: typeof setTimeout[] = [];
+
   componentDidUpdate(prevProps: ObservationFormProps) {
     if (
       prevProps.observation_id !== this.props.observation_id ||
@@ -117,7 +120,14 @@ class ObservationForm extends React.Component<
   }
 
   componentWillUnmount() {
-    //FIXME ensure cleanup to prevent memory leak
+    for (const timeout_id of this.timeouts) {
+      clearTimeout(
+        (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]
+      );
+    }
+    if (this.stageInterval !== null) {
+      clearInterval(this.stageInterval);
+    }
   }
 
   async setUISpec() {
@@ -189,16 +199,36 @@ class ObservationForm extends React.Component<
     if (this.props.is_fresh) {
       return null;
     } else {
+      const existing_doc = await lookupFAIMSDataID(
+        this.props.project_id,
+        this.props.observation_id
+      );
+      if (existing_doc === null) {
+        console.error('observation form created for deleted document');
+      }
       return {
         _id: this.props.observation_id,
-        _rev:
-          this.props.revision_id ||
-          (await lookupFAIMSDataID(
-            this.props.project_id,
-            this.props.observation_id
-          ))!._rev!,
+        _rev: this.props.revision_id || existing_doc!._rev!,
       };
     }
+  }
+
+  /**
+   * Equivalent to setTimeout, but with added function that
+   * clears any timeouts when the component is unmounted.
+   * @param callback Function to run when timeout elapses
+   */
+  setTimeout(callback: () => void, time: number) {
+    const my_index = this.timeouts.length;
+    setTimeout(() => {
+      try {
+        callback();
+        this.timeouts.splice(my_index, 1);
+      } catch (err) {
+        this.timeouts.splice(my_index, 1);
+        throw err;
+      }
+    }, time);
   }
 
   requireUiSpec(): ProjectUIModel {
@@ -347,7 +377,7 @@ class ObservationForm extends React.Component<
           .then(set_ok => {
             this.lastStagingRev = set_ok.rev;
             this.consequtiveStagingSaveErrors = 0;
-            setTimeout(() => {
+            this.setTimeout(() => {
               this.setState({is_saving: false, last_saved: new Date()});
             }, 1000);
           })
@@ -490,7 +520,7 @@ class ObservationForm extends React.Component<
             validationSchema={this.getValidationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
-              setTimeout(() => {
+              this.setTimeout(() => {
                 setSubmitting(false);
                 console.log(JSON.stringify(values, null, 2));
                 this.save(values);
