@@ -477,7 +477,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
 const example_listings: {[listing_id: string]: ProjectObject[]} = {
   default: [
     {
-      name: 'AsTRoSkY Test Project',
+      name: 'AsTRoSkY - (Test Project)',
       data_db: {
         proto: 'http',
         host: '10.80.11.44',
