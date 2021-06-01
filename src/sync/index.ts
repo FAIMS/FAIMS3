@@ -1223,8 +1223,8 @@ async function autoactivate_projects(
 async function activate_project(
   listing_id: string,
   project_id: string,
-  username: string| null,
-  password: string| null,
+  username: string | null,
+  password: string | null,
   is_sync = true
 ) {
   if (project_id.startsWith('_design/')) {
@@ -1249,7 +1249,7 @@ async function activate_project(
         is_sync: is_sync,
       });
     } else {
-        throw err;
+      throw err;
     }
   }
 }
