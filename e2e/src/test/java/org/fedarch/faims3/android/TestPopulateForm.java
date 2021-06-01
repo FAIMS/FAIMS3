@@ -24,7 +24,7 @@ public class TestPopulateForm extends AndroidTest {
   public static void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  AndroidTest.setup(false, "FAIMS3-153: Test Data Entry - Android");
+	  AndroidTest.setup(false);
   }
 
   /**
