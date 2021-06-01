@@ -1126,7 +1126,9 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   const get_active_projects_in_this_listing = async () => {
     const all_project_ids_in_this_listing = (
       await local_projects_db.local.allDocs()
-    ).rows.map(row => row.id);
+    ).rows
+      .map(row => row.id)
+      .filter(id => !id.startsWith('_design/'));
     console.debug(
       `All projects in listing ${listing_id} are`,
       all_project_ids_in_this_listing
