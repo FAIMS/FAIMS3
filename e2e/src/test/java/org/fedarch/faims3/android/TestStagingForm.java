@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 
-import org.fedarch.faims3.LakeMungo;
+import org.fedarch.faims3.AstroSky;
 import org.json.JSONException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,27 +67,27 @@ public class TestStagingForm extends AndroidTest {
   @Test
   public void testSwitchTab() throws JSONException {
 	  try {
-			// Go to Lake Mungo form
+			// Go to AsTRoSkY form
 			TestUtils.loadPreviousDevContent(driver);
 			// Fill out all fields
-			LakeMungo.fillOutFormWithValidFields(driver);
+			AstroSky.fillOutFormWithValidFields(driver);
 			TestUtils.scrollDown(driver);
 			// validate JSON values
-			LakeMungo.validateJSON(driver);
+			AstroSky.validateJSON(driver);
 			// scroll up and click on the "Example Project A" tab
 			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
-			// click submit before opening Lake Mungo tab again
+			// click submit before opening AsTRoSkY tab again
 			WebDriverWait wait = new WebDriverWait(driver, 10);
 			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SUBMIT']"))).click();;
-			// reopen Lake Mungo
-			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-lake_mungo']")).click();
+			// reopen AsTRoSkY
+			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-astro_sky']")).click();
 			// Check all fields are still the same
-			LakeMungo.validateLatLong(driver);
-			assertEquals(LakeMungo.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
-			assertEquals(LakeMungo.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
+			AstroSky.validateLatLong(driver);
+			assertEquals(AstroSky.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
+			assertEquals(AstroSky.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
 
 			AndroidElement currencies = TestUtils.scrollToResourceId(driver, "multi-str-field");
-			assertEquals(LakeMungo.UNICODE, currencies.getText());
+			assertEquals(AstroSky.UNICODE, currencies.getText());
 
 			TestUtils.scrollDown(driver);
 
@@ -109,7 +109,7 @@ public class TestStagingForm extends AndroidTest {
 			TestUtils.scrollDown(driver);
 
 			// Make sure JSON is still the same
-			if (!LakeMungo.validateJSON(driver)) {
+			if (!AstroSky.validateJSON(driver)) {
 				TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 						"Android - TestStagingForm.testSwitchTab() fails because JSON values don't match.");
 				return;

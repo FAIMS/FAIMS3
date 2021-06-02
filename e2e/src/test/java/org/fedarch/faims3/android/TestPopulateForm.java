@@ -22,7 +22,7 @@ package org.fedarch.faims3.android;
 
 import java.net.MalformedURLException;
 
-import org.fedarch.faims3.LakeMungo;
+import org.fedarch.faims3.AstroSky;
 import org.json.JSONException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -54,16 +54,16 @@ public class TestPopulateForm extends AndroidTest {
   @Test
   public void testNoErrors() throws JSONException {
       try {
-			// Load up Lake Mungo form
+			// Load up AsTRoSkY form
 			TestUtils.loadPreviousDevContent(driver);
 			// The form should load up
-			LakeMungo.fillOutFormWithValidFields(driver);
+			AstroSky.fillOutFormWithValidFields(driver);
 			TestUtils.scrollDown(driver);
 			// Submit button
 			AndroidElement submit = driver.findElement(By.xpath("//*[@text='SUBMIT']"));
 			submit.click();
 			// validate JSON
-			if(!LakeMungo.validateJSON(driver)) {
+			if(!AstroSky.validateJSON(driver)) {
 				TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false, "Android - TestPopulateForm.testNoErrors() failed because JSON values don't match!");
 				return;
 			}
