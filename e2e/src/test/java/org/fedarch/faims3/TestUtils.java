@@ -1,26 +1,12 @@
-/*
- * Copyright 2021 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: TestUtils.java
- * Description: 
- *   TODO
- */
- 
-package org.fedarch.faims3.android;
+package org.fedarch.faims3;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.html5.Location;
+import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -40,7 +26,7 @@ public class TestUtils {
 	 * Scroll down a little bit at a time.
 	 * @param driver AndroidDriver
 	 */
-	public static void scrollDown(AndroidDriver<AndroidElement> driver) {
+	public static void scrollDown(WebDriver driver) {
 		//if pressX was zero it didn't work for me
 	    int pressX = driver.manage().window().getSize().width / 2;
 	    // 4/5 of the screen as the bottom finger-press point
@@ -74,9 +60,14 @@ public class TestUtils {
      * @param toX Scroll horizontal destination point
      * @param toY Scroll vertical destination point
      */
-	public static void scroll(AndroidDriver<AndroidElement> driver, int fromX, int fromY, int toX, int toY) {
-	    TouchAction touchAction = new TouchAction(driver);
-	    touchAction.longPress(PointOption.point(fromX, fromY)).moveTo(PointOption.point(toX, toY)).release().perform();
+	public static void scroll(WebDriver driver, int fromX, int fromY, int toX, int toY) {
+		if (driver instanceof AndroidDriver) {
+	        TouchAction touchAction = new TouchAction((AndroidDriver)driver);
+	        touchAction.longPress(PointOption.point(fromX, fromY)).moveTo(PointOption.point(toX, toY)).release().perform();
+		} else {
+			// TODO: implement chrome and ios support if needed
+			throw new UnsupportedOperationException("Chrome and IOS scroll() aren't supported yet!");
+		}
 	}
 
 	/**
@@ -100,17 +91,41 @@ public class TestUtils {
 	}
 
 	/**
-	 * Click on "Previous Dev Content" on the landing page.
+	 * Load up new Lake Mungo form.
 	 *
 	 * @param driver AndroidDriver
 	 */
-	public static void loadPreviousDevContent(AndroidDriver<AndroidElement> driver) {
-		// Click on "Previous dev content"
-		AndroidElement prevDev = (AndroidElement) new WebDriverWait(driver, 10).until(
-			        ExpectedConditions.elementToBeClickable(MobileBy.xpath ("//*[contains(@text, 'Previous dev content')]")));
-		prevDev.click();
+	public static void loadNewAstroSkyForm(AndroidDriver<AndroidElement> driver) {
+		// Click on "Projects"
+		WebElement projects = new WebDriverWait(driver, 10).until(
+			        ExpectedConditions.elementToBeClickable(MobileBy.xpath ("//android.view.MenuItem[contains(@text, 'Projects')]")));
+		projects.click();
+
+		// Get the right project
+		AndroidElement AstroSky = (AndroidElement) new WebDriverWait(driver, 10).until(
+		        ExpectedConditions.presenceOfElementLocated(MobileBy.xpath(
+		        		"//*[@text='Lake Mungo Archaeological Survey - 2018']")));
+	    // Find the '+' button
+		AndroidElement newButton = (AndroidElement) AstroSky.findElement(By.xpath(
+	    		"../android.view.View[5]/android.widget.Button[contains(@text, 'NEW OBSERVATION')]"));
+		newButton.click();
 	}
 
+	/**
+	 * Load up new Lake Mungo form.
+	 *
+	 * @param driver ChromeDriver
+	 */
+	public static void loadNewAstroSkyForm(RemoteWebDriver driver) {
+		// Click on "Projects"
+		WebElement projects = new WebDriverWait(driver, 10).until(
+			        ExpectedConditions.elementToBeClickable(By.xpath ("//a[@href='/projects']")));
+		projects.click();
+	    // Find the '+' button for Lake Mungo
+		WebElement newObservation = new WebDriverWait(driver, 10).until(
+		        ExpectedConditions.elementToBeClickable(By.xpath ("//a[@href='/projects/default_lake_mungo/new-observation']")));
+	    newObservation.click();
+	}
 
 	/**
 	 * Browserstack doesn't know when an assertion fail. We need to explicitly let it know.
@@ -119,12 +134,12 @@ public class TestUtils {
 	 * @param passed True if the test passed. False otherwise.
 	 * @param message Reason it passed/failed.
 	 */
-	public static void markBrowserstackTestResult(AndroidDriver<AndroidElement> driver, boolean isBrowserstackConnected, boolean passed, String message) {
+	public static void markBrowserstackTestResult(WebDriver driver, boolean isBrowserstackConnected, boolean passed, String message) {
 		if (!isBrowserstackConnected) {
 			// only for browserstack
 			return;
 		}
-	    JavascriptExecutor jse = driver;
+	    JavascriptExecutor jse = (JavascriptExecutor) driver;
 	    // Setting the status of test as 'passed' or 'failed' based on the condition
 	    if (passed) {
 	        jse.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"" + message + "\"}}");
@@ -134,12 +149,34 @@ public class TestUtils {
 	}
 
 	/**
+	 * Get location of the driver
+	 * @param driver WebDriver
+	 * @return
+	 */
+	public static Location getLocation(WebDriver driver) {
+		Location location = null;
+
+		if (driver instanceof ChromeDriver) {
+			location = ((ChromeDriver) driver).location();
+		} else if (driver instanceof AndroidDriver) {
+			location = ((ChromeDriver) driver).location();
+		}
+		//TODO: handle IOS
+
+		return location;
+	}
+
+	/**
 	 * Get a string representation of the driver's location latitude.
 	 * @param driver
 	 * @return Latitude string
 	 */
-	public static String getLatitude(AndroidDriver<AndroidElement> driver) {
-		return String.valueOf(driver.location().getLatitude());
+	public static String getLatitude(WebDriver driver) {
+		Location location = getLocation(driver);
+		if (location != null) {
+			return String.valueOf(location.getLatitude());
+		}
+		return "";
 	}
 
 	/**
@@ -147,7 +184,24 @@ public class TestUtils {
 	 * @param driver
 	 * @return Longitude string
 	 */
-	public static String getLongitude(AndroidDriver<AndroidElement> driver) {
-		return String.valueOf(driver.location().getLongitude());
+	public static String getLongitude(WebDriver driver) {
+		Location location = getLocation(driver);
+		if (location != null) {
+			return String.valueOf(location.getLongitude());
+		}
+		return "";
+	}
+
+	/**
+	 * Get commit message for browserstack. Defaults to "manual run".
+	 * @return
+	 */
+	public static String getCommitMessage() {
+	    //Set commit message as session name
+	    String description = System.getenv("BROWSERSTACK_BUILD_NAME");
+	    if (description == null || description.isEmpty()) {
+	    	description = "Manual run";
+	    }
+	    return description;
 	}
 }

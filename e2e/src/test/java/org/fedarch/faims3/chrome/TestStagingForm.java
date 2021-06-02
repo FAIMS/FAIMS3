@@ -17,8 +17,7 @@
  * Description:
  *   TODO
  */
-
-package org.fedarch.faims3.android;
+package org.fedarch.faims3.chrome;
 
 import static org.junit.Assert.assertEquals;
 
@@ -27,6 +26,7 @@ import java.net.MalformedURLException;
 
 import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestUtils;
+import org.fedarch.faims3.android.AndroidTest;
 import org.json.JSONException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,7 +50,7 @@ public class TestStagingForm extends AndroidTest {
   public static void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  AndroidTest.setup(false, "Test staging new Lake Mungo form (Android)");
+	  ChromeTest.setup(false,  "Test staging new Lake Mungo form (Chrome)");
   }
 
   /**
@@ -68,7 +68,7 @@ public class TestStagingForm extends AndroidTest {
   @Test
   public void testSwitchTab() throws JSONException {
 	  try {
-			// Go to AstroSky form
+			// Go to Lake Mungo form
 			TestUtils.loadNewAstroSkyForm(driver);
 			// Fill out all fields
 			AstroSky.fillOutFormWithValidFields(driver);
@@ -77,11 +77,11 @@ public class TestStagingForm extends AndroidTest {
 			AstroSky.validateJSON(driver);
 			// scroll up and click on the "Example Project A" tab
 			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
-			// click submit before opening AsTRoSkY tab again
+			// click submit before opening Lake Mungo tab again
 			WebDriverWait wait = new WebDriverWait(driver, 10);
 			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SUBMIT']"))).click();;
-			// reopen AsTRoSkY
-			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-astro_sky']")).click();
+			// reopen Lake Mungo
+			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-lake_mungo']")).click();
 			// Check all fields are still the same
 			AstroSky.validateLatLong(driver);
 			assertEquals(AstroSky.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());

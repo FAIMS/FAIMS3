@@ -17,8 +17,7 @@
  * Description:
  *   TODO
  */
-
-package org.fedarch.faims3.android;
+package org.fedarch.faims3.chrome;
 
 import java.net.MalformedURLException;
 
@@ -29,8 +28,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
-
-import io.appium.java_client.android.AndroidElement;
+import org.openqa.selenium.WebElement;
 
 /**
  * Test populate the fields on the Android app:
@@ -39,13 +37,13 @@ import io.appium.java_client.android.AndroidElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestPopulateForm extends AndroidTest {
+public class TestPopulateForm extends ChromeTest {
 
   @BeforeClass
   public static void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  AndroidTest.setup(false, "Test populate new Lake Mungo form (Android)");
+	  ChromeTest.setup(true, "Test populate new Lake Mungo form (Chrome)");
   }
 
   /**
@@ -61,7 +59,7 @@ public class TestPopulateForm extends AndroidTest {
 			AstroSky.fillOutFormWithValidFields(driver);
 			TestUtils.scrollDown(driver);
 			// Submit button
-			AndroidElement submit = driver.findElement(By.xpath("//*[@text='SUBMIT']"));
+			WebElement submit = driver.findElement(By.xpath("//*[@text='SUBMIT']"));
 			submit.click();
 			// validate JSON
 			if(!AstroSky.validateJSON(driver)) {

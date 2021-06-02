@@ -23,6 +23,7 @@ package org.fedarch.faims3.android;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.fedarch.faims3.TestUtils;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
 import io.appium.java_client.android.AndroidDriver;
@@ -41,7 +42,7 @@ public class AndroidTest {
 	 * @return an AndroidDriver instance
 	 * @throws MalformedURLException
 	 */
-	public static void setup(boolean localTest) throws MalformedURLException {
+	public static void setup(boolean localTest, String testDesc) throws MalformedURLException {
 		DesiredCapabilities caps = new DesiredCapabilities();
 		// allow location services
 	    caps.setCapability(AndroidMobileCapabilityType.GPS_ENABLED, "true");
@@ -53,7 +54,7 @@ public class AndroidTest {
 			localConnectionSetup(caps);
 			isLocal = true;
 		} else {
-		    browserstackSetup(caps);
+		    browserstackSetup(caps, testDesc);
 		    isLocal = false;
 		}
 	}
@@ -77,16 +78,10 @@ public class AndroidTest {
 	 * @param testDescription Test scenario. Link to JIRA if possible.
 	 * @throws MalformedURLException
 	 */
-	private static void browserstackSetup(DesiredCapabilities caps) throws MalformedURLException {
+	private static void browserstackSetup(DesiredCapabilities caps, String testDescription) throws MalformedURLException {
 	    caps.setCapability("project", "FAIMS3 - Android Tests");
 	    caps.setCapability("build", "Alpha");
-
-	    //Set commit message as session name
-	    String description = System.getenv("BROWSERSTACK_BUILD_NAME");
-	    if (description == null || description.isEmpty()) {
-	    	description = "Manual run";
-	    }
-	    caps.setCapability("name", description);
+	    caps.setCapability("name", testDescription.concat(" : ").concat(TestUtils.getCommitMessage()));
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "Google Pixel 3");
@@ -94,10 +89,10 @@ public class AndroidTest {
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
-	    // Below works with FAIMS Github Action. Customise with your own values if running manually.
-	    caps.setCapability("app", System.getenv("app_url"));
+        // TODO: will this work against Brian's Github script?
+	    caps.setCapability("app", System.getenv("BROWSERSTACK_LOCAL_IDENTIFIER"));
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
-        caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
+	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
 
 	    driver = new AndroidDriver<AndroidElement>(
 	            new URL("http://hub.browserstack.com/wd/hub"), caps);
