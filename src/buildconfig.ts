@@ -89,6 +89,9 @@ function directory_host(): string {
 function directory_port(): number {
   const port = process.env.REACT_APP_DIRECTORY_PORT;
   if (port === '' || port === undefined) {
+    if (PROD_BUILD) {
+      return 443;
+    }
     return 5984;
   }
   try {
