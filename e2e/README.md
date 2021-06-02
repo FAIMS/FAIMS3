@@ -7,6 +7,7 @@
 
 ### Steps:
 
+
 #### Test with local Android web driver
 
 1. By default, the tests are set to run with Browserstack. You can switch this by changing the localTest parameter in AndroidTest.setup() to true.
