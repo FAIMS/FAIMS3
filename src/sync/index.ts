@@ -37,9 +37,14 @@ export interface LocalDBRemote<Content extends {}> {
   db: PouchDB.Database<Content>;
   connection:
     | PouchDB.Replication.Replication<Content>
-    | PouchDB.Replication.Sync<Content>;
+    | PouchDB.Replication.Sync<Content>
+    | null;
   info: DataModel.ConnectionInfo;
   options: DBReplicateOptions;
+  create_handler: (
+    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
+  ) => SyncHandler;
+  handler: null | SyncHandler;
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -216,6 +221,9 @@ function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: DataModel.ConnectionInfo,
   global_dbs: LocalDBList<Content>,
+  handler: (
+    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
+  ) => SyncHandler,
   options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
@@ -238,44 +246,21 @@ function ensure_synced_db<Content extends {}>(
       },
     ];
   }
-  const local = global_dbs[local_db_id].local;
+  const db_info = (global_dbs[local_db_id] = {
+    ...global_dbs[local_db_id],
+    remote: {
+      db: ConnectionInfo_create_pouch(connection_info),
+      connection: null, //Connection initialized in setLocalConnection
+      info: connection_info,
+      create_handler: handler,
+      handler: null,
+      options: options,
+    },
+  });
 
-  const remote: PouchDB.Database<Content> = ConnectionInfo_create_pouch(
-    connection_info
-  );
+  setLocalConnection(db_info);
 
-  const push_too = (options as {push?: unknown}).push !== undefined;
-
-  let connection:
-    | PouchDB.Replication.Replication<Content>
-    | PouchDB.Replication.Sync<Content>;
-
-  if (push_too) {
-    const options_sync = options as PouchDB.Replication.SyncOptions;
-    connection = PouchDB.sync(remote, local, {
-      push: {live: true, retry: true, ...options_sync.push},
-      pull: {live: true, retry: true, ...(options_sync.pull || {})},
-    });
-  } else {
-    connection = PouchDB.replicate(remote, local, {
-      live: true,
-      retry: true,
-      ...options,
-    });
-  }
-
-  return [
-    true,
-    (global_dbs[local_db_id] = {
-      ...global_dbs[local_db_id],
-      remote: {
-        db: remote,
-        connection: connection,
-        info: connection_info,
-        options: options,
-      },
-    }),
-  ];
+  return [true, db_info];
 }
 
 async function get_default_instance(): Promise<DataModel.NonNullListingsObject> {
@@ -347,24 +332,74 @@ export function setSyncingProject(active_id: string, syncing: boolean) {
   if (syncing === isSyncingProject(active_id)) {
     return; //Nothing to do, already same value
   }
-  data_dbs[active_id].is_sync = syncing;
 
-  if (data_dbs[active_id].remote === null) {
-    return;
+  const data_db = data_dbs[active_id];
+  data_db.is_sync = syncing;
+
+  const has_remote = (
+    db: typeof data_db
+  ): db is LocalDB<DataModel.EncodedObservation> & {
+    remote: LocalDBRemote<DataModel.EncodedObservation>;
+  } => {
+    return db.remote !== null;
+  };
+
+  if (has_remote(data_db)) {
+    setLocalConnection(data_db);
   }
 
-  if (syncing) {
-    data_dbs[active_id].remote!.connection = PouchDB.replicate(
-      data_dbs[active_id].remote!.db,
-      data_dbs[active_id].local
-    );
-  } else {
-    data_dbs[active_id].remote!.connection.cancel();
-  }
   // Trigger sync listeners
   syncingProjectListeners
     .filter(l => l !== undefined && l![0] === active_id)
     .forEach(l => l![1](syncing));
+}
+
+/**
+ * If the given remote DB is not synced, starts syncing, and visa versa.
+ * db_info.remote.{connection, handler} are modified based on what's in
+ * db_info.is_sync, db_info.remote.info, db_info.remote.create_handler.
+ *
+ * This does NOT ensure that the existing connection info (URL, port, proto)
+ * matches anything. that's left to ensure_synced_db
+ *
+ * @param db_info info to use to create a DB connection:
+ *                Remote connection info, is_sync, the local DB to sync with,
+ */
+function setLocalConnection<Content extends {}>(
+  db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
+) {
+  const options = db_info.remote.options;
+
+  if (db_info.is_sync && db_info.remote.connection === null) {
+    // Start a new connection
+    const push_too = (options as {push?: unknown}).push !== undefined;
+    let connection:
+      | PouchDB.Replication.Replication<Content>
+      | PouchDB.Replication.Sync<Content>;
+
+    if (push_too) {
+      const options_sync = options as PouchDB.Replication.SyncOptions;
+      connection = PouchDB.sync(db_info.remote.db, db_info.local, {
+        push: {live: true, retry: true, ...options_sync.push},
+        pull: {live: true, retry: true, ...(options_sync.pull || {})},
+      });
+    } else {
+      connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
+        live: true,
+        retry: true,
+        ...options,
+      });
+    }
+
+    db_info.remote.connection = connection;
+    db_info.remote.handler = db_info.remote.create_handler(db_info);
+    db_info.remote.handler.listen(connection);
+  } else if (!db_info.is_sync && db_info.remote.connection !== null) {
+    // Stop an existing connection
+    db_info.remote.handler!.detach(db_info.remote.connection);
+    db_info.remote.connection.cancel();
+    db_info.remote.connection = null;
+  }
 }
 
 export function getDataDB(
@@ -402,6 +437,10 @@ class SyncHandler {
   timeout_track?: ReturnType<typeof setTimeout>;
   emissions: EmissionsArg;
 
+  listener_error?: (...args: any[]) => unknown;
+  listener_changed?: (...args: any[]) => unknown;
+  listener_paused?: (...args: any[]) => unknown;
+
   constructor(timeout: number, emissions: EmissionsArg) {
     this.timeout = timeout;
 
@@ -429,55 +468,64 @@ class SyncHandler {
   listen(
     db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
   ) {
-    db.on('paused', (err?: {}) => {
-      /*
+    db.on(
+      'paused',
+      (this.listener_paused = (err?: {}) => {
+        /*
       This event fires when the replication is paused, either because a live
       replication is waiting for changes, or replication has temporarily
       failed, with err, and is attempting to resume.
       */
-      this.lastActive = undefined;
-      this.clearTimeout();
-      this.emissions.paused(err);
-    });
-    db.on('change', () => {
-      /*
+        this.lastActive = undefined;
+        this.clearTimeout();
+        this.emissions.paused(err);
+      })
+    );
+    db.on(
+      'change',
+      (this.listener_changed = () => {
+        /*
       This event fires when the replication starts actively processing changes;
       e.g. when it recovers from an error or new changes are available.
       */
 
-      if (
-        this.lastActive !== undefined &&
-        this.lastActive! + this.timeout - 20 <= Date.now()
-      ) {
-        console.warn(
-          "someone didn't clear the lastActive when clearTimeout called"
-        );
-        this.lastActive = undefined;
-      }
+        if (
+          this.lastActive !== undefined &&
+          this.lastActive! + this.timeout - 20 <= Date.now()
+        ) {
+          console.warn(
+            "someone didn't clear the lastActive when clearTimeout called"
+          );
+          this.lastActive = undefined;
+        }
 
-      if (this.lastActive === undefined) {
-        this.lastActive = Date.now();
-        this.clearTimeout();
-        this.emissions.active();
+        if (this.lastActive === undefined) {
+          this.lastActive = Date.now();
+          this.clearTimeout();
+          this.emissions.active();
 
-        // After 2 seconds of no more 'active' events,
-        // assume it's up to date
-        // (Otherwise, if it's still active, keep checking until it's not)
-        this.setTimeout().then(this._inactiveCheckLoop.bind(this));
-      } else {
-        this.lastActive = Date.now();
-      }
-    });
-    db.on('error', err => {
-      /*
+          // After 2 seconds of no more 'active' events,
+          // assume it's up to date
+          // (Otherwise, if it's still active, keep checking until it's not)
+          this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+        } else {
+          this.lastActive = Date.now();
+        }
+      })
+    );
+    db.on(
+      'error',
+      (this.listener_error = err => {
+        /*
       This event is fired when the replication is stopped due to an
       unrecoverable failure.
       */
-      // Prevent any further events
-      this.lastActive = undefined;
-      this.clearTimeout();
-      this.emissions.error(err);
-    });
+        // Prevent any further events
+        this.lastActive = undefined;
+        this.clearTimeout();
+        this.emissions.error(err);
+      })
+    );
   }
   clearTimeout() {
     if (this.timeout_track !== undefined) {
@@ -485,6 +533,15 @@ class SyncHandler {
       this.timeout_track = undefined;
     }
   }
+  detach(
+    db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
+  ) {
+    db.removeListener('paused', this.listener_paused!);
+    db.removeListener('change', this.listener_changed!);
+    db.removeListener('error', this.listener_error!);
+    this.clearTimeout();
+  }
+
   setTimeout(time?: number): Promise<void> {
     return new Promise(resolve => {
       this.timeout_track = setTimeout(() => {
@@ -1006,44 +1063,41 @@ async function process_directory(
     directory_connection_info
   );
 
-  const directory_connection = PouchDB.replicate(
-    directory_paused,
-    directory_db.local,
-    {
-      live: false,
-      retry: false,
-    }
-  );
+  const sync_handler = () =>
+    new SyncHandler(DIRECTORY_TIMEOUT, {
+      active: async () =>
+        initializeEvents.emit(
+          'directory_active',
+          await get_active_listings_in_this_directory()
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+        initializeEvents.emit(
+          'directory_paused',
+          await get_active_listings_in_this_directory()
+        );
+      },
+      error: async () => {
+        if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+        initializeEvents.emit(
+          'directory_paused',
+          await get_active_listings_in_this_directory()
+        );
+      },
+    });
 
   directory_db.remote = {
     db: directory_paused,
-    connection: directory_connection,
+    connection: null,
+    create_handler: sync_handler,
+    handler: null,
     info: directory_connection_info,
     options: {},
   };
 
-  const sync_handler = new SyncHandler(DIRECTORY_TIMEOUT, {
-    active: async () =>
-      initializeEvents.emit(
-        'directory_active',
-        await get_active_listings_in_this_directory()
-      ),
-    paused: async () => {
-      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-      initializeEvents.emit(
-        'directory_paused',
-        await get_active_listings_in_this_directory()
-      );
-    },
-    error: async () => {
-      if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-      initializeEvents.emit(
-        'directory_paused',
-        await get_active_listings_in_this_directory()
-      );
-    },
-  });
-  sync_handler.listen(directory_connection);
+  setLocalConnection(
+    (directory_db as unknown) as Parameters<typeof setLocalConnection>[0]
+  );
 }
 
 function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
@@ -1099,13 +1153,13 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   const [, local_people_db] = ensure_local_db(
     'people',
     people_local_id,
-    false,
+    true,
     people_dbs
   );
   const [, local_projects_db] = ensure_local_db(
     'projects',
     projects_db_id,
-    false,
+    true,
     projects_dbs
   );
 
@@ -1155,62 +1209,75 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
     projects_connection
   );
 
+  const people_sync_handler = () =>
+    new SyncHandler(LISTINGS_TIMEOUT, {
+      active: () => {},
+      paused: () => {},
+      error: () => {},
+    });
+
   // TODO: Ensure that when the user adds a new active project
   // that these filters are updated.
   ensure_synced_db(
     people_local_id,
     people_connection,
     people_dbs,
+    people_sync_handler,
     // Filters to only projects that are active
     unupdated_projects_in_this_listing.map(v => v._id)
   );
-  const [projects_is_fresh, projects_db] = ensure_synced_db(
+
+  const project_sync_handler = () =>
+    new SyncHandler(LISTINGS_TIMEOUT, {
+      active: async () =>
+        initializeEvents.emit(
+          'listing_active',
+          listing_object,
+          await get_active_projects_in_this_listing(),
+          local_people_db,
+          local_projects_db,
+          projects_connection
+        ),
+      paused: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleListing(
+            listing_object._id,
+            local_projects_db.local
+          );
+        initializeEvents.emit(
+          'listing_paused',
+          listing_object,
+          await get_active_projects_in_this_listing(),
+          local_people_db,
+          local_projects_db,
+          projects_connection
+        );
+      },
+      error: async () => {
+        if (!USE_REAL_DATA)
+          await setupExampleListing(
+            listing_object._id,
+            local_projects_db.local
+          );
+        initializeEvents.emit(
+          'listing_paused',
+          listing_object,
+          await get_active_projects_in_this_listing(),
+          local_people_db,
+          local_projects_db,
+          projects_connection
+        );
+      },
+    });
+
+  ensure_synced_db(
     projects_db_id,
     projects_connection,
     projects_dbs,
+    project_sync_handler,
     // Filters to only projects that are active
     unupdated_projects_in_this_listing.map(v => v._id)
   );
-  if (!projects_is_fresh) {
-    return;
-  }
-
-  const sync_handler = new SyncHandler(LISTINGS_TIMEOUT, {
-    active: async () =>
-      initializeEvents.emit(
-        'listing_active',
-        listing_object,
-        await get_active_projects_in_this_listing(),
-        local_people_db,
-        local_projects_db,
-        projects_connection
-      ),
-    paused: async () => {
-      if (!USE_REAL_DATA)
-        await setupExampleListing(listing_object._id, local_projects_db.local);
-      initializeEvents.emit(
-        'listing_paused',
-        listing_object,
-        await get_active_projects_in_this_listing(),
-        local_people_db,
-        local_projects_db,
-        projects_connection
-      );
-    },
-    error: async () => {
-      if (!USE_REAL_DATA)
-        await setupExampleListing(listing_object._id, local_projects_db.local);
-      initializeEvents.emit(
-        'listing_paused',
-        listing_object,
-        await get_active_projects_in_this_listing(),
-        local_people_db,
-        local_projects_db,
-        projects_connection
-      );
-    },
-  });
-  sync_handler.listen(projects_db.remote.connection);
 }
 
 async function autoactivate_projects(
@@ -1347,20 +1414,8 @@ async function process_project(
     project_object.data_db
   );
 
-  const [meta_is_fresh, meta_db] = ensure_synced_db(
-    active_id,
-    meta_connection_info,
-    metadata_dbs
-  );
-  const [data_is_fresh, data_db] = ensure_synced_db(
-    active_id,
-    data_connection_info,
-    data_dbs,
-    {push: {}}
-  );
-
-  if (meta_is_fresh) {
-    const meta_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+  const meta_sync_handler = (meta_db: LocalDB<DataModel.ProjectMetaObject>) =>
+    new SyncHandler(PROJECT_TIMEOUT, {
       active: async () =>
         initializeEvents.emit(
           'project_meta_active',
@@ -1392,11 +1447,16 @@ async function process_project(
         );
       },
     });
-    meta_sync_handler.listen(meta_db.remote.connection);
-  }
 
-  if (data_is_fresh) {
-    const data_sync_handler = new SyncHandler(PROJECT_TIMEOUT, {
+  ensure_synced_db(
+    active_id,
+    meta_connection_info,
+    metadata_dbs,
+    meta_sync_handler
+  );
+
+  const data_sync_handler = (data_db: LocalDB<DataModel.EncodedObservation>) =>
+    new SyncHandler(PROJECT_TIMEOUT, {
       active: async () =>
         initializeEvents.emit(
           'project_data_active',
@@ -1428,7 +1488,13 @@ async function process_project(
         );
       },
     });
-    data_sync_handler.listen(data_db.remote.connection);
-  }
+
+  ensure_synced_db(
+    active_id,
+    data_connection_info,
+    data_dbs,
+    data_sync_handler,
+    {push: {}}
+  );
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
