@@ -66,8 +66,8 @@ export interface ActiveDoc {
   _id: string;
   listing_id: string;
   project_id: string;
-  username: string;
-  password: string;
+  username: string | null;
+  password: string | null;
   friendly_name?: string;
   is_sync: boolean;
 }

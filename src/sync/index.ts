@@ -36,6 +36,7 @@ import {
   DIRECTORY_HOST,
   DIRECTORY_PORT,
   RUNNING_UNDER_TEST,
+  AUTOACTIVATE_PROJECTS,
 } from '../buildconfig';
 
 const POUCH_SEPARATOR = '_';
@@ -114,6 +115,11 @@ export const active_db = new PouchDB<DataModel.ActiveDoc>(
   'active',
   local_pouch_options
 );
+
+/**
+ * This contains any local app state we want to keep across sessions
+ */
+export const local_state_db = new PouchDB('local_state');
 
 /**
  * Each listing has a Projects database and Users/People DBs
@@ -980,6 +986,10 @@ async function process_directory(
       await directory_db.local.allDocs()
     ).rows.map(row => row.id);
 
+    console.debug(
+      `All the listing ids found are ${all_listing_ids_in_this_directory}`
+    );
+
     const active_listings_in_this_directory = (
       await active_db.find({
         selector: {
@@ -987,6 +997,10 @@ async function process_directory(
         },
       })
     ).docs;
+
+    console.debug(
+      `The active listing ids are ${active_listings_in_this_directory}`
+    );
 
     return new Set(
       active_listings_in_this_directory.map(doc => doc.listing_id)
@@ -1075,6 +1089,7 @@ function process_listings(listings: Set<string>, allow_nonexistant: boolean) {
 
 async function process_listing(listing_object: DataModel.ListingsObject) {
   const listing_id = listing_object._id;
+  console.debug(`Processing listing id ${listing_id}`);
 
   const projects_db_id = listing_object['projects_db']
     ? listing_id
@@ -1111,7 +1126,16 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   const get_active_projects_in_this_listing = async () => {
     const all_project_ids_in_this_listing = (
       await local_projects_db.local.allDocs()
-    ).rows.map(row => row.id);
+    ).rows
+      .map(row => row.id)
+      .filter(id => !id.startsWith('_design/'));
+    console.debug(
+      `All projects in listing ${listing_id} are`,
+      all_project_ids_in_this_listing
+    );
+    if (AUTOACTIVATE_PROJECTS) {
+      await autoactivate_projects(listing_id, all_project_ids_in_this_listing);
+    }
 
     const active_projects_in_this_listing = (
       await active_db.find({
@@ -1121,6 +1145,10 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
         },
       })
     ).docs;
+    console.debug(
+      `Active projects in listing ${listing_id} are`,
+      active_projects_in_this_listing
+    );
 
     return active_projects_in_this_listing;
   };
@@ -1198,6 +1226,54 @@ async function process_listing(listing_object: DataModel.ListingsObject) {
   sync_handler.listen(projects_db.remote.connection);
 }
 
+async function autoactivate_projects(
+  listing_id: string,
+  project_ids: string[]
+) {
+  for (const project_id of project_ids) {
+    try {
+      await activate_project(listing_id, project_id, null, null);
+    } catch (err) {
+      const active_id = listing_id + POUCH_SEPARATOR + project_id;
+      console.debug('Unable to autoactivate', active_id);
+    }
+  }
+}
+
+async function activate_project(
+  listing_id: string,
+  project_id: string,
+  username: string | null,
+  password: string | null,
+  is_sync = true
+) {
+  if (project_id.startsWith('_design/')) {
+    throw Error(`Cannot activate design document ${project_id}`);
+  }
+  if (project_id.startsWith('_')) {
+    console.error('Projects should not start with a underscore: ', project_id);
+  }
+  const active_id = listing_id + POUCH_SEPARATOR + project_id;
+  try {
+    await active_db.get(active_id);
+    console.debug('Have already activated', active_id);
+  } catch (err) {
+    if (err.status === 404) {
+      // TODO: work out a better way to do this
+      await active_db.put({
+        _id: active_id,
+        listing_id: listing_id,
+        project_id: project_id,
+        username: username,
+        password: password,
+        is_sync: is_sync,
+      });
+    } else {
+      throw err;
+    }
+  }
+}
+
 function process_projects(
   listing: DataModel.ListingsObject,
   active_projects: ExistingActiveDoc[],
@@ -1236,6 +1312,7 @@ async function process_project(
    * metadata/data databases.
    */
   const active_id = active_project._id;
+  console.debug(`Processing project ${active_id}`);
 
   const [, meta_db_local] = ensure_local_db(
     'metadata',

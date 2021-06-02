@@ -131,9 +131,50 @@ class ObservationForm extends React.Component<
   }
 
   async componentDidMount() {
-    await this.setUISpec();
-    await this.setStagedValues();
-    await this.setInitialValues();
+    try {
+      await this.setUISpec();
+    } catch (err) {
+      console.error('setUISpec error', err);
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message:
+            'Project is not fully downloaded or not setup correctly (UI Specification Missing)',
+          severity: 'error',
+        },
+      });
+      // This form cannot be shown at all. No recovery except go back to project.
+      this.props.history.goBack();
+      return;
+    }
+    try {
+      await this.setStagedValues();
+    } catch (err) {
+      console.error('setStagedValues error', err);
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Could not load previous data: ' + err.message,
+          severity: 'warnings',
+        },
+      });
+      // Empty staged data, this isn't as severe if the staged data can't be loaded.
+      this.loadedStagedData = {};
+    }
+    try {
+      await this.setInitialValues();
+    } catch (err) {
+      console.error('setInitialValues error', err);
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Could not load previous data: ' + err.message,
+          severity: 'warnings',
+        },
+      });
+      // Show an empty form
+      this.setState({initialValues: {_id: this.props.observation_id!}});
+    }
   }
 
   componentWillUnmount() {
