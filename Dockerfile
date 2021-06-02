@@ -9,10 +9,13 @@ RUN npm ci
 #COPY --chown=node:node package*.json /app/
 
 
-
+# https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp
 ENV NODE_ENV production
-ENV REACT_APP_DIRECTORY_HOST="testing.db.faims.edu.au"
-ENV REACT_APP_DIRECTORY_PORT="443"
+ENV REACT_APP_PRODUCTION_BUILD true
+ENV REACT_APP_USE_REAL_DATA true
+ENV REACT_APP_USE_HTTPS true
+ENV REACT_APP_DIRECTORY_HOST alpha.db.faims.edu.au
+ENV REACT_APP_DIRECTORY_PORT 443
 # https://blog.knoldus.com/deployment-with-docker-in-ionic/
 #USER node
 # They say to run with min privs, but since we're building and not running, I CBF'd right now.
