@@ -56,6 +56,7 @@ import {
 } from '../../sync';
 import {FormControlLabel} from '@material-ui/core';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
+import {listenProjectMetas} from '../../projectMetadata';
 
 type ProjectCardProps = {
   project: ProjectInformation;
@@ -111,6 +112,7 @@ export default function ProjectCard(props: ProjectCardProps) {
   const [isSyncing, setIsSyncing] = useState(
     isSyncingProject(project.project_id)
   );
+  const [metadatums, setMetadatums] = useState({} as {[key: string]: unknown});
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 
@@ -133,6 +135,12 @@ export default function ProjectCard(props: ProjectCardProps) {
   useEffect(() => {
     return listenSyncingProject(project.project_id, setIsSyncing);
   }, [project.project_id]);
+
+  useEffect(() => {
+    return listenProjectMetas(project.project_id, (meta_id, meta_value) =>
+      setMetadatums({...metadatums, [meta_id]: meta_value})
+    );
+  });
 
   return (
     <React.Fragment>
