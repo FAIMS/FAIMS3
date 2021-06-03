@@ -31,11 +31,20 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
       <MuiBreadcrumbs aria-label="breadcrumb" maxItems={not_xs ? 4 : 2}>
         {data.map(item => {
           return item.link !== undefined ? (
-            <Link component={RouterLink} to={item.link} key={'breadcrumb-item-'+item.title}>
+            <Link
+              component={RouterLink}
+              to={item.link}
+              key={'breadcrumb-item-' + item.title}
+            >
               {item.title}
             </Link>
           ) : (
-            <Typography color="textPrimary" key={'breadcrumb-item-'+item.title}>{item.title}</Typography>
+            <Typography
+              color="textPrimary"
+              key={'breadcrumb-item-' + item.title}
+            >
+              {item.title}
+            </Typography>
           );
         })}
       </MuiBreadcrumbs>

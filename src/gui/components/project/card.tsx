@@ -305,22 +305,22 @@ export default function Card(props: ProjectCardProps) {
           </CardContent>
           <CardActions style={{width: '100%'}}>
             <Grid container alignItems="center">
-              <Grid item xs={6} sm={6} >
+              <Grid item xs={6} sm={6}>
                 {!listView ? <ProjectSync project={project} /> : ''}
               </Grid>
               <Grid item xs={6} sm={6}>
                 {listView ? (
-                    <Button
-                        color="primary"
-                        component={RouterLink}
-                        to={project_url}
-                        style={{float: 'right'}}
-                    >
-                      View Project
-                      <ChevronRightIcon />
-                    </Button>
+                  <Button
+                    color="primary"
+                    component={RouterLink}
+                    to={project_url}
+                    style={{float: 'right'}}
+                  >
+                    View Project
+                    <ChevronRightIcon />
+                  </Button>
                 ) : (
-                    ''
+                  ''
                 )}
               </Grid>
             </Grid>
