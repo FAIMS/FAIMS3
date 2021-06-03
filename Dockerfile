@@ -11,6 +11,7 @@ RUN npm ci
 
 # https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp
 ENV NODE_ENV production
+ENV REACT_APP_CURRENT_VERSION docker
 ENV REACT_APP_PRODUCTION_BUILD true
 ENV REACT_APP_USE_REAL_DATA false
 #REACT_APP_USE_REAL_DATA: This configures whether to include local test data in the system or not. REACT_APP_USE_REAL_DATA=true disables test data.
@@ -25,4 +26,5 @@ RUN npm run-script build
 FROM nginx:1.21.0-alpine
 RUN rm -rf /usr/share/nginx/html/*
 # not /app/www but /app/build because react
+COPY ./.nginx/nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /app/build/ /usr/share/nginx/html/
