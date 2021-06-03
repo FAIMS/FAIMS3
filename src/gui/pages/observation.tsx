@@ -44,7 +44,7 @@ import BoxTab from '../components/ui/boxTab';
 import {Alert} from '@material-ui/lab';
 import {
   deleteFAIMSDataForID,
-  listFAIMSProjectRevisions,
+  listFAIMSObservationRevisions,
 } from '../../dataStorage';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
@@ -64,9 +64,9 @@ export default function Observation() {
   const project_info = getProjectInfo(project_id);
   const [revisions, setRevisions] = React.useState([] as string[]);
   useEffect(() => {
-    listFAIMSProjectRevisions(project_id)
-      .then(all_revisions_in_project => {
-        setRevisions(all_revisions_in_project[observation_id]);
+    listFAIMSObservationRevisions(project_id, observation_id)
+      .then(all_revisions => {
+        setRevisions(all_revisions);
       })
       .catch(console.error /*TODO*/);
   });
