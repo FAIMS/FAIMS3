@@ -22,6 +22,27 @@
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
+/*
+ * This is designed to get useful commit information data from 
+ * environment variables for the testing server. While more sophisticated
+ * iterations of this can use extra node modules to get git data directly,
+ * passing environment variables seems like the safest first path.
+ */
+
+function commit_version(): string {
+  const commitver = process.env.REACT_APP_COMMIT_VERSION;
+  console.log(commitver);
+  if (
+      commitver === '' ||
+      commitver === undefined ||
+      FALSEY_STRINGS.includes(commitver.toLowerCase())
+  ) {
+    return "-dev";
+  } else {
+    return `-${commitver}`;
+  }
+}
+
 function prod_build(): boolean {
   const prodbuild = process.env.REACT_APP_PRODUCTION_BUILD;
   if (
@@ -112,3 +133,4 @@ export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
 export const RUNNING_UNDER_TEST = is_testing();
+export const COMMIT_VERSION = commit_version();
