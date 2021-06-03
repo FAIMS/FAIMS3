@@ -33,6 +33,7 @@ import * as ROUTES from '../../constants/routes';
 import {store} from '../../store';
 import Skeleton from '@material-ui/lab/Skeleton';
 import {ActionType} from '../../actions';
+import InProgress from '../components/ui/inProgress';
 
 const useStyles = makeStyles(theme => ({
   gridRoot: {
@@ -111,9 +112,12 @@ export default function ObservationList() {
           <Grid item xs={12} key={'skeleton-observation-list-grid'}>
             <Skeleton animation="wave" variant="rect" height={100} />
           </Grid>
-          To be implemented... Observation list component - list of observation
-          user has access to: - shows most recent (top 100) - allows for
-          filtering by meta data (owner, last_updated by, project etc)
+          <InProgress />
+          <p>
+            This component (also shown on the user's home/dashboard) shows the
+            latest e.g., 100 observations across all the user's projects, and
+            allows for filtering by meta data (owner, last updated etc).
+          </p>
         </Grid>
       </div>
     </Container>
