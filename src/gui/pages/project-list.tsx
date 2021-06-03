@@ -29,7 +29,7 @@ import {
   Grid,
   Link,
 } from '@material-ui/core';
-import ProjectCard from '../components/projectCard';
+import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectList} from '../../databaseAccess';

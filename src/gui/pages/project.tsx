@@ -21,7 +21,7 @@
 import React from 'react';
 import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
 import {Box, Breadcrumbs, Container, Link, Typography} from '@material-ui/core';
-import ProjectCard from '../components/projectCard';
+import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';

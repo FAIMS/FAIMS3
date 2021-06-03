@@ -68,7 +68,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
           </Breadcrumbs>
         </Box>
         <Grid container spacing={3}>
-          <Grid item xs={6} sm={4}>
+          <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
                 <MenuItem
@@ -104,7 +104,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
               </MenuList>
             </Paper>
           </Grid>
-          <Grid item xs={6} sm={4}>
+          <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
                 <MenuItem component={NavLink} to={ROUTES.HOME}>
