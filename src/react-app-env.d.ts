@@ -14,8 +14,8 @@
  * limitations under the License.
  *
  * Filename: react-app-env.d.ts
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 /// <reference types="react-scripts" />

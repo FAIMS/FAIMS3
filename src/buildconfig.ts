@@ -110,6 +110,9 @@ function directory_host(): string {
 function directory_port(): number {
   const port = process.env.REACT_APP_DIRECTORY_PORT;
   if (port === '' || port === undefined) {
+    if (PROD_BUILD) {
+      return 443;
+    }
     return 5984;
   }
   try {
@@ -134,3 +137,4 @@ export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
 export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
+export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this

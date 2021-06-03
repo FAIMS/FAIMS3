@@ -30,6 +30,9 @@ You should also be aware of the
 building/management of the Android/iOS
 apps.
 
+Further build/install instructions can be found at
+<https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp>.
+
 ## Choosing couchdb instances
 
 The `server_configs` directory contains sourcable scripts for some of the
