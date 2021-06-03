@@ -20,16 +20,9 @@
 
 import React, {useContext, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Link as RouterLink} from 'react-router-dom';
-import {
-  Box,
-  Breadcrumbs,
-  Container,
-  Grid,
-  Link,
-  Typography,
-} from '@material-ui/core';
+import {Box, Container, Grid} from '@material-ui/core';
 import * as ROUTES from '../../constants/routes';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import {store} from '../../store';
 import Skeleton from '@material-ui/lab/Skeleton';
 import {ActionType} from '../../actions';
@@ -37,7 +30,6 @@ import {ActionType} from '../../actions';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
-    padding: theme.spacing(2),
   },
   bullet: {
     display: 'inline-block',
@@ -70,6 +62,10 @@ export default function ObservationList() {
   const classes = useStyles();
   const globalState = useContext(store);
   const {dispatch} = globalState;
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {title: 'Observations'},
+  ];
   useEffect(() => {
     dispatch({
       type: ActionType.ADD_ALERT,
@@ -98,12 +94,7 @@ export default function ObservationList() {
   return (
     <Container maxWidth="lg">
       <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to={ROUTES.INDEX}>
-            Index
-          </Link>
-          <Typography color="textPrimary">Observations</Typography>
-        </Breadcrumbs>
+        <Breadcrumbs data={breadcrumbs} />
       </Box>
 
       <div className={classes.gridRoot}>

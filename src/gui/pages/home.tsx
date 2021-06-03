@@ -21,19 +21,12 @@
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {Link as RouterLink} from 'react-router-dom';
-import {
-  Container,
-  Breadcrumbs,
-  Typography,
-  Box,
-  Grid,
-  Paper,
-  Link,
-} from '@material-ui/core';
+import {Container, Typography, Box, Grid, Paper, Link} from '@material-ui/core';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectInfo, getProjectList} from '../../databaseAccess';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
 const useStyles = makeStyles(theme => ({
@@ -73,24 +66,10 @@ export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = getProjectList();
-
+  const breadcrumbs = [{link: ROUTES.INDEX, title: 'Index'}, {title: 'Home'}];
   return (
     <Container maxWidth="lg">
-      <Box
-        display="flex"
-        flexDirection="row-reverse"
-        p={1}
-        m={1}
-        // bgcolor="background.paper"
-      >
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to={ROUTES.INDEX}>
-            Index
-          </Link>
-          <Typography color="textPrimary">Home</Typography>
-        </Breadcrumbs>
-      </Box>
-
+      <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Typography variant="overline">Add new Observation</Typography>

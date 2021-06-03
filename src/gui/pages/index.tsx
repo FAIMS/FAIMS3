@@ -22,11 +22,8 @@ import React from 'react';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {
-  Box,
   Grid,
   Container,
-  Breadcrumbs,
-  Typography,
   Paper,
   MenuList,
   MenuItem,
@@ -39,6 +36,7 @@ import LockOpenIcon from '@material-ui/icons/LockOpen';
 import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 type IndexProps = {
   // project: string;
 };
@@ -53,20 +51,10 @@ export class Index extends React.Component<IndexProps, IndexState> {
   }
 
   render() {
+    const breadcrumbs = [{title: 'Index'}];
     return (
       <Container maxWidth="lg">
-        <Box
-          display="flex"
-          flexDirection="row-reverse"
-          p={1}
-          m={1}
-          // bgcolor="background.paper"
-        >
-          <Breadcrumbs aria-label="breadcrumb">
-            {/*<NavLink to={ROUTES.INDEX}>/</NavLink>*/}
-            <Typography color="textPrimary">Index</Typography>
-          </Breadcrumbs>
-        </Box>
+        <Breadcrumbs data={breadcrumbs} />
         <Grid container spacing={3}>
           <Grid item xs={12} sm={4}>
             <Paper>

@@ -93,7 +93,13 @@ export default function ObservationsTable(props: ObservationsTableProps) {
   return (
     <div>
       <Typography variant="overline">Recent Observations</Typography>
-      <div style={{height: 400, width: '100%'}}>
+      <div
+        style={{
+          height: 400,
+          width: '100%',
+          marginBottom: not_xs ? '20px' : '40px',
+        }}
+      >
         <DataGrid
           rows={rows}
           loading={loading}

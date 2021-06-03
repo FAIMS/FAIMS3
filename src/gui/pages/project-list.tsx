@@ -20,15 +20,8 @@
 
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Link as RouterLink} from 'react-router-dom';
-import {
-  Container,
-  Breadcrumbs,
-  Typography,
-  Box,
-  Grid,
-  Link,
-} from '@material-ui/core';
+import {Container, Grid} from '@material-ui/core';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
@@ -36,7 +29,6 @@ import {getProjectList} from '../../databaseAccess';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
-    padding: theme.spacing(2),
   },
   bullet: {
     display: 'inline-block',
@@ -69,18 +61,13 @@ export default function ProjectList() {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = getProjectList();
-
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {title: 'Projects'},
+  ];
   return (
     <Container maxWidth="lg">
-      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to={ROUTES.INDEX}>
-            Index
-          </Link>
-          <Typography color="textPrimary">Projects</Typography>
-        </Breadcrumbs>
-      </Box>
-
+      <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
           {Object.keys(pouchProjectList).length === 0 ? (

@@ -19,8 +19,9 @@
  */
 
 import React from 'react';
-import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
-import {Box, Breadcrumbs, Container, Link, Typography} from '@material-ui/core';
+import {useParams, Redirect} from 'react-router-dom';
+import {Container} from '@material-ui/core';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
@@ -30,20 +31,14 @@ import {ProjectID} from '../../datamodel';
 export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const project_info = getProjectInfo(project_id);
-
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {title: project_info !== null ? project_info.name : ''},
+  ];
   return project_info ? (
     <Container maxWidth="lg">
-      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to={ROUTES.INDEX}>
-            Index
-          </Link>
-          <Link component={RouterLink} to={ROUTES.PROJECT_LIST}>
-            Projects
-          </Link>
-          <Typography color="textPrimary">{project_info.name}</Typography>
-        </Breadcrumbs>
-      </Box>
+      <Breadcrumbs data={breadcrumbs} />
       <ProjectCard
         project={project_info}
         showObservations={true}

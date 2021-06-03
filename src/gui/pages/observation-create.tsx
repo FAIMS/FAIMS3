@@ -19,17 +19,10 @@
  */
 
 import React from 'react';
-import {
-  Box,
-  Breadcrumbs,
-  Container,
-  Typography,
-  Paper,
-  Link,
-} from '@material-ui/core';
-import {Link as RouterLink} from 'react-router-dom';
+import {Box, Container, Typography, Paper} from '@material-ui/core';
 import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import {generateFAIMSDataID} from '../../dataStorage';
 import ObservationForm from '../components/observation/form';
 import {getProjectInfo} from '../../databaseAccess';
@@ -40,23 +33,18 @@ export default function ObservationCreate() {
     project_id: ProjectID;
   }>();
   const project_info = getProjectInfo(project_id);
-
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {
+      link: ROUTES.PROJECT + project_id,
+      title: project_info !== null ? project_info.name : project_id,
+    },
+    {title: 'New Observation'},
+  ];
   return (
     <Container maxWidth="lg">
-      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to={ROUTES.INDEX}>
-            Index
-          </Link>
-          <Link component={RouterLink} to={ROUTES.PROJECT_LIST}>
-            Projects
-          </Link>
-          <Link component={RouterLink} to={ROUTES.PROJECT + project_id}>
-            Project {project_info !== null ? project_info.name : project_id}
-          </Link>
-          <Typography color="textPrimary">New Observation</Typography>
-        </Breadcrumbs>
-      </Box>
+      <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
           Record Observation
