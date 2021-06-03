@@ -264,7 +264,7 @@ export default function Card(props: ProjectCardProps) {
               />
             </Box>
 
-            <Typography variant="body2" color="textPrimary" component="p">
+            <Typography variant="body2" color="textPrimary" component="div">
               {project.description}&nbsp;
               <br />
               {listView ? (
@@ -296,8 +296,7 @@ export default function Card(props: ProjectCardProps) {
               <Box mt={1}>
                 <ObservationsTable
                   project_id={project.project_id}
-                  restrictRows={10}
-                  compact={listView}
+                  maxRows={listView ? 10 : 25}
                 />
               </Box>
             ) : (
