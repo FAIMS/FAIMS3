@@ -351,13 +351,6 @@ class ObservationForm extends React.Component<
             severity: 'success',
           },
         });
-        // if a new observation, redirect to the new observation page to allow the user to rapidly add more records
-        // otherwise, redirect to the project page listing all observations
-        this.props.is_fresh
-          ? this.props.history.push(
-              ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
-            )
-          : this.props.history.push(ROUTES.PROJECT + this.props.project_id);
       })
       .catch(err => {
         const message = this.props.is_fresh
@@ -372,7 +365,30 @@ class ObservationForm extends React.Component<
         });
         console.warn(err);
         console.error('Failed to save data');
-      });
+      })
+      // Clear the staging area (Possibly after redirecting back to project page)
+      .then(() => this.nullCoalesceRevision())
+      .then(obsid_revid =>
+        setStagedData(
+          {},
+          this.lastStagingRev,
+          this.props.project_id,
+          this.reqireCurrentView(),
+          obsid_revid
+        ).catch(clean_error => {
+          // Errors with cleaning the staging area are not 'fatal' to the redirect
+          console.warn('failed to clear staging area', clean_error);
+        })
+      )
+      .then(() =>
+        // if a new observation, redirect to the new observation page to allow the user to rapidly add more records
+        // otherwise, redirect to the project page listing all observations
+        this.props.is_fresh
+          ? this.props.history.push(
+              ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
+            )
+          : this.props.history.push(ROUTES.PROJECT + this.props.project_id)
+      );
   }
 
   updateView(viewName: string) {
