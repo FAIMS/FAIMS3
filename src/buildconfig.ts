@@ -23,7 +23,7 @@ const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 /*
- * This is designed to get useful commit information data from 
+ * This is designed to get useful commit information data from
  * environment variables for the testing server. While more sophisticated
  * iterations of this can use extra node modules to get git data directly,
  * passing environment variables seems like the safest first path.
@@ -33,11 +33,11 @@ function commit_version(): string {
   const commitver = process.env.REACT_APP_COMMIT_VERSION;
   console.log(commitver);
   if (
-      commitver === '' ||
-      commitver === undefined ||
-      FALSEY_STRINGS.includes(commitver.toLowerCase())
+    commitver === '' ||
+    commitver === undefined ||
+    FALSEY_STRINGS.includes(commitver.toLowerCase())
   ) {
-    return "-dev";
+    return '-dev';
   } else {
     return `-${commitver}`;
   }
