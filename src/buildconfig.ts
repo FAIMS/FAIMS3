@@ -39,7 +39,7 @@ function commit_version(): string {
   ) {
     return '-dev';
   } else {
-    return `-${commitver}`;
+    return `-${commitver.slice(0, 7)}`;
   }
 }
 
