@@ -25,7 +25,11 @@ import {Plugins} from '@capacitor/core';
 
 const {Geolocation} = Plugins;
 
-export class TakePoint extends React.Component<FieldProps> {
+export type TakePointProps = FieldProps & {
+  onChange(evt: React.ChangeEvent<unknown>): unknown;
+};
+
+export class TakePoint extends React.Component<TakePointProps> {
   async takePoint() {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
@@ -46,7 +50,7 @@ export class TakePoint extends React.Component<FieldProps> {
       // which provides just the value of the input
       // It uses the string as a value, so we have to setFieldValue afterwards.
 
-      const cb: unknown = this.props.field.onChange(
+      const cb: unknown = this.props.onChange(
         (this.props.field.name as unknown) as React.ChangeEvent<unknown>
       );
       (cb as (s: string) => void)('TEMPORARY VALUE');
