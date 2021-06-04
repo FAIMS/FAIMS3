@@ -34,6 +34,23 @@ export class TakePoint extends React.Component<FieldProps> {
         latitude: coordinates.coords.latitude,
         longitude: coordinates.coords.longitude,
       };
+      // This is a hack! I intend to fix this by doing diffs
+      // of form.values at every render instead of listening to
+      // onChange, at the observation form level.
+      // Hence this is a temporary workaround until staging-refactor
+      // is done & merged.
+      // This works because Formik.tsx's handleChange handles
+      // 'eventOrPath': string | React.ChangeEvent<any>,
+      // then executeChange takes a string | React.ChangeEvent<any>
+      // to be compatible with 'React Native Web's onChangeText prop'
+      // which provides just the value of the input
+      // It uses the string as a value, so we have to setFieldValue afterwards.
+
+      const cb: unknown = this.props.field.onChange(
+        (this.props.field.name as unknown) as React.ChangeEvent<unknown>
+      );
+      (cb as (s: string) => void)('TEMPORARY VALUE');
+
       this.props.form.setFieldValue(this.props.field.name, pos);
     } catch (err) {
       console.error(err);
