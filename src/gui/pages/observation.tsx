@@ -22,22 +22,20 @@ import React, {useContext, useEffect} from 'react';
 import {
   AppBar,
   Box,
-  Breadcrumbs,
   Container,
   Typography,
   Paper,
   Tab,
   Button,
-  Link,
 } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
-import {Link as RouterLink, useHistory, useParams} from 'react-router-dom';
+import {useHistory, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel';
-
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import ObservationForm from '../components/observation/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
@@ -62,6 +60,15 @@ export default function Observation() {
   const globalState = useContext(store);
   const {dispatch} = globalState;
   const project_info = getProjectInfo(project_id);
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {
+      link: ROUTES.PROJECT + project_id,
+      title: project_info !== null ? project_info.name : project_id,
+    },
+    {title: observation_id},
+  ];
   const [revisions, setRevisions] = React.useState([] as string[]);
   useEffect(() => {
     listFAIMSObservationRevisions(project_id, observation_id)
@@ -100,20 +107,7 @@ export default function Observation() {
 
   return (
     <Container maxWidth="lg">
-      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to={ROUTES.INDEX}>
-            Index
-          </Link>
-          <Link component={RouterLink} to={ROUTES.PROJECT_LIST}>
-            Projects
-          </Link>
-          <Link component={RouterLink} to={ROUTES.PROJECT + project_id}>
-            {project_info !== null ? project_info.name : project_id}
-          </Link>
-          <Typography color="textPrimary">{observation_id}</Typography>
-        </Breadcrumbs>
-      </Box>
+      <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
           Update Observation
