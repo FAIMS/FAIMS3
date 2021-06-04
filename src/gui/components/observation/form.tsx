@@ -463,15 +463,16 @@ class ObservationForm extends React.Component<
     this.stageInterval = window.setInterval(main_save_func, STAGING_SAVE_CYCLE);
   }
 
-  interceptChange<E>(
-    handleChange: (evt: E) => unknown,
+  interceptChange<E, R>(
+    handleChange: (evt: E) => R,
     formProps: FormikProps<any>,
     fieldName: string,
-    evt: E & {currentTarget: {name: string}}
-  ): void {
-    handleChange(evt);
+    evt: E
+  ): ReturnType<typeof handleChange> {
+    const ret = handleChange(evt);
     this.touchedFields.add(fieldName);
     this.updateLastValues(formProps.values);
+    return ret;
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
@@ -499,26 +500,23 @@ class ObservationForm extends React.Component<
     }
     const formProps: FormikProps<{[key: string]: unknown}> =
       view.props.formProps;
+
     return (
       <Box mb={3} key={fieldName}>
         <Field
           component={Component} //e.g, TextField (default <input>)
           name={fieldName}
-          onChange={(evt: React.ChangeEvent<{name: string}>) =>
-            this.interceptChange(
-              formProps.handleChange,
-              formProps,
-              fieldName,
-              evt
-            )
+          onChange={(evt: React.ChangeEvent<unknown>) =>
+            this.interceptChange<
+              React.ChangeEvent<unknown>,
+              void | ((e: string | React.ChangeEvent<any>) => void)
+            >(formProps.handleChange, formProps, fieldName, evt)
           }
-          onBlur={(evt: React.FocusEvent<{name: string}>) =>
-            this.interceptChange(
-              formProps.handleBlur,
-              formProps,
-              fieldName,
-              evt
-            )
+          onBlur={(evt: React.FocusEvent<unknown>) =>
+            this.interceptChange<
+              React.ChangeEvent<unknown>,
+              void | ((e: string | React.ChangeEvent<any>) => void)
+            >(formProps.handleBlur, formProps, fieldName, evt)
           }
           value={formProps.values[fieldName]}
           // error={
