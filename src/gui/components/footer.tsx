@@ -25,7 +25,7 @@ import {store} from '../../store';
 import grey from '@material-ui/core/colors/grey';
 import InProgress from './ui/inProgress';
 import BoxTab from './ui/boxTab';
-
+import {COMMIT_VERSION} from '../../buildconfig';
 export default function Footer() {
   const globalState = useContext(store);
 
@@ -35,6 +35,7 @@ export default function Footer() {
         <Grid item xs={12} sm={6}>
           <code>
             Alpha: {packageJson.name} v{packageJson.version}
+            {COMMIT_VERSION}
           </code>
           <Box mt={2}>
             <Typography variant={'h6'}>Key</Typography>
