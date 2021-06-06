@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {Button, Grid, Box} from '@material-ui/core';
+import {Button, Grid, Box, ButtonGroup} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -351,10 +351,6 @@ class ObservationForm extends React.Component<
             severity: 'success',
           },
         });
-        // if a new observation, redirect back to the project page
-        this.props.is_fresh
-          ? this.props.history.push(ROUTES.PROJECT + this.props.project_id)
-          : '';
       })
       .catch(err => {
         const message = this.props.is_fresh
@@ -369,7 +365,30 @@ class ObservationForm extends React.Component<
         });
         console.warn(err);
         console.error('Failed to save data');
-      });
+      })
+      // Clear the staging area (Possibly after redirecting back to project page)
+      .then(() => this.nullCoalesceRevision())
+      .then(obsid_revid =>
+        setStagedData(
+          {},
+          this.lastStagingRev,
+          this.props.project_id,
+          this.reqireCurrentView(),
+          obsid_revid
+        ).catch(clean_error => {
+          // Errors with cleaning the staging area are not 'fatal' to the redirect
+          console.warn('failed to clear staging area', clean_error);
+        })
+      )
+      .then(() =>
+        // if a new observation, redirect to the new observation page to allow the user to rapidly add more records
+        // otherwise, redirect to the project page listing all observations
+        this.props.is_fresh
+          ? this.props.history.push(
+              ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
+            )
+          : this.props.history.push(ROUTES.PROJECT + this.props.project_id)
+      );
   }
 
   updateView(viewName: string) {
@@ -616,34 +635,39 @@ class ObservationForm extends React.Component<
                         </Alert>
                       )}
                       <br />
-                      <Button
-                        type="submit"
-                        color={formProps.isSubmitting ? 'default' : 'primary'}
-                        variant="contained"
-                        onClick={formProps.submitForm}
-                        disableElevation
-                        disabled={formProps.isSubmitting}
+                      <ButtonGroup
+                        color="primary"
+                        aria-label="contained primary button group"
                       >
-                        {formProps.isSubmitting
-                          ? !this.props.is_fresh
-                            ? 'Working...'
-                            : 'Working...'
-                          : !this.props.is_fresh
-                          ? '[Alpha] Perform Validation and mark as syncable (New Observation) '
-                          : '[Alpha] Perform Validation and mark as syncable (Existing Observation) '}
-                        {formProps.isSubmitting && (
-                          <CircularProgress
-                            size={24}
-                            style={{
-                              position: 'absolute',
-                              top: '50%',
-                              left: '50%',
-                              marginTop: -12,
-                              marginLeft: -12,
-                            }}
-                          />
-                        )}
-                      </Button>
+                        <Button
+                          type="submit"
+                          color={formProps.isSubmitting ? 'default' : 'primary'}
+                          variant="contained"
+                          onClick={formProps.submitForm}
+                          disableElevation
+                          disabled={formProps.isSubmitting}
+                        >
+                          {formProps.isSubmitting
+                            ? !this.props.is_fresh
+                              ? 'Working...'
+                              : 'Working...'
+                            : !this.props.is_fresh
+                            ? 'Update'
+                            : 'Save and new'}
+                          {formProps.isSubmitting && (
+                            <CircularProgress
+                              size={24}
+                              style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                marginTop: -12,
+                                marginLeft: -12,
+                              }}
+                            />
+                          )}
+                        </Button>
+                      </ButtonGroup>
                     </Grid>
                     <Grid item sm={6} xs={12}>
                       <BoxTab title={'Developer tool: form state'} />
@@ -654,6 +678,32 @@ class ObservationForm extends React.Component<
                         style={{overflowX: 'scroll'}}
                       >
                         <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                      </Box>
+                      <Box mt={3}>
+                        <BoxTab
+                          title={'Alpha info: Autosave, validation and syncing'}
+                        />
+                        <Box bgcolor={grey[200]} p={2}>
+                          <p>
+                            The data in this form are auto-saved locally within
+                            the app every 5 seconds. The data do not need to be
+                            valid, and you can return to this page to complete
+                            this observation on this device at any time.
+                          </p>
+                          <p>
+                            Once you are ready, hit the{' '}
+                            <Button
+                              variant="contained"
+                              size={'small'}
+                              color="primary"
+                              disableElevation
+                            >
+                              save and new{' '}
+                            </Button>{' '}
+                            button. This will firstly validate the data, and if
+                            valid, sync the observation to the remote server.
+                          </p>
+                        </Box>
                       </Box>
                     </Grid>
                   </Grid>

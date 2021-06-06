@@ -111,7 +111,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   <ListItemIcon>
                     <DescriptionIcon fontSize="small" />
                   </ListItemIcon>
-                  Observations
+                  Observations <TimelapseIcon color={'secondary'} />
                 </MenuItem>
               </MenuList>
             </Paper>
