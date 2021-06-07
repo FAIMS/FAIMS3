@@ -7,7 +7,7 @@ const STAGING_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
   project_id: ProjectID;
-  record_id: RecordID;
+  record_id: RecordID | null;
   revision_id: RevisionID | null;
 };
 
@@ -216,13 +216,16 @@ class RecordStagingState {
     this.data = null;
     try {
       // TODO: Multiple view support
-      const data =
-        (await getStagedData(
-          this.props.project_id,
-          loadedProps.view_name,
-          this.props.record_id,
-          loadedProps.revision_id
-        )) || {};
+      const result = await getStagedData(
+        this.props.project_id,
+        loadedProps.view_name,
+        this.props.record_id,
+        loadedProps.revision_id
+      );
+      this.last_revision = result?._rev || null;
+
+      const data = result || {};
+
       if (this.fetch_sequence !== uninterrupted_fetch_sequence) {
         return; // Assume another fetch has taken control, don't run data_listener errors
       }
