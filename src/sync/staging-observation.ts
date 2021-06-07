@@ -224,7 +224,7 @@ class RecordStagingState {
       );
       this.last_revision = result?._rev || null;
 
-      const data = result || {};
+      const data = result?.fields || {};
 
       if (this.fetch_sequence !== uninterrupted_fetch_sequence) {
         return; // Assume another fetch has taken control, don't run data_listener errors

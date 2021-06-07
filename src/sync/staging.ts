@@ -78,7 +78,7 @@ export async function setStagedData(
   );
   try {
     const put_doc: PouchDB.Core.PutDocument<SavedView> = {
-      ...new_data,
+      fields: new_data,
       _id: _id,
     };
     if (_rev !== null) put_doc._rev = _rev;

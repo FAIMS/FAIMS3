@@ -22,6 +22,6 @@ export interface SavedView {
   // ID: active_id + '/' + view_name
   // OR: active_id + '/' + view_name + '/' + existing.record + '/' + existing.revision
   _id: string;
-  // Fields
-  [key: string]: unknown;
+  // Fields (may itself contain an _id)
+  fields: {[key: string]: unknown};
 }
