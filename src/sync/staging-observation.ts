@@ -2,20 +2,28 @@ import {FormikValues} from 'formik';
 import {getStagedData, setStagedData} from './staging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
+const STAGING_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
   project_id: string;
   observation_id: string;
+  revision_id?: string;
+  is_fresh: boolean;
+};
+
+/**
+ * Important properties that might not be present
+ * until .start() is called. This is mainly used
+ * in _fetchData and _saveData
+ */
+type LoadableProps = {
   revision_id: string;
   view_name: string;
-  is_fresh: boolean;
 };
 
 type StagedData = {
   [fieldName: string]: unknown;
 };
-
-//loadedStagedData|stageInterval|staging|touchedFields|lastStagingRev|consequtiveStagingSaveErrors
 
 /**
  * Intermediary between React and Pouch Staging area.
@@ -26,8 +34,13 @@ type StagedData = {
  *
  * Unless you open the same observation on 2 tabs, it's
  * not possible for the pouch to out of sync with this
+ *
+ *
+ * This class has an invariant that either _fetchData function is running, or
+ * this.data !== null, or this.fetch_error !== null
+ * This invariant doesn't hold before start() or after stop()
  */
-export class ObservationStagingState {
+class ObservationStagingState {
   // Up-to-date data direct from formik
   // this is kept in-sync with formik. The only reason
   // to duplicate the data is to keep track of which fields
@@ -64,16 +77,13 @@ export class ObservationStagingState {
    */
   touched_fields = new Set<string>();
 
-  // Incrementally increasing revision ID from staging docs.
-  // Reset when current observation/project changes
-  last_revision: null | string = null;
-
   /**
    * (Incrementally increasing) revision ID from staging docs
+   * Reset when current observation/project changes
    * Used to avoid collision-avoid lookup before setStagingData
    * Whenever setStagingData is called, save the revision to this.
    */
-  rev: null | string = null;
+  last_revision: null | string = null;
 
   // +1 every time setStagingData errors out. Set to 0 when it doesn't error.
   errors = 0;
@@ -81,7 +91,13 @@ export class ObservationStagingState {
   /**
    * First error in the last sequence of errors to occur.
    */
-  last_error: null | {} = null;
+  save_error: null | {} = null;
+
+  /**
+   * Last time _fetchData was called, if it produced an error,
+   * this is said error.
+   */
+  fetch_error: null | {} = null;
 
   // Null if the form is in an indeterminate state
   // e.g. currentView is not loaded yet.
@@ -92,13 +108,90 @@ export class ObservationStagingState {
   }
 
   /**
+   * Starts any timeouts/timers that need to be started,
+   * *Starts fetching staging data* (use getInitialValues() after calling this)
+   */
+  start(loadedProps: LoadableProps) {
+    this._fetchData(loadedProps);
+
+    this.interval = window.setInterval(
+      this._saveData.bind(this, loadedProps),
+      STAGING_SAVE_CYCLE
+    );
+  }
+
+  /**
+   * Stops any pending promises/timeouts, invalidating this class
+   * Call this before the owning react component unmounts
+   */
+  stop() {
+    this.fetch_sequence += 1;
+    if (this.interval !== null) {
+      window.clearInterval(this.interval);
+    }
+  }
+
+  /**
    * A function executed when an observation form renders with the Formik form showing:
    * <Formik>{values => renderHook(values); return (<other elements>)}</Formik>
    *
    * @param values FormikProps.values object, retrieved from the First argument
    *               of the callback to the Formik element's children:
    */
-  async renderHook(values: FormikValues) {}
+  renderHook(values: FormikValues) {
+    if (this.fetch_error === null && this.data !== null) {
+      this.data = values;
+    }
+  }
+
+  /**
+   * Creates a listener that is compatible with onChange/onBlur of <Field>s with components
+   * that are native HTML components (i.e. components that do call onChange/onBlur and have
+   * said listeners on their props)
+   *
+   * The purpose of this hook is to run an inner handler (from Formik) but also to
+   * ensure that any blur/focus event adds the element to the touched elements list.
+   *
+   * @param innerHandler Formik's handleChange/handleBlur function to call with the event
+   * @param fieldName Name of the current field this listener should be for
+   * @returns A listener to pass to a <Field> whos component has onChange/onBlur events
+   */
+  createNativeFieldHook<E extends React.SyntheticEvent<{name: string}>, R>(
+    innerHandler: (evt: E) => R,
+    fieldName: string
+  ): (evt: E) => R {
+    return (evt: E): R => {
+      const ret = innerHandler(evt);
+      this.touched_fields.add(fieldName);
+      return ret;
+    };
+  }
+
+  /**
+   * Creates a listener that is compatible with stageValue of <Field>s with components
+   * that are custom FAIMS components.
+   *
+   * The purpose of this hook is to set the value in the formik form, but also to
+   * ensure that event adds the element to the touched elements list.
+   *
+   * @param innerHandler Formik's handleChange/handleBlur function to call with the event
+   * @param fieldName Name of the current field this listener should be for
+   * @returns A listener to pass to a <Field> whos component has onChange/onBlur events
+   */
+  createCustomFieldHook(
+    /* setFieldValue straight from FormikHelpers<any> */
+    setFieldValue: (
+      field: string,
+      value: any,
+      shouldValidate?: boolean | undefined
+    ) => void,
+    fieldName: string
+  ): (value: any) => void {
+    return (value: any) => {
+      setFieldValue(fieldName, value);
+      this.touched_fields.add(fieldName);
+    };
+  }
 
   /**
    * Allows the _fetchData to be interrupted.
@@ -111,16 +204,22 @@ export class ObservationStagingState {
   /**
    * Called from within this class, fetches the latest data from the staging area
    * puts it into data and then resolves any promises waiting for said data.
+   *
+   * This should be called whenever the ID of the staging document changes:
+   * this ID is made from the project id, (with listing id), observation id and
+   * possibly the view (View-specific staging not implemented yet, TBD)
+   * So if the project changes, this _fetchData() should be run.
+   * This should also be run at construction of this class.
    */
-  async _fetchData(): Promise<void> {
+  async _fetchData(loadedProps: LoadableProps): Promise<void> {
     const uninterrupted_fetch_sequence = this.fetch_sequence;
     this.data = null;
     try {
       // TODO: Multiple view support
       const data =
-        (await getStagedData(this.props.project_id, this.props.view_name, {
+        (await getStagedData(this.props.project_id, loadedProps.view_name, {
           _id: this.props.observation_id,
-          _rev: this.props.revision_id,
+          _rev: loadedProps.revision_id,
         })) || {};
       if (this.fetch_sequence !== uninterrupted_fetch_sequence) {
         return; // Assume another fetch has taken control, don't run data_listener errors
@@ -133,6 +232,7 @@ export class ObservationStagingState {
       this.data_listeners = [];
       data_listeners.forEach(f => f[0].call(this, data));
     } catch (err) {
+      this.fetch_error = err;
       // Reject any promises waiting for data
       const data_listeners = this.data_listeners;
       this.data_listeners = [];
@@ -158,6 +258,8 @@ export class ObservationStagingState {
     // Wait for data to exist before returning:
     if (this.data !== null) {
       return with_data(this.data);
+    } else if (this.fetch_error !== null) {
+      throw this.fetch_error;
     } else {
       return new Promise((resolve, reject) => {
         this.data_listeners.push([resolve, reject]);
@@ -168,31 +270,45 @@ export class ObservationStagingState {
   /**
    * Pushes the currently touched values into the staging DB
    */
-  async _saveData(): Promise<void> {
+  async _saveData(loadedProps: LoadableProps): Promise<void> {
+    if (this.is_saving) {
+      console.warn('Last stage save took longer than ', STAGING_SAVE_CYCLE);
+      // Leave thes existing running _saveData function to finish its work
+      // Doesn't schedule any more saves to happen
+      return;
+    }
+    this.saveListener(true);
     this.is_saving = true;
     let result;
     try {
+      const to_save = await this._touchedData();
       result = await setStagedData(
-        await this._touchedData(),
+        to_save,
         this.last_revision,
         this.props.project_id,
-        this.props.view_name,
+        loadedProps.view_name,
         {
           _id: this.props.observation_id,
-          _rev: this.props.revision_id,
+          _rev: loadedProps.revision_id,
         }
       );
 
       if (result.ok) {
         this.last_revision = result.rev;
         this.errors = 0;
-        this.savedListener();
+        this.saveListener(true);
+      } else {
+        this.errors += 1;
+        this.save_error = Error('Saving to staging returned not OK');
+        if (this.errors === MAX_CONSEQUTIVE_SAVE_ERRORS) {
+          this.saveListener(this.save_error);
+        }
       }
     } catch (err) {
       this.errors += 1;
-      this.last_error = err;
+      this.save_error = err;
       if (this.errors === MAX_CONSEQUTIVE_SAVE_ERRORS) {
-        this.errorListener(this.lastError);
+        this.saveListener(this.save_error!);
       }
     }
     this.is_saving = false;
@@ -207,19 +323,20 @@ export class ObservationStagingState {
   }
 
   /**
-   * Set in constructor, called when MAX_CONSEQUTIVE_SAVE_ERRORS reached
+   * Set in constructor, called when saving starts (true), finishes (false), or
+   * (after MAX_CONSEQUTIVE_SAVE_ERRORS reached) errors out ({error_object})
    */
-  errorListener: (lastError: {}) => unknown;
-
-  /**
-   * Set in constructor, called when saving went OK
-   */
-  savedListener: () => unknown;
+  saveListener: (val: boolean | {}) => unknown = () => {};
 
   /**
    * Called from ObservationForm.componentDidUpdate,
    * this determines if staging data must be changed/refreshed
    * and does so.
+   *
+   * setInitialValues of your form must be run after this function,
+   * i.e. while this runs, initialValues should be non-existant, until
+   * this function returns. At which point, you may combine existing data
+   * and data from this.getInitialValues() to give to Formik.
    *
    * Note: To avoid the staged values constantly re-fetching themselves,
    *       only trigger this when any of the following props of your
@@ -230,13 +347,15 @@ export class ObservationStagingState {
    *
    * This may trigger a change of state of the ObservationForm
    */
-  observationChangeHook(
-    observation_id: string,
-    revision_id: string,
-    is_fresh: boolean
-  ) {
+  observationChangeHook(newProps: RelevantProps, loadedProps: LoadableProps) {
     this.data = null;
-    this.rev = null;
-    this.touchedFields.clear();
+    this.last_revision = null;
+    this.touched_fields.clear();
+
+    this.props = newProps;
+
+    this._fetchData(loadedProps);
   }
 }
+
+export default ObservationStagingState;
