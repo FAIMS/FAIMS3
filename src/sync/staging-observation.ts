@@ -1,14 +1,14 @@
 import {FormikValues} from 'formik';
 import {getStagedData, setStagedData} from './staging';
+import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const STAGING_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
-  project_id: string;
-  observation_id: string;
-  revision_id?: string;
-  is_fresh: boolean;
+  project_id: ProjectID;
+  record_id: RecordID;
+  revision_id: RevisionID | null;
 };
 
 /**
@@ -32,7 +32,7 @@ type StagedData = {
  * (due to Formik) this stores a copy of the staging data.
  * (Just for this form, it's not much)
  *
- * Unless you open the same observation on 2 tabs, it's
+ * Unless you open the same record on 2 tabs, it's
  * not possible for the pouch to out of sync with this
  *
  *
@@ -40,7 +40,7 @@ type StagedData = {
  * this.data !== null, or this.fetch_error !== null
  * This invariant doesn't hold before start() or after stop()
  */
-class ObservationStagingState {
+class RecordStagingState {
   // Up-to-date data direct from formik
   // this is kept in-sync with formik. The only reason
   // to duplicate the data is to keep track of which fields
@@ -79,7 +79,7 @@ class ObservationStagingState {
 
   /**
    * (Incrementally increasing) revision ID from staging docs
-   * Reset when current observation/project changes
+   * Reset when current record/project changes
    * Used to avoid collision-avoid lookup before setStagingData
    * Whenever setStagingData is called, save the revision to this.
    */
@@ -132,7 +132,7 @@ class ObservationStagingState {
   }
 
   /**
-   * A function executed when an observation form renders with the Formik form showing:
+   * A function executed when an record form renders with the Formik form showing:
    * <Formik>{values => renderHook(values); return (<other elements>)}</Formik>
    *
    * @param values FormikProps.values object, retrieved from the First argument
@@ -206,7 +206,7 @@ class ObservationStagingState {
    * puts it into data and then resolves any promises waiting for said data.
    *
    * This should be called whenever the ID of the staging document changes:
-   * this ID is made from the project id, (with listing id), observation id and
+   * this ID is made from the project id, (with listing id), record id and
    * possibly the view (View-specific staging not implemented yet, TBD)
    * So if the project changes, this _fetchData() should be run.
    * This should also be run at construction of this class.
@@ -217,10 +217,12 @@ class ObservationStagingState {
     try {
       // TODO: Multiple view support
       const data =
-        (await getStagedData(this.props.project_id, loadedProps.view_name, {
-          _id: this.props.observation_id,
-          _rev: loadedProps.revision_id,
-        })) || {};
+        (await getStagedData(
+          this.props.project_id,
+          loadedProps.view_name,
+          this.props.record_id,
+          loadedProps.revision_id
+        )) || {};
       if (this.fetch_sequence !== uninterrupted_fetch_sequence) {
         return; // Assume another fetch has taken control, don't run data_listener errors
       }
@@ -287,10 +289,8 @@ class ObservationStagingState {
         this.last_revision,
         this.props.project_id,
         loadedProps.view_name,
-        {
-          _id: this.props.observation_id,
-          _rev: loadedProps.revision_id,
-        }
+        this.props.record_id,
+        loadedProps.revision_id
       );
 
       if (result.ok) {
@@ -316,7 +316,7 @@ class ObservationStagingState {
 
   /**
    * Called by setInitialValues, this function retrieves any existing
-   * data from the staging area for this current observation/revision
+   * data from the staging area for this current record/revision
    */
   async getInitialValues(): Promise<StagedData> {
     return this._touchedData();
@@ -329,7 +329,7 @@ class ObservationStagingState {
   saveListener: (val: boolean | {}) => unknown = () => {};
 
   /**
-   * Called from ObservationForm.componentDidUpdate,
+   * Called from RecordForm.componentDidUpdate,
    * this determines if staging data must be changed/refreshed
    * and does so.
    *
@@ -341,13 +341,13 @@ class ObservationStagingState {
    * Note: To avoid the staged values constantly re-fetching themselves,
    *       only trigger this when any of the following props of your
    *       component changes:
-   *           observation_id, revision_id, is_fresh
+   *           record_id, revision_id
    *       Or other props that change which data the staging area
    *       should fetch
    *
-   * This may trigger a change of state of the ObservationForm
+   * This may trigger a change of state of the RecordForm
    */
-  observationChangeHook(newProps: RelevantProps, loadedProps: LoadableProps) {
+  recordChangeHook(newProps: RelevantProps, loadedProps: LoadableProps) {
     this.data = null;
     this.last_revision = null;
     this.touched_fields.clear();
@@ -358,4 +358,4 @@ class ObservationStagingState {
   }
 }
 
-export default ObservationStagingState;
+export default RecordStagingState;

@@ -22,7 +22,7 @@ import React from 'react';
 import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
+import {Formik, Form, Field, FormikProps} from 'formik';
 
 import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
@@ -37,26 +37,19 @@ import {ViewComponent} from '../../view';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {getStagedData, setStagedData} from '../../../sync/staging';
 import {getCurrentUserId} from '../../../users';
 import BoxTab from '../ui/boxTab';
 import {ActionType} from '../../../actions';
 import {store} from '../../../store';
 import AutoSave from './autosave';
 import * as ROUTES from '../../../constants/routes';
+import RecordStagingState from '../../../sync/staging-observation';
 
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
   revision_id: RevisionID | null;
 };
-
-// After this many errors happen with from the staging db
-// on consecutive calls, the error is bubbled up to this
-// FormState's stagingError.
-const MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS = 5;
-
-const STAGING_SAVE_CYCLE = 5000;
 
 type RecordFormState = {
   stagingError: string | null;
@@ -91,59 +84,40 @@ class RecordForm extends React.Component<
   RecordFormProps & RouteComponentProps,
   RecordFormState
 > {
-  // Staging data that is ONLY updated from setUISpec, used in getInitialValues
-  // that means this ISN'T up-to-date with the data in the form.
-  // Reset when current record/project changes
-  loadedStagedData: null | {
-    [fieldName: string]: unknown;
-  } = null;
-
-  // To avoid staging saves that take more than 2 seconds overlapping,
-  // the second one stops early if it finds this true,
-  // (Set by any running staging save)
-  staging = false;
-
-  // Return from setInterval, when the staging save is running.
-  stageInterval: null | number = null;
-
-  // Keeps track of any fields that have changed from their initial values
-  // This is different from formik's FormikProps.touched, in that it tracks
-  // when the values change before the blur event (i.e. listens for onChange AND onBlur)
-  // Used for determining what to save to the staging area.
-  // Starts out as empty set even if there was data loaded from the staging area.
-  // Reset when current record/project changes
-  touchedFields = new Set<string>();
-
-  // Incrementally increasing revision ID from staging docs.
-  // Reset when current record/project changes
-  lastStagingRev: null | string = null;
-
-  // +1 every time setStagingData errors out. Set to 0 when it doesn't error.
-  consequtiveStagingSaveErrors = 0;
+  staging: RecordStagingState;
 
   uiSpec: ProjectUIModel | null = null;
 
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
 
-  componentDidUpdate(prevProps: RecordFormProps) {
+  async componentDidUpdate(prevProps: RecordFormProps) {
+    if (prevProps.project_id !== this.props.project_id) {
+      // We need to re-fetch the view name if the project changed
+      // Although theoretically this shouldn't happen with 1 instance of a form.
+      this.uiSpec = null;
+    }
+
     if (
+      prevProps.project_id !== this.props.project_id ||
       prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
-        this.state.currentRev !== this.props.revision_id) ||
-      prevProps.is_fresh !== this.props.is_fresh
+        this.state.currentRev !== this.props.revision_id)
     ) {
-      this.loadedStagedData = null;
-      this.touchedFields.clear();
-      this.lastStagingRev = null;
-
+      // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({initialValues: null});
-      this.setStagedValues().then(this.setInitialValues);
+      // Re-initialize basically everything.
+      this.formChanged(true);
     }
   }
 
   constructor(props: RecordFormProps & RouteComponentProps) {
     super(props);
+    this.staging = new RecordStagingState({
+      record_id: this.props.record_id,
+      revision_id: this.props.revision_id,
+      project_id: this.props.project_id,
+    });
     this.state = {
       currentView: null,
       currentRev: null,
@@ -160,7 +134,37 @@ class RecordForm extends React.Component<
     this.getFields = this.getFields.bind(this);
   }
 
-  async componentDidMount() {
+  componentDidMount() {
+    // On mount, staging.start() must be called, so give this false:
+    this.formChanged(false);
+  }
+
+  saveListener(val: boolean | {}) {
+    if (val === true) {
+      // Start saving
+      this.setState({is_saving: true});
+    } else if (val === false) {
+      // Finished saving successfully
+      this.setState({is_saving: false, last_saved: new Date()});
+    } else {
+      // Error occurred while saving
+      // Heuristically determine a nice user-facing error
+      const error_message =
+        (val as {message?: string}).message || val.toString();
+      console.error('saveListener', val);
+
+      this.setState({is_saving: false, stagingError: error_message});
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Could not load previous data: ' + error_message,
+          severity: 'warnings',
+        },
+      });
+    }
+  }
+
+  async formChanged(staging_area_started_already: boolean) {
     try {
       await Promise.all([this.setUISpec(), this.setLastRev()]);
     } catch (err) {
@@ -178,18 +182,27 @@ class RecordForm extends React.Component<
       return;
     }
     try {
-      await this.setStagedValues();
+      // these come after setUISpec & setLastRev has set view_name & revision_id these to not null
+      const currentView = this.reqireCurrentView();
+      const currentRev = this.state.currentRev!;
+
+      // If the staging area .start() has already been called,
+      // The proper way to change the record/revision/etc is this
+      // (saveListener is already bound at this point)
+      if (staging_area_started_already) {
+        this.staging.recordChangeHook(this.props, {
+          view_name: currentView,
+          revision_id: currentRev,
+        });
+      } else {
+        this.staging.saveListener = this.saveListener.bind(this);
+        await this.staging.start({
+          view_name: currentView,
+          revision_id: currentRev,
+        });
+      }
     } catch (err) {
-      console.error('setStagedValues error', err);
-      this.context.dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Could not load previous data: ' + err.message,
-          severity: 'warnings',
-        },
-      });
-      // Empty staged data, this isn't as severe if the staged data can't be loaded.
-      this.loadedStagedData = {};
+      console.error('rare staging error', err);
     }
     try {
       await this.setInitialValues();
@@ -213,9 +226,7 @@ class RecordForm extends React.Component<
         (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]
       );
     }
-    if (this.stageInterval !== null) {
-      clearInterval(this.stageInterval);
-    }
+    this.staging.stop();
   }
 
   async setUISpec() {
@@ -232,88 +243,62 @@ class RecordForm extends React.Component<
     });
   }
 
-  async setStagedValues() {
-    const uiSpec = this.requireUiSpec();
-    // Load data from staging DB
-    let loadedStagedData: {[fn: string]: unknown} = {};
-
-    const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
-      getStagedData(
-        this.props.project_id,
-        viewName,
-        this.props.record_id,
-        this.props.revision_id
-      ).then(staged_data_restore => {
-        loadedStagedData = {
-          ...loadedStagedData,
-          ...(staged_data_restore || {}),
-        };
-      })
-    );
-
-    // Wait for all data to load from staging DB before setting this.staged not null
-    await Promise.all(viewStageLoaders);
-    this.loadedStagedData = loadedStagedData;
-  }
-
   async setLastRev() {
     if (
       this.props.revision_id === undefined &&
       this.state.currentRev === null &&
-      !this.props.is_fresh
+      this.props.revision_id !== null
     ) {
-      const latest_observation = await lookupFAIMSDataID(
-        this.props.project_id,
-        this.props.observation_id
-      );
-      if (latest_observation === null) {
-        this.setState({
-          stagingError: `Could not find data for observation ${this.props.observation_id}`,
-        });
-        this.context.dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message:
-              'Could not load existing observation: ' +
-              this.props.observation_id,
-            severity: 'warnings',
-          },
-        });
-      } else {
-        this.setState({currentRev: latest_observation._rev});
-      }
-    }
-
-  async setInitialValues() {
-    /***
-     * Formik requires a single object for initialValues, collect these from the
-     * ui schema or from the database
-     */
-    let existingData: {
-      [fieldName: string]: unknown;
-    };
-    if (this.props.revision_id === null) {
-      existingData = {};
-    } else {
-      const existing_record = await getFullRecordData(
+      const latest_record = await getFullRecordData(
         this.props.project_id,
         this.props.record_id,
         this.props.revision_id
       );
-      if (existing_record === null) {
-        existingData = {};
+      if (latest_record === null) {
+        this.setState({
+          stagingError: `Could not find data for record ${this.props.record_id}`,
+        });
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Could not load existing record: ' + this.props.record_id,
+            severity: 'warnings',
+          },
+        });
       } else {
-        existingData = existing_record.data;
+        this.setState({currentRev: latest_record.data._rev});
       }
     }
+  }
+
+  async setInitialValues() {
+    /***
+     * Formik requires a single object for initialValues, collect these from the
+     * (in order high priority to last resort): staging area, database, ui schema
+     */
+    const database_data =
+      this.props.revision_id === null
+        ? {}
+        : (
+            await getFullRecordData(
+              this.props.project_id,
+              this.props.record_id,
+              this.props.revision_id
+            )
+          )?.data || {};
+
+    const staged_data = await this.staging.getInitialValues();
 
     const fieldNames = this.getFieldNames();
     const fields = this.getFields();
-    const initialValues: {[key: string]: any} = {};
+
+    const initialValues: {[key: string]: any} = {
+      _id: this.props.record_id!,
+    };
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] = firstDefinedFromList([
-        this.loadedStagedData![fieldName],
-        existingData?.[fieldName],
+        staged_data[fieldName],
+        database_data[fieldName],
         fields[fieldName]['initialValue'],
       ]);
     });
@@ -408,17 +393,9 @@ class RecordForm extends React.Component<
       })
       // Clear the staging area (Possibly after redirecting back to project page)
       .then(() =>
-        setStagedData(
-          {},
-          this.lastStagingRev,
-          this.props.project_id,
-          this.reqireCurrentView(),
-          this.props.record_id,
-          this.props.revision_id
-        ).catch(clean_error => {
-          // Errors with cleaning the staging area are not 'fatal' to the
-          // redirect
-          console.warn('failed to clear staging area', clean_error);
+        this.staging.clear({
+          view_name: this.reqireCurrentView(),
+          revision_id: this.state.currentRev!,
         })
       )
       .then(() => {
@@ -446,96 +423,6 @@ class RecordForm extends React.Component<
     } else {
       throw Error(`No view ${viewName}`);
     }
-  }
-
-  lastValues: FormikValues | null = null;
-
-  updateLastValues(values: FormikValues) {
-    this.lastValues = values;
-    if (this.stageInterval !== null) {
-      // It is now OK to clal updateLastValues whenever,
-      // just to update the formikProps.values
-      return;
-    }
-
-    /*
-        This main_save_func is run every 2 seconds, when this.lastValues !== null
-        It saves this.lastValues to the staging DB.
-
-        Any errors that occur within are pushed to this.state.stagingArea,
-        but only after MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS errors occurred in consequitive invokations
-        */
-    const main_save_func = () => {
-      if (this.staging) {
-        console.warn('Last stage save took longer than ', STAGING_SAVE_CYCLE);
-        return;
-      }
-      this.staging = true;
-      // These may occur after the user switches tabs.
-      if (this.loadedStagedData === null) {
-        console.debug('Attempt to save whilst UI is loading something else');
-        return;
-      }
-      const loadedStagedData = this.loadedStagedData;
-      if (this.state.currentView === null) {
-        console.debug('Attempt to save whilst UI is loading something else');
-        return;
-      }
-
-      this.touchedFields.forEach(fieldName => {
-        const fieldValue = this.lastValues![fieldName];
-        if (fieldValue !== undefined) {
-          loadedStagedData[fieldName] = fieldValue;
-        } else {
-          console.warn("Formik didn't give a value for ", fieldName);
-        }
-      });
-
-      this.setState({is_saving: true});
-      setStagedData(
-        loadedStagedData,
-        this.lastStagingRev,
-        this.props.project_id,
-        this.reqireCurrentView(),
-        this.props.record_id,
-        this.props.revision_id
-      )
-        .then(set_ok => {
-          this.lastStagingRev = set_ok.rev;
-          this.consequtiveStagingSaveErrors = 0;
-          this.setTimeout(() => {
-            this.setState({is_saving: false, last_saved: new Date()});
-          }, 1000);
-        })
-        .catch(err => {
-          this.consequtiveStagingSaveErrors += 1;
-          if (
-            this.consequtiveStagingSaveErrors ===
-            MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
-          ) {
-            this.setState({
-              stagingError: JSON.stringify(err),
-              is_saving: false,
-            });
-          }
-        })
-        .finally(() => {
-          this.staging = false;
-        });
-    };
-
-    this.stageInterval = window.setInterval(main_save_func, STAGING_SAVE_CYCLE);
-  }
-
-  interceptChange<E>(
-    handleChange: (evt: E) => unknown,
-    formProps: FormikProps<any>,
-    fieldName: string,
-    evt: E & {currentTarget: {name: string}}
-  ): void {
-    handleChange(evt);
-    this.touchedFields.add(fieldName);
-    this.updateLastValues(formProps.values);
   }
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
@@ -568,22 +455,18 @@ class RecordForm extends React.Component<
         <Field
           component={Component} //e.g, TextField (default <input>)
           name={fieldName}
-          onChange={(evt: React.ChangeEvent<{name: string}>) =>
-            this.interceptChange(
-              formProps.handleChange,
-              formProps,
-              fieldName,
-              evt
-            )
-          }
-          onBlur={(evt: React.FocusEvent<{name: string}>) =>
-            this.interceptChange(
-              formProps.handleBlur,
-              formProps,
-              fieldName,
-              evt
-            )
-          }
+          onChange={this.staging.createNativeFieldHook<
+            React.ChangeEvent<{name: string}>,
+            ReturnType<typeof formProps.handleChange>
+          >(formProps.handleChange, fieldName)}
+          onBlur={this.staging.createNativeFieldHook<
+            React.FocusEvent<{name: string}>,
+            ReturnType<typeof formProps.handleBlur>
+          >(formProps.handleBlur, fieldName)}
+          stageValue={this.staging.createCustomFieldHook(
+            formProps.setFieldValue,
+            fieldName
+          )}
           value={formProps.values[fieldName]}
           // error={
           //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
@@ -653,7 +536,7 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              this.updateLastValues(formProps.values);
+              this.staging.renderHook(formProps.values);
               return (
                 <Form>
                   <Grid container spacing={2}>
