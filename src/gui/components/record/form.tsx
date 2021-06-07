@@ -61,6 +61,7 @@ const STAGING_SAVE_CYCLE = 5000;
 type RecordFormState = {
   stagingError: string | null;
   currentView: string | null;
+  currentRev: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
   last_saved: Date;
@@ -128,7 +129,9 @@ class RecordForm extends React.Component<
   componentDidUpdate(prevProps: RecordFormProps) {
     if (
       prevProps.record_id !== this.props.record_id ||
-      prevProps.revision_id !== this.props.revision_id
+      (prevProps.revision_id !== this.props.revision_id &&
+        this.state.currentRev !== this.props.revision_id) ||
+      prevProps.is_fresh !== this.props.is_fresh
     ) {
       this.loadedStagedData = null;
       this.touchedFields.clear();
@@ -143,6 +146,7 @@ class RecordForm extends React.Component<
     super(props);
     this.state = {
       currentView: null,
+      currentRev: null,
       stagingError: null,
       initialValues: null,
       is_saving: false,
@@ -158,9 +162,9 @@ class RecordForm extends React.Component<
 
   async componentDidMount() {
     try {
-      await this.setUISpec();
+      await Promise.all([this.setUISpec(), this.setLastRev()]);
     } catch (err) {
-      console.error('setUISpec error', err);
+      console.error('setUISpec/setLastRev error', err);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -251,6 +255,34 @@ class RecordForm extends React.Component<
     await Promise.all(viewStageLoaders);
     this.loadedStagedData = loadedStagedData;
   }
+
+  async setLastRev() {
+    if (
+      this.props.revision_id === undefined &&
+      this.state.currentRev === null &&
+      !this.props.is_fresh
+    ) {
+      const latest_observation = await lookupFAIMSDataID(
+        this.props.project_id,
+        this.props.observation_id
+      );
+      if (latest_observation === null) {
+        this.setState({
+          stagingError: `Could not find data for observation ${this.props.observation_id}`,
+        });
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message:
+              'Could not load existing observation: ' +
+              this.props.observation_id,
+            severity: 'warnings',
+          },
+        });
+      } else {
+        this.setState({currentRev: latest_observation._rev});
+      }
+    }
 
   async setInitialValues() {
     /***
