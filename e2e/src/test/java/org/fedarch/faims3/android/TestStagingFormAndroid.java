@@ -51,7 +51,7 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
   public void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  super.setup(false, "Test staging new Lake Mungo form (Android)");
+	  super.setup(false, "Test staging new Test Project observation form (Android)");
   }
 
   /**
