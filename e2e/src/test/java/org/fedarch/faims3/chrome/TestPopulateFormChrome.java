@@ -76,7 +76,7 @@ public class TestPopulateFormChrome extends ChromeTest implements TestPopulateFo
 			throw e;
 		}
 		TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true,
-				"Android - TestPopulateForm.testNoErrors() passed!");
+				"Chrome - TestPopulateForm.testNoErrors() passed!");
 	}
 
 	@AfterClass
