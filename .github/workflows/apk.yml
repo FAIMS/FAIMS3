@@ -98,9 +98,10 @@ jobs:
           npm run webapp-build
           npm run app-update
       # https://capacitorjs.com/docs/android
-      - run: npx cap sync android
-      - run: npx cap copy
-      - run: npx cap update android
+      - run: npx cap sync --deployment android
+        # Sync runs copy then update
+      #- run: npx cap copy android
+      # - run: npx cap update android
       
       # Builds for debian, presently out of scope.
 
