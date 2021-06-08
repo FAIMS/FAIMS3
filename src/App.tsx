@@ -27,6 +27,7 @@ import Footer from './gui/components/footer';
 import {Index} from './gui/pages';
 import {SignUp} from './gui/pages/signup';
 import {SignIn} from './gui/pages/signin';
+import AboutBuild from './gui/pages/about-build';
 import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
@@ -115,6 +116,7 @@ export class App extends React.Component<AppProps, AppState> {
                 component={Observation}
               />
               <Route exact path="/" component={Index} />
+              <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
               <Route component={NotFound404} />
             </Switch>
             <Footer />
