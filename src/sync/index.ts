@@ -780,6 +780,7 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
+  PouchDB.debug.enable('*');
   await setupExampleActive(active_db);
   console.log('adding directory test data');
 
