@@ -4,24 +4,24 @@ name: Nightly Compile APK to BrowserStack
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
-on:
-  # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule
-  # This is UTC. For dev timing look at https://www.worldtimebuddy.com/?pl=1&lid=2147714,100,2063523&h=2147714&hf=1
-  # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
-  # Note: The schedule event can be delayed during periods of high loads of GitHub Actions workflow runs. High load times include the start of every hour. To decrease the chance of delay, schedule your workflow to run at a different time of the hour.
-  schedule:
-    - cron: '39 22 * * *'
+# on:
+#   # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule
+#   # This is UTC. For dev timing look at https://www.worldtimebuddy.com/?pl=1&lid=2147714,100,2063523&h=2147714&hf=1
+#   # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
+#   # Note: The schedule event can be delayed during periods of high loads of GitHub Actions workflow runs. High load times include the start of every hour. To decrease the chance of delay, schedule your workflow to run at a different time of the hour.
+#   schedule:
+#     - cron: '39 22 * * 2-6'
   
 # It's great having an on schedule, but bloody impossible to test.
-# on:
-#   # Trigger the workflow on push or pull request,
-#   # but only for the main branch
-#   push:
-#     branches:
-#       - main
-#   pull_request:
-#     branches:
-#       - main
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+      - github-actions
+  pull_request:
+    branches:
+      - github-actions
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -88,12 +88,19 @@ jobs:
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2.0.6
-      
-      - run: npm install
-      - run: npm run build
+      - name: Building webapp
+        run: |
+          export REACT_APP_PRODUCTION_BUILD=true
+          export REACT_APP_DIRECTORY_HOST=alpha.db.faims.edu.au
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          git clean -xfd
+          npm ci
+          npm run webapp-build
+          npm run app-update
       # https://capacitorjs.com/docs/android
-      
       - run: npx cap sync android
+      - run: npx cap copy
+      - run: npx cap update
       
       # Builds for debian, presently out of scope.
 
@@ -231,11 +238,15 @@ jobs:
         run: |
           cd e2e
           echo "::group::Mvn Install"
-          mvn install -Dskiptests
+          mvn install > ~/mavenTests.log
           echo "::endgroup::"
-          echo "::group::Mvn Tests"
-          mvn test
-          echo "::endgroup::"
+      - name: Archive log
+        if: ${{ always() }} # - name: Archive log https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#job-status-check-functions
+        uses: actions/upload-artifact@v2
+        with:
+          name: log
+          path: |
+            ./mavenTests.log
       # https://blog.mindorks.com/github-actions-for-android
       
       # curl -u "<username>:<password>" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@/path/to/app/file/Application-debug.apk"
