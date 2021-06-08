@@ -11,7 +11,8 @@ RUN npm ci
 
 # https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp
 ENV NODE_ENV production
-ENV REACT_APP_CURRENT_VERSION docker
+#ENV REACT_APP_CURRENT_VERSION docker
+RUN /app/bin/setVersionExport.sh
 ENV REACT_APP_PRODUCTION_BUILD true
 ENV REACT_APP_USE_REAL_DATA false
 #REACT_APP_USE_REAL_DATA: This configures whether to include local test data in the system or not. REACT_APP_USE_REAL_DATA=true disables test data.
@@ -21,6 +22,7 @@ ENV REACT_APP_DIRECTORY_PORT 443
 # https://blog.knoldus.com/deployment-with-docker-in-ionic/
 #USER node
 # They say to run with min privs, but since we're building and not running, I CBF'd right now.
+RUN echo $REACT_APP_CURRENT_VERSION
 RUN npm run-script build
 
 FROM nginx:1.21.0-alpine
