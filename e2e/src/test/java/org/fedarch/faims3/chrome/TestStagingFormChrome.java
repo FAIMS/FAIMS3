@@ -20,23 +20,22 @@
 package org.fedarch.faims3.chrome;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
+import java.util.List;
 
 import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestStagingForm;
 import org.fedarch.faims3.TestUtils;
-import org.fedarch.faims3.android.AndroidTest;
 import org.json.JSONException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
-import io.appium.java_client.MobileBy;
-import io.appium.java_client.android.AndroidElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 
 /**
  * Test populate the fields on the Android app:
@@ -45,7 +44,7 @@ import io.appium.java_client.android.AndroidElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestStagingFormChrome extends AndroidTest implements TestStagingForm {
+public class TestStagingFormChrome extends ChromeTest implements TestStagingForm {
 
   @BeforeClass
   public static void setup() throws MalformedURLException, JSONException {
@@ -77,35 +76,40 @@ public class TestStagingFormChrome extends AndroidTest implements TestStagingFor
 			TestUtils.scrollDown(driver);
 			// validate JSON values
 			validateJSON();
-			// scroll up and click on the "Example Project A" tab
-			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
-			// click submit before opening Test Project tab again
-			WebDriverWait wait = new WebDriverWait(driver, 10);
-			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SUBMIT']"))).click();;
-			// reopen Test Project
-			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-lake_mungo']")).click();
+
+			// open the other project
+			// driver.findElement(By.xpath("//*[@href='/projects']")).click();
+//			WebDriverWait wait = new WebDriverWait(driver, 10);
+//			wait.until(
+//					ExpectedConditions.presenceOfElementLocated(
+//							By.xpath("//*[@href='/projects/default_generated_oral_history']"))).click();
+
+			// return to "Projects" and then reopen the form
+			loadNewAstroSkyForm();
 			// Check all fields are still the same
 			validateLatLong();
-			assertEquals(AstroSky.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
-			assertEquals(AstroSky.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
-
-			AndroidElement currencies = TestUtils.scrollToResourceId(driver, "multi-str-field");
-			assertEquals(AstroSky.UNICODE, currencies.getText());
+			assertEquals(AstroSky.EMAIL, driver.findElement(By.id("email-field")).getText());
 
 			TestUtils.scrollDown(driver);
 
-			assertEquals("1.0", wait.until(
-					ExpectedConditions.visibilityOfElementLocated(
-							MobileBy.xpath("//*[@resource-id='int-field']"))).getText());
-			assertEquals("Currency €", driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']")).getText());
-			assertEquals("Currencies $, €", driver.findElement(MobileBy.xpath("//*[@resource-id='multi-select-field']")).getText());
-			assertEquals("true", driver.findElement(MobileBy.xpath("//*[@resource-id='checkbox-field']")).getAttribute("checked"));
-			for (AndroidElement radioButton : driver.findElementsByClassName("android.widget.RadioButton")) {
-				if (radioButton.getText().equals("4")) {
+			assertEquals(AstroSky.COLOUR, driver.findElement(By.id("str-field")).getText());
+			assertEquals(AstroSky.UNICODE, driver.findElement(By.id("multi-str-field")).getText());
+
+			TestUtils.scrollDown(driver);
+
+			assertEquals(AstroSky.INTEGER, driver.findElement(By.id("int-field")).getText());
+			assertEquals("Currency €", driver.findElement(By.id("select-field")).getText());
+			assertEquals("Currencies $, €", driver.findElement(By.id("multi-select-field")).getText());
+			assertEquals("true", driver.findElement(By.id("checkbox-field")).getAttribute("checked"));
+
+			// radio button
+		    List<WebElement> radioButtons = driver.findElementsByXPath("//input[name='radio-group-field']");
+			for (WebElement radioButton : radioButtons) {
+				if (radioButton.getAttribute("value").equals("4")) {
 					// the fourth radio button should be selected
-					assertEquals("true", radioButton.getAttribute("checked"));
+					assertTrue(radioButton.isSelected());
 				} else {
-					assertEquals("false", radioButton.getAttribute("checked"));
+					assertFalse(radioButton.isSelected());
 				}
 			}
 
@@ -123,13 +127,13 @@ public class TestStagingFormChrome extends AndroidTest implements TestStagingFor
 	      throw e;
 	  }
 	  // if we make it to the end with no exceptions, that means we passed!
-	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "Android - TestStagingForm.testSwitchTab() passed!");
+	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "Chrome - TestStagingForm.testSwitchTab() passed!");
   }
 
   //TODO: switch via menu on the left
   @AfterClass
   public static void tearDown() {
 	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.
-	 driver.quit();
+	 ChromeTest.tearDown();
   }
 }
