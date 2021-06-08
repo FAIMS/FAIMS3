@@ -37,9 +37,9 @@ function commit_version(): string {
     commitver === undefined ||
     FALSEY_STRINGS.includes(commitver.toLowerCase())
   ) {
-    return '-dev';
+    return 'unknown dev';
   } else {
-    return `-${commitver.slice(0, 7)}`;
+    return commitver;
   }
 }
 
