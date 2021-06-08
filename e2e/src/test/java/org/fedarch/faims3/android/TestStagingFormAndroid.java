@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.AstroSky;
+import org.fedarch.faims3.TestStagingForm;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.junit.AfterClass;
@@ -44,13 +45,13 @@ import io.appium.java_client.android.AndroidElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestStagingForm extends AndroidTest {
+public class TestStagingFormAndroid extends AndroidTest implements TestStagingForm {
 
   @BeforeClass
-  public static void setup() throws MalformedURLException {
+  public void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  AndroidTest.setup(false, "Test staging new Lake Mungo form (Android)");
+	  super.setup(false, "Test staging new Lake Mungo form (Android)");
   }
 
   /**
@@ -65,16 +66,17 @@ public class TestStagingForm extends AndroidTest {
    * @throws IllegalArgumentException
    * @throws InvocationTargetException
    */
-  @Test
+  @Override
+@Test
   public void testSwitchTab() throws JSONException {
 	  try {
 			// Go to AstroSky form
-			TestUtils.loadNewAstroSkyForm(driver);
+			loadNewAstroSkyForm();
 			// Fill out all fields
-			AstroSky.fillOutFormWithValidFields(driver);
+			fillOutFormWithValidFields();
 			TestUtils.scrollDown(driver);
 			// validate JSON values
-			AstroSky.validateJSON(driver);
+			validateJSON();
 			// scroll up and click on the "Example Project A" tab
 			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
 			// click submit before opening AsTRoSkY tab again
@@ -83,7 +85,7 @@ public class TestStagingForm extends AndroidTest {
 			// reopen AsTRoSkY
 			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-astro_sky']")).click();
 			// Check all fields are still the same
-			AstroSky.validateLatLong(driver);
+			validateLatLong();
 			assertEquals(AstroSky.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
 			assertEquals(AstroSky.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
 
@@ -110,11 +112,7 @@ public class TestStagingForm extends AndroidTest {
 			TestUtils.scrollDown(driver);
 
 			// Make sure JSON is still the same
-			if (!AstroSky.validateJSON(driver)) {
-				TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
-						"Android - TestStagingForm.testSwitchTab() fails because JSON values don't match.");
-				return;
-			}
+			validateJSON();
 	  } catch (Exception e) {
 	      TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 	    		  "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
@@ -131,7 +129,6 @@ public class TestStagingForm extends AndroidTest {
   //TODO: switch via menu on the left
   @AfterClass
   public static void tearDown() {
-	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.
-	 driver.quit();
+	 AndroidTest.tearDown();
   }
 }

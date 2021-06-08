@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.AstroSky;
+import org.fedarch.faims3.TestStagingForm;
 import org.fedarch.faims3.TestUtils;
 import org.fedarch.faims3.android.AndroidTest;
 import org.json.JSONException;
@@ -44,13 +45,13 @@ import io.appium.java_client.android.AndroidElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestStagingForm extends AndroidTest {
+public class TestStagingFormChrome extends AndroidTest implements TestStagingForm {
 
   @BeforeClass
-  public static void setup() throws MalformedURLException {
+  public static void setup() throws MalformedURLException, JSONException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  ChromeTest.setup(false,  "Test staging new Lake Mungo form (Chrome)");
+	  ChromeTest.setup(false,  "Test staging new Test Project observation form (Chrome)");
   }
 
   /**
@@ -65,25 +66,26 @@ public class TestStagingForm extends AndroidTest {
    * @throws IllegalArgumentException
    * @throws InvocationTargetException
    */
-  @Test
+  @Override
+@Test
   public void testSwitchTab() throws JSONException {
 	  try {
-			// Go to Lake Mungo form
-			TestUtils.loadNewAstroSkyForm(driver);
+			// Go to Test Project form
+			loadNewAstroSkyForm();
 			// Fill out all fields
-			AstroSky.fillOutFormWithValidFields(driver);
+			fillOutFormWithValidFields();
 			TestUtils.scrollDown(driver);
 			// validate JSON values
-			AstroSky.validateJSON(driver);
+			validateJSON();
 			// scroll up and click on the "Example Project A" tab
 			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
-			// click submit before opening Lake Mungo tab again
+			// click submit before opening Test Project tab again
 			WebDriverWait wait = new WebDriverWait(driver, 10);
 			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SUBMIT']"))).click();;
-			// reopen Lake Mungo
+			// reopen Test Project
 			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-lake_mungo']")).click();
 			// Check all fields are still the same
-			AstroSky.validateLatLong(driver);
+			validateLatLong();
 			assertEquals(AstroSky.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
 			assertEquals(AstroSky.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
 
@@ -110,11 +112,7 @@ public class TestStagingForm extends AndroidTest {
 			TestUtils.scrollDown(driver);
 
 			// Make sure JSON is still the same
-			if (!AstroSky.validateJSON(driver)) {
-				TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
-						"Android - TestStagingForm.testSwitchTab() fails because JSON values don't match.");
-				return;
-			}
+			validateJSON();
 	  } catch (Exception e) {
 	      TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 	    		  "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
