@@ -13,20 +13,20 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: AstroSky.java
+ * Filename: TestStagingFormInterface.java
  * Description:
  *   TODO
  */
-
 package org.fedarch.faims3;
 
+import org.json.JSONException;
 /**
- * Utilities and constants used in AsTRoSkY test form
+ * Skeleton for testing staging new form.
  * @author Rini Angreani, CSIRO
+ *
  */
-public class AstroSky {
-    public static final String EMAIL = "jane.doe@csiro.au";
-    public static final String COLOUR = "Pink";
-    public static final String UNICODE = "いろはにほへとちりぬるを Pchnąć w tę łódź jeża lub ośm skrzyń fig จงฝ่าฟันพัฒนาวิชาการ    côté de l'alcôve ovoïde größeren";
-    public static final String INTEGER = "16";
+public interface TestStagingForm {
+
+	public void testSwitchTab() throws JSONException;
+
 }
