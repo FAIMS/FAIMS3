@@ -20,6 +20,7 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+import pouchdbDebug from 'pouchdb-debug';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 import * as DataModel from '../datamodel';
 import * as Events from 'events';
@@ -307,6 +308,7 @@ async function get_default_instance(): Promise<DataModel.NonNullListingsObject> 
 }
 
 PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(pouchdbDebug);
 
 /**
  * This is appended to whneever a listing has its
