@@ -43,7 +43,7 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 	public static void setup() throws MalformedURLException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		AndroidTest.setup(false, "Test populate new Lake Mungo form (Android)");
+		AndroidTest.setup(false, "Test populate new Test Project observation form (Android)");
 	}
 
 	/**
