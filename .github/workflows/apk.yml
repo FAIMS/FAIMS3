@@ -95,8 +95,7 @@ jobs:
           export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
           git clean -xfd
           npm ci
-          npm run webapp-build
-          npm run app-update
+          npm run build
       # https://capacitorjs.com/docs/android
       - run: npx cap sync --deployment android
         # Sync runs copy then update
