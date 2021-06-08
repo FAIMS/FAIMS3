@@ -14,15 +14,13 @@
  * limitations under the License.
  *
  * Filename: TestUtils.java
- * Description: 
+ * Description:
  *   TODO
  */
- 
+
 package org.fedarch.faims3.android;
 
 import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import io.appium.java_client.MobileBy;
 import io.appium.java_client.TouchAction;
@@ -98,19 +96,6 @@ public class TestUtils {
 	    return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
             + "new UiSelector().resourceIdMatches(\"" + resourceId + "\"));"));
 	}
-
-	/**
-	 * Click on "Previous Dev Content" on the landing page.
-	 *
-	 * @param driver AndroidDriver
-	 */
-	public static void loadPreviousDevContent(AndroidDriver<AndroidElement> driver) {
-		// Click on "Previous dev content"
-		AndroidElement prevDev = (AndroidElement) new WebDriverWait(driver, 10).until(
-			        ExpectedConditions.elementToBeClickable(MobileBy.xpath ("//*[contains(@text, 'Previous dev content')]")));
-		prevDev.click();
-	}
-
 
 	/**
 	 * Browserstack doesn't know when an assertion fail. We need to explicitly let it know.
