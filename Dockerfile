@@ -12,7 +12,7 @@ RUN npm ci
 # https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp
 ENV NODE_ENV production
 #ENV REACT_APP_CURRENT_VERSION docker
-RUN sh /app/bin/setVersionExport.sh
+#RUN sh /app/bin/setVersionExport.sh
 ENV REACT_APP_PRODUCTION_BUILD true
 ENV REACT_APP_USE_REAL_DATA false
 #REACT_APP_USE_REAL_DATA: This configures whether to include local test data in the system or not. REACT_APP_USE_REAL_DATA=true disables test data.
