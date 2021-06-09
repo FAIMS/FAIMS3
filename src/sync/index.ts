@@ -38,6 +38,7 @@ import {
   RUNNING_UNDER_TEST,
   AUTOACTIVATE_PROJECTS,
 } from '../buildconfig';
+import {staging_db} from './staging';
 
 const POUCH_SEPARATOR = '_';
 const DEFAULT_LISTING_ID = 'default';
@@ -1518,3 +1519,46 @@ async function process_project(
   );
 }
 /* eslint-enable @typescript-eslint/no-unused-vars */
+
+async function delete_synced_db(name: string, db: LocalDB<any>) {
+  try {
+    console.debug(await db.remote?.db.close());
+  } catch (err) {
+    console.error('Failed to remove remote db', name);
+    console.error(err);
+  }
+  try {
+    console.debug(await db.local.destroy());
+    console.debug('Removed local db', name);
+  } catch (err) {
+    console.error('Failed to remove local db', name);
+    console.error(err);
+  }
+}
+
+async function delete_synced_dbs(db_list: LocalDBList<any>) {
+  for (const name in db_list) {
+    console.debug('Deleting', name);
+    await delete_synced_db(name, db_list[name]);
+    delete db_list['name'];
+  }
+}
+
+export async function wipe_all_pouch_databases() {
+  const local_only_dbs_to_wipe = [active_db, local_state_db, staging_db];
+  await delete_synced_dbs(data_dbs);
+  await delete_synced_dbs(metadata_dbs);
+  await delete_synced_dbs(people_dbs);
+  await delete_synced_dbs(projects_dbs);
+  await delete_synced_db('directory', directory_db);
+  for (const db of local_only_dbs_to_wipe) {
+    try {
+      console.debug(await db.destroy());
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  // TODO: work out how best to recreate the databases, currently using a
+  // redirect and having FAIMS reinitialise seems to be the best
+  console.debug('Deleted dbs');
+}
