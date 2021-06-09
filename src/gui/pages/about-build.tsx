@@ -70,12 +70,10 @@ export default function AboutBuild() {
         variant="outlined"
         color={'secondary'}
         onClick={() => {
-          wipe_all_pouch_databases().then(
-            () => {
-                console.log("User cleaned database");
-                window.location.reload();
-            }
-          );
+          wipe_all_pouch_databases().then(() => {
+            console.log('User cleaned database');
+            window.location.reload();
+          });
         }}
         style={{marginRight: '10px'}}
       >
