@@ -376,19 +376,25 @@ class ObservationForm extends React.Component<
           this.reqireCurrentView(),
           obsid_revid
         ).catch(clean_error => {
-          // Errors with cleaning the staging area are not 'fatal' to the redirect
+          // Errors with cleaning the staging area are not 'fatal' to the
+          // redirect
           console.warn('failed to clear staging area', clean_error);
         })
       )
-      .then(() =>
-        // if a new observation, redirect to the new observation page to allow the user to rapidly add more records
-        // otherwise, redirect to the project page listing all observations
-        this.props.is_fresh
-          ? this.props.history.push(
-              ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
-            )
-          : this.props.history.push(ROUTES.PROJECT + this.props.project_id)
-      );
+      .then(() => {
+        // if a new observation, redirect to the new observation page to allow
+        // the user to rapidly add more records
+        if (this.props.is_fresh) {
+          this.props.history.push(
+            ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
+          );
+          window.scrollTo(0, 0);
+          // scroll to top of page, seems to be needed on mobile devices
+        } else {
+          // otherwise, redirect to the project page listing all observations
+          this.props.history.push(ROUTES.PROJECT + this.props.project_id);
+        }
+      });
   }
 
   updateView(viewName: string) {
