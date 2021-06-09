@@ -55,15 +55,15 @@ export default function AboutBuild() {
         </tr>
         <tr>
           <td>Using real data</td>
-          <td>{USE_REAL_DATA ? "True" : "False"}</td>
+          <td>{USE_REAL_DATA ? 'True' : 'False'}</td>
         </tr>
         <tr>
           <td>Running under test</td>
-          <td>{RUNNING_UNDER_TEST ? "True" : "False"}</td>
+          <td>{RUNNING_UNDER_TEST ? 'True' : 'False'}</td>
         </tr>
         <tr>
           <td>Autoactivating projects</td>
-          <td>{AUTOACTIVATE_PROJECTS ? "True" : "False"}</td>
+          <td>{AUTOACTIVATE_PROJECTS ? 'True' : 'False'}</td>
         </tr>
       </table>
       <Button
