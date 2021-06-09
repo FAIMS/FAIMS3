@@ -134,6 +134,8 @@ public class ChromeTest implements E2ETest {
 	    caps.setCapability("build", "Alpha");
 	    caps.setCapability("name", testDesc.concat(" : ").concat(TestUtils.getCommitMessage()));
 
+	    turnOnBrowserstackLogs(caps);
+
 	    // INIT CHROME OPTIONS
 	    ChromeOptions options = new ChromeOptions();
 	    Map < String, Object > prefs = new HashMap < String, Object > ();
@@ -157,6 +159,21 @@ public class ChromeTest implements E2ETest {
 
 	    driver.get(FAIMS_TEST_URL);
 
+	}
+
+	/**
+	 * Optional logging options for browserstack
+	 * @param caps
+	 * @return
+	 */
+	public static void turnOnBrowserstackLogs(DesiredCapabilities caps) {
+	    // Log settings to debug
+	    caps.setCapability("browserstack.console", "verbose");
+	    HashMap networkLogsOptions = new HashMap<>();
+	    networkLogsOptions.put("captureContent", Boolean.TRUE);
+	    // turn on network logs
+	    caps.setCapability("browserstack.networkLogs", "true");
+	    caps.setCapability("browserstack.networkLogsOptions", networkLogsOptions);
 	}
 
 	/**
