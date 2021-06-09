@@ -81,7 +81,7 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
 			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
 			// click submit before opening AsTRoSkY tab again
 			WebDriverWait wait = new WebDriverWait(driver, 10);
-			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SUBMIT']"))).click();;
+			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SAVE AND NEW']"))).click();;
 			// reopen AsTRoSkY
 			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-astro_sky']")).click();
 			// Check all fields are still the same

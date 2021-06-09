@@ -33,6 +33,7 @@ import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -98,7 +99,7 @@ public class AndroidTest implements E2ETest {
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "Google Pixel 3");
-	    caps.setCapability("os_version", "10.0");
+	    caps.setCapability("os_version", "9.0");
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
@@ -142,17 +143,29 @@ public class AndroidTest implements E2ETest {
 	 */
 	@Override
 	public void loadNewAstroSkyForm() {
+		// workaround for FAIMS3-247
+		try {
+			Thread.sleep(10000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		WebDriverWait wait = new WebDriverWait(driver, 10);
 		// Click on "Projects"
-		AndroidElement projects = (AndroidElement) new WebDriverWait(driver, 10).until(ExpectedConditions
+		AndroidElement projects = (AndroidElement) wait.until(ExpectedConditions
 				.elementToBeClickable(MobileBy.xpath("//android.view.MenuItem[contains(@text, 'Projects')]")));
 		projects.click();
 
 		// Get the right project
-		AndroidElement AstroSky = (AndroidElement) new WebDriverWait(driver, 10).until(ExpectedConditions
-				.presenceOfElementLocated(MobileBy.xpath("//*[@text='Lake Mungo Archaeological Survey - 2018']")));
+		AndroidElement AstroSky = (AndroidElement) wait.until(ExpectedConditions
+				.presenceOfElementLocated(MobileBy.xpath("//*[contains(@text, 'Astrosky')]")));
+
 		// Find the '+' button
-		AndroidElement newButton = (AndroidElement) AstroSky.findElement(
-				By.xpath("../android.view.View[5]/android.widget.Button[contains(@text, 'NEW OBSERVATION')]"));
+		AndroidElement menuButton = (AndroidElement) AstroSky.findElement(
+				MobileBy.xpath("../android.view.View[5]/android.widget.Button"));
+		menuButton.click();
+		AndroidElement newButton = (AndroidElement) wait.until(ExpectedConditions.visibilityOfElementLocated(
+				By.xpath("//*[contains(@text, 'New Observation')]")));
 		newButton.click();
 	}
 
@@ -208,8 +221,12 @@ public class AndroidTest implements E2ETest {
 	    AndroidElement currencyList = (AndroidElement) wait.until(
 	    		ExpectedConditions.presenceOfElementLocated(MobileBy.className("android.widget.ListView")));
 	    // choose the second value: Euro
-	    currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
-
+	    try {
+	        currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
+	    } catch(StaleElementReferenceException e) {
+	    	// sometimes this happens.. try again
+	    	currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
+        }
 	    // Multiple currency field
 	    AndroidElement multiCurrField = (AndroidElement) wait.until(
 	            ExpectedConditions.elementToBeClickable(
@@ -251,9 +268,9 @@ public class AndroidTest implements E2ETest {
 		// so we have to work out the class name and get the siblings
 		String className = driver.findElement(By.xpath("//*[@text='Lat: ']")).getAttribute("className");
 		List<AndroidElement> gpsInfo = driver.findElements(By.xpath("//*[@text='Lat: ']/../" + className));
-		assertEquals(getLatitude(), gpsInfo.get(1).getText());
-		assertEquals("; Long: ", gpsInfo.get(2).getText());
-		assertEquals(getLongitude(), gpsInfo.get(3).getText());
+		assertEquals(getLatitude(), gpsInfo.get(2).getText());
+		assertEquals("; Long: ", gpsInfo.get(3).getText());
+		assertEquals(getLongitude(), gpsInfo.get(4).getText());
 	}
 
 	@Override
@@ -276,10 +293,8 @@ public class AndroidTest implements E2ETest {
 	public void validateJSON() throws JSONException, AssertionError {
 		// Find JSON
 		WebDriverWait wait = new WebDriverWait(driver, 10);
-		// wait for Submit to finish
-		wait.until(ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@text='SUBMIT']")));
 		WebElement json = wait.until(ExpectedConditions.visibilityOf(
-				driver.findElement(MobileBy.xpath("//*[@text='SUBMIT']/following-sibling::android.view.View/android.view.View"))));
+				driver.findElement(MobileBy.xpath("//*[@text='DEVELOPER TOOL: FORM STATE']/following-sibling::android.view.View/android.view.View"))));
 		JSONObject jsonObject = new JSONObject(json.getText());
 		JSONObject values = jsonObject.getJSONObject("values");
 

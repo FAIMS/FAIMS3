@@ -61,11 +61,12 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 			// The form should load up
 			super.fillOutFormWithValidFields();
 			TestUtils.scrollDown(driver);
-			// Submit button
-			WebElement submit = driver.findElement(By.xpath("//*[@text='SUBMIT']"));
-			submit.click();
 			// validate JSON
 			validateJSON();
+			// Submit button
+			WebElement submit = driver.findElement(By.xpath("//*[@text='SAVE AND NEW']"));
+			submit.click();
+
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
