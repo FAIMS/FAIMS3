@@ -20,6 +20,7 @@
 
 import React from 'react';
 import {Container} from '@material-ui/core';
+import Button from '@material-ui/core/Button';
 import * as ROUTES from '../../constants/routes';
 import {
   USE_REAL_DATA,
@@ -31,6 +32,7 @@ import {
   AUTOACTIVATE_PROJECTS,
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {wipe_all_pouch_databases} from '../../sync';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -64,6 +66,19 @@ export default function AboutBuild() {
           <td>{AUTOACTIVATE_PROJECTS}</td>
         </tr>
       </table>
+      <Button
+        variant="outlined"
+        color={'secondary'}
+        onClick={() => {
+          wipe_all_pouch_databases().then(() => {
+            console.log('User cleaned database');
+            window.location.reload();
+          });
+        }}
+        style={{marginRight: '10px'}}
+      >
+        Wipe and reset everything!
+      </Button>
     </Container>
   );
 }
