@@ -48,10 +48,10 @@ import io.appium.java_client.android.AndroidElement;
 public class TestStagingFormAndroid extends AndroidTest implements TestStagingForm {
 
   @BeforeClass
-  public void setup() throws MalformedURLException {
+  public static void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  super.setup(false, "Test staging new Test Project observation form (Android)");
+	  AndroidTest.setup(false, "Test staging new Test Project observation form (Android)");
   }
 
   /**
