@@ -1,20 +1,34 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: home.tsx
+ * Description:
+ *   TODO
+ */
+
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
-import {
-  Container,
-  Breadcrumbs,
-  Typography,
-  Box,
-  Grid,
-  Paper,
-  Link,
-} from '@material-ui/core';
-import ProjectCard from '../components/projectCard';
+import {Link as RouterLink} from 'react-router-dom';
+import {Container, Typography, Box, Grid, Paper, Link} from '@material-ui/core';
+import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectInfo, getProjectList} from '../../databaseAccess';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
+import TimelapseIcon from '@material-ui/icons/Timelapse';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -52,22 +66,10 @@ export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = getProjectList();
-
+  const breadcrumbs = [{link: ROUTES.INDEX, title: 'Index'}, {title: 'Home'}];
   return (
     <Container maxWidth="lg">
-      <Box
-        display="flex"
-        flexDirection="row-reverse"
-        p={1}
-        m={1}
-        // bgcolor="background.paper"
-      >
-        <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
-          <Typography color="textPrimary">Home</Typography>
-        </Breadcrumbs>
-      </Box>
-
+      <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Typography variant="overline">Add new Observation</Typography>
@@ -77,7 +79,19 @@ export default function Home() {
         </Grid>
         {/* Recent Observations */}
         <Grid item xs={12} md={8} lg={9}>
-          <Typography variant="overline">Recent Observations</Typography>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
+            <Typography variant="overline" display={'inline'}>
+              Recent Observations&nbsp;&nbsp;
+            </Typography>
+            <TimelapseIcon color={'secondary'} style={{fontSize: '1.1rem'}} />
+          </div>
+
           <Paper className={classes.paper}>
             {/*<Observations />*/}
             <Box mt={2}>

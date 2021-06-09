@@ -1,12 +1,29 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: index.tsx
+ * Description:
+ *   TODO
+ */
+
 import React from 'react';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {
-  Box,
   Grid,
   Container,
-  Breadcrumbs,
-  Typography,
   Paper,
   MenuList,
   MenuItem,
@@ -18,7 +35,8 @@ import DescriptionIcon from '@material-ui/icons/Description';
 import LockOpenIcon from '@material-ui/icons/LockOpen';
 import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
-import DeveloperModeIcon from '@material-ui/icons/DeveloperMode';
+import TimelapseIcon from '@material-ui/icons/Timelapse';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 type IndexProps = {
   // project: string;
 };
@@ -33,49 +51,48 @@ export class Index extends React.Component<IndexProps, IndexState> {
   }
 
   render() {
+    const breadcrumbs = [{title: 'Index'}];
     return (
       <Container maxWidth="lg">
-        <Box
-          display="flex"
-          flexDirection="row-reverse"
-          p={1}
-          m={1}
-          // bgcolor="background.paper"
-        >
-          <Breadcrumbs aria-label="breadcrumb">
-            {/*<NavLink to={ROUTES.INDEX}>/</NavLink>*/}
-            <Typography color="textPrimary">Index</Typography>
-          </Breadcrumbs>
-        </Box>
+        <Breadcrumbs data={breadcrumbs} />
         <Grid container spacing={3}>
-          <Grid item xs={6} sm={4}>
-            <img src="static/FAIMS.png" />
-          </Grid>
-          <Grid item xs={6} sm={4}>
+          <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.SIGN_IN}>
+                <MenuItem
+                  component={NavLink}
+                  to={ROUTES.SIGN_IN}
+                  disabled={true}
+                >
                   <ListItemIcon>
                     <AccountBoxIcon fontSize="small" />
                   </ListItemIcon>
-                  Sign In
+                  Sign In <TimelapseIcon color={'secondary'} />
                 </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.SIGN_UP}>
+                <MenuItem
+                  component={NavLink}
+                  to={ROUTES.SIGN_UP}
+                  disabled={true}
+                >
                   <ListItemIcon>
                     <PersonAddIcon fontSize="small" />
                   </ListItemIcon>
-                  Sign Up
+                  Sign Up <TimelapseIcon color={'secondary'} />
                 </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.FORGOT_PASSWORD}>
+                <MenuItem
+                  component={NavLink}
+                  to={ROUTES.FORGOT_PASSWORD}
+                  disabled={true}
+                >
                   <ListItemIcon>
                     <LockOpenIcon fontSize="small" />
                   </ListItemIcon>
-                  Forgot Password
+                  Forgot Password <TimelapseIcon color={'secondary'} />
                 </MenuItem>
               </MenuList>
             </Paper>
           </Grid>
-          <Grid item xs={6} sm={4}>
+          <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
                 <MenuItem component={NavLink} to={ROUTES.HOME}>
@@ -94,22 +111,16 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   <ListItemIcon>
                     <DescriptionIcon fontSize="small" />
                   </ListItemIcon>
-                  Observations
+                  Observations <TimelapseIcon color={'secondary'} />
+                </MenuItem>
+                <MenuItem component={NavLink} to={ROUTES.ABOUT_BUILD}>
+                  <ListItemIcon>
+                    <DescriptionIcon fontSize="small" />
+                  </ListItemIcon>
+                  About Build <TimelapseIcon color={'secondary'} />
                 </MenuItem>
               </MenuList>
             </Paper>
-            <Box mt={2}>
-              <Paper>
-                <MenuList>
-                  <MenuItem component={NavLink} to={ROUTES.DUMMY}>
-                    <ListItemIcon>
-                      <DeveloperModeIcon fontSize="small" />
-                    </ListItemIcon>
-                    Previous dev content
-                  </MenuItem>
-                </MenuList>
-              </Paper>
-            </Box>
           </Grid>
         </Grid>
       </Container>

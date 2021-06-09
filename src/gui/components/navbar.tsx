@@ -1,3 +1,23 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: navbar.tsx
+ * Description:
+ *   TODO
+ */
+
 import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
@@ -5,7 +25,6 @@ import {
   CircularProgress,
   IconButton,
   Toolbar,
-  Typography,
 } from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import {makeStyles} from '@material-ui/core/styles';
@@ -170,6 +189,12 @@ export default function Navbar() {
       to: '/',
       disabled: true,
     },
+    {
+      title: 'About Build',
+      icon: <SettingsIcon />,
+      to: ROUTES.ABOUT_BUILD,
+      disabled: false,
+    },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     {
@@ -216,19 +241,19 @@ export default function Navbar() {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h4" noWrap style={{flex: 1}}>
-              FAIMS3{' '}
-              {isSyncing ? (
-                <CircularProgress
-                  color={'secondary'}
-                  size={'1rem'}
-                  thickness={5}
-                />
-              ) : (
-                ''
-              )}
-            </Typography>
-            <Typography>username</Typography>
+            <img
+              src="/static/logo/Faims-white-small.png"
+              style={{maxWidth: '70px', flex: 1}}
+            />
+            {isSyncing ? (
+              <CircularProgress
+                color={'secondary'}
+                size={'1rem'}
+                thickness={5}
+              />
+            ) : (
+              ''
+            )}
           </Toolbar>
         </MuiAppBar>
         <Drawer

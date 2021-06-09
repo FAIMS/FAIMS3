@@ -1,49 +1,22 @@
 ---
 # Nightly compile for e2e testing
-name: Nightly Compile APK to BrowserStack
+name: Mobile app build
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
-# on:
-#   # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule
-#   # This is UTC. For dev timing look at https://www.worldtimebuddy.com/?pl=1&lid=2147714,100,2063523&h=2147714&hf=1
-#   # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
-#   # Note: The schedule event can be delayed during periods of high loads of GitHub Actions workflow runs. High load times include the start of every hour. To decrease the chance of delay, schedule your workflow to run at a different time of the hour.
-#   schedule:
-#     - cron: '20 5 * * *'
+
   
-# It's great having an on schedule, but bloody impossible to test.
 on:
   # Trigger the workflow on push or pull request,
   # but only for the main branch
   push:
     branches:
-      - e2e
-  pull_request:
-    branches:
-      - e2e
+      - github-actions
+      - main
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  check_date:
-    runs-on: ubuntu-latest
-    name: Check latest commit
-    outputs:
-      should_run: ${{ steps.should_run.outputs.should_run }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: print latest_commit
-        run: echo ${{ github.sha }}
-
-      - id: should_run
-        continue-on-error: true
-        name: check latest commit is less than a day
-        if: ${{ github.event_name == 'schedule' }}
-        run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
   node-deb-android-job:
-    # https://github.community/t/trigger-action-on-schedule-only-if-there-are-changes-to-the-branch/17887/4
-    needs: check_date
-    if: ${{ needs.check_date.outputs.should_run != 'false' }}
     # The type of runner that the job will run on
     # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
     runs-on: ubuntu-latest
@@ -88,13 +61,19 @@ jobs:
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2.0.6
-      
-      - run: npm install
-      - run: npm run build
+      - name: Building webapp
+        run: |
+          export REACT_APP_PRODUCTION_BUILD=true
+          export REACT_APP_DIRECTORY_HOST=alpha.db.faims.edu.au
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          git clean -xfd
+          npm ci
+          npm run build
       # https://capacitorjs.com/docs/android
-      
-      - run: npx cap sync android
-      
+      - run: npx cap sync --deployment android
+        # Sync runs copy then update
+      #- run: npx cap copy android
+      #- run: npx cap update android
       # Builds for debian, presently out of scope.
 
       # # build local deb
@@ -105,14 +84,7 @@ jobs:
       #   with:
       #     name: ubuntu-deb
       #     path: |
-      #       ./*.deb         
-      - name: Archive build
-        uses: actions/upload-artifact@v2
-        with:
-          name: npm-build
-          path: |
-            build
-            android
+      #       ./*.deb
       # Don't need to explicitly unzip
       # https://github.com/oxr463/setup-cordova
       # This is a docker build, so I don't think any of the caching will do any good...
@@ -159,158 +131,16 @@ jobs:
           name: apks
           path: |
             ./*.apk
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest-android"
+          prerelease: true
+          title: "Android APK Development Build"
+          files: |
+            LICENSE
+            *.apk
       # https://www.browserstack.com/docs/automate/selenium/github-actions#set-up-a-github-workflow-to-run-browserstack-tests
       # Thereafter, invoke setup-env BrowserStack Action to set up 
       # environment variables in the runner
-  # browserstack_job:
-  #   needs: [node-deb-android-job, check_date]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-      
-        # - name: Cache node modules
-        #   uses: actions/cache@v2
-        #   env:
-        #     cache-name: cache-node-modules
-        #   with:
-        #     # npm cache files are stored in `~/.npm` on Linux/macOS
-        #     path: ~/.npm
-        #     key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        #     restore-keys: |
-        #       ${{ runner.os }}-build-${{ env.cache-name }}-
-        #       ${{ runner.os }}-build-
-        #       ${{ runner.os }}-
-        # - name: Use Node.js ${{ matrix.node-version }}
-        #   uses: actions/setup-node@v1
-        #   with:
-        #     node-version: ${{ matrix.node-version }}   
-        # # run it every time... 
-        # - run: npm install
-      # # Final part of the path is the custom id above. Should be a variable. Will fix later.
-      # - name: Get App Metadata
-      #   uses: satak/webrequest-action@master
-      #   with: 
-      #     url: https://api-cloud.browserstack.com/app-automate/recent_apps/ElaborationApp
-      #     method: GET
-      #     username: ${{ secrets.BROWSERSTACK_USERNAME }}
-      #     password: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-      - name: 'BrowserStack Env Setup'
-        uses: 'browserstack/github-actions/setup-env@master'
-        with:
-          username: '${{ secrets.BROWSERSTACK_USERNAME }}'
-          access-key: '${{ secrets.BROWSERSTACK_ACCESS_KEY }}'
-          # build-name: (Optional) Sets the environment variable BROWSERSTACK_BUILD_NAME
-          # build-name: 'BUILD_INFO'
-          # project-name: (Optional) Sets the environment variable BROWSERSTACK_PROJECT_NAME
-          # project-name: 'REPO_NAME'
-      # # Invoke setup-local BrowserStack Action to set up a tunnel connection 
-      # # between the GitHub Actions runner environment and the BrowserStack 
-      # # device cloud so that the application server on the runner environment 
-      # # can be accessed by the browsers in BrowserStack's device cloud
-      - name: 'BrowserStackLocal Setup'
-        uses: 'browserstack/github-actions/setup-local@master'
-        with:
-          local-testing: start
-          local-identifier: random
-          local-logging-level: all-logs
-          local-args: --log-file '$GITHUB_WORKSPACE/browserstack.log'
-      # https://docs.github.com/en/actions/guides/building-and-testing-java-with-maven
-      - name: Set up JDK 13
-        uses: actions/setup-java@v2
-        with:
-          java-version: '13'
-          distribution: 'adopt'
-      - name: Cache local Maven repository
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-      - name: Build with Maven
-        run: |
-          cd e2e
-          echo "::group::Mvn Install"
-          mvn install -Dskiptests
-          echo "::endgroup::"
-          echo "::group::Mvn Tests"
-          mvn test
-          echo "::endgroup::"
-      # https://blog.mindorks.com/github-actions-for-android
-      
-      # curl -u "<username>:<password>" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@/path/to/app/file/Application-debug.apk"
-      
-      # https://raw.githubusercontent.com/shreyanshp/upload-app-browserstack/master/README.md
-      # TRAP
-      # - uses: actions/upload-app-browserstack@v1
-      #   with:
-      #     app-path: ${{ github.workspace }}/app/build/outputs/apk/debug/app-debug.apk
-      #     browserstack-username: ${{ secrets.BROWSERSTACK_USERNAME }}
-      #     browserstack-accesskey: ${{ secrets.BROWSERSTACK_ACCESSKEY }}
-      # Note: To be able to run these test scripts in the GitHub Actions runner environment, you have to add a step(s) in the workflow to install the required Selenium bindings for the language of your choice.
-      # https://www.browserstack.com/docs/automate/selenium/github-actions#sample-github-workflow-showing-a-browserstack-test
-      
-      # CustomURL
-      # https://www.browserstack.com/docs/app-automate/appium/upload-app-define-custom-id
-      # new run, need to check out the repo again.
-      
-      # - run: pwd
-      # - run: ls -alR 
-      # - name: 'Running test on BrowserStack'  # Invokes the actual test script that would run on BrowserStack browsers
-      #   run: npm run browserstack 
-      #   env:
-      #     BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-      #     BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-      #     GITHUB_COMMIT_MESSAGE: '${{ github.event.head_commit.message }} - ${{ github.sha}}'
-      #     BUILD: ${{ github.repository }}
-      #   # Running it from the npm runner rather than node might fix path issues?
-      # # ***IMPORTANT***
-      # # If you do not stop the binary after the completion of your tests, the logs will not be uploaded as artifacts.
-      - name: 'BrowserStackLocal Stop'
-        uses: 'browserstack/github-actions/setup-local@master'
-        with:
-          local-testing: stop
-      # https://github.com/marketplace/actions/curl-axiosjs
-      # Why am I wrapping curl in JS? WHY?
-      # - name: 'Get list of recent sessions'
-      #   uses: indiesdev/curl@v1
-      #   with:
-      #     url: "https://api-cloud.browserstack.com/app-automate/builds.json"
-      #     method: 'GET'
-      #     basic-auth:  "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"
-      # - name: 'Use response'
-      #     run: echo ${{ steps.api.outputs.response }}
-      # - name: "Install jq to parse curl output"
-      #   run: sudo apt install jq -y 
-      # - name: "get build id"
-      #   run: curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}"  -X GET "https://api-cloud.browserstack.com/app-automate/builds.json" | jq -cr '.[][] | select(.name=="${{ github.repository }}") | .hashed_id' |  xargs -I{} echo ::set-output name=BUILD_ID::{}
-      #   id: build-id
-      # https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions
-      # - run: echo "${{ steps.build-id.outputs.BUILD_ID}}"
-      # - name: "Get Sessions of build: ${{ github.repository }}"
-      #   run: curl --silent --show-error --fail  -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X GET "https://api-cloud.browserstack.com/app-automate/builds/${{steps.build-id.outputs.BUILD_ID}}/sessions.json" > sessions.json
-      # - run: cat sessions.json | jq -cr '.[][] | .appium_logs_url' | xargs -I{} echo ::set-output name=appium_log::{}
-      #   id: appium-log-url
-      # - name: "fetching appium log from:  ${{steps.appium-log-url.outputs.appium_log}}"
-      #   run: curl --silent --show-error --fail  -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X GET ${{steps.appium-log-url.outputs.appium_log}} > appium.log
-      # - run: cat sessions.json | jq -cr '.[][] | .public_url' | xargs -I{} echo ::set-output name=public_url::{}
-      #   id: sessions-json
-      # - name: Archive appium log
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: logs
-      #     path: |
-      #       ./*.log
-      #       ./*.json
-      # - name: "Find errors in appium log"
-      #   run: |
-      #     echo ::set-output name=error-count::$(grep -i "Error" appium.log | wc -l)
-      #   id: error-count
-      # - run: |
-      #     echo "Public build URL: ${{steps.sessions-json.outputs.public_url}}"
-      # - name: "List errors"
-      #   run: |
-      #     echo "::error::${{steps.error-count.outputs.error-count}} testing-errors encountered on Browserstack run."
-      #     grep "Encountered internal error" appium.log
-      #     echo "::error::For details: ${{steps.sessions-json.outputs.public_url}}"
-      #   if: ${{ steps.error-count.outputs.error-count > 0}}
+ 

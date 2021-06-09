@@ -1,10 +1,47 @@
 /*
- * This module exports the configuration of the build, including things like
- * which server to use and whether to include test data
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: reportWebVitals.ts
+ * Description:
+ *   This module exports the configuration of the build, including things like
+ *   which server to use and whether to include test data
  */
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
+
+/*
+ * This is designed to get useful commit information data from
+ * environment variables for the testing server. While more sophisticated
+ * iterations of this can use extra node modules to get git data directly,
+ * passing environment variables seems like the safest first path.
+ */
+
+function commit_version(): string {
+  const commitver = process.env.REACT_APP_COMMIT_VERSION;
+  console.log(commitver);
+  if (
+    commitver === '' ||
+    commitver === undefined ||
+    FALSEY_STRINGS.includes(commitver.toLowerCase())
+  ) {
+    return 'unknown dev';
+  } else {
+    return commitver;
+  }
+}
 
 function prod_build(): boolean {
   const prodbuild = process.env.REACT_APP_PRODUCTION_BUILD;
@@ -73,6 +110,9 @@ function directory_host(): string {
 function directory_port(): number {
   const port = process.env.REACT_APP_DIRECTORY_PORT;
   if (port === '' || port === undefined) {
+    if (PROD_BUILD) {
+      return 443;
+    }
     return 5984;
   }
   try {
@@ -96,3 +136,5 @@ export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
 export const RUNNING_UNDER_TEST = is_testing();
+export const COMMIT_VERSION = commit_version();
+export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this

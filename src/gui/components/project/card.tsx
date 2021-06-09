@@ -1,32 +1,56 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: projectCard.tsx
+ * Description:
+ *   TODO
+ */
+
 import React, {useEffect, useState} from 'react';
 import {
   Avatar,
   Box,
-  Card,
+  Button,
+  Card as MuiCard,
   Chip,
   CardActions,
   CardContent,
   CardHeader,
-  // Button,
   Typography,
   CircularProgress,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Link,
+  Grid,
 } from '@material-ui/core';
+
 // import {EmailShareButton} from 'react-share';
 // import MailOutlineIcon from '@material-ui/icons/MailOutline';
 // import {Plugins} from '@capacitor/core';
 // const {Share} = Plugins;
 import {Link as RouterLink} from 'react-router-dom';
-import * as ROUTES from '../../constants/routes';
+import * as ROUTES from '../../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectInformation} from '../../datamodel';
-import ObservationsTable from './observationsTable';
-import MetadataRenderer from './metadataRenderer';
+import {ProjectInformation} from '../../../datamodel';
+import ObservationsTable from '../observation/table';
+import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import TimelapseIcon from '@material-ui/icons/Timelapse';
+import ProjectCardHeaderAction from './cardHeaderAction';
+import ProjectSync from './sync';
 
 type ProjectCardProps = {
   project: ProjectInformation;
@@ -74,7 +98,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export default function ProjectCard(props: ProjectCardProps) {
+export default function Card(props: ProjectCardProps) {
   const {project, showObservations, listView, dashboard} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
@@ -142,7 +166,7 @@ export default function ProjectCard(props: ProjectCardProps) {
           </ListItem>
         </List>
       ) : (
-        <Card>
+        <MuiCard>
           <CardHeader
             className={classes.cardHeader}
             avatar={
@@ -150,31 +174,41 @@ export default function ProjectCard(props: ProjectCardProps) {
                 {project.name.charAt(0)}
               </Avatar>
             }
-            // action={
-            //   <IconButton aria-label="settings">
-            //     <MoreVertIcon />
-            //   </IconButton>
-            // }
+            action={<ProjectCardHeaderAction project={project} />}
             title={
               <React.Fragment>
-                <b>{project.name}</b>&nbsp;
-                {listView ? (
-                  ''
-                ) : (
-                  <Typography
-                    variant={'caption'}
-                    style={{cursor: 'not-allowed'}}
-                    color={'textSecondary'}
-                  >
-                    <i>edit title</i>
-                  </Typography>
-                )}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <b>{project.name}</b>&nbsp;
+                  {!listView ? (
+                    <React.Fragment>
+                      <Typography
+                        variant={'caption'}
+                        style={{cursor: 'not-allowed'}}
+                        color={'textSecondary'}
+                      >
+                        <i>edit title&nbsp;&nbsp;</i>
+                      </Typography>
+                      <TimelapseIcon
+                        color={'secondary'}
+                        style={{fontSize: '13px'}}
+                      />
+                    </React.Fragment>
+                  ) : (
+                    ''
+                  )}
+                </div>
               </React.Fragment>
             }
             subheader={
-              'Created:' +
+              'Created' +
               project.created +
-              ', last updated: ' +
+              ', last observation updated ' +
               project.last_updated
             }
           />
@@ -182,13 +216,41 @@ export default function ProjectCard(props: ProjectCardProps) {
             <Box mb={2}>
               <Chip
                 size={'small'}
-                label={'Active team members: 10'}
-                style={{marginRight: '5px'}}
+                label={
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>Active team members: 10</span>&nbsp;{' '}
+                    <TimelapseIcon
+                      color={'secondary'}
+                      style={{fontSize: '13px'}}
+                    />
+                  </div>
+                }
+                style={{marginRight: '5px', marginBottom: '5px'}}
               />
               <Chip
                 size={'small'}
-                label={'Status: active'}
-                style={{marginRight: '5px'}}
+                label={
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>Status: active</span>&nbsp;{' '}
+                    <TimelapseIcon
+                      color={'secondary'}
+                      style={{fontSize: '13px'}}
+                    />
+                  </div>
+                }
+                style={{marginRight: '5px', marginBottom: '5px'}}
               />
               <MetadataRenderer
                 project_id={project.project_id}
@@ -202,18 +264,31 @@ export default function ProjectCard(props: ProjectCardProps) {
               />
             </Box>
 
-            <Typography variant="body2" color="textPrimary" component="p">
+            <Typography variant="body2" color="textPrimary" component="div">
               {project.description}&nbsp;
+              <br />
               {listView ? (
                 ''
               ) : (
-                <Typography
-                  variant={'caption'}
-                  style={{cursor: 'not-allowed'}}
-                  color={'textSecondary'}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
                 >
-                  <i>edit description</i>
-                </Typography>
+                  <Typography
+                    variant={'caption'}
+                    style={{cursor: 'not-allowed'}}
+                    color={'textSecondary'}
+                  >
+                    <i>edit description&nbsp;&nbsp;</i>
+                  </Typography>
+                  <TimelapseIcon
+                    color={'secondary'}
+                    style={{fontSize: '14px'}}
+                  />
+                </div>
               )}
             </Typography>
 
@@ -221,34 +296,35 @@ export default function ProjectCard(props: ProjectCardProps) {
               <Box mt={1}>
                 <ObservationsTable
                   project_id={project.project_id}
-                  restrictRows={10}
-                  compact={listView}
+                  maxRows={listView ? 10 : 25}
                 />
               </Box>
             ) : (
               ''
             )}
           </CardContent>
-          {listView ? (
-            <CardActions>
-              <Box pl={1}>
-                <Link
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                  }}
-                  component={RouterLink}
-                  to={project_url}
-                >
-                  View Project
-                  <ChevronRightIcon />
-                </Link>
-              </Box>
-            </CardActions>
-          ) : (
-            ''
-          )}
+          <CardActions style={{width: '100%'}}>
+            <Grid container alignItems="center">
+              <Grid item xs={6} sm={6}>
+                {!listView ? <ProjectSync project={project} /> : ''}
+              </Grid>
+              <Grid item xs={6} sm={6}>
+                {listView ? (
+                  <Button
+                    color="primary"
+                    component={RouterLink}
+                    to={project_url}
+                    style={{float: 'right'}}
+                  >
+                    View Project
+                    <ChevronRightIcon />
+                  </Button>
+                ) : (
+                  ''
+                )}
+              </Grid>
+            </Grid>
+          </CardActions>
           {/*{listView ? (*/}
           {/*  ''*/}
           {/*) : (*/}
@@ -281,12 +357,12 @@ export default function ProjectCard(props: ProjectCardProps) {
           {/*    )}*/}
           {/*  </CardActions>*/}
           {/*)}*/}
-        </Card>
+        </MuiCard>
       )}
     </React.Fragment>
   );
 }
-ProjectCard.defaultProps = {
+Card.defaultProps = {
   showObservations: false,
   listView: false,
   dashboard: false,

@@ -1,34 +1,67 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: observation-create.tsx
+ * Description:
+ *   TODO
+ */
+
 import React from 'react';
-import {
-  Box,
-  Breadcrumbs,
-  Container,
-  Typography,
-  Paper,
-} from '@material-ui/core';
-import {NavLink, useParams} from 'react-router-dom';
+import {Box, Container, Typography, Paper} from '@material-ui/core';
+import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import {generateFAIMSDataID} from '../../dataStorage';
+import ObservationForm from '../components/observation/form';
+import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel';
 
 export default function ObservationCreate() {
   const {project_id} = useParams<{
     project_id: ProjectID;
   }>();
-
+  const project_info = getProjectInfo(project_id);
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {
+      link: ROUTES.PROJECT + project_id,
+      title: project_info !== null ? project_info.name : project_id,
+    },
+    {title: 'New Observation'},
+  ];
   return (
     <Container maxWidth="lg">
-      <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
-          <NavLink to={ROUTES.PROJECT_LIST}>Projects</NavLink>
-          <NavLink to={ROUTES.PROJECT + project_id}>
-            Project {project_id}
-          </NavLink>
-          <Typography color="textPrimary">New Observation</Typography>
-        </Breadcrumbs>
+      <Breadcrumbs data={breadcrumbs} />
+      <Box mb={2}>
+        <Typography variant={'h2'} component={'h1'}>
+          Record Observation
+        </Typography>
+        <Typography variant={'subtitle1'} gutterBottom>
+          Add an observation for the{' '}
+          {project_info !== null ? project_info.name : project_id} project.
+        </Typography>
       </Box>
       <Paper square>
-        <b>Form generated from the project ui spec goes here</b>
+        <Box p={3}>
+          <ObservationForm
+            project_id={project_id}
+            observation_id={generateFAIMSDataID()}
+            is_fresh={true}
+          />
+        </Box>
       </Paper>
     </Container>
   );
