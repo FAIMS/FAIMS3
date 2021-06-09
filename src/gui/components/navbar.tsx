@@ -189,6 +189,12 @@ export default function Navbar() {
       to: '/',
       disabled: true,
     },
+    {
+      title: 'About Build',
+      icon: <SettingsIcon />,
+      to: ROUTES.ABOUT_BUILD,
+      disabled: false,
+    },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
     {
