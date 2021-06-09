@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 
 import org.fedarch.faims3.AstroSky;
@@ -101,6 +102,8 @@ public class AndroidTest implements E2ETest {
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
+	    turnOnBrowserstackLogs(caps);
+
 	    caps.setCapability("app", System.getenv("app_url"));
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
 	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
@@ -108,6 +111,21 @@ public class AndroidTest implements E2ETest {
 	    driver = new AndroidDriver<AndroidElement>(
 	            new URL("http://hub.browserstack.com/wd/hub"), caps);
 
+	}
+
+	/**
+	 * Optional logging options for browserstack
+	 * @param caps
+	 * @return
+	 */
+	public static void turnOnBrowserstackLogs(DesiredCapabilities caps) {
+	    // Log settings to debug
+	    caps.setCapability("browserstack.console", "verbose");
+	    HashMap networkLogsOptions = new HashMap<>();
+	    networkLogsOptions.put("captureContent", Boolean.TRUE);
+	    // turn on network logs
+	    caps.setCapability("browserstack.networkLogs", "true");
+	    caps.setCapability("browserstack.networkLogsOptions", networkLogsOptions);
 	}
 
 	/**
