@@ -15,7 +15,18 @@
  *
  * Filename: databaseAccess.tsx
  * Description:
- *   TODO
+ *   This file contains accessors to data stored in PouchDB
+ *
+ *   If you find yourself writing pouchdb.get(), pouchdb.put(), etc.
+ *   put that code in a function in this file
+ *
+ *   See dataStorage.ts for accessors specific to Observations
+ *   In comparison, this file is for metadata, or other data
+ *   (dataStorage.ts is called from this file, as dataStorage.ts
+ *    does encoding/decoding of observations)
+ *
+ *   TODO: Convert *everything* to listeners that can run more than once
+ *   (Sync refactor)
  */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -34,6 +45,7 @@ import {
   createdProjects,
   createdProjectsInterface,
   initializeEvents,
+  projects_known,
 } from './sync';
 
 export function getProjectList(user_id?: string): ProjectInformation[] {
@@ -57,6 +69,27 @@ export function getProjectList(user_id?: string): ProjectInformation[] {
     });
   }
   return output;
+}
+
+export function listenProjectList(
+  listener: (project_list: ProjectInformation[]) => void,
+  user_id?: string
+): () => void {
+  const callback = () => {
+    listener(getProjectList(user_id));
+  };
+
+  initializeEvents.on('projects_known', callback);
+
+  if (projects_known !== null) {
+    // Projects already known by the time this function is called
+    callback();
+  }
+
+  return () => {
+    // Event remover
+    initializeEvents.removeListener('projects_known', callback);
+  };
 }
 
 export function getProjectInfo(
