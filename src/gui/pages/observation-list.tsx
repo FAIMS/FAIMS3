@@ -20,24 +20,17 @@
 
 import React, {useContext, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Link as RouterLink} from 'react-router-dom';
-import {
-  Box,
-  Breadcrumbs,
-  Container,
-  Grid,
-  Link,
-  Typography,
-} from '@material-ui/core';
+import {Box, Container, Grid} from '@material-ui/core';
 import * as ROUTES from '../../constants/routes';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import {store} from '../../store';
 import Skeleton from '@material-ui/lab/Skeleton';
 import {ActionType} from '../../actions';
+import InProgress from '../components/ui/inProgress';
 
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
-    padding: theme.spacing(2),
   },
   bullet: {
     display: 'inline-block',
@@ -70,6 +63,10 @@ export default function ObservationList() {
   const classes = useStyles();
   const globalState = useContext(store);
   const {dispatch} = globalState;
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {title: 'Observations'},
+  ];
   useEffect(() => {
     dispatch({
       type: ActionType.ADD_ALERT,
@@ -98,12 +95,7 @@ export default function ObservationList() {
   return (
     <Container maxWidth="lg">
       <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
-        <Breadcrumbs aria-label="breadcrumb">
-          <Link component={RouterLink} to={ROUTES.INDEX}>
-            Index
-          </Link>
-          <Typography color="textPrimary">Observations</Typography>
-        </Breadcrumbs>
+        <Breadcrumbs data={breadcrumbs} />
       </Box>
 
       <div className={classes.gridRoot}>
@@ -111,9 +103,12 @@ export default function ObservationList() {
           <Grid item xs={12} key={'skeleton-observation-list-grid'}>
             <Skeleton animation="wave" variant="rect" height={100} />
           </Grid>
-          To be implemented... Observation list component - list of observation
-          user has access to: - shows most recent (top 100) - allows for
-          filtering by meta data (owner, last_updated by, project etc)
+          <InProgress />
+          <p>
+            This component (also shown on the user's home/dashboard) shows the
+            latest e.g., 100 observations across all the user's projects, and
+            allows for filtering by meta data (owner, last updated etc).
+          </p>
         </Grid>
       </div>
     </Container>

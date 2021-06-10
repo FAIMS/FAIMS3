@@ -42,7 +42,7 @@ export default function LoadingApp() {
         <Grid item xs={3} sm={2} md={1}>
           <img src="/static/logo/Faims-medium.jpg" style={{maxWidth: '100%'}} />
         </Grid>
-        <Grid item xs={3}>
+        <Grid item xs={4} sm={3}>
           <Box mb={1} mt={2}>
             <Typography variant="subtitle2" align={'center'}>
               <b>Loading data </b>
@@ -55,8 +55,8 @@ export default function LoadingApp() {
           </Box>
           <Box mb={2}>
             <Typography variant={'body2'} align={'center'}>
-              This may take some time on first load depending on your connection
-              speed.
+              This may take some time on first load, depending on your
+              connection speed.
             </Typography>
           </Box>
         </Grid>

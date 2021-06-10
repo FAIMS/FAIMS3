@@ -50,7 +50,7 @@ export default function MetadataRenderer(props: MetadataProps) {
   return (
     <Chip
       size={'small'}
-      style={{marginRight: '5px'}}
+      style={{marginRight: '5px', marginBottom: '5px'}}
       label={
         <React.Fragment>
           {metadata_label ? (

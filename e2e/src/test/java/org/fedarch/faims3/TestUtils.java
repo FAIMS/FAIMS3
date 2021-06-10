@@ -17,10 +17,11 @@
  * Description:
  *   TODO
  */
-
-package org.fedarch.faims3.android;
+package org.fedarch.faims3;
 
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 import io.appium.java_client.MobileBy;
 import io.appium.java_client.TouchAction;
@@ -38,7 +39,7 @@ public class TestUtils {
 	 * Scroll down a little bit at a time.
 	 * @param driver AndroidDriver
 	 */
-	public static void scrollDown(AndroidDriver<AndroidElement> driver) {
+	public static void scrollDown(WebDriver driver) {
 		//if pressX was zero it didn't work for me
 	    int pressX = driver.manage().window().getSize().width / 2;
 	    // 4/5 of the screen as the bottom finger-press point
@@ -72,9 +73,17 @@ public class TestUtils {
      * @param toX Scroll horizontal destination point
      * @param toY Scroll vertical destination point
      */
-	public static void scroll(AndroidDriver<AndroidElement> driver, int fromX, int fromY, int toX, int toY) {
-	    TouchAction touchAction = new TouchAction(driver);
-	    touchAction.longPress(PointOption.point(fromX, fromY)).moveTo(PointOption.point(toX, toY)).release().perform();
+	public static void scroll(WebDriver driver, int fromX, int fromY, int toX, int toY) {
+		if (driver instanceof AndroidDriver) {
+	        TouchAction touchAction = new TouchAction((AndroidDriver)driver);
+	        touchAction.longPress(PointOption.point(fromX, fromY)).moveTo(PointOption.point(toX, toY)).release().perform();
+		} else if (driver instanceof RemoteWebDriver) {
+			JavascriptExecutor js = (JavascriptExecutor) driver;
+			js.executeScript("window.scrollBy(0," + (fromY - toY) + ")", "");
+		} else {
+			// TODO: implement ios support if needed
+			throw new UnsupportedOperationException("IOS scroll() isn't supported yet!");
+		}
 	}
 
 	/**
@@ -104,12 +113,12 @@ public class TestUtils {
 	 * @param passed True if the test passed. False otherwise.
 	 * @param message Reason it passed/failed.
 	 */
-	public static void markBrowserstackTestResult(AndroidDriver<AndroidElement> driver, boolean isBrowserstackConnected, boolean passed, String message) {
+	public static void markBrowserstackTestResult(WebDriver driver, boolean isBrowserstackConnected, boolean passed, String message) {
 		if (!isBrowserstackConnected) {
 			// only for browserstack
 			return;
 		}
-	    JavascriptExecutor jse = driver;
+	    JavascriptExecutor jse = (JavascriptExecutor) driver;
 	    // Setting the status of test as 'passed' or 'failed' based on the condition
 	    if (passed) {
 	        jse.executeScript("browserstack_executor: {\"action\": \"setSessionStatus\", \"arguments\": {\"status\": \"passed\", \"reason\": \"" + message + "\"}}");
@@ -119,20 +128,20 @@ public class TestUtils {
 	}
 
 	/**
-	 * Get a string representation of the driver's location latitude.
-	 * @param driver
-	 * @return Latitude string
+	 * Get commit message for browserstack. Defaults to "manual run".
+	 * @return
 	 */
-	public static String getLatitude(AndroidDriver<AndroidElement> driver) {
-		return String.valueOf(driver.location().getLatitude());
+	public static String getCommitMessage() {
+	    //Set commit message as session name
+	    String description = System.getenv("BROWSERSTACK_BUILD_NAME");
+	    if (description == null || description.isEmpty()) {
+	    	description = "Manual run";
+	    }
+	    return description;
 	}
 
-	/**
-	 * Get a string representation of the driver's location longitude.
-	 * @param driver
-	 * @return Longitude string
-	 */
-	public static String getLongitude(AndroidDriver<AndroidElement> driver) {
-		return String.valueOf(driver.location().getLongitude());
+	public static boolean isUsingBrowserstack(WebDriver driver) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

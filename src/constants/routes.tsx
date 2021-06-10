@@ -31,6 +31,7 @@ export const PROJECT = '/projects/';
 export const OBSERVATION_LIST = '/observations';
 export const OBSERVATION = '/observations/';
 export const OBSERVATION_CREATE = '/new-observation';
+export const ABOUT_BUILD = '/about-build';
 
 export function getObservationRoute(
   project_id: ProjectID,
