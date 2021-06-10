@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {Button, Grid, Box, ButtonGroup} from '@material-ui/core';
+import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -697,15 +697,14 @@ class ObservationForm extends React.Component<
                             this observation on this device at any time.
                           </p>
                           <p>
-                            Once you are ready, hit the{' '}
-                            <Button
-                              variant="contained"
-                              size={'small'}
-                              color="primary"
-                              disableElevation
-                            >
-                              save and new{' '}
-                            </Button>{' '}
+                            Once you are ready, click the{' '}
+                            <Typography variant="button">
+                              <b>
+                                {this.props.is_fresh
+                                  ? 'save and new'
+                                  : 'update'}
+                              </b>
+                            </Typography>{' '}
                             button. This will firstly validate the data, and if
                             valid, sync the observation to the remote server.
                           </p>
