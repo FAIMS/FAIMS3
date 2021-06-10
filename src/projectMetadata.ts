@@ -17,12 +17,44 @@
  * Description:
  *   TODO
  */
-import {getProjectDB} from './sync/index';
+import {getProjectDB, initializeEvents} from './sync/index';
 import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
   ProjectID,
 } from './datamodel';
+
+export function listenProjectMetas(
+  active_id: string,
+  callback: (meta_key: string, meta_value: unknown) => unknown
+): () => void {
+  const on_update = async () => {
+    // TODO: Optimise this when sync module gets more granular update notifications
+    // i.e. when sync can properly pass through 'change' events from Pouch
+    // we can *just* update the metadata object that updated.
+    // Currently, this updates all metadata objects whenever *ANY PROJECT*'s meta
+    // changes.
+    const projdb = getProjectDB(active_id);
+    try {
+      const docs = await projdb.allDocs({include_docs: true});
+      docs.rows.forEach(row => {
+        if (row.id.startsWith(PROJECT_METADATA_PREFIX + '-')) {
+          callback(
+            row.id.slice((PROJECT_METADATA_PREFIX + '-').length),
+            (row.doc! as EncodedProjectMetadata).metadata
+          );
+        }
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  initializeEvents.on('project_meta_paused', on_update);
+
+  return () =>
+    initializeEvents.removeListener('project_meta_paused', on_update);
+}
 
 export async function getProjectMetadata(
   project_id: ProjectID,
