@@ -19,6 +19,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import _ from 'lodash';
 import {
   DataGrid,
   GridColDef,
@@ -43,7 +44,6 @@ type ObservationsTableProps = {
 export default function ObservationsTable(props: ObservationsTableProps) {
   const {project_id, maxRows} = props;
   const [loading, setLoading] = useState(true);
-  const pouchObservationList = {};
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
@@ -77,18 +77,22 @@ export default function ObservationsTable(props: ObservationsTableProps) {
       width: 200,
     },
   ];
+
   useEffect(() => {
+    //  Dependency is only the project_id, ie., register one callback for this component
+    // on load - if the observation list is updated, the callback should be fired
     if (project_id === undefined) return; //dummy project
     const destroyListener = listenObservationsList(
       project_id,
-      newObservationList => {
+      newPouchObservationList => {
         setLoading(false);
-        Object.assign(pouchObservationList, newObservationList);
-        setRows(Object.values(pouchObservationList));
+        if (!_.isEqual(Object.values(newPouchObservationList), rows)) {
+          setRows(Object.values(newPouchObservationList));
+        }
       }
     );
     return destroyListener; // destroyListener called when this component unmounts.
-  }, []);
+  }, [project_id]);
 
   return (
     <div>

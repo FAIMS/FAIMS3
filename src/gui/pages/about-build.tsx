@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {Container} from '@material-ui/core';
+import {Box, Container} from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import * as ROUTES from '../../constants/routes';
 import {
@@ -33,39 +33,48 @@ import {
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync';
+import grey from '@material-ui/core/colors/grey';
+import BoxTab from '../components/ui/boxTab';
 
 export default function AboutBuild() {
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'About-Build'},
+    {title: 'about-build'},
   ];
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
-      <table>
-        <tr>
-          <td>Directory Server</td>
-          <td>
-            {DIRECTORY_PROTOCOL}://{DIRECTORY_HOST}:{DIRECTORY_PORT}/
-          </td>
-        </tr>
-        <tr>
-          <td>Commit Version</td>
-          <td>{COMMIT_VERSION}</td>
-        </tr>
-        <tr>
-          <td>Using real data</td>
-          <td>{USE_REAL_DATA ? 'True' : 'False'}</td>
-        </tr>
-        <tr>
-          <td>Running under test</td>
-          <td>{RUNNING_UNDER_TEST ? 'True' : 'False'}</td>
-        </tr>
-        <tr>
-          <td>Autoactivating projects</td>
-          <td>{AUTOACTIVATE_PROJECTS ? 'True' : 'False'}</td>
-        </tr>
-      </table>
+      <BoxTab title={'Developer tool: About the build'} bgcolor={grey[100]} />
+      <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}} mb={2}>
+        <pre>
+          <table>
+            <tbody>
+              <tr>
+                <td>Directory Server</td>
+                <td>
+                  {DIRECTORY_PROTOCOL}://{DIRECTORY_HOST}:{DIRECTORY_PORT}/
+                </td>
+              </tr>
+              <tr>
+                <td>Commit Version</td>
+                <td>{COMMIT_VERSION}</td>
+              </tr>
+              <tr>
+                <td>Using real data</td>
+                <td>{USE_REAL_DATA ? 'True' : 'False'}</td>
+              </tr>
+              <tr>
+                <td>Running under test</td>
+                <td>{RUNNING_UNDER_TEST ? 'True' : 'False'}</td>
+              </tr>
+              <tr>
+                <td>Autoactivating projects</td>
+                <td>{AUTOACTIVATE_PROJECTS ? 'True' : 'False'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </pre>
+      </Box>
       <Button
         variant="outlined"
         color={'secondary'}

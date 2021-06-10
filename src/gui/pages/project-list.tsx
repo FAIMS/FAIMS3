@@ -74,7 +74,7 @@ export default function ProjectList() {
 
   useEffect(() => {
     return listenProjectList(setProjectList);
-  });
+  }, []);
 
   return (
     <Container maxWidth="lg">
