@@ -79,6 +79,17 @@ export default function AboutBuild() {
       >
         Wipe and reset everything!
       </Button>
+      <Button
+        variant="outlined"
+        color={'secondary'}
+        onClick={() => {
+          console.log('User refreshed page');
+          window.location.reload();
+        }}
+        style={{marginRight: '10px'}}
+      >
+        Refresh the app (like in a browser)!
+      </Button>
     </Container>
   );
 }
