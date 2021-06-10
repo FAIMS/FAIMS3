@@ -289,13 +289,6 @@ public class ChromeTest implements E2ETest {
 	 */
 	@Override
 	public void loadNewAstroSkyForm() {
-		// workaround for FAIMS3-247
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		// Click on "Projects"
 		WebElement projects = new WebDriverWait(driver, 10)
 				.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='/projects']")));

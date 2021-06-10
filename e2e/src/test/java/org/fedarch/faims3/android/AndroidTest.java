@@ -99,7 +99,7 @@ public class AndroidTest implements E2ETest {
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "Google Pixel 3");
-	    caps.setCapability("os_version", "9.0");
+	    caps.setCapability("os_version", "10.0");
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
@@ -143,13 +143,6 @@ public class AndroidTest implements E2ETest {
 	 */
 	@Override
 	public void loadNewAstroSkyForm() {
-		// workaround for FAIMS3-247
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		WebDriverWait wait = new WebDriverWait(driver, 10);
 		// Click on "Projects"
 		AndroidElement projects = (AndroidElement) wait.until(ExpectedConditions
@@ -161,8 +154,8 @@ public class AndroidTest implements E2ETest {
 				.presenceOfElementLocated(MobileBy.xpath("//*[contains(@text, 'Astrosky')]")));
 
 		// Find the '+' button
-		AndroidElement menuButton = (AndroidElement) AstroSky.findElement(
-				MobileBy.xpath("../android.view.View[5]/android.widget.Button"));
+		AndroidElement menuButton = driver.findElement(
+				MobileBy.xpath("//*[contains(@text, 'Astrosky')]/../android.view.View[5]/android.widget.Button"));
 		menuButton.click();
 		AndroidElement newButton = (AndroidElement) wait.until(ExpectedConditions.visibilityOfElementLocated(
 				By.xpath("//*[contains(@text, 'New Observation')]")));
