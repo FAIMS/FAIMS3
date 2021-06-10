@@ -71,12 +71,13 @@ export default function Observation() {
   ];
   const [revisions, setRevisions] = React.useState([] as string[]);
   useEffect(() => {
+    setRevisions([]);
     listFAIMSObservationRevisions(project_id, observation_id)
       .then(all_revisions => {
         setRevisions(all_revisions);
       })
       .catch(console.error /*TODO*/);
-  });
+  }, [project_id, observation_id]);
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
