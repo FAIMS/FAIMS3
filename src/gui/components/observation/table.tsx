@@ -95,7 +95,6 @@ export default function ObservationsTable(props: ObservationsTableProps) {
       <Typography variant="overline">Recent Observations</Typography>
       <div
         style={{
-          height: 400,
           width: '100%',
           marginBottom: not_xs ? '20px' : '40px',
         }}
