@@ -49,7 +49,6 @@ import ObservationsTable from '../observation/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
-import {listenProjectMetas} from '../../../projectMetadata';
 import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
 
@@ -104,7 +103,6 @@ export default function Card(props: ProjectCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
-  const [metadatums, setMetadatums] = useState({} as {[key: string]: unknown});
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 
@@ -123,12 +121,6 @@ export default function Card(props: ProjectCardProps) {
       setLoading(false);
     }
   }, [project]);
-
-  useEffect(() => {
-    return listenProjectMetas(project.project_id, (meta_id, meta_value) =>
-      setMetadatums({...metadatums, [meta_id]: meta_value})
-    );
-  });
 
   return (
     <React.Fragment>
