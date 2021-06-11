@@ -274,6 +274,8 @@ class RecordStagingState {
 
   /**
    * Pushes the currently touched values into the staging DB
+   *
+   * This is awaitable as a normal async function
    */
   async _saveData(loadedProps: LoadableProps): Promise<void> {
     if (this.is_saving) {
@@ -358,6 +360,17 @@ class RecordStagingState {
     this.props = newProps;
 
     this._fetchData(loadedProps);
+  }
+
+  /**
+   * Called after save & new button is pressed,
+   * This clears the staging area of ALL data
+   *
+   * This is done for existing observations and new observations
+   */
+  async clear(loadedProps: LoadableProps) {
+    this.touched_fields.clear();
+    await this._saveData(loadedProps);
   }
 }
 
