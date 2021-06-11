@@ -123,6 +123,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
           components={{
             Toolbar: GridToolbar,
           }}
+          sortModel={[{field: 'updated', sort: 'desc'}]}
         />
       </div>
     </div>
