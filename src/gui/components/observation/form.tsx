@@ -62,6 +62,26 @@ type ObservationFormState = {
   last_saved: Date;
 };
 
+/**
+ * Given a list of values, returns the first from the list that isn't null/undefined
+ * This is to be used instead of list[0] || list[1] || list[2]
+ * in the case that list can contain the number 0
+ *
+ * @param list List of undefineds, nulls, or anything else
+ * @returns Always returns null or a defined value, this never returns undefined.
+ */
+function firstDefinedFromList<T>(
+  list: NonNullable<T>[]
+): NonNullable<T> | null {
+  if (list.length === 0) {
+    return null;
+  } else if (list[0] === undefined || list[0] === null) {
+    return firstDefinedFromList(list.slice(1));
+  } else {
+    return list[0];
+  }
+}
+
 class ObservationForm extends React.Component<
   ObservationFormProps & RouteComponentProps,
   ObservationFormState
@@ -248,10 +268,11 @@ class ObservationForm extends React.Component<
       _id: this.props.observation_id!,
     };
     fieldNames.forEach(fieldName => {
-      initialValues[fieldName] =
-        this.loadedStagedData![fieldName] ||
-        existingData?.[fieldName] ||
-        fields[fieldName]['initialValue'];
+      initialValues[fieldName] = firstDefinedFromList([
+        this.loadedStagedData![fieldName],
+        existingData?.[fieldName],
+        fields[fieldName]['initialValue'],
+      ]);
     });
     this.setState({initialValues: initialValues});
   }
