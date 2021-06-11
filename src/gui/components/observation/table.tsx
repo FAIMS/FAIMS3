@@ -92,7 +92,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
       }
     );
     return destroyListener; // destroyListener called when this component unmounts.
-  }, [project_id]);
+  }, [project_id, rows]);
 
   return (
     <div>
