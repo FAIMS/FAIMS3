@@ -88,18 +88,18 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
 			loadNewAstroSkyForm();
 			// Check all fields are still the same
 			validateLatLong();
-			assertEquals(AstroSky.EMAIL_CHROME, driver.findElement(By.id("email-field")).getText());
+			assertEquals(AstroSky.EMAIL_CHROME, driver.findElement(By.id("email-field")).getAttribute("value"));
 
 			TestUtils.scrollDown(driver);
 
-			assertEquals(AstroSky.COLOUR, driver.findElement(By.id("str-field")).getText());
-			assertEquals(AstroSky.UNICODE, driver.findElement(By.id("multi-str-field")).getText());
+			assertEquals(AstroSky.COLOUR, driver.findElement(By.id("str-field")).getAttribute("value"));
+			assertEquals(AstroSky.UNICODE, driver.findElement(By.id("multi-str-field")).getAttribute("value"));
 
 			TestUtils.scrollDown(driver);
 
-			assertEquals(AstroSky.INTEGER, driver.findElement(By.id("int-field")).getText());
-			assertEquals("Currency €", driver.findElement(By.id("select-field")).getText());
-			assertEquals("Currencies $, €", driver.findElement(By.id("multi-select-field")).getText());
+			assertEquals(AstroSky.INTEGER, driver.findElement(By.id("int-field")).getAttribute("value"));
+			assertEquals("Currency €", driver.findElement(By.id("select-field")).getAttribute("value"));
+			assertEquals("Currencies $, €", driver.findElement(By.id("multi-select-field")).getAttribute("value"));
 			assertEquals("true", driver.findElement(By.id("checkbox-field")).getAttribute("checked"));
 
 			// radio button

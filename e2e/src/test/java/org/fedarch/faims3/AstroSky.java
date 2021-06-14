@@ -26,8 +26,16 @@ package org.fedarch.faims3;
  */
 public class AstroSky {
     public static final String EMAIL_ANDROID = "android-browserstack@faims.edu.au";
+
     public static final String EMAIL_CHROME = "chrome-browserstack@faims.edu.au";
+
+    public static final String EMAIL_DRAFT_ANDROID = "draft-observation-android-browserstack@faims.edu.au";
+
+    public static final String EMAIL_DRAFT_CHROME = "draft-observation-chrome-browserstack@faims.edu.au";
+
     public static final String COLOUR = "Pink";
+
     public static final String UNICODE = "いろはにほへとちりぬるを Pchnąć w tę łódź jeża lub ośm skrzyń fig จงฝ่าฟันพัฒนาวิชาการ    côté de l'alcôve ovoïde größeren";
+
     public static final String INTEGER = "16";
 }

@@ -67,7 +67,7 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
    * @throws InvocationTargetException
    */
   @Override
-@Test
+  @Test
   public void testSwitchTab() throws JSONException {
 	  try {
 			// Go to AstroSky form
