@@ -57,15 +57,18 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 
 		try {
 			// Load up Astro Sky form
-			super.loadNewAstroSkyForm();
+			loadNewAstroSkyForm();
 			// The form should load up
-			super.fillOutFormWithValidFields();
+			fillOutFormWithValidFields();
+
 			TestUtils.scrollDown(driver);
-			// Submit button
-			WebElement submit = driver.findElement(By.xpath("//*[@text='SUBMIT']"));
-			submit.click();
 			// validate JSON
 			validateJSON();
+			// Submit button
+			WebElement submit = driver.findElement(By.xpath("//*[@text='SAVE AND NEW']"));
+			submit.click();
+			// Check the message
+			verifyMessage("Observation successfully created");
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");

@@ -66,6 +66,8 @@ public class TestPopulateFormChrome extends ChromeTest implements TestPopulateFo
 			// Submit button
 			WebElement submit = driver.findElement(By.xpath("//button[@type='submit']"));
 			submit.click();
+			// Check the message
+			super.verifyMessage("Observation successfully created");
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");

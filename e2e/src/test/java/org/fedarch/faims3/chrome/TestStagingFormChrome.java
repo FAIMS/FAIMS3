@@ -88,7 +88,7 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
 			loadNewAstroSkyForm();
 			// Check all fields are still the same
 			validateLatLong();
-			assertEquals(AstroSky.EMAIL, driver.findElement(By.id("email-field")).getText());
+			assertEquals(AstroSky.EMAIL_CHROME, driver.findElement(By.id("email-field")).getText());
 
 			TestUtils.scrollDown(driver);
 
