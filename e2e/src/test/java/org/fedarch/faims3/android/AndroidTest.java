@@ -33,6 +33,7 @@ import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -227,8 +228,12 @@ public class AndroidTest implements E2ETest {
 	    AndroidElement currencyList = (AndroidElement) wait.until(
 	    		ExpectedConditions.presenceOfElementLocated(MobileBy.className("android.widget.ListView")));
 	    // choose the second value: Euro
-	    currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
-
+	    try {
+	        currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
+	    } catch(StaleElementReferenceException e) {
+	    	// sometimes this happens.. try again
+	    	currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
+        }
 	    // Multiple currency field
 	    AndroidElement multiCurrField = (AndroidElement) wait.until(
 	            ExpectedConditions.elementToBeClickable(
@@ -305,10 +310,8 @@ public class AndroidTest implements E2ETest {
 	public void validateJSON() throws JSONException, AssertionError {
 		// Find JSON
 		WebDriverWait wait = new WebDriverWait(driver, 10);
-		// wait for Submit to finish
-		wait.until(ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@text='SUBMIT']")));
 		WebElement json = wait.until(ExpectedConditions.visibilityOf(
-				driver.findElement(MobileBy.xpath("//*[@text='SUBMIT']/following-sibling::android.view.View/android.view.View"))));
+				driver.findElement(MobileBy.xpath("//*[@text='DEVELOPER TOOL: FORM STATE']/following-sibling::android.view.View/android.view.View"))));
 		JSONObject jsonObject = new JSONObject(json.getText());
 		JSONObject values = jsonObject.getJSONObject("values");
 

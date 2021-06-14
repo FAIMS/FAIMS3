@@ -306,7 +306,7 @@ export default function Card(props: ProjectCardProps) {
           <CardActions style={{width: '100%'}}>
             <Grid container alignItems="center">
               <Grid item xs={6} sm={6}>
-                {!listView ? <ProjectSync project={project} /> : ''}
+                <Box>{!listView ? <ProjectSync project={project} /> : ''}</Box>
               </Grid>
               <Grid item xs={6} sm={6}>
                 {listView ? (

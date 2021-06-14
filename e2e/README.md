@@ -47,7 +47,7 @@ Run appium in command line:
 * Make sure you're on the same directory as this e2e folder. 
 * Run: `mvn install`
 
-6. To debug Android elements, I use UIAutomatorViewer.bat.
+6. To debug Android elements, I use UIAutomatorViewer.bat. Browserstack app-live also has inspect functionality in the Dev Tools. 
 
 #### Test with Browserstack
 

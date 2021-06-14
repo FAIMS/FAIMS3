@@ -59,7 +59,7 @@ export default function ObservationMeta(props: ObservationMetaProps) {
           <Table>
             <TableBody>
               {Object.keys(meta).map(key => (
-                <TableRow>
+                <TableRow key={'observation-meta-' + key}>
                   <TableCell>
                     <b>{key}</b>
                   </TableCell>

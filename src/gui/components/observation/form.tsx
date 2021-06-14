@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {Button, Grid, Box, ButtonGroup} from '@material-ui/core';
+import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -61,6 +61,26 @@ type ObservationFormState = {
   is_saving: boolean;
   last_saved: Date;
 };
+
+/**
+ * Given a list of values, returns the first from the list that isn't null/undefined
+ * This is to be used instead of list[0] || list[1] || list[2]
+ * in the case that list can contain the number 0
+ *
+ * @param list List of undefineds, nulls, or anything else
+ * @returns Always returns null or a defined value, this never returns undefined.
+ */
+function firstDefinedFromList<T>(
+  list: NonNullable<T>[]
+): NonNullable<T> | null {
+  if (list.length === 0) {
+    return null;
+  } else if (list[0] === undefined || list[0] === null) {
+    return firstDefinedFromList(list.slice(1));
+  } else {
+    return list[0];
+  }
+}
 
 class ObservationForm extends React.Component<
   ObservationFormProps & RouteComponentProps,
@@ -248,10 +268,11 @@ class ObservationForm extends React.Component<
       _id: this.props.observation_id!,
     };
     fieldNames.forEach(fieldName => {
-      initialValues[fieldName] =
-        this.loadedStagedData![fieldName] ||
-        existingData?.[fieldName] ||
-        fields[fieldName]['initialValue'];
+      initialValues[fieldName] = firstDefinedFromList([
+        this.loadedStagedData![fieldName],
+        existingData?.[fieldName],
+        fields[fieldName]['initialValue'],
+      ]);
     });
     this.setState({initialValues: initialValues});
   }
@@ -697,15 +718,14 @@ class ObservationForm extends React.Component<
                             this observation on this device at any time.
                           </p>
                           <p>
-                            Once you are ready, hit the{' '}
-                            <Button
-                              variant="contained"
-                              size={'small'}
-                              color="primary"
-                              disableElevation
-                            >
-                              save and new{' '}
-                            </Button>{' '}
+                            Once you are ready, click the{' '}
+                            <Typography variant="button">
+                              <b>
+                                {this.props.is_fresh
+                                  ? 'save and new'
+                                  : 'update'}
+                              </b>
+                            </Typography>{' '}
                             button. This will firstly validate the data, and if
                             valid, sync the observation to the remote server.
                           </p>

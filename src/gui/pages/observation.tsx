@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useEffect} from 'react';
+import React, {useEffect} from 'react';
 import {
   AppBar,
   Box,
@@ -26,29 +26,22 @@ import {
   Typography,
   Paper,
   Tab,
-  Button,
 } from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
-import {useHistory, useParams} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ObservationForm from '../components/observation/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
-import {Alert} from '@material-ui/lab';
-import {
-  deleteFAIMSDataForID,
-  listFAIMSObservationRevisions,
-} from '../../dataStorage';
-import {ActionType} from '../../actions';
-import {store} from '../../store';
+import {listFAIMSObservationRevisions} from '../../dataStorage';
 import {getProjectInfo} from '../../databaseAccess';
 import grey from '@material-ui/core/colors/grey';
 import ObservationMeta from '../components/observation/meta';
+import ObservationDelete from '../components/observation/delete';
 
 export default function Observation() {
   const {project_id, observation_id} = useParams<{
@@ -56,9 +49,7 @@ export default function Observation() {
     observation_id: string;
   }>();
   const [value, setValue] = React.useState('1');
-  const history = useHistory();
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
+
   const project_info = getProjectInfo(project_id);
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
@@ -71,38 +62,15 @@ export default function Observation() {
   ];
   const [revisions, setRevisions] = React.useState([] as string[]);
   useEffect(() => {
+    setRevisions([]);
     listFAIMSObservationRevisions(project_id, observation_id)
       .then(all_revisions => {
         setRevisions(all_revisions);
       })
       .catch(console.error /*TODO*/);
-  });
+  }, [project_id, observation_id]);
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
-  };
-
-  const handleDelete = () => {
-    deleteFAIMSDataForID(project_id, observation_id)
-      .then(() => {
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Observation ' + observation_id + ' deleted',
-            severity: 'success',
-          },
-        });
-        history.push(ROUTES.PROJECT + project_id);
-      })
-      .catch(err => {
-        console.log('Could not delete observation: ' + observation_id, err);
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Could not delete observation: ' + observation_id,
-            severity: 'error',
-          },
-        });
-      });
   };
 
   return (
@@ -152,20 +120,10 @@ export default function Observation() {
               observation_id={observation_id}
             />
             <Box mt={2}>
-              <Button
-                variant="outlined"
-                color="secondary"
-                startIcon={<DeleteIcon />}
-                onClick={handleDelete}
-              >
-                Delete Observation
-              </Button>
-              <Box mt={2}>
-                <Alert severity="warning">
-                  You cannot reverse this action! Be sure you wish to delete
-                  this observation.
-                </Alert>
-              </Box>
+              <ObservationDelete
+                project_id={project_id}
+                observation_id={observation_id}
+              />
             </Box>
           </TabPanel>
         </TabContext>

@@ -45,7 +45,7 @@ export default function MetadataRenderer(props: MetadataProps) {
       }
     };
     getMeta();
-  });
+  }, []);
 
   return (
     <Chip
