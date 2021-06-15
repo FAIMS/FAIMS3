@@ -60,8 +60,6 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 			loadNewAstroSkyForm();
 			// The form should load up
 			fillOutFormWithValidFields();
-
-			TestUtils.scrollDown(driver);
 			// validate JSON
 			validateJSON();
 			// Submit button

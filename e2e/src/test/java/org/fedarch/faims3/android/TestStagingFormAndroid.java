@@ -91,7 +91,7 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
 			TestUtils.scrollDown(driver);
 
 			WebDriverWait wait = new WebDriverWait(driver, 10);
-			assertEquals("1.0", wait.until(
+			assertEquals(AstroSky.INTEGER, wait.until(
 					ExpectedConditions.visibilityOfElementLocated(
 							MobileBy.xpath("//*[@resource-id='int-field']"))).getText());
 			assertEquals("Currency €", driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']")).getText());

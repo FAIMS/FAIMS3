@@ -213,12 +213,12 @@ public class AndroidTest implements E2ETest {
 	    AndroidElement textField = driver.findElement(MobileBy.xpath("//*[@resource-id='multi-str-field']"));
 	    textField.sendKeys(AstroSky.UNICODE);
 
-	    //TODO:
-	    //Since updating to appium 1.21.0 (to enable geolocation), this will not work anymore
-	    // so we just use the default number for now. It's now expecting you to enter the numbers from the
-	    // keyboard, which is not showing properly.
 	    AndroidElement intField = driver.findElement(By.xpath("//*[@resource-id='int-field']"));
-	    //intField.sendKeys(AstroSky.INTEGER);
+	    intField.click();
+	    driver.pressKey(new KeyEvent(AndroidKey.DEL));
+	    driver.pressKey(new KeyEvent(AndroidKey.DIGIT_1));
+	    driver.pressKey(new KeyEvent(AndroidKey.DIGIT_6));
+	    driver.pressKey(new KeyEvent(AndroidKey.ENTER));
 
 	    // Currency field
 	    AndroidElement currencyField = driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']"));
@@ -251,12 +251,12 @@ public class AndroidTest implements E2ETest {
 	    // click out of the dropdown
 	    driver.pressKey(new KeyEvent(AndroidKey.ESCAPE));
 
+	    TestUtils.scrollDown(driver);
+
 	    // tick the checkbox
 	    AndroidElement checkbox = (AndroidElement) wait.until(
 	    		ExpectedConditions.visibilityOfElementLocated(MobileBy.xpath("//*[@resource-id='checkbox-field']")));
 	    checkbox.click();
-
-	    TestUtils.scrollToText(driver, "SAVE AND NEW");
 
 	    // radio button
 	    AndroidElement radioButton = (AndroidElement) wait.until(ExpectedConditions.visibilityOfElementLocated(
@@ -322,7 +322,7 @@ public class AndroidTest implements E2ETest {
 		assertEquals(AstroSky.EMAIL_ANDROID, values.get("email-field").toString());
         assertEquals(AstroSky.COLOUR, values.get("str-field").toString());
         assertEquals(AstroSky.UNICODE, values.get("multi-str-field").toString());
-        assertEquals("1", values.get("int-field").toString());
+        assertEquals(AstroSky.INTEGER, values.get("int-field").toString());
         assertEquals("EUR", values.get("select-field").toString());
         assertEquals("[\"USD\",\"EUR\"]", values.get("multi-select-field").toString());
         // FIXME: seems like an appium bug. The values below aren't updating despite us waiting and reretrieving them
