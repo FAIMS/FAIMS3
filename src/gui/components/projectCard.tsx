@@ -33,7 +33,7 @@ import {
   isSyncingProject,
   listenSyncingProject,
   setSyncingProject,
-} from '../../sync';
+} from '../../sync/sync-toggle';
 import {FormControlLabel} from '@material-ui/core';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
 

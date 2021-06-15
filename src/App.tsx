@@ -24,7 +24,7 @@ import {MuiThemeProvider} from '@material-ui/core/styles';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
-import {createdProjects} from './sync';
+import {createdProjects} from './sync/state';
 import {ProjectsList} from './datamodel';
 import theme from './gui/theme';
 

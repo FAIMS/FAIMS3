@@ -1,4 +1,4 @@
-import {active_db} from './sync/index';
+import {active_db} from './sync/databases';
 import {ProjectID} from './datamodel';
 
 export async function getFriendlyUserName(

@@ -9,12 +9,10 @@ import {
   ProjectID,
 } from './datamodel';
 import {listFAIMSData} from './dataStorage';
-import {
-  add_initial_listener,
-  createdProjects,
-  createdProjectsInterface,
-  initializeEvents,
-} from './sync';
+import {add_initial_listener} from './sync/event-handler-registration';
+import {createdProjects, createdProjectsInterface} from './sync/state';
+import {initializeEvents} from './sync/initialize';
+import {ExistingActiveDoc} from './sync/databases';
 
 export function getProjectList(user_id?: string): ProjectInformation[] {
   /**
@@ -91,9 +89,12 @@ export async function getObservationList(
 const observationsUpdated: {[project_id: string]: boolean} = {};
 
 add_initial_listener(initializeEvents => {
-  initializeEvents.on('project_data_paused', (listing, active) => {
-    observationsUpdated[active._id] = true;
-  });
+  initializeEvents.on(
+    'project_data_paused',
+    (listing, active: ExistingActiveDoc) => {
+      observationsUpdated[active._id] = true;
+    }
+  );
 });
 
 /**
