@@ -52,7 +52,7 @@ import {
   DEFAULT_LISTING_ID,
   POUCH_SEPARATOR,
 } from './databases';
-import {initializeEvents} from './initialize';
+import {events} from './events';
 import {createdProjects} from './state';
 import {setLocalConnection} from './databases';
 import {SyncHandler} from './sync-handler';
@@ -93,10 +93,7 @@ export async function process_directory(
   };
   const unupdated_listings_in_this_directory = await get_active_listings_in_this_directory();
 
-  initializeEvents.emit(
-    'directory_local',
-    unupdated_listings_in_this_directory
-  );
+  events.emit('directory_local', unupdated_listings_in_this_directory);
 
   if (directory_db.remote !== null) {
     return; //Already hooked up
@@ -108,20 +105,20 @@ export async function process_directory(
   const sync_handler = () =>
     new SyncHandler(DIRECTORY_TIMEOUT, {
       active: async () =>
-        initializeEvents.emit(
+        events.emit(
           'directory_active',
           await get_active_listings_in_this_directory()
         ),
       paused: async () => {
         if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-        initializeEvents.emit(
+        events.emit(
           'directory_paused',
           await get_active_listings_in_this_directory()
         );
       },
       error: async () => {
         if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-        initializeEvents.emit(
+        events.emit(
           'directory_paused',
           await get_active_listings_in_this_directory()
         );
@@ -151,7 +148,7 @@ export function process_listings(
       .get(listing_id)
       .then(listing_object => {
         process_listing(listing_object).catch(err => {
-          initializeEvents.emit('listing_error', listing_id, err);
+          events.emit('listing_error', listing_id, err);
         });
       })
       .catch(err => {
@@ -167,7 +164,7 @@ export function process_listings(
             listing_id,
             'is missing'
           );
-          initializeEvents.emit('listing_error', listing_id, err);
+          events.emit('listing_error', listing_id, err);
         }
       });
   });
@@ -246,7 +243,7 @@ async function process_listing(listing_object: ListingsObject) {
    */
   const unupdated_projects_in_this_listing = await get_active_projects_in_this_listing();
 
-  initializeEvents.emit(
+  events.emit(
     'listing_local',
     listing_object,
     unupdated_projects_in_this_listing,
@@ -276,7 +273,7 @@ async function process_listing(listing_object: ListingsObject) {
   const project_sync_handler = () =>
     new SyncHandler(LISTINGS_TIMEOUT, {
       active: async () =>
-        initializeEvents.emit(
+        events.emit(
           'listing_active',
           listing_object,
           await get_active_projects_in_this_listing(),
@@ -290,7 +287,7 @@ async function process_listing(listing_object: ListingsObject) {
             listing_object._id,
             local_projects_db.local
           );
-        initializeEvents.emit(
+        events.emit(
           'listing_paused',
           listing_object,
           await get_active_projects_in_this_listing(),
@@ -305,7 +302,7 @@ async function process_listing(listing_object: ListingsObject) {
             listing_object._id,
             local_projects_db.local
           );
-        initializeEvents.emit(
+        events.emit(
           'listing_paused',
           listing_object,
           await get_active_projects_in_this_listing(),
@@ -388,14 +385,14 @@ export function process_projects(
       .then(project_object => {
         process_project(listing, ap, default_connection, project_object).catch(
           err => {
-            initializeEvents.emit('project_error', listing, ap, err);
+            events.emit('project_error', listing, ap, err);
           }
         );
       })
       .catch(err => {
         console.log(err, 'No', ap.project_id, 'in', projects_db.local);
         if (!allow_nonexistant) {
-          initializeEvents.emit('project_error', listing, ap, err);
+          events.emit('project_error', listing, ap, err);
         }
       });
   });
@@ -434,7 +431,7 @@ async function process_project(
     data: data_db_local,
   };
 
-  initializeEvents.emit(
+  events.emit(
     'project_local',
     listing,
     active_project,
@@ -463,7 +460,7 @@ async function process_project(
   const meta_sync_handler = (meta_db: LocalDB<ProjectMetaObject>) =>
     new SyncHandler(PROJECT_TIMEOUT, {
       active: async () =>
-        initializeEvents.emit(
+        events.emit(
           'project_meta_active',
           listing,
           active_project,
@@ -473,7 +470,7 @@ async function process_project(
       paused: async () => {
         if (!USE_REAL_DATA)
           await setupExampleProjectMetadata(active_project._id, meta_db.local);
-        initializeEvents.emit(
+        events.emit(
           'project_meta_paused',
           listing,
           active_project,
@@ -484,7 +481,7 @@ async function process_project(
       error: async () => {
         if (!USE_REAL_DATA)
           await setupExampleProjectMetadata(active_project._id, meta_db.local);
-        initializeEvents.emit(
+        events.emit(
           'project_meta_paused',
           listing,
           active_project,
@@ -503,7 +500,7 @@ async function process_project(
   const data_sync_handler = (data_db: LocalDB<EncodedObservation>) =>
     new SyncHandler(PROJECT_TIMEOUT, {
       active: async () =>
-        initializeEvents.emit(
+        events.emit(
           'project_data_active',
           listing,
           active_project,
@@ -513,7 +510,7 @@ async function process_project(
       paused: async () => {
         if (!USE_REAL_DATA)
           await setupExampleData(active_project._id, data_db.local);
-        initializeEvents.emit(
+        events.emit(
           'project_data_paused',
           listing,
           active_project,
@@ -524,7 +521,7 @@ async function process_project(
       error: async () => {
         if (!USE_REAL_DATA)
           await setupExampleData(active_project._id, data_db.local);
-        initializeEvents.emit(
+        events.emit(
           'project_data_paused',
           listing,
           active_project,

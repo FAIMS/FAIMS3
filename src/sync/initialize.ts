@@ -17,8 +17,6 @@
  * Description:
  *   TODO
  */
-
-import EventEmitter from 'events';
 import {setupExampleActive} from '../dummyData';
 import {
   process_listings,
@@ -26,10 +24,8 @@ import {
   process_directory,
 } from './process-initialization';
 import {active_db, directory_connection_info} from './databases';
-import {DirectoryEmitter} from './events';
+import {DirectoryEmitter, events} from './events';
 import {attach_all_listeners} from './event-handler-registration';
-
-export const initializeEvents: DirectoryEmitter = new EventEmitter();
 
 /**
  * To prevent initialize() being called multiple times
@@ -59,7 +55,7 @@ async function initialize_nocheck() {
   await setupExampleActive(active_db);
 
   const initialized = new Promise(resolve => {
-    initializeEvents.once('projects_created', resolve);
+    events.once('projects_created', resolve);
   });
   console.log('sync/initialize: starting');
   initialize_dbs();
@@ -69,18 +65,18 @@ async function initialize_nocheck() {
 
 function initialize_dbs(): DirectoryEmitter {
   // Main sync propagation downwards to individual projects:
-  initializeEvents
+  events
     .on('directory_local', listings => process_listings(listings, true))
     .on('directory_paused', listings => process_listings(listings, false))
     .on('listing_local', (...args) => process_projects(...args, true))
     .on('listing_paused', (...args) => process_projects(...args, false));
 
-  attach_all_listeners(initializeEvents);
+  attach_all_listeners(events);
 
   // It all starts here, once the events are all registered
   console.log('sync/initialize: listeners registered');
   process_directory(directory_connection_info).catch(err =>
-    initializeEvents.emit('directory_error', err)
+    events.emit('directory_error', err)
   );
-  return initializeEvents;
+  return events;
 }

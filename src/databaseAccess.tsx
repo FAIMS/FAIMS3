@@ -46,7 +46,7 @@ import {
   createdProjectsInterface,
   projects_known,
 } from './sync/state';
-import {initializeEvents} from './sync/initialize';
+import {events} from './sync/events';
 import {ExistingActiveDoc} from './sync/databases';
 
 export function getProjectList(user_id?: string): ProjectInformation[] {
@@ -80,7 +80,7 @@ export function listenProjectList(
     listener(getProjectList(user_id));
   };
 
-  initializeEvents.on('projects_known', callback);
+  events.on('projects_known', callback);
 
   if (projects_known !== null) {
     // Projects already known by the time this function is called
@@ -89,7 +89,7 @@ export function listenProjectList(
 
   return () => {
     // Event remover
-    initializeEvents.removeListener('projects_known', callback);
+    events.removeListener('projects_known', callback);
   };
 }
 
@@ -174,12 +174,11 @@ export function listenObservationsList(
     if (active._id === project_id) runCallback();
   };
 
-  initializeEvents.on('project_data_paused', listener_func);
+  events.on('project_data_paused', listener_func);
 
   if (observationsUpdated[project_id]) runCallback();
 
-  return () =>
-    initializeEvents.removeListener('project_data_paused', listener_func);
+  return () => events.removeListener('project_data_paused', listener_func);
 }
 
 export function listenObservation(observation_id: string) {}
