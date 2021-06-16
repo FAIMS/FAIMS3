@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import PouchDB from 'pouchdb';
 import EventEmitter from 'events';
 import {ProjectObject, ProjectMetaObject} from '../datamodel';
 

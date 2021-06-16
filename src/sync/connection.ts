@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import PouchDB from 'pouchdb';
 import {RUNNING_UNDER_TEST} from '../buildconfig';
 import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';

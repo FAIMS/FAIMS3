@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import PouchDB from 'pouchdb';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
