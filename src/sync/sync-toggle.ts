@@ -1,4 +1,30 @@
-import {data_dbs} from './databases';
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: index.ts
+ * Description:
+ *   TODO
+ */
+
+import {EncodedObservation} from '../datamodel';
+import {
+  data_dbs,
+  LocalDB,
+  LocalDBRemote,
+  setLocalConnection,
+} from './databases';
 
 const syncingProjectListeners: (
   | [string, (syncing: boolean) => unknown]
@@ -32,19 +58,19 @@ export function setSyncingProject(active_id: string, syncing: boolean) {
   if (syncing === isSyncingProject(active_id)) {
     return; //Nothing to do, already same value
   }
-  data_dbs[active_id].is_sync = syncing;
+  const data_db = data_dbs[active_id];
+  data_db.is_sync = syncing;
 
-  if (data_dbs[active_id].remote === null) {
-    return;
-  }
+  const has_remote = (
+    db: typeof data_db
+  ): db is LocalDB<EncodedObservation> & {
+    remote: LocalDBRemote<EncodedObservation>;
+  } => {
+    return db.remote !== null;
+  };
 
-  if (syncing) {
-    data_dbs[active_id].remote!.connection = PouchDB.replicate(
-      data_dbs[active_id].remote!.db,
-      data_dbs[active_id].local
-    );
-  } else {
-    data_dbs[active_id].remote!.connection.cancel();
+  if (has_remote(data_db)) {
+    setLocalConnection(data_db);
   }
   // Trigger sync listeners
   syncingProjectListeners

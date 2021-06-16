@@ -17,6 +17,10 @@ export class SyncHandler {
   timeout_track?: ReturnType<typeof setTimeout>;
   emissions: EmissionsArg;
 
+  listener_error?: (...args: any[]) => unknown;
+  listener_changed?: (...args: any[]) => unknown;
+  listener_paused?: (...args: any[]) => unknown;
+
   constructor(timeout: number, emissions: EmissionsArg) {
     this.timeout = timeout;
 
@@ -44,55 +48,64 @@ export class SyncHandler {
   listen(
     db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
   ) {
-    db.on('paused', (err?: {}) => {
-      /*
+    db.on(
+      'paused',
+      (this.listener_paused = (err?: {}) => {
+        /*
         This event fires when the replication is paused, either because a live
         replication is waiting for changes, or replication has temporarily
         failed, with err, and is attempting to resume.
         */
-      this.lastActive = undefined;
-      this.clearTimeout();
-      this.emissions.paused(err);
-    });
-    db.on('change', () => {
-      /*
+        this.lastActive = undefined;
+        this.clearTimeout();
+        this.emissions.paused(err);
+      })
+    );
+    db.on(
+      'change',
+      (this.listener_changed = () => {
+        /*
         This event fires when the replication starts actively processing changes;
         e.g. when it recovers from an error or new changes are available.
         */
 
-      if (
-        this.lastActive !== undefined &&
-        this.lastActive! + this.timeout - 20 <= Date.now()
-      ) {
-        console.warn(
-          "someone didn't clear the lastActive when clearTimeout called"
-        );
-        this.lastActive = undefined;
-      }
+        if (
+          this.lastActive !== undefined &&
+          this.lastActive! + this.timeout - 20 <= Date.now()
+        ) {
+          console.warn(
+            "someone didn't clear the lastActive when clearTimeout called"
+          );
+          this.lastActive = undefined;
+        }
 
-      if (this.lastActive === undefined) {
-        this.lastActive = Date.now();
-        this.clearTimeout();
-        this.emissions.active();
+        if (this.lastActive === undefined) {
+          this.lastActive = Date.now();
+          this.clearTimeout();
+          this.emissions.active();
 
-        // After 2 seconds of no more 'active' events,
-        // assume it's up to date
-        // (Otherwise, if it's still active, keep checking until it's not)
-        this.setTimeout().then(this._inactiveCheckLoop.bind(this));
-      } else {
-        this.lastActive = Date.now();
-      }
-    });
-    db.on('error', err => {
-      /*
+          // After 2 seconds of no more 'active' events,
+          // assume it's up to date
+          // (Otherwise, if it's still active, keep checking until it's not)
+          this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+        } else {
+          this.lastActive = Date.now();
+        }
+      })
+    );
+    db.on(
+      'error',
+      (this.listener_error = err => {
+        /*
         This event is fired when the replication is stopped due to an
         unrecoverable failure.
         */
-      // Prevent any further events
-      this.lastActive = undefined;
-      this.clearTimeout();
-      this.emissions.error(err);
-    });
+        // Prevent any further events
+        this.lastActive = undefined;
+        this.clearTimeout();
+        this.emissions.error(err);
+      })
+    );
   }
   clearTimeout() {
     if (this.timeout_track !== undefined) {
@@ -100,6 +113,15 @@ export class SyncHandler {
       this.timeout_track = undefined;
     }
   }
+  detach(
+    db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
+  ) {
+    db.removeListener('paused', this.listener_paused!);
+    db.removeListener('change', this.listener_changed!);
+    db.removeListener('error', this.listener_error!);
+    this.clearTimeout();
+  }
+
   setTimeout(time?: number): Promise<void> {
     return new Promise(resolve => {
       this.timeout_track = setTimeout(() => {

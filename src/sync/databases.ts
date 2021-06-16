@@ -1,3 +1,23 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: index.ts
+ * Description:
+ *   TODO
+ */
+
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -18,6 +38,8 @@ import {
   local_pouch_options,
   materializeConnectionInfo,
 } from './connection';
+import {staging_db} from './staging';
+import {SyncHandler} from './sync-handler';
 
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
@@ -41,13 +63,26 @@ export interface LocalDBRemote<Content extends {}> {
   db: PouchDB.Database<Content>;
   connection:
     | PouchDB.Replication.Replication<Content>
-    | PouchDB.Replication.Sync<Content>;
+    | PouchDB.Replication.Sync<Content>
+    | null;
   info: ConnectionInfo;
+  options: DBReplicateOptions;
+  create_handler: (
+    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
+  ) => SyncHandler;
+  handler: null | SyncHandler;
 }
 
 export interface LocalDBList<Content extends {}> {
   [key: string]: LocalDB<Content>;
 }
+
+type DBReplicateOptions =
+  | PouchDB.Replication.ReplicateOptions
+  | {
+      pull?: PouchDB.Replication.ReplicateOptions;
+      push: PouchDB.Replication.ReplicateOptions;
+    };
 
 /**
  * Directory: All (public, anyways) Faims instances
@@ -67,6 +102,11 @@ export const directory_db: LocalDB<ListingsObject> = {
  *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
  */
 export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
+
+/**
+ * This contains any local app state we want to keep across sessions
+ */
+export const local_state_db = new PouchDB('local_state');
 
 /**
  * Each listing has a Projects database and Users/People DBs
@@ -158,12 +198,10 @@ export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: ConnectionInfo,
   global_dbs: LocalDBList<Content>,
-  options:
-    | PouchDB.Replication.ReplicateOptions
-    | {
-        pull?: PouchDB.Replication.ReplicateOptions;
-        push: PouchDB.Replication.ReplicateOptions;
-      } = {}
+  handler: (
+    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
+  ) => SyncHandler,
+  options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
@@ -173,7 +211,9 @@ export function ensure_synced_db<Content extends {}>(
   if (
     global_dbs[local_db_id].remote !== null &&
     JSON.stringify(global_dbs[local_db_id].remote!.info) ===
-      JSON.stringify(connection_info)
+      JSON.stringify(connection_info) &&
+    JSON.stringify(global_dbs[local_db_id].remote!.options) ===
+      JSON.stringify(options)
   ) {
     return [
       false,
@@ -183,41 +223,109 @@ export function ensure_synced_db<Content extends {}>(
       },
     ];
   }
-  const local = global_dbs[local_db_id].local;
+  const db_info = (global_dbs[local_db_id] = {
+    ...global_dbs[local_db_id],
+    remote: {
+      db: ConnectionInfo_create_pouch(connection_info),
+      connection: null, //Connection initialized in setLocalConnection
+      info: connection_info,
+      create_handler: handler,
+      handler: null,
+      options: options,
+    },
+  });
 
-  const remote: PouchDB.Database<Content> = ConnectionInfo_create_pouch(
-    connection_info
-  );
+  setLocalConnection(db_info);
+  return [true, db_info];
+}
 
-  const push_too = (options as {push?: unknown}).push !== undefined;
+/**
+ * If the given remote DB is not synced, starts syncing, and visa versa.
+ * db_info.remote.{connection, handler} are modified based on what's in
+ * db_info.is_sync, db_info.remote.info, db_info.remote.create_handler.
+ *
+ * This does NOT ensure that the existing connection info (URL, port, proto)
+ * matches anything. that's left to ensure_synced_db
+ *
+ * @param db_info info to use to create a DB connection:
+ *                Remote connection info, is_sync, the local DB to sync with,
+ */
+export function setLocalConnection<Content extends {}>(
+  db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
+) {
+  const options = db_info.remote.options;
 
-  let connection:
-    | PouchDB.Replication.Replication<Content>
-    | PouchDB.Replication.Sync<Content>;
+  if (db_info.is_sync && db_info.remote.connection === null) {
+    // Start a new connection
+    const push_too = (options as {push?: unknown}).push !== undefined;
+    let connection:
+      | PouchDB.Replication.Replication<Content>
+      | PouchDB.Replication.Sync<Content>;
 
-  if (push_too) {
-    const options_sync = options as PouchDB.Replication.SyncOptions;
-    connection = PouchDB.sync(remote, local, {
-      push: {live: true, retry: true, ...options_sync.push},
-      pull: {live: true, retry: true, ...(options_sync.pull || {})},
-    });
-  } else {
-    connection = PouchDB.replicate(remote, local, {
-      live: true,
-      retry: true,
-      ...options,
-    });
+    if (push_too) {
+      const options_sync = options as PouchDB.Replication.SyncOptions;
+      connection = PouchDB.sync(db_info.remote.db, db_info.local, {
+        push: {live: true, retry: true, ...options_sync.push},
+        pull: {live: true, retry: true, ...(options_sync.pull || {})},
+      });
+    } else {
+      connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
+        live: true,
+        retry: true,
+        ...options,
+      });
+    }
+
+    db_info.remote.connection = connection;
+    db_info.remote.handler = db_info.remote.create_handler(db_info);
+    db_info.remote.handler.listen(connection);
+  } else if (!db_info.is_sync && db_info.remote.connection !== null) {
+    // Stop an existing connection
+    db_info.remote.handler!.detach(db_info.remote.connection);
+    db_info.remote.connection.cancel();
+    db_info.remote.connection = null;
   }
+}
 
-  return [
-    true,
-    (global_dbs[local_db_id] = {
-      ...global_dbs[local_db_id],
-      remote: {
-        db: remote,
-        connection: connection,
-        info: connection_info,
-      },
-    }),
-  ];
+async function delete_synced_db(name: string, db: LocalDB<any>) {
+  try {
+    console.debug(await db.remote?.db.close());
+  } catch (err) {
+    console.error('Failed to remove remote db', name);
+    console.error(err);
+  }
+  try {
+    console.debug(await db.local.destroy());
+    console.debug('Removed local db', name);
+  } catch (err) {
+    console.error('Failed to remove local db', name);
+    console.error(err);
+  }
+}
+
+async function delete_synced_dbs(db_list: LocalDBList<any>) {
+  for (const name in db_list) {
+    console.debug('Deleting', name);
+    await delete_synced_db(name, db_list[name]);
+    delete db_list['name'];
+  }
+}
+
+export async function wipe_all_pouch_databases() {
+  const local_only_dbs_to_wipe = [active_db, local_state_db, staging_db];
+  await delete_synced_dbs(data_dbs);
+  await delete_synced_dbs(metadata_dbs);
+  await delete_synced_dbs(people_dbs);
+  await delete_synced_dbs(projects_dbs);
+  await delete_synced_db('directory', directory_db);
+  for (const db of local_only_dbs_to_wipe) {
+    try {
+      console.debug(await db.destroy());
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  // TODO: work out how best to recreate the databases, currently using a
+  // redirect and having FAIMS reinitialise seems to be the best
+  console.debug('Deleted dbs');
 }
