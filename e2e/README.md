@@ -7,6 +7,7 @@
 
 ### Steps:
 
+
 #### Test with local Android web driver
 
 1. By default, the tests are set to run with Browserstack. You can switch this by changing the localTest parameter in AndroidTest.setup() to true.
@@ -46,7 +47,7 @@ Run appium in command line:
 * Make sure you're on the same directory as this e2e folder. 
 * Run: `mvn install`
 
-6. To debug Android elements, I use UIAutomator.bat.
+6. To debug Android elements, I use UIAutomatorViewer.bat. Browserstack app-live also has inspect functionality in the Dev Tools. 
 
 #### Test with Browserstack
 

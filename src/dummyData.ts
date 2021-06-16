@@ -1,3 +1,23 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: dummyData.ts
+ * Description:
+ *   TODO
+ */
+
 import {setUiSpecForProject} from './uiSpecification';
 import {
   ActiveDoc,
@@ -14,7 +34,7 @@ import {setProjectMetadata} from './projectMetadata';
 const example_datums: {
   [key: string]: EncodedObservation[];
 } = {
-  default_lake_mungo: [
+  default_astro_sky: [
     {
       _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       type: '??:??',
@@ -71,7 +91,7 @@ function randomDate(start: Date, end: Date) {
 }
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  default_lake_mungo: {
+  default_astro_sky: {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -477,16 +497,16 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
 const example_listings: {[listing_id: string]: ProjectObject[]} = {
   default: [
     {
-      name: 'Lake Mungo Archaeological Survey - 2018',
+      name: 'AsTRoSkY - (Test Project)',
       data_db: {
         proto: 'http',
         host: '10.80.11.44',
         port: 5984,
         lan: true,
-        db_name: 'lake_mungo',
+        db_name: 'astro_sky',
       },
-      description: 'Lake Mungo Archaeological Survey - 2018',
-      _id: 'lake_mungo',
+      description: 'AsTRoSkY Test Project',
+      _id: 'astro_sky',
     },
     {
       name: "Example Project 'A'",
@@ -542,24 +562,24 @@ const example_directory: ListingsObject[] = [
       host: '10.80.11.44',
       port: 5984,
       lan: true,
-      db_name: 'cisro_hosted_projects',
+      db_name: 'csiro_hosted_projects',
     },
   },
 ];
 
 const example_active_db: ActiveDoc[] = [
   {
-    _id: 'default_lake_mungo',
+    _id: 'default_astro_sky',
     listing_id: 'default',
-    project_id: 'lake_mungo',
+    project_id: 'astro_sky',
     username: 'test1',
     password: 'apple',
     is_sync: true,
   },
   {
-    _id: 'csiro_csiro-geochemistry',
+    _id: 'csiro_notparkes',
     listing_id: 'csiro',
-    project_id: 'csiro-geochemistry',
+    project_id: 'notparkes',
     username: 'test1',
     password: 'apple',
     is_sync: true,

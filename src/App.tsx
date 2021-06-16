@@ -1,3 +1,23 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: App.tsx
+ * Description:
+ *   TODO
+ */
+
 import React from 'react';
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
@@ -7,6 +27,7 @@ import Footer from './gui/components/footer';
 import {Index} from './gui/pages';
 import {SignUp} from './gui/pages/signup';
 import {SignIn} from './gui/pages/signin';
+import AboutBuild from './gui/pages/about-build';
 import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
@@ -15,7 +36,6 @@ import ObservationList from './gui/pages/observation-list';
 import Observation from './gui/pages/observation';
 import ObservationCreate from './gui/pages/observation-create';
 import NotFound404 from './gui/pages/404';
-// import ProjectNavTabs from './gui/projectNav';
 import {StateProvider} from './store';
 
 import {MuiThemeProvider} from '@material-ui/core/styles';
@@ -95,6 +115,7 @@ export class App extends React.Component<AppProps, AppState> {
                 component={Observation}
               />
               <Route exact path="/" component={Index} />
+              <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
               <Route component={NotFound404} />
             </Switch>
             <Footer />

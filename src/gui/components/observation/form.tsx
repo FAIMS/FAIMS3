@@ -1,5 +1,25 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: form.tsx
+ * Description:
+ *   TODO
+ */
+
 import React from 'react';
-import {Button, Grid, Box} from '@material-ui/core';
+import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -42,6 +62,26 @@ type ObservationFormState = {
   last_saved: Date;
 };
 
+/**
+ * Given a list of values, returns the first from the list that isn't null/undefined
+ * This is to be used instead of list[0] || list[1] || list[2]
+ * in the case that list can contain the number 0
+ *
+ * @param list List of undefineds, nulls, or anything else
+ * @returns Always returns null or a defined value, this never returns undefined.
+ */
+function firstDefinedFromList<T>(
+  list: NonNullable<T>[]
+): NonNullable<T> | null {
+  if (list.length === 0) {
+    return null;
+  } else if (list[0] === undefined || list[0] === null) {
+    return firstDefinedFromList(list.slice(1));
+  } else {
+    return list[0];
+  }
+}
+
 class ObservationForm extends React.Component<
   ObservationFormProps & RouteComponentProps,
   ObservationFormState
@@ -78,6 +118,9 @@ class ObservationForm extends React.Component<
 
   uiSpec: ProjectUIModel | null = null;
 
+  // List of timeouts that unmount must cancel
+  timeouts: typeof setTimeout[] = [];
+
   componentDidUpdate(prevProps: ObservationFormProps) {
     if (
       prevProps.observation_id !== this.props.observation_id ||
@@ -111,13 +154,61 @@ class ObservationForm extends React.Component<
   }
 
   async componentDidMount() {
-    await this.setUISpec();
-    await this.setStagedValues();
-    await this.setInitialValues();
+    try {
+      await this.setUISpec();
+    } catch (err) {
+      console.error('setUISpec error', err);
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message:
+            'Project is not fully downloaded or not setup correctly (UI Specification Missing)',
+          severity: 'error',
+        },
+      });
+      // This form cannot be shown at all. No recovery except go back to project.
+      this.props.history.goBack();
+      return;
+    }
+    try {
+      await this.setStagedValues();
+    } catch (err) {
+      console.error('setStagedValues error', err);
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Could not load previous data: ' + err.message,
+          severity: 'warnings',
+        },
+      });
+      // Empty staged data, this isn't as severe if the staged data can't be loaded.
+      this.loadedStagedData = {};
+    }
+    try {
+      await this.setInitialValues();
+    } catch (err) {
+      console.error('setInitialValues error', err);
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Could not load previous data: ' + err.message,
+          severity: 'warnings',
+        },
+      });
+      // Show an empty form
+      this.setState({initialValues: {_id: this.props.observation_id!}});
+    }
   }
 
   componentWillUnmount() {
-    //FIXME ensure cleanup to prevent memory leak
+    for (const timeout_id of this.timeouts) {
+      clearTimeout(
+        (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]
+      );
+    }
+    if (this.stageInterval !== null) {
+      clearInterval(this.stageInterval);
+    }
   }
 
   async setUISpec() {
@@ -177,10 +268,11 @@ class ObservationForm extends React.Component<
       _id: this.props.observation_id!,
     };
     fieldNames.forEach(fieldName => {
-      initialValues[fieldName] =
-        this.loadedStagedData![fieldName] ||
-        existingData?.[fieldName] ||
-        fields[fieldName]['initialValue'];
+      initialValues[fieldName] = firstDefinedFromList([
+        this.loadedStagedData![fieldName],
+        existingData?.[fieldName],
+        fields[fieldName]['initialValue'],
+      ]);
     });
     this.setState({initialValues: initialValues});
   }
@@ -189,16 +281,36 @@ class ObservationForm extends React.Component<
     if (this.props.is_fresh) {
       return null;
     } else {
+      const existing_doc = await lookupFAIMSDataID(
+        this.props.project_id,
+        this.props.observation_id
+      );
+      if (existing_doc === null) {
+        console.error('observation form created for deleted document');
+      }
       return {
         _id: this.props.observation_id,
-        _rev:
-          this.props.revision_id ||
-          (await lookupFAIMSDataID(
-            this.props.project_id,
-            this.props.observation_id
-          ))!._rev!,
+        _rev: this.props.revision_id || existing_doc!._rev!,
       };
     }
+  }
+
+  /**
+   * Equivalent to setTimeout, but with added function that
+   * clears any timeouts when the component is unmounted.
+   * @param callback Function to run when timeout elapses
+   */
+  setTimeout(callback: () => void, time: number) {
+    const my_index = this.timeouts.length;
+    setTimeout(() => {
+      try {
+        callback();
+        this.timeouts.splice(my_index, 1);
+      } catch (err) {
+        this.timeouts.splice(my_index, 1);
+        throw err;
+      }
+    }, time);
   }
 
   requireUiSpec(): ProjectUIModel {
@@ -260,10 +372,6 @@ class ObservationForm extends React.Component<
             severity: 'success',
           },
         });
-        // if a new observation, redirect back to the project page
-        this.props.is_fresh
-          ? this.props.history.push(ROUTES.PROJECT + this.props.project_id)
-          : '';
       })
       .catch(err => {
         const message = this.props.is_fresh
@@ -278,6 +386,35 @@ class ObservationForm extends React.Component<
         });
         console.warn(err);
         console.error('Failed to save data');
+      })
+      // Clear the staging area (Possibly after redirecting back to project page)
+      .then(() => this.nullCoalesceRevision())
+      .then(obsid_revid =>
+        setStagedData(
+          {},
+          this.lastStagingRev,
+          this.props.project_id,
+          this.reqireCurrentView(),
+          obsid_revid
+        ).catch(clean_error => {
+          // Errors with cleaning the staging area are not 'fatal' to the
+          // redirect
+          console.warn('failed to clear staging area', clean_error);
+        })
+      )
+      .then(() => {
+        // if a new observation, redirect to the new observation page to allow
+        // the user to rapidly add more records
+        if (this.props.is_fresh) {
+          this.props.history.push(
+            ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
+          );
+          window.scrollTo(0, 0);
+          // scroll to top of page, seems to be needed on mobile devices
+        } else {
+          // otherwise, redirect to the project page listing all observations
+          this.props.history.push(ROUTES.PROJECT + this.props.project_id);
+        }
       });
   }
 
@@ -347,7 +484,7 @@ class ObservationForm extends React.Component<
           .then(set_ok => {
             this.lastStagingRev = set_ok.rev;
             this.consequtiveStagingSaveErrors = 0;
-            setTimeout(() => {
+            this.setTimeout(() => {
               this.setState({is_saving: false, last_saved: new Date()});
             }, 1000);
           })
@@ -490,7 +627,7 @@ class ObservationForm extends React.Component<
             validationSchema={this.getValidationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
-              setTimeout(() => {
+              this.setTimeout(() => {
                 setSubmitting(false);
                 console.log(JSON.stringify(values, null, 2));
                 this.save(values);
@@ -525,34 +662,39 @@ class ObservationForm extends React.Component<
                         </Alert>
                       )}
                       <br />
-                      <Button
-                        type="submit"
-                        color={formProps.isSubmitting ? 'default' : 'primary'}
-                        variant="contained"
-                        onClick={formProps.submitForm}
-                        disableElevation
-                        disabled={formProps.isSubmitting}
+                      <ButtonGroup
+                        color="primary"
+                        aria-label="contained primary button group"
                       >
-                        {formProps.isSubmitting
-                          ? !this.props.is_fresh
-                            ? 'Saving...'
-                            : 'Adding'
-                          : !this.props.is_fresh
-                          ? 'Save'
-                          : 'Add'}
-                        {formProps.isSubmitting && (
-                          <CircularProgress
-                            size={24}
-                            style={{
-                              position: 'absolute',
-                              top: '50%',
-                              left: '50%',
-                              marginTop: -12,
-                              marginLeft: -12,
-                            }}
-                          />
-                        )}
-                      </Button>
+                        <Button
+                          type="submit"
+                          color={formProps.isSubmitting ? 'default' : 'primary'}
+                          variant="contained"
+                          onClick={formProps.submitForm}
+                          disableElevation
+                          disabled={formProps.isSubmitting}
+                        >
+                          {formProps.isSubmitting
+                            ? !this.props.is_fresh
+                              ? 'Working...'
+                              : 'Working...'
+                            : !this.props.is_fresh
+                            ? 'Update'
+                            : 'Save and new'}
+                          {formProps.isSubmitting && (
+                            <CircularProgress
+                              size={24}
+                              style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                marginTop: -12,
+                                marginLeft: -12,
+                              }}
+                            />
+                          )}
+                        </Button>
+                      </ButtonGroup>
                     </Grid>
                     <Grid item sm={6} xs={12}>
                       <BoxTab title={'Developer tool: form state'} />
@@ -563,6 +705,31 @@ class ObservationForm extends React.Component<
                         style={{overflowX: 'scroll'}}
                       >
                         <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                      </Box>
+                      <Box mt={3}>
+                        <BoxTab
+                          title={'Alpha info: Autosave, validation and syncing'}
+                        />
+                        <Box bgcolor={grey[200]} p={2}>
+                          <p>
+                            The data in this form are auto-saved locally within
+                            the app every 5 seconds. The data do not need to be
+                            valid, and you can return to this page to complete
+                            this observation on this device at any time.
+                          </p>
+                          <p>
+                            Once you are ready, click the{' '}
+                            <Typography variant="button">
+                              <b>
+                                {this.props.is_fresh
+                                  ? 'save and new'
+                                  : 'update'}
+                              </b>
+                            </Typography>{' '}
+                            button. This will firstly validate the data, and if
+                            valid, sync the observation to the remote server.
+                          </p>
+                        </Box>
                       </Box>
                     </Grid>
                   </Grid>

@@ -1,3 +1,34 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: databaseAccess.tsx
+ * Description:
+ *   This file contains accessors to data stored in PouchDB
+ *
+ *   If you find yourself writing pouchdb.get(), pouchdb.put(), etc.
+ *   put that code in a function in this file
+ *
+ *   See dataStorage.ts for accessors specific to Observations
+ *   In comparison, this file is for metadata, or other data
+ *   (dataStorage.ts is called from this file, as dataStorage.ts
+ *    does encoding/decoding of observations)
+ *
+ *   TODO: Convert *everything* to listeners that can run more than once
+ *   (Sync refactor)
+ */
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {dummy_observations} from './dummyData';
 import {
@@ -10,7 +41,11 @@ import {
 } from './datamodel';
 import {listFAIMSData} from './dataStorage';
 import {add_initial_listener} from './sync/event-handler-registration';
-import {createdProjects, createdProjectsInterface} from './sync/state';
+import {
+  createdProjects,
+  createdProjectsInterface,
+  projects_known,
+} from './sync/state';
 import {initializeEvents} from './sync/initialize';
 import {ExistingActiveDoc} from './sync/databases';
 
@@ -35,6 +70,27 @@ export function getProjectList(user_id?: string): ProjectInformation[] {
     });
   }
   return output;
+}
+
+export function listenProjectList(
+  listener: (project_list: ProjectInformation[]) => void,
+  user_id?: string
+): () => void {
+  const callback = () => {
+    listener(getProjectList(user_id));
+  };
+
+  initializeEvents.on('projects_known', callback);
+
+  if (projects_known !== null) {
+    // Projects already known by the time this function is called
+    callback();
+  }
+
+  return () => {
+    // Event remover
+    initializeEvents.removeListener('projects_known', callback);
+  };
 }
 
 export function getProjectInfo(

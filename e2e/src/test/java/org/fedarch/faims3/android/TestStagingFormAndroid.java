@@ -1,3 +1,23 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: TestStagingForm.java
+ * Description:
+ *   TODO
+ */
+
 package org.fedarch.faims3.android;
 
 import static org.junit.Assert.assertEquals;
@@ -5,7 +25,9 @@ import static org.junit.Assert.assertEquals;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 
-import org.fedarch.faims3.LakeMungo;
+import org.fedarch.faims3.AstroSky;
+import org.fedarch.faims3.TestStagingForm;
+import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -23,13 +45,13 @@ import io.appium.java_client.android.AndroidElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestStagingForm extends AndroidTest {
+public class TestStagingFormAndroid extends AndroidTest implements TestStagingForm {
 
   @BeforeClass
   public static void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  AndroidTest.setup(false, "Test Form Staging - Android");
+	  AndroidTest.setup(false, "Test staging new Test Project observation form (Android)");
   }
 
   /**
@@ -44,30 +66,31 @@ public class TestStagingForm extends AndroidTest {
    * @throws IllegalArgumentException
    * @throws InvocationTargetException
    */
-  @Test
+  @Override
+@Test
   public void testSwitchTab() throws JSONException {
 	  try {
-			// Go to Lake Mungo form
-			TestUtils.loadPreviousDevContent(driver);
+			// Go to AstroSky form
+			loadNewAstroSkyForm();
 			// Fill out all fields
-			LakeMungo.fillOutFormWithValidFields(driver);
+			fillOutFormWithValidFields();
 			TestUtils.scrollDown(driver);
 			// validate JSON values
-			LakeMungo.validateJSON(driver);
+			validateJSON();
 			// scroll up and click on the "Example Project A" tab
 			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
-			// click submit before opening Lake Mungo tab again
+			// click submit before opening AsTRoSkY tab again
 			WebDriverWait wait = new WebDriverWait(driver, 10);
-			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SUBMIT']"))).click();;
-			// reopen Lake Mungo
-			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-lake_mungo']")).click();
+			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SAVE AND NEW']"))).click();;
+			// reopen AsTRoSkY
+			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-astro_sky']")).click();
 			// Check all fields are still the same
-			LakeMungo.validateLatLong(driver);
-			assertEquals(LakeMungo.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
-			assertEquals(LakeMungo.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
+			validateLatLong();
+			assertEquals(AstroSky.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
+			assertEquals(AstroSky.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
 
 			AndroidElement currencies = TestUtils.scrollToResourceId(driver, "multi-str-field");
-			assertEquals(LakeMungo.UNICODE, currencies.getText());
+			assertEquals(AstroSky.UNICODE, currencies.getText());
 
 			TestUtils.scrollDown(driver);
 
@@ -89,11 +112,7 @@ public class TestStagingForm extends AndroidTest {
 			TestUtils.scrollDown(driver);
 
 			// Make sure JSON is still the same
-			if (!LakeMungo.validateJSON(driver)) {
-				TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
-						"Android - TestStagingForm.testSwitchTab() fails because JSON values don't match.");
-				return;
-			}
+			validateJSON();
 	  } catch (Exception e) {
 	      TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 	    		  "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
@@ -110,7 +129,6 @@ public class TestStagingForm extends AndroidTest {
   //TODO: switch via menu on the left
   @AfterClass
   public static void tearDown() {
-	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.
-	 driver.quit();
+	 AndroidTest.tearDown();
   }
 }

@@ -55,7 +55,7 @@ initialise_couchdb() {
 
     # setup directory with default
     $curl_cmd "$base_url/metadata-test_proj"
-    $curl_cmd "$base_url/metadata-test_proj/default" -d "{
+    $curl_cmd "$base_url/metadata-test_proj/ui-specification" -d "{
         \"_id\": \"ui-specification\",
         \"fields\": {
           \"bad-field\": {

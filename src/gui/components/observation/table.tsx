@@ -1,5 +1,31 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: table.tsx
+ * Description:
+ *   TODO
+ */
+
 import React, {useEffect, useState} from 'react';
-import {DataGrid, GridColDef, GridCellParams} from '@material-ui/data-grid';
+import _ from 'lodash';
+import {
+  DataGrid,
+  GridColDef,
+  GridCellParams,
+  GridToolbar,
+} from '@material-ui/data-grid';
 import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
@@ -7,17 +33,20 @@ import Link from '@material-ui/core/Link';
 import {Observation, ProjectID} from '../../../datamodel';
 import * as ROUTES from '../../../constants/routes';
 import {listenObservationsList} from '../../../databaseAccess';
+import {useTheme} from '@material-ui/core/styles';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
 
 type ObservationsTableProps = {
   project_id: ProjectID;
-  restrictRows: number;
-  compact: boolean;
+  maxRows: number | null;
 };
 
 export default function ObservationsTable(props: ObservationsTableProps) {
-  const {project_id, compact} = props;
+  const {project_id, maxRows} = props;
   const [loading, setLoading] = useState(true);
-  const pouchObservationList = {};
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const defaultMaxRowsMobile = 10;
   const [rows, setRows] = useState<Array<Observation>>([]);
   const columns: GridColDef[] = [
     {
@@ -25,7 +54,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
       headerName: 'Obs ID',
       description: 'Observation ID',
       type: 'string',
-      flex: 1,
+      width: not_xs ? 300 : 100,
       renderCell: (params: GridCellParams) => (
         <Link
           component={RouterLink}
@@ -38,45 +67,68 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         </Link>
       ),
     },
-    {field: 'created', headerName: 'Created', type: 'dateTime', flex: 1},
-    {field: 'created_by', headerName: 'Created by', type: 'string', flex: 1},
-    {field: 'updated', headerName: 'Updated', type: 'dateTime', flex: 1},
+    //{field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+    //{field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
+    {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
     {
       field: 'updated_by',
       headerName: 'Last updated by',
       type: 'string',
-      flex: 1,
+      width: 200,
     },
   ];
+
   useEffect(() => {
+    //  Dependency is only the project_id, ie., register one callback for this component
+    // on load - if the observation list is updated, the callback should be fired
     if (project_id === undefined) return; //dummy project
     const destroyListener = listenObservationsList(
       project_id,
-      newObservationList => {
+      newPouchObservationList => {
         setLoading(false);
-        Object.assign(pouchObservationList, newObservationList);
-        setRows(Object.values(pouchObservationList));
+        if (!_.isEqual(Object.values(newPouchObservationList), rows)) {
+          setRows(Object.values(newPouchObservationList));
+        }
       }
     );
     return destroyListener; // destroyListener called when this component unmounts.
-  }, []);
+  }, [project_id, rows]);
 
   return (
     <div>
       <Typography variant="overline">Recent Observations</Typography>
-      <div style={{height: compact ? 250 : 400, width: '100%'}}>
+      <div
+        style={{
+          width: '100%',
+          marginBottom: not_xs ? '20px' : '40px',
+        }}
+      >
         <DataGrid
           rows={rows}
           loading={loading}
           getRowId={r => r.observation_id}
           columns={columns}
-          pageSize={5}
+          autoHeight
+          pageSize={
+            maxRows !== null
+              ? not_xs
+                ? maxRows
+                : defaultMaxRowsMobile
+              : not_xs
+              ? 25
+              : defaultMaxRowsMobile
+          }
           checkboxSelection
+          density={not_xs ? 'standard' : 'comfortable'}
+          components={{
+            Toolbar: GridToolbar,
+          }}
+          sortModel={[{field: 'updated', sort: 'desc'}]}
         />
       </div>
     </div>
   );
 }
 ObservationsTable.defaultProps = {
-  compact: false,
+  maxRows: null,
 };
