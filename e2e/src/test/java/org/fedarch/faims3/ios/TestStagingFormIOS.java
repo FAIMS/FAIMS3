@@ -13,11 +13,11 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: TestStagingFormChrome.java
+ * Filename: TestStagingFormIOS.java
  * Description:
  *   TODO
  */
-package org.fedarch.faims3.chrome;
+package org.fedarch.faims3.ios;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -37,6 +37,8 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import io.appium.java_client.ios.IOSElement;
+
 /**
  * Test populate the fields on the Android app:
  * https://faimsproject.atlassian.net/browse/FAIMS3-153
@@ -44,13 +46,13 @@ import org.openqa.selenium.WebElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestStagingFormChrome extends ChromeTest implements TestStagingForm {
+public class TestStagingFormIOS extends IOSTest implements TestStagingForm {
 
   @BeforeClass
   public static void setup() throws MalformedURLException, JSONException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  ChromeTest.setup(false,  "Test staging new Test Project observation form (Chrome)");
+	  IOSTest.setup(false,  "Test staging new Test Project observation form (IOS)");
   }
 
   /**
@@ -88,7 +90,7 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
 			loadNewAstroSkyForm();
 			// Check all fields are still the same
 			validateLatLong();
-			assertEquals(AstroSky.EMAIL_CHROME, driver.findElement(By.id("email-field")).getAttribute("value"));
+			assertEquals(AstroSky.EMAIL_IOS, driver.findElement(By.id("email-field")).getAttribute("value"));
 
 			TestUtils.scrollDown(driver);
 
@@ -103,7 +105,7 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
 			assertEquals("true", driver.findElement(By.id("checkbox-field")).getAttribute("checked"));
 
 			// radio button
-		    List<WebElement> radioButtons = driver.findElementsByXPath("//input[name='radio-group-field']");
+		    List<IOSElement> radioButtons = driver.findElementsByXPath("//input[name='radio-group-field']");
 			for (WebElement radioButton : radioButtons) {
 				if (radioButton.getAttribute("value").equals("4")) {
 					// the fourth radio button should be selected
@@ -127,13 +129,13 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
 	      throw e;
 	  }
 	  // if we make it to the end with no exceptions, that means we passed!
-	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "Chrome - TestStagingForm.testSwitchTab() passed!");
+	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "IOS - TestStagingForm.testSwitchTab() passed!");
   }
 
   //TODO: switch via menu on the left
   @AfterClass
   public static void tearDown() {
 	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.
-	 ChromeTest.tearDown();
+	 IOSTest.tearDown();
   }
 }
