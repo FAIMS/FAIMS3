@@ -13,11 +13,11 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: TestPopulateFormChrome.java
+ * Filename: TestPopulateFormIOS.java
  * Description:
  *   TODO
  */
-package org.fedarch.faims3.chrome;
+package org.fedarch.faims3.ios;
 
 import static org.junit.Assert.assertEquals;
 
@@ -42,13 +42,13 @@ import org.openqa.selenium.support.ui.WebDriverWait;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestPopulateFormChrome extends ChromeTest implements TestPopulateForm {
+public class TestPopulateFormIOS extends IOSTest implements TestPopulateForm {
 
 	@BeforeClass
 	public static void setup() throws MalformedURLException, JSONException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		ChromeTest.setup(false, "Test populate new Test Project observation form (Chrome)");
+		IOSTest.setup(false, "Test populate new Test Project observation form (iOS)");
 	}
 
 	/**
@@ -109,12 +109,12 @@ public class TestPopulateFormChrome extends ChromeTest implements TestPopulateFo
 			throw e;
 		}
 		TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true,
-				"Chrome - TestPopulateForm.testNewObservationWithGPS() passed!");
+				"iOS - TestPopulateForm.testNewObservationWithGPS() passed!");
 	}
 
 	@AfterClass
 	public static void tearDown() {
-		ChromeTest.tearDown();
+		IOSTest.tearDown();
 	}
 
 }
