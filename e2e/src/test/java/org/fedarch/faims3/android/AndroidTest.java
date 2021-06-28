@@ -60,6 +60,10 @@ public class AndroidTest implements E2ETest {
 	// Newly created observation form's id
 	protected String recordUuid;
 
+	public AndroidTest() {
+		setDatabase();
+	}
+
 	/**
 	 * Setup the AndroidDriver based on parameter.
 	 * @param localTest If true, then we'll set up a local connection. Otherwise we'll set up a browserstack one.
