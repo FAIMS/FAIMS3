@@ -59,6 +59,10 @@ public class ChromeTest implements E2ETest {
 	// Newly created record uui
 	protected String recordUuid;
 
+	public ChromeTest() {
+		setDatabase();
+	}
+
 	/**
 	 * Setup the ChromeDriver based on parameter.
 	 * @param localTest If true, then we'll set up a local connection. Otherwise we'll set up a browserstack one.

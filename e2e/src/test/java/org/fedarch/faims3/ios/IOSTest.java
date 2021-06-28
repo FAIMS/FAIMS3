@@ -58,6 +58,10 @@ public class IOSTest implements E2ETest {
 	// Newly created observation form's id
 	protected String recordUuid;
 
+	public IOSTest() {
+		setDatabase();
+	}
+
 	/**
 	 * Setup the IOSDriver based on parameter.
 	 * @param localTest If true, then we'll set up a local connection. Otherwise we'll set up a browserstack one.
@@ -91,7 +95,7 @@ public class IOSTest implements E2ETest {
 	    caps.setCapability("platformVersion", "11.0");
 	    caps.setCapability("deviceName", "iPhone 12");
 	    caps.setCapability("adbExecTimeout", "1200000");
-	    caps.setCapability("app", "C:\\github\\FAIMS3\\ios\\App\\App\\build\\FAIMS3.api");
+	    caps.setCapability("app", "C:\\github\\FAIMS3\\ios\\App\\App\\build\\FAIMS3.ipa");
 
 	    driver = new IOSDriver<IOSElement>(new URL("http://127.0.0.1:4723/wd/hub"), caps);
 	}
@@ -155,22 +159,22 @@ public class IOSTest implements E2ETest {
 		WebDriverWait wait = new WebDriverWait(driver, 10);
 		// Test GPS point
 		WebElement gpsPoint = wait.until(
-		        ExpectedConditions.presenceOfElementLocated(By.xpath("//button/span[text()='Take Point']")));
+		        ExpectedConditions.presenceOfElementLocated(By.xpath("//button/span[@text='Take Point']")));
 		gpsPoint.click();
 		// Make sure the point text has been updated
 		wait.until(
-		        ExpectedConditions.invisibilityOfElementLocated(By.xpath("//*[text()='No point taken.']")));
+		        ExpectedConditions.invisibilityOfElementLocated(By.xpath("//*[@text='No point taken.']")));
 		// now check that the point was captured
 		validateLatLong();
 
 		// Click on Action button
 	    // The value will be updated in JSON
-		WebElement action = driver.findElement(By.xpath("//*[text()='Action!']"));
+		WebElement action = driver.findElement(By.xpath("//*[@text='Action!']"));
 		action.click();
 
 	    // Email field
 	    WebElement emailField = driver.findElement(By.id("email-field"));
-	    emailField.sendKeys(AstroSky.EMAIL_CHROME);
+	    emailField.sendKeys(AstroSky.EMAIL_IOS);
 
 	    TestUtils.scrollDown(driver);
 
@@ -355,6 +359,6 @@ public class IOSTest implements E2ETest {
 	public void verifyMessage(String message) {
 		WebDriverWait wait = new WebDriverWait(driver, 10);
 		wait.until(ExpectedConditions.presenceOfElementLocated(
-				By.xpath("//div[@class='MuiAlert-message' and text()='" + message + "']")));
+				By.xpath("//div[@class='MuiAlert-message' and @text='" + message + "']")));
 	}
 }

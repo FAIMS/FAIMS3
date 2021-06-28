@@ -19,6 +19,9 @@
  */
 package org.fedarch.faims3;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.json.JSONException;
 
 public interface E2ETest {
@@ -66,5 +69,18 @@ public interface E2ETest {
 	 * @param message String to check against
 	 */
 	void verifyMessage(String message);
+
+	/**
+	 * Pass on the database set in environment.properties to environment variable.
+	 */
+	default void setDatabase() {
+		Environment env = new Environment();
+		try {
+			TestUtils.getModifiableEnvironment().put("REACT_APP_DIRECTORY_HOST", env.getDatabase());
+		} catch (Exception e) {
+			Logger.getAnonymousLogger().log(
+					Level.CONFIG, "Error setting database to environment variable.");
+		}
+	}
 
 }
