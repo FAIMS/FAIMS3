@@ -19,8 +19,11 @@
  */
 package org.fedarch.faims3;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -156,5 +159,21 @@ public class TestUtils {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd yyyy");
 		Date date = new Date();
 		return dateFormat.format(date);
+	}
+
+	/**
+	 * Get environment variable of current process
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	protected static Map<String, String> getModifiableEnvironment() throws Exception
+	{
+	    Class<?> pe = Class.forName("java.lang.ProcessEnvironment");
+	    Method getenv = pe.getDeclaredMethod("getenv", String.class);
+	    getenv.setAccessible(true);
+	    Field props = pe.getDeclaredField("theCaseInsensitiveEnvironment");
+	    props.setAccessible(true);
+	    return (Map<String, String>) props.get(null);
 	}
 }
