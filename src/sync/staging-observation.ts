@@ -45,7 +45,7 @@ class RecordStagingState {
   // this is kept in-sync with formik. The only reason
   // to duplicate the data is to keep track of which fields
   // have changed.
-  data: null | StagedData = null;
+  data: null | {fields: StagedData; view_name: string} = null;
 
   data_listeners: [
     (data: StagedData) => unknown,
@@ -138,9 +138,9 @@ class RecordStagingState {
    * @param values FormikProps.values object, retrieved from the First argument
    *               of the callback to the Formik element's children:
    */
-  renderHook(values: FormikValues) {
+  renderHook(view_name: string, values: FormikValues) {
     if (this.fetch_error === null && this.data !== null) {
-      this.data = values;
+      this.data = {view_name: view_name, fields: values};
     }
   }
 
@@ -231,7 +231,7 @@ class RecordStagingState {
       }
 
       this.touched_fields = new Set(Object.keys(data));
-      this.data = data;
+      this.data = {view_name: loadedProps.view_name, fields: data};
       // Resolve any promises waiting for data
       const data_listeners = this.data_listeners;
       this.data_listeners = [];
@@ -262,7 +262,7 @@ class RecordStagingState {
 
     // Wait for data to exist before returning:
     if (this.data !== null) {
-      return with_data(this.data);
+      return with_data(this.data.fields);
     } else if (this.fetch_error !== null) {
       throw this.fetch_error;
     } else {

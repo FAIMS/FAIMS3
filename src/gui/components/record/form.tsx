@@ -536,7 +536,7 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              this.staging.renderHook(formProps.values);
+              this.staging.renderHook(viewName, formProps.values);
               return (
                 <Form>
                   <Grid container spacing={2}>
