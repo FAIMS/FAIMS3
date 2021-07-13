@@ -10,18 +10,17 @@ import {add_initial_listener} from '../sync/event-handler-registration';
  *
  * State: State that is kept track of by DBTracker
  */
-export type EventStateMapping<Params extends {}, State> = (
-  params: Params,
-  ...event_args: any[]
-) => Promise<State>;
+export type EventStateMapping<Params extends {}, State> =
+  | ((params: Params, ...event_args: any[]) => State)
+  | ((params: Params, ...event_args: any[]) => Promise<State>);
 
 /**
  * Given an event from the EventEmitter, determines what type
  * of params it has (for a given DBTracker)
  */
-export type EventParamsMapping<Params extends {}> = (
-  ...event_args: any[]
-) => Params;
+export type EventParamsMapping<Params extends {}> =
+  | ((...event_args: any[]) => Params)
+  | ((...event_args: any[]) => Promise<Params>);
 
 export const default_filter = () => true;
 
@@ -105,6 +104,30 @@ export class DBTracker<P extends {}, S> {
    */
   _load_interrupts: Map<P, number> = new Map();
 
+  /**
+   * Similarly to _load_interrupts, between when an event is emitted and the
+   * Promise<Params> is resolved, this whole DBTracker is in a loading state
+   *
+   * This state is not reflected anywhere except to the extent that a Promise
+   * is running. But while in this state, another event may be emitted, in which
+   * case the first Promise<Params> MUST WAIT for the second Promise<Params> to
+   * resolve. If they both resolve to the same Params, only one Promise<State>
+   * is fetched. (If they're different, they won't interefere, so it's fine)
+   *
+   * This is to prevent an event occuring, then another event of the same Params
+   * as the first to occur and go through all code before the first event has a
+   * chance to set _load_interrupts.
+   *
+   * See _promisedParams
+   */
+  _params_interrupt = 1;
+
+  /**
+   * While a Promise<Params> is resolving, this accumulates the list of all
+   * Promise<Params> that resolved but were interrupted by another one resolving
+   */
+  _params_resolved = new Map<P, (resolved: P) => void>();
+
   /*
    * Each of these _X_listeners maps stores a list of callables to be run
    * when the State corresponding to the given Param P changes.
@@ -179,6 +202,10 @@ export class DBTracker<P extends {}, S> {
     add_initial_listener(this._attachTo.bind(this, track_points));
   }
 
+  _globalError(error: {}) {
+    //TODO
+  }
+
   _resolveState(params: P, state: S) {
     if (this.states.has(params) || this.store_all) {
       this.states.set(params, {
@@ -197,6 +224,45 @@ export class DBTracker<P extends {}, S> {
         initial: undefined,
       });
     }
+  }
+
+  /**
+   * When a Params is about to become available (we may be waiting for PouchDB,
+   * or waiting for an EventStateMapping to resolve) this is called with the
+   * promise to get the Params
+   *
+   * If the promise resolves, the callback is called
+   *
+   * If something else calls _promisedParams before unresolved resolves, this will
+   * wait both unresolved's to resolve before any callback is run
+   *
+   * If something else calls _promisedParams before unresolved resolves, AND
+   * said something resolves to the same thing that this unresolved resolves to,
+   * ONLY the callback for the latest resolution is called.
+   *
+   * @param unresolved Promise that will resolve to a Param value
+   * @param callback When it is know that no other _promisedParams with
+   *                 the same Param value is going to be, or has resolved,
+   *                 this is called. It is usually _promisedState bound to
+   *                 some state resolution from a track point in _attachTo
+   *                 This is expected to do its own error handling
+   */
+  _promisedParams(unresolved: Promise<P>, callback: (resolved: P) => void) {
+    const my_load = this._params_interrupt + 1;
+    this._params_interrupt = my_load;
+
+    unresolved.then((params: P) => {
+      // A _promisedParams may currently still be resolving
+      // while this .then has executed.
+      this._params_resolved.set(params, callback);
+
+      if (this._params_interrupt === my_load) {
+        // No other Promise<Param>s to wait for, execute all the latest
+        // callbacks for each unique Param:
+        this._params_resolved.forEach((cb, param) => cb(param));
+        this._params_resolved.clear();
+      }
+    }, this._globalError);
   }
 
   /**
@@ -271,10 +337,21 @@ export class DBTracker<P extends {}, S> {
   _attachTo(track_points: TrackPoint<P, S>[], emitter: EventEmitter): void {
     // For each 'event' to attach to:
     for (const tpoint of track_points) {
+      // The listener:
       const attach_point = (...args: unknown[]) => {
-        // The listener:
-        const this_params = tpoint[1](...args);
-        this._promisedState(this_params, tpoint[2](this_params, ...args));
+        // _promisedParams takes a Promise, but tpoint[1] might be a non-promise
+        // so resolve directly:
+        const wait_params = Promise.resolve(tpoint[1](...args));
+        this._promisedParams(wait_params, this_params => {
+          try {
+            // And now we again wait for a Promise to resolve, but this time
+            // it's the per-Param state that must resolve
+            const wait_state = Promise.resolve(tpoint[2](this_params, ...args));
+            this._promisedState(this_params, wait_state);
+          } catch (err) {
+            this._rejectState(this_params, err);
+          }
+        });
       };
 
       // Store it for later deletion
