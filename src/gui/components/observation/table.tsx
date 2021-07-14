@@ -30,9 +30,10 @@ import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
-import {Observation, ProjectID} from '../../../datamodel';
+import {Observation, ObservationList, ProjectID} from '../../../datamodel';
 import * as ROUTES from '../../../constants/routes';
-import {listenObservationsList} from '../../../databaseAccess';
+import {observationListTracker} from '../../../databaseAccess';
+import {useDBTracker} from '../../pouchHook';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
@@ -43,11 +44,12 @@ type ObservationsTableProps = {
 
 export default function ObservationsTable(props: ObservationsTableProps) {
   const {project_id, maxRows} = props;
-  const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  const [rows, setRows] = useState<Array<Observation>>([]);
+
+  const rows = useDBTracker(observationListTracker, [project_id] as [string]);
+
   const columns: GridColDef[] = [
     {
       field: 'observation_id',
@@ -78,22 +80,6 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     },
   ];
 
-  useEffect(() => {
-    //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the observation list is updated, the callback should be fired
-    if (project_id === undefined) return; //dummy project
-    const destroyListener = listenObservationsList(
-      project_id,
-      newPouchObservationList => {
-        setLoading(false);
-        if (!_.isEqual(Object.values(newPouchObservationList), rows)) {
-          setRows(Object.values(newPouchObservationList));
-        }
-      }
-    );
-    return destroyListener; // destroyListener called when this component unmounts.
-  }, [project_id, rows]);
-
   return (
     <div>
       <Typography variant="overline">Recent Observations</Typography>
@@ -104,8 +90,8 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         }}
       >
         <DataGrid
-          rows={rows}
-          loading={loading}
+          rows={Object.values(rows.state || {})}
+          loading={rows.loading !== undefined}
           getRowId={r => r.observation_id}
           columns={columns}
           autoHeight
