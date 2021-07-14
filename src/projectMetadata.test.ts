@@ -20,7 +20,7 @@
 
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
-import {getProjectMetadata, setProjectMetadata} from './projectMetadata';
+import {projectMetadataTracker, setProjectMetadata} from './projectMetadata';
 import {ProjectID} from './datamodel';
 import {equals} from './utils/eqTestSupport';
 
@@ -72,9 +72,10 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(projdbs !== {});
 
       return setProjectMetadata(project_id, metadata_key, metadata)
-        .then(result => {
-          return getProjectMetadata(project_id, metadata_key);
+        .then(() => {
+          return projectMetadataTracker.promiseState([project_id]);
         })
+        .then(p => p[metadata_key])
         .then(result => {
           expect(equals(result, metadata)).toBe(true);
         });

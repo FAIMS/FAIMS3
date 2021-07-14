@@ -22,23 +22,40 @@ import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
   ProjectID,
+  ProjectMetaObject,
 } from './datamodel';
+import {DBTracker} from './gui/pouchHook';
+import {LocalDB} from './sync/databases';
 
-export async function getProjectMetadata(
-  project_id: ProjectID,
-  metadata_key: string
-): Promise<any> {
-  const projdb = getProjectDB(project_id);
-  try {
-    const doc: EncodedProjectMetadata = await projdb.get(
-      PROJECT_METADATA_PREFIX + '-' + metadata_key
-    );
-    return doc.metadata;
-  } catch (err) {
-    console.warn(err);
-    throw Error('failed to find metadata');
-  }
-}
+export const projectMetadataTracker = new DBTracker<
+  [ProjectID],
+  {[metadata_key: string]: any}
+>([
+  'project_meta_paused',
+  (listing: unknown, active: {_id: ProjectID}) => {
+    return [[active._id]];
+  },
+  async (
+    listing: unknown,
+    active: unknown,
+    project: unknown,
+    meta: LocalDB<EncodedProjectMetadata>
+  ) => {
+    const all_docs = await meta.local.allDocs({
+      include_docs: true,
+      startkey: PROJECT_METADATA_PREFIX + '-',
+      endkey: PROJECT_METADATA_PREFIX + '-\uffff',
+    });
+
+    const all_meta: {[metadata_key: string]: any} = {};
+
+    for (const row of all_docs.rows) {
+      all_meta[row.id] = row.doc!.metadata;
+    }
+
+    return all_meta;
+  },
+]);
 
 export async function setProjectMetadata(
   project_id: ProjectID,
