@@ -66,18 +66,14 @@ export class DBTracker<P extends {}, S> {
 
   /**
    * Gets the current state corresponding to a Params
+   * If the params is unknown, returns {initial:false}
+   * (Which is returned even if addListener(params) was called)
+   * 
    * @param params Parameters to get state for, e.g. {project_id}
-   * @returns State of the current param. {initial: boolean} means
    *          that no updates have been received for the given param yet.
    */
   getState(params: P): FullState<S> {
-    return (
-      this.states.get(params) || {
-        err: undefined,
-        state: undefined,
-        initial: true,
-      }
-    );
+    return this.states.get(params) || {initial: false};
   }
 
   /**
@@ -158,11 +154,8 @@ export class DBTracker<P extends {}, S> {
     }
 
     if (!this.states.has(params)) {
-      this.states.set(params, {
-        err: undefined,
-        state: undefined,
-        initial: true,
-      });
+      // First encounter with the given params, must updates to be "loading"
+      this._setState(params, {initial: true}, true);
     }
   }
   /**
@@ -206,23 +199,34 @@ export class DBTracker<P extends {}, S> {
     //TODO
   }
 
-  _resolveState(params: P, state: S) {
-    if (this.states.has(params) || this.store_all) {
-      this.states.set(params, {
-        err: undefined,
-        state: state,
-        initial: undefined,
-      });
-    }
-  }
+  /**
+   * Sets/Updates the state for a given Param that is being listened for
+   * (or if store_all is true, sets/updates the state)
+   *
+   * If this isn't in store_all mode, and the Param is not yet listening,
+   * nothing will be done in this function.
+   *
+   * Errors are propagated to this._globalError
+   *
+   * @param params Param to update the corresponding state for
+   * @param state State to set param to, NOT LOADING, either error or valid.
+   */
+  _setState(params: P, state: FullState<S>, store_new = false) {
+    if (this.states.has(params) || this.store_all || store_new) {
+      this.states.set(params, state);
 
-  _rejectState(params: P, error: {}) {
-    if (this.states.has(params) || this.store_all) {
-      this.states.set(params, {
-        err: error,
-        state: undefined,
-        initial: undefined,
-      });
+      // Run state listeners
+      const listeners = this._listeners.get(params);
+      if (listeners !== undefined) {
+        for (const listener of listeners) {
+          try {
+            listener(state);
+          } catch (error) {
+            this._globalError(error);
+            break;
+          }
+        }
+      }
     }
   }
 
@@ -291,11 +295,7 @@ export class DBTracker<P extends {}, S> {
 
     // Like _rejectState, _resolveState, the this.states must be updated
     // as to not expose old state
-    this.states.set(params, {
-      err: undefined,
-      state: undefined,
-      initial: false,
-    });
+    this._setState(params, {initial: false});
 
     // INTERRUPTION
 
@@ -315,12 +315,12 @@ export class DBTracker<P extends {}, S> {
     state.then(
       (state: S) => {
         if (is_uninterrupted()) {
-          this._resolveState(params, state);
+          this._setState(params, {state: state});
         }
       },
       (err: {}) => {
         if (is_uninterrupted()) {
-          this._rejectState(params, err);
+          this._setState(params, {err: err});
         }
       }
     );
