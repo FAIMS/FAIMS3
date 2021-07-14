@@ -90,7 +90,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         }}
       >
         <DataGrid
-          rows={Object.values(rows.state || {})}
+          rows={Object.values(rows.value || {})}
           loading={rows.loading !== undefined}
           getRowId={r => r.observation_id}
           columns={columns}
