@@ -34,10 +34,70 @@ export type TrackPoint<P extends unknown[], S> = [
 
 type AttachedPoint = (...args: unknown[]) => void;
 
-export type FullState<S> =
-  | {err: {}; state?: undefined; loading?: undefined}
-  | {err?: undefined; state: S; loading?: undefined}
-  | {err?: undefined; state?: undefined; loading: boolean};
+export class FullState<S> {
+  // Only one of these 3 is defined at a time
+  error?: {};
+  value?: S;
+  loading?: 'reload' | 'initial';
+  constructor(
+    full_state:
+      | {err: {}; state?: undefined; loading?: undefined}
+      | {err?: undefined; state: S; loading?: undefined}
+      | {err?: undefined; state?: undefined; loading: boolean}
+  ) {
+    if (full_state.err !== undefined) {
+      this.error = full_state.err;
+    } else if (full_state.state !== undefined) {
+      this.value = full_state.state;
+    } else {
+      this.loading = full_state.loading ? 'reload' : 'initial';
+    }
+  }
+
+  /**
+   * fmap function for the FullState functor: If this FullState isn't in a
+   * loading/error state, this returns a new FullState with the value mapped
+   * by the given f function
+   * @param f Maps the interior state value. Called 0 or 1 time.
+   * @returns A new FullState, possibly with same err/loading state, or T from f
+   */
+  map<T>(f: (state: S) => T): FullState<T> {
+    if (this.value !== undefined) {
+      return new FullState({state: f(this.value)});
+    } else {
+      // Create a COPY of this, so that we don't have a FullState<T> and FullState<S>
+      // referring to the same object.
+      if (this.error !== undefined) {
+        return new FullState({err: this.error});
+      } else {
+        return new FullState({loading: this.loading === 'reload'});
+      }
+    }
+  }
+
+  /**
+   * Calls only 1 of the 3 given functions, depending on what state this
+   * FullState is in.
+   * useful for producing 3 different React Components based on the state
+   * @param map_state Branch executed when this FullState is NOT errored/loading
+   * @param map_error Branch executed when this FullState is in an error state
+   * @param map_loading Branch executed when this FullState is still loading
+   */
+  match<T, U, V>(
+    map_state: (state: S) => T,
+    map_error: (error: {}) => U,
+    map_loading: (loading: 'reload' | 'initial') => V
+  ): T | U | V {
+    if (this.value !== undefined) {
+      return map_state(this.value);
+    } else if (this.error !== undefined) {
+      return map_error(this.error);
+    } else {
+      return map_loading(this.loading!);
+    }
+  }
+}
+
 export type StateListener<S> = (state: FullState<S>) => void;
 
 /**
@@ -138,7 +198,7 @@ export class DBTracker<P extends unknown[], S> {
    *          that no updates have been received for the given param yet.
    */
   getState(params: P): FullState<S> {
-    return this.states.get(params) || {loading: false};
+    return this.states.get(params) || new FullState<S>({loading: false});
   }
 
   /**
@@ -158,15 +218,19 @@ export class DBTracker<P extends unknown[], S> {
   promiseState(params: P): Promise<S> {
     return new Promise((resolve, reject) => {
       const listener = (state: FullState<S>) => {
-        if (state.loading !== undefined) {
-          // Do nothing: Wait for more updates to come through
-        } else {
-          // Resolve immediately, also removing this listener
-          this.removeListener(params, listener);
-          return state.err === undefined
-            ? resolve(state.state)
-            : reject(state.err);
-        }
+        state.match(
+          // Resolve immediately, also removing this listener:
+          state => {
+            this.removeListener(params, listener);
+            resolve(state);
+          },
+          error => {
+            this.removeListener(params, listener);
+            reject(error);
+          },
+          // Loading: Do nothing: Wait for more updates to come through:
+          () => {}
+        );
       };
 
       this.addListener(params, listener);
@@ -317,25 +381,27 @@ export class DBTracker<P extends unknown[], S> {
       this._load_interrupts.set(params, interruptable_promise + 1);
     }
 
-    if (this.states.get(params)?.err !== undefined) {
+    if (this.states.get(params)?.error !== undefined) {
       // This params is already in an error state:
       // Don't change the error, and don't update any listeners
       return;
     }
+
+    const full_state = new FullState<S>({err: error});
 
     // Error out the state for the Param
     // (This is done manually, not using _setState, as to not
     // accidentally recurse infinitley, as well as to ensure
     // the error is 'atomically' set, not letting listeners
     // run and see non-errored state for other Params)
-    this.states.set(params, {err: error});
+    this.states.set(params, full_state);
 
     // Call listeners (as long as it wasn't a listener that initated this error)
     const listeners = this._listeners.get(params);
     if (listeners !== undefined && notify_listeners) {
       for (const listener of listeners) {
         try {
-          listener({err: error});
+          listener(full_state);
         } catch (err) {
           console.error(
             'DBTracker listener emitted an error while handling an error',
@@ -377,8 +443,11 @@ export class DBTracker<P extends unknown[], S> {
     // accidentally recurse infinitley, as well as to ensure
     // the error is 'atomically' set, not letting listeners
     // run and see non-errored state for other Params)
+
+    const full_state = new FullState<S>({err: error});
+
     this.states.forEach((old_state, known_params) =>
-      this.states.set(known_params, {err: error})
+      this.states.set(known_params, full_state)
     );
     this.error = error;
 
@@ -386,7 +455,7 @@ export class DBTracker<P extends unknown[], S> {
       this._listeners.forEach(listeners =>
         listeners.forEach(listener => {
           try {
-            listener({err: error});
+            listener(full_state);
           } catch (err) {
             console.error(
               'DBTracker listener emitted an error while handling a DBTracker error',
@@ -419,18 +488,20 @@ export class DBTracker<P extends unknown[], S> {
     over_error = false
   ) {
     if (this.states.has(params) || this.store_all || store_new) {
-      if (!over_error && this.states.get(params)?.err !== undefined) {
+      if (!over_error && this.states.get(params)?.error !== undefined) {
         return; // Don't overwrite errors normally
       }
 
-      this.states.set(params, state);
+      const full_state = new FullState<S>(state);
+
+      this.states.set(params, full_state);
 
       // Run state listeners
       const listeners = this._listeners.get(params);
       if (listeners !== undefined) {
         for (const listener of listeners) {
           try {
-            listener(state);
+            listener(full_state);
           } catch (error) {
             this._localError(params, error, false);
             break;
