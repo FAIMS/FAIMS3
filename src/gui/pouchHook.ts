@@ -24,7 +24,7 @@ export type EventParamsMapping<Params extends {}> =
 
 export const default_filter = () => true;
 
-type TrackPoint<P extends {}, S> = [
+export type TrackPoint<P extends {}, S> = [
   string, // Event name to listen on initializeEvents
   // When an event of said name triggers, this function determines if
   // it applies to a given parameterset that's being listened for
@@ -34,11 +34,11 @@ type TrackPoint<P extends {}, S> = [
 
 type AttachedPoint = (...args: unknown[]) => void;
 
-type FullState<S> =
+export type FullState<S> =
   | {err: {}; state?: undefined; loading?: undefined}
   | {err?: undefined; state: S; loading?: undefined}
   | {err?: undefined; state?: undefined; loading: boolean};
-type StateListener<S> = (state: FullState<S>) => void;
+export type StateListener<S> = (state: FullState<S>) => void;
 
 /**
  * Concept:
@@ -75,6 +75,25 @@ type StateListener<S> = (state: FullState<S>) => void;
  *   non-store_all mode) if they have been emitted before addListener(param) was
  *   called and, its state is in {loading:false}
  *
+ * Errors:
+ *   Errors are handled from a call to EventStateMapping(params) is passed to
+ *   any listeners listening to params, as {err: error caught}
+ *
+ *   Errors produced from listeners are then made into "Global" errors.
+ *   A Global error (to the individual DBTracker) is not as gracefully handled:
+ *   This ignores any running Promises that the DBTracker was waiting for,
+ *   (e.g. EventStateMapping promises) and instead: Every listener for every
+ *   parameter has its state set to {err: error caught}.
+ *
+ *   _all listeners are then removed from the DBTracker after a global error_
+ *   The DBTracker becomes in an error'd state, and no proper recovery apart
+ *   from setting this.error = null and re-adding the removed listeners.
+ *
+ *   Errors thrown in the process of the above Global error being passed to
+ *   listeners are logged to console and dropped.
+ *
+ *   The first "Global" error is stored in this.error
+ *
  * Implementation:
  *   At construction time is when the PouchDB's change events are hooked into.
  *   This is done using a 'TrackPoint' object: Just an event name, and
@@ -91,6 +110,8 @@ type StateListener<S> = (state: FullState<S>) => void;
  */
 export class DBTracker<P extends {}, S> {
   store_all = true;
+
+  error = null as null | {};
 
   /**
    * For every unique parameters, it has a unique state. This state
@@ -241,8 +262,108 @@ export class DBTracker<P extends {}, S> {
     add_initial_listener(this._attachTo.bind(this, track_points));
   }
 
-  _globalError(error: {}) {
-    //TODO
+  /**
+   * Throws an error that was thrown by an EventStateMapping or a listener
+   * (listening to non-error states) to the listeners on a param corresponding
+   * to where it was thrown from.
+   *
+   * To prevent a listener throwing an error, then receiving the error it just
+   * threw back in as a parameter to itself, and prevent infinite recursion when
+   * the user throws a passed-error from more than 1 listener, set
+   * notify_listeners only when the errors is NOT from a listener (i.e. only
+   * when the error occurred in EventStateMapping function)
+   *
+   * @param params Parameters for which an error occurred locally in
+   * @param error Error thrown by user-code, either EventStateMapper or listener
+   */
+  _localError(params: P, error: {}, notify_listeners: boolean) {
+    // Interrupt specific promises
+    const interruptable_promise = this._load_interrupts.get(params);
+    if (interruptable_promise !== undefined) {
+      this._load_interrupts.set(params, interruptable_promise + 1);
+    }
+
+    if (this.states.get(params)?.err !== undefined) {
+      // This params is already in an error state:
+      // Don't change the error, and don't update any listeners
+      return;
+    }
+
+    // Error out the state for the Param
+    // (This is done manually, not using _setState, as to not
+    // accidentally recurse infinitley, as well as to ensure
+    // the error is 'atomically' set, not letting listeners
+    // run and see non-errored state for other Params)
+    this.states.set(params, {err: error});
+
+    // Call listeners (as long as it wasn't a listener that initated this error)
+    const listeners = this._listeners.get(params);
+    if (listeners !== undefined && notify_listeners) {
+      for (const listener of listeners) {
+        try {
+          listener({err: error});
+        } catch (err) {
+          console.error(
+            'DBTracker listener emitted an error while handling an error',
+            params,
+            err
+          );
+          // Breaks this loop to emit a global error
+          return this._globalError(error, false);
+        }
+      }
+    }
+  }
+
+  /**
+   * Called when an error is thrown in general DBTracker operation, but it
+   * doesn't make sense being a _localError (i.e. it isn't from
+   * EventStateMapping or a listener listening to non-error states)
+   *
+   * Sets this whole DBTracker into a bad 'error' state, throwing the given
+   * error to _all_ listeners and then removing all listeners.
+   *
+   * To prevent a listener throwing an error, then receiving the error it just
+   * threw back in as a parameter to itself, and prevent very big recursion when
+   * the user throws a passed-error from more than 1 listener, set
+   * notify_listeners only when the errors is NOT from a listener (i.e. only
+   * when the error occurred in EventParamMapping function)
+   *
+   * @param error Error that was thrown
+   */
+  _globalError(error: {}, notify_listeners: boolean) {
+    // Interrupt absolutely every promise:
+    this._load_interrupts.forEach((last_int, params) =>
+      this._load_interrupts.set(params, last_int + 1)
+    );
+    this._params_interrupt += 1;
+    this._params_resolved.clear();
+    // Error out all known Param's being kept track of
+    // (This is done manually, not using _setState, as to not
+    // accidentally recurse infinitley, as well as to ensure
+    // the error is 'atomically' set, not letting listeners
+    // run and see non-errored state for other Params)
+    this.states.forEach((old_state, known_params) =>
+      this.states.set(known_params, {err: error})
+    );
+    this.error = error;
+
+    if (notify_listeners) {
+      this._listeners.forEach(listeners =>
+        listeners.forEach(listener => {
+          try {
+            listener({err: error});
+          } catch (err) {
+            console.error(
+              'DBTracker listener emitted an error while handling a DBTracker error',
+              err
+            );
+          }
+        })
+      );
+    }
+
+    this._listeners.clear();
   }
 
   /**
@@ -252,13 +373,22 @@ export class DBTracker<P extends {}, S> {
    * If this isn't in store_all mode, and the Param is not yet listening,
    * nothing will be done in this function.
    *
-   * Errors are propagated to this._globalError
+   * Errors are propagated to this._localError(params)
    *
    * @param params Param to update the corresponding state for
    * @param state State to set param to, NOT LOADING, either error or valid.
    */
-  _setState(params: P, state: FullState<S>, store_new = false) {
+  _setState(
+    params: P,
+    state: {loading: boolean} | {state: S},
+    store_new = false,
+    over_error = false
+  ) {
     if (this.states.has(params) || this.store_all || store_new) {
+      if (!over_error && this.states.get(params)?.err !== undefined) {
+        return; // Don't overwrite errors normally
+      }
+
       this.states.set(params, state);
 
       // Run state listeners
@@ -268,7 +398,7 @@ export class DBTracker<P extends {}, S> {
           try {
             listener(state);
           } catch (error) {
-            this._globalError(error);
+            this._localError(params, error, false);
             break;
           }
         }
@@ -301,18 +431,23 @@ export class DBTracker<P extends {}, S> {
     const my_load = this._params_interrupt + 1;
     this._params_interrupt = my_load;
 
-    unresolved.then((params: P) => {
-      // A _promisedParams may currently still be resolving
-      // while this .then has executed.
-      this._params_resolved.set(params, callback);
+    unresolved
+      .then((params: P) => {
+        // Another _promisedParams may currently still be resolving
+        // while this one's .then is running, here.
 
-      if (this._params_interrupt === my_load) {
-        // No other Promise<Param>s to wait for, execute all the latest
-        // callbacks for each unique Param:
-        this._params_resolved.forEach((cb, param) => cb(param));
-        this._params_resolved.clear();
-      }
-    }, this._globalError);
+        // Last callback for this Param is set, to be run when no more
+        // _promisedParams are running:
+        this._params_resolved.set(params, callback);
+
+        if (this._params_interrupt === my_load) {
+          // No other Promise<Param>s to wait for, execute all the latest
+          // callbacks for each unique Param:
+          this._params_resolved.forEach((cb, params) => cb(params));
+          this._params_resolved.clear();
+        }
+      })
+      .catch(err => this._globalError(err, true));
   }
 
   /**
@@ -366,7 +501,7 @@ export class DBTracker<P extends {}, S> {
       },
       (err: {}) => {
         if (is_uninterrupted()) {
-          this._setState(params, {err: err});
+          this._localError(params, err, true);
         }
       }
     );
@@ -389,14 +524,10 @@ export class DBTracker<P extends {}, S> {
         // so resolve directly:
         const wait_params = Promise.resolve(tpoint[1](...args));
         this._promisedParams(wait_params, this_params => {
-          try {
-            // And now we again wait for a Promise to resolve, but this time
-            // it's the per-Param state that must resolve
-            const wait_state = Promise.resolve(tpoint[2](this_params, ...args));
-            this._promisedState(this_params, wait_state);
-          } catch (err) {
-            this._rejectState(this_params, err);
-          }
+          // And now we again wait for a Promise to resolve, but this time
+          // it's the per-Param state that must resolve
+          const wait_state = Promise.resolve(tpoint[2](this_params, ...args));
+          this._promisedState(this_params, wait_state);
         });
       };
 
