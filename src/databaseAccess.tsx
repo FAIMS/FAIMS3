@@ -38,6 +38,7 @@ import {
   ProjectObject,
   ActiveDoc,
   ProjectID,
+  ListingsObject,
 } from './datamodel';
 import {listFAIMSData} from './dataStorage';
 import {add_initial_listener} from './sync/event-handler-registration';
@@ -48,6 +49,7 @@ import {
 } from './sync/state';
 import {events} from './sync/events';
 import {ExistingActiveDoc} from './sync/databases';
+import {DBTracker} from './gui/pouchHook';
 
 export function getProjectList(user_id?: string): ProjectInformation[] {
   /**
@@ -140,46 +142,14 @@ export async function getObservationList(
   return listFAIMSData(project_id);
 }
 
-// note the string below is a ProjectID, but typescript is kinda silly and
-// doesn't let us do that
-const observationsUpdated: {[project_id: string]: boolean} = {};
-
-add_initial_listener(initializeEvents => {
-  initializeEvents.on(
-    'project_data_paused',
-    (listing, active: ExistingActiveDoc) => {
-      observationsUpdated[active._id] = true;
-    }
-  );
-});
-
-/**
- * Registers a callback to be run whenever observationList is updated.
- * If the observationList already updated before this function is called, the callback is also run immediately.
- *
- * @param project_id listing_id & project_id (active doc ._id) to get observations of
- * @param callback Run whenever the list of observations might have changed, called with the list.
- * @returns 'Destructor' that removes the listener that this function added.
- */
-export function listenObservationsList(
-  project_id: ProjectID,
-  callback: (observationList: ObservationList) => unknown
-): () => void {
-  const runCallback = () =>
-    getObservationList(project_id)
-      .then(callback)
-      .catch(err => console.error('Uncaught observation list error'));
-
-  const listener_func = (listing: unknown, active: ActiveDoc) => {
-    if (active._id === project_id) runCallback();
-  };
-
-  events.on('project_data_paused', listener_func);
-
-  if (observationsUpdated[project_id]) runCallback();
-
-  return () => events.removeListener('project_data_paused', listener_func);
-}
+export const observationListTracker = new DBTracker<
+  [string /*project_id*/],
+  ObservationList
+>([
+  'project_data_paused',
+  (listing: ListingsObject, active: ActiveDoc) => [[active._id]],
+  getObservationList,
+]);
 
 export function listenObservation(observation_id: string) {}
 
