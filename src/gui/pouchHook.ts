@@ -142,6 +142,42 @@ export class DBTracker<P extends unknown[], S> {
   }
 
   /**
+   * @note DO NOT use this in REACT or a react hook. You should be keeping
+   *       up to date! This doesn't trigger more than once, so keeping up to
+   *       date using this is impossible. This is more useful for tests.
+   *
+   * Gets the current, or if currently loading, the future state for a
+   * given Params. This essentially adds a one-time Listener if the Params is
+   * unknown, resolving the callback (or erroring). Else, if it's known or
+   * errored, the promise resolves immediately.
+   *
+   * @param params Parameters to get state for, e.g. {project_id}
+   * @returns State of the given param, waiting for any loading to happen if
+   *          the state isn't yet known.
+   */
+  promiseState(params: P): Promise<S> {
+    return new Promise((resolve, reject) => {
+      const listener = (state: FullState<S>) => {
+        if (state.loading !== undefined) {
+          // Do nothing: Wait for more updates to come through
+        } else {
+          // Resolve immediately, also removing this listener
+          this.removeListener(params, listener);
+          return state.err === undefined
+            ? resolve(state.state)
+            : reject(state.err);
+        }
+      };
+
+      this.addListener(params, listener);
+      // If this DBTracker KNOWS Already what the state is for the params,
+      // this listener call immediately removes the above added listener,
+      // and then resolves/rejects the returned Promise.
+      return listener(this.getState(params));
+    });
+  }
+
+  /**
    * Instantiated at construction time of the DBTracker,
    * and when the initializeEvents calls the _attachTo function,
    *
