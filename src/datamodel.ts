@@ -258,7 +258,8 @@ export interface SavedView {
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | ProjectPeople;
+  | ProjectPeople
+  | EncodedProjectMetadata;
 
 /**
  * Document from a people DB
