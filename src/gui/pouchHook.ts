@@ -35,9 +35,9 @@ type TrackPoint<P extends {}, S> = [
 type AttachedPoint = (...args: unknown[]) => void;
 
 type FullState<S> =
-  | {err: {}; state: undefined; initial: undefined}
-  | {err: undefined; state: S; initial: undefined}
-  | {err: undefined; state: undefined; initial: boolean};
+  | {err: {}; state?: undefined; loading?: undefined}
+  | {err?: undefined; state: S; loading?: undefined}
+  | {err?: undefined; state?: undefined; loading: boolean};
 type StateListener<S> = (state: FullState<S>) => void;
 
 /**
@@ -66,14 +66,15 @@ export class DBTracker<P extends {}, S> {
 
   /**
    * Gets the current state corresponding to a Params
-   * If the params is unknown, returns {initial:false}
+   * If the params is unknown, returns {loading:false}
    * (Which is returned even if addListener(params) was called)
    * 
    * @param params Parameters to get state for, e.g. {project_id}
+   * @returns State of the current param. {loading: boolean} means
    *          that no updates have been received for the given param yet.
    */
   getState(params: P): FullState<S> {
-    return this.states.get(params) || {initial: false};
+    return this.states.get(params) || {loading: false};
   }
 
   /**
@@ -155,7 +156,7 @@ export class DBTracker<P extends {}, S> {
 
     if (!this.states.has(params)) {
       // First encounter with the given params, must updates to be "loading"
-      this._setState(params, {initial: true}, true);
+      this._setState(params, {loading: false}, true);
     }
   }
   /**
@@ -295,7 +296,7 @@ export class DBTracker<P extends {}, S> {
 
     // Like _rejectState, _resolveState, the this.states must be updated
     // as to not expose old state
-    this._setState(params, {initial: false});
+    this._setState(params, {loading: true});
 
     // INTERRUPTION
 
