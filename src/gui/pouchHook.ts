@@ -10,21 +10,21 @@ import {add_initial_listener} from '../sync/event-handler-registration';
  *
  * State: State that is kept track of by DBTracker
  */
-export type EventStateMapping<Params extends {}, State> =
-  | ((params: Params, ...event_args: any[]) => State)
-  | ((params: Params, ...event_args: any[]) => Promise<State>);
+export type EventStateMapping<Params extends unknown[], State> =
+  | ((...params: [...Params, ...any[]]) => State)
+  | ((...params: [...Params, ...any[]]) => Promise<State>);
 
 /**
  * Given an event from the EventEmitter, determines what type
  * of params it has (for a given DBTracker)
  */
-export type EventParamsMapping<Params extends {}> =
+export type EventParamsMapping<Params extends unknown[]> =
   | ((...event_args: any[]) => Params)
   | ((...event_args: any[]) => Promise<Params>);
 
 export const default_filter = () => true;
 
-export type TrackPoint<P extends {}, S> = [
+export type TrackPoint<P extends unknown[], S> = [
   string, // Event name to listen on initializeEvents
   // When an event of said name triggers, this function determines if
   // it applies to a given parameterset that's being listened for
@@ -108,7 +108,7 @@ export type StateListener<S> = (state: FullState<S>) => void;
  *   specific revision of an observation in a project. Params is used in said
  *   specification, e.g. [project_id], [project_id, observation_id], etc.
  */
-export class DBTracker<P extends {}, S> {
+export class DBTracker<P extends unknown[], S> {
   store_all = true;
 
   error = null as null | {};
@@ -526,7 +526,9 @@ export class DBTracker<P extends {}, S> {
         this._promisedParams(wait_params, this_params => {
           // And now we again wait for a Promise to resolve, but this time
           // it's the per-Param state that must resolve
-          const wait_state = Promise.resolve(tpoint[2](this_params, ...args));
+          const wait_state = Promise.resolve(
+            tpoint[2](...this_params, ...args)
+          );
           this._promisedState(this_params, wait_state);
         });
       };
@@ -543,7 +545,7 @@ export class DBTracker<P extends {}, S> {
   }
 }
 
-export function useDBTracker<P extends {}, S>(
+export function useDBTracker<P extends unknown[], S>(
   tracker: DBTracker<P, S>,
   params: P
 ): FullState<S> {
