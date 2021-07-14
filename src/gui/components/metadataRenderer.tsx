@@ -20,8 +20,9 @@
 
 import React, {useEffect, useState} from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
-import {getProjectMetadata} from '../../projectMetadata';
+import {projectMetadataTracker} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel';
+import {useDBTracker} from '../pouchHook';
 
 type MetadataProps = {
   project_id: ProjectID;
@@ -33,19 +34,9 @@ export default function MetadataRenderer(props: MetadataProps) {
   const project_id = props.project_id;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
-  const [metadata_value, setMetadata] = useState(null as string | null);
-
-  useEffect(() => {
-    const getMeta = async () => {
-      try {
-        const meta = await getProjectMetadata(project_id, metadata_key);
-        setMetadata(meta);
-      } catch (err) {
-        setMetadata('Unknown');
-      }
-    };
-    getMeta();
-  }, []);
+  const metadata_value = useDBTracker(projectMetadataTracker, [project_id] as [
+    string
+  ]).map(values => values[metadata_key]);
 
   return (
     <Chip
@@ -58,10 +49,18 @@ export default function MetadataRenderer(props: MetadataProps) {
           ) : (
             <React.Fragment />
           )}
-          {metadata_value ? (
-            <span>{metadata_value}</span>
-          ) : (
-            <CircularProgress size={12} thickness={4} />
+          {metadata_value.match(
+            metadata_value => (
+              <span>{metadata_value}</span>
+            ),
+            error => (
+              <span>
+                {metadata_key} not found: {error}
+              </span>
+            ),
+            () => (
+              <CircularProgress size={12} thickness={4} />
+            )
           )}
         </React.Fragment>
       }
