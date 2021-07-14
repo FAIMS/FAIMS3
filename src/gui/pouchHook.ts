@@ -10,17 +10,17 @@ import {add_initial_listener} from '../sync/event-handler-registration';
  *
  * State: State that is kept track of by DBTracker
  */
-export type EventStateMapping<Params extends unknown[], State> =
-  | ((...params: [...Params, ...any[]]) => State)
-  | ((...params: [...Params, ...any[]]) => Promise<State>);
+export type EventStateMapping<Params extends unknown[], State> = (
+  ...params: [...Params, ...any[]]
+) => State | Promise<State>;
 
 /**
  * Given an event from the EventEmitter, determines what type
  * of params it has (for a given DBTracker)
  */
-export type EventParamsMapping<Params extends unknown[]> =
-  | ((...event_args: any[]) => Params)
-  | ((...event_args: any[]) => Promise<Params>);
+export type EventParamsMapping<Params extends unknown[]> = (
+  ...event_args: any[]
+) => Params[] | Promise<Params[]>;
 
 export const default_filter = () => true;
 
@@ -425,18 +425,20 @@ export class DBTracker<P extends unknown[], S> {
    *                 some state resolution from a track point in _attachTo
    *                 This is expected to do its own error handling
    */
-  _promisedParams(unresolved: Promise<P>, callback: (resolved: P) => void) {
+  _promisedParams(unresolved: Promise<P[]>, callback: (resolved: P) => void) {
     const my_load = this._params_interrupt + 1;
     this._params_interrupt = my_load;
 
     unresolved
-      .then((params: P) => {
+      .then((params_list: P[]) => {
         // Another _promisedParams may currently still be resolving
         // while this one's .then is running, here.
 
         // Last callback for this Param is set, to be run when no more
         // _promisedParams are running:
-        this._params_resolved.set(params, callback);
+        params_list.forEach(params =>
+          this._params_resolved.set(params, callback)
+        );
 
         if (this._params_interrupt === my_load) {
           // No other Promise<Param>s to wait for, execute all the latest
