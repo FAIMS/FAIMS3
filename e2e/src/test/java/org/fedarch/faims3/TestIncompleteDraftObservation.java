@@ -13,22 +13,22 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: TestPopulateFormInterface.java
+ * Filename: TestIncompleteDraftObservation
  * Description:
  *   TODO
  */
 package org.fedarch.faims3;
 
+import org.json.JSONException;
 /**
- * Skeleton for testing populating new form.
- *
+ * Skeleton for Doable Task 2.2 - Incomplete/Draft Observations
+ * Relating to: FAIMS3-25: As a module developer, I want to be able to control
+ * when the record saves, either in "google docs" style, or "push save button" style.DONE
  * @author Rini Angreani, CSIRO
  *
  */
-public interface TestPopulateForm {
+public interface TestIncompleteDraftObservation {
 
-	// Doable Task 2.1 - Observation creation
-	// Doable Task 2.3 - GPS and Taking a Point
-	public void testNewObservationWithGPS() throws Exception;
+	public void testIncompleteDraft() throws JSONException, Exception;
 
 }

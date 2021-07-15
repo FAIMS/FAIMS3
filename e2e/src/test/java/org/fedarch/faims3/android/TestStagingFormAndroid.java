@@ -67,26 +67,22 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
    * @throws InvocationTargetException
    */
   @Override
-@Test
+  @Test
   public void testSwitchTab() throws JSONException {
 	  try {
 			// Go to AstroSky form
 			loadNewAstroSkyForm();
 			// Fill out all fields
 			fillOutFormWithValidFields();
-			TestUtils.scrollDown(driver);
 			// validate JSON values
 			validateJSON();
-			// scroll up and click on the "Example Project A" tab
-			TestUtils.scrollToResourceId(driver, "project-nav-scrollable-tab-projectB").click();
-			// click submit before opening AsTRoSkY tab again
-			WebDriverWait wait = new WebDriverWait(driver, 10);
-			wait.until(ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='SAVE AND NEW']"))).click();;
+			// scroll up and click on index again
+			TestUtils.scrollToText(driver, "Index").click();
 			// reopen AsTRoSkY
-			driver.findElement(MobileBy.xpath("//*[@resource-id='project-nav-scrollable-tab-astro_sky']")).click();
+			loadNewAstroSkyForm();
 			// Check all fields are still the same
 			validateLatLong();
-			assertEquals(AstroSky.EMAIL, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
+			assertEquals(AstroSky.EMAIL_ANDROID, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
 			assertEquals(AstroSky.COLOUR, driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']")).getText());
 
 			AndroidElement currencies = TestUtils.scrollToResourceId(driver, "multi-str-field");
@@ -94,7 +90,8 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
 
 			TestUtils.scrollDown(driver);
 
-			assertEquals("1.0", wait.until(
+			WebDriverWait wait = new WebDriverWait(driver, 10);
+			assertEquals(AstroSky.INTEGER, wait.until(
 					ExpectedConditions.visibilityOfElementLocated(
 							MobileBy.xpath("//*[@resource-id='int-field']"))).getText());
 			assertEquals("Currency €", driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']")).getText());
