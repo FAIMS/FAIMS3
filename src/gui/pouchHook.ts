@@ -685,6 +685,18 @@ export class DBTracker<P extends unknown[], S> {
     );
   }
 
+  _event_router(tpoint: TrackPoint<P, S>, ...args: unknown[]) {
+    // _promisedParams takes a Promise, but tpoint[1] might be a non-promise
+    // so resolve directly:
+    const wait_params = Promise.resolve(tpoint[1](...args));
+    this._promisedParams(wait_params, this_params => {
+      // And now we again wait for a Promise to resolve, but this time
+      // it's the per-Param state that must resolve
+      const wait_state = Promise.resolve(tpoint[2](...this_params, ...args));
+      this._promisedState(this_params, wait_state);
+    });
+  }
+
   /**
    * Called once the EventEmitter is created, this attaches the events for this
    * DBTracker to the EventEmitter. Events are only attached once, when this is called
@@ -697,19 +709,7 @@ export class DBTracker<P extends unknown[], S> {
     // For each 'event' to attach to:
     for (const tpoint of track_points) {
       // The listener:
-      const attach_point = (...args: unknown[]) => {
-        // _promisedParams takes a Promise, but tpoint[1] might be a non-promise
-        // so resolve directly:
-        const wait_params = Promise.resolve(tpoint[1](...args));
-        this._promisedParams(wait_params, this_params => {
-          // And now we again wait for a Promise to resolve, but this time
-          // it's the per-Param state that must resolve
-          const wait_state = Promise.resolve(
-            tpoint[2](...this_params, ...args)
-          );
-          this._promisedState(this_params, wait_state);
-        });
-      };
+      const attach_point = this._event_router.bind(this, tpoint);
 
       // Store it for later deletion
       if (this._attachments.has(tpoint)) {
