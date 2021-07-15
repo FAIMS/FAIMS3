@@ -722,6 +722,85 @@ export class DBTracker<P extends unknown[], S> {
   }
 }
 
+type TrackerMapperFunc<P extends unknown[], S, IP extends unknown[], IS> = (
+  params: IP,
+  state?: IS // undefined if only converting an error
+) => [P, S?]; // undefined only allowed if state was
+
+export class MappedDBTracker<
+  P extends unknown[],
+  S,
+  IP extends unknown[],
+  IS
+> extends DBTracker<P, S> {
+  mapped: DBTracker<IP, IS>;
+  mapper: TrackerMapperFunc<P, S, IP, IS>;
+
+  constructor(
+    mapped: DBTracker<IP, IS>,
+    mapper: TrackerMapperFunc<P, S, IP, IS>
+  ) {
+    super();
+    this.mapped = mapped;
+    this.mapper = mapper;
+    this._attachMap();
+  }
+
+  _attachMap() {
+    this.mapped.addGlobalListener((...args) => {
+      if (args[0] === undefined) {
+        // Global error
+        this._globalError(args[1], false);
+      } else {
+        const iparams: IP = args[0];
+        const istate = args[1] as unknown as FullState<IS>;
+
+        istate.match(
+          state => {
+            try {
+              const [oparams, ostate] = this.mapper(iparams, state);
+              if (ostate === undefined) {
+                this._globalError(
+                  Error('TrackerMapperFunc(state nonnull) must return a state'),
+                  true
+                );
+              } else {
+                this._setState(oparams, {state: ostate});
+              }
+            } catch (unconvertable) {
+              this._globalError(unconvertable, true);
+            }
+          },
+          err => {
+            try {
+              const [oparams, ostate] = this.mapper(iparams, undefined);
+              if (ostate === undefined) {
+                // Unconvertable
+                this._globalError(err, true);
+              } else {
+                this._localError(oparams, {err: err}, true);
+              }
+            } catch (unconvertable) {
+              this._globalError(unconvertable, true);
+            }
+          },
+          loading => this._setState(params, {loading: loading === 'reload'})
+        )
+
+        let oparams, ostate;
+
+        try {
+          const output = this.mapper(iparams, istate.value);
+          oparams = output[0];
+          ostate = output[1];
+        } catch (unconvertable) {
+          this._globalError(unconvertable, true);
+        }
+      }
+    });
+  }
+}
+
 export function useDBTracker<P extends unknown[], S>(
   tracker: DBTracker<P, S>,
   params: P
