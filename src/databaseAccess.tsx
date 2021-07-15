@@ -40,13 +40,14 @@ import {
   ProjectID,
 } from './datamodel';
 import {listFAIMSData} from './dataStorage';
+import {add_initial_listener} from './sync/event-handler-registration';
 import {
-  add_initial_listener,
   createdProjects,
   createdProjectsInterface,
-  initializeEvents,
   projects_known,
-} from './sync';
+} from './sync/state';
+import {events} from './sync/events';
+import {ExistingActiveDoc} from './sync/databases';
 
 export function getProjectList(user_id?: string): ProjectInformation[] {
   /**
@@ -79,7 +80,7 @@ export function listenProjectList(
     listener(getProjectList(user_id));
   };
 
-  initializeEvents.on('projects_known', callback);
+  events.on('projects_known', callback);
 
   if (projects_known !== null) {
     // Projects already known by the time this function is called
@@ -88,7 +89,7 @@ export function listenProjectList(
 
   return () => {
     // Event remover
-    initializeEvents.removeListener('projects_known', callback);
+    events.removeListener('projects_known', callback);
   };
 }
 
@@ -144,9 +145,12 @@ export async function getObservationList(
 const observationsUpdated: {[project_id: string]: boolean} = {};
 
 add_initial_listener(initializeEvents => {
-  initializeEvents.on('project_data_paused', (listing, active) => {
-    observationsUpdated[active._id] = true;
-  });
+  initializeEvents.on(
+    'project_data_paused',
+    (listing, active: ExistingActiveDoc) => {
+      observationsUpdated[active._id] = true;
+    }
+  );
 });
 
 /**
@@ -170,12 +174,11 @@ export function listenObservationsList(
     if (active._id === project_id) runCallback();
   };
 
-  initializeEvents.on('project_data_paused', listener_func);
+  events.on('project_data_paused', listener_func);
 
   if (observationsUpdated[project_id]) runCallback();
 
-  return () =>
-    initializeEvents.removeListener('project_data_paused', listener_func);
+  return () => events.removeListener('project_data_paused', listener_func);
 }
 
 export function listenObservation(observation_id: string) {}

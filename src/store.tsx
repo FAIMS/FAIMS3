@@ -29,7 +29,7 @@ import {
 } from './actions';
 import {Color} from '@material-ui/lab/Alert';
 import LoadingApp from './gui/components/loadingApp';
-import {initialize} from './sync';
+import {initialize} from './sync/initialize';
 import {v4 as uuidv4} from 'uuid';
 
 interface InitialStateProps {

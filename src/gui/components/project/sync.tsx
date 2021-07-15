@@ -6,7 +6,7 @@ import {
   isSyncingProject,
   setSyncingProject,
   listenSyncingProject,
-} from '../../../sync';
+} from '../../../sync/sync-toggle';
 
 type ProjectSyncProps = {
   project: ProjectInformation;

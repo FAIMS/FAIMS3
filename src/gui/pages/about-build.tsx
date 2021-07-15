@@ -32,7 +32,7 @@ import {
   AUTOACTIVATE_PROJECTS,
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {wipe_all_pouch_databases} from '../../sync';
+import {wipe_all_pouch_databases} from '../../sync/databases';
 import grey from '@material-ui/core/colors/grey';
 import BoxTab from '../components/ui/boxTab';
 

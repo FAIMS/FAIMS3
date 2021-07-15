@@ -25,13 +25,13 @@ import {
   DIRECTORY_PORT,
 } from '../buildconfig';
 import {
-  initialize,
   projects_dbs,
   people_dbs,
   data_dbs,
   metadata_dbs,
   directory_db,
-} from '../sync';
+} from '../sync/databases';
+import {initialize} from '../sync/initialize';
 
 const COUCHDB_USER = String(process.env.COUCHDB_USER);
 const COUCHDB_PASSWORD = String(process.env.COUCHDB_PASSWORD);
