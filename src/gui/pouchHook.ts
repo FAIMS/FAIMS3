@@ -328,10 +328,8 @@ export class DBTracker<P extends unknown[], S> {
    * State for a given param will stick around until all its listeners are removed
    * So this serves to allow GC'ing of state if store_all is false
    *
-   * @param listeners Any one of state_listeners, unload_listeners, error_listeners
-   * @param params (Expose publically) Parameter that updates were filtered by
-   * @param listener (Expose publically) Listener that was executed when the state
-   *                 of this.state.get(params) is changed.
+   * @param params Parameter that updates were filtered by
+   * @param listener Listener that was added by addListener, now to be removed
    */
   removeListener(params: P, listener: StateListener<S>): void {
     const listeners_for_params = this._listeners.get(params);
