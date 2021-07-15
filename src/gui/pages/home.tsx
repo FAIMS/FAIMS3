@@ -25,7 +25,7 @@ import {Container, Typography, Box, Grid, Paper, Link} from '@material-ui/core';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
-import {getProjectInfo, getProjectList} from '../../databaseAccess';
+import {getProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
@@ -118,8 +118,8 @@ export default function Home() {
               {Object.keys(pouchProjectList).length === 0 ? (
                 <span>No projects found</span>
               ) : (
-                Object.keys(pouchProjectList).map(project_id => {
-                  const project_info = getProjectInfo(project_id);
+                pouchProjectList.map(project_info => {
+                  const project_id = project_info.project_id;
                   if (project_info !== null) {
                     return (
                       <Grid item xs={12} key={'project-list-grid' + project_id}>
