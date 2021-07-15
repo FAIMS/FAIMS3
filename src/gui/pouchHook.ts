@@ -100,6 +100,13 @@ export class FullState<S> {
 
 export type StateListener<S> = (state: FullState<S>) => void;
 
+export type GlobalListener<P extends unknown[], S> = (
+  ...args:
+    | [params: P, state: FullState<S>]
+    // params might be undefined if a global error occurred.
+    | [params: undefined, error: {}]
+) => void;
+
 /**
  * Concept:
  *   An instance for every updatable state that needs to be kept track of.
@@ -296,7 +303,14 @@ export class DBTracker<P extends unknown[], S> {
    * or it might be an error/resolve
    */
 
-  _listeners: Map<P, StateListener<S>[]> = new Map();
+  _local_listeners: Map<P, StateListener<S>[]> = new Map();
+
+  /**
+   * Similar to the above list of listeners per-Params, there is this
+   * below set of listeners that are triggered regardless of the Params
+   * they are triggered for.
+   */
+  _global_listeners: Set<GlobalListener<P, S>> =  new Set();
 
   /**
    * Main publically used function: To listen for changes to a DB's object
@@ -311,11 +325,11 @@ export class DBTracker<P extends unknown[], S> {
    *                 of this.state.get(params) is changed.
    */
   addListener(params: P, listener: StateListener<S>): void {
-    const listeners_for_params = this._listeners.get(params);
+    const listeners_for_params = this._local_listeners.get(params);
     if (listeners_for_params !== undefined) {
       listeners_for_params.push(listener);
     } else {
-      this._listeners.set(params, [listener]);
+      this._local_listeners.set(params, [listener]);
     }
 
     if (!this.states.has(params)) {
@@ -323,6 +337,19 @@ export class DBTracker<P extends unknown[], S> {
       this._setState(params, {loading: false}, true);
     }
   }
+
+  /**
+   * Adds the given listener to the list of listeners that will be called when
+   * any DB update happens (and after the param and state is known), as well as
+   * when a listener or other place throws an error.
+   *
+   * @param listener Listener to execute after state change is applied or
+   *                 when an error in a listener occurs.
+   */
+  addGlobalListener(listener: GlobalListener<P, S>): void {
+    this._global_listeners.add(listener);
+  }
+
   /**
    * Remove listeners that were added by addListener
    * State for a given param will stick around until all its listeners are removed
@@ -332,11 +359,11 @@ export class DBTracker<P extends unknown[], S> {
    * @param listener Listener that was added by addListener, now to be removed
    */
   removeListener(params: P, listener: StateListener<S>): void {
-    const listeners_for_params = this._listeners.get(params);
+    const listeners_for_params = this._local_listeners.get(params);
     if (listeners_for_params !== undefined) {
       if (listeners_for_params === [listener]) {
         // This was the last listener left for said parameter
-        this._listeners.delete(params);
+        this._local_listeners.delete(params);
         this._try_cleanup_unlistened(params);
       } else {
         const idx = listeners_for_params.indexOf(listener);
@@ -348,10 +375,20 @@ export class DBTracker<P extends unknown[], S> {
     }
   }
 
+  /**
+   * Remove listeners that were added by addGlobalListener
+   *
+   * @param listener Listener that was added by addGloballistener, to now be
+   *                 removed
+   */
+  removeGlobalListener(listener: GlobalListener<P, S>): void {
+    this._global_listeners.delete(listener);
+  }
+
   _try_cleanup_unlistened(params: P): void {
     // When all listeners for a given Params removed,
     // we can remove the state as well
-    if (!this.store_all && !this._listeners.has(params)) {
+    if (!this.store_all && !this._local_listeners.has(params)) {
       this.states.delete(params);
     }
   }
@@ -397,19 +434,34 @@ export class DBTracker<P extends unknown[], S> {
     this.states.set(params, full_state);
 
     // Call listeners (as long as it wasn't a listener that initated this error)
-    const listeners = this._listeners.get(params);
-    if (listeners !== undefined && notify_listeners) {
-      for (const listener of listeners) {
+    const listeners = this._local_listeners.get(params);
+    if (notify_listeners) {
+      for (const listener of Array.from(this._global_listeners.values())) {
         try {
-          listener(full_state);
+          listener(params, full_state);
         } catch (err) {
           console.error(
-            'DBTracker listener emitted an error while handling an error',
+            `DBTracker global listener emitted an error while handling error`,
             params,
             err
           );
           // Breaks this loop to emit a global error
           return this._globalError(error, false);
+        }
+      }
+      if (listeners !== undefined) {
+        for (const listener of listeners) {
+          try {
+            listener(full_state);
+          } catch (err) {
+            console.error(
+              'DBTracker listener emitted an error while handling an error',
+              params,
+              err
+            );
+            // Breaks this loop to emit a global error
+            return this._globalError(error, false);
+          }
         }
       }
     }
@@ -444,7 +496,7 @@ export class DBTracker<P extends unknown[], S> {
     // the error is 'atomically' set, not letting listeners
     // run and see non-errored state for other Params)
 
-    const full_state = new FullState<S>({err: error});
+    const full_state = new FullState<S>({err: error}) as FullState<S> & {error: {}};
 
     this.states.forEach((old_state, known_params) =>
       this.states.set(known_params, full_state)
@@ -452,7 +504,18 @@ export class DBTracker<P extends unknown[], S> {
     this.error = error;
 
     if (notify_listeners) {
-      this._listeners.forEach(listeners =>
+      this._global_listeners.forEach(listener => {
+        try {
+          listener(undefined, full_state);
+        } catch (err) {
+          console.error(
+            'DBTracker global listener emitted an error while handling a DBTracker error',
+            err
+          );
+        }
+      })
+
+      this._local_listeners.forEach(listeners =>
         listeners.forEach(listener => {
           try {
             listener(full_state);
@@ -466,7 +529,8 @@ export class DBTracker<P extends unknown[], S> {
       );
     }
 
-    this._listeners.clear();
+    this._global_listeners.clear();
+    this._local_listeners.clear();
   }
 
   /**
@@ -497,7 +561,14 @@ export class DBTracker<P extends unknown[], S> {
       this.states.set(params, full_state);
 
       // Run state listeners
-      const listeners = this._listeners.get(params);
+      const listeners = this._local_listeners.get(params);
+      for (const listener of Array.from(this._global_listeners.keys())) {
+        try {
+          listener(params, full_state);
+        } catch(error) {
+          this._localError(params, error, false);
+        }
+      }
       if (listeners !== undefined) {
         for (const listener of listeners) {
           try {
