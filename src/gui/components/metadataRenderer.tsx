@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import React from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
 import {projectMetadataTracker} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel';
