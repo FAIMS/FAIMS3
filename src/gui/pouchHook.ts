@@ -318,6 +318,10 @@ export class DBTracker<P extends unknown[], S> {
    * Between when an event is emitted and the Promise<State> is resolved,
    * a State for the corresponding Parameter is in a loading state.
    *
+   * Params are JSON stringified before adding to this map so that
+   * it is keys that are actually meaningfully comparable, instead of the
+   * array of strings that always compare == equal to false.
+   *
    * This state is reflected in this.states. But also, while in this state,
    * another event may be emitted, in which case the first Promise<State>
    * MUST NOT be allowed to resolve. To disallow this, this _load_interrupts
@@ -325,7 +329,7 @@ export class DBTracker<P extends unknown[], S> {
    *
    * See _promisedState
    */
-  _load_interrupts: Map<P, number> = new Map();
+  _load_interrupts: Map<string, number> = new Map();
 
   /**
    * Similarly to _load_interrupts, between when an event is emitted and the
@@ -348,24 +352,32 @@ export class DBTracker<P extends unknown[], S> {
   /**
    * While a Promise<Params> is resolving, this accumulates the list of all
    * Promise<Params> that resolved but were interrupted by another one resolving
+   *
+   * Params are JSON stringified before adding to this map so that
+   * it is keys that are actually meaningfully comparable, instead of the
+   * array of strings that always compare == equal to false.
    */
-  _params_resolved = new Map<P, (resolved: P) => void>();
+  _params_resolved = new Map<string, (resolved: P) => void>();
 
   /*
    * Each of these _X_listeners maps stores a list of callables to be run
    * when the State corresponding to the given Param P changes.
    * This might be the state starting to load another state (unload_listeners)
    * or it might be an error/resolve
+   *
+   * Params are JSON stringified before adding to this map so that
+   * it is keys that are actually meaningfully comparable, instead of the
+   * array of strings that always compare == equal to false.
    */
 
-  _local_listeners: Map<P, StateListener<S>[]> = new Map();
+  _local_listeners: Map<string, StateListener<S>[]> = new Map();
 
   /**
    * Similar to the above list of listeners per-Params, there is this
    * below set of listeners that are triggered regardless of the Params
    * they are triggered for.
    */
-  _global_listeners: Set<GlobalListener<P, S>> =  new Set();
+  _global_listeners: Set<GlobalListener<P, S>> = new Set();
 
   /**
    * Main publically used function: To listen for changes to a DB's object
@@ -380,11 +392,13 @@ export class DBTracker<P extends unknown[], S> {
    *                 of this.state.get(params) is changed.
    */
   addListener(params: P, listener: StateListener<S>): void {
-    const listeners_for_params = this._local_listeners.get(params);
+    const listeners_for_params = this._local_listeners.get(
+      stable_stringify(params)
+    );
     if (listeners_for_params !== undefined) {
       listeners_for_params.push(listener);
     } else {
-      this._local_listeners.set(params, [listener]);
+      this._local_listeners.set(stable_stringify(params), [listener]);
     }
 
     if (!this.states.has(stable_stringify(params))) {
@@ -416,11 +430,13 @@ export class DBTracker<P extends unknown[], S> {
    * @param listener Listener that was added by addListener, now to be removed
    */
   removeListener(params: P, listener: StateListener<S>): void {
-    const listeners_for_params = this._local_listeners.get(params);
+    const listeners_for_params = this._local_listeners.get(
+      stable_stringify(params)
+    );
     if (listeners_for_params !== undefined) {
       if (listeners_for_params === [listener]) {
         // This was the last listener left for said parameter
-        this._local_listeners.delete(params);
+        this._local_listeners.delete(stable_stringify(params));
         this._try_cleanup_unlistened(params);
       } else {
         const idx = listeners_for_params.indexOf(listener);
@@ -445,7 +461,10 @@ export class DBTracker<P extends unknown[], S> {
   _try_cleanup_unlistened(params: P): void {
     // When all listeners for a given Params removed,
     // we can remove the state as well
-    if (!this.store_all && !this._local_listeners.has(params)) {
+    if (
+      !this.store_all &&
+      !this._local_listeners.has(stable_stringify(params))
+    ) {
       this.states.delete(stable_stringify(params));
     }
   }
@@ -461,7 +480,7 @@ export class DBTracker<P extends unknown[], S> {
       typeof x[0] === 'function';
 
     if (has_eager(track_points)) {
-      // Overload 2: eager_load is set to the first EventStateMapping 
+      // Overload 2: eager_load is set to the first EventStateMapping
       this.eager_load = track_points[0];
       const track_points_real = (track_points.slice(
         1
@@ -490,9 +509,14 @@ export class DBTracker<P extends unknown[], S> {
    */
   _localError(params: P, error: {}, notify_listeners: boolean) {
     // Interrupt specific promises
-    const interruptable_promise = this._load_interrupts.get(params);
+    const interruptable_promise = this._load_interrupts.get(
+      stable_stringify(params)
+    );
     if (interruptable_promise !== undefined) {
-      this._load_interrupts.set(params, interruptable_promise + 1);
+      this._load_interrupts.set(
+        stable_stringify(params),
+        interruptable_promise + 1
+      );
     }
 
     if (this.states.get(stable_stringify(params))?.error !== undefined) {
@@ -511,14 +535,14 @@ export class DBTracker<P extends unknown[], S> {
     this.states.set(stable_stringify(params), full_state);
 
     // Call listeners (as long as it wasn't a listener that initated this error)
-    const listeners = this._local_listeners.get(params);
+    const listeners = this._local_listeners.get(stable_stringify(params));
     if (notify_listeners) {
       for (const listener of Array.from(this._global_listeners.values())) {
         try {
           listener(params, full_state);
         } catch (err) {
           console.error(
-            `DBTracker global listener emitted an error while handling error`,
+            'DBTracker global listener emitted an error while handling error',
             params,
             err
           );
@@ -563,7 +587,7 @@ export class DBTracker<P extends unknown[], S> {
   _globalError(error: {}, notify_listeners: boolean) {
     // Interrupt absolutely every promise:
     this._load_interrupts.forEach((last_int, params) =>
-      this._load_interrupts.set(params, last_int + 1)
+      this._load_interrupts.set(stable_stringify(params), last_int + 1)
     );
     this._params_interrupt += 1;
     this._params_resolved.clear();
@@ -645,7 +669,7 @@ export class DBTracker<P extends unknown[], S> {
       this.states.set(stable_stringify(params), full_state);
 
       // Run state listeners
-      const listeners = this._local_listeners.get(params);
+      const listeners = this._local_listeners.get(stable_stringify(params));
       for (const listener of Array.from(this._global_listeners.keys())) {
         try {
           listener(params, full_state);
@@ -699,13 +723,13 @@ export class DBTracker<P extends unknown[], S> {
         // Last callback for this Param is set, to be run when no more
         // _promisedParams are running:
         params_list.forEach(params =>
-          this._params_resolved.set(params, callback)
+          this._params_resolved.set(stable_stringify(params), callback)
         );
 
         if (this._params_interrupt === my_load) {
           // No other Promise<Param>s to wait for, execute all the latest
           // callbacks for each unique Param:
-          this._params_resolved.forEach((cb, params) => cb(params));
+          this._params_resolved.forEach((cb, params) => cb(JSON.parse(params)));
           this._params_resolved.clear();
         }
       })
@@ -743,15 +767,16 @@ export class DBTracker<P extends unknown[], S> {
     // INTERRUPTION
 
     // To be able to interrupt something, the _load_interrupts is incremented
-    const my_load = (this._load_interrupts.get(params) || 0) + 1;
+    const my_load =
+      (this._load_interrupts.get(stable_stringify(params)) || 0) + 1;
 
     // Update to reflect my_load:
-    this._load_interrupts.set(params, my_load);
+    this._load_interrupts.set(stable_stringify(params), my_load);
 
-    // To detect interruption, my_load is compared with this._load_interrupts.get(params)
+    // To detect interruption, my_load is compared with this._load_interrupts.get(stable_stringify(params))
     // When the state promise resolves/rejects
     const is_uninterrupted = () =>
-      my_load === this._load_interrupts.get(params);
+      my_load === this._load_interrupts.get(stable_stringify(params));
 
     // LISTENING
 
