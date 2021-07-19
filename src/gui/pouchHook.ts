@@ -526,7 +526,7 @@ export class DBTracker<P extends unknown[], S> {
     // the error is 'atomically' set, not letting listeners
     // run and see non-errored state for other Params)
 
-    const full_state = new FullState<S>({err: error}) as FullState<S> & {error: {}};
+    const full_state = new FullState<S>({err: error});
 
     this.states.forEach((old_state, known_params) =>
       this.states.set(known_params, full_state)
@@ -543,7 +543,7 @@ export class DBTracker<P extends unknown[], S> {
             err
           );
         }
-      })
+      });
 
       this._local_listeners.forEach(listeners =>
         listeners.forEach(listener => {
@@ -595,7 +595,7 @@ export class DBTracker<P extends unknown[], S> {
       for (const listener of Array.from(this._global_listeners.keys())) {
         try {
           listener(params, full_state);
-        } catch(error) {
+        } catch (error) {
           this._localError(params, error, false);
         }
       }
