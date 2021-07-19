@@ -94,7 +94,7 @@ export default function ProjectList() {
             error => (
               <span>{error.toString()}</span>
             ),
-            loading => (
+            () => (
               <CircularProgress size={24} thickness={6} />
             )
           )}

@@ -116,7 +116,7 @@ export default function Observation() {
                 error => (
                   <span>{error.toString()}</span>
                 ),
-                loading => (
+                () => (
                   <CircularProgress size={20} thickness={5} />
                 )
               )}

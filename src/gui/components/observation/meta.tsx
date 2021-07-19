@@ -62,7 +62,7 @@ export default function ObservationMeta(props: ObservationMetaProps) {
         err => (
           <span>Error: {err.toString()}</span>
         ),
-        loading => (
+        () => (
           <CircularProgress color={'primary'} size={'0.75rem'} thickness={5} />
         )
       )}
