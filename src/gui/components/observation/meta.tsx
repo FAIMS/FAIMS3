@@ -27,7 +27,9 @@ import {
   TableBody,
   TableRow,
 } from '@material-ui/core';
+import {observationMetadataTracker} from '../../../observationMetadata';
 import {lookupFAIMSDataID} from '../../../dataStorage';
+import {useDBTracker} from '../../pouchHook';
 type ObservationMetaProps = {
   project_id: ProjectID;
   observation_id: string;
@@ -35,40 +37,36 @@ type ObservationMetaProps = {
 
 export default function ObservationMeta(props: ObservationMetaProps) {
   const {project_id, observation_id} = props;
-  const [meta, setMeta] = React.useState<{[key: string]: any}>({});
-
-  useEffect(() => {
-    async function fetchObservationMeta() {
-      const observation = await lookupFAIMSDataID(project_id, observation_id);
-      setMeta({
-        Created: observation?.created.toString(),
-        Updated: observation?.updated.toString(),
-        'Created by': observation?.created_by,
-        'Last updated by': observation?.updated_by,
-      });
-    }
-    fetchObservationMeta();
-  }, []);
+  const meta = useDBTracker(observationMetadataTracker, [
+    project_id,
+    observation_id,
+  ] as [string, string]);
 
   return (
     <div>
-      {Object.keys(meta).length === 0 ? (
-        <CircularProgress color={'primary'} size={'0.75rem'} thickness={5} />
-      ) : (
-        <div>
-          <Table>
-            <TableBody>
-              {Object.keys(meta).map(key => (
-                <TableRow key={'observation-meta-' + key}>
-                  <TableCell>
-                    <b>{key}</b>
-                  </TableCell>
-                  <TableCell>{meta[key]}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      {meta.match(
+        meta => (
+          <div>
+            <Table>
+              <TableBody>
+                {Object.keys(meta).map(key => (
+                  <TableRow key={'observation-meta-' + key}>
+                    <TableCell>
+                      <b>{key}</b>
+                    </TableCell>
+                    <TableCell>{meta[key].toString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ),
+        err => (
+          <span>Error: {err.toString()}</span>
+        ),
+        loading => (
+          <CircularProgress color={'primary'} size={'0.75rem'} thickness={5} />
+        )
       )}
     </div>
   );
