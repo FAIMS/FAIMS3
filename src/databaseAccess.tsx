@@ -74,26 +74,10 @@ export function getProjectList(user_id?: string): ProjectInformation[] {
   return output;
 }
 
-export function listenProjectList(
-  listener: (project_list: ProjectInformation[]) => void,
-  user_id?: string
-): () => void {
-  const callback = () => {
-    listener(getProjectList(user_id));
-  };
-
-  events.on('projects_known', callback);
-
-  if (projects_known !== null) {
-    // Projects already known by the time this function is called
-    callback();
-  }
-
-  return () => {
-    // Event remover
-    events.removeListener('projects_known', callback);
-  };
-}
+export const projectListTracker = new DBTracker<
+  [string? /* user_id */],
+  ProjectInformation[]
+>(getProjectList, ['projects_known', getProjectList]);
 
 export function getProjectInfo(
   project_id: ProjectID

@@ -25,11 +25,9 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
-import {listenProjectList} from '../../databaseAccess';
-import {ProjectInformation} from '../../datamodel';
-import {useState} from 'react';
-import {useEffect} from 'react';
+import {projectListTracker} from '../../databaseAccess';
 import {CircularProgress} from '@material-ui/core';
+import {useDBTracker} from '../pouchHook';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -64,42 +62,41 @@ const useStyles = makeStyles(theme => ({
 export default function ProjectList() {
   const classes = useStyles();
   // const globalState = useContext(store);
-  const [projectList, setProjectList] = useState(
-    null as null | ProjectInformation[]
-  );
+  const projectList = useDBTracker(projectListTracker, [undefined]);
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {title: 'Projects'},
   ];
-
-  useEffect(() => {
-    return listenProjectList(setProjectList);
-  }, []);
 
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {projectList === null ? (
-            <CircularProgress size={24} thickness={6} />
-          ) : (
-            projectList.map(project_info => {
-              return (
-                <Grid
-                  item
-                  xs={12}
-                  key={'project-list-grid' + project_info.project_id}
-                >
-                  <ProjectCard
-                    project={project_info}
-                    listView={true}
-                    showObservations={true}
-                    dashboard={false}
-                  />
-                </Grid>
-              );
-            })
+          {projectList.match(
+            loadedProjectList =>
+              loadedProjectList.map(project_info => {
+                return (
+                  <Grid
+                    item
+                    xs={12}
+                    key={'project-list-grid' + project_info.project_id}
+                  >
+                    <ProjectCard
+                      project={project_info}
+                      listView={true}
+                      showObservations={true}
+                      dashboard={false}
+                    />
+                  </Grid>
+                );
+              }),
+            error => (
+              <span>{error.toString()}</span>
+            ),
+            loading => (
+              <CircularProgress size={24} thickness={6} />
+            )
           )}
         </Grid>
       </div>
