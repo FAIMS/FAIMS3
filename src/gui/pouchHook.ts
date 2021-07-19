@@ -754,7 +754,8 @@ export class DBTracker<P extends unknown[], S> {
    * @param state Promise resolving into state, or error
    */
   _promisedState(params: P, state: Promise<S>) {
-    const existing_state = this.states.get(stable_stringify(params));
+    const params_str = stable_stringify(params);
+    const existing_state = this.states.get(params_str);
     if (!this.store_all && existing_state === undefined) {
       // Not storing any unlistened states:
       return;
@@ -768,15 +769,15 @@ export class DBTracker<P extends unknown[], S> {
 
     // To be able to interrupt something, the _load_interrupts is incremented
     const my_load =
-      (this._load_interrupts.get(stable_stringify(params)) || 0) + 1;
+      (this._load_interrupts.get(params_str) || 0) + 1;
 
     // Update to reflect my_load:
-    this._load_interrupts.set(stable_stringify(params), my_load);
+    this._load_interrupts.set(params_str, my_load);
 
-    // To detect interruption, my_load is compared with this._load_interrupts.get(stable_stringify(params))
+    // To detect interruption, my_load is compared with this._load_interrupts.get(params_str)
     // When the state promise resolves/rejects
     const is_uninterrupted = () =>
-      my_load === this._load_interrupts.get(stable_stringify(params));
+      my_load === this._load_interrupts.get(params_str);
 
     // LISTENING
 
@@ -787,9 +788,12 @@ export class DBTracker<P extends unknown[], S> {
         }
       },
       (err: {}) => {
-        if (is_uninterrupted()) {
-          this._localError(params, err, true);
-        }
+        // Interrupt everything else
+        this._load_interrupts.set(
+          params_str,
+          this._load_interrupts.get(params_str)! + 1
+        );
+        this._localError(params, err, true);
       }
     );
   }
