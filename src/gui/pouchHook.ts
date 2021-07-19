@@ -87,6 +87,25 @@ export class FullState<S> {
     }
   }
 
+  catch(...fs: ((error: {}) => {} | void)[]): FullState<S> {
+    if (this.error !== undefined) {
+      // Convert all errors in the fs conversion funcs list, recursively
+      if (fs === []) {
+        // Base case: No conversion whatsoever, just a copy
+        return new FullState({err: this.error});
+      } else {
+        // Recursive case: Convert using the first function given.
+        return new FullState<S>({err: fs[0](this.error) || {}}).catch(
+          ...fs.slice(1)
+        );
+      }
+    } else if (this.value !== undefined) {
+      return new FullState({state: this.value});
+    } else {
+      return new FullState({loading: this.loading === 'reload'});
+    }
+  }
+
   /**
    * Calls only 1 of the 3 given functions, depending on what state this
    * FullState is in.
