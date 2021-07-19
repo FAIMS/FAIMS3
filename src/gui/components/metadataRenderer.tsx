@@ -51,12 +51,10 @@ export default function MetadataRenderer(props: MetadataProps) {
           )}
           {metadata_value.match(
             metadata_value => (
-              <span>{metadata_value}</span>
+              <span>{metadata_value.toString()}</span>
             ),
             error => (
-              <span>
-                {metadata_key} not found: {error}
-              </span>
+              <span>Error: {error.toString()}</span>
             ),
             () => (
               <CircularProgress size={12} thickness={4} />
