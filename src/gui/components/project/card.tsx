@@ -101,7 +101,6 @@ const useStyles = makeStyles(theme => ({
 export default function Card(props: ProjectCardProps) {
   const {project, showObservations, listView, dashboard} = props;
   const classes = useStyles();
-  const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
@@ -116,17 +115,9 @@ export default function Card(props: ProjectCardProps) {
   //   });
   // };
 
-  useEffect(() => {
-    if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
-      setLoading(false);
-    }
-  }, [project]);
-
   return (
     <React.Fragment>
-      {loading ? (
-        <CircularProgress size={12} thickness={4} />
-      ) : dashboard ? (
+      {dashboard ? (
         <List style={{padding: 0}}>
           <ListItem
             button
