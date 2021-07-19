@@ -26,6 +26,7 @@ import {
   Typography,
   Paper,
   Tab,
+  CircularProgress,
 } from '@material-ui/core';
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
@@ -37,11 +38,15 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import ObservationForm from '../components/observation/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
-import {listFAIMSObservationRevisions} from '../../dataStorage';
+import {
+  FAIMSObservationRevisionsTracker,
+  listFAIMSObservationRevisions,
+} from '../../dataStorage';
 import {getProjectInfo} from '../../databaseAccess';
 import grey from '@material-ui/core/colors/grey';
 import ObservationMeta from '../components/observation/meta';
 import ObservationDelete from '../components/observation/delete';
+import {useDBTracker} from '../pouchHook';
 
 export default function Observation() {
   const {project_id, observation_id} = useParams<{
@@ -60,15 +65,11 @@ export default function Observation() {
     },
     {title: observation_id},
   ];
-  const [revisions, setRevisions] = React.useState([] as string[]);
-  useEffect(() => {
-    setRevisions([]);
-    listFAIMSObservationRevisions(project_id, observation_id)
-      .then(all_revisions => {
-        setRevisions(all_revisions);
-      })
-      .catch(console.error /*TODO*/);
-  }, [project_id, observation_id]);
+  const revisions = useDBTracker(FAIMSObservationRevisionsTracker, [
+    project_id,
+    observation_id,
+  ] as [ProjectID, string]);
+
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
@@ -111,7 +112,18 @@ export default function Observation() {
               pr={2}
               style={{overflowX: 'scroll'}}
             >
-              <pre>{JSON.stringify(revisions, null, 2)}</pre>
+              {revisions.match(
+                valid => (
+                  <pre>{JSON.stringify(valid, null, 2)}</pre>
+                ),
+                error => (
+                  <span>{error.toString()}</span>
+                ),
+                loading => (
+                  <CircularProgress size={20} thickness={5} />
+                )
+              )}
+              <pre></pre>
             </Box>
           </TabPanel>
           <TabPanel value="3">

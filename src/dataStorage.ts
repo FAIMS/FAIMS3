@@ -29,6 +29,7 @@ import {
   ObservationID,
   //  OBSERVATION_INDEX_NAME,
 } from './datamodel';
+import {DBTracker} from './gui/pouchHook';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
@@ -213,6 +214,14 @@ export async function listFAIMSObservationRevisions(
     throw Error(`failed to list data for id ${observation_id}`);
   }
 }
+
+export const FAIMSObservationRevisionsTracker = new DBTracker<
+  [ProjectID, ObservationID],
+  ObservationRevisionListing
+>(listFAIMSObservationRevisions, [
+  'project_data_paused',
+  listFAIMSObservationRevisions,
+]);
 
 export async function listFAIMSProjectRevisions(
   project_id: ProjectID
