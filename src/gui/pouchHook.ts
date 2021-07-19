@@ -763,13 +763,14 @@ export class DBTracker<P extends unknown[], S> {
 
     // Like _rejectState, _resolveState, the this.states must be updated
     // as to not expose old state
-    this._setState(params, {loading: true});
+    if (existing_state?.loading !== 'reload') {
+      this._setState(params, {loading: true});
+    }
 
     // INTERRUPTION
 
     // To be able to interrupt something, the _load_interrupts is incremented
-    const my_load =
-      (this._load_interrupts.get(params_str) || 0) + 1;
+    const my_load = (this._load_interrupts.get(params_str) || 0) + 1;
 
     // Update to reflect my_load:
     this._load_interrupts.set(params_str, my_load);
