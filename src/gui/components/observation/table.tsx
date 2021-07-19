@@ -18,8 +18,6 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
-import _ from 'lodash';
 import {
   DataGrid,
   GridColDef,
@@ -30,7 +28,7 @@ import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
-import {Observation, ObservationList, ProjectID} from '../../../datamodel';
+import {ProjectID} from '../../../datamodel';
 import * as ROUTES from '../../../constants/routes';
 import {observationListTracker} from '../../../databaseAccess';
 import {useDBTracker} from '../../pouchHook';

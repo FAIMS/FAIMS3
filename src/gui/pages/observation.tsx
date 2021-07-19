@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useEffect} from 'react';
+import React from 'react';
 import {
   AppBar,
   Box,
@@ -38,10 +38,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import ObservationForm from '../components/observation/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
-import {
-  FAIMSObservationRevisionsTracker,
-  listFAIMSObservationRevisions,
-} from '../../dataStorage';
+import {FAIMSObservationRevisionsTracker} from '../../dataStorage';
 import {getProjectInfo} from '../../databaseAccess';
 import grey from '@material-ui/core/colors/grey';
 import ObservationMeta from '../components/observation/meta';

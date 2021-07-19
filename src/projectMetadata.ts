@@ -22,7 +22,6 @@ import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
   ProjectID,
-  ProjectMetaObject,
 } from './datamodel';
 import {DBTracker} from './gui/pouchHook';
 import {LocalDB} from './sync/databases';

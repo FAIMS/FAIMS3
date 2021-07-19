@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {
   Avatar,
   Box,
@@ -29,7 +29,6 @@ import {
   CardContent,
   CardHeader,
   Typography,
-  CircularProgress,
   List,
   ListItem,
   ListItemAvatar,

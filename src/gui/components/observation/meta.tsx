@@ -18,7 +18,6 @@
  *   TODO
  */
 
-import React, {useEffect} from 'react';
 import {ProjectID} from '../../../datamodel';
 import {
   CircularProgress,
@@ -28,7 +27,6 @@ import {
   TableRow,
 } from '@material-ui/core';
 import {observationMetadataTracker} from '../../../observationMetadata';
-import {lookupFAIMSDataID} from '../../../dataStorage';
 import {useDBTracker} from '../../pouchHook';
 type ObservationMetaProps = {
   project_id: ProjectID;
