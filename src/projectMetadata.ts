@@ -32,9 +32,6 @@ export const projectMetadataTracker = new DBTracker<
   {[metadata_key: string]: any}
 >([
   'project_meta_paused',
-  (listing: unknown, active: {_id: ProjectID}) => {
-    return [[active._id]];
-  },
   async (
     listing: unknown,
     active: unknown,
@@ -54,6 +51,9 @@ export const projectMetadataTracker = new DBTracker<
     }
 
     return all_meta;
+  },
+  (listing: unknown, active: {_id: ProjectID}) => {
+    return [[active._id] as [string]];
   },
 ]);
 

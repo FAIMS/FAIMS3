@@ -147,8 +147,8 @@ export const observationListTracker = new DBTracker<
   ObservationList
 >([
   'project_data_paused',
-  (listing: ListingsObject, active: ActiveDoc) => [[active._id]],
   getObservationList,
+  (listing: ListingsObject, active: ActiveDoc) => [[active._id] as [string]],
 ]);
 
 export function listenObservation(observation_id: string) {}

@@ -5,6 +5,9 @@ import {add_initial_listener} from '../sync/event-handler-registration';
  * Given that an event has just happened from EventEmitter,
  * this fetches & translates any state data for a DBTracker to keep track of
  *
+ * This may also be called if the user requests state for a given Param and
+ * there is nothing yet known for the given state, and eager_load is defined
+ *
  * unknown[] args: These may not be consumed by the EventStateMapping, but these
  * are the arguments directly passed from the initializeEvents emission
  *
@@ -24,13 +27,21 @@ export type EventParamsMapping<Params extends unknown[]> = (
 
 export const default_filter = () => true;
 
-export type TrackPoint<P extends unknown[], S> = [
-  string, // Event name to listen on initializeEvents
-  // When an event of said name triggers, this function determines if
-  // it applies to a given parameterset that's being listened for
-  EventParamsMapping<P>,
-  EventStateMapping<P, S>
-];
+export type TrackPoint<P extends unknown[], S> =
+  | [
+      string, // Event name to listen on initializeEvents
+      // When an event of said name triggers, this function determines if
+      // it applies to a given parameterset that's being listened for
+      EventStateMapping<P, S>,
+      EventParamsMapping<P>
+    ]
+  | [
+      string, // Event name to listen on initializeEvents
+      // For when DB events on the above event listeners are indiscriminate,
+      // We don't want to bother extracting the list of updates separately
+      // from the list of states: Just give a new Mappings of States
+      EventStateMapping<P, S>
+    ];
 
 type AttachedPoint = (...args: unknown[]) => void;
 
@@ -178,6 +189,22 @@ export type GlobalListener<P extends unknown[], S> = (
 export class DBTracker<P extends unknown[], S> {
   store_all = true;
 
+  eager_load?: EventStateMapping<P, S>;
+
+  _start_eager_load(params: P) {
+    if (this.states.get(params)?.value !== undefined) {
+      // Already loaded
+      return;
+    }
+
+    if (this.eager_load !== undefined) {
+      // Call without the 'this' being bound to this DBTracker,
+      // Also, typescript needs a bit of help with Type resolution on ...any[]
+      const unbound: (...params: [...P]) => S | Promise<S> = this.eager_load;
+      this._promisedState(params, Promise.resolve(unbound(...params)));
+    }
+  }
+
   error = null as null | {};
 
   /**
@@ -205,6 +232,7 @@ export class DBTracker<P extends unknown[], S> {
    *          that no updates have been received for the given param yet.
    */
   getState(params: P): FullState<S> {
+    this._start_eager_load(params);
     return this.states.get(params) || new FullState<S>({loading: false});
   }
 
@@ -335,6 +363,8 @@ export class DBTracker<P extends unknown[], S> {
     if (!this.states.has(params)) {
       // First encounter with the given params, must updates to be "loading"
       this._setState(params, {loading: false}, true);
+      // If eager loading is enabled, this immediately sets loading to true
+      this._start_eager_load(params);
     }
   }
 
@@ -686,13 +716,23 @@ export class DBTracker<P extends unknown[], S> {
   }
 
   _event_router(tpoint: TrackPoint<P, S>, ...args: unknown[]) {
-    // _promisedParams takes a Promise, but tpoint[1] might be a non-promise
-    // so resolve directly:
-    const wait_params = Promise.resolve(tpoint[1](...args));
+    let wait_params;
+
+    if (tpoint.length === 2) {
+      // Given this TrackPoint triggered, it triggers updates for ALL listening
+      // (all known) states (but it doesn't add any more params to the state)
+      wait_params = Promise.resolve(Array.from(this.states.keys()));
+    } else {
+      // This TrackPoint derives a specific Params that changed.
+      //
+      // _promisedParams takes a Promise, but tpoint[1] might be a non-promise
+      // so resolve directly:
+      wait_params = Promise.resolve(tpoint[2](...args));
+    }
     this._promisedParams(wait_params, this_params => {
       // And now we again wait for a Promise to resolve, but this time
       // it's the per-Param state that must resolve
-      const wait_state = Promise.resolve(tpoint[2](...this_params, ...args));
+      const wait_state = Promise.resolve(tpoint[1](...this_params, ...args));
       this._promisedState(this_params, wait_state);
     });
   }
