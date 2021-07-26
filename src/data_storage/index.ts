@@ -20,7 +20,7 @@
 
 import {v4 as uuidv4} from 'uuid';
 
-import {getDataDB} from './sync';
+import {getDataDB} from '../sync';
 import {
   Observation,
   EncodedObservation,
@@ -28,7 +28,7 @@ import {
   ProjectID,
   ObservationID,
   //  OBSERVATION_INDEX_NAME,
-} from './datamodel';
+} from '../datamodel';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];

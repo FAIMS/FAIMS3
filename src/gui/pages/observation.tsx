@@ -37,7 +37,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import ObservationForm from '../components/observation/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
-import {listFAIMSObservationRevisions} from '../../dataStorage';
+import {listFAIMSObservationRevisions} from '../../data_storage';
 import {getProjectInfo} from '../../databaseAccess';
 import grey from '@material-ui/core/colors/grey';
 import ObservationMeta from '../components/observation/meta';
