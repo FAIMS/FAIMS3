@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {EncodedObservation} from '../datamodel';
+import {ProjectDataObject} from '../datamodel';
 import {
   data_dbs,
   LocalDB,
@@ -63,8 +63,8 @@ export function setSyncingProject(active_id: string, syncing: boolean) {
 
   const has_remote = (
     db: typeof data_db
-  ): db is LocalDB<EncodedObservation> & {
-    remote: LocalDBRemote<EncodedObservation>;
+  ): db is LocalDB<ProjectDataObject> & {
+    remote: LocalDBRemote<ProjectDataObject>;
   } => {
     return db.remote !== null;
   };

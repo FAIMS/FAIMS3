@@ -27,11 +27,11 @@ import {
 import {
   ActiveDoc,
   ConnectionInfo,
-  EncodedObservation,
   ListingsObject,
   NonNullListingsObject,
   PeopleDoc,
   ProjectMetaObject,
+  ProjectDataObject,
   ProjectObject,
 } from '../datamodel';
 import {
@@ -124,7 +124,7 @@ export const people_dbs: LocalDBList<PeopleDoc> = {};
  * Contain in these databases (indexed by the active_db id's)
  * is project data.
  */
-export const data_dbs: LocalDBList<EncodedObservation> = {};
+export const data_dbs: LocalDBList<ProjectDataObject> = {};
 
 /**
  * Synced from the project metadatabase for each active project,

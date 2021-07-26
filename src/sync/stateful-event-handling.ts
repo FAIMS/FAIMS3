@@ -52,4 +52,3 @@ export interface StatefulEvents extends EventEmitter {
     ) => unknown
   ): this;
 }
-

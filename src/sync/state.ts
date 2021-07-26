@@ -21,7 +21,7 @@
 import {
   ProjectObject,
   ProjectMetaObject,
-  EncodedObservation,
+  ProjectDataObject,
   ActiveDoc,
 } from '../datamodel';
 import {ExistingActiveDoc, LocalDB} from './databases';
@@ -125,7 +125,7 @@ export type createdProjectsInterface = {
   project: ProjectObject;
   active: ExistingActiveDoc;
   meta: LocalDB<ProjectMetaObject>;
-  data: LocalDB<EncodedObservation>;
+  data: LocalDB<ProjectDataObject>;
 };
 
 export const createdProjects: {
@@ -133,7 +133,7 @@ export const createdProjects: {
     project: ProjectObject;
     active: ExistingActiveDoc;
     meta: LocalDB<ProjectMetaObject>;
-    data: LocalDB<EncodedObservation>;
+    data: LocalDB<ProjectDataObject>;
   };
 } = {};
 

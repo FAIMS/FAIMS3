@@ -24,7 +24,7 @@ import {
   ListingsObject,
   ProjectObject,
   ProjectMetaObject,
-  EncodedObservation,
+  ProjectDataObject,
   PeopleDoc,
   ConnectionInfo,
 } from '../datamodel';
@@ -67,7 +67,7 @@ export interface DirectoryEmitter extends EventEmitter {
       listing: ListingsObject,
       active: ExistingActiveDoc,
       project: ProjectObject,
-      data: LocalDB<EncodedObservation>
+      data: LocalDB<ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -76,7 +76,7 @@ export interface DirectoryEmitter extends EventEmitter {
       listing: ListingsObject,
       active: ExistingActiveDoc,
       project: ProjectObject,
-      data: LocalDB<EncodedObservation>
+      data: LocalDB<ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -86,7 +86,7 @@ export interface DirectoryEmitter extends EventEmitter {
       active: ExistingActiveDoc,
       project: ProjectObject,
       meta: LocalDB<ProjectMetaObject>,
-      data: LocalDB<EncodedObservation>
+      data: LocalDB<ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -181,14 +181,14 @@ export interface DirectoryEmitter extends EventEmitter {
     listing: ListingsObject,
     active: ExistingActiveDoc,
     project: ProjectObject,
-    data: LocalDB<EncodedObservation>
+    data: LocalDB<ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_data_active',
     listing: ListingsObject,
     active: ExistingActiveDoc,
     project: ProjectObject,
-    data: LocalDB<EncodedObservation>
+    data: LocalDB<ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_local',
@@ -196,7 +196,7 @@ export interface DirectoryEmitter extends EventEmitter {
     active: ExistingActiveDoc,
     project: ProjectObject,
     meta: LocalDB<ProjectMetaObject>,
-    data: LocalDB<EncodedObservation>
+    data: LocalDB<ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_error',
