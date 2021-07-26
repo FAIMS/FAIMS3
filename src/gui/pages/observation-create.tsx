@@ -23,7 +23,7 @@ import {Box, Container, Typography, Paper} from '@material-ui/core';
 import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {generateFAIMSDataID} from '../../dataStorage';
+import {generateFAIMSDataID} from '../../data_storage';
 import ObservationForm from '../components/observation/form';
 import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel';

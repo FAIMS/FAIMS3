@@ -20,9 +20,9 @@
  *   If you find yourself writing pouchdb.get(), pouchdb.put(), etc.
  *   put that code in a function in this file
  *
- *   See dataStorage.ts for accessors specific to Observations
+ *   See data_storage/index.ts for accessors specific to Observations
  *   In comparison, this file is for metadata, or other data
- *   (dataStorage.ts is called from this file, as dataStorage.ts
+ *   (data_storage/index.ts is called from this file, as data_storage/index.ts
  *    does encoding/decoding of observations)
  *
  *   TODO: Convert *everything* to listeners that can run more than once
@@ -39,7 +39,7 @@ import {
   ActiveDoc,
   ProjectID,
 } from './datamodel';
-import {listFAIMSData} from './dataStorage';
+import {listFAIMSData} from './data_storage';
 import {add_initial_listener} from './sync/event-handler-registration';
 import {
   createdProjects,

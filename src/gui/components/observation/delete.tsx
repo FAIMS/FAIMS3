@@ -29,7 +29,7 @@ import {
   DialogActions,
 } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
-import {deleteFAIMSDataForID} from '../../../dataStorage';
+import {deleteFAIMSDataForID} from '../../../data_storage';
 import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';
 import {useHistory} from 'react-router-dom';

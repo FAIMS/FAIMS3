@@ -25,6 +25,7 @@ import {
   ListingsObject,
   ObservationList,
   ProjectMetaObject,
+  ProjectDataObject,
   ProjectObject,
   ProjectsList,
   ProjectUIModel,
@@ -705,7 +706,7 @@ export async function setupExampleListing(
 
 export async function setupExampleData(
   projname: string,
-  data_db: PouchDB.Database<EncodedObservation>
+  data_db: PouchDB.Database<ProjectDataObject>
 ) {
   // let ids: string[] = [];
 

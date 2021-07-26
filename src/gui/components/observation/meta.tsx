@@ -27,7 +27,7 @@ import {
   TableBody,
   TableRow,
 } from '@material-ui/core';
-import {lookupFAIMSDataID} from '../../../dataStorage';
+import {lookupFAIMSDataID} from '../../../data_storage';
 type ObservationMetaProps = {
   project_id: ProjectID;
   observation_id: string;

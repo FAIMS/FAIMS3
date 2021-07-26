@@ -28,7 +28,7 @@ import {getUiSpecForProject} from '../../../uiSpecification';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from '../../view';
-import {upsertFAIMSData, lookupFAIMSDataID} from '../../../dataStorage';
+import {upsertFAIMSData, lookupFAIMSDataID} from '../../../data_storage';
 import {ProjectUIModel} from '../../../datamodel';
 import {getStagedData, setStagedData} from '../../../sync/staging';
 import {getCurrentUserId} from '../../../users';

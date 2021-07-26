@@ -21,7 +21,7 @@
 import {USE_REAL_DATA, AUTOACTIVATE_PROJECTS} from '../buildconfig';
 import {
   ConnectionInfo,
-  EncodedObservation,
+  ProjectDataObject,
   ListingsObject,
   PeopleDoc,
   ProjectMetaObject,
@@ -497,7 +497,7 @@ async function process_project(
     meta_sync_handler
   );
 
-  const data_sync_handler = (data_db: LocalDB<EncodedObservation>) =>
+  const data_sync_handler = (data_db: LocalDB<ProjectDataObject>) =>
     new SyncHandler(PROJECT_TIMEOUT, {
       active: async () =>
         events.emit(

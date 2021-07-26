@@ -20,14 +20,14 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
-import {EncodedObservation, ProjectMetaObject} from '../datamodel';
+import {ProjectDataObject, ProjectMetaObject} from '../datamodel';
 import {data_dbs, metadata_dbs} from './databases';
 
 PouchDB.plugin(PouchDBFind);
 
 export function getDataDB(
   active_id: string
-): PouchDB.Database<EncodedObservation> {
+): PouchDB.Database<ProjectDataObject> {
   if (data_dbs[active_id] !== undefined) {
     return data_dbs[active_id].local;
   } else {

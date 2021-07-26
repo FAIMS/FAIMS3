@@ -260,6 +260,12 @@ export type ProjectMetaObject =
   | EncodedProjectUIModel
   | ProjectPeople;
 
+/*
+ * Elements of a Project's dataDB can be any one of these,
+ * discriminated by the prefix of the object's id
+ */
+export type ProjectDataObject = EncodedObservation;
+
 /**
  * Document from a people DB
  */

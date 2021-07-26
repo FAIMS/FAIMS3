@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: dataStorage.test.ts
+ * Filename: data_storage.test.ts
  * Description:
  *   TODO
  */
@@ -28,7 +28,7 @@ import {
   listFAIMSProjectRevisions,
   deleteFAIMSDataForID,
   undeleteFAIMSDataForID,
-} from './dataStorage';
+} from './data_storage';
 import {equals} from './utils/eqTestSupport';
 
 import {getDataDB} from './sync/index';
