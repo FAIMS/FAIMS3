@@ -13,24 +13,29 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.tsx
+ * Filename: actions.ts
  * Description:
  *   TODO
  */
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import {IS_AUTH_PORTAL} from './buildconfig';
-import App from './App';
-import AuthApp from './auth/App';
-//import reportWebVitals from './reportWebVitals';
 
-ReactDOM.render(
-  <React.StrictMode>{IS_AUTH_PORTAL ? <AuthApp /> : <App />}</React.StrictMode>,
-  document.getElementById('root')
-);
+import {Color} from '@material-ui/lab/Alert';
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-//reportWebVitals();
+export enum ActionType {
+  ADD_ALERT,
+  DELETE_ALERT,
+}
+
+export interface ADD_ALERT {
+  type: ActionType.ADD_ALERT;
+  payload: {
+    message: string;
+    severity: Color;
+  };
+}
+
+export interface DELETE_ALERT {
+  type: ActionType.DELETE_ALERT;
+  payload: {key: string};
+}
+
+export type AlertActions = ADD_ALERT | DELETE_ALERT;

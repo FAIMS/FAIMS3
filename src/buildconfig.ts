@@ -65,6 +65,22 @@ function prod_build(): boolean {
  */
 const PROD_BUILD = prod_build();
 
+function is_auth_portal(): boolean {
+  const isauthportal = process.env.REACT_APP_IS_AUTH_PORTAL;
+  if (
+    isauthportal === '' ||
+    isauthportal === undefined ||
+    FALSEY_STRINGS.includes(isauthportal.toLowerCase())
+  ) {
+    return false;
+  } else if(TRUTHY_STRINGS.includes(isauthportal.toLowerCase())) {
+    return true;
+  } else {
+    console.error('REACT_APP_IS_AUTH_PORTAL badly defined. assuming false');
+    return false;
+  }
+}
+
 function use_real_data(): boolean {
   const userealdata = process.env.REACT_APP_USE_REAL_DATA;
   if (
@@ -131,6 +147,7 @@ function is_testing() {
   return jest_worker_is_running || jest_imported || test_node_env;
 }
 
+export const IS_AUTH_PORTAL = is_auth_portal();
 export const USE_REAL_DATA = PROD_BUILD || use_real_data();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
