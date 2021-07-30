@@ -13,6 +13,7 @@ initialise_couchdb() {
         \"_id\": \"default\",
         \"name\": \"Default instance\",
         \"description\": \"Default FAIMS instance\",
+        \"auth_mechanisms\": [{type: \"dc_password\"}],
         \"people_db\": {
             \"proto\": \"$1\",
             \"host\": \"$2\",

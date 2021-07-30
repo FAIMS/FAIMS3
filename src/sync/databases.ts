@@ -152,6 +152,7 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
         directory_connection_info,
         possibly_corrupted_instance.people_db
       ),
+      auth_mechanisms: [{type: 'dc_password'}],
     };
   }
   return default_instance;

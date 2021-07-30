@@ -39,6 +39,19 @@ export interface ConnectionInfo {
   db_name: string;
 }
 
+/**
+ * To extend this to SSO or other mechanisms,
+ * do a union with,
+ *
+ * For example, to add FAA-based auth, which is
+ * an SSO mechanism that we allow restricting based on institution (domain)
+ * {type: 'FAA', domains: [] | null}
+ */
+export type AuthInfo = {
+  type: 'dc_password';
+  domains?: [];
+};
+
 export type PossibleConnectionInfo =
   | undefined
   | {
@@ -55,6 +68,7 @@ export interface ListingsObject {
   description: string;
   projects_db?: PossibleConnectionInfo;
   people_db?: PossibleConnectionInfo;
+  auth_mechanisms: AuthInfo[];
 }
 
 export interface NonNullListingsObject extends ListingsObject {

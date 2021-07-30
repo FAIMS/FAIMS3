@@ -537,6 +537,7 @@ const example_directory: ListingsObject[] = [
       lan: true,
       db_name: 'people',
     },
+    auth_mechanisms: [{type: 'dc_password'}],
     projects_db: {
       proto: 'http',
       host: '10.80.11.44',
@@ -565,6 +566,7 @@ const example_directory: ListingsObject[] = [
       lan: true,
       db_name: 'csiro_hosted_projects',
     },
+    auth_mechanisms: [{type: 'dc_password'}],
   },
 ];
 
