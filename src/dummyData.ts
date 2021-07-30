@@ -565,13 +565,6 @@ const example_directory: ListingsObject[] = [
     name: 'AAO Internal FAIMS instance',
     description:
       'This FAIMS server is the instance used internally by the AAO for testing.',
-    people_db: {
-      proto: 'http',
-      host: '10.80.11.44',
-      port: 5984,
-      lan: true,
-      db_name: 'people',
-    },
     auth_mechanisms: [{type: 'dc_password'}],
     projects_db: {
       proto: 'http',
@@ -587,13 +580,6 @@ const example_directory: ListingsObject[] = [
       'Test of an independently hosted CouchDB Instance (People DB not implemented yet)',
     description:
       'This FAIMS server is the instance used internally by the AAO for testing.',
-    people_db: {
-      proto: 'http',
-      host: '10.80.11.44',
-      port: 5984,
-      lan: true,
-      db_name: 'people',
-    },
     projects_db: {
       proto: 'http',
       host: '10.80.11.44',

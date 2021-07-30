@@ -81,13 +81,11 @@ export interface ListingsObject {
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  people_db?: PossibleConnectionInfo;
   auth_mechanisms: AuthInfo[];
 }
 
 export interface NonNullListingsObject extends ListingsObject {
   projects_db: ConnectionInfo;
-  people_db: ConnectionInfo;
 }
 
 export interface ActiveDoc {
@@ -229,16 +227,4 @@ export type ProjectDataObject = AttributeValuePair | Revision | EncodedRecord;
 
 export function isRecord(doc: ProjectDataObject): doc is EncodedRecord {
   return (<EncodedRecord>doc).record_format_version !== undefined;
-}
-
-/**
- * Document from a people DB
- */
-export interface PeopleDoc {
-  roles: Array<string>;
-  devices: Array<string>;
-  salt: string;
-  ierations: 10;
-  derived_key: string;
-  passsword_scheme: string;
 }

@@ -71,11 +71,10 @@ function initialize_dbs(): DirectoryEmitter {
     .on('listing_local', (...args) => process_projects(...args, false))
     .on(
       'listing_paused',
-      (listing, projects, people_db, projects_db, default_connection) =>
+      (listing, projects, projects_db, default_connection) =>
         process_projects(
           listing,
           projects,
-          people_db,
           projects_db,
           default_connection,
           true

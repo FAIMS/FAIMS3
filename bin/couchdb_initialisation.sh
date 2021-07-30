@@ -14,12 +14,6 @@ initialise_couchdb() {
         \"name\": \"Default instance\",
         \"description\": \"Default FAIMS instance\",
         \"auth_mechanisms\": [{type: \"dc_password\"}],
-        \"people_db\": {
-            \"proto\": \"$1\",
-            \"host\": \"$2\",
-            \"port\": $3,
-            \"lan\": true,
-            \"db_name\": \"people\"
         }, \"projects_db\": {
             \"proto\": \"$1\",
             \"host\": \"$2\",
@@ -29,9 +23,6 @@ initialise_couchdb() {
             \"projects\"
         }
     }"
-
-    # setup people with default
-    $curl_cmd "$base_url/people"
 
     # setup test_proj with default
     $curl_cmd "$base_url/projects"
@@ -510,7 +501,6 @@ initialise_couchdb() {
 
     $curl_cmd -H 'Content-Type: application/json' "$base_url/directory/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
     $curl_cmd -H 'Content-Type: application/json' "$base_url/projects/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
-    $curl_cmd -H 'Content-Type: application/json' "$base_url/people/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
     $curl_cmd -H 'Content-Type: application/json' "$base_url/metadata-test_proj/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
     $curl_cmd -H 'Content-Type: application/json' "$base_url/data-test_proj/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
 }
