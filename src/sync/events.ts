@@ -25,7 +25,6 @@ import {
   ProjectObject,
   ProjectMetaObject,
   ProjectDataObject,
-  PeopleDoc,
   ConnectionInfo,
 } from '../datamodel';
 import {ExistingActiveDoc, LocalDB} from './databases';
@@ -102,7 +101,6 @@ export interface DirectoryEmitter extends EventEmitter {
     listener: (
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
-      people_db: LocalDB<PeopleDoc>,
       projects_db: LocalDB<ProjectObject>,
       default_connection: ConnectionInfo
     ) => unknown
@@ -112,7 +110,6 @@ export interface DirectoryEmitter extends EventEmitter {
     listener: (
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
-      people_db: LocalDB<PeopleDoc>,
       projects_db: LocalDB<ProjectObject>,
       default_connection: ConnectionInfo
     ) => unknown
@@ -122,7 +119,6 @@ export interface DirectoryEmitter extends EventEmitter {
     listener: (
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
-      people_db: LocalDB<PeopleDoc>,
       projects_db: LocalDB<ProjectObject>,
       default_connection: ConnectionInfo
     ) => unknown
@@ -208,7 +204,6 @@ export interface DirectoryEmitter extends EventEmitter {
     event: 'listing_local',
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
-    people_db: LocalDB<PeopleDoc>,
     projects_db: LocalDB<ProjectObject>,
     default_connection: ConnectionInfo
   ): boolean;
@@ -216,7 +211,6 @@ export interface DirectoryEmitter extends EventEmitter {
     event: 'listing_paused',
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
-    people_db: LocalDB<PeopleDoc>,
     projects_db: LocalDB<ProjectObject>,
     default_connection: ConnectionInfo
   ): boolean;
@@ -224,7 +218,6 @@ export interface DirectoryEmitter extends EventEmitter {
     event: 'listing_active',
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
-    people_db: LocalDB<PeopleDoc>,
     projects_db: LocalDB<ProjectObject>,
     default_connection: ConnectionInfo
   ): boolean;

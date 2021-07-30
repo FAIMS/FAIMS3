@@ -23,7 +23,6 @@ import {
   ConnectionInfo,
   ProjectDataObject,
   ListingsObject,
-  PeopleDoc,
   ProjectMetaObject,
   ProjectObject,
 } from '../datamodel';
@@ -42,7 +41,6 @@ import {
   active_db,
   get_default_instance,
   ensure_local_db,
-  people_dbs,
   projects_dbs,
   ensure_synced_db,
   ExistingActiveDoc,
@@ -183,21 +181,6 @@ async function process_listing(listing_object: ListingsObject) {
     listing_object['projects_db']
   );
 
-  const people_local_id = listing_object['people_db']
-    ? listing_id
-    : DEFAULT_LISTING_ID;
-
-  const people_connection = materializeConnectionInfo(
-    (await get_default_instance())['people_db'],
-    listing_object['people_db']
-  );
-
-  const [, local_people_db] = ensure_local_db(
-    'people',
-    people_local_id,
-    true,
-    people_dbs
-  );
   const [, local_projects_db] = ensure_local_db(
     'projects',
     projects_db_id,
@@ -247,27 +230,8 @@ async function process_listing(listing_object: ListingsObject) {
     'listing_local',
     listing_object,
     unupdated_projects_in_this_listing,
-    local_people_db,
     local_projects_db,
     projects_connection
-  );
-
-  const people_sync_handler = () =>
-    new SyncHandler(LISTINGS_TIMEOUT, {
-      active: () => {},
-      paused: () => {},
-      error: () => {},
-    });
-
-  // TODO: Ensure that when the user adds a new active project
-  // that these filters are updated.
-  ensure_synced_db(
-    people_local_id,
-    people_connection,
-    people_dbs,
-    people_sync_handler,
-    // Filters to only projects that are active
-    unupdated_projects_in_this_listing.map(v => v._id)
   );
 
   const project_sync_handler = () =>
@@ -277,7 +241,6 @@ async function process_listing(listing_object: ListingsObject) {
           'listing_active',
           listing_object,
           await get_active_projects_in_this_listing(),
-          local_people_db,
           local_projects_db,
           projects_connection
         ),
@@ -291,7 +254,6 @@ async function process_listing(listing_object: ListingsObject) {
           'listing_paused',
           listing_object,
           await get_active_projects_in_this_listing(),
-          local_people_db,
           local_projects_db,
           projects_connection
         );
@@ -306,7 +268,6 @@ async function process_listing(listing_object: ListingsObject) {
           'listing_paused',
           listing_object,
           await get_active_projects_in_this_listing(),
-          local_people_db,
           local_projects_db,
           projects_connection
         );
@@ -374,7 +335,6 @@ async function activate_project(
 export function process_projects(
   listing: ListingsObject,
   active_projects: ExistingActiveDoc[],
-  people_db: LocalDB<PeopleDoc>,
   projects_db: LocalDB<ProjectObject>,
   default_connection: ConnectionInfo,
   allow_nonexistant: boolean

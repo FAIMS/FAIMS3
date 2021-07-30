@@ -67,13 +67,11 @@ export interface ListingsObject {
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  people_db?: PossibleConnectionInfo;
   auth_mechanisms: AuthInfo[];
 }
 
 export interface NonNullListingsObject extends ListingsObject {
   projects_db: ConnectionInfo;
-  people_db: ConnectionInfo;
 }
 
 export interface ActiveDoc {
@@ -279,15 +277,3 @@ export type ProjectMetaObject =
  * discriminated by the prefix of the object's id
  */
 export type ProjectDataObject = EncodedObservation;
-
-/**
- * Document from a people DB
- */
-export interface PeopleDoc {
-  roles: Array<string>;
-  devices: Array<string>;
-  salt: string;
-  ierations: 10;
-  derived_key: string;
-  passsword_scheme: string;
-}

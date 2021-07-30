@@ -29,7 +29,6 @@ import {
   ConnectionInfo,
   ListingsObject,
   NonNullListingsObject,
-  PeopleDoc,
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
@@ -100,7 +99,7 @@ export const directory_db: LocalDB<ListingsObject> = {
  *   For each project the current device is part of (so this is keyed by listing id + project id),
  *   * listing_id: A couchdb instance object's id (from "directory" db)
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
- *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
+ *   * authentication mechanism used (id of a doc in the auth_db)
  */
 export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 
@@ -110,14 +109,9 @@ export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 export const local_state_db = new PouchDB('local_state');
 
 /**
- * Each listing has a Projects database and Users/People DBs
+ * Each listing has a Projects database and Users DBs
  */
 export const projects_dbs: LocalDBList<ProjectObject> = {};
-
-/**
- * mapping from listing id to a PouchDB CLIENTSIDE DB
- */
-export const people_dbs: LocalDBList<PeopleDoc> = {};
 
 /**
  * Per-[active]-project project data:
@@ -148,10 +142,6 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
         directory_connection_info,
         possibly_corrupted_instance.projects_db
       ),
-      people_db: materializeConnectionInfo(
-        directory_connection_info,
-        possibly_corrupted_instance.people_db
-      ),
       auth_mechanisms: [{type: 'dc_password'}],
     };
   }
@@ -161,7 +151,7 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
 /**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db or people_db
+ * @param global_dbs projects_db
  * @returns Flag if newly created =true, already existing=false & The local DB
  */
 export function ensure_local_db<Content extends {}>(
@@ -189,7 +179,7 @@ export function ensure_local_db<Content extends {}>(
 
 /**
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db or people_db
+ * @param global_dbs projects_db
  * @param connection_info Info to use to connect to remote
  * @param options PouchDB options. Defaults to live: true, retry: true.
  *                if options.sync is defined, then this turns into ensuring the DB
@@ -317,7 +307,6 @@ export async function wipe_all_pouch_databases() {
   const local_only_dbs_to_wipe = [active_db, local_state_db, staging_db];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
-  await delete_synced_dbs(people_dbs);
   await delete_synced_dbs(projects_dbs);
   await delete_synced_db('directory', directory_db);
   for (const db of local_only_dbs_to_wipe) {
