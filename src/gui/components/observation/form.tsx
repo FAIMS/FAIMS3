@@ -19,17 +19,28 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
+import {RouteComponentProps} from 'react-router';
+
+import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
+
 import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
+
+import {transformAll} from '@demvsystems/yup-ast';
+
 import {getComponentByName} from '../../ComponentRegistry';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import {transformAll} from '@demvsystems/yup-ast';
 import {ViewComponent} from '../../view';
-import {upsertFAIMSData, lookupFAIMSDataID} from '../../../data_storage';
-import {ProjectUIModel} from '../../../datamodel';
+import {upsertFAIMSData, getFullObservationData} from '../../../data_storage';
+import {
+  ProjectUIModel,
+  ProjectID,
+  ObservationID,
+  RevisionID,
+} from '../../../datamodel';
 import {getStagedData, setStagedData} from '../../../sync/staging';
 import {getCurrentUserId} from '../../../users';
 import BoxTab from '../ui/boxTab';
@@ -37,14 +48,11 @@ import {ActionType} from '../../../actions';
 import {store} from '../../../store';
 import AutoSave from './autosave';
 import * as ROUTES from '../../../constants/routes';
-import {withRouter} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
 
 type ObservationFormProps = {
-  project_id: string;
-  observation_id: string;
-  revision_id?: string;
-  is_fresh: boolean;
+  project_id: ProjectID;
+  observation_id: ObservationID;
+  revision_id: RevisionID | null;
 };
 
 // After this many errors happen with from the staging db
@@ -124,8 +132,7 @@ class ObservationForm extends React.Component<
   componentDidUpdate(prevProps: ObservationFormProps) {
     if (
       prevProps.observation_id !== this.props.observation_id ||
-      prevProps.revision_id !== this.props.revision_id ||
-      prevProps.is_fresh !== this.props.is_fresh
+      prevProps.revision_id !== this.props.revision_id
     ) {
       this.loadedStagedData = null;
       this.touchedFields.clear();
@@ -231,16 +238,17 @@ class ObservationForm extends React.Component<
     let loadedStagedData: {[fn: string]: unknown} = {};
 
     const viewStageLoaders = Object.entries(uiSpec['views']).map(([viewName]) =>
-      this.nullCoalesceRevision().then(obsid_revid =>
-        getStagedData(this.props.project_id, viewName, obsid_revid).then(
-          staged_data_restore => {
-            loadedStagedData = {
-              ...loadedStagedData,
-              ...(staged_data_restore || {}),
-            };
-          }
-        )
-      )
+      getStagedData(
+        this.props.project_id,
+        viewName,
+        this.props.observation_id,
+        this.props.revision_id
+      ).then(staged_data_restore => {
+        loadedStagedData = {
+          ...loadedStagedData,
+          ...(staged_data_restore || {}),
+        };
+      })
     );
 
     // Wait for all data to load from staging DB before setting this.staged not null
@@ -253,20 +261,27 @@ class ObservationForm extends React.Component<
      * Formik requires a single object for initialValues, collect these from the
      * ui schema or from the database
      */
-    const existingData: {
-      [viewName: string]: {[fieldName: string]: unknown};
-    } = (this.props.is_fresh
-      ? {}
-      : await lookupFAIMSDataID(
-          this.props.project_id,
-          this.props.observation_id
-        )
-    )?.data;
+    let existingData: {
+      [fieldName: string]: unknown;
+    };
+    if (this.props.revision_id === null) {
+      existingData = {};
+    } else {
+      const existing_observation = await getFullObservationData(
+        this.props.project_id,
+        this.props.observation_id,
+        this.props.revision_id
+      );
+      if (existing_observation === null) {
+        existingData = {};
+      } else {
+        existingData = existing_observation.data;
+      }
+    }
+
     const fieldNames = this.getFieldNames();
     const fields = this.getFields();
-    const initialValues: {[key: string]: any} = {
-      _id: this.props.observation_id!,
-    };
+    const initialValues: {[key: string]: any} = {};
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] = firstDefinedFromList([
         this.loadedStagedData![fieldName],
@@ -275,24 +290,6 @@ class ObservationForm extends React.Component<
       ]);
     });
     this.setState({initialValues: initialValues});
-  }
-
-  async nullCoalesceRevision(): Promise<null | {_id: string; _rev: string}> {
-    if (this.props.is_fresh) {
-      return null;
-    } else {
-      const existing_doc = await lookupFAIMSDataID(
-        this.props.project_id,
-        this.props.observation_id
-      );
-      if (existing_doc === null) {
-        console.error('observation form created for deleted document');
-      }
-      return {
-        _id: this.props.observation_id,
-        _rev: this.props.revision_id || existing_doc!._rev!,
-      };
-    }
   }
 
   /**
@@ -337,23 +334,15 @@ class ObservationForm extends React.Component<
   save(values: any) {
     getCurrentUserId(this.props.project_id)
       .then(userid => {
-        console.assert(values['_id'] === this.props.observation_id);
-        delete values['_id'];
-        const created = new Date('1990-01-01'); // FIXME
         const now = new Date();
         const doc = {
           observation_id: this.props.observation_id,
-          _rev: undefined as undefined | string,
-          type: '??:??',
+          revision_id: this.props.revision_id,
+          type: '??:??', // TODO: get correct type
           data: values,
-          created_by: userid, // get this from the form
           updated_by: userid,
-          created: created,
           updated: now,
         };
-        if (!this.props.revision_id !== null) {
-          doc._rev = this.props.revision_id;
-        }
         console.log(doc);
         return doc;
       })
@@ -362,9 +351,10 @@ class ObservationForm extends React.Component<
       })
       .then(result => {
         console.debug(result);
-        const message = this.props.is_fresh
-          ? 'Observation successfully created'
-          : 'Observation successfully updated';
+        const message =
+          this.props.revision_id === null
+            ? 'Observation successfully created'
+            : 'Observation successfully updated';
         this.context.dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
@@ -374,9 +364,10 @@ class ObservationForm extends React.Component<
         });
       })
       .catch(err => {
-        const message = this.props.is_fresh
-          ? 'Could not create observation'
-          : 'Could not update observation';
+        const message =
+          this.props.revision_id === null
+            ? 'Could not create observation'
+            : 'Could not update observation';
         this.context.dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
@@ -388,14 +379,14 @@ class ObservationForm extends React.Component<
         console.error('Failed to save data');
       })
       // Clear the staging area (Possibly after redirecting back to project page)
-      .then(() => this.nullCoalesceRevision())
-      .then(obsid_revid =>
+      .then(() =>
         setStagedData(
           {},
           this.lastStagingRev,
           this.props.project_id,
           this.reqireCurrentView(),
-          obsid_revid
+          this.props.observation_id,
+          this.props.revision_id
         ).catch(clean_error => {
           // Errors with cleaning the staging area are not 'fatal' to the
           // redirect
@@ -405,7 +396,7 @@ class ObservationForm extends React.Component<
       .then(() => {
         // if a new observation, redirect to the new observation page to allow
         // the user to rapidly add more records
-        if (this.props.is_fresh) {
+        if (this.props.revision_id === null) {
           this.props.history.push(
             ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
           );
@@ -472,38 +463,37 @@ class ObservationForm extends React.Component<
         }
       });
 
-      this.nullCoalesceRevision().then(obsid_revid => {
-        this.setState({is_saving: true});
-        setStagedData(
-          loadedStagedData,
-          this.lastStagingRev,
-          this.props.project_id,
-          this.reqireCurrentView(),
-          obsid_revid
-        )
-          .then(set_ok => {
-            this.lastStagingRev = set_ok.rev;
-            this.consequtiveStagingSaveErrors = 0;
-            this.setTimeout(() => {
-              this.setState({is_saving: false, last_saved: new Date()});
-            }, 1000);
-          })
-          .catch(err => {
-            this.consequtiveStagingSaveErrors += 1;
-            if (
-              this.consequtiveStagingSaveErrors ===
-              MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
-            ) {
-              this.setState({
-                stagingError: JSON.stringify(err),
-                is_saving: false,
-              });
-            }
-          })
-          .finally(() => {
-            this.staging = false;
-          });
-      });
+      this.setState({is_saving: true});
+      setStagedData(
+        loadedStagedData,
+        this.lastStagingRev,
+        this.props.project_id,
+        this.reqireCurrentView(),
+        this.props.observation_id,
+        this.props.revision_id
+      )
+        .then(set_ok => {
+          this.lastStagingRev = set_ok.rev;
+          this.consequtiveStagingSaveErrors = 0;
+          this.setTimeout(() => {
+            this.setState({is_saving: false, last_saved: new Date()});
+          }, 1000);
+        })
+        .catch(err => {
+          this.consequtiveStagingSaveErrors += 1;
+          if (
+            this.consequtiveStagingSaveErrors ===
+            MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS
+          ) {
+            this.setState({
+              stagingError: JSON.stringify(err),
+              is_saving: false,
+            });
+          }
+        })
+        .finally(() => {
+          this.staging = false;
+        });
     };
 
     this.stageInterval = window.setInterval(main_save_func, STAGING_SAVE_CYCLE);
@@ -675,10 +665,10 @@ class ObservationForm extends React.Component<
                           disabled={formProps.isSubmitting}
                         >
                           {formProps.isSubmitting
-                            ? !this.props.is_fresh
+                            ? !(this.props.revision_id === null)
                               ? 'Working...'
                               : 'Working...'
-                            : !this.props.is_fresh
+                            : !(this.props.revision_id === null)
                             ? 'Update'
                             : 'Save and new'}
                           {formProps.isSubmitting && (
@@ -721,7 +711,7 @@ class ObservationForm extends React.Component<
                             Once you are ready, click the{' '}
                             <Typography variant="button">
                               <b>
-                                {this.props.is_fresh
+                                {this.props.revision_id === null
                                   ? 'save and new'
                                   : 'update'}
                               </b>

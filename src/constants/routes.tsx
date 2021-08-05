@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectID} from '../datamodel';
+import {ProjectID, ObservationID, RevisionID} from '../datamodel';
 
 export const INDEX = '/';
 export const SIGN_UP = '/signup';
@@ -31,14 +31,25 @@ export const PROJECT = '/projects/';
 export const OBSERVATION_LIST = '/observations';
 export const OBSERVATION = '/observations/';
 export const OBSERVATION_CREATE = '/new-observation';
+export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 
 export function getObservationRoute(
   project_id: ProjectID,
-  observation_id: string
+  observation_id: ObservationID,
+  revision_id: RevisionID
 ) {
-  if (!!project_id && !!observation_id) {
-    return PROJECT + project_id + OBSERVATION + observation_id;
+  if (!!project_id && !!observation_id && !!revision_id) {
+    return (
+      PROJECT +
+      project_id +
+      OBSERVATION +
+      observation_id +
+      REVISION +
+      revision_id
+    );
   }
-  throw Error('Both project_id and observation_id are required for this route');
+  throw Error(
+    'project_id, observation_id and revision_id are required for this route'
+  );
 }

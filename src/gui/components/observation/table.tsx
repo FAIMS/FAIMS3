@@ -29,12 +29,12 @@ import {
 import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
-
-import {Observation, ProjectID} from '../../../datamodel';
-import * as ROUTES from '../../../constants/routes';
-import {listenObservationsList} from '../../../databaseAccess';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
+
+import {ObservationMetadata, ProjectID} from '../../../datamodel';
+import * as ROUTES from '../../../constants/routes';
+import {listenObservationsList} from '../../../data_storage/listeners';
 
 type ObservationsTableProps = {
   project_id: ProjectID;
@@ -47,7 +47,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  const [rows, setRows] = useState<Array<Observation>>([]);
+  const [rows, setRows] = useState<Array<ObservationMetadata>>([]);
   const columns: GridColDef[] = [
     {
       field: 'observation_id',
@@ -60,20 +60,27 @@ export default function ObservationsTable(props: ObservationsTableProps) {
           component={RouterLink}
           to={ROUTES.getObservationRoute(
             project_id || 'dummy',
-            (params.getValue('observation_id') || '').toString()
+            (params.getValue('observation_id') || '').toString(),
+            (params.getValue('revision_id') || '').toString()
           )}
         >
           {params.value}
         </Link>
       ),
     },
-    //{field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-    //{field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
+    {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+    {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
     {
       field: 'updated_by',
       headerName: 'Last updated by',
       type: 'string',
+      width: 200,
+    },
+    {
+      field: 'conflicts',
+      headerName: 'Conflicts',
+      type: 'boolean',
       width: 200,
     },
   ];

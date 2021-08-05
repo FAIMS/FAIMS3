@@ -59,7 +59,7 @@ export default function ObservationCreate() {
           <ObservationForm
             project_id={project_id}
             observation_id={generateFAIMSDataID()}
-            is_fresh={true}
+            revision_id={null}
           />
         </Box>
       </Paper>

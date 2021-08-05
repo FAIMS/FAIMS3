@@ -19,7 +19,6 @@
  */
 
 import React, {useEffect} from 'react';
-import {ProjectID} from '../../../datamodel';
 import {
   CircularProgress,
   TableCell,
@@ -27,19 +26,27 @@ import {
   TableBody,
   TableRow,
 } from '@material-ui/core';
-import {lookupFAIMSDataID} from '../../../data_storage';
+
+import {getObservationMetadata} from '../../../data_storage';
+import {ProjectID, ObservationID, RevisionID} from '../../../datamodel';
+
 type ObservationMetaProps = {
   project_id: ProjectID;
-  observation_id: string;
+  observation_id: ObservationID;
+  revision_id: RevisionID;
 };
 
 export default function ObservationMeta(props: ObservationMetaProps) {
-  const {project_id, observation_id} = props;
+  const {project_id, observation_id, revision_id} = props;
   const [meta, setMeta] = React.useState<{[key: string]: any}>({});
 
   useEffect(() => {
     async function fetchObservationMeta() {
-      const observation = await lookupFAIMSDataID(project_id, observation_id);
+      const observation = await getObservationMetadata(
+        project_id,
+        observation_id,
+        revision_id
+      );
       setMeta({
         Created: observation?.created.toString(),
         Updated: observation?.updated.toString(),

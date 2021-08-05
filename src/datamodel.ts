@@ -183,6 +183,8 @@ export interface SplitObservationID {
   project_id: string;
   observation_id: ObservationID;
 }
+export type RevisionID = string;
+export type DatumID = string;
 
 export function resolve_observation_id(
   split_id: SplitObservationID
@@ -209,17 +211,36 @@ export function split_full_observation_id(
   };
 }
 
-// This is used within the form/ui subsystem, do not use with pouch
-export interface Observation {
+export interface ObservationMetadata {
+  project_id: ProjectID;
   observation_id: ObservationID;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _project_id?: string;
-  type: string;
-  data: any;
+  revision_id: RevisionID;
   created: Date;
   created_by: string;
   updated: Date;
   updated_by: string;
+  conflicts: boolean;
+}
+
+export type ObservationMetadataList = {
+  [key: string]: ObservationMetadata;
+};
+
+// This is used within the form/ui subsystem, do not use with pouch
+export interface Observation {
+  project_id?: ProjectID;
+  observation_id: ObservationID;
+  revision_id: RevisionID | null;
+  type: string;
+  data: {[field_name: string]: any};
+  updated: Date;
+  updated_by: string;
+  /*
+  created{_by} are optional as we don't need to track them with the actual data.
+  If you need creation information, then use observation metadata
+  */
+  created?: Date;
+  created_by?: string;
 }
 
 export type ObservationList = {
@@ -230,17 +251,55 @@ export type ObservationList = {
 export interface EncodedObservation {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
-  _revisions?: {start: number; ids: string[]};
   _deleted?: boolean; // This is for couchdb deletion
-  deleted?: boolean; // This is for user-level deletion
-  _project_id?: string;
-  format_version: number;
-  type: string;
-  data: any;
+  observation_format_version: number;
   created: string;
   created_by: string;
-  updated: string;
-  updated_by: string;
+  revisions: RevisionID[];
+  heads: RevisionID[];
+}
+
+export type DatumIDMap = {
+  [field_name: string]: DatumID;
+};
+
+export type DatumMap = {
+  [field_name: string]: Datum;
+};
+
+export type RevisionMap = {
+  [field_name: string]: Revision;
+};
+
+export type ObservationMap = {
+  [field_name: string]: EncodedObservation;
+};
+
+export interface Revision {
+  _id: string;
+  _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean; // This is for couchdb deletion
+  revision_format_version: number;
+  datums: DatumIDMap;
+  observation_id: ObservationID;
+  parents: RevisionID[];
+  created: string;
+  created_by: string;
+  type: string;
+  deleted?: boolean;
+}
+
+export interface Datum {
+  _id: string;
+  _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean; // This is for couchdb deletion
+  _attachments?: PouchAttachments;
+  datum_format_version: number;
+  type: string;
+  data: any;
+  revision_id: RevisionID;
+  observation_id: ObservationID;
+  annotations: any;
 }
 
 export interface SavedView {
@@ -264,7 +323,7 @@ export type ProjectMetaObject =
  * Elements of a Project's dataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
-export type ProjectDataObject = EncodedObservation;
+export type ProjectDataObject = Datum | Revision | EncodedObservation;
 
 /**
  * Document from a people DB
