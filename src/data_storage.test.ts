@@ -79,10 +79,10 @@ function observationsEqual(
   }
   if (ignore_dates) {
     if (value !== null) {
-      value.updated = new Date();
+      value.updated = new Date(0);
     }
     if (expected !== null) {
-      expected.updated = new Date();
+      expected.updated = new Date(0);
     }
   }
   if (equals(value, expected)) {

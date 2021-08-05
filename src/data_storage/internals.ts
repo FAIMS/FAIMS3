@@ -9,7 +9,6 @@ import {
   EncodedObservation,
   Observation,
   ObservationID,
-  ObservationList,
   ObservationMetadataList,
   ObservationMap,
   ProjectID,
@@ -105,7 +104,6 @@ export async function getLatestRevision(
 export async function listObservationMetadata(
   project_id: ProjectID
 ): Promise<ObservationMetadataList> {
-  const datadb = getDataDB(project_id);
   try {
     const observations = await getAllObservations(project_id);
     const revision_ids: RevisionID[] = [];

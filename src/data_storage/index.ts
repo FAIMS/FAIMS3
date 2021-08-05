@@ -22,8 +22,6 @@ import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
 import {
-  DatumID,
-  EncodedObservation,
   Observation,
   ObservationID,
   ObservationMetadata,
@@ -36,13 +34,8 @@ import {
   addNewRevisionFromForm,
   generateFAIMSRevisionID,
   getObservation,
-  getObservations,
   getRevision,
-  getRevisions,
-  getDatum,
-  getDatums,
   getFormDataFromRevision,
-  getLatestRevision,
   updateHeads,
 } from './internals';
 

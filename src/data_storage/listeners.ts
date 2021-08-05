@@ -32,7 +32,7 @@ export function listenObservationsList(
   const runCallback = () =>
     listObservationMetadata(project_id)
       .then(callback)
-      .catch(err => console.error('Uncaught observation list error'));
+      .catch(err => console.error('Uncaught observation list error', err));
 
   const listener_func = (listing: unknown, active: ActiveDoc) => {
     if (active._id === project_id) runCallback();
@@ -44,9 +44,3 @@ export function listenObservationsList(
 
   return () => events.removeListener('project_data_paused', listener_func);
 }
-
-export function listenObservation(observation_id: string) {}
-
-export function updateObservation(observation_id: string) {}
-
-export function removeObservation(observation_id: string) {}

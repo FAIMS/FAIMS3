@@ -37,7 +37,7 @@ import {
 } from './sync/state';
 import {events} from './sync/events';
 
-export function getProjectList(user_id?: string): ProjectInformation[] {
+export function getProjectList(): ProjectInformation[] {
   /**
    * Return all active projects the user has access to, including the
    * top 30 most recently updated observations.
@@ -61,11 +61,10 @@ export function getProjectList(user_id?: string): ProjectInformation[] {
 }
 
 export function listenProjectList(
-  listener: (project_list: ProjectInformation[]) => void,
-  user_id?: string
+  listener: (project_list: ProjectInformation[]) => void
 ): () => void {
   const callback = () => {
-    listener(getProjectList(user_id));
+    listener(getProjectList());
   };
 
   events.on('projects_known', callback);
@@ -106,6 +105,6 @@ export function getProject(project_id: ProjectID): createdProjectsInterface {
   return createdProjects[project_id];
 }
 
-export function updateProject(project_id: ProjectID) {}
+//export function updateProject(project_id: ProjectID) {}
 
-export function removeProject(project_id: ProjectID) {}
+//export function removeProject(project_id: ProjectID) {}
