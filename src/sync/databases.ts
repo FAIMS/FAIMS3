@@ -32,6 +32,7 @@ import {
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
+  LocalAuthDoc,
 } from '../datamodel';
 import {
   ConnectionInfo_create_pouch,
@@ -107,6 +108,11 @@ export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
  * This contains any local app state we want to keep across sessions
  */
 export const local_state_db = new PouchDB('local_state');
+
+/**
+ * Login tokens for each FAIMS Cluster that needs it
+ */
+export const local_auth_db = new PouchDB<LocalAuthDoc>('local_auth');
 
 /**
  * Each listing has a Projects database and Users DBs
