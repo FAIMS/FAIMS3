@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useContext} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {Container, Grid} from '@material-ui/core';
 import Breadcrumbs from '../components/ui/breadcrumbs';
@@ -30,6 +30,7 @@ import {useState} from 'react';
 import {useEffect} from 'react';
 import {CircularProgress} from '@material-ui/core';
 import ClusterCard from '../components/authentication/cluster_card';
+import {store} from '../../store';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -67,6 +68,7 @@ type SignInProps = {
 
 export function SignIn(props: SignInProps) {
   const classes = useStyles();
+  const globalState = useContext(store);
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
@@ -78,9 +80,13 @@ export function SignIn(props: SignInProps) {
       <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          <Grid item xs={12}>
-            <ClusterCard />
-          </Grid>
+          {Array.from(globalState.state.known_listings.values()).map(
+            listing_id => (
+              <Grid item xs={12}>
+                <ClusterCard key={listing_id}/>
+              </Grid>
+            )
+          )}
         </Grid>
       </div>
     </Container>
