@@ -22,51 +22,18 @@ import React, {useContext} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {Container, Grid} from '@material-ui/core';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
-import {listenProjectList} from '../../databaseAccess';
-import {ProjectInformation} from '../../datamodel';
-import {useState} from 'react';
-import {useEffect} from 'react';
-import {CircularProgress} from '@material-ui/core';
 import ClusterCard from '../components/authentication/cluster_card';
 import {store} from '../../store';
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles(() => ({
   gridRoot: {
     flexGrow: 1,
   },
-  bullet: {
-    display: 'inline-block',
-    margin: '0 2px',
-    transform: 'scale(0.8)',
-  },
-  title: {
-    fontSize: 14,
-  },
-  pos: {
-    marginBottom: 12,
-  },
-  avatar: {
-    borderRadius: 8,
-    // backgroundColor: red[500],
-    backgroundColor: theme.palette.secondary.light,
-  },
-  overline: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: 500,
-  },
 }));
 
-type SignInProps = {
-  // project: string;
-};
+/* type SignInProps = {}; */
 
-export function SignIn(props: SignInProps) {
+export function SignIn(/* props: SignInProps */) {
   const classes = useStyles();
   const globalState = useContext(store);
 
