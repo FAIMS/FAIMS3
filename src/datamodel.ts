@@ -84,11 +84,10 @@ export interface ActiveDoc {
   is_sync: boolean;
 }
 
-
 export interface LocalAuthDoc {
-  _id: string; //Corresponds to a project ID
+  _id: string; //Corresponds to a listings ID
   dc_token: string;
-};
+}
 
 /**
  * Describes a project, with connection, name, description, and schema

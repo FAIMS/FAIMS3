@@ -19,21 +19,69 @@
  */
 
 import React from 'react';
+import {makeStyles} from '@material-ui/core/styles';
+import {Container, Grid} from '@material-ui/core';
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import ProjectCard from '../components/project/card';
+import * as ROUTES from '../../constants/routes';
+import {listenProjectList} from '../../databaseAccess';
+import {ProjectInformation} from '../../datamodel';
+import {useState} from 'react';
+import {useEffect} from 'react';
+import {CircularProgress} from '@material-ui/core';
+const useStyles = makeStyles(theme => ({
+  gridRoot: {
+    flexGrow: 1,
+  },
+  bullet: {
+    display: 'inline-block',
+    margin: '0 2px',
+    transform: 'scale(0.8)',
+  },
+  title: {
+    fontSize: 14,
+  },
+  pos: {
+    marginBottom: 12,
+  },
+  avatar: {
+    borderRadius: 8,
+    // backgroundColor: red[500],
+    backgroundColor: theme.palette.secondary.light,
+  },
+  overline: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  name: {
+    fontSize: 14,
+    fontWeight: 500,
+  },
+}));
 
 type SignInProps = {
   // project: string;
 };
 
-type SignInState = {};
+export function SignIn(props: SignInProps) {
+  const classes = useStyles();
 
-export class SignIn extends React.Component<SignInProps, SignInState> {
-  constructor(props: SignInProps) {
-    super(props);
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {title: 'Sign In'},
+  ];
 
-    this.state = {};
-  }
-
-  render() {
-    return <div>SignIn</div>;
-  }
+  return (
+    <Container maxWidth="lg">
+      <Breadcrumbs data={breadcrumbs} />
+      <div className={classes.gridRoot}>
+        <Grid container spacing={1}>
+          <Grid item xs={12}>
+            <React.Fragment />
+          </Grid>
+        </Grid>
+      </div>
+    </Container>
+  );
 }
