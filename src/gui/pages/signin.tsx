@@ -83,7 +83,7 @@ export function SignIn(props: SignInProps) {
           {Array.from(globalState.state.known_listings.values()).map(
             listing_id => (
               <Grid item xs={12}>
-                <ClusterCard key={listing_id}/>
+                <ClusterCard key={listing_id} listing_id={listing_id} />
               </Grid>
             )
           )}

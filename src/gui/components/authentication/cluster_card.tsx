@@ -27,7 +27,9 @@ import {
 
 import {makeStyles} from '@material-ui/core/styles';
 
-type ClusterCardProps = {};
+type ClusterCardProps = {
+  listing_id: string;
+};
 
 const useStyles = makeStyles(() => ({
   cardHeader: {
@@ -39,7 +41,7 @@ export default function ClusterCard(props: ClusterCardProps) {
   const classes = useStyles();
   return (
     <MuiCard>
-      <CardHeader className={classes.cardHeader} title={<b>Listing</b>} />
+      <CardHeader className={classes.cardHeader} title={props.listing_id} />
       <CardContent style={{paddingTop: 0}}></CardContent>
       <CardActions></CardActions>
     </MuiCard>
