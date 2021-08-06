@@ -98,15 +98,11 @@ export interface ActiveDoc {
   is_sync: boolean;
 }
 
-/*
- * Objects that may be contained in a Project's metadata DB
- */
 
-export interface ProjectPeople {
-  _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
-}
+export interface LocalAuthDoc {
+  _id: string; //Corresponds to a project ID
+  dc_token: string;
+};
 
 /**
  * Describes a project, with connection, name, description, and schema
