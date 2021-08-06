@@ -26,15 +26,19 @@ import {
   SyncingActions,
   AlertActions,
   ActionType,
+  SyncActions,
 } from './actions';
 import {Color} from '@material-ui/lab/Alert';
 import LoadingApp from './gui/components/loadingApp';
 import {initialize} from './sync/initialize';
 import {v4 as uuidv4} from 'uuid';
+import {add_initial_listener} from './sync/event-handler-registration';
 
 interface InitialStateProps {
   initialized: boolean;
   isSyncing: boolean;
+
+  known_listings: Set<string>; //direct from listings_known event
 
   active_project: ProjectObject | null;
   active_observation: Observation | null;
@@ -44,6 +48,8 @@ interface InitialStateProps {
 const InitialState = {
   initialized: false,
   isSyncing: false,
+
+  known_listings: new Set<string>(),
 
   active_project: null,
   active_observation: null,
@@ -73,8 +79,15 @@ const StateProvider = (props: any) => {
         | ObservationActions
         | SyncingActions
         | AlertActions
+        | SyncActions
     ) => {
       switch (action.type) {
+        case ActionType.SET_LISTINGS_KNOWN: {
+          return {
+            ...state,
+            known_listings: action.payload,
+          };
+        }
         case ActionType.INITIALIZED: {
           return {
             ...state,
@@ -150,6 +163,14 @@ const StateProvider = (props: any) => {
   );
 
   useEffect(() => {
+    add_initial_listener(emitter => {
+      emitter.on('listings_known', known_listings =>
+        dispatch({
+          type: ActionType.SET_LISTINGS_KNOWN,
+          payload: known_listings,
+        })
+      );
+    });
     initialize()
       .then(() =>
         dispatch({

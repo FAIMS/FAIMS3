@@ -31,6 +31,8 @@ export enum ActionType {
   GET_ACTIVE_OBSERVATION,
   DROP_ACTIVE_OBSERVATION,
 
+  SET_LISTINGS_KNOWN,
+
   ADD_ALERT,
   DELETE_ALERT,
 }
@@ -70,6 +72,13 @@ export interface DROP_ACTIVE_OBSERVATION {
 export type ObservationActions =
   | GET_ACTIVE_OBSERVATION
   | DROP_ACTIVE_OBSERVATION;
+
+export interface SET_LISTINGS_KNOWN {
+  type: ActionType.SET_LISTINGS_KNOWN;
+  payload: Set<string>;
+}
+
+export type SyncActions = SET_LISTINGS_KNOWN;
 
 export interface ADD_ALERT {
   type: ActionType.ADD_ALERT;
