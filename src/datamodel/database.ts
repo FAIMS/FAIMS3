@@ -22,7 +22,7 @@ import {
   NonUniqueProjectID,
   ObservationID,
   RevisionID,
-  DatumID,
+  AentValueID,
   ProjectID,
 } from './core';
 import {
@@ -155,12 +155,12 @@ export interface EncodedObservation {
   heads: RevisionID[];
 }
 
-export type DatumIDMap = {
-  [field_name: string]: DatumID;
+export type AentValueIDMap = {
+  [field_name: string]: AentValueID;
 };
 
-export type DatumMap = {
-  [field_name: string]: Datum;
+export type AentValueMap = {
+  [field_name: string]: AentValue;
 };
 
 export type RevisionMap = {
@@ -176,7 +176,7 @@ export interface Revision {
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
   revision_format_version: number;
-  datums: DatumIDMap;
+  aent_values: AentValueIDMap;
   observation_id: ObservationID;
   parents: RevisionID[];
   created: string;
@@ -185,12 +185,12 @@ export interface Revision {
   deleted?: boolean;
 }
 
-export interface Datum {
+export interface AentValue {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
   _attachments?: PouchAttachments;
-  datum_format_version: number;
+  aent_value_format_version: number;
   type: string;
   data: any;
   revision_id: RevisionID;
@@ -211,7 +211,7 @@ export type ProjectMetaObject =
  * Elements of a Project's dataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
-export type ProjectDataObject = Datum | Revision | EncodedObservation;
+export type ProjectDataObject = AentValue | Revision | EncodedObservation;
 
 /**
  * Document from a people DB

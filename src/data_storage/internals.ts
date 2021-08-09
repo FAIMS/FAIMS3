@@ -21,11 +21,11 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
-import {DatumID, ObservationID, ProjectID, RevisionID} from '../datamodel/core';
+import {AentValueID, ObservationID, ProjectID, RevisionID} from '../datamodel/core';
 import {
-  Datum,
-  DatumMap,
-  DatumIDMap,
+  AentValue,
+  AentValueMap,
+  AentValueIDMap,
   EncodedObservation,
   ObservationMap,
   Revision,
@@ -39,7 +39,7 @@ export function generateFAIMSRevisionID(): RevisionID {
   return uuidv4();
 }
 
-function generateFAIMSDatumID(): DatumID {
+function generateFAIMSAentValueID(): AentValueID {
   return uuidv4();
 }
 
@@ -85,16 +85,16 @@ export async function getRevision(
   return revision;
 }
 
-export async function getDatum(
+export async function getAentValue(
   project_id: ProjectID,
-  datum_id: DatumID
-): Promise<Datum> {
-  const datums = await getDatums(project_id, [datum_id]);
-  const datum = datums[datum_id];
-  if (datum === undefined) {
-    throw Error(`no such datum ${datum_id}`);
+  aent_value_id: AentValueID
+): Promise<AentValue> {
+  const aent_values = await getAentValues(project_id, [aent_value_id]);
+  const aent_value = aent_values[aent_value_id];
+  if (aent_value === undefined) {
+    throw Error(`no such aent_value ${aent_value_id}`);
   }
-  return datum;
+  return aent_value;
 }
 
 export async function getLatestRevision(
@@ -149,21 +149,21 @@ export async function listObservationMetadata(
   }
 }
 
-export async function getDatums(
+export async function getAentValues(
   project_id: ProjectID,
-  datum_ids: DatumID[]
-): Promise<DatumMap> {
+  aent_value_ids: AentValueID[]
+): Promise<AentValueMap> {
   const datadb = getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     binary: true, // TODO: work out which format is best for attachments
-    keys: datum_ids,
+    keys: aent_value_ids,
   });
   const rows = res.rows;
-  const mapping: DatumMap = {};
+  const mapping: AentValueMap = {};
   rows.forEach(e => {
     if (e.doc !== undefined) {
-      const doc = e.doc as Datum;
+      const doc = e.doc as AentValue;
       mapping[doc._id] = doc;
     }
   });
@@ -232,10 +232,10 @@ export async function getFormDataFromRevision(
   revision: Revision
 ): Promise<{[field_name: string]: any}> {
   const data: {[field_name: string]: any} = {};
-  const datum_ids = Object.values(revision.datums);
-  const datums = await getDatums(project_id, datum_ids);
-  for (const [name, datum_id] of Object.entries(revision.datums)) {
-    data[name] = datums[datum_id].data;
+  const aent_value_ids = Object.values(revision.aent_values);
+  const aent_values = await getAentValues(project_id, aent_value_ids);
+  for (const [name, aent_value_id] of Object.entries(revision.aent_values)) {
+    data[name] = aent_values[aent_value_id].data;
   }
   return data;
 }
@@ -246,7 +246,7 @@ export async function addNewRevisionFromForm(
   new_revision_id: RevisionID
 ) {
   const datadb = getDataDB(project_id);
-  const datum_map = await addNewDatums(
+  const aent_value_map = await addNewAentValues(
     project_id,
     observation,
     new_revision_id
@@ -256,7 +256,7 @@ export async function addNewRevisionFromForm(
   const new_revision: Revision = {
     _id: new_revision_id,
     revision_format_version: 1,
-    datums: datum_map,
+    aent_values: aent_value_map,
     observation_id: observation.observation_id,
     parents: parents,
     created: observation.updated.toISOString(),
@@ -266,13 +266,13 @@ export async function addNewRevisionFromForm(
   await datadb.put(new_revision);
 }
 
-async function addNewDatums(
+async function addNewAentValues(
   project_id: ProjectID,
   observation: Observation,
   new_revision_id: RevisionID
-): Promise<DatumIDMap> {
+): Promise<AentValueIDMap> {
   const datadb = getDataDB(project_id);
-  const datum_map: DatumIDMap = {};
+  const aent_value_map: AentValueIDMap = {};
   let revision;
   let data;
   if (observation.revision_id !== null) {
@@ -285,30 +285,30 @@ async function addNewDatums(
   for (const [field_name, field_value] of Object.entries(observation.data)) {
     const stored_data = data[field_name];
     if (stored_data === undefined || stored_data !== field_value) {
-      const new_datum_id = generateFAIMSDatumID();
-      const new_datum = {
-        _id: new_datum_id,
-        datum_format_version: 1,
+      const new_aent_value_id = generateFAIMSAentValueID();
+      const new_aent_value = {
+        _id: new_aent_value_id,
+        aent_value_format_version: 1,
         type: '??:??', // TODO: Add type handling
         data: field_value,
         revision_id: new_revision_id,
         observation_id: observation.observation_id,
         annotations: [], // TODO: Add annotation handling
       };
-      await datadb.put(new_datum);
-      datum_map[field_name] = new_datum_id;
+      await datadb.put(new_aent_value);
+      aent_value_map[field_name] = new_aent_value_id;
     } else {
-      if (revision.datums !== undefined) {
-        datum_map[field_name] = revision.datums[field_name];
+      if (revision.aent_values !== undefined) {
+        aent_value_map[field_name] = revision.aent_values[field_name];
       } else {
         // This should not happen, as if stored_data === field_value and
-        // stored_data is not undefined, then then revision.datums should be
+        // stored_data is not undefined, then then revision.aent_values should be
         // defined
-        throw Error('something odd happened when saving datums...');
+        throw Error('something odd happened when saving aent_values...');
       }
     }
   }
-  return datum_map;
+  return aent_value_map;
 }
 
 //function pouchAllDocsToMap(pouch_res: PouchDBAllDocsResult): FAIMSPouchDBMap {
