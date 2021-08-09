@@ -94,7 +94,7 @@ export default function ProjectList() {
                   <ProjectCard
                     project={project_info}
                     listView={true}
-                    showObservations={true}
+                    showRecords={true}
                     dashboard={false}
                   />
                 </Grid>

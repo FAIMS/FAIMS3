@@ -23,7 +23,7 @@
  * Do not use with sync code; UI code only
  */
 
-import {ProjectID, ObservationID, RevisionID} from './core';
+import {ProjectID, RecordID, RevisionID} from './core';
 import {ProjectUIFields, ProjectUIViews} from './typesystem';
 
 export interface ProjectInformation {
@@ -43,9 +43,9 @@ export interface ProjectUIModel {
   start_view: string;
 }
 
-export interface ObservationMetadata {
+export interface RecordMetadata {
   project_id: ProjectID;
-  observation_id: ObservationID;
+  record_id: RecordID;
   revision_id: RevisionID;
   created: Date;
   created_by: string;
@@ -54,14 +54,14 @@ export interface ObservationMetadata {
   conflicts: boolean;
 }
 
-export type ObservationMetadataList = {
-  [key: string]: ObservationMetadata;
+export type RecordMetadataList = {
+  [key: string]: RecordMetadata;
 };
 
 // This is used within the form/ui subsystem, do not use with pouch
-export interface Observation {
+export interface Record {
   project_id?: ProjectID;
-  observation_id: ObservationID;
+  record_id: RecordID;
   revision_id: RevisionID | null;
   type: string;
   data: {[field_name: string]: any};
@@ -69,12 +69,12 @@ export interface Observation {
   updated_by: string;
   /*
   created{_by} are optional as we don't need to track them with the actual data.
-  If you need creation information, then use observation metadata
+  If you need creation information, then use record metadata
   */
   created?: Date;
   created_by?: string;
 }
 
-export type ObservationList = {
-  [key: string]: Observation;
+export type RecordList = {
+  [key: string]: Record;
 };

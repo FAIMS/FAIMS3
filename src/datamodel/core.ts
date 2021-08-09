@@ -34,37 +34,37 @@ export function resolve_project_id(
   return cleaned_listing_id + '||' + nonunique_id;
 }
 
-// There are two internal ID for observations, the former is unique to a
+// There are two internal ID for records, the former is unique to a
 // project, the latter unique to the system (i.e. includes project_id)
-export type ObservationID = string;
-export type FullyResolvedObservationID = string;
-export interface SplitObservationID {
+export type RecordID = string;
+export type FullyResolvedRecordID = string;
+export interface SplitRecordID {
   project_id: string;
-  observation_id: ObservationID;
+  record_id: RecordID;
 }
 
-export function resolve_observation_id(
-  split_id: SplitObservationID
-): FullyResolvedObservationID {
+export function resolve_record_id(
+  split_id: SplitRecordID
+): FullyResolvedRecordID {
   const cleaned_project_id = split_id.project_id.replace('||', '\\|\\|');
-  return cleaned_project_id + '||' + split_id.observation_id;
+  return cleaned_project_id + '||' + split_id.record_id;
 }
 
-export function split_full_observation_id(
-  full_proj_id: FullyResolvedObservationID
-): SplitObservationID {
+export function split_full_record_id(
+  full_proj_id: FullyResolvedRecordID
+): SplitRecordID {
   const splitid = full_proj_id.split('||');
   if (
     splitid.length !== 2 ||
     splitid[0].trim() === '' ||
     splitid[1].trim() === ''
   ) {
-    throw Error('Not a valid full observation id');
+    throw Error('Not a valid full record id');
   }
   const cleaned_project_id = splitid[0].replace('\\|\\|', '||');
   return {
     project_id: cleaned_project_id,
-    observation_id: splitid[1],
+    record_id: splitid[1],
   };
 }
 

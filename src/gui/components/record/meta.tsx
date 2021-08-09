@@ -27,34 +27,34 @@ import {
   TableRow,
 } from '@material-ui/core';
 
-import {getObservationMetadata} from '../../../data_storage';
-import {ProjectID, ObservationID, RevisionID} from '../../../datamodel/core';
+import {getRecordMetadata} from '../../../data_storage';
+import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 
-type ObservationMetaProps = {
+type RecordMetaProps = {
   project_id: ProjectID;
-  observation_id: ObservationID;
+  record_id: RecordID;
   revision_id: RevisionID;
 };
 
-export default function ObservationMeta(props: ObservationMetaProps) {
-  const {project_id, observation_id, revision_id} = props;
+export default function RecordMeta(props: RecordMetaProps) {
+  const {project_id, record_id, revision_id} = props;
   const [meta, setMeta] = React.useState<{[key: string]: any}>({});
 
   useEffect(() => {
-    async function fetchObservationMeta() {
-      const observation = await getObservationMetadata(
+    async function fetchRecordMeta() {
+      const record = await getRecordMetadata(
         project_id,
-        observation_id,
+        record_id,
         revision_id
       );
       setMeta({
-        Created: observation?.created.toString(),
-        Updated: observation?.updated.toString(),
-        'Created by': observation?.created_by,
-        'Last updated by': observation?.updated_by,
+        Created: record?.created.toString(),
+        Updated: record?.updated.toString(),
+        'Created by': record?.created_by,
+        'Last updated by': record?.updated_by,
       });
     }
-    fetchObservationMeta();
+    fetchRecordMeta();
   }, []);
 
   return (
@@ -66,7 +66,7 @@ export default function ObservationMeta(props: ObservationMetaProps) {
           <Table>
             <TableBody>
               {Object.keys(meta).map(key => (
-                <TableRow key={'observation-meta-' + key}>
+                <TableRow key={'record-meta-' + key}>
                   <TableCell>
                     <b>{key}</b>
                   </TableCell>

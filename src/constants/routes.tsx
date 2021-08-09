@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectID, ObservationID, RevisionID} from '../datamodel/core';
+import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
 
 export const INDEX = '/';
 export const SIGN_UP = '/signup';
@@ -28,28 +28,21 @@ export const NOT_FOUND = '/not-found';
 export const HOME = '/home';
 export const PROJECT_LIST = '/projects';
 export const PROJECT = '/projects/';
-export const OBSERVATION_LIST = '/observations';
-export const OBSERVATION = '/observations/';
-export const OBSERVATION_CREATE = '/new-observation';
+export const RECORD_LIST = '/records';
+export const RECORD = '/records/';
+export const RECORD_CREATE = '/new-record';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 
-export function getObservationRoute(
+export function getRecordRoute(
   project_id: ProjectID,
-  observation_id: ObservationID,
+  record_id: RecordID,
   revision_id: RevisionID
 ) {
-  if (!!project_id && !!observation_id && !!revision_id) {
-    return (
-      PROJECT +
-      project_id +
-      OBSERVATION +
-      observation_id +
-      REVISION +
-      revision_id
-    );
+  if (!!project_id && !!record_id && !!revision_id) {
+    return PROJECT + project_id + RECORD + record_id + REVISION + revision_id;
   }
   throw Error(
-    'project_id, observation_id and revision_id are required for this route'
+    'project_id, record_id and revision_id are required for this route'
   );
 }

@@ -33,35 +33,35 @@ import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
 import {ProjectID} from '../../../datamodel/core';
-import {ObservationMetadata} from '../../../datamodel/ui';
+import {RecordMetadata} from '../../../datamodel/ui';
 import * as ROUTES from '../../../constants/routes';
-import {listenObservationsList} from '../../../data_storage/listeners';
+import {listenRecordsList} from '../../../data_storage/listeners';
 
-type ObservationsTableProps = {
+type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
 };
 
-export default function ObservationsTable(props: ObservationsTableProps) {
+export default function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows} = props;
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  const [rows, setRows] = useState<Array<ObservationMetadata>>([]);
+  const [rows, setRows] = useState<Array<RecordMetadata>>([]);
   const columns: GridColDef[] = [
     {
-      field: 'observation_id',
+      field: 'record_id',
       headerName: 'Obs ID',
-      description: 'Observation ID',
+      description: 'Record ID',
       type: 'string',
       width: not_xs ? 300 : 100,
       renderCell: (params: GridCellParams) => (
         <Link
           component={RouterLink}
-          to={ROUTES.getObservationRoute(
+          to={ROUTES.getRecordRoute(
             project_id || 'dummy',
-            (params.getValue('observation_id') || '').toString(),
+            (params.getValue('record_id') || '').toString(),
             (params.getValue('revision_id') || '').toString()
           )}
         >
@@ -88,14 +88,14 @@ export default function ObservationsTable(props: ObservationsTableProps) {
 
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the observation list is updated, the callback should be fired
+    // on load - if the record list is updated, the callback should be fired
     if (project_id === undefined) return; //dummy project
-    const destroyListener = listenObservationsList(
+    const destroyListener = listenRecordsList(
       project_id,
-      newPouchObservationList => {
+      newPouchRecordList => {
         setLoading(false);
-        if (!_.isEqual(Object.values(newPouchObservationList), rows)) {
-          setRows(Object.values(newPouchObservationList));
+        if (!_.isEqual(Object.values(newPouchRecordList), rows)) {
+          setRows(Object.values(newPouchRecordList));
         }
       }
     );
@@ -104,7 +104,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
 
   return (
     <div>
-      <Typography variant="overline">Recent Observations</Typography>
+      <Typography variant="overline">Recent Records</Typography>
       <div
         style={{
           width: '100%',
@@ -114,7 +114,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         <DataGrid
           rows={rows}
           loading={loading}
-          getRowId={r => r.observation_id}
+          getRowId={r => r.record_id}
           columns={columns}
           autoHeight
           pageSize={
@@ -137,6 +137,6 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     </div>
   );
 }
-ObservationsTable.defaultProps = {
+RecordsTable.defaultProps = {
   maxRows: null,
 };

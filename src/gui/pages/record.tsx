@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: observation.tsx
+ * Filename: record.tsx
  * Description:
  *   TODO
  */
@@ -35,21 +35,21 @@ import TabPanel from '@material-ui/lab/TabPanel';
 import grey from '@material-ui/core/colors/grey';
 
 import * as ROUTES from '../../constants/routes';
-import {ProjectID, ObservationID, RevisionID} from '../../datamodel/core';
+import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
 import {getProjectInfo} from '../../databaseAccess';
-import {listFAIMSObservationRevisions} from '../../data_storage';
+import {listFAIMSRecordRevisions} from '../../data_storage';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import ObservationForm from '../components/observation/form';
+import RecordForm from '../components/record/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
-import ObservationMeta from '../components/observation/meta';
-import ObservationDelete from '../components/observation/delete';
+import RecordMeta from '../components/record/meta';
+import RecordDelete from '../components/record/delete';
 
-export default function Observation() {
-  const {project_id, observation_id, revision_id} = useParams<{
+export default function Record() {
+  const {project_id, record_id, revision_id} = useParams<{
     project_id: ProjectID;
-    observation_id: ObservationID;
+    record_id: RecordID;
     revision_id: RevisionID;
   }>();
   const [value, setValue] = React.useState('1');
@@ -62,18 +62,18 @@ export default function Observation() {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
-    {title: observation_id},
+    {title: record_id},
     {title: revision_id},
   ];
   const [revisions, setRevisions] = React.useState([] as string[]);
   useEffect(() => {
     setRevisions([]);
-    listFAIMSObservationRevisions(project_id, observation_id)
+    listFAIMSRecordRevisions(project_id, record_id)
       .then(all_revisions => {
         setRevisions(all_revisions);
       })
       .catch(console.error /*TODO*/);
-  }, [project_id, observation_id]);
+  }, [project_id, record_id]);
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
@@ -83,10 +83,10 @@ export default function Observation() {
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          Update Observation
+          Update Record
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Edit data for this observation. If you need to, you can also revisit
+          Edit data for this record. If you need to, you can also revisit
           previous revisions.
         </Typography>
       </Box>
@@ -100,16 +100,16 @@ export default function Observation() {
             </TabList>
           </AppBar>
           <TabPanel value="1">
-            <ObservationForm
+            <RecordForm
               project_id={project_id}
-              observation_id={observation_id}
+              record_id={record_id}
               revision_id={revision_id}
             />
           </TabPanel>
           <TabPanel value="2">
             <InProgress />
             <Box p={2} />
-            <BoxTab title={'Developer tool: observation revisions'} />
+            <BoxTab title={'Developer tool: record revisions'} />
             <Box
               bgcolor={grey[200]}
               pl={2}
@@ -120,15 +120,15 @@ export default function Observation() {
             </Box>
           </TabPanel>
           <TabPanel value="3">
-            <ObservationMeta
+            <RecordMeta
               project_id={project_id}
-              observation_id={observation_id}
+              record_id={record_id}
               revision_id={revision_id}
             />
             <Box mt={2}>
-              <ObservationDelete
+              <RecordDelete
                 project_id={project_id}
-                observation_id={observation_id}
+                record_id={record_id}
                 revision_id={revision_id}
               />
             </Box>

@@ -49,7 +49,7 @@ export default function DashboardActions(props: DashboardActionProps) {
   const [inputValue, setInputValue] = React.useState('');
   const handleSubmit = () => {
     if (value !== null) {
-      history.push(value.url + ROUTES.OBSERVATION_CREATE);
+      history.push(value.url + ROUTES.RECORD_CREATE);
     }
   };
   return (

@@ -20,7 +20,7 @@
 
 export interface SavedView {
   // ID: active_id + '/' + view_name
-  // OR: active_id + '/' + view_name + '/' + existing.observation + '/' + existing.revision
+  // OR: active_id + '/' + view_name + '/' + existing.record + '/' + existing.revision
   _id: string;
   // Fields
   [key: string]: unknown;

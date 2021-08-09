@@ -23,7 +23,7 @@ import {v4 as uuidv4} from 'uuid';
 import {getDataDB} from '../sync';
 import {
   AttributeValuePairID,
-  ObservationID,
+  RecordID,
   ProjectID,
   RevisionID,
 } from '../datamodel/core';
@@ -31,14 +31,14 @@ import {
   AttributeValuePair,
   AttributeValuePairMap,
   AttributeValuePairIDMap,
-  EncodedObservation,
-  ObservationMap,
+  EncodedRecord,
+  RecordMap,
   Revision,
   RevisionMap,
 } from '../datamodel/database';
-import {Observation, ObservationMetadataList} from '../datamodel/ui';
+import {Record, RecordMetadataList} from '../datamodel/ui';
 
-type EncodedObservationMap = Map<ObservationID, EncodedObservation>;
+type EncodedRecordMap = Map<RecordID, EncodedRecord>;
 
 export function generateFAIMSRevisionID(): RevisionID {
   return uuidv4();
@@ -50,32 +50,32 @@ function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
 
 export async function updateHeads(
   project_id: ProjectID,
-  obsid: ObservationID,
+  obsid: RecordID,
   base_revid: RevisionID,
   new_revid: RevisionID
 ) {
   const datadb = getDataDB(project_id);
-  const observation = await getObservation(project_id, obsid);
-  const heads = observation.heads;
+  const record = await getRecord(project_id, obsid);
+  const heads = record.heads;
   const old_head_index = heads.indexOf(base_revid);
   if (old_head_index !== -1) {
     heads.splice(old_head_index, 1);
   }
   heads.push(new_revid);
-  observation.heads = heads.sort();
-  datadb.put(observation);
+  record.heads = heads.sort();
+  datadb.put(record);
 }
 
-export async function getObservation(
+export async function getRecord(
   project_id: ProjectID,
-  obsid: ObservationID
-): Promise<EncodedObservation> {
-  const observations = await getObservations(project_id, [obsid]);
-  const observation = observations[obsid];
-  if (observation === undefined) {
-    throw Error(`no such observation ${obsid}`);
+  obsid: RecordID
+): Promise<EncodedRecord> {
+  const records = await getRecords(project_id, [obsid]);
+  const record = records[obsid];
+  if (record === undefined) {
+    throw Error(`no such record ${obsid}`);
   }
-  return observation;
+  return record;
 }
 
 export async function getRevision(
@@ -117,34 +117,34 @@ export async function getLatestRevision(
 }
 
 /**
- * Returns a list of not deleted observations
- * @param project_id Project ID to get list of observation for
- * @returns key: observation id, value: observation (NOT NULL)
+ * Returns a list of not deleted records
+ * @param project_id Project ID to get list of record for
+ * @returns key: record id, value: record (NOT NULL)
  */
-export async function listObservationMetadata(
+export async function listRecordMetadata(
   project_id: ProjectID
-): Promise<ObservationMetadataList> {
+): Promise<RecordMetadataList> {
   try {
-    const observations = await getAllObservations(project_id);
+    const records = await getAllRecords(project_id);
     const revision_ids: RevisionID[] = [];
-    observations.forEach(o => {
+    records.forEach(o => {
       revision_ids.push(o.heads[0]);
     });
     const revisions = await getRevisions(project_id, revision_ids);
 
-    const out: ObservationMetadataList = {};
-    observations.forEach((observation, observation_id) => {
-      const revision_id = observation.heads[0];
+    const out: RecordMetadataList = {};
+    records.forEach((record, record_id) => {
+      const revision_id = record.heads[0];
       const revision = revisions[revision_id];
-      out[observation_id] = {
+      out[record_id] = {
         project_id: project_id,
-        observation_id: observation_id,
+        record_id: record_id,
         revision_id: revision_id,
-        created: new Date(observation.created),
-        created_by: observation.created_by,
+        created: new Date(record.created),
+        created_by: record.created_by,
         updated: new Date(revision.created),
         updated_by: revision.created_by,
-        conflicts: observation.heads.length > 1,
+        conflicts: record.heads.length > 1,
       };
     });
     return out;
@@ -195,41 +195,41 @@ export async function getRevisions(
   return mapping;
 }
 
-export async function getObservations(
+export async function getRecords(
   project_id: ProjectID,
-  observation_ids: ObservationID[]
-): Promise<ObservationMap> {
+  record_ids: RecordID[]
+): Promise<RecordMap> {
   const datadb = getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
-    keys: observation_ids,
+    keys: record_ids,
     conflicts: true,
   });
   const rows = res.rows;
-  const mapping: ObservationMap = {};
+  const mapping: RecordMap = {};
   rows.forEach(e => {
     if (e.doc !== undefined) {
-      const doc = e.doc as EncodedObservation;
+      const doc = e.doc as EncodedRecord;
       mapping[doc._id] = doc;
     }
   });
   return mapping;
 }
 
-export async function getAllObservations(
+export async function getAllRecords(
   project_id: ProjectID
-): Promise<EncodedObservationMap> {
+): Promise<EncodedRecordMap> {
   const datadb = getDataDB(project_id);
   const res = await datadb.find({
     selector: {
-      observation_format_version: 1,
+      record_format_version: 1,
     },
   });
-  const observations: EncodedObservationMap = new Map();
+  const records: EncodedRecordMap = new Map();
   res.docs.map(o => {
-    observations.set(o._id, o as EncodedObservation);
+    records.set(o._id, o as EncodedRecord);
   });
-  return observations;
+  return records;
 }
 
 export async function getFormDataFromRevision(
@@ -247,47 +247,46 @@ export async function getFormDataFromRevision(
 
 export async function addNewRevisionFromForm(
   project_id: ProjectID,
-  observation: Observation,
+  record: Record,
   new_revision_id: RevisionID
 ) {
   const datadb = getDataDB(project_id);
   const avp_map = await addNewAttributeValuePairs(
     project_id,
-    observation,
+    record,
     new_revision_id
   );
-  const parents =
-    observation.revision_id === null ? [] : [observation.revision_id];
+  const parents = record.revision_id === null ? [] : [record.revision_id];
   const new_revision: Revision = {
     _id: new_revision_id,
     revision_format_version: 1,
     avps: avp_map,
-    observation_id: observation.observation_id,
+    record_id: record.record_id,
     parents: parents,
-    created: observation.updated.toISOString(),
-    created_by: observation.updated_by,
-    type: observation.type,
+    created: record.updated.toISOString(),
+    created_by: record.updated_by,
+    type: record.type,
   };
   await datadb.put(new_revision);
 }
 
 async function addNewAttributeValuePairs(
   project_id: ProjectID,
-  observation: Observation,
+  record: Record,
   new_revision_id: RevisionID
 ): Promise<AttributeValuePairIDMap> {
   const datadb = getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   let revision;
   let data;
-  if (observation.revision_id !== null) {
-    revision = await getRevision(project_id, observation.revision_id);
+  if (record.revision_id !== null) {
+    revision = await getRevision(project_id, record.revision_id);
     data = await getFormDataFromRevision(project_id, revision);
   } else {
     revision = {};
     data = {};
   }
-  for (const [field_name, field_value] of Object.entries(observation.data)) {
+  for (const [field_name, field_value] of Object.entries(record.data)) {
     const stored_data = data[field_name];
     if (stored_data === undefined || stored_data !== field_value) {
       const new_avp_id = generateFAIMSAttributeValuePairID();
@@ -297,7 +296,7 @@ async function addNewAttributeValuePairs(
         type: '??:??', // TODO: Add type handling
         data: field_value,
         revision_id: new_revision_id,
-        observation_id: observation.observation_id,
+        record_id: record.record_id,
         annotations: [], // TODO: Add annotation handling
       };
       await datadb.put(new_avp);

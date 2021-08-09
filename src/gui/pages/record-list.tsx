@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: observation-list.tsx
+ * Filename: record-list.tsx
  * Description:
  *   TODO
  */
@@ -59,13 +59,13 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export default function ObservationList() {
+export default function RecordList() {
   const classes = useStyles();
   const globalState = useContext(store);
   const {dispatch} = globalState;
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'Observations'},
+    {title: 'Records'},
   ];
   useEffect(() => {
     dispatch({
@@ -90,7 +90,7 @@ export default function ObservationList() {
       },
     });
   }, []);
-  // const pouchObservationList = {};
+  // const pouchRecordList = {};
 
   return (
     <Container maxWidth="lg">
@@ -100,14 +100,14 @@ export default function ObservationList() {
 
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          <Grid item xs={12} key={'skeleton-observation-list-grid'}>
+          <Grid item xs={12} key={'skeleton-record-list-grid'}>
             <Skeleton animation="wave" variant="rect" height={100} />
           </Grid>
           <InProgress />
           <p>
             This component (also shown on the user's home/dashboard) shows the
-            latest e.g., 100 observations across all the user's projects, and
-            allows for filtering by meta data (owner, last updated etc).
+            latest e.g., 100 records across all the user's projects, and allows
+            for filtering by meta data (owner, last updated etc).
           </p>
         </Grid>
       </div>
