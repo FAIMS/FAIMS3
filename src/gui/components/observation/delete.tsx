@@ -19,7 +19,8 @@
  */
 
 import React, {useContext} from 'react';
-import {ProjectID} from '../../../datamodel';
+import {useHistory} from 'react-router-dom';
+
 import {
   Button,
   Dialog,
@@ -29,19 +30,23 @@ import {
   DialogActions,
 } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
-import {deleteFAIMSDataForID} from '../../../data_storage';
+import {Alert} from '@material-ui/lab';
+
 import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';
-import {useHistory} from 'react-router-dom';
 import {store} from '../../../store';
-import {Alert} from '@material-ui/lab';
+import {ProjectID, ObservationID, RevisionID} from '../../../datamodel';
+import {getCurrentUserId} from '../../../users';
+import {setObservationAsDeleted} from '../../../data_storage';
+
 type ObservationDeleteProps = {
   project_id: ProjectID;
-  observation_id: string;
+  observation_id: ObservationID;
+  revision_id: RevisionID;
 };
 
 export default function ObservationDelete(props: ObservationDeleteProps) {
-  const {project_id, observation_id} = props;
+  const {project_id, observation_id, revision_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useHistory();
   const globalState = useContext(store);
@@ -55,7 +60,10 @@ export default function ObservationDelete(props: ObservationDeleteProps) {
   };
 
   const handleDelete = () => {
-    deleteFAIMSDataForID(project_id, observation_id)
+    getCurrentUserId(project_id)
+      .then(userid =>
+        setObservationAsDeleted(project_id, observation_id, revision_id, userid)
+      )
       .then(() => {
         dispatch({
           type: ActionType.ADD_ALERT,

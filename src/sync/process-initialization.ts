@@ -508,8 +508,7 @@ async function process_project(
           data_db
         ),
       paused: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleData(active_project._id, data_db.local);
+        if (!USE_REAL_DATA) await setupExampleData(active_project._id);
         events.emit(
           'project_data_paused',
           listing,
@@ -519,8 +518,7 @@ async function process_project(
         );
       },
       error: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleData(active_project._id, data_db.local);
+        if (!USE_REAL_DATA) await setupExampleData(active_project._id);
         events.emit(
           'project_data_paused',
           listing,

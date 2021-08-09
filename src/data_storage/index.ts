@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: dataStorage.ts
+ * Filename: index.ts
  * Description:
  *   TODO
  */
@@ -23,18 +23,27 @@ import {v4 as uuidv4} from 'uuid';
 import {getDataDB} from '../sync';
 import {
   Observation,
-  EncodedObservation,
-  ObservationList,
-  ProjectID,
   ObservationID,
+  ObservationMetadata,
+  ProjectID,
+  Revision,
+  RevisionID,
   //  OBSERVATION_INDEX_NAME,
 } from '../datamodel';
+import {
+  addNewRevisionFromForm,
+  generateFAIMSRevisionID,
+  getObservation,
+  getRevision,
+  getFormDataFromRevision,
+  updateHeads,
+} from './internals';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
 }
 
-export type ObservationRevisionListing = string[];
+export type ObservationRevisionListing = RevisionID[];
 
 export function generateFAIMSDataID(): ObservationID {
   return uuidv4();
@@ -56,158 +65,83 @@ export function generateFAIMSDataID(): ObservationID {
 //  }
 //}
 
-function convertFromFormToDB(
-  doc: Observation,
-  revision: string | undefined = undefined
-): EncodedObservation {
-  if (revision !== undefined) {
-    return {
-      _id: doc.observation_id,
-      _rev: revision,
-      type: doc.type,
-      data: doc.data,
-      created: doc.created.toISOString(),
-      created_by: doc.created_by,
-      updated: doc.updated.toISOString(),
-      updated_by: doc.updated_by,
-      format_version: 1,
-    };
-  }
-  if (doc._rev !== undefined) {
-    return {
-      _id: doc.observation_id,
-      _rev: doc._rev,
-      type: doc.type,
-      data: doc.data,
-      created: doc.created.toISOString(),
-      created_by: doc.created_by,
-      updated: doc.updated.toISOString(),
-      updated_by: doc.updated_by,
-      format_version: 1,
-    };
-  }
-  return {
-    _id: doc.observation_id,
-    type: doc.type,
-    data: doc.data,
-    created: doc.created.toISOString(),
-    created_by: doc.created_by,
-    updated: doc.updated.toISOString(),
-    updated_by: doc.updated_by,
-    format_version: 1,
-  };
-}
-
-export function convertFromDBToForm(
-  doc: EncodedObservation
-): Observation | null {
-  if (doc.deleted) {
-    return null;
-  }
-  return {
-    observation_id: doc._id,
-    type: doc.type,
-    data: doc.data,
-    created: new Date(doc.created),
-    created_by: doc.created_by,
-    updated: new Date(doc.updated),
-    updated_by: doc.updated_by,
-  };
-}
-
-async function getLatestRevision(
-  project_id: ProjectID,
-  docid: string
-): Promise<string | undefined> {
-  const datadb = getDataDB(project_id);
-  try {
-    const doc = await datadb.get(docid);
-    return doc._rev;
-  } catch (err) {
-    console.debug(err);
-    return undefined;
-  }
-}
-
-export async function upsertFAIMSData(project_id: ProjectID, doc: Observation) {
-  const datadb = getDataDB(project_id);
-  if (doc.observation_id === undefined) {
-    throw Error('observation_id required to save observation');
-  }
-  try {
-    const revision = await getLatestRevision(project_id, doc.observation_id);
-    return await datadb.put(convertFromFormToDB(doc, revision));
-  } catch (err) {
-    console.warn(err);
-    throw Error('failed to save data');
-  }
-}
-
-export async function lookupFAIMSDataID(
+export async function getFirstObservationHead(
   project_id: ProjectID,
   observation_id: ObservationID
-): Promise<Observation | null> {
-  const datadb = getDataDB(project_id);
-  try {
-    const doc = await datadb.get(observation_id);
-    return convertFromDBToForm(doc);
-  } catch (err) {
-    if (err.status === 404 && err.reason === 'deleted') {
-      return null;
-    }
-    console.warn(err);
-    throw Error(`failed to find data with id ${observation_id}`);
-  }
+): Promise<RevisionID> {
+  const observation = await getObservation(project_id, observation_id);
+  return observation.heads[0];
 }
 
-/**
- * Returns a list of not deleted observations
- * @param project_id Project ID to get list of observation for
- * @returns key: observation id, value: observation (NOT NULL)
- */
-export async function listFAIMSData(
-  project_id: ProjectID
-): Promise<ObservationList> {
-  const datadb = getDataDB(project_id);
-  try {
-    //await ensureObservationIndex(project_id);
-    const all = await datadb.find({
-      selector: {format_version: {$eq: 1}},
-      //use_index: OBSERVATION_INDEX_NAME,
-    });
-    const retval: ObservationList = {};
-    all.docs.forEach(row => {
-      const converted = convertFromDBToForm(row);
-      if (converted !== null) {
-        retval[row._id] = converted;
-      }
-    });
-    return retval;
-  } catch (err) {
-    console.warn(err);
-    throw Error('failed to get data');
+export async function upsertFAIMSData(
+  project_id: ProjectID,
+  observation: Observation
+): Promise<RevisionID> {
+  if (observation.observation_id === undefined) {
+    throw Error('observation_id required to save observation');
   }
+  const revision_id = generateFAIMSRevisionID();
+  if (observation.revision_id === null) {
+    const datadb = getDataDB(project_id);
+    const new_encoded_observation = {
+      _id: observation.observation_id,
+      observation_format_version: 1,
+      created: observation.updated.toISOString(),
+      created_by: observation.updated_by,
+      revisions: [revision_id],
+      heads: [revision_id],
+    };
+    try {
+      await datadb.put(new_encoded_observation);
+    } catch (err) {
+      // TODO: add proper error handling for conflicts
+      console.warn(err);
+      throw Error('failed to create observation document');
+    }
+    await addNewRevisionFromForm(project_id, observation, revision_id);
+  } else {
+    await addNewRevisionFromForm(project_id, observation, revision_id);
+    await updateHeads(
+      project_id,
+      observation.observation_id,
+      observation.revision_id,
+      revision_id
+    );
+  }
+  return revision_id;
+}
+
+export async function getFullObservationData(
+  project_id: ProjectID,
+  observation_id: ObservationID,
+  revision_id: RevisionID
+): Promise<Observation | null> {
+  const revision = await getRevision(project_id, revision_id);
+  if (revision.deleted === true) {
+    return null;
+  }
+  const observation = await getObservation(project_id, observation_id);
+  const form_data = await getFormDataFromRevision(project_id, revision);
+  return {
+    project_id: project_id,
+    observation_id: observation_id,
+    revision_id: revision_id,
+    type: revision.type,
+    data: form_data,
+    updated_by: revision.created_by,
+    updated: new Date(revision.created),
+    created: new Date(observation.created),
+    created_by: observation.created_by,
+  };
 }
 
 export async function listFAIMSObservationRevisions(
   project_id: ProjectID,
   observation_id: ObservationID
 ): Promise<ObservationRevisionListing> {
-  const datadb = getDataDB(project_id);
   try {
-    const doc = await datadb.get(observation_id, {revs: true});
-    const revisions = doc._revisions;
-    if (revisions === undefined) {
-      throw Error('revisions not found');
-    }
-    const revs = revisions.ids;
-    let revs_num = revisions.start;
-    const nice_revs = [];
-    for (const rev of revs) {
-      nice_revs.push(revs_num.toString() + '-' + rev);
-      revs_num = revs_num - 1;
-    }
-    return nice_revs;
+    const observation = await getObservation(project_id, observation_id);
+    return observation.revisions;
   } catch (err) {
     console.warn(err);
     throw Error(`failed to list data for id ${observation_id}`);
@@ -234,13 +168,20 @@ export async function listFAIMSProjectRevisions(
 
 export async function deleteFAIMSDataForID(
   project_id: ProjectID,
-  observation_id: ObservationID
-) {
-  const datadb = getDataDB(project_id);
+  observation_id: ObservationID,
+  userid: string
+): Promise<RevisionID> {
+  const observation = await getObservation(project_id, observation_id);
+  if (observation.heads.length !== 1) {
+    throw Error('Too many head revisions, must choose a specific head');
+  }
   try {
-    const doc = await datadb.get(observation_id);
-    doc.deleted = true;
-    return await datadb.put(doc);
+    return await setObservationAsDeleted(
+      project_id,
+      observation_id,
+      observation.heads[0],
+      userid
+    );
   } catch (err) {
     console.warn(err);
     throw Error('failed to delete data with id');
@@ -249,15 +190,98 @@ export async function deleteFAIMSDataForID(
 
 export async function undeleteFAIMSDataForID(
   project_id: ProjectID,
-  observation_id: ObservationID
-) {
-  const datadb = getDataDB(project_id);
+  observation_id: ObservationID,
+  userid: string
+): Promise<RevisionID> {
+  const observation = await getObservation(project_id, observation_id);
+  if (observation.heads.length !== 1) {
+    throw Error('Too many head revisions, must choose a specific head');
+  }
   try {
-    const doc = await datadb.get(observation_id);
-    doc.deleted = false;
-    return await datadb.put(doc);
+    return await setObservationAsUndeleted(
+      project_id,
+      observation_id,
+      observation.heads[0],
+      userid
+    );
   } catch (err) {
     console.warn(err);
     throw Error('failed to undelete data with id');
+  }
+}
+
+export async function setObservationAsDeleted(
+  project_id: ProjectID,
+  obsid: ObservationID,
+  base_revid: RevisionID,
+  user: string
+): Promise<RevisionID> {
+  const datadb = getDataDB(project_id);
+  const date = new Date();
+  const base_revision = await getRevision(project_id, base_revid);
+  const new_rev_id = generateFAIMSRevisionID();
+  const new_revision: Revision = {
+    _id: new_rev_id,
+    revision_format_version: 1,
+    datums: base_revision.datums,
+    type: base_revision.type,
+    observation_id: obsid,
+    parents: [base_revid],
+    created: date.toISOString(),
+    created_by: user,
+    deleted: true,
+  };
+  await datadb.put(new_revision);
+  await updateHeads(project_id, obsid, base_revision._id, new_rev_id);
+  return new_rev_id;
+}
+
+export async function setObservationAsUndeleted(
+  project_id: ProjectID,
+  obsid: ObservationID,
+  base_revid: RevisionID,
+  user: string
+): Promise<RevisionID> {
+  const datadb = getDataDB(project_id);
+  const date = new Date();
+  const base_revision = await getRevision(project_id, base_revid);
+  const new_rev_id = generateFAIMSRevisionID();
+  const new_revision: Revision = {
+    _id: new_rev_id,
+    revision_format_version: 1,
+    datums: base_revision.datums,
+    type: base_revision.type,
+    observation_id: obsid,
+    parents: [base_revid],
+    created: date.toISOString(),
+    created_by: user,
+    deleted: false,
+  };
+  await datadb.put(new_revision);
+  await updateHeads(project_id, obsid, base_revision._id, new_rev_id);
+  return new_rev_id;
+}
+
+export async function getObservationMetadata(
+  project_id: ProjectID,
+  observation_id: ObservationID,
+  revision_id: RevisionID
+): Promise<ObservationMetadata> {
+  try {
+    const observation = await getObservation(project_id, observation_id);
+    const revision = await getRevision(project_id, revision_id);
+    return {
+      project_id: project_id,
+      observation_id: observation_id,
+      revision_id: revision_id,
+      created: new Date(observation.created),
+      created_by: observation.created_by,
+      updated: new Date(revision.created),
+      updated_by: revision.created_by,
+      conflicts: observation.heads.length > 1,
+    };
+  } catch (err) {
+    console.error(err);
+    throw Error('failed to get metadata');
   }
 }

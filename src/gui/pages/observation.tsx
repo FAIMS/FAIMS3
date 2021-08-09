@@ -19,6 +19,8 @@
  */
 
 import React, {useEffect} from 'react';
+import {useParams} from 'react-router-dom';
+
 import {
   AppBar,
   Box,
@@ -30,23 +32,25 @@ import {
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
-import {useParams} from 'react-router-dom';
+import grey from '@material-ui/core/colors/grey';
+
 import * as ROUTES from '../../constants/routes';
-import {ProjectID} from '../../datamodel';
+import {ProjectID, ObservationID, RevisionID} from '../../datamodel';
+import {getProjectInfo} from '../../databaseAccess';
+import {listFAIMSObservationRevisions} from '../../data_storage';
+
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ObservationForm from '../components/observation/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
-import {listFAIMSObservationRevisions} from '../../data_storage';
-import {getProjectInfo} from '../../databaseAccess';
-import grey from '@material-ui/core/colors/grey';
 import ObservationMeta from '../components/observation/meta';
 import ObservationDelete from '../components/observation/delete';
 
 export default function Observation() {
-  const {project_id, observation_id} = useParams<{
+  const {project_id, observation_id, revision_id} = useParams<{
     project_id: ProjectID;
-    observation_id: string;
+    observation_id: ObservationID;
+    revision_id: RevisionID;
   }>();
   const [value, setValue] = React.useState('1');
 
@@ -59,6 +63,7 @@ export default function Observation() {
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: observation_id},
+    {title: revision_id},
   ];
   const [revisions, setRevisions] = React.useState([] as string[]);
   useEffect(() => {
@@ -98,7 +103,7 @@ export default function Observation() {
             <ObservationForm
               project_id={project_id}
               observation_id={observation_id}
-              is_fresh={observation_id === 'new-observation'}
+              revision_id={revision_id}
             />
           </TabPanel>
           <TabPanel value="2">
@@ -118,11 +123,13 @@ export default function Observation() {
             <ObservationMeta
               project_id={project_id}
               observation_id={observation_id}
+              revision_id={revision_id}
             />
             <Box mt={2}>
               <ObservationDelete
                 project_id={project_id}
                 observation_id={observation_id}
+                revision_id={revision_id}
               />
             </Box>
           </TabPanel>

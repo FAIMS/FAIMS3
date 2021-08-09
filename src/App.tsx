@@ -110,7 +110,9 @@ export class App extends React.Component<AppProps, AppState> {
                   ROUTES.PROJECT +
                   ':project_id' +
                   ROUTES.OBSERVATION +
-                  ':observation_id'
+                  ':observation_id' +
+                  ROUTES.REVISION +
+                  ':revision_id'
                 }
                 component={Observation}
               />

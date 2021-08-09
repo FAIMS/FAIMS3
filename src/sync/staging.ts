@@ -19,7 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
-import {SavedView} from '../datamodel';
+import {SavedView, ObservationID, RevisionID} from '../datamodel';
 
 export type StagingDB = PouchDB.Database<SavedView>;
 
@@ -29,9 +29,15 @@ export async function getStagedData(
   active_id: string,
   view_name: string,
   // Revision & observation from data db.
-  existing: null | {_id: string; _rev: string}
+  existing_observation_id: ObservationID | null,
+  existing_revision_id: RevisionID | null
 ): Promise<null | (SavedView & PouchDB.Core.GetMeta)> {
-  const _id = determineId(active_id, view_name, existing);
+  const _id = determineId(
+    active_id,
+    view_name,
+    existing_observation_id,
+    existing_revision_id
+  );
 
   try {
     return await staging_db.get(_id);
@@ -60,9 +66,15 @@ export async function setStagedData(
   _rev: string | null,
   active_id: string,
   view_name: string,
-  existing: {_id: string; _rev: string} | null
+  existing_observation_id: ObservationID | null,
+  existing_revision_id: RevisionID | null
 ): Promise<PouchDB.Core.Response> {
-  const _id = determineId(active_id, view_name, existing);
+  const _id = determineId(
+    active_id,
+    view_name,
+    existing_observation_id,
+    existing_revision_id
+  );
   try {
     const put_doc: PouchDB.Core.PutDocument<SavedView> = {
       ...new_data,
@@ -81,7 +93,8 @@ export async function setStagedData(
         _rev,
         active_id,
         view_name,
-        existing
+        existing_observation_id,
+        existing_revision_id
       );
     } else {
       throw possibleConflict;
@@ -109,12 +122,15 @@ export async function setStagedData(
 function determineId(
   active_id: string,
   view_name: string,
-  existing: {_id: string; _rev: string} | null
+  existing_observation_id: ObservationID | null,
+  existing_revision_id: RevisionID | null
 ): string {
-  const parts: string[] =
-    existing !== null
-      ? [active_id, view_name, existing._id, existing._rev]
-      : [active_id, view_name];
-
+  const parts: string[] = [active_id, view_name];
+  if (existing_observation_id !== null) {
+    parts.push(existing_observation_id);
+  }
+  if (existing_revision_id !== null) {
+    parts.push(existing_revision_id);
+  }
   return parts.map(encodeURIComponent).join('/');
 }
