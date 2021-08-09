@@ -19,19 +19,11 @@
  */
 
 import {
-  Box,
-  Button,
   Card as MuiCard,
   CardActions,
   CardContent,
   CardHeader,
   CircularProgress,
-  FormControl,
-  Grid,
-  Input,
-  InputLabel,
-  MenuItem,
-  Select,
 } from '@material-ui/core';
 
 import {makeStyles} from '@material-ui/core/styles';
@@ -39,17 +31,15 @@ import {useEffect} from 'react';
 import {useState} from 'react';
 import {LocalAuthDoc} from '../../../datamodel';
 import {local_auth_db} from '../../../sync/databases';
+import {LoginForm} from './login_form';
 
 type ClusterCardProps = {
   listing_id: string;
 };
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles(() => ({
   cardHeader: {
     alignItems: 'flex-start',
-  },
-  margin: {
-    'margin-top': theme.spacing(2),
   },
 }));
 
@@ -102,38 +92,18 @@ export default function ClusterCard(props: ClusterCardProps) {
         {mapFullState(
           authDBDoc,
           authDBDoc => (
-            <Box>
-              <FormControl className={classes.margin} fullWidth>
-                <Select
-                  labelId="auth-method"
-                  id="auth-method"
-                  value={'dc_password'}
-                  fullWidth
-                >
-                  <MenuItem value={'dc_password'}>Data Central</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl className={classes.margin} fullWidth>
-                <InputLabel htmlFor="dc-username">Username</InputLabel>
-                <Input id="dc-username" fullWidth />
-              </FormControl>
-              <FormControl className={classes.margin} fullWidth>
-                <InputLabel htmlFor="dc-password">Password</InputLabel>
-                <Input type="password" id="dc-password" fullWidth />
-              </FormControl>
-              <Button
-                className={classes.margin}
-                variant="contained"
-                color="primary"
-                fullWidth
-              >
-                Login
-              </Button>
-            </Box>
+            <LoginForm auth_doc={authDBDoc} />
           ),
-          err => (
-            <pre>Error: {err.toString()}</pre>
-          ),
+          err => {
+            if (
+              'reason' in err &&
+              (err as {reason: any}).reason === 'missing'
+            ) {
+              return <LoginForm />;
+            } else {
+              return <span>Error: {err.toString()}</span>;
+            }
+          },
           () => (
             <CircularProgress color="primary" size="2rem" thickness={5} />
           )
