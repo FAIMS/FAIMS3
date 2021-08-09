@@ -16,7 +16,7 @@ import * as ROUTES from '../../../constants/routes';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-import {ProjectInformation} from '../../../datamodel';
+import {ProjectInformation} from '../../../datamodel/ui';
 
 type ProjectCardActionProps = {
   project: ProjectInformation;

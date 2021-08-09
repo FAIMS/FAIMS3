@@ -20,7 +20,7 @@
 
 import PouchDB from 'pouchdb';
 import EventEmitter from 'events';
-import {ProjectObject, ProjectMetaObject} from '../datamodel';
+import {ProjectObject, ProjectMetaObject} from '../datamodel/database';
 
 export type ProjectMetaList = {
   [active_id: string]: [ProjectObject, PouchDB.Database<ProjectMetaObject>];

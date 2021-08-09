@@ -20,7 +20,7 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
-import {ProjectDataObject, ProjectMetaObject} from '../datamodel';
+import {ProjectDataObject, ProjectMetaObject} from '../datamodel/database';
 import {data_dbs, metadata_dbs} from './databases';
 
 PouchDB.plugin(PouchDBFind);

@@ -19,7 +19,8 @@
  */
 
 import PouchDB from 'pouchdb';
-import {SavedView, ObservationID, RevisionID} from '../datamodel';
+import {ObservationID, RevisionID} from '../datamodel/core';
+import {SavedView} from '../datamodel/staging';
 
 export type StagingDB = PouchDB.Database<SavedView>;
 

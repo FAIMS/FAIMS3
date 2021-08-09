@@ -35,12 +35,8 @@ import {getComponentByName} from '../../ComponentRegistry';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ViewComponent} from '../../view';
 import {upsertFAIMSData, getFullObservationData} from '../../../data_storage';
-import {
-  ProjectUIModel,
-  ProjectID,
-  ObservationID,
-  RevisionID,
-} from '../../../datamodel';
+import {ProjectID, ObservationID, RevisionID} from '../../../datamodel/core';
+import {ProjectUIModel} from '../../../datamodel/ui';
 import {getStagedData, setStagedData} from '../../../sync/staging';
 import {getCurrentUserId} from '../../../users';
 import BoxTab from '../ui/boxTab';

@@ -13,25 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: users.ts
+ * Filename: index.ts
  * Description:
  *   TODO
  */
 
-import {active_db} from './sync/databases';
-import {ProjectID} from './datamodel/core';
-
-export async function getFriendlyUserName(
-  project_id: ProjectID
-): Promise<string> {
-  const doc = await active_db.get(project_id);
-  if (doc.friendly_name === undefined) {
-    return doc.username || 'Dummy User';
-  }
-  return doc.friendly_name;
-}
-
-export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
-  const doc = await active_db.get(project_id);
-  return doc.username || 'Dummy User';
-}
+export {}; // Is there anything we should be exporting?

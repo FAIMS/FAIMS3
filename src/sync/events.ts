@@ -27,7 +27,7 @@ import {
   ProjectDataObject,
   PeopleDoc,
   ConnectionInfo,
-} from '../datamodel';
+} from '../datamodel/database';
 import {ExistingActiveDoc, LocalDB} from './databases';
 
 export class DebugEmitter extends EventEmitter {

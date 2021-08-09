@@ -26,7 +26,7 @@ import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel';
+import {ProjectID} from '../../datamodel/core';
 
 export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();

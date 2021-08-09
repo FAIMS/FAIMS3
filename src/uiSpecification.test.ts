@@ -21,7 +21,8 @@
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 import {getUiSpecForProject, setUiSpecForProject} from './uiSpecification';
-import {UI_SPECIFICATION_NAME, ProjectID} from './datamodel';
+import {ProjectID} from './datamodel/core';
+import {UI_SPECIFICATION_NAME} from './datamodel/database';
 import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';

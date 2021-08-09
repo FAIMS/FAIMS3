@@ -18,7 +18,8 @@
  *   TODO
  */
 
-import {ProjectObject, Observation} from './datamodel';
+import {ProjectObject} from './datamodel/database';
+import {Observation} from './datamodel/ui';
 import {Color} from '@material-ui/lab/Alert';
 
 export enum ActionType {

@@ -20,7 +20,8 @@
 
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
-import {Observation, ProjectID} from './datamodel';
+import {ProjectID} from './datamodel/core';
+import {Observation} from './datamodel/ui';
 import {
   deleteFAIMSDataForID,
   generateFAIMSDataID,

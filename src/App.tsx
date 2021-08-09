@@ -45,7 +45,7 @@ import {MuiThemeProvider} from '@material-ui/core/styles';
 // will be resolved in material-ui v5
 
 import {createdProjects} from './sync/state';
-import {ProjectsList} from './datamodel';
+import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
 
 type AppProps = {};

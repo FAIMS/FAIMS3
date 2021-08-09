@@ -26,7 +26,7 @@ import {
   PeopleDoc,
   ProjectMetaObject,
   ProjectObject,
-} from '../datamodel';
+} from '../datamodel/database';
 import {
   setupExampleDirectory,
   setupExampleListing,

@@ -21,13 +21,12 @@
 import {setUiSpecForProject} from './uiSpecification';
 import {
   ActiveDoc,
-  Observation,
   ListingsObject,
   ProjectMetaObject,
   ProjectObject,
   ProjectsList,
-  ProjectUIModel,
-} from './datamodel';
+} from './datamodel/database';
+import {Observation, ProjectUIModel} from './datamodel/ui';
 import {setProjectMetadata} from './projectMetadata';
 import {upsertFAIMSData} from './data_storage';
 

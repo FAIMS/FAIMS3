@@ -35,7 +35,7 @@ import TabPanel from '@material-ui/lab/TabPanel';
 import grey from '@material-ui/core/colors/grey';
 
 import * as ROUTES from '../../constants/routes';
-import {ProjectID, ObservationID, RevisionID} from '../../datamodel';
+import {ProjectID, ObservationID, RevisionID} from '../../datamodel/core';
 import {getProjectInfo} from '../../databaseAccess';
 import {listFAIMSObservationRevisions} from '../../data_storage';
 

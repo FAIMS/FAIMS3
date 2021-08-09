@@ -29,7 +29,7 @@ import {
   upsertFAIMSConstant,
   clearAllCaches,
 } from './projectSpecification';
-import {ProjectID} from './datamodel';
+import {ProjectID} from './datamodel/core';
 import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';

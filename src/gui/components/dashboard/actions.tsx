@@ -25,7 +25,7 @@ import {Grid, Button, TextField} from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 // import Skeleton from '@material-ui/lab/Skeleton';
 import * as ROUTES from '../../../constants/routes';
-import {ProjectInformation} from '../../../datamodel';
+import {ProjectInformation} from '../../../datamodel/ui';
 type DashboardActionProps = {
   pouchProjectList: ProjectInformation[];
 };

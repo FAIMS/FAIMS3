@@ -33,7 +33,7 @@ import {
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
-} from '../datamodel';
+} from '../datamodel/database';
 import {
   ConnectionInfo_create_pouch,
   local_pouch_options,

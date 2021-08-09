@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectDataObject} from '../datamodel';
+import {ProjectDataObject} from '../datamodel/database';
 import {
   data_dbs,
   LocalDB,

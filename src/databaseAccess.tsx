@@ -29,7 +29,8 @@
  *   (Sync refactor)
  */
 
-import {ProjectInformation, ProjectID} from './datamodel';
+import {ProjectID} from './datamodel/core';
+import {ProjectInformation} from './datamodel/ui';
 import {
   createdProjects,
   createdProjectsInterface,

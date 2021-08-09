@@ -23,7 +23,7 @@ import {
   ProjectMetaObject,
   ProjectDataObject,
   ActiveDoc,
-} from '../datamodel';
+} from '../datamodel/database';
 import {ExistingActiveDoc, LocalDB} from './databases';
 import {add_initial_listener} from './event-handler-registration';
 import {DirectoryEmitter} from './events';

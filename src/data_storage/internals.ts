@@ -21,22 +21,17 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
+import {DatumID, ObservationID, ProjectID, RevisionID} from '../datamodel/core';
 import {
   Datum,
   DatumMap,
-  DatumID,
   DatumIDMap,
   EncodedObservation,
-  Observation,
-  ObservationID,
-  ObservationMetadataList,
   ObservationMap,
-  ProjectID,
   Revision,
-  RevisionID,
   RevisionMap,
-  //  OBSERVATION_INDEX_NAME,
-} from '../datamodel';
+} from '../datamodel/database';
+import {Observation, ObservationMetadataList} from '../datamodel/ui';
 
 type EncodedObservationMap = Map<ObservationID, EncodedObservation>;
 

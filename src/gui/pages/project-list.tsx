@@ -26,7 +26,7 @@ import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {listenProjectList} from '../../databaseAccess';
-import {ProjectInformation} from '../../datamodel';
+import {ProjectInformation} from '../../datamodel/ui';
 import {useState} from 'react';
 import {useEffect} from 'react';
 import {CircularProgress} from '@material-ui/core';
