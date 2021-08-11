@@ -92,14 +92,14 @@ export default function ClusterCard(props: ClusterCardProps) {
         {mapFullState(
           authDBDoc,
           authDBDoc => (
-            <LoginForm auth_doc={authDBDoc} />
+            <span>Logged in with: {JSON.stringify(authDBDoc)}</span>
           ),
           err => {
             if (
-              'reason' in err &&
-              (err as {reason: any}).reason === 'missing'
+              'message' in err &&
+              (err as {message: any}).message === 'missing'
             ) {
-              return <LoginForm />;
+              return <LoginForm listing_id={props.listing_id} />;
             } else {
               return <span>Error: {err.toString()}</span>;
             }
