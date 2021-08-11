@@ -217,7 +217,7 @@ export async function setObservationAsDeleted(
   const new_revision: Revision = {
     _id: new_rev_id,
     revision_format_version: 1,
-    aent_values: base_revision.aent_values,
+    avps: base_revision.avps,
     type: base_revision.type,
     observation_id: obsid,
     parents: [base_revid],
@@ -243,7 +243,7 @@ export async function setObservationAsUndeleted(
   const new_revision: Revision = {
     _id: new_rev_id,
     revision_format_version: 1,
-    aent_values: base_revision.aent_values,
+    avps: base_revision.avps,
     type: base_revision.type,
     observation_id: obsid,
     parents: [base_revid],

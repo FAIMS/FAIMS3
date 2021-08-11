@@ -23,7 +23,7 @@
  * Do not use with sync code; UI code only
  */
 
-import {ProjectID, ObservationID, RevisionID, AentValueID} from './core';
+import {ProjectID, ObservationID, RevisionID} from './core';
 import {ProjectUIFields, ProjectUIViews} from './typesystem';
 
 export interface ProjectInformation {

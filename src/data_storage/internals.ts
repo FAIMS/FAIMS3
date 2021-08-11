@@ -21,11 +21,16 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
-import {AentValueID, ObservationID, ProjectID, RevisionID} from '../datamodel/core';
 import {
-  AentValue,
-  AentValueMap,
-  AentValueIDMap,
+  AttributeValuePairID,
+  ObservationID,
+  ProjectID,
+  RevisionID,
+} from '../datamodel/core';
+import {
+  AttributeValuePair,
+  AttributeValuePairMap,
+  AttributeValuePairIDMap,
   EncodedObservation,
   ObservationMap,
   Revision,
@@ -39,7 +44,7 @@ export function generateFAIMSRevisionID(): RevisionID {
   return uuidv4();
 }
 
-function generateFAIMSAentValueID(): AentValueID {
+function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
   return uuidv4();
 }
 
@@ -85,16 +90,16 @@ export async function getRevision(
   return revision;
 }
 
-export async function getAentValue(
+export async function getAttributeValuePair(
   project_id: ProjectID,
-  aent_value_id: AentValueID
-): Promise<AentValue> {
-  const aent_values = await getAentValues(project_id, [aent_value_id]);
-  const aent_value = aent_values[aent_value_id];
-  if (aent_value === undefined) {
-    throw Error(`no such aent_value ${aent_value_id}`);
+  avp_id: AttributeValuePairID
+): Promise<AttributeValuePair> {
+  const avps = await getAttributeValuePairs(project_id, [avp_id]);
+  const avp = avps[avp_id];
+  if (avp === undefined) {
+    throw Error(`no such avp ${avp_id}`);
   }
-  return aent_value;
+  return avp;
 }
 
 export async function getLatestRevision(
@@ -149,21 +154,21 @@ export async function listObservationMetadata(
   }
 }
 
-export async function getAentValues(
+export async function getAttributeValuePairs(
   project_id: ProjectID,
-  aent_value_ids: AentValueID[]
-): Promise<AentValueMap> {
+  avp_ids: AttributeValuePairID[]
+): Promise<AttributeValuePairMap> {
   const datadb = getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     binary: true, // TODO: work out which format is best for attachments
-    keys: aent_value_ids,
+    keys: avp_ids,
   });
   const rows = res.rows;
-  const mapping: AentValueMap = {};
+  const mapping: AttributeValuePairMap = {};
   rows.forEach(e => {
     if (e.doc !== undefined) {
-      const doc = e.doc as AentValue;
+      const doc = e.doc as AttributeValuePair;
       mapping[doc._id] = doc;
     }
   });
@@ -232,10 +237,10 @@ export async function getFormDataFromRevision(
   revision: Revision
 ): Promise<{[field_name: string]: any}> {
   const data: {[field_name: string]: any} = {};
-  const aent_value_ids = Object.values(revision.aent_values);
-  const aent_values = await getAentValues(project_id, aent_value_ids);
-  for (const [name, aent_value_id] of Object.entries(revision.aent_values)) {
-    data[name] = aent_values[aent_value_id].data;
+  const avp_ids = Object.values(revision.avps);
+  const avps = await getAttributeValuePairs(project_id, avp_ids);
+  for (const [name, avp_id] of Object.entries(revision.avps)) {
+    data[name] = avps[avp_id].data;
   }
   return data;
 }
@@ -246,7 +251,7 @@ export async function addNewRevisionFromForm(
   new_revision_id: RevisionID
 ) {
   const datadb = getDataDB(project_id);
-  const aent_value_map = await addNewAentValues(
+  const avp_map = await addNewAttributeValuePairs(
     project_id,
     observation,
     new_revision_id
@@ -256,7 +261,7 @@ export async function addNewRevisionFromForm(
   const new_revision: Revision = {
     _id: new_revision_id,
     revision_format_version: 1,
-    aent_values: aent_value_map,
+    avps: avp_map,
     observation_id: observation.observation_id,
     parents: parents,
     created: observation.updated.toISOString(),
@@ -266,13 +271,13 @@ export async function addNewRevisionFromForm(
   await datadb.put(new_revision);
 }
 
-async function addNewAentValues(
+async function addNewAttributeValuePairs(
   project_id: ProjectID,
   observation: Observation,
   new_revision_id: RevisionID
-): Promise<AentValueIDMap> {
+): Promise<AttributeValuePairIDMap> {
   const datadb = getDataDB(project_id);
-  const aent_value_map: AentValueIDMap = {};
+  const avp_map: AttributeValuePairIDMap = {};
   let revision;
   let data;
   if (observation.revision_id !== null) {
@@ -285,30 +290,30 @@ async function addNewAentValues(
   for (const [field_name, field_value] of Object.entries(observation.data)) {
     const stored_data = data[field_name];
     if (stored_data === undefined || stored_data !== field_value) {
-      const new_aent_value_id = generateFAIMSAentValueID();
-      const new_aent_value = {
-        _id: new_aent_value_id,
-        aent_value_format_version: 1,
+      const new_avp_id = generateFAIMSAttributeValuePairID();
+      const new_avp = {
+        _id: new_avp_id,
+        avp_format_version: 1,
         type: '??:??', // TODO: Add type handling
         data: field_value,
         revision_id: new_revision_id,
         observation_id: observation.observation_id,
         annotations: [], // TODO: Add annotation handling
       };
-      await datadb.put(new_aent_value);
-      aent_value_map[field_name] = new_aent_value_id;
+      await datadb.put(new_avp);
+      avp_map[field_name] = new_avp_id;
     } else {
-      if (revision.aent_values !== undefined) {
-        aent_value_map[field_name] = revision.aent_values[field_name];
+      if (revision.avps !== undefined) {
+        avp_map[field_name] = revision.avps[field_name];
       } else {
         // This should not happen, as if stored_data === field_value and
-        // stored_data is not undefined, then then revision.aent_values should be
+        // stored_data is not undefined, then then revision.avps should be
         // defined
-        throw Error('something odd happened when saving aent_values...');
+        throw Error('something odd happened when saving avps...');
       }
     }
   }
-  return aent_value_map;
+  return avp_map;
 }
 
 //function pouchAllDocsToMap(pouch_res: PouchDBAllDocsResult): FAIMSPouchDBMap {
