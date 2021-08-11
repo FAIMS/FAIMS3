@@ -21,7 +21,7 @@
 import React, {useEffect, useState} from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
 import {getProjectMetadata} from '../../projectMetadata';
-import {ProjectID} from '../../datamodel';
+import {ProjectID} from '../../datamodel/core';
 
 type MetadataProps = {
   project_id: ProjectID;

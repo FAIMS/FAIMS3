@@ -21,7 +21,7 @@
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 import {getProjectMetadata, setProjectMetadata} from './projectMetadata';
-import {ProjectID} from './datamodel';
+import {ProjectID} from './datamodel/core';
 import {equals} from './utils/eqTestSupport';
 
 import {getProjectDB} from './sync/index';

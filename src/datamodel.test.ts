@@ -23,7 +23,7 @@ import {
   resolve_observation_id,
   split_full_observation_id,
   SplitObservationID,
-} from './datamodel';
+} from './datamodel/core';
 
 testProp('not a full observation id errors', [fc.fullUnicodeString()], id => {
   fc.pre(!id.includes('||'));

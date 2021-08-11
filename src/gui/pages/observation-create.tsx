@@ -26,7 +26,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {generateFAIMSDataID} from '../../data_storage';
 import ObservationForm from '../components/observation/form';
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel';
+import {ProjectID} from '../../datamodel/core';
 
 export default function ObservationCreate() {
   const {project_id} = useParams<{

@@ -19,14 +19,15 @@
  */
 
 import PouchDB from 'pouchdb';
-import {SavedView, ObservationID, RevisionID} from '../datamodel';
+import {ObservationID, ProjectID, RevisionID} from '../datamodel/core';
+import {SavedView} from '../datamodel/staging';
 
 export type StagingDB = PouchDB.Database<SavedView>;
 
 export const staging_db: StagingDB = new PouchDB('staging');
 
 export async function getStagedData(
-  active_id: string,
+  active_id: ProjectID,
   view_name: string,
   // Revision & observation from data db.
   existing_observation_id: ObservationID | null,
@@ -64,7 +65,7 @@ export async function getStagedData(
 export async function setStagedData(
   new_data: {[key_not_underscore_id: string]: unknown},
   _rev: string | null,
-  active_id: string,
+  active_id: ProjectID,
   view_name: string,
   existing_observation_id: ObservationID | null,
   existing_revision_id: RevisionID | null
@@ -120,7 +121,7 @@ export async function setStagedData(
  * @returns {string} _id field for pouch SavedView
  */
 function determineId(
-  active_id: string,
+  active_id: ProjectID,
   view_name: string,
   existing_observation_id: ObservationID | null,
   existing_revision_id: RevisionID | null

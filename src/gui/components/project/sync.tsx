@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Box, Switch, FormControlLabel, Typography} from '@material-ui/core';
 
-import {ProjectInformation} from '../../../datamodel';
+import {ProjectInformation} from '../../../datamodel/ui';
 import {
   isSyncingProject,
   setSyncingProject,

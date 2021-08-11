@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectID, ObservationID, RevisionID} from '../datamodel';
+import {ProjectID, ObservationID, RevisionID} from '../datamodel/core';
 
 export const INDEX = '/';
 export const SIGN_UP = '/signup';

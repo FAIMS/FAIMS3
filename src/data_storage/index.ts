@@ -21,15 +21,9 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
-import {
-  Observation,
-  ObservationID,
-  ObservationMetadata,
-  ProjectID,
-  Revision,
-  RevisionID,
-  //  OBSERVATION_INDEX_NAME,
-} from '../datamodel';
+import {ObservationID, ProjectID, RevisionID} from '../datamodel/core';
+import {Revision} from '../datamodel/database';
+import {Observation, ObservationMetadata} from '../datamodel/ui';
 import {
   addNewRevisionFromForm,
   generateFAIMSRevisionID,

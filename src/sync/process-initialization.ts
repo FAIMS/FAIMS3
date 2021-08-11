@@ -26,7 +26,7 @@ import {
   PeopleDoc,
   ProjectMetaObject,
   ProjectObject,
-} from '../datamodel';
+} from '../datamodel/database';
 import {
   setupExampleDirectory,
   setupExampleListing,
@@ -50,12 +50,12 @@ import {
   metadata_dbs,
   data_dbs,
   DEFAULT_LISTING_ID,
-  POUCH_SEPARATOR,
 } from './databases';
 import {events} from './events';
 import {createdProjects} from './state';
 import {setLocalConnection} from './databases';
 import {SyncHandler} from './sync-handler';
+import {NonUniqueProjectID, resolve_project_id} from '../datamodel/core';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
 const DIRECTORY_TIMEOUT = 2000;
@@ -325,13 +325,13 @@ async function process_listing(listing_object: ListingsObject) {
 
 async function autoactivate_projects(
   listing_id: string,
-  project_ids: string[]
+  project_ids: NonUniqueProjectID[]
 ) {
   for (const project_id of project_ids) {
     try {
       await activate_project(listing_id, project_id, null, null);
     } catch (err) {
-      const active_id = listing_id + POUCH_SEPARATOR + project_id;
+      const active_id = resolve_project_id(listing_id, project_id);
       console.debug('Unable to autoactivate', active_id);
     }
   }
@@ -339,7 +339,7 @@ async function autoactivate_projects(
 
 async function activate_project(
   listing_id: string,
-  project_id: string,
+  project_id: NonUniqueProjectID,
   username: string | null,
   password: string | null,
   is_sync = true
@@ -350,7 +350,7 @@ async function activate_project(
   if (project_id.startsWith('_')) {
     console.error('Projects should not start with a underscore: ', project_id);
   }
-  const active_id = listing_id + POUCH_SEPARATOR + project_id;
+  const active_id = resolve_project_id(listing_id, project_id);
   try {
     await active_db.get(active_id);
     console.debug('Have already activated', active_id);

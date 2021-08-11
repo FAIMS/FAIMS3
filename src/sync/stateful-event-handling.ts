@@ -20,10 +20,14 @@
 
 import PouchDB from 'pouchdb';
 import EventEmitter from 'events';
-import {ProjectObject, ProjectMetaObject} from '../datamodel';
+import {ProjectObject, ProjectMetaObject} from '../datamodel/database';
+import {ProjectID} from '../datamodel/core';
 
 export type ProjectMetaList = {
-  [active_id: string]: [ProjectObject, PouchDB.Database<ProjectMetaObject>];
+  [active_id in ProjectID]: [
+    ProjectObject,
+    PouchDB.Database<ProjectMetaObject>
+  ];
 };
 
 export const state = {

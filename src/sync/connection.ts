@@ -20,7 +20,7 @@
 
 import PouchDB from 'pouchdb';
 import {RUNNING_UNDER_TEST} from '../buildconfig';
-import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel';
+import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel/database';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 
 /**

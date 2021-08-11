@@ -18,7 +18,9 @@
  *   TODO
  */
 
-import {ActiveDoc, ProjectID, ObservationMetadataList} from '../datamodel';
+import {ProjectID} from '../datamodel/core';
+import {ActiveDoc} from '../datamodel/database';
+import {ObservationMetadataList} from '../datamodel/ui';
 import {ExistingActiveDoc} from '../sync/databases';
 import {events} from '../sync/events';
 import {add_initial_listener} from '../sync/event-handler-registration';

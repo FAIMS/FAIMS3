@@ -51,7 +51,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
 import SystemAlert from './alert';
-import {ProjectInformation} from '../../datamodel';
+import {ProjectInformation} from '../../datamodel/ui';
 
 // type NavBarState = {
 //   topMenuItems: any;

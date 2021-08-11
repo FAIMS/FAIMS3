@@ -44,7 +44,7 @@ import {
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectInformation} from '../../../datamodel';
+import {ProjectInformation} from '../../../datamodel/ui';
 import ObservationsTable from '../observation/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';

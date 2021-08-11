@@ -28,7 +28,7 @@ import {
 } from '@material-ui/core';
 
 import {getObservationMetadata} from '../../../data_storage';
-import {ProjectID, ObservationID, RevisionID} from '../../../datamodel';
+import {ProjectID, ObservationID, RevisionID} from '../../../datamodel/core';
 
 type ObservationMetaProps = {
   project_id: ProjectID;

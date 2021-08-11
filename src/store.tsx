@@ -19,7 +19,12 @@
  */
 
 import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
-import {Observation, ProjectObject} from './datamodel';
+import {Color} from '@material-ui/lab/Alert';
+
+import {v4 as uuidv4} from 'uuid';
+
+import {ProjectObject} from './datamodel/database';
+import {Observation} from './datamodel/ui';
 import {
   ProjectActions,
   ObservationActions,
@@ -27,10 +32,8 @@ import {
   AlertActions,
   ActionType,
 } from './actions';
-import {Color} from '@material-ui/lab/Alert';
 import LoadingApp from './gui/components/loadingApp';
 import {initialize} from './sync/initialize';
-import {v4 as uuidv4} from 'uuid';
 
 interface InitialStateProps {
   initialized: boolean;

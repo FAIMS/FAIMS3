@@ -18,11 +18,11 @@
  *   TODO
  */
 import {getProjectDB} from './sync/index';
+import {ProjectID} from './datamodel/core';
 import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
-  ProjectID,
-} from './datamodel';
+} from './datamodel/database';
 
 export async function getProjectMetadata(
   project_id: ProjectID,

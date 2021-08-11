@@ -35,7 +35,7 @@ import {Alert} from '@material-ui/lab';
 import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';
 import {store} from '../../../store';
-import {ProjectID, ObservationID, RevisionID} from '../../../datamodel';
+import {ProjectID, ObservationID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setObservationAsDeleted} from '../../../data_storage';
 

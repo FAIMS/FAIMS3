@@ -32,7 +32,8 @@ import Link from '@material-ui/core/Link';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-import {ObservationMetadata, ProjectID} from '../../../datamodel';
+import {ProjectID} from '../../../datamodel/core';
+import {ObservationMetadata} from '../../../datamodel/ui';
 import * as ROUTES from '../../../constants/routes';
 import {listenObservationsList} from '../../../data_storage/listeners';
 
