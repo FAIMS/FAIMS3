@@ -69,4 +69,4 @@ export function split_full_observation_id(
 }
 
 export type RevisionID = string;
-export type DatumID = string;
+export type AttributeValuePairID = string;
