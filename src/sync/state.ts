@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import {ProjectID} from '../datamodel/core';
 import {
   ProjectObject,
   ProjectMetaObject,
@@ -51,7 +52,7 @@ function register_listings_known(initializeEvents: DirectoryEmitter) {
  *
  * This is set to just before 'projects_known' event is emitted.
  */
-export let projects_known: null | Set<string> = null;
+export let projects_known: null | Set<ProjectID> = null;
 /**
  * Adds event handlers to initializeEvents to:
  * Enable 'Propagation' of completion of all known projects meta & other databases.
@@ -74,7 +75,7 @@ function register_projects_known(initializeEvents: DirectoryEmitter) {
     listings_known && Array.from(listing_statuses.values()).every(v => v);
 
   // All projects accumulated here
-  const projects_known_acc = new Set<string>();
+  const projects_known_acc = new Set<ProjectID>();
 
   // Emits project_known if all listings have their projects added to known_projects.
   const emit_if_complete = () => {
@@ -170,7 +171,7 @@ function register_projects_created(initializeEvents: DirectoryEmitter) {
 add_initial_listener(register_projects_created);
 
 export type MetasCompleteType = {
-  [active_id: string]:
+  [active_id in ProjectID]:
     | [ActiveDoc, ProjectObject, LocalDB<ProjectMetaObject>]
     // Error'd out metadata db
     | [ActiveDoc, unknown];

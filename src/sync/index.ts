@@ -20,13 +20,14 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject, ProjectMetaObject} from '../datamodel/database';
 import {data_dbs, metadata_dbs} from './databases';
 
 PouchDB.plugin(PouchDBFind);
 
 export function getDataDB(
-  active_id: string
+  active_id: ProjectID
 ): PouchDB.Database<ProjectDataObject> {
   if (data_dbs[active_id] !== undefined) {
     return data_dbs[active_id].local;
@@ -37,7 +38,7 @@ export function getDataDB(
 }
 
 export function getProjectDB(
-  active_id: string
+  active_id: ProjectID
 ): PouchDB.Database<ProjectMetaObject> {
   if (metadata_dbs[active_id] !== undefined) {
     return metadata_dbs[active_id].local;

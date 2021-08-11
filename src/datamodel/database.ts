@@ -18,7 +18,13 @@
  *   TODO
  */
 
-import {ProjectID, ObservationID, RevisionID, DatumID} from './core';
+import {
+  NonUniqueProjectID,
+  ObservationID,
+  RevisionID,
+  DatumID,
+  ProjectID,
+} from './core';
 import {
   FAIMSConstantCollection,
   FAIMSTypeCollection,
@@ -71,9 +77,9 @@ export interface NonNullListingsObject extends ListingsObject {
 }
 
 export interface ActiveDoc {
-  _id: string;
+  _id: ProjectID;
   listing_id: string;
-  project_id: ProjectID;
+  project_id: NonUniqueProjectID;
   username: string | null;
   password: string | null;
   friendly_name?: string;

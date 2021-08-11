@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject} from '../datamodel/database';
 import {
   data_dbs,
@@ -27,12 +28,12 @@ import {
 } from './databases';
 
 const syncingProjectListeners: (
-  | [string, (syncing: boolean) => unknown]
+  | [ProjectID, (syncing: boolean) => unknown]
   | undefined
 )[] = [];
 
 export function listenSyncingProject(
-  active_id: string,
+  active_id: ProjectID,
   callback: (syncing: boolean) => unknown
 ): () => void {
   const my_index = syncingProjectListeners.length;
@@ -42,7 +43,7 @@ export function listenSyncingProject(
   };
 }
 
-export function isSyncingProject(active_id: string) {
+export function isSyncingProject(active_id: ProjectID) {
   if (data_dbs[active_id] === undefined) {
     throw 'Projects not initialized yet';
   }
@@ -54,7 +55,7 @@ export function isSyncingProject(active_id: string) {
   return data_dbs[active_id].is_sync;
 }
 
-export function setSyncingProject(active_id: string, syncing: boolean) {
+export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
   if (syncing === isSyncingProject(active_id)) {
     return; //Nothing to do, already same value
   }

@@ -18,7 +18,21 @@
  *   TODO
  */
 
+// There are two internal IDs for projects, the former is unique to the system
+// (i.e. includes the listing_id), the latter is unique only to the 'projects'
+// database it came from, for a FAIMS listing
+// (It is this way because the list of projects is decentralised and so we
+// cannot enforce system-wide unique project IDs without a 'namespace' listing id)
 export type ProjectID = string;
+export type NonUniqueProjectID = string;
+
+export function resolve_project_id(
+  listing_id: string,
+  nonunique_id: NonUniqueProjectID
+): ProjectID {
+  const cleaned_listing_id = listing_id.replace('||', '\\|\\|');
+  return cleaned_listing_id + '||' + nonunique_id;
+}
 
 // There are two internal ID for observations, the former is unique to a
 // project, the latter unique to the system (i.e. includes project_id)

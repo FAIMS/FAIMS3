@@ -29,6 +29,7 @@ import {
   ConnectionInfo,
 } from '../datamodel/database';
 import {ExistingActiveDoc, LocalDB} from './databases';
+import {ProjectID} from '../datamodel/core';
 
 export class DebugEmitter extends EventEmitter {
   constructor(opts?: {captureRejections?: boolean}) {
@@ -152,7 +153,7 @@ export interface DirectoryEmitter extends EventEmitter {
 
   on(
     event: 'projects_known',
-    listener: (projects: Set<string>) => unknown
+    listener: (projects: Set<ProjectID>) => unknown
   ): this;
 
   on(
@@ -234,7 +235,7 @@ export interface DirectoryEmitter extends EventEmitter {
   emit(event: 'directory_active', listings: Set<string>): boolean;
   emit(event: 'directory_error', err: unknown): boolean;
   emit(event: 'listings_known', listings: Set<string>): boolean;
-  emit(event: 'projects_known', projects: Set<string>): boolean;
+  emit(event: 'projects_known', projects: Set<ProjectID>): boolean;
   emit(event: 'metas_complete', metas: MetasCompleteType): boolean;
   emit(event: 'projects_created'): boolean;
 }
