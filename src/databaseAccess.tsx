@@ -20,10 +20,10 @@
  *   If you find yourself writing pouchdb.get(), pouchdb.put(), etc.
  *   put that code in a function in this file
  *
- *   See data_storage/index.ts for accessors specific to Observations
+ *   See data_storage/index.ts for accessors specific to Records
  *   In comparison, this file is for metadata, or other data
  *   (data_storage/index.ts is called from this file, as data_storage/index.ts
- *    does encoding/decoding of observations)
+ *    does encoding/decoding of records)
  *
  *   TODO: Convert *everything* to listeners that can run more than once
  *   (Sync refactor)
@@ -41,7 +41,7 @@ import {events} from './sync/events';
 export function getProjectList(): ProjectInformation[] {
   /**
    * Return all active projects the user has access to, including the
-   * top 30 most recently updated observations.
+   * top 30 most recently updated records.
    */
   // TODO filter by user_id
   // TODO filter by active projects

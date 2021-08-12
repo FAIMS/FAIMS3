@@ -72,12 +72,12 @@ export default function Home() {
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Typography variant="overline">Add new Observation</Typography>
+          <Typography variant="overline">Add new Record</Typography>
           <Paper className={classes.paper}>
             <DashboardActions pouchProjectList={pouchProjectList} />
           </Paper>
         </Grid>
-        {/* Recent Observations */}
+        {/* Recent Records */}
         <Grid item xs={12} md={8} lg={9}>
           <div
             style={{
@@ -87,13 +87,13 @@ export default function Home() {
             }}
           >
             <Typography variant="overline" display={'inline'}>
-              Recent Observations&nbsp;&nbsp;
+              Recent Records&nbsp;&nbsp;
             </Typography>
             <TimelapseIcon color={'secondary'} style={{fontSize: '1.1rem'}} />
           </div>
 
           <Paper className={classes.paper}>
-            {/*<Observations />*/}
+            {/*<Records />*/}
             <Box mt={2}>
               <Link
                 style={{
@@ -102,9 +102,9 @@ export default function Home() {
                   flexWrap: 'wrap',
                 }}
                 component={RouterLink}
-                to={ROUTES.OBSERVATION_LIST}
+                to={ROUTES.RECORD_LIST}
               >
-                See more observations
+                See more records
                 {/*<ChevronRightIcon />*/}
               </Link>
             </Box>

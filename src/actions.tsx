@@ -19,7 +19,7 @@
  */
 
 import {ProjectObject} from './datamodel/database';
-import {Observation} from './datamodel/ui';
+import {Record} from './datamodel/ui';
 import {Color} from '@material-ui/lab/Alert';
 
 export enum ActionType {
@@ -29,8 +29,8 @@ export enum ActionType {
   GET_ACTIVE_PROJECT,
   DROP_ACTIVE_PROJECT,
 
-  GET_ACTIVE_OBSERVATION,
-  DROP_ACTIVE_OBSERVATION,
+  GET_ACTIVE_RECORD,
+  DROP_ACTIVE_RECORD,
 
   ADD_ALERT,
   DELETE_ALERT,
@@ -59,18 +59,16 @@ export interface DROP_ACTIVE_PROJECT {
 
 export type ProjectActions = GET_ACTIVE_PROJECT | DROP_ACTIVE_PROJECT;
 
-export interface GET_ACTIVE_OBSERVATION {
-  type: ActionType.GET_ACTIVE_OBSERVATION;
-  payload: Observation | null;
+export interface GET_ACTIVE_RECORD {
+  type: ActionType.GET_ACTIVE_RECORD;
+  payload: Record | null;
 }
 
-export interface DROP_ACTIVE_OBSERVATION {
-  type: ActionType.DROP_ACTIVE_OBSERVATION;
+export interface DROP_ACTIVE_RECORD {
+  type: ActionType.DROP_ACTIVE_RECORD;
 }
 
-export type ObservationActions =
-  | GET_ACTIVE_OBSERVATION
-  | DROP_ACTIVE_OBSERVATION;
+export type RecordActions = GET_ACTIVE_RECORD | DROP_ACTIVE_RECORD;
 
 export interface ADD_ALERT {
   type: ActionType.ADD_ALERT;

@@ -35,18 +35,18 @@ import {Alert} from '@material-ui/lab';
 import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';
 import {store} from '../../../store';
-import {ProjectID, ObservationID, RevisionID} from '../../../datamodel/core';
+import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
-import {setObservationAsDeleted} from '../../../data_storage';
+import {setRecordAsDeleted} from '../../../data_storage';
 
-type ObservationDeleteProps = {
+type RecordDeleteProps = {
   project_id: ProjectID;
-  observation_id: ObservationID;
+  record_id: RecordID;
   revision_id: RevisionID;
 };
 
-export default function ObservationDelete(props: ObservationDeleteProps) {
-  const {project_id, observation_id, revision_id} = props;
+export default function RecordDelete(props: RecordDeleteProps) {
+  const {project_id, record_id, revision_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useHistory();
   const globalState = useContext(store);
@@ -62,24 +62,24 @@ export default function ObservationDelete(props: ObservationDeleteProps) {
   const handleDelete = () => {
     getCurrentUserId(project_id)
       .then(userid =>
-        setObservationAsDeleted(project_id, observation_id, revision_id, userid)
+        setRecordAsDeleted(project_id, record_id, revision_id, userid)
       )
       .then(() => {
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Observation ' + observation_id + ' deleted',
+            message: 'Record ' + record_id + ' deleted',
             severity: 'success',
           },
         });
         history.push(ROUTES.PROJECT + project_id);
       })
       .catch(err => {
-        console.log('Could not delete observation: ' + observation_id, err);
+        console.log('Could not delete record: ' + record_id, err);
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Could not delete observation: ' + observation_id,
+            message: 'Could not delete record: ' + record_id,
             severity: 'error',
           },
         });
@@ -94,7 +94,7 @@ export default function ObservationDelete(props: ObservationDeleteProps) {
         onClick={handleClickOpen}
         startIcon={<DeleteIcon />}
       >
-        Delete observation
+        Delete record
       </Button>
       <Dialog
         open={open}
@@ -103,13 +103,13 @@ export default function ObservationDelete(props: ObservationDeleteProps) {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          {'Delete observation ' + observation_id}
+          {'Delete record ' + record_id}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description" component={'div'}>
             <Alert severity="warning">
               You cannot reverse this action! Be sure you wish to delete this
-              observation.
+              record.
             </Alert>
           </DialogContentText>
         </DialogContent>

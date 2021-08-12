@@ -20,7 +20,7 @@
 
 import {
   NonUniqueProjectID,
-  ObservationID,
+  RecordID,
   RevisionID,
   AttributeValuePairID,
   ProjectID,
@@ -35,7 +35,7 @@ import {
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
 export const PROJECT_METADATA_PREFIX = 'project-metadata';
-export const OBSERVATION_INDEX_NAME = 'observation-version-index';
+export const RECORD_INDEX_NAME = 'record-version-index';
 
 /*
  * This may already exist in pouchdb's typing, but lets make a temporary one for
@@ -144,11 +144,11 @@ export interface EncodedProjectMetadata {
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
-export interface EncodedObservation {
+export interface EncodedRecord {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
-  observation_format_version: number;
+  record_format_version: number;
   created: string;
   created_by: string;
   revisions: RevisionID[];
@@ -167,8 +167,8 @@ export type RevisionMap = {
   [field_name: string]: Revision;
 };
 
-export type ObservationMap = {
-  [field_name: string]: EncodedObservation;
+export type RecordMap = {
+  [field_name: string]: EncodedRecord;
 };
 
 export interface Revision {
@@ -177,7 +177,7 @@ export interface Revision {
   _deleted?: boolean; // This is for couchdb deletion
   revision_format_version: number;
   avps: AttributeValuePairIDMap;
-  observation_id: ObservationID;
+  record_id: RecordID;
   parents: RevisionID[];
   created: string;
   created_by: string;
@@ -194,7 +194,7 @@ export interface AttributeValuePair {
   type: string;
   data: any;
   revision_id: RevisionID;
-  observation_id: ObservationID;
+  record_id: RecordID;
   annotations: any;
 }
 
@@ -211,10 +211,7 @@ export type ProjectMetaObject =
  * Elements of a Project's dataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
-export type ProjectDataObject =
-  | AttributeValuePair
-  | Revision
-  | EncodedObservation;
+export type ProjectDataObject = AttributeValuePair | Revision | EncodedRecord;
 
 /**
  * Document from a people DB

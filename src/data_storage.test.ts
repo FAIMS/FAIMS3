@@ -21,12 +21,12 @@
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 import {ProjectID} from './datamodel/core';
-import {Observation} from './datamodel/ui';
+import {Record} from './datamodel/ui';
 import {
   deleteFAIMSDataForID,
   generateFAIMSDataID,
-  getFirstObservationHead,
-  getFullObservationData,
+  getFirstRecordHead,
+  getFullRecordData,
   listFAIMSProjectRevisions,
   undeleteFAIMSDataForID,
   upsertFAIMSData,
@@ -64,9 +64,9 @@ async function cleanDataDBS() {
   }
 }
 
-function observationsEqual(
-  value: Observation | null,
-  expected: Observation | null,
+function recordsEqual(
+  value: Record | null,
+  expected: Record | null,
   skip_revisions = true,
   ignore_dates = true
 ): boolean {
@@ -120,11 +120,11 @@ describe('roundtrip reading and writing to db', () => {
 
       const fulltype = namespace + '::' + name;
 
-      const observation_id = generateFAIMSDataID();
+      const record_id = generateFAIMSDataID();
 
-      const doc: Observation = {
+      const doc: Record = {
         project_id: project_id,
-        observation_id: observation_id,
+        record_id: record_id,
         revision_id: null,
         type: fulltype,
         data: {field_name: data},
@@ -136,14 +136,10 @@ describe('roundtrip reading and writing to db', () => {
 
       return upsertFAIMSData(project_id, doc)
         .then(revision_id => {
-          return getFullObservationData(
-            project_id,
-            observation_id,
-            revision_id
-          );
+          return getFullRecordData(project_id, record_id, revision_id);
         })
         .then(result => {
-          expect(observationsEqual(result, doc)).toBe(true);
+          expect(recordsEqual(result, doc)).toBe(true);
         });
     }
   );
@@ -181,11 +177,11 @@ describe('CRUD for data', () => {
 
       const fulltype = namespace + '::' + name;
 
-      const observation_id = generateFAIMSDataID();
+      const record_id = generateFAIMSDataID();
 
-      const doc: Observation = {
+      const doc: Record = {
         project_id: project_id,
-        observation_id: observation_id,
+        record_id: record_id,
         revision_id: null,
         type: fulltype,
         data: {field_name: data},
@@ -195,9 +191,9 @@ describe('CRUD for data', () => {
         updated: time,
       };
 
-      const new_doc: Observation = {
+      const new_doc: Record = {
         project_id: project_id,
-        observation_id: observation_id,
+        record_id: record_id,
         revision_id: null,
         type: fulltype,
         data: {field_name: new_data},
@@ -209,24 +205,16 @@ describe('CRUD for data', () => {
 
       return upsertFAIMSData(project_id, doc)
         .then(revision_id => {
-          return getFullObservationData(
-            project_id,
-            observation_id,
-            revision_id
-          );
+          return getFullRecordData(project_id, record_id, revision_id);
         })
         .then(result => {
-          expect(observationsEqual(result, doc)).toBe(true);
+          expect(recordsEqual(result, doc)).toBe(true);
         })
         .then(() => {
-          return getFirstObservationHead(project_id, observation_id);
+          return getFirstRecordHead(project_id, record_id);
         })
         .then(revision_id => {
-          return getFullObservationData(
-            project_id,
-            observation_id,
-            revision_id
-          );
+          return getFullRecordData(project_id, record_id, revision_id);
         })
         .then(result => {
           if (result === null) {
@@ -236,40 +224,28 @@ describe('CRUD for data', () => {
           return upsertFAIMSData(project_id, result);
         })
         .then(revision_id => {
-          return getFullObservationData(
-            project_id,
-            observation_id,
-            revision_id
-          );
+          return getFullRecordData(project_id, record_id, revision_id);
         })
         .then(result => {
-          expect(observationsEqual(result, new_doc)).toBe(true);
+          expect(recordsEqual(result, new_doc)).toBe(true);
         })
         .then(result => {
-          return deleteFAIMSDataForID(project_id, observation_id, userid);
+          return deleteFAIMSDataForID(project_id, record_id, userid);
         })
         .then(revision_id => {
-          return getFullObservationData(
-            project_id,
-            observation_id,
-            revision_id
-          );
+          return getFullRecordData(project_id, record_id, revision_id);
         })
         .then(result => {
           expect(result).toBe(null);
         })
         .then(result => {
-          return undeleteFAIMSDataForID(project_id, observation_id, userid);
+          return undeleteFAIMSDataForID(project_id, record_id, userid);
         })
         .then(revision_id => {
-          return getFullObservationData(
-            project_id,
-            observation_id,
-            revision_id
-          );
+          return getFullRecordData(project_id, record_id, revision_id);
         })
         .then(result => {
-          expect(observationsEqual(result, new_doc)).toBe(true);
+          expect(recordsEqual(result, new_doc)).toBe(true);
         });
     }
   );
@@ -297,11 +273,11 @@ describe('listing revisions', () => {
 
       const fulltype = namespace + '::' + name;
 
-      const observation_id = generateFAIMSDataID();
+      const record_id = generateFAIMSDataID();
 
-      const doc: Observation = {
+      const doc: Record = {
         project_id: project_id,
-        observation_id: observation_id,
+        record_id: record_id,
         revision_id: null,
         type: fulltype,
         data: {field_name: data},
@@ -316,9 +292,9 @@ describe('listing revisions', () => {
           return listFAIMSProjectRevisions(project_id);
         })
         .then(result => {
-          expect(result[observation_id]).not.toBe(undefined);
-          expect(result[observation_id]).toHaveLength(1);
-          expect(result[observation_id][0]).toEqual(
+          expect(result[record_id]).not.toBe(undefined);
+          expect(result[record_id]).toHaveLength(1);
+          expect(result[record_id][0]).toEqual(
             // TODO: Work out regex for revision ids
             expect.stringMatching(/^.*/)
           );

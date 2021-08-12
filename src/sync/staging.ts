@@ -19,7 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
-import {ObservationID, ProjectID, RevisionID} from '../datamodel/core';
+import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
 import {SavedView} from '../datamodel/staging';
 
 export type StagingDB = PouchDB.Database<SavedView>;
@@ -29,14 +29,14 @@ export const staging_db: StagingDB = new PouchDB('staging');
 export async function getStagedData(
   active_id: ProjectID,
   view_name: string,
-  // Revision & observation from data db.
-  existing_observation_id: ObservationID | null,
+  // Revision & record from data db.
+  existing_record_id: RecordID | null,
   existing_revision_id: RevisionID | null
 ): Promise<null | (SavedView & PouchDB.Core.GetMeta)> {
   const _id = determineId(
     active_id,
     view_name,
-    existing_observation_id,
+    existing_record_id,
     existing_revision_id
   );
 
@@ -59,7 +59,7 @@ export async function getStagedData(
  *                       or if _rev is not yet known
  * @param {string} active_id First arg: active_id of a project from ActiveDB
  * @param {string} view_name Name of the view, defined by project GUI Model
- * @param {string|null} existing_observation Observation id if this was editing an existing observation
+ * @param {string|null} existing_record Record id if this was editing an existing record
  * @param {string|null} existing_revision Revision ID if this was editing an existing revision
  */
 export async function setStagedData(
@@ -67,13 +67,13 @@ export async function setStagedData(
   _rev: string | null,
   active_id: ProjectID,
   view_name: string,
-  existing_observation_id: ObservationID | null,
+  existing_record_id: RecordID | null,
   existing_revision_id: RevisionID | null
 ): Promise<PouchDB.Core.Response> {
   const _id = determineId(
     active_id,
     view_name,
-    existing_observation_id,
+    existing_record_id,
     existing_revision_id
   );
   try {
@@ -94,7 +94,7 @@ export async function setStagedData(
         _rev,
         active_id,
         view_name,
-        existing_observation_id,
+        existing_record_id,
         existing_revision_id
       );
     } else {
@@ -111,24 +111,24 @@ export async function setStagedData(
  * to/from the staging area, this gives you a pouch unique _id to use.
  *
  * If you're trying to get/save data for when the user
- * is creating a new document, leave out existing_observation or existing_revision
+ * is creating a new document, leave out existing_record or existing_revision
  * (the last 2 parameters)
  *
  * @param {string} active_id First arg: active_id of a project from ActiveDB
  * @param {string} view_name Name of the view, defined by project GUI Model
- * @param {string|null} existing_observation Observation id if this was editing an existing observation
+ * @param {string|null} existing_record Record id if this was editing an existing record
  * @param {string|null} existing_revision Revision ID if this was editing an existing revision
  * @returns {string} _id field for pouch SavedView
  */
 function determineId(
   active_id: ProjectID,
   view_name: string,
-  existing_observation_id: ObservationID | null,
+  existing_record_id: RecordID | null,
   existing_revision_id: RevisionID | null
 ): string {
   const parts: string[] = [active_id, view_name];
-  if (existing_observation_id !== null) {
-    parts.push(existing_observation_id);
+  if (existing_record_id !== null) {
+    parts.push(existing_record_id);
   }
   if (existing_revision_id !== null) {
     parts.push(existing_revision_id);

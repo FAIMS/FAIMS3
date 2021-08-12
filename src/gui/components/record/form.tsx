@@ -34,8 +34,8 @@ import {transformAll} from '@demvsystems/yup-ast';
 import {getComponentByName} from '../../ComponentRegistry';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ViewComponent} from '../../view';
-import {upsertFAIMSData, getFullObservationData} from '../../../data_storage';
-import {ProjectID, ObservationID, RevisionID} from '../../../datamodel/core';
+import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
+import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import {getStagedData, setStagedData} from '../../../sync/staging';
 import {getCurrentUserId} from '../../../users';
@@ -45,9 +45,9 @@ import {store} from '../../../store';
 import AutoSave from './autosave';
 import * as ROUTES from '../../../constants/routes';
 
-type ObservationFormProps = {
+type RecordFormProps = {
   project_id: ProjectID;
-  observation_id: ObservationID;
+  record_id: RecordID;
   revision_id: RevisionID | null;
 };
 
@@ -58,7 +58,7 @@ const MAX_CONSEQUTIVE_STAGING_SAVE_ERRORS = 5;
 
 const STAGING_SAVE_CYCLE = 5000;
 
-type ObservationFormState = {
+type RecordFormState = {
   stagingError: string | null;
   currentView: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
@@ -86,13 +86,13 @@ function firstDefinedFromList<T>(
   }
 }
 
-class ObservationForm extends React.Component<
-  ObservationFormProps & RouteComponentProps,
-  ObservationFormState
+class RecordForm extends React.Component<
+  RecordFormProps & RouteComponentProps,
+  RecordFormState
 > {
   // Staging data that is ONLY updated from setUISpec, used in getInitialValues
   // that means this ISN'T up-to-date with the data in the form.
-  // Reset when current observation/project changes
+  // Reset when current record/project changes
   loadedStagedData: null | {
     [fieldName: string]: unknown;
   } = null;
@@ -110,11 +110,11 @@ class ObservationForm extends React.Component<
   // when the values change before the blur event (i.e. listens for onChange AND onBlur)
   // Used for determining what to save to the staging area.
   // Starts out as empty set even if there was data loaded from the staging area.
-  // Reset when current observation/project changes
+  // Reset when current record/project changes
   touchedFields = new Set<string>();
 
   // Incrementally increasing revision ID from staging docs.
-  // Reset when current observation/project changes
+  // Reset when current record/project changes
   lastStagingRev: null | string = null;
 
   // +1 every time setStagingData errors out. Set to 0 when it doesn't error.
@@ -125,9 +125,9 @@ class ObservationForm extends React.Component<
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
 
-  componentDidUpdate(prevProps: ObservationFormProps) {
+  componentDidUpdate(prevProps: RecordFormProps) {
     if (
-      prevProps.observation_id !== this.props.observation_id ||
+      prevProps.record_id !== this.props.record_id ||
       prevProps.revision_id !== this.props.revision_id
     ) {
       this.loadedStagedData = null;
@@ -139,7 +139,7 @@ class ObservationForm extends React.Component<
     }
   }
 
-  constructor(props: ObservationFormProps & RouteComponentProps) {
+  constructor(props: RecordFormProps & RouteComponentProps) {
     super(props);
     this.state = {
       currentView: null,
@@ -199,7 +199,7 @@ class ObservationForm extends React.Component<
         },
       });
       // Show an empty form
-      this.setState({initialValues: {_id: this.props.observation_id!}});
+      this.setState({initialValues: {_id: this.props.record_id!}});
     }
   }
 
@@ -216,7 +216,7 @@ class ObservationForm extends React.Component<
 
   async setUISpec() {
     // CurrentView & loadedStagedData are assumed to need updating when this is called
-    // (They need updating if this.props.observation changes)
+    // (They need updating if this.props.record changes)
     // but uiSpec might not need updating here
 
     if (this.uiSpec === null) {
@@ -237,7 +237,7 @@ class ObservationForm extends React.Component<
       getStagedData(
         this.props.project_id,
         viewName,
-        this.props.observation_id,
+        this.props.record_id,
         this.props.revision_id
       ).then(staged_data_restore => {
         loadedStagedData = {
@@ -263,15 +263,15 @@ class ObservationForm extends React.Component<
     if (this.props.revision_id === null) {
       existingData = {};
     } else {
-      const existing_observation = await getFullObservationData(
+      const existing_record = await getFullRecordData(
         this.props.project_id,
-        this.props.observation_id,
+        this.props.record_id,
         this.props.revision_id
       );
-      if (existing_observation === null) {
+      if (existing_record === null) {
         existingData = {};
       } else {
-        existingData = existing_observation.data;
+        existingData = existing_record.data;
       }
     }
 
@@ -332,7 +332,7 @@ class ObservationForm extends React.Component<
       .then(userid => {
         const now = new Date();
         const doc = {
-          observation_id: this.props.observation_id,
+          record_id: this.props.record_id,
           revision_id: this.props.revision_id,
           type: '??:??', // TODO: get correct type
           data: values,
@@ -349,8 +349,8 @@ class ObservationForm extends React.Component<
         console.debug(result);
         const message =
           this.props.revision_id === null
-            ? 'Observation successfully created'
-            : 'Observation successfully updated';
+            ? 'Record successfully created'
+            : 'Record successfully updated';
         this.context.dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
@@ -362,8 +362,8 @@ class ObservationForm extends React.Component<
       .catch(err => {
         const message =
           this.props.revision_id === null
-            ? 'Could not create observation'
-            : 'Could not update observation';
+            ? 'Could not create record'
+            : 'Could not update record';
         this.context.dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
@@ -381,7 +381,7 @@ class ObservationForm extends React.Component<
           this.lastStagingRev,
           this.props.project_id,
           this.reqireCurrentView(),
-          this.props.observation_id,
+          this.props.record_id,
           this.props.revision_id
         ).catch(clean_error => {
           // Errors with cleaning the staging area are not 'fatal' to the
@@ -390,16 +390,16 @@ class ObservationForm extends React.Component<
         })
       )
       .then(() => {
-        // if a new observation, redirect to the new observation page to allow
+        // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
         if (this.props.revision_id === null) {
           this.props.history.push(
-            ROUTES.PROJECT + this.props.project_id + ROUTES.OBSERVATION_CREATE
+            ROUTES.PROJECT + this.props.project_id + ROUTES.RECORD_CREATE
           );
           window.scrollTo(0, 0);
           // scroll to top of page, seems to be needed on mobile devices
         } else {
-          // otherwise, redirect to the project page listing all observations
+          // otherwise, redirect to the project page listing all records
           this.props.history.push(ROUTES.PROJECT + this.props.project_id);
         }
       });
@@ -465,7 +465,7 @@ class ObservationForm extends React.Component<
         this.lastStagingRev,
         this.props.project_id,
         this.reqireCurrentView(),
-        this.props.observation_id,
+        this.props.record_id,
         this.props.revision_id
       )
         .then(set_ok => {
@@ -701,7 +701,7 @@ class ObservationForm extends React.Component<
                             The data in this form are auto-saved locally within
                             the app every 5 seconds. The data do not need to be
                             valid, and you can return to this page to complete
-                            this observation on this device at any time.
+                            this record on this device at any time.
                           </p>
                           <p>
                             Once you are ready, click the{' '}
@@ -713,7 +713,7 @@ class ObservationForm extends React.Component<
                               </b>
                             </Typography>{' '}
                             button. This will firstly validate the data, and if
-                            valid, sync the observation to the remote server.
+                            valid, sync the record to the remote server.
                           </p>
                         </Box>
                       </Box>
@@ -734,5 +734,5 @@ class ObservationForm extends React.Component<
     }
   }
 }
-ObservationForm.contextType = store;
-export default withRouter(ObservationForm);
+RecordForm.contextType = store;
+export default withRouter(RecordForm);

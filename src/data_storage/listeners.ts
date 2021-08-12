@@ -20,41 +20,41 @@
 
 import {ProjectID} from '../datamodel/core';
 import {ActiveDoc} from '../datamodel/database';
-import {ObservationMetadataList} from '../datamodel/ui';
+import {RecordMetadataList} from '../datamodel/ui';
 import {ExistingActiveDoc} from '../sync/databases';
 import {events} from '../sync/events';
 import {add_initial_listener} from '../sync/event-handler-registration';
-import {listObservationMetadata} from './internals';
+import {listRecordMetadata} from './internals';
 
 // note the string below is a ProjectID, but typescript is kinda silly and
 // doesn't let us do that
-const observationsUpdated: {[project_id: string]: boolean} = {};
+const recordsUpdated: {[project_id: string]: boolean} = {};
 
 add_initial_listener(initializeEvents => {
   initializeEvents.on(
     'project_data_paused',
     (listing, active: ExistingActiveDoc) => {
-      observationsUpdated[active._id] = true;
+      recordsUpdated[active._id] = true;
     }
   );
 });
 
 /**
- * Registers a callback to be run whenever observationList is updated.
- * If the observationList already updated before this function is called, the callback is also run immediately.
+ * Registers a callback to be run whenever recordList is updated.
+ * If the recordList already updated before this function is called, the callback is also run immediately.
  *
- * @param project_id listing_id & project_id (active doc ._id) to get observations of
- * @param callback Run whenever the list of observations might have changed, called with the list.
+ * @param project_id listing_id & project_id (active doc ._id) to get records of
+ * @param callback Run whenever the list of records might have changed, called with the list.
  * @returns 'Destructor' that removes the listener that this function added.
  */
-export function listenObservationsList(
+export function listenRecordsList(
   project_id: ProjectID,
-  callback: (observationList: ObservationMetadataList) => unknown
+  callback: (recordList: RecordMetadataList) => unknown
 ): () => void {
   const runCallback = () =>
-    listObservationMetadata(project_id)
+    listRecordMetadata(project_id)
       .then(callback)
-      .catch(err => console.error('Uncaught observation list error', err));
+      .catch(err => console.error('Uncaught record list error', err));
 
   const listener_func = (listing: unknown, active: ActiveDoc) => {
     if (active._id === project_id) runCallback();
@@ -62,7 +62,7 @@ export function listenObservationsList(
 
   events.on('project_data_paused', listener_func);
 
-  if (observationsUpdated[project_id]) runCallback();
+  if (recordsUpdated[project_id]) runCallback();
 
   return () => events.removeListener('project_data_paused', listener_func);
 }

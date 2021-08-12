@@ -26,16 +26,16 @@ import {
   ProjectObject,
   ProjectsList,
 } from './datamodel/database';
-import {Observation, ProjectUIModel} from './datamodel/ui';
+import {Record, ProjectUIModel} from './datamodel/ui';
 import {setProjectMetadata} from './projectMetadata';
 import {upsertFAIMSData} from './data_storage';
 
-const example_observations: {
-  [key: string]: Observation[];
+const example_records: {
+  [key: string]: Record[];
 } = {
   default_astro_sky: [
     {
-      observation_id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
+      record_id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       revision_id: '1',
       type: '??:??',
       created: randomDate(new Date(2012, 0, 1), new Date()),
@@ -58,7 +58,7 @@ const example_observations: {
       },
     },
     {
-      observation_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
+      record_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
       revision_id: '1',
       type: '??:??',
       created: randomDate(new Date(2012, 0, 1), new Date()),
@@ -703,8 +703,8 @@ export async function setupExampleListing(
 }
 
 export async function setupExampleData(projname: string) {
-  if (projname in example_observations) {
-    for (const obs of example_observations[projname]) {
+  if (projname in example_records) {
+    for (const obs of example_records[projname]) {
       try {
         await upsertFAIMSData(projname, obs);
       } catch (err) {

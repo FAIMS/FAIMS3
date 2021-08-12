@@ -21,13 +21,13 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
-import {ObservationID, ProjectID, RevisionID} from '../datamodel/core';
+import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
 import {Revision} from '../datamodel/database';
-import {Observation, ObservationMetadata} from '../datamodel/ui';
+import {Record, RecordMetadata} from '../datamodel/ui';
 import {
   addNewRevisionFromForm,
   generateFAIMSRevisionID,
-  getObservation,
+  getRecord,
   getRevision,
   getFormDataFromRevision,
   updateHeads,
@@ -37,108 +37,108 @@ export interface ProjectRevisionListing {
   [_id: string]: string[];
 }
 
-export type ObservationRevisionListing = RevisionID[];
+export type RecordRevisionListing = RevisionID[];
 
-export function generateFAIMSDataID(): ObservationID {
+export function generateFAIMSDataID(): RecordID {
   return uuidv4();
 }
 
 // Commented as this does not work with the find below for some unknown reason
-//async function ensureObservationIndex(project_id: ProjectID) {
+//async function ensureRecordIndex(project_id: ProjectID) {
 //  const datadb = getDataDB(project_id);
 //  try {
 //    return datadb.createIndex({
 //      index: {
 //        fields: ['format_version'],
-//        name: OBSERVATION_INDEX_NAME,
+//        name: RECORD_INDEX_NAME,
 //      },
 //    });
 //  } catch (err) {
 //    console.error(err);
-//    throw Error('Failed to create observation index');
+//    throw Error('Failed to create record index');
 //  }
 //}
 
-export async function getFirstObservationHead(
+export async function getFirstRecordHead(
   project_id: ProjectID,
-  observation_id: ObservationID
+  record_id: RecordID
 ): Promise<RevisionID> {
-  const observation = await getObservation(project_id, observation_id);
-  return observation.heads[0];
+  const record = await getRecord(project_id, record_id);
+  return record.heads[0];
 }
 
 export async function upsertFAIMSData(
   project_id: ProjectID,
-  observation: Observation
+  record: Record
 ): Promise<RevisionID> {
-  if (observation.observation_id === undefined) {
-    throw Error('observation_id required to save observation');
+  if (record.record_id === undefined) {
+    throw Error('record_id required to save record');
   }
   const revision_id = generateFAIMSRevisionID();
-  if (observation.revision_id === null) {
+  if (record.revision_id === null) {
     const datadb = getDataDB(project_id);
-    const new_encoded_observation = {
-      _id: observation.observation_id,
-      observation_format_version: 1,
-      created: observation.updated.toISOString(),
-      created_by: observation.updated_by,
+    const new_encoded_record = {
+      _id: record.record_id,
+      record_format_version: 1,
+      created: record.updated.toISOString(),
+      created_by: record.updated_by,
       revisions: [revision_id],
       heads: [revision_id],
     };
     try {
-      await datadb.put(new_encoded_observation);
+      await datadb.put(new_encoded_record);
     } catch (err) {
       // TODO: add proper error handling for conflicts
       console.warn(err);
-      throw Error('failed to create observation document');
+      throw Error('failed to create record document');
     }
-    await addNewRevisionFromForm(project_id, observation, revision_id);
+    await addNewRevisionFromForm(project_id, record, revision_id);
   } else {
-    await addNewRevisionFromForm(project_id, observation, revision_id);
+    await addNewRevisionFromForm(project_id, record, revision_id);
     await updateHeads(
       project_id,
-      observation.observation_id,
-      observation.revision_id,
+      record.record_id,
+      record.revision_id,
       revision_id
     );
   }
   return revision_id;
 }
 
-export async function getFullObservationData(
+export async function getFullRecordData(
   project_id: ProjectID,
-  observation_id: ObservationID,
+  record_id: RecordID,
   revision_id: RevisionID
-): Promise<Observation | null> {
+): Promise<Record | null> {
   const revision = await getRevision(project_id, revision_id);
   if (revision.deleted === true) {
     return null;
   }
-  const observation = await getObservation(project_id, observation_id);
+  const record = await getRecord(project_id, record_id);
   const form_data = await getFormDataFromRevision(project_id, revision);
   return {
     project_id: project_id,
-    observation_id: observation_id,
+    record_id: record_id,
     revision_id: revision_id,
     type: revision.type,
     data: form_data,
     updated_by: revision.created_by,
     updated: new Date(revision.created),
-    created: new Date(observation.created),
-    created_by: observation.created_by,
+    created: new Date(record.created),
+    created_by: record.created_by,
   };
 }
 
-export async function listFAIMSObservationRevisions(
+export async function listFAIMSRecordRevisions(
   project_id: ProjectID,
-  observation_id: ObservationID
-): Promise<ObservationRevisionListing> {
+  record_id: RecordID
+): Promise<RecordRevisionListing> {
   try {
-    const observation = await getObservation(project_id, observation_id);
-    return observation.revisions;
+    const record = await getRecord(project_id, record_id);
+    return record.revisions;
   } catch (err) {
     console.warn(err);
-    throw Error(`failed to list data for id ${observation_id}`);
+    throw Error(`failed to list data for id ${record_id}`);
   }
 }
 
@@ -150,8 +150,8 @@ export async function listFAIMSProjectRevisions(
     const result = await datadb.allDocs();
     const revmap: ProjectRevisionListing = {};
     for (const row of result.rows) {
-      const _id: ObservationID = row.key;
-      revmap[_id] = await listFAIMSObservationRevisions(project_id, _id);
+      const _id: RecordID = row.key;
+      revmap[_id] = await listFAIMSRecordRevisions(project_id, _id);
     }
     return revmap;
   } catch (err) {
@@ -162,18 +162,18 @@ export async function listFAIMSProjectRevisions(
 
 export async function deleteFAIMSDataForID(
   project_id: ProjectID,
-  observation_id: ObservationID,
+  record_id: RecordID,
   userid: string
 ): Promise<RevisionID> {
-  const observation = await getObservation(project_id, observation_id);
-  if (observation.heads.length !== 1) {
+  const record = await getRecord(project_id, record_id);
+  if (record.heads.length !== 1) {
     throw Error('Too many head revisions, must choose a specific head');
   }
   try {
-    return await setObservationAsDeleted(
+    return await setRecordAsDeleted(
       project_id,
-      observation_id,
-      observation.heads[0],
+      record_id,
+      record.heads[0],
       userid
     );
   } catch (err) {
@@ -184,18 +184,18 @@ export async function deleteFAIMSDataForID(
 
 export async function undeleteFAIMSDataForID(
   project_id: ProjectID,
-  observation_id: ObservationID,
+  record_id: RecordID,
   userid: string
 ): Promise<RevisionID> {
-  const observation = await getObservation(project_id, observation_id);
-  if (observation.heads.length !== 1) {
+  const record = await getRecord(project_id, record_id);
+  if (record.heads.length !== 1) {
     throw Error('Too many head revisions, must choose a specific head');
   }
   try {
-    return await setObservationAsUndeleted(
+    return await setRecordAsUndeleted(
       project_id,
-      observation_id,
-      observation.heads[0],
+      record_id,
+      record.heads[0],
       userid
     );
   } catch (err) {
@@ -204,9 +204,9 @@ export async function undeleteFAIMSDataForID(
   }
 }
 
-export async function setObservationAsDeleted(
+export async function setRecordAsDeleted(
   project_id: ProjectID,
-  obsid: ObservationID,
+  obsid: RecordID,
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
@@ -219,7 +219,7 @@ export async function setObservationAsDeleted(
     revision_format_version: 1,
     avps: base_revision.avps,
     type: base_revision.type,
-    observation_id: obsid,
+    record_id: obsid,
     parents: [base_revid],
     created: date.toISOString(),
     created_by: user,
@@ -230,9 +230,9 @@ export async function setObservationAsDeleted(
   return new_rev_id;
 }
 
-export async function setObservationAsUndeleted(
+export async function setRecordAsUndeleted(
   project_id: ProjectID,
-  obsid: ObservationID,
+  obsid: RecordID,
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
@@ -245,7 +245,7 @@ export async function setObservationAsUndeleted(
     revision_format_version: 1,
     avps: base_revision.avps,
     type: base_revision.type,
-    observation_id: obsid,
+    record_id: obsid,
     parents: [base_revid],
     created: date.toISOString(),
     created_by: user,
@@ -256,23 +256,23 @@ export async function setObservationAsUndeleted(
   return new_rev_id;
 }
 
-export async function getObservationMetadata(
+export async function getRecordMetadata(
   project_id: ProjectID,
-  observation_id: ObservationID,
+  record_id: RecordID,
   revision_id: RevisionID
-): Promise<ObservationMetadata> {
+): Promise<RecordMetadata> {
   try {
-    const observation = await getObservation(project_id, observation_id);
+    const record = await getRecord(project_id, record_id);
     const revision = await getRevision(project_id, revision_id);
     return {
       project_id: project_id,
-      observation_id: observation_id,
+      record_id: record_id,
       revision_id: revision_id,
-      created: new Date(observation.created),
-      created_by: observation.created_by,
+      created: new Date(record.created),
+      created_by: record.created_by,
       updated: new Date(revision.created),
       updated_by: revision.created_by,
-      conflicts: observation.heads.length > 1,
+      conflicts: record.heads.length > 1,
     };
   } catch (err) {
     console.error(err);
