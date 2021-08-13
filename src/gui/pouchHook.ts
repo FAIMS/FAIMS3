@@ -3,7 +3,7 @@ import {add_initial_listener} from '../sync/event-handler-registration';
 import stable_stringify from 'json-stable-stringify';
 
 /**
- * Given that an event has just happened from EventEmitter,
+ * Given that an event has just happened from EventEmitter or Pouch Changes,
  * this fetches & translates any state data for a DBTracker to keep track of
  *
  * This may also be called if the user requests state for a given Param and
@@ -19,8 +19,8 @@ export type EventStateMapping<Params extends unknown[], State> = (
 ) => State | Promise<State>;
 
 /**
- * Given an event from the EventEmitter, determines what type
- * of params it has (for a given DBTracker)
+ * Given an event from the EventEmitter  or Pouch Changes, determines what
+ * params it is a a change event for.
  */
 export type EventParamsMapping<Params extends unknown[]> = (
   ...event_args: any[]
@@ -28,23 +28,78 @@ export type EventParamsMapping<Params extends unknown[]> = (
 
 export const default_filter = () => true;
 
+/**
+ * In order to track PouchDB Changes, this track point (@see TrackPoint)
+ * defines: An event stream and an EventStateMapping to convert events from
+ * that stream to DBTracker state (or with params)
+ */
+export type ChangesTrackPoint<P extends unknown[], S, Content extends {}> = [
+  PouchDB.Core.Changes<Content>, // Changes to listen to initially
+  // For when you want to track events from a PouchDB,
+  // and that PouchDB is immediately available
+  EventStateMapping<P, S>,
+  ...([] | [EventParamsMapping<P>])
+];
+
+/**
+ * @see TrackPoint
+ * To allow for tracking pouchDB Changes that only occur after a specific
+ * event has triggered, this is used to get a TrackPoint from an event.
+ * TODO: Untested.
+ *      Find commented-out code with
+ *      DelayedChangesTracker or track_point_is_delayed_pouch
+ *      and uncomment to start testing.
+ */
+// export type DelayedChangesTracker<
+//   P extends unknown[],
+//   S,
+//   Content extends {}
+// > = (
+//   ...event_args: any[]
+// ) =>
+//   | ChangesTrackPoint<P, S, Content>[]
+//   | Promise<ChangesTrackPoint<P, S, Content>[]>;
+
 export type TrackPoint<P extends unknown[], S> =
   | [
       string, // Event name to listen on initializeEvents
+      // EventParamsMapping is for:
       // When an event of said name triggers, this function determines if
       // it applies to a given parameterset that's being listened for
-      EventStateMapping<P, S>,
-      EventParamsMapping<P>
-    ]
-  | [
-      string, // Event name to listen on initializeEvents
+      // No EventParamsMapping:
       // For when DB events on the above event listeners are indiscriminate,
       // We don't want to bother extracting the list of updates separately
       // from the list of states: Just give a new Mappings of States
-      EventStateMapping<P, S>
-    ];
+      EventStateMapping<P, S>,
+      ...([] | [EventParamsMapping<P>])
+    ]
+  // | [
+  //     string, // Event name to listen on initializeEvents
+  //     // For when you want to track events from a PouchDB,
+  //     // but that PouchDB won't be available until an event on initializeEvents
+  //     // is triggered. (Said event is translated to a PouchDB Changes by the
+  //     // given mapping function in ChangesTrackPoint)
+  //     DelayedChangesTracker<P, S, {}>
+  //   ]
+  | ChangesTrackPoint<P, S, {}>;
 
-type AttachedPoint = (...args: unknown[]) => void;
+function track_point_is_event<P extends unknown[], S>(
+  x: TrackPoint<P, S>
+): x is [string, EventStateMapping<P, S>, ...([] | [EventParamsMapping<P>])] {
+  return typeof x[0] === 'string' && typeof x[1] === 'function';
+}
+
+function track_point_is_pouch<P extends unknown[], S>(
+  x: TrackPoint<P, S>
+): x is ChangesTrackPoint<P, S, {}> {
+  return typeof x[0] === 'object' && 'on' in x[0];
+}
+
+// function track_point_is_delayed_pouch<P extends unknown[], S>(
+//   x: TrackPoint<P, S>
+// ): x is [string, DelayedChangesTracker<P, S, {}>] {
+//   return typeof x[0] === 'string' && typeof x[1] !== 'function';
+// }
 
 export class FullState<S> {
   // Only one of these 3 is defined at a time
@@ -302,17 +357,6 @@ export class DBTracker<P extends unknown[], S> {
       return listener(this.getState(params));
     });
   }
-
-  /**
-   * Instantiated at construction time of the DBTracker,
-   * and when the initializeEvents calls the _attachTo function,
-   *
-   * Since for each track_point argument to DBTracker.constructor will run a
-   * EventEmitter.on(...), said event has to be removed sometime.
-   * To faciliate this removal, the second arg to EventEmitter.on is saved
-   * for every TrackPoint<P, S>, in this variable.
-   */
-  _attachments: Map<TrackPoint<P, S>, AttachedPoint> = new Map();
 
   /**
    * Between when an event is emitted and the Promise<State> is resolved,
@@ -799,10 +843,14 @@ export class DBTracker<P extends unknown[], S> {
     );
   }
 
-  _event_router(tpoint: TrackPoint<P, S>, ...args: unknown[]) {
+  _event_router(
+    state_mapping: EventStateMapping<P, S>,
+    params_mapping?: EventParamsMapping<P>,
+    ...args: unknown[]
+  ) {
     let wait_params;
 
-    if (tpoint.length === 2) {
+    if (params_mapping === undefined) {
       // Given this TrackPoint triggered, it triggers updates for ALL listening
       // (all known) states (but it doesn't add any more params to the state)
       wait_params = Promise.resolve(
@@ -813,12 +861,14 @@ export class DBTracker<P extends unknown[], S> {
       //
       // _promisedParams takes a Promise, but tpoint[1] might be a non-promise
       // so resolve directly:
-      wait_params = Promise.resolve(tpoint[2](...args));
+      wait_params = Promise.resolve(params_mapping(...args));
     }
     this._promisedParams(wait_params, this_params => {
       // And now we again wait for a Promise to resolve, but this time
       // it's the per-Param state that must resolve
-      const wait_state = Promise.resolve(tpoint[1](...this_params, ...args));
+      const wait_state = Promise.resolve(
+        state_mapping(...this_params, ...args)
+      );
       this._promisedState(this_params, wait_state);
     });
   }
@@ -835,16 +885,30 @@ export class DBTracker<P extends unknown[], S> {
     // For each 'event' to attach to:
     for (const tpoint of track_points) {
       // The listener:
-      const attach_point = this._event_router.bind(this, tpoint);
-
-      // Store it for later deletion
-      if (this._attachments.has(tpoint)) {
-        throw Error('DBTracker _attachTo called twice');
+      // Switch based on what type of trackpoint this is
+      if (track_point_is_event(tpoint)) {
+        emitter.on(
+          tpoint[0],
+          this._event_router.bind(this, tpoint[1], tpoint?.[2])
+        );
+      } else if (track_point_is_pouch<P, S>(tpoint)) {
+        tpoint[0].on(
+          'change',
+          this._event_router.bind(this, tpoint[1], tpoint?.[2])
+        );
+        tpoint[0].on('error', err => this._globalError(err, true));
+        // } else if (track_point_is_delayed_pouch(tpoint)) {
+        //   emitter.on(tpoint[0], async (...event_args: unknown[]) => {
+        //     const new_tpoints = await Promise.resolve(tpoint[1](...event_args));
+        //     new_tpoints.forEach(new_tpoint => {
+        //       new_tpoint[0].on(
+        //         'change',
+        //         this._event_router.bind(this, new_tpoint[1], new_tpoint?.[2])
+        //       );
+        //       new_tpoint[0].on('error', err => this._globalError(err, true));
+        //     });
+        //   });
       }
-      this._attachments.set(tpoint, attach_point);
-
-      // Listen to event and trigger the listener
-      emitter.on(tpoint[0], attach_point);
     }
   }
 }
