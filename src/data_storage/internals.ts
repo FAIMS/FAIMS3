@@ -51,18 +51,16 @@ function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
 export async function updateHeads(
   project_id: ProjectID,
   obsid: RecordID,
-  base_revid: RevisionID,
+  base_revids: RevisionID[],
   new_revid: RevisionID
 ) {
   const datadb = getDataDB(project_id);
   const record = await getRecord(project_id, obsid);
   const heads = record.heads;
-  const old_head_index = heads.indexOf(base_revid);
-  if (old_head_index !== -1) {
-    heads.splice(old_head_index, 1);
-  }
-  heads.push(new_revid);
-  record.heads = heads.sort();
+  const base_rev_set = new Set<RevisionID>(base_revids);
+  const new_heads = heads.filter(r => !base_rev_set.has(r));
+  new_heads.push(new_revid);
+  record.heads = new_heads.sort();
   datadb.put(record);
 }
 

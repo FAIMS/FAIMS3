@@ -98,7 +98,7 @@ export async function upsertFAIMSData(
     await updateHeads(
       project_id,
       record.record_id,
-      record.revision_id,
+      [record.revision_id],
       revision_id
     );
   }
@@ -226,7 +226,7 @@ export async function setRecordAsDeleted(
     deleted: true,
   };
   await datadb.put(new_revision);
-  await updateHeads(project_id, obsid, base_revision._id, new_rev_id);
+  await updateHeads(project_id, obsid, [base_revision._id], new_rev_id);
   return new_rev_id;
 }
 
@@ -252,7 +252,7 @@ export async function setRecordAsUndeleted(
     deleted: false,
   };
   await datadb.put(new_revision);
-  await updateHeads(project_id, obsid, base_revision._id, new_rev_id);
+  await updateHeads(project_id, obsid, [base_revision._id], new_rev_id);
   return new_rev_id;
 }
 
