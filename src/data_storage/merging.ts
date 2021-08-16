@@ -39,6 +39,7 @@ import {
   generateFAIMSRevisionID,
   getRecord,
   getRevision,
+  getRevisions,
   getFormDataFromRevision,
   updateHeads,
 } from './internals';
@@ -47,6 +48,7 @@ type RevisionCache = {[revision_id: string]: Revision};
 
 class MergeResult {
   private _state: string | undefined = undefined;
+  private _new_revision_id: RevisionID | undefined = undefined;
 
   set_trivial() {
     if (this._state === undefined) {
@@ -79,6 +81,17 @@ class MergeResult {
       return false;
     }
     return true;
+  }
+
+  add_new_revision(revision_id: RevisionID) {
+    this._new_revision_id = revision_id;
+  }
+
+  get_new_revision_id(): RevisionID {
+    if (this._new_revision_id === undefined) {
+      throw Error('Merge did not succeed, no new revision created');
+    }
+    return this._new_revision_id;
   }
 }
 
@@ -191,6 +204,8 @@ export async function do3WayMerge(
     const creator = await getAutomergeCreator(project_id);
     const parents = [us_id, them_id].sort();
 
+    merge_result.add_new_revision(new_revision_id);
+
     const new_revision: Revision = {
       _id: new_revision_id,
       revision_format_version: 1,
@@ -207,4 +222,59 @@ export async function do3WayMerge(
     await updateHeads(project_id, us.record_id, parents, new_revision_id);
   }
   return merge_result;
+}
+
+export async function mergeHeads(
+  project_id: ProjectID,
+  record_id: RecordID,
+  initial_cache_size = 100
+): Promise<boolean> {
+  let fully_merged: boolean | undefined = undefined;
+  const record = await getRecord(project_id, record_id);
+  const revision_ids_to_seed_cache = record.revisions.slice(
+    0,
+    initial_cache_size
+  );
+  const revision_cache: RevisionCache = (await getRevisions(
+    project_id,
+    revision_ids_to_seed_cache
+  )) as RevisionCache;
+  const working_heads = record.heads.concat(); // make a clean copy
+  const initial_head_revisions = await getRevisions(project_id, working_heads);
+  for (const rev_id in working_heads) {
+    revision_cache[rev_id] = initial_head_revisions[rev_id];
+  }
+
+  // we've now set up our environment to start doing pairwise merging of the
+  // heads
+  while (working_heads.length > 1) {
+    let us_id = working_heads.shift();
+    if (us_id === undefined) {
+      // we've emptied working_heads, no more merging
+      break;
+    }
+    const to_merge_heads = working_heads.concat();
+    for (const them_id in to_merge_heads) {
+      const pairwise_merge_result: MergeResult = await do3WayMerge(
+        project_id,
+        revision_cache,
+        them_id,
+        us_id
+      );
+      if (pairwise_merge_result.is_successful()) {
+        const i = working_heads.indexOf(them_id);
+        if (i < -1) {
+          working_heads.splice(i, 1);
+        }
+        us_id = pairwise_merge_result.get_new_revision_id() as RevisionID;
+      } else {
+        fully_merged = false;
+      }
+    }
+  }
+
+  if (fully_merged === undefined) {
+    fully_merged = true;
+  }
+  return fully_merged;
 }
