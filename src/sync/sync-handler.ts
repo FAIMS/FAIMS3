@@ -19,7 +19,7 @@
  */
 interface EmissionsArg<Content extends {}> {
   active(): unknown;
-  paused(err?: {}): unknown;
+  paused(changes: PouchDB.Core.ChangesResponseChange<Content>[]): unknown;
   error(err: {}): unknown;
 }
 /**
@@ -35,6 +35,7 @@ export class SyncHandler<Content extends {}> {
   timeout: number;
   timeout_track?: ReturnType<typeof setTimeout>;
   emissions: EmissionsArg<Content>;
+  tracked_changes: PouchDB.Core.ChangesResponseChange<Content>[] = [];
 
   listener_error?: (...args: any[]) => unknown;
   listener_changed?: (...args: any[]) => unknown;
@@ -48,14 +49,16 @@ export class SyncHandler<Content extends {}> {
     this.setTimeout().then(() => {
       // After 2 seconds of no initial activity,
       // Mark the data as stopped coming in
-      this.emissions.paused();
+      this.emissions.paused(this.tracked_changes);
+      this.tracked_changes = [];
     });
   }
   _inactiveCheckLoop() {
     if (this.lastActive! + this.timeout - 20 <= Date.now()) {
       // Timeout (minus wiggle room) (or more) has elapsed since being active
       this.lastActive = undefined;
-      this.emissions.paused();
+      this.emissions.paused(this.tracked_changes);
+      this.tracked_changes = [];
     } else {
       // Set a new timeout for the remaining time of the 2 seconds.
       this.setTimeout(this.lastActive! + this.timeout - Date.now()).then(
@@ -77,16 +80,23 @@ export class SyncHandler<Content extends {}> {
         */
         this.lastActive = undefined;
         this.clearTimeout();
-        this.emissions.paused(err);
+        if (err === undefined || err === null) {
+          this.emissions.paused(this.tracked_changes);
+          this.tracked_changes = [];
+        } else {
+          this.emissions.error(err);
+        }
       })
     );
     db.on(
       'change',
-      (this.listener_changed = () => {
+      (this.listener_changed = change => {
         /*
         This event fires when the replication starts actively processing changes;
         e.g. when it recovers from an error or new changes are available.
         */
+
+        this.tracked_changes.push(change);
 
         if (
           this.lastActive !== undefined &&

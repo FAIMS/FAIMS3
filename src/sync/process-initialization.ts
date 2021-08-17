@@ -109,11 +109,12 @@ export async function process_directory(
           'directory_active',
           await get_active_listings_in_this_directory()
         ),
-      paused: async () => {
+      paused: async changes => {
         if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
         events.emit(
           'directory_paused',
-          await get_active_listings_in_this_directory()
+          await get_active_listings_in_this_directory(),
+          changes
         );
       },
       error: async () => {
