@@ -243,9 +243,19 @@ function start_listening_for_changes(
   proj_id: NonUniqueProjectID,
   data_db: LocalDB<ProjectDataObject>
 ) {
-  data_db.local.changes({since: 'now', live: true}).on('change', doc => {
-    if (isRecord(doc)) {
-      mergeHeads(proj_id, doc.id);
-    }
-  });
+  data_db.local
+    .changes({
+      since: 'now',
+      live: true,
+      include_docs: true,
+    })
+    .on('change', doc => {
+      if (doc !== undefined) {
+        const pdoc = doc.doc;
+
+        if (pdoc !== undefined && isRecord(pdoc)) {
+          mergeHeads(proj_id, doc.id);
+        }
+      }
+    });
 }
