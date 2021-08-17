@@ -70,8 +70,8 @@ export interface LocalDBRemote<Content extends {}> {
   options: DBReplicateOptions;
   create_handler: (
     remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler;
-  handler: null | SyncHandler;
+  ) => SyncHandler<Content>;
+  handler: null | SyncHandler<Content>;
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -201,7 +201,7 @@ export function ensure_synced_db<Content extends {}>(
   global_dbs: LocalDBList<Content>,
   handler: (
     remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler,
+  ) => SyncHandler<Content>,
   options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {

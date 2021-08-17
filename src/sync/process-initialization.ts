@@ -103,7 +103,7 @@ export async function process_directory(
   );
 
   const sync_handler = () =>
-    new SyncHandler(DIRECTORY_TIMEOUT, {
+    new SyncHandler<ListingsObject>(DIRECTORY_TIMEOUT, {
       active: async () =>
         events.emit(
           'directory_active',
@@ -253,7 +253,7 @@ async function process_listing(listing_object: ListingsObject) {
   );
 
   const people_sync_handler = () =>
-    new SyncHandler(LISTINGS_TIMEOUT, {
+    new SyncHandler<PeopleDoc>(LISTINGS_TIMEOUT, {
       active: () => {},
       paused: () => {},
       error: () => {},
@@ -271,7 +271,7 @@ async function process_listing(listing_object: ListingsObject) {
   );
 
   const project_sync_handler = () =>
-    new SyncHandler(LISTINGS_TIMEOUT, {
+    new SyncHandler<ProjectObject>(LISTINGS_TIMEOUT, {
       active: async () =>
         events.emit(
           'listing_active',
@@ -458,7 +458,7 @@ async function process_project(
   );
 
   const meta_sync_handler = (meta_db: LocalDB<ProjectMetaObject>) =>
-    new SyncHandler(PROJECT_TIMEOUT, {
+    new SyncHandler<ProjectMetaObject>(PROJECT_TIMEOUT, {
       active: async () =>
         events.emit(
           'project_meta_active',
@@ -498,7 +498,7 @@ async function process_project(
   );
 
   const data_sync_handler = (data_db: LocalDB<ProjectDataObject>) =>
-    new SyncHandler(PROJECT_TIMEOUT, {
+    new SyncHandler<ProjectDataObject>(PROJECT_TIMEOUT, {
       active: async () =>
         events.emit(
           'project_data_active',

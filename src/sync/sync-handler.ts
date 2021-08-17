@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-interface EmissionsArg {
+interface EmissionsArg<Content extends {}> {
   active(): unknown;
   paused(err?: {}): unknown;
   error(err: {}): unknown;
@@ -30,17 +30,17 @@ interface EmissionsArg {
  * Pouch should theoretically batch its updates, so in the future
  * I hope to be able to remove this class.
  */
-export class SyncHandler {
+export class SyncHandler<Content extends {}> {
   lastActive?: ReturnType<typeof Date.now>;
   timeout: number;
   timeout_track?: ReturnType<typeof setTimeout>;
-  emissions: EmissionsArg;
+  emissions: EmissionsArg<Content>;
 
   listener_error?: (...args: any[]) => unknown;
   listener_changed?: (...args: any[]) => unknown;
   listener_paused?: (...args: any[]) => unknown;
 
-  constructor(timeout: number, emissions: EmissionsArg) {
+  constructor(timeout: number, emissions: EmissionsArg<Content>) {
     this.timeout = timeout;
 
     this.emissions = emissions;
@@ -65,7 +65,7 @@ export class SyncHandler {
   }
 
   listen(
-    db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
+    db: PouchDB.Replication.ReplicationEventEmitter<Content, unknown, unknown>
   ) {
     db.on(
       'paused',
