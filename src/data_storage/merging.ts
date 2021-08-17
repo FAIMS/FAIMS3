@@ -19,28 +19,13 @@
  */
 
 import {getDataDB} from '../sync';
+import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
+import {AttributeValuePairIDMap, Revision} from '../datamodel/database';
 import {
-  AttributeValuePairID,
-  RecordID,
-  ProjectID,
-  RevisionID,
-} from '../datamodel/core';
-import {
-  AttributeValuePair,
-  AttributeValuePairMap,
-  AttributeValuePairIDMap,
-  EncodedRecord,
-  RecordMap,
-  Revision,
-  RevisionMap,
-} from '../datamodel/database';
-import {
-  addNewRevisionFromForm,
   generateFAIMSRevisionID,
   getRecord,
   getRevision,
   getRevisions,
-  getFormDataFromRevision,
   updateHeads,
 } from './internals';
 
@@ -268,6 +253,7 @@ export async function do3WayMerge(
       parents: parents,
       created: creation_time.toISOString(),
       created_by: creator,
+      deleted: us.deleted && them.deleted ? true : false,
       // TODO: Work out how to handle changing types if that's going to be a
       // thing
       type: us.type,

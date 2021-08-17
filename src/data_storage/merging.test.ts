@@ -18,24 +18,17 @@
  *   TODO
  */
 
-import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 
 import {ProjectID} from '../datamodel/core';
 import {Record} from '../datamodel/ui';
 import {
-  deleteFAIMSDataForID,
   generateFAIMSDataID,
-  getFirstRecordHead,
-  getFullRecordData,
-  listFAIMSProjectRevisions,
-  undeleteFAIMSDataForID,
   upsertFAIMSData,
+  setRecordAsDeleted,
 } from './index';
-import {getRecord} from './internals';
+import {getRecord, getRevision} from './internals';
 import {mergeHeads} from './merging';
-
-import {equals} from '../utils/eqTestSupport';
 
 import {getDataDB} from '../sync/index';
 
@@ -325,7 +318,7 @@ describe('test basic automerge', () => {
       updated: time,
     };
 
-    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData(project_id, doc2);
 
     const doc3: Record = {
       project_id: project_id,
@@ -407,7 +400,7 @@ describe('test basic automerge', () => {
       updated: time,
     };
 
-    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+    await upsertFAIMSData(project_id, doc2);
 
     const doc3: Record = {
       project_id: project_id,
@@ -453,30 +446,580 @@ describe('test basic automerge', () => {
   test('changes to different avps', async () => {
     // This tests the case where there has been a split, but the changes have
     // been to different avps
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc3);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(true);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(1); // Should be 1 head
+        expect(record.revisions).toHaveLength(4); // 1 merge should happen
+      });
   });
 
   test('changes to different avps AND different change', async () => {
     // This tests the case where there are three heads, of which two can be
     // merged
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc3);
+
+    const doc4: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc4);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(false);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(2); // Should be 2 heads
+        expect(record.revisions).toHaveLength(5); // 1 merge should happen
+      });
   });
 
   test('changes to different avps AND different change 4 HEADS', async () => {
     // This tests the case where there are 4 heads, of which three can be merged
     // together
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 1,
+        avp3: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 2,
+        avp3: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc3);
+
+    const doc4: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc4);
+
+    const doc5: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 2,
+        avp3: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc5);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(false);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(2); // Should be 2 heads
+        expect(record.revisions).toHaveLength(7); // 2 merges should happen
+      });
   });
 
   test('changes to different avps AND different change 2 PAIRS', async () => {
     // This tests the case where there are 4 heads, but the merge this time is
     // as two pairs
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 1,
+        avp3: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 2,
+        avp3: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc3);
+
+    const doc4: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 1,
+        avp3: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc4);
+
+    const doc5: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 2,
+        avp3: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc5);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(false);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        return getRevision(project_id, record.heads[0]);
+      })
+      .then(revision => {
+        expect(revision.deleted).toBe(false); // Should not be deleted
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(2); // Should be 2 heads
+        expect(record.revisions).toHaveLength(7); // 2 merges should happen
+      });
   });
 
   test('merge deleted and non-deleted', async () => {
     // This tests the case where there are 2 heads, and one revision is marked
     // deleted
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+
+    await setRecordAsDeleted(project_id, record_id, revision_id3, userid);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(true);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(1); // Should be 1 head
+        expect(record.revisions).toHaveLength(5); // 1 merge should happen
+      });
   });
 
   test('merge deleted and deleted', async () => {
     // This tests the case where there are 2 heads, and both revisions are
     // marked deleted
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 2,
+        avp2: 1,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {
+        avp1: 1,
+        avp2: 2,
+      },
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+
+    await setRecordAsDeleted(project_id, record_id, revision_id2, userid);
+    await setRecordAsDeleted(project_id, record_id, revision_id3, userid);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(true);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        return getRevision(project_id, record.heads[0]);
+      })
+      .then(revision => {
+        expect(revision.deleted).toBe(true); // Should be deleted
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(1); // Should be 1 head
+        expect(record.revisions).toHaveLength(6); // 1 merge should happen
+      });
   });
 });
