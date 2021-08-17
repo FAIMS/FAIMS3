@@ -32,7 +32,11 @@ const STAGING_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
   project_id: ProjectID;
-  record_id: RecordID | null;
+  // When this is a fresh object, revision_id is null,
+  // BUT, Until we support multiple drafts, record_id shouldn't be used if
+  // revision_id is null, since that would make a new draft every time
+  // a draft is created
+  record_id: RecordID;
   revision_id: RevisionID | null;
 };
 
@@ -42,7 +46,7 @@ type RelevantProps = {
  * in _fetchData and _saveData
  */
 type LoadableProps = {
-  revision_id: string;
+  revision_id: RevisionID;
   view_name: string;
 };
 
@@ -244,7 +248,7 @@ class RecordStagingState {
       const result = await getStagedData(
         this.props.project_id,
         loadedProps.view_name,
-        this.props.record_id,
+        loadedProps.revision_id === null ? null : this.props.record_id,
         loadedProps.revision_id
       );
       this.last_revision = result?._rev || null;
@@ -319,7 +323,7 @@ class RecordStagingState {
         this.last_revision,
         this.props.project_id,
         loadedProps.view_name,
-        this.props.record_id,
+        loadedProps.revision_id === null ? null : this.props.record_id,
         loadedProps.revision_id
       );
 
