@@ -56,11 +56,26 @@ export async function updateHeads(
 ) {
   const datadb = getDataDB(project_id);
   const record = await getRecord(project_id, obsid);
-  const heads = record.heads;
-  const base_rev_set = new Set<RevisionID>(base_revids);
-  const new_heads = heads.filter(r => !base_rev_set.has(r));
-  new_heads.push(new_revid);
-  record.heads = new_heads.sort();
+
+  // Add new revision to heads, removing obsolete heads
+  // Using set in case we have the revision already (i.e. we're cleaning up
+  // heads via a fast-forward merge)
+  const heads = new Set<RevisionID>(record.heads);
+  heads.add(new_revid);
+  for (const r of base_revids) {
+    heads.delete(r);
+  }
+  record.heads = Array.from(heads);
+  record.heads.sort();
+
+  // Add new head to revisions also
+  // Using set in case we have the revision already (i.e. we're cleaning up
+  // heads via a fast-forward merge)
+  const revisions = new Set<RevisionID>(record.revisions);
+  revisions.add(new_revid);
+  record.revisions = Array.from(revisions);
+  record.revisions.sort();
+
   datadb.put(record);
 }
 
@@ -311,6 +326,29 @@ async function addNewAttributeValuePairs(
     }
   }
   return avp_map;
+}
+
+export async function createNewRecord(
+  project_id: ProjectID,
+  record: Record,
+  revision_id: RevisionID
+) {
+  const datadb = getDataDB(project_id);
+  const new_encoded_record = {
+    _id: record.record_id,
+    record_format_version: 1,
+    created: record.updated.toISOString(),
+    created_by: record.updated_by,
+    revisions: [revision_id],
+    heads: [revision_id],
+  };
+  try {
+    await datadb.put(new_encoded_record);
+  } catch (err) {
+    // TODO: add proper error handling for conflicts
+    console.warn(err);
+    throw Error('failed to create record document');
+  }
 }
 
 //function pouchAllDocsToMap(pouch_res: PouchDBAllDocsResult): FAIMSPouchDBMap {

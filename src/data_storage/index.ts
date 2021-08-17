@@ -26,6 +26,7 @@ import {Revision} from '../datamodel/database';
 import {Record, RecordMetadata} from '../datamodel/ui';
 import {
   addNewRevisionFromForm,
+  createNewRecord,
   generateFAIMSRevisionID,
   getRecord,
   getRevision,
@@ -76,22 +77,7 @@ export async function upsertFAIMSData(
   }
   const revision_id = generateFAIMSRevisionID();
   if (record.revision_id === null) {
-    const datadb = getDataDB(project_id);
-    const new_encoded_record = {
-      _id: record.record_id,
-      record_format_version: 1,
-      created: record.updated.toISOString(),
-      created_by: record.updated_by,
-      revisions: [revision_id],
-      heads: [revision_id],
-    };
-    try {
-      await datadb.put(new_encoded_record);
-    } catch (err) {
-      // TODO: add proper error handling for conflicts
-      console.warn(err);
-      throw Error('failed to create record document');
-    }
+    await createNewRecord(project_id, record, revision_id);
     await addNewRevisionFromForm(project_id, record, revision_id);
   } else {
     await addNewRevisionFromForm(project_id, record, revision_id);

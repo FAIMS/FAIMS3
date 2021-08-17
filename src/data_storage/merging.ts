@@ -76,7 +76,15 @@ class MergeResult {
     this._state = 'no_merge';
   }
 
+  set_fast_forward(revision_id: RevisionID) {
+    this._state = 'fast_forward';
+    this.add_new_revision(revision_id);
+  }
+
   is_successful(): boolean {
+    if (this._state === undefined) {
+      throw Error('Merge was not attempted');
+    }
     if (this._state === 'no_merge') {
       return false;
     }
@@ -123,16 +131,18 @@ async function getBaseRevision(
   // We're going to start with us
   const to_check = [them];
   let current_revision: Revision | undefined = us;
-  while (to_check.length !== 0) {
+  while (true) {
+    console.debug('To check', to_check);
+    console.debug('Current revision', current_revision);
     if (current_revision === undefined) {
-      current_revision = to_check.shift();
-      continue;
+      break;
     }
     if (revisions_seen.has(current_revision._id)) {
       return current_revision;
     }
     revisions_seen.add(current_revision._id);
-    for (const parent_id in current_revision.parents) {
+    console.debug('Seen', revisions_seen);
+    for (const parent_id of current_revision.parents) {
       const parent = await getCachedRevision(
         project_id,
         revision_cache,
@@ -159,12 +169,41 @@ function getAttributes(base: Revision, them: Revision, us: Revision): string[] {
   return Array.from(attributes);
 }
 
+function canFastForward(base: Revision, them: Revision, us: Revision): boolean {
+  if (base._id === them._id) {
+    return true;
+  }
+  if (base._id === us._id) {
+    return true;
+  }
+  return false;
+}
+
+async function doFastForward(
+  project_id: ProjectID,
+  merge_result: MergeResult,
+  base: Revision,
+  them: Revision,
+  us: Revision
+): Promise<MergeResult> {
+  if (base._id === them._id) {
+    merge_result.set_fast_forward(us._id);
+    await updateHeads(project_id, us.record_id, [them._id, base._id], us._id);
+  }
+  if (base._id === us._id) {
+    merge_result.set_fast_forward(them._id);
+    await updateHeads(project_id, them.record_id, [us._id, base._id], them._id);
+  }
+  return merge_result;
+}
+
 export async function do3WayMerge(
   project_id: ProjectID,
   revision_cache: RevisionCache,
   them_id: RevisionID,
   us_id: RevisionID
 ): Promise<MergeResult> {
+  console.debug(`merging ${us_id} and ${them_id}`);
   const datadb = getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   const merge_result = new MergeResult();
@@ -172,6 +211,11 @@ export async function do3WayMerge(
   const us = await getCachedRevision(project_id, revision_cache, us_id);
 
   const base = await getBaseRevision(project_id, revision_cache, them, us);
+  console.debug('Base revision:', base);
+  if (canFastForward(base, them, us)) {
+    return await doFastForward(project_id, merge_result, base, them, us);
+  }
+
   const attrs = getAttributes(base, them, us);
   for (const attr in attrs) {
     const base_avp_id = base.avps[attr];
@@ -253,19 +297,17 @@ export async function mergeHeads(
       // we've emptied working_heads, no more merging
       break;
     }
+    console.debug(`merging ${us_id}`);
     const to_merge_heads = working_heads.concat();
-    for (const them_id in to_merge_heads) {
+    for (const them_index in to_merge_heads) {
       const pairwise_merge_result: MergeResult = await do3WayMerge(
         project_id,
         revision_cache,
-        them_id,
+        to_merge_heads[them_index],
         us_id
       );
       if (pairwise_merge_result.is_successful()) {
-        const i = working_heads.indexOf(them_id);
-        if (i < -1) {
-          working_heads.splice(i, 1);
-        }
+        working_heads.splice(Number(them_index), 1);
         us_id = pairwise_merge_result.get_new_revision_id() as RevisionID;
       } else {
         fully_merged = false;
