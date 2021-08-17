@@ -90,7 +90,7 @@ class MergeResult {
 
 async function getAutomergeCreator(project_id: ProjectID): Promise<string> {
   // TODO: Work out what the correct value should be
-  return 'automerge';
+  return 'automerge' + (project_id as string);
 }
 
 async function getCachedRevision(
