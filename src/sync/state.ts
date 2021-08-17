@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectID} from '../datamodel/core';
+import {NonUniqueProjectID, ProjectID} from '../datamodel/core';
 import {
   ProjectObject,
   ProjectMetaObject,
@@ -26,6 +26,7 @@ import {
   ActiveDoc,
   isRecord,
 } from '../datamodel/database';
+import {mergeHeads} from '../data_storage/merging';
 import {ExistingActiveDoc, LocalDB} from './databases';
 import {add_initial_listener} from './event-handler-registration';
 import {DirectoryEmitter} from './events';
@@ -221,6 +222,7 @@ function register_metas_complete(initializeEvents: DirectoryEmitter) {
   });
 }
 
+add_initial_listener(register_basic_automerge_resolver);
 /*
  * Registers a handler to do automerge on new records
  */
@@ -241,9 +243,9 @@ function start_listening_for_changes(
   proj_id: NonUniqueProjectID,
   data_db: LocalDB<ProjectDataObject>
 ) {
-  data_db.changes({since: 'now', live: true}).on('change', doc => {
+  data_db.local.changes({since: 'now', live: true}).on('change', doc => {
     if (isRecord(doc)) {
-      mergeHeads(proj_id, doc._id);
+      mergeHeads(proj_id, doc.id);
     }
   });
 }
