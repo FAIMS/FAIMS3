@@ -217,10 +217,20 @@ export async function do3WayMerge(
   }
 
   const attrs = getAttributes(base, them, us);
-  for (const attr in attrs) {
+  for (const attr of attrs) {
     const base_avp_id = base.avps[attr];
     const their_avp_id = them.avps[attr];
     const our_avp_id = us.avps[attr];
+    if (base_avp_id === undefined) {
+      throw Error(`base_avp ${attr} is undefined`);
+    }
+    if (their_avp_id === undefined) {
+      throw Error(`their_avp ${attr} is undefined`);
+    }
+    if (our_avp_id === undefined) {
+      throw Error(`our_avp ${attr} is undefined`);
+    }
+    console.error(base_avp_id, their_avp_id, our_avp_id);
     if (their_avp_id === our_avp_id) {
       // The avp is the same on both heads, the trivial case
       avp_map[attr] = our_avp_id;
@@ -309,6 +319,7 @@ export async function mergeHeads(
       if (pairwise_merge_result.is_successful()) {
         working_heads.splice(Number(them_index), 1);
         us_id = pairwise_merge_result.get_new_revision_id() as RevisionID;
+        console.debug(`merged ${to_merge_heads[them_index]} as ${us_id}`);
       } else {
         fully_merged = false;
       }

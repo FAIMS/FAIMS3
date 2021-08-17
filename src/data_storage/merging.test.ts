@@ -288,12 +288,166 @@ describe('test basic automerge', () => {
 
   test('same change', async () => {
     // This tests the case where there has been a split, but the same change has
-    // been made
+    // been made. This should cause the basic automerge to fail.
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {avp1: 1},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {avp1: 2},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {avp1: 3},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+
+    const doc4: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id3,
+      type: fulltype,
+      data: {avp1: 2},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc4);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(false);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(2); // Should be 2 head
+        expect(record.revisions).toHaveLength(4); // no merge should happen
+      });
   });
 
   test('different change', async () => {
     // This tests the case where there has been a split, and different changes
     // have been made. This should cause the basic automerge to fail.
+    await cleanDataDBS();
+    expect(projdbs === {});
+
+    const project_id = 'test';
+    const fulltype = 'test::test';
+    const time = new Date();
+    const userid = 'user';
+
+    const record_id = generateFAIMSDataID();
+
+    const doc1: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fulltype,
+      data: {avp1: 1},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id1 = await upsertFAIMSData(project_id, doc1);
+
+    const doc2: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {avp1: 2},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id2 = await upsertFAIMSData(project_id, doc2);
+
+    const doc3: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id1,
+      type: fulltype,
+      data: {avp1: 3},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    const revision_id3 = await upsertFAIMSData(project_id, doc3);
+
+    const doc4: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: revision_id3,
+      type: fulltype,
+      data: {avp1: 4},
+      created_by: userid,
+      updated_by: userid,
+      created: time,
+      updated: time,
+    };
+
+    await upsertFAIMSData(project_id, doc4);
+
+    return mergeHeads(project_id, record_id)
+      .then(status => {
+        expect(status).toBe(false);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        expect(record.heads).toHaveLength(2); // Should be two heads
+        expect(record.revisions).toHaveLength(4); // No merge should happen
+      });
   });
 
   test('changes to different avps', async () => {
