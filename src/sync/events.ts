@@ -51,7 +51,7 @@ export interface DirectoryEmitter extends EventEmitter {
       active: ExistingActiveDoc,
       project: ProjectObject,
       meta: LocalDB<ProjectMetaObject>,
-      changes?: PouchDB.Core.ChangesResponseChange<ProjectMetaObject>[]
+      changes: PouchDB.Core.ExistingDocument<ProjectMetaObject>[]
     ) => unknown
   ): this;
   on(
@@ -79,7 +79,7 @@ export interface DirectoryEmitter extends EventEmitter {
       active: ExistingActiveDoc,
       project: ProjectObject,
       data: LocalDB<ProjectDataObject>,
-      changes?: PouchDB.Core.ChangesResponseChange<ProjectDataObject>[]
+      changes: PouchDB.Core.ExistingDocument<ProjectDataObject>[]
     ) => unknown
   ): this;
   on(
@@ -118,7 +118,7 @@ export interface DirectoryEmitter extends EventEmitter {
       people_db: LocalDB<PeopleDoc>,
       projects_db: LocalDB<ProjectObject>,
       default_connection: ConnectionInfo,
-      changes?: PouchDB.Core.ChangesResponseChange<ProjectObject>[]
+      changes: PouchDB.Core.ExistingDocument<ProjectObject>[]
     ) => unknown
   ): this;
   on(
@@ -143,7 +143,7 @@ export interface DirectoryEmitter extends EventEmitter {
     event: 'directory_paused',
     listener: (
       listings: Set<string>,
-      changes?: PouchDB.Core.ChangesResponseChange<ListingsObject>[]
+      changes: PouchDB.Core.ExistingDocument<ListingsObject>[]
     ) => unknown
   ): this;
   on(
@@ -175,7 +175,7 @@ export interface DirectoryEmitter extends EventEmitter {
     active: ExistingActiveDoc,
     project: ProjectObject,
     meta: LocalDB<ProjectMetaObject>,
-    changes?: PouchDB.Core.ChangesResponseChange<ProjectMetaObject>[]
+    changes: PouchDB.Core.ExistingDocument<ProjectMetaObject>[]
   ): boolean;
   emit(
     event: 'project_meta_active',
@@ -190,7 +190,7 @@ export interface DirectoryEmitter extends EventEmitter {
     active: ExistingActiveDoc,
     project: ProjectObject,
     data: LocalDB<ProjectDataObject>,
-    changes?: PouchDB.Core.ChangesResponseChange<ProjectDataObject>[]
+    changes: PouchDB.Core.ExistingDocument<ProjectDataObject>[]
   ): boolean;
   emit(
     event: 'project_data_active',
@@ -228,7 +228,7 @@ export interface DirectoryEmitter extends EventEmitter {
     people_db: LocalDB<PeopleDoc>,
     projects_db: LocalDB<ProjectObject>,
     default_connection: ConnectionInfo,
-    changes?: PouchDB.Core.ChangesResponseChange<ProjectObject>[]
+    changes: PouchDB.Core.ExistingDocument<ProjectObject>[]
   ): boolean;
   emit(
     event: 'listing_active',
@@ -243,7 +243,7 @@ export interface DirectoryEmitter extends EventEmitter {
   emit(
     event: 'directory_paused',
     listings: Set<string>,
-    changes?: PouchDB.Core.ChangesResponseChange<ListingsObject>[]
+    changes: PouchDB.Core.ExistingDocument<ListingsObject>[]
   ): boolean;
   emit(event: 'directory_active', listings: Set<string>): boolean;
   emit(event: 'directory_error', err: unknown): boolean;

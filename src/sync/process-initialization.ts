@@ -121,7 +121,8 @@ export async function process_directory(
         if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
         events.emit(
           'directory_paused',
-          await get_active_listings_in_this_directory()
+          await get_active_listings_in_this_directory(),
+          []
         );
       },
     });
@@ -282,7 +283,7 @@ async function process_listing(listing_object: ListingsObject) {
           local_projects_db,
           projects_connection
         ),
-      paused: async () => {
+      paused: async changes => {
         if (!USE_REAL_DATA)
           await setupExampleListing(
             listing_object._id,
@@ -294,7 +295,8 @@ async function process_listing(listing_object: ListingsObject) {
           await get_active_projects_in_this_listing(),
           local_people_db,
           local_projects_db,
-          projects_connection
+          projects_connection,
+          changes
         );
       },
       error: async () => {
@@ -309,7 +311,8 @@ async function process_listing(listing_object: ListingsObject) {
           await get_active_projects_in_this_listing(),
           local_people_db,
           local_projects_db,
-          projects_connection
+          projects_connection,
+          []
         );
       },
     });
@@ -468,7 +471,7 @@ async function process_project(
           project_object,
           meta_db
         ),
-      paused: async () => {
+      paused: async changes => {
         if (!USE_REAL_DATA)
           await setupExampleProjectMetadata(active_project._id, meta_db.local);
         events.emit(
@@ -476,7 +479,8 @@ async function process_project(
           listing,
           active_project,
           project_object,
-          meta_db
+          meta_db,
+          changes
         );
       },
       error: async () => {
@@ -487,7 +491,8 @@ async function process_project(
           listing,
           active_project,
           project_object,
-          meta_db
+          meta_db,
+          []
         );
       },
     });
@@ -508,14 +513,15 @@ async function process_project(
           project_object,
           data_db
         ),
-      paused: async () => {
+      paused: async changes => {
         if (!USE_REAL_DATA) await setupExampleData(active_project._id);
         events.emit(
           'project_data_paused',
           listing,
           active_project,
           project_object,
-          data_db
+          data_db,
+          changes
         );
       },
       error: async () => {
@@ -525,7 +531,8 @@ async function process_project(
           listing,
           active_project,
           project_object,
-          data_db
+          data_db,
+          []
         );
       },
     });

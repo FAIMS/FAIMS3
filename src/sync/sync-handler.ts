@@ -19,7 +19,7 @@
  */
 interface EmissionsArg<Content extends {}> {
   active(): unknown;
-  paused(changes: PouchDB.Core.ChangesResponseChange<Content>[]): unknown;
+  paused(changes: PouchDB.Core.ExistingDocument<Content>[]): unknown;
   error(err: {}): unknown;
 }
 /**
@@ -35,7 +35,7 @@ export class SyncHandler<Content extends {}> {
   timeout: number;
   timeout_track?: ReturnType<typeof setTimeout>;
   emissions: EmissionsArg<Content>;
-  tracked_changes: PouchDB.Core.ChangesResponseChange<Content>[] = [];
+  tracked_changes: PouchDB.Core.ExistingDocument<Content>[] = [];
 
   listener_error?: (...args: any[]) => unknown;
   listener_changed?: (...args: any[]) => unknown;
@@ -67,9 +67,11 @@ export class SyncHandler<Content extends {}> {
     }
   }
 
-  listen(
-    db: PouchDB.Replication.ReplicationEventEmitter<Content, unknown, unknown>
-  ) {
+  listen<
+    D extends
+      | PouchDB.Replication.Sync<Content>
+      | PouchDB.Replication.Replication<Content>
+  >(db: D, changes_include_doc: PouchDB.Core.Changes<Content>) {
     db.on(
       'paused',
       (this.listener_paused = (err?: {}) => {
@@ -88,40 +90,62 @@ export class SyncHandler<Content extends {}> {
         }
       })
     );
-    db.on(
-      'change',
-      (this.listener_changed = change => {
-        /*
-        This event fires when the replication starts actively processing changes;
-        e.g. when it recovers from an error or new changes are available.
-        */
+    this.listener_changed = (
+      changes: PouchDB.Core.ExistingDocument<Content>[]
+    ) => {
+      /*
+      This event fires when the replication starts actively processing changes;
+      e.g. when it recovers from an error or new changes are available.
+      */
 
-        this.tracked_changes.push(change);
+      this.tracked_changes.push(...changes);
 
-        if (
-          this.lastActive !== undefined &&
-          this.lastActive! + this.timeout - 20 <= Date.now()
-        ) {
-          console.warn(
-            "someone didn't clear the lastActive when clearTimeout called"
-          );
-          this.lastActive = undefined;
-        }
+      if (
+        this.lastActive !== undefined &&
+        this.lastActive! + this.timeout - 20 <= Date.now()
+      ) {
+        console.warn(
+          "someone didn't clear the lastActive when clearTimeout called"
+        );
+        this.lastActive = undefined;
+      }
 
-        if (this.lastActive === undefined) {
-          this.lastActive = Date.now();
-          this.clearTimeout();
-          this.emissions.active();
+      if (this.lastActive === undefined) {
+        this.lastActive = Date.now();
+        this.clearTimeout();
+        this.emissions.active();
 
-          // After 2 seconds of no more 'active' events,
-          // assume it's up to date
-          // (Otherwise, if it's still active, keep checking until it's not)
-          this.setTimeout().then(this._inactiveCheckLoop.bind(this));
-        } else {
-          this.lastActive = Date.now();
-        }
-      })
-    );
+        // After 2 seconds of no more 'active' events,
+        // assume it's up to date
+        // (Otherwise, if it's still active, keep checking until it's not)
+        this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+      } else {
+        this.lastActive = Date.now();
+      }
+    };
+    changes_include_doc.on('change', change => {
+      this.listener_changed!([change.doc!]);
+      this.tracked_changes.push(change.doc!);
+    });
+    // This is a valid conversion. Typescript doesn't like this, but
+    // it's valid because either thing that DB can be has a 'change' event,
+    // They give different argument types, though.
+    ((db as unknown) as {
+      on(
+        event: 'change',
+        listener: (
+          info:
+            | PouchDB.Replication.ReplicationResult<Content>
+            | PouchDB.Replication.SyncResult<Content>
+        ) => any
+      ): D;
+    }).on('change', changes => {
+      if ('direction' in changes && changes.direction === 'pull') {
+        this.listener_changed!(changes.change.docs);
+      } else if ('docs' in changes) {
+        this.listener_changed!(changes.docs);
+      }
+    });
     db.on(
       'error',
       (this.listener_error = err => {

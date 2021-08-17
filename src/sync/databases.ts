@@ -279,7 +279,10 @@ export function setLocalConnection<Content extends {}>(
 
     db_info.remote.connection = connection;
     db_info.remote.handler = db_info.remote.create_handler(db_info);
-    db_info.remote.handler.listen(connection);
+    db_info.remote.handler.listen(
+      connection,
+      db_info.local.changes({since: 'now', include_docs: true})
+    );
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
     db_info.remote.handler!.detach(db_info.remote.connection);
