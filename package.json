@@ -1,0 +1,25 @@
+{
+  "name": "faims3-cluster",
+  "version": "0.1.0",
+  "private": true,
+  "main": "build/src/index.js",
+  "scripts": {
+    "lint": "gts lint",
+    "clean": "gts clean",
+    "compile": "tsc",
+    "fix": "gts fix",
+    "prestart": "npm run compile",
+    "start": "node ."
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/node": "^16.6.2",
+    "gts": "^3.1.0",
+    "jest": "^27.0.6",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.3.5"
+  }
+}
