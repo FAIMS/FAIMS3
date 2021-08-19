@@ -429,10 +429,35 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         // validationSchema: [['yup.number'], ['yup.lessThan', 2]],
         initialValue: '3',
       },
+      'hrid-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'TemplatedStringField',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'hrid-field',
+          id: 'hrid-field',
+          helperText: 'Human Readable ID',
+          variant: 'outlined',
+          required: true,
+          template: 'αβγ {{str-field}}',
+          InputProps: {
+            type: 'text', // must be a valid html type
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Human Readable ID',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: '',
+      },
     },
     views: {
       'start-view': {
         fields: [
+          'hrid-field',
           'take-point-field',
           'bad-field',
           'action-field',
