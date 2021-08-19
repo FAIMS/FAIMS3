@@ -841,15 +841,6 @@ describe('test basic automerge', () => {
         return getRecord(project_id, record_id);
       })
       .then(record => {
-        return getRevision(project_id, record.heads[0]);
-      })
-      .then(revision => {
-        expect(revision.deleted).toBe(false); // Should not be deleted
-      })
-      .then(() => {
-        return getRecord(project_id, record_id);
-      })
-      .then(record => {
         expect(record.heads).toHaveLength(2); // Should be 2 heads
         expect(record.revisions).toHaveLength(7); // 2 merges should happen
       });
@@ -924,6 +915,15 @@ describe('test basic automerge', () => {
     return mergeHeads(project_id, record_id)
       .then(status => {
         expect(status).toBe(true);
+      })
+      .then(() => {
+        return getRecord(project_id, record_id);
+      })
+      .then(record => {
+        return getRevision(project_id, record.heads[0]);
+      })
+      .then(revision => {
+        expect(revision.deleted).toBe(false); // Should not be deleted
       })
       .then(() => {
         return getRecord(project_id, record_id);
