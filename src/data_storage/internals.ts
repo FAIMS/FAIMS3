@@ -51,18 +51,31 @@ function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
 export async function updateHeads(
   project_id: ProjectID,
   obsid: RecordID,
-  base_revid: RevisionID,
+  base_revids: RevisionID[],
   new_revid: RevisionID
 ) {
   const datadb = getDataDB(project_id);
   const record = await getRecord(project_id, obsid);
-  const heads = record.heads;
-  const old_head_index = heads.indexOf(base_revid);
-  if (old_head_index !== -1) {
-    heads.splice(old_head_index, 1);
+
+  // Add new revision to heads, removing obsolete heads
+  // Using set in case we have the revision already (i.e. we're cleaning up
+  // heads via a fast-forward merge)
+  const heads = new Set<RevisionID>(record.heads);
+  heads.add(new_revid);
+  for (const r of base_revids) {
+    heads.delete(r);
   }
-  heads.push(new_revid);
-  record.heads = heads.sort();
+  record.heads = Array.from(heads);
+  record.heads.sort();
+
+  // Add new head to revisions also
+  // Using set in case we have the revision already (i.e. we're cleaning up
+  // heads via a fast-forward merge)
+  const revisions = new Set<RevisionID>(record.revisions);
+  revisions.add(new_revid);
+  record.revisions = Array.from(revisions);
+  record.revisions.sort();
+
   datadb.put(record);
 }
 
@@ -313,6 +326,29 @@ async function addNewAttributeValuePairs(
     }
   }
   return avp_map;
+}
+
+export async function createNewRecord(
+  project_id: ProjectID,
+  record: Record,
+  revision_id: RevisionID
+) {
+  const datadb = getDataDB(project_id);
+  const new_encoded_record = {
+    _id: record.record_id,
+    record_format_version: 1,
+    created: record.updated.toISOString(),
+    created_by: record.updated_by,
+    revisions: [revision_id],
+    heads: [revision_id],
+  };
+  try {
+    await datadb.put(new_encoded_record);
+  } catch (err) {
+    // TODO: add proper error handling for conflicts
+    console.warn(err);
+    throw Error('failed to create record document');
+  }
 }
 
 //function pouchAllDocsToMap(pouch_res: PouchDBAllDocsResult): FAIMSPouchDBMap {

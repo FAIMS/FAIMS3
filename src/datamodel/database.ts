@@ -213,6 +213,10 @@ export type ProjectMetaObject =
  */
 export type ProjectDataObject = AttributeValuePair | Revision | EncodedRecord;
 
+export function isRecord(doc: ProjectDataObject): doc is EncodedRecord {
+  return (<EncodedRecord>doc).record_format_version !== undefined;
+}
+
 /**
  * Document from a people DB
  */
