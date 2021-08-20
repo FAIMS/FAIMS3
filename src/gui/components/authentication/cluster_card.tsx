@@ -29,7 +29,7 @@ import {
 import {makeStyles} from '@material-ui/core/styles';
 import {useEffect} from 'react';
 import {useState} from 'react';
-import {LocalAuthDoc} from '../../../datamodel';
+import {LocalAuthDoc} from '../../../datamodel/database';
 import {local_auth_db} from '../../../sync/databases';
 import {LoginForm} from './login_form';
 

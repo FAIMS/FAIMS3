@@ -212,7 +212,7 @@ export interface AttributeValuePair {
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | ProjectPeople;
+  | EncodedProjectMetadata;
 
 /*
  * Elements of a Project's dataDB can be any one of these,

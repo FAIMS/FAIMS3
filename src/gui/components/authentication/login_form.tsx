@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {Box, Button, Tab, Tabs} from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
-import {LocalAuthDoc} from '../../../datamodel';
+import {LocalAuthDoc} from '../../../datamodel/database';
 import {local_auth_db} from '../../../sync/databases';
 
 export type LoginFormProps = {
