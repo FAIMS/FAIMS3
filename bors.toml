@@ -1,0 +1,2 @@
+status = [ 'Integration tests/test/%', 'Lint, build, test, cap doctor/build/%', 'Check License Lines/build/%' ]
+update_base_for_deletes = True
