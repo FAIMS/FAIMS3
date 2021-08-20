@@ -63,8 +63,9 @@ export function SignInReturnLoader(props: RouteComponentProps<any>) {
 
   // State, as defined by oauth spec.
   const state_parsed = tryParseStateFromQueryValue(params.get('state'));
+  const code_parsed = params.get('code');
 
-  if ('error' in state_parsed) {
+  if ('error' in state_parsed || code_parsed === null) {
     dispatch({
       type: ActionType.ADD_ALERT,
       payload: {
@@ -79,36 +80,43 @@ export function SignInReturnLoader(props: RouteComponentProps<any>) {
     window.scrollTo(0, 0);
     return <Redirect to={ROUTES.SIGN_IN} />;
   } else {
-    const [authDBDoc, setAuthDBDoc] = useState(
-      null as null | LocalAuthDoc | {error: {}}
-    );
+    const [putResult, setPutResult] = useState(false as boolean | {error: any});
+    const setPutError = (err: any) => setPutResult({error: err});
     useEffect(() => {
-      local_auth_db
-        .get(state_parsed.listing_id)
-        .then(setAuthDBDoc, (err: any) => {
-          setAuthDBDoc({error: err});
-        });
+      // Array to ensure these closures reference cancelled, instead of copy.
+      const cancelled = [false];
+      // This is a 2-step process:
+      // while this process is happening, any render calls to this react element
+      // cause a CircularProgress to be rendered (see below) (when putResult == false)
+      // If any errors occur, they are propagated to the state using setPutError,
+      // which are then rendered as a redirect and alert
+      // Once both steps are completed, the url in the ?state= query parameter
+      // is what the user is redirected to.
+      local_auth_db.get(state_parsed.listing_id).then(auth_obj => {
+        if (cancelled[0]) {
+          return;
+        }
+        local_auth_db
+          .put({
+            ...auth_obj,
+            dc_token: code_parsed,
+          })
+          .then(() => {
+            if (cancelled[0]) {
+              return;
+            }
+            setPutResult(true);
+          }, setPutError);
+      }, setPutError);
 
-      const changes = local_auth_db.changes({include_docs: true, since: 'now'});
-      const change_listener = (
-        change: PouchDB.Core.ChangesResponseChange<LocalAuthDoc>
-      ) => {
-        setAuthDBDoc(change.doc!);
-      };
-      const error_listener = (err: any) => {
-        setAuthDBDoc({error: err});
-      };
-      changes.on('change', change_listener);
-      changes.on('error', error_listener);
       return () => {
-        changes.removeListener('change', change_listener);
-        changes.removeListener('error', error_listener);
+        cancelled[0] = true;
       };
     });
-    if (authDBDoc === null) {
+    if (putResult === false) {
       // Still loading the local DB
       return <CircularProgress size={36} thickness={6} />;
-    } else if ('error' in authDBDoc) {
+    } else if (putResult !== true) {
       // Error occurred
       dispatch({
         type: ActionType.ADD_ALERT,
