@@ -27,6 +27,7 @@ import Footer from './gui/components/footer';
 import {Index} from './gui/pages';
 import {SignUp} from './gui/pages/signup';
 import {SignIn} from './gui/pages/signin';
+import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';
 import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
@@ -79,6 +80,11 @@ export class App extends React.Component<AppProps, AppState> {
             <Switch>
               <Route exact path={ROUTES.SIGN_UP} component={SignUp} />
               <Route exact path={ROUTES.SIGN_IN} component={SignIn} />
+              <Route
+                exact
+                path={ROUTES.SIGN_IN_RETURN}
+                component={SignInReturnLoader}
+              />
               <Route
                 exact
                 path={ROUTES.FORGOT_PASSWORD}
