@@ -10,9 +10,13 @@ on:
   push:
     branches:
       - main
+      - staging
+      - trying
   pull_request:
     branches:
       - main
+      - staging
+      - trying
   # Also trigger on page_build, as well as release created events
   page_build:
   release:
