@@ -62,8 +62,11 @@ export interface ConnectionInfo {
  * {type: 'FAA', domains: [] | null}
  */
 export type AuthInfo = {
-  type: 'dc_password';
+  type: 'oauth';
   domains?: [];
+  base_url: string;
+  client_id: string;
+  name: string;
 };
 
 export type PossibleConnectionInfo =

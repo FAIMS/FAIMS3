@@ -1,114 +1,110 @@
+/* eslint-disable node/no-unsupported-features/node-builtins */
 import React, {useState} from 'react';
-import {Box, Button, Tab, Tabs} from '@material-ui/core';
+import {Box, Button, CircularProgress, Tab, Tabs} from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
-import {LocalAuthDoc} from '../../../datamodel/database';
-import {local_auth_db} from '../../../sync/databases';
+import {
+  AuthInfo,
+  ListingsObject,
+  LocalAuthDoc,
+} from '../../../datamodel/database';
+import {directory_db, local_auth_db} from '../../../sync/databases';
+import {useHistory} from 'react-router-dom';
+import {useEffect} from 'react';
 
 export type LoginFormProps = {
   listing_id: string;
   auth_doc?: LocalAuthDoc;
 };
 
-export type PasswordFormProps = {
+export type LoginButtonProps = {
   listing_id: string;
-  auth_method: string;
+  auth_mechanism: AuthInfo;
 };
 
-const useStyles = makeStyles(theme => ({
-  control_margin: {},
-  panel_margin: {
-    'margin-left': theme.spacing(2),
-    'margin-right': theme.spacing(2),
-  },
-  root: {
-    minWidth: '0px',
-    flexGrow: 1,
-    backgroundColor: theme.palette.background.paper,
-    display: 'flex',
-  },
-  tabs: {
-    borderRight: `1px solid ${theme.palette.divider}`,
-  },
-}));
+/**
+ * Generates a user-facing name for authentication mechanism
+ * @param info AuthInfo from a listings object or project object
+ * @returns String name
+ */
+function authInfoTypeName(info: AuthInfo): string {
+  switch (info.type) {
+    case 'oauth':
+      return info.name;
+  }
+}
 
-export function LoginForm(props: LoginFormProps) {
-  const classes = useStyles();
-  const selectableAuthModes = [
-    {id: 'dc_password', label: 'Data Central'},
-    {id: 'other', label: 'Other'},
-  ];
-  const [selectedAuth, setSelectedAuth] = useState(0);
+function oauth_redirect_url(
+  listing_id: string,
+  mode: AuthInfo & {type: 'oauth'}
+): string {
+  const params = new URLSearchParams();
+  params.append('response_type', 'code');
+  params.append('client_id', mode.client_id);
+  params.append('state', JSON.stringify({listing_id: listing_id}));
+  params.append('redirect_uri', 'http://localhost:3000/signin-return');
+  return mode.base_url + '?' + params.toString();
+}
 
+function LoginButton(props: LoginButtonProps) {
   return (
-    <div className={classes.root}>
-      <Tabs
-        orientation="vertical"
-        variant="scrollable"
-        value={selectedAuth}
-        onChange={(event, newIndex) => {
-          setSelectedAuth(newIndex);
-        }}
-        aria-label="Vertical tabs example"
-        className={classes.tabs}
-      >
-        {selectableAuthModes.map((mode, index) => (
-          <Tab
-            key={mode.id}
-            label={mode.label}
-            id={`vertical-tab-${index}`}
-            aria-controls={`vertical-tabpanel-${index}`}
-          />
-        ))}
-      </Tabs>
-      {selectableAuthModes.map((mode, index) => (
-        <Box
-          className={classes.panel_margin}
-          role="tabpanel"
-          hidden={index !== selectedAuth}
-          id={`vertical-tabpanel-${index}`}
-          aria-labelledby={`vertical-tab-${index}`}
-        >
-          {index === selectedAuth &&
-            /* This is temporarily a other/dc password switch until
-              alternative Authentication methods are implemented */
-            (mode.id === 'dc_password' ? (
-              <React.Fragment>
-                <Button
-                  className={classes.control_margin}
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={async () => {
-                    const put_doc = {
-                      _id: props.listing_id,
-                      _rev: undefined as undefined | string,
-                      dc_token: 'dummy token',
-                    };
-                    try {
-                      put_doc._rev = (
-                        await local_auth_db.get(
-                          selectableAuthModes[selectedAuth].id
-                        )
-                      )._rev;
-                    } catch (err) {
-                      if (
-                        !('reason' in err) ||
-                        (err as {reason: string}).reason !== 'missing'
-                      ) {
-                        throw err;
-                      }
-                    }
-                    local_auth_db.put(put_doc);
-                  }}
-                >
-                  Login
-                </Button>
-              </React.Fragment>
-            ) : (
-              <React.Fragment>Unimplemented</React.Fragment>
-            ))}
-        </Box>
-      ))}
-    </div>
+    <Button
+      variant="contained"
+      color="primary"
+      href={oauth_redirect_url(props.listing_id, props.auth_mechanism)}
+    >
+      Sign-in with {authInfoTypeName(props.auth_mechanism)}
+    </Button>
   );
+}
+
+/**
+ * The component that goes inside a card for a FAIMS Cluster
+ * @param props ID of this cluster + any info if it's already logged in
+ */
+export function LoginForm(props: LoginFormProps) {
+  const [listingInfo, setListingInfo] = useState(
+    null as null | AuthInfo[] | {error: {}}
+  );
+
+  useEffect(() => {
+    directory_db.local.get(props.listing_id).then(
+      info => setListingInfo(info.auth_mechanisms),
+      (err: any) => {
+        setListingInfo({error: err});
+      }
+    );
+
+    const changes = directory_db.local.changes({
+      include_docs: true,
+      since: 'now',
+    });
+    const change_listener = (
+      change: PouchDB.Core.ChangesResponseChange<ListingsObject>
+    ) => {
+      setListingInfo(change.doc!.auth_mechanisms);
+    };
+    const error_listener = (err: any) => {
+      setListingInfo({error: err});
+    };
+    changes.on('change', change_listener);
+    changes.on('error', error_listener);
+    return () => {
+      changes.removeListener('change', change_listener);
+      changes.removeListener('error', error_listener);
+    };
+  });
+
+  if (listingInfo === null) {
+    return <CircularProgress color="primary" size="2rem" thickness={5} />;
+  } else if ('error' in listingInfo) {
+    return <span>Error: {listingInfo.error.toString()}</span>;
+  } else {
+    return (
+      <Box>
+        {listingInfo.map(mode => (
+          <LoginButton listing_id={props.listing_id} auth_mechanism={mode} />
+        ))}
+      </Box>
+    );
+  }
 }
