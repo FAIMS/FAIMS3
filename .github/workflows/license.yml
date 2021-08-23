@@ -13,7 +13,7 @@ on:
       - staging
       - trying
 jobs:
-  build:
+  license:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
