@@ -36,7 +36,7 @@ const example_records: {
   default_astro_sky: [
     {
       record_id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
-      revision_id: '1',
+      revision_id: null,
       type: '??:??',
       created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
@@ -59,7 +59,7 @@ const example_records: {
     },
     {
       record_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
-      revision_id: '1',
+      revision_id: null,
       type: '??:??',
       created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
@@ -718,9 +718,14 @@ export async function setupExampleProjectMetadata(
   projname: string,
   meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
-  console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
-  for (const key in example_project_metadata) {
-    await setProjectMetadata(projname, key, example_project_metadata[key]);
+  const example_ui_spec = example_ui_specs[projname];
+  if (example_ui_spec === undefined) {
+    console.error(`Unable to find example_ui_spec for ${projname}`);
+  } else {
+    console.log(await setUiSpecForProject(meta_db, example_ui_spec));
+    for (const key in example_project_metadata) {
+      await setProjectMetadata(projname, key, example_project_metadata[key]);
+    }
   }
 }
 

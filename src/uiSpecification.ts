@@ -64,6 +64,7 @@ export async function setUiSpecForProject(
     encUIInfo._rev = existing_encUIInfo._rev;
   } catch (err) {
     // Probably no existing UI info
+    console.debug(err);
   }
 
   try {
