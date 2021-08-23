@@ -20,9 +20,9 @@
 
 import React from 'react';
 import {FieldProps} from 'formik';
-import Button from '@material-ui/core/Button';
+import Button, {ButtonProps} from '@material-ui/core/Button';
 
-export class ActionButton extends React.Component<FieldProps> {
+export class ActionButton extends React.Component<FieldProps & ButtonProps> {
   clickThis() {
     this.props.form.setFieldValue(this.props.field.name, 'Change!');
   }
@@ -31,6 +31,9 @@ export class ActionButton extends React.Component<FieldProps> {
       <Button
         variant="outlined"
         color={'primary'}
+        {...this.props}
+        // Props from the metadata db will overwrite the above
+        // style attributes, but not overwrite the below onclick.
         onClick={() => {
           this.clickThis();
         }}
