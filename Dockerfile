@@ -1,5 +1,5 @@
 #https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
-FROM node:14.17.0-alpine as build
+FROM node:14.17.0-alpine@sha256:f07ead757c93bc5e9e79978075217851d45a5d8e5c48eaf823e7f12d9bbc1d3c as build
 # we need as build due to line 22
 
 # https://snyk.io/blog/10-best-practices-to-containerize-nodejs-web-applications-with-docker/
