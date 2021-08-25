@@ -466,18 +466,30 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           helperText: 'Human Readable ID',
           variant: 'outlined',
           required: true,
-          template: 'αβγ {{str-field}}',
+          template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
           InputProps: {
             type: 'text', // must be a valid html type
           },
-          SelectProps: {},
           InputLabelProps: {
             label: 'Human Readable ID',
           },
-          FormHelperTextProps: {},
         },
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
+      },
+      'basic-autoincrementer-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'BasicAutoIncrementer',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          name: 'basic-autoincrementer-field',
+          id: 'basic-autoincrementer-field',
+          variant: 'outlined',
+          required: true,
+          num_digits: 5,
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: null,
       },
     },
     viewsets: {
@@ -494,6 +506,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         label: 'Main',
         fields: [
           'hrid-field',
+          'basic-autoincrementer-field',
           'take-point-field',
           'bad-field',
           'action-field',

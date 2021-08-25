@@ -102,3 +102,8 @@ registerComponent(
   'TemplatedStringField',
   setupComponentProperties('', '', TemplatedStringField)
 );
+registerComponent(
+  'faims-custom',
+  'BasicAutoIncrementer',
+  setupComponentProperties('', '', BasicAutoIncrementer)
+);
