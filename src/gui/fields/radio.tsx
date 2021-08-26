@@ -20,7 +20,7 @@
 
 import React from 'react';
 import MuiRadioGroup from '@material-ui/core/RadioGroup';
-import MuiRadio from '@material-ui/core/Radio';
+import MuiRadio, {RadioProps} from '@material-ui/core/Radio';
 import FormControl from '@material-ui/core/FormControl';
 import {
   FormLabel,
@@ -28,6 +28,7 @@ import {
   FormHelperText,
   FormLabelProps,
   FormHelperTextProps,
+  FormControlLabelProps,
 } from '@material-ui/core';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-material-ui';
 
@@ -35,6 +36,8 @@ interface option {
   key: string;
   value: string;
   label: string;
+  FormControlProps: Omit<FormControlLabelProps, 'control' | 'value' | 'key'>;
+  RadioProps: RadioProps;
 }
 
 interface ElementProps {
@@ -73,8 +76,9 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
             <FormControlLabel
               key={option.key ? option.key : option.value}
               value={option.value}
-              control={<MuiRadio />}
+              control={<MuiRadio {...option['RadioProps']} />}
               label={option.label}
+              {...option['FormControlProps']}
             />
           ))}
         </MuiRadioGroup>

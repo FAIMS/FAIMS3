@@ -404,18 +404,30 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
               {
                 value: '1',
                 label: '1',
+                RadioProps: {
+                  id: 'radio-group-field-1',
+                },
               },
               {
                 value: '2',
                 label: '2',
+                RadioProps: {
+                  id: 'radio-group-field-2',
+                },
               },
               {
                 value: '3',
                 label: '3',
+                RadioProps: {
+                  id: 'radio-group-field-3',
+                },
               },
               {
                 value: '4',
                 label: '4',
+                RadioProps: {
+                  id: 'radio-group-field-4',
+                },
               },
             ],
           },
