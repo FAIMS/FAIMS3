@@ -13,26 +13,26 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: observationMetadata.ts
+ * Filename: recordMetadata.ts
  * Description:
- *   Interaction with the metadata of an observation: Users, dates.-
+ *   Interaction with the metadata of an record: Users, dates.-
  */
-import {ProjectID} from './datamodel';
+import {ProjectID} from './datamodel/core';
 import {DBTracker} from './gui/pouchHook';
-import {lookupFAIMSDataID} from './dataStorage';
+import {getRecordMetadata} from './data_storage';
 
-export const observationMetadataTracker = new DBTracker<
-  [ProjectID, string /* observation_id */],
+export const recordMetadataTracker = new DBTracker<
+  [ProjectID, string /* record_id */, string /*revision_id*/],
   {[key: string]: any}
->(lookupFAIMSDataID, [
-  'project_data_paused',
-  async (project_id: ProjectID, observation_id: string) => {
-    const observation = await lookupFAIMSDataID(project_id, observation_id);
+>(getRecordMetadata, [
+  'project_meta_paused',
+  async (project_id: ProjectID, record_id: string, revision_id: string) => {
+    const record = await getRecordMetadata(project_id, record_id, revision_id);
     return {
-      Created: observation?.created.toString(),
-      Updated: observation?.updated.toString(),
-      'Created by': observation?.created_by,
-      'Last updated by': observation?.updated_by,
+      Created: record?.created.toString(),
+      Updated: record?.updated.toString(),
+      'Created by': record?.created_by,
+      'Last updated by': record?.updated_by,
     };
   },
 ]);

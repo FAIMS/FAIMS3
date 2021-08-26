@@ -27,6 +27,8 @@ package org.fedarch.faims3;
  */
 public interface TestPopulateForm {
 
-	public void testNoErrors() throws Exception;
+	// Doable Task 2.1 - Observation creation
+	// Doable Task 2.3 - GPS and Taking a Point
+	public void testNewObservationWithGPS() throws Exception;
 
 }

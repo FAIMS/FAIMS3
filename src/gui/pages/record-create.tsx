@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: observation-create.tsx
+ * Filename: record-create.tsx
  * Description:
  *   TODO
  */
@@ -23,12 +23,12 @@ import {Box, Container, Typography, Paper} from '@material-ui/core';
 import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {generateFAIMSDataID} from '../../dataStorage';
-import ObservationForm from '../components/observation/form';
+import {generateFAIMSDataID} from '../../data_storage';
+import RecordForm from '../components/record/form';
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel';
+import {ProjectID} from '../../datamodel/core';
 
-export default function ObservationCreate() {
+export default function RecordCreate() {
   const {project_id} = useParams<{
     project_id: ProjectID;
   }>();
@@ -40,26 +40,26 @@ export default function ObservationCreate() {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
-    {title: 'New Observation'},
+    {title: 'New Record'},
   ];
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          Record Observation
+          Record Record
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Add an observation for the{' '}
+          Add an record for the{' '}
           {project_info !== null ? project_info.name : project_id} project.
         </Typography>
       </Box>
       <Paper square>
         <Box p={3}>
-          <ObservationForm
+          <RecordForm
             project_id={project_id}
-            observation_id={generateFAIMSDataID()}
-            is_fresh={true}
+            record_id={generateFAIMSDataID()}
+            revision_id={null}
           />
         </Box>
       </Paper>

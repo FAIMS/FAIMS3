@@ -20,41 +20,31 @@
  *   If you find yourself writing pouchdb.get(), pouchdb.put(), etc.
  *   put that code in a function in this file
  *
- *   See dataStorage.ts for accessors specific to Observations
+ *   See data_storage/index.ts for accessors specific to Records
  *   In comparison, this file is for metadata, or other data
- *   (dataStorage.ts is called from this file, as dataStorage.ts
- *    does encoding/decoding of observations)
+ *   (data_storage/index.ts is called from this file, as data_storage/index.ts
+ *    does encoding/decoding of records)
  *
  *   TODO: Convert *everything* to listeners that can run more than once
  *   (Sync refactor)
  */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {dummy_observations} from './dummyData';
+import {ActiveDoc, ListingsObject} from './datamodel/database';
+import {ProjectID} from './datamodel/core';
+import {listRecordMetadata} from './data_storage/internals';
 import {
-  ObservationList,
   ProjectInformation,
-  ProjectsList,
-  ProjectObject,
-  ActiveDoc,
-  ProjectID,
-  ListingsObject,
-} from './datamodel';
-import {listFAIMSData} from './dataStorage';
-import {add_initial_listener} from './sync/event-handler-registration';
-import {
-  createdProjects,
-  createdProjectsInterface,
-  projects_known,
-} from './sync/state';
-import {events} from './sync/events';
-import {ExistingActiveDoc} from './sync/databases';
+  RecordList,
+  RecordMetadataList,
+} from './datamodel/ui';
+import {createdProjects, createdProjectsInterface} from './sync/state';
 import {DBTracker} from './gui/pouchHook';
 
-export function getProjectList(user_id?: string): ProjectInformation[] {
+export function getProjectList(): ProjectInformation[] {
   /**
    * Return all active projects the user has access to, including the
-   * top 30 most recently updated observations.
+   * top 30 most recently updated records.
    */
   // TODO filter by user_id
   // TODO filter by active projects
@@ -75,7 +65,7 @@ export function getProjectList(user_id?: string): ProjectInformation[] {
 }
 
 export const projectListTracker = new DBTracker<
-  [string? /* user_id */],
+  [/*string user_id */],
   ProjectInformation[]
 >(getProjectList, ['projects_known', getProjectList]);
 
@@ -104,39 +94,15 @@ export function getProject(project_id: ProjectID): createdProjectsInterface {
   return createdProjects[project_id];
 }
 
-export function updateProject(project_id: ProjectID) {}
-
-export function removeProject(project_id: ProjectID) {}
-
-export async function getObservationList(
-  project_id: ProjectID
-): Promise<ObservationList> {
-  /**
-   * Return all observations for a given project_id.
-   * TODO project_id could be optional and return recently updated for home page
-   * TODO truncate this to top 100?
-   */
-  // const observation_keys = Object.keys(dummy_observations).filter(
-  //   key => dummy_observations[key]._project_id === project_id
-  // );
-  // return observation_keys.reduce(
-  //   (obj, key) => ({...obj, [key]: dummy_observations[key]}),
-  //   {}
-  // );
-  return listFAIMSData(project_id);
-}
-
-export const observationListTracker = new DBTracker<
+export const recordListTracker = new DBTracker<
   [string /*project_id*/],
-  ObservationList
+  RecordMetadataList
 >([
   'project_data_paused',
-  getObservationList,
+  listRecordMetadata,
   (listing: ListingsObject, active: ActiveDoc) => [[active._id] as [string]],
 ]);
 
-export function listenObservation(observation_id: string) {}
+//export function updateProject(project_id: ProjectID) {}
 
-export function updateObservation(observation_id: string) {}
-
-export function removeObservation(observation_id: string) {}
+//export function removeProject(project_id: ProjectID) {}

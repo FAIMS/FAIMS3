@@ -19,25 +19,28 @@
  */
 
 import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
-import {Observation, ProjectObject} from './datamodel';
+import {Color} from '@material-ui/lab/Alert';
+
+import {v4 as uuidv4} from 'uuid';
+
+import {ProjectObject} from './datamodel/database';
+import {Record} from './datamodel/ui';
 import {
   ProjectActions,
-  ObservationActions,
+  RecordActions,
   SyncingActions,
   AlertActions,
   ActionType,
 } from './actions';
-import {Color} from '@material-ui/lab/Alert';
 import LoadingApp from './gui/components/loadingApp';
 import {initialize} from './sync/initialize';
-import {v4 as uuidv4} from 'uuid';
 
 interface InitialStateProps {
   initialized: boolean;
   isSyncing: boolean;
 
   active_project: ProjectObject | null;
-  active_observation: Observation | null;
+  active_record: Record | null;
   alerts: Array<{message: string; severity: Color; key: string}>;
 }
 
@@ -46,14 +49,14 @@ const InitialState = {
   isSyncing: false,
 
   active_project: null,
-  active_observation: null,
+  active_record: null,
   alerts: [],
 };
 
 interface ContextType {
   state: InitialStateProps;
   dispatch: Dispatch<
-    ProjectActions | ObservationActions | SyncingActions | AlertActions
+    ProjectActions | RecordActions | SyncingActions | AlertActions
   >;
 }
 
@@ -68,11 +71,7 @@ const StateProvider = (props: any) => {
   const [state, dispatch] = useReducer(
     (
       state: InitialStateProps,
-      action:
-        | ProjectActions
-        | ObservationActions
-        | SyncingActions
-        | AlertActions
+      action: ProjectActions | RecordActions | SyncingActions | AlertActions
     ) => {
       switch (action.type) {
         case ActionType.INITIALIZED: {
@@ -117,28 +116,28 @@ const StateProvider = (props: any) => {
           };
         }
 
-        // case ActionType.APPEND_OBSERVATION_LIST: {
+        // case ActionType.APPEND_RECORD_LIST: {
         //   return {
         //     ...state,
-        //     observation_list: {
-        //       ...state.observation_list,
+        //     record_list: {
+        //       ...state.record_list,
         //       [action.payload.project_id]: action.payload.data,
         //     },
         //   };
-        //   // return {...state, observation_list: action.payload};
+        //   // return {...state, record_list: action.payload};
         // }
-        // case ActionType.POP_OBSERVATION_LIST: {
-        //   const new_observation_list = {
-        //     ...state.observation_list[action.payload.project_id],
+        // case ActionType.POP_RECORD_LIST: {
+        //   const new_record_list = {
+        //     ...state.record_list[action.payload.project_id],
         //   };
         //   action.payload.data_ids.forEach(
-        //     data_id => delete new_observation_list[data_id]
+        //     data_id => delete new_record_list[data_id]
         //   );
         //   return {
         //     ...state,
-        //     observation_list: {
-        //       ...state.observation_list,
-        //       [action.payload.project_id]: new_observation_list,
+        //     record_list: {
+        //       ...state.record_list,
+        //       [action.payload.project_id]: new_record_list,
         //     },
         //   };
         // }

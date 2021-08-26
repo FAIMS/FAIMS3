@@ -20,12 +20,13 @@
 
 import {getProjectDB} from './sync';
 import PouchDB from 'pouchdb';
-import {ProjectMetaObject, ProjectID} from './datamodel';
+import {ProjectID} from './datamodel/core';
 import {
+  ProjectMetaObject,
   UI_SPECIFICATION_NAME,
-  ProjectUIModel,
   EncodedProjectUIModel,
-} from './datamodel';
+} from './datamodel/database';
+import {ProjectUIModel} from './datamodel/ui';
 
 export async function getUiSpecForProject(
   project_id: ProjectID
@@ -63,6 +64,7 @@ export async function setUiSpecForProject(
     encUIInfo._rev = existing_encUIInfo._rev;
   } catch (err) {
     // Probably no existing UI info
+    console.debug(err);
   }
 
   try {

@@ -20,15 +20,23 @@
 
 package org.fedarch.faims3.android;
 
+import static org.junit.Assert.assertEquals;
+
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.TestPopulateForm;
 import org.fedarch.faims3.TestUtils;
+import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import io.appium.java_client.MobileBy;
+import io.appium.java_client.android.AndroidElement;
 
 /**
  * Test populate the fields on the Android app:
@@ -49,23 +57,55 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 	/**
 	 * This test scenario is when you put in all the mandatory fields correctly and
 	 * then click submit successfully.
+	 * Doable Task 2.1 - Observation creation
+	 * Doable Task 2.3 - GPS and Taking a Point
 	 * @throws Exception
 	 */
 	@Test
 	@Override
-	public void testNoErrors() throws Exception {
+	public void testNewObservationWithGPS() throws Exception {
 
 		try {
-			// Load up Astro Sky form
-			super.loadNewAstroSkyForm();
+			// Start a new observation
+			loadNewAstroSkyForm();
 			// The form should load up
-			super.fillOutFormWithValidFields();
-			TestUtils.scrollDown(driver);
+			fillOutFormWithValidFields();
 			// validate JSON
 			validateJSON();
-			// Submit button
+			// Click save and new
 			WebElement submit = driver.findElement(By.xpath("//*[@text='SAVE AND NEW']"));
 			submit.click();
+
+			// Check the message
+			verifyMessage("Observation successfully created");
+
+			//return to the projects page
+			if (driver.findElementByXPath("//android.widget.Button[@text='Show path']").isDisplayed()) {
+				  driver.findElementByXPath("//android.widget.Button[@text='Show path']").click();
+			}
+			WebDriverWait wait = new WebDriverWait(driver, 10);
+			AndroidElement projects = (AndroidElement) wait.until(ExpectedConditions
+				  .elementToBeClickable(MobileBy.xpath("//android.widget.TextView[contains(@text, 'Projects')]")));
+			projects.click();
+
+			//Load the just-created observation
+			wait.until(ExpectedConditions.visibilityOfElementLocated(
+					By.xpath("//*[contains(@text, '" + this.recordUuid + "')]"))).click();
+
+			//Ensure that location and change are still present in the data
+			validateLatLong();
+
+			TestUtils.scrollToText(driver, "UPDATE");
+
+			WebElement json = wait.until(ExpectedConditions.visibilityOf(
+					driver.findElement(MobileBy.xpath("//*[@text='DEVELOPER TOOL: FORM STATE']/following-sibling::android.view.View/android.view.View"))));
+			JSONObject jsonObject = new JSONObject(json.getText());
+			JSONObject values = jsonObject.getJSONObject("values");
+
+			JSONObject gps = values.getJSONObject("take-point-field");
+			assertEquals(this.latitude, gps.get("latitude").toString());
+		    assertEquals(this.longitude, gps.get("longitude").toString());
+			assertEquals("Change!", values.get("action-field").toString());
 
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
@@ -77,11 +117,12 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 			throw e;
 		}
 		TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true,
-				"Android - TestPopulateForm.testNoErrors() passed!");
+				"Android - TestPopulateForm.testNewObservationWithGPS() passed!");
 	}
 
 	@AfterClass
 	public static void tearDown() {
 		AndroidTest.tearDown();
 	}
+
 }

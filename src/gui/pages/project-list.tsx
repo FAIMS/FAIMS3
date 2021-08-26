@@ -62,7 +62,7 @@ const useStyles = makeStyles(theme => ({
 export default function ProjectList() {
   const classes = useStyles();
   // const globalState = useContext(store);
-  const projectList = useDBTracker(projectListTracker, [undefined]);
+  const projectList = useDBTracker(projectListTracker, [] as []);
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {title: 'Projects'},
@@ -85,7 +85,7 @@ export default function ProjectList() {
                     <ProjectCard
                       project={project_info}
                       listView={true}
-                      showObservations={true}
+                      showRecords={true}
                       dashboard={false}
                     />
                   </Grid>

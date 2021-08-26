@@ -18,12 +18,15 @@
  *   TODO
  */
 
+import {NonUniqueProjectID, ProjectID} from '../datamodel/core';
 import {
   ProjectObject,
   ProjectMetaObject,
-  EncodedObservation,
+  ProjectDataObject,
   ActiveDoc,
-} from '../datamodel';
+  isRecord,
+} from '../datamodel/database';
+import {mergeHeads} from '../data_storage/merging';
 import {ExistingActiveDoc, LocalDB} from './databases';
 import {add_initial_listener} from './event-handler-registration';
 import {DirectoryEmitter} from './events';
@@ -51,7 +54,7 @@ function register_listings_known(initializeEvents: DirectoryEmitter) {
  *
  * This is set to just before 'projects_known' event is emitted.
  */
-export let projects_known: null | Set<string> = null;
+export let projects_known: null | Set<ProjectID> = null;
 /**
  * Adds event handlers to initializeEvents to:
  * Enable 'Propagation' of completion of all known projects meta & other databases.
@@ -74,7 +77,7 @@ function register_projects_known(initializeEvents: DirectoryEmitter) {
     listings_known && Array.from(listing_statuses.values()).every(v => v);
 
   // All projects accumulated here
-  const projects_known_acc = new Set<string>();
+  const projects_known_acc = new Set<ProjectID>();
 
   // Emits project_known if all listings have their projects added to known_projects.
   const emit_if_complete = () => {
@@ -125,7 +128,7 @@ export type createdProjectsInterface = {
   project: ProjectObject;
   active: ExistingActiveDoc;
   meta: LocalDB<ProjectMetaObject>;
-  data: LocalDB<EncodedObservation>;
+  data: LocalDB<ProjectDataObject>;
 };
 
 export const createdProjects: {
@@ -133,7 +136,7 @@ export const createdProjects: {
     project: ProjectObject;
     active: ExistingActiveDoc;
     meta: LocalDB<ProjectMetaObject>;
-    data: LocalDB<EncodedObservation>;
+    data: LocalDB<ProjectDataObject>;
   };
 } = {};
 
@@ -170,7 +173,7 @@ function register_projects_created(initializeEvents: DirectoryEmitter) {
 add_initial_listener(register_projects_created);
 
 export type MetasCompleteType = {
-  [active_id: string]:
+  [active_id in ProjectID]:
     | [ActiveDoc, ProjectObject, LocalDB<ProjectMetaObject>]
     // Error'd out metadata db
     | [ActiveDoc, unknown];
@@ -217,4 +220,42 @@ function register_metas_complete(initializeEvents: DirectoryEmitter) {
   initializeEvents.on('projects_known', () => {
     emit_if_metas_complete();
   });
+}
+
+add_initial_listener(register_basic_automerge_resolver);
+/*
+ * Registers a handler to do automerge on new records
+ */
+function register_basic_automerge_resolver(initializeEvents: DirectoryEmitter) {
+  const already_listening = new Set<string>();
+  initializeEvents.on(
+    'project_data_paused',
+    (listing, active, project, data) => {
+      if (!(project._id in already_listening)) {
+        already_listening.add(project._id);
+        start_listening_for_changes(project._id, data);
+      }
+    }
+  );
+}
+
+function start_listening_for_changes(
+  proj_id: NonUniqueProjectID,
+  data_db: LocalDB<ProjectDataObject>
+) {
+  data_db.local
+    .changes({
+      since: 'now',
+      live: true,
+      include_docs: true,
+    })
+    .on('change', doc => {
+      if (doc !== undefined) {
+        const pdoc = doc.doc;
+
+        if (pdoc !== undefined && isRecord(pdoc)) {
+          mergeHeads(proj_id, doc.id);
+        }
+      }
+    });
 }

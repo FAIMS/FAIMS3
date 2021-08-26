@@ -20,7 +20,7 @@
 
 /* eslint-disable */
 import {createTypeContext,lookupFAIMSType} from '../projectSpecification';
-import {ProjectID} from '../datamodel';
+import {ProjectID} from '../datamodel/core';
 
 type validationResult = {
   err: boolean;

@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectID} from '../../../datamodel';
+import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {
   CircularProgress,
   TableCell,
@@ -26,19 +26,22 @@ import {
   TableBody,
   TableRow,
 } from '@material-ui/core';
-import {observationMetadataTracker} from '../../../observationMetadata';
+import {recordMetadataTracker} from '../../../recordMetadata';
 import {useDBTracker} from '../../pouchHook';
-type ObservationMetaProps = {
+
+type RecordMetaProps = {
   project_id: ProjectID;
-  observation_id: string;
+  record_id: RecordID;
+  revision_id: RevisionID;
 };
 
-export default function ObservationMeta(props: ObservationMetaProps) {
-  const {project_id, observation_id} = props;
-  const meta = useDBTracker(observationMetadataTracker, [
+export default function RecordMeta(props: RecordMetaProps) {
+  const {project_id, record_id, revision_id} = props;
+  const meta = useDBTracker(recordMetadataTracker, [
     project_id,
-    observation_id,
-  ] as [string, string]);
+    record_id,
+    revision_id,
+  ] as [string, string, string]);
 
   return (
     <div>
@@ -48,7 +51,7 @@ export default function ObservationMeta(props: ObservationMetaProps) {
             <Table>
               <TableBody>
                 {Object.keys(meta).map(key => (
-                  <TableRow key={'observation-meta-' + key}>
+                  <TableRow key={'record-meta-' + key}>
                     <TableCell>
                       <b>{key}</b>
                     </TableCell>

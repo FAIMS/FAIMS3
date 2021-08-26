@@ -13,12 +13,14 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: observation.tsx
+ * Filename: record.tsx
  * Description:
  *   TODO
  */
 
 import React from 'react';
+import {useParams} from 'react-router-dom';
+
 import {
   AppBar,
   Box,
@@ -31,24 +33,26 @@ import {
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
-import {useParams} from 'react-router-dom';
+import grey from '@material-ui/core/colors/grey';
+
 import * as ROUTES from '../../constants/routes';
-import {ProjectID} from '../../datamodel';
+import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
+import {getProjectInfo} from '../../databaseAccess';
+
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import ObservationForm from '../components/observation/form';
+import RecordForm from '../components/record/form';
 import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
-import {FAIMSObservationRevisionsTracker} from '../../dataStorage';
-import {getProjectInfo} from '../../databaseAccess';
-import grey from '@material-ui/core/colors/grey';
-import ObservationMeta from '../components/observation/meta';
-import ObservationDelete from '../components/observation/delete';
+import {FAIMSRecordRevisionsTracker} from '../../data_storage/listeners';
+import RecordMeta from '../components/record/meta';
+import RecordDelete from '../components/record/delete';
 import {useDBTracker} from '../pouchHook';
 
-export default function Observation() {
-  const {project_id, observation_id} = useParams<{
+export default function Record() {
+  const {project_id, record_id, revision_id} = useParams<{
     project_id: ProjectID;
-    observation_id: string;
+    record_id: RecordID;
+    revision_id: RevisionID;
   }>();
   const [value, setValue] = React.useState('1');
 
@@ -60,11 +64,12 @@ export default function Observation() {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
-    {title: observation_id},
+    {title: record_id},
+    {title: revision_id},
   ];
-  const revisions = useDBTracker(FAIMSObservationRevisionsTracker, [
+  const revisions = useDBTracker(FAIMSRecordRevisionsTracker, [
     project_id,
-    observation_id,
+    record_id,
   ] as [ProjectID, string]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
@@ -76,10 +81,10 @@ export default function Observation() {
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          Update Observation
+          Update Record
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Edit data for this observation. If you need to, you can also revisit
+          Edit data for this record. If you need to, you can also revisit
           previous revisions.
         </Typography>
       </Box>
@@ -93,16 +98,16 @@ export default function Observation() {
             </TabList>
           </AppBar>
           <TabPanel value="1">
-            <ObservationForm
+            <RecordForm
               project_id={project_id}
-              observation_id={observation_id}
-              is_fresh={observation_id === 'new-observation'}
+              record_id={record_id}
+              revision_id={revision_id}
             />
           </TabPanel>
           <TabPanel value="2">
             <InProgress />
             <Box p={2} />
-            <BoxTab title={'Developer tool: observation revisions'} />
+            <BoxTab title={'Developer tool: record revisions'} />
             <Box
               bgcolor={grey[200]}
               pl={2}
@@ -124,14 +129,16 @@ export default function Observation() {
             </Box>
           </TabPanel>
           <TabPanel value="3">
-            <ObservationMeta
+            <RecordMeta
               project_id={project_id}
-              observation_id={observation_id}
+              record_id={record_id}
+              revision_id={revision_id}
             />
             <Box mt={2}>
-              <ObservationDelete
+              <RecordDelete
                 project_id={project_id}
-                observation_id={observation_id}
+                record_id={record_id}
+                revision_id={revision_id}
               />
             </Box>
           </TabPanel>

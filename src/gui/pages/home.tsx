@@ -25,7 +25,7 @@ import {Container, Typography, Box, Grid, Paper, Link} from '@material-ui/core';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
-import {getProjectInfo, getProjectList} from '../../databaseAccess';
+import {getProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
@@ -72,12 +72,12 @@ export default function Home() {
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={3}>
         <Grid item xs={12}>
-          <Typography variant="overline">Add new Observation</Typography>
+          <Typography variant="overline">Add new Record</Typography>
           <Paper className={classes.paper}>
             <DashboardActions pouchProjectList={pouchProjectList} />
           </Paper>
         </Grid>
-        {/* Recent Observations */}
+        {/* Recent Records */}
         <Grid item xs={12} md={8} lg={9}>
           <div
             style={{
@@ -87,13 +87,13 @@ export default function Home() {
             }}
           >
             <Typography variant="overline" display={'inline'}>
-              Recent Observations&nbsp;&nbsp;
+              Recent Records&nbsp;&nbsp;
             </Typography>
             <TimelapseIcon color={'secondary'} style={{fontSize: '1.1rem'}} />
           </div>
 
           <Paper className={classes.paper}>
-            {/*<Observations />*/}
+            {/*<Records />*/}
             <Box mt={2}>
               <Link
                 style={{
@@ -102,9 +102,9 @@ export default function Home() {
                   flexWrap: 'wrap',
                 }}
                 component={RouterLink}
-                to={ROUTES.OBSERVATION_LIST}
+                to={ROUTES.RECORD_LIST}
               >
-                See more observations
+                See more records
                 {/*<ChevronRightIcon />*/}
               </Link>
             </Box>
@@ -118,8 +118,8 @@ export default function Home() {
               {Object.keys(pouchProjectList).length === 0 ? (
                 <span>No projects found</span>
               ) : (
-                Object.keys(pouchProjectList).map(project_id => {
-                  const project_info = getProjectInfo(project_id);
+                pouchProjectList.map(project_info => {
+                  const project_id = project_info.project_id;
                   if (project_info !== null) {
                     return (
                       <Grid item xs={12} key={'project-list-grid' + project_id}>

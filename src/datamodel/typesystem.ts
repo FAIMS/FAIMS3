@@ -13,25 +13,31 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: users.ts
+ * Filename: typesystem.ts
  * Description:
  *   TODO
  */
 
-import {active_db} from './sync/databases';
-import {ProjectID} from './datamodel/core';
-
-export async function getFriendlyUserName(
-  project_id: ProjectID
-): Promise<string> {
-  const doc = await active_db.get(project_id);
-  if (doc.friendly_name === undefined) {
-    return doc.username || 'Dummy User';
-  }
-  return doc.friendly_name;
+export interface FAIMSType {
+  [key: string]: any; // any for now until we lock down the json
 }
 
-export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
-  const doc = await active_db.get(project_id);
-  return doc.username || 'Dummy User';
+export interface FAIMSTypeCollection {
+  [key: string]: FAIMSType;
+}
+
+export interface FAIMSConstant {
+  [key: string]: any; // any for now until we lock down the json
+}
+
+export interface FAIMSConstantCollection {
+  [key: string]: FAIMSConstant;
+}
+
+export interface ProjectUIFields {
+  [key: string]: any;
+}
+
+export interface ProjectUIViews {
+  [key: string]: any;
 }

@@ -16,7 +16,7 @@ import * as ROUTES from '../../../constants/routes';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-import {ProjectInformation} from '../../../datamodel';
+import {ProjectInformation} from '../../../datamodel/ui';
 
 type ProjectCardActionProps = {
   project: ProjectInformation;
@@ -48,11 +48,9 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               color="primary"
               startIcon={<AddIcon />}
               component={RouterLink}
-              to={
-                ROUTES.PROJECT + project.project_id + ROUTES.OBSERVATION_CREATE
-              }
+              to={ROUTES.PROJECT + project.project_id + ROUTES.RECORD_CREATE}
             >
-              New Observation
+              New Record
             </Button>
           </Box>
         </React.Fragment>
@@ -70,14 +68,12 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
           >
             <MenuItem
               component={NavLink}
-              to={
-                ROUTES.PROJECT + project.project_id + ROUTES.OBSERVATION_CREATE
-              }
+              to={ROUTES.PROJECT + project.project_id + ROUTES.RECORD_CREATE}
             >
               <ListItemIcon>
                 <AddIcon fontSize="small" />
               </ListItemIcon>
-              New Observation
+              New Record
             </MenuItem>
             <MenuItem disabled={true}>
               <ListItemIcon>

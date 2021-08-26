@@ -21,7 +21,7 @@
 import React from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
 import {projectMetadataTracker} from '../../projectMetadata';
-import {ProjectID} from '../../datamodel';
+import {ProjectID} from '../../datamodel/core';
 import {useDBTracker} from '../pouchHook';
 
 type MetadataProps = {

@@ -19,6 +19,9 @@
  */
 package org.fedarch.faims3;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
@@ -143,5 +146,15 @@ public class TestUtils {
 	public static boolean isUsingBrowserstack(WebDriver driver) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	/**
+	 * Get today's date in the DD Mmm dd format
+	 * @return
+	 */
+	public static String getTodaysDate() {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd yyyy");
+		Date date = new Date();
+		return dateFormat.format(date);
 	}
 }

@@ -43,8 +43,8 @@ import {
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
-import {ProjectInformation} from '../../../datamodel';
-import ObservationsTable from '../observation/table';
+import {ProjectInformation} from '../../../datamodel/ui';
+import RecordsTable from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
@@ -53,7 +53,7 @@ import ProjectSync from './sync';
 
 type ProjectCardProps = {
   project: ProjectInformation;
-  showObservations: boolean;
+  showRecords: boolean;
   listView: boolean;
   dashboard: boolean;
 };
@@ -98,7 +98,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export default function Card(props: ProjectCardProps) {
-  const {project, showObservations, listView, dashboard} = props;
+  const {project, showRecords, listView, dashboard} = props;
   const classes = useStyles();
   const project_url = ROUTES.PROJECT + project.project_id;
 
@@ -198,7 +198,7 @@ export default function Card(props: ProjectCardProps) {
             subheader={
               'Created' +
               project.created +
-              ', last observation updated ' +
+              ', last record updated ' +
               project.last_updated
             }
           />
@@ -282,9 +282,9 @@ export default function Card(props: ProjectCardProps) {
               )}
             </Typography>
 
-            {showObservations ? (
+            {showRecords ? (
               <Box mt={1}>
-                <ObservationsTable
+                <RecordsTable
                   project_id={project.project_id}
                   maxRows={listView ? 10 : 25}
                 />
@@ -353,7 +353,7 @@ export default function Card(props: ProjectCardProps) {
   );
 }
 Card.defaultProps = {
-  showObservations: false,
+  showRecords: false,
   listView: false,
   dashboard: false,
 };

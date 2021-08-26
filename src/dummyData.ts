@@ -21,26 +21,26 @@
 import {setUiSpecForProject} from './uiSpecification';
 import {
   ActiveDoc,
-  EncodedObservation,
   ListingsObject,
-  ObservationList,
   ProjectMetaObject,
   ProjectObject,
   ProjectsList,
-  ProjectUIModel,
-} from './datamodel';
+} from './datamodel/database';
+import {Record, ProjectUIModel} from './datamodel/ui';
 import {setProjectMetadata} from './projectMetadata';
+import {upsertFAIMSData} from './data_storage';
 
-const example_datums: {
-  [key: string]: EncodedObservation[];
+const example_records: {
+  [key: string]: Record[];
 } = {
   default_astro_sky: [
     {
-      _id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
+      record_id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
+      revision_id: null,
       type: '??:??',
-      created: randomDate(new Date(2012, 0, 1), new Date()).toISOString(),
+      created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
-      updated: randomDate(new Date(2021, 0, 1), new Date()).toISOString(),
+      updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
@@ -56,14 +56,14 @@ const example_datums: {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
-      format_version: 1,
     },
     {
-      _id: '020948f4-79b8-435f-9db6-9clksjdf900a',
+      record_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
+      revision_id: null,
       type: '??:??',
-      created: randomDate(new Date(2012, 0, 1), new Date()).toISOString(),
+      created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
-      updated: randomDate(new Date(2021, 0, 1), new Date()).toISOString(),
+      updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
@@ -79,7 +79,6 @@ const example_datums: {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
-      format_version: 1,
     },
   ],
 };
@@ -703,44 +702,30 @@ export async function setupExampleListing(
   }
 }
 
-export async function setupExampleData(
-  projname: string,
-  data_db: PouchDB.Database<EncodedObservation>
-) {
-  // let ids: string[] = [];
-
-  if (projname in example_datums) {
-    for (const datum of example_datums[projname]) {
-      let current_rev: {_rev?: undefined | string} = {};
+export async function setupExampleData(projname: string) {
+  if (projname in example_records) {
+    for (const obs of example_records[projname]) {
       try {
-        current_rev = {_rev: (await data_db.get(datum._id))._rev};
+        await upsertFAIMSData(projname, obs);
       } catch (err) {
-        if (err.message !== 'missing') {
-          //.reason may be 'deleted' or 'missing'
-          throw err;
-        }
-        // Not in the DB means _rev is unnecessary for put()
+        console.error(err);
       }
-      await data_db.put({...datum, ...current_rev});
     }
-    // ids = example_datums[projname].map(doc => doc._id!);
   }
-
-  // Remove anything not supposed to be there
-  // for (const row of (await data_db.allDocs()).rows) {
-  //   if (ids.indexOf(row.id) < 0) {
-  //     await data_db.remove(row.id, row.value.rev);
-  //   }
-  // }
 }
 
 export async function setupExampleProjectMetadata(
   projname: string,
   meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
-  console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
-  for (const key in example_project_metadata) {
-    await setProjectMetadata(projname, key, example_project_metadata[key]);
+  const example_ui_spec = example_ui_specs[projname];
+  if (example_ui_spec === undefined) {
+    console.error(`Unable to find example_ui_spec for ${projname}`);
+  } else {
+    console.log(await setUiSpecForProject(meta_db, example_ui_spec));
+    for (const key in example_project_metadata) {
+      await setProjectMetadata(projname, key, example_project_metadata[key]);
+    }
   }
 }
 
@@ -771,104 +756,5 @@ export const dummy_projects: ProjectsList = {
     status: 'closed',
     description:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
-  },
-};
-export const dummy_observations: ObservationList = {
-  '1': {
-    observation_id: '1',
-    _rev: '1',
-    _project_id: '1',
-    type: '',
-    created: randomDate(new Date(2012, 0, 1), new Date()),
-    created_by: 'Emma Smith',
-    updated: randomDate(new Date(2021, 0, 1), new Date()),
-    updated_by: 'Sally Jones',
-    data: {
-      values: {
-        'take-point-field': null,
-        'action-field': 'hello',
-        'email-field': '',
-        'str-field': 'yellow',
-        'multi-str-field':
-          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-        'int-field': 1,
-        'select-field': '',
-        'multi-select-field': [],
-        'checkbox-field': false,
-        'radio-group-field': '2',
-      },
-    },
-  },
-  '2': {
-    observation_id: '2',
-    _rev: '1',
-    _project_id: '1',
-    type: '',
-    created: randomDate(new Date(2012, 0, 1), new Date()),
-    created_by: 'John Smith',
-    updated: randomDate(new Date(2021, 0, 1), new Date()),
-    updated_by: 'Sarah Jones',
-    data: {
-      values: {
-        'take-point-field': null,
-        'action-field': 'hello',
-        'email-field': '',
-        'str-field': 'red',
-      },
-    },
-  },
-  '3': {
-    observation_id: '3',
-    _rev: '1',
-    _project_id: '1',
-    type: '',
-    created: randomDate(new Date(2012, 0, 1), new Date()),
-    created_by: 'John Davis',
-    updated: randomDate(new Date(2021, 0, 1), new Date()),
-    updated_by: 'Emily Jones',
-    data: {
-      values: {
-        'take-point-field': null,
-        'action-field': 'hello',
-        'email-field': '',
-        'str-field': 'yellow',
-      },
-    },
-  },
-  '4': {
-    observation_id: '4',
-    _rev: '1',
-    _project_id: '2',
-    type: '',
-    created: randomDate(new Date(2012, 0, 1), new Date()),
-    created_by: 'Yoda',
-    updated: randomDate(new Date(2021, 0, 1), new Date()),
-    updated_by: 'Ben Kenobi',
-    data: {
-      values: {
-        'take-point-field': null,
-        'action-field': 'hello there',
-        'email-field': '',
-        'str-field': 'green',
-      },
-    },
-  },
-  '5': {
-    observation_id: '5',
-    _rev: '1',
-    _project_id: '2',
-    type: '',
-    created: randomDate(new Date(2012, 0, 1), new Date()),
-    created_by: 'John Smith',
-    updated: randomDate(new Date(2021, 0, 1), new Date()),
-    updated_by: 'Yoda',
-    data: {
-      values: {
-        'take-point-field': null,
-        'action-field': 'hello there general',
-        'email-field': '',
-        'str-field': 'blue',
-      },
-    },
   },
 };

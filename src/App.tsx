@@ -32,9 +32,9 @@ import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
-import ObservationList from './gui/pages/observation-list';
-import Observation from './gui/pages/observation';
-import ObservationCreate from './gui/pages/observation-create';
+import RecordList from './gui/pages/record-list';
+import Record from './gui/pages/record';
+import RecordCreate from './gui/pages/record-create';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './store';
 
@@ -45,7 +45,7 @@ import {MuiThemeProvider} from '@material-ui/core/styles';
 // will be resolved in material-ui v5
 
 import {createdProjects} from './sync/state';
-import {ProjectsList} from './datamodel';
+import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
 
 type AppProps = {};
@@ -86,11 +86,7 @@ export class App extends React.Component<AppProps, AppState> {
               />
 
               <Route exact path={ROUTES.HOME} component={Home} />
-              <Route
-                exact
-                path={ROUTES.OBSERVATION_LIST}
-                component={ObservationList}
-              />
+              <Route exact path={ROUTES.RECORD_LIST} component={RecordList} />
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
               <Route
                 exact
@@ -99,20 +95,20 @@ export class App extends React.Component<AppProps, AppState> {
               />
               <Route
                 exact
-                path={
-                  ROUTES.PROJECT + ':project_id' + ROUTES.OBSERVATION_CREATE
-                }
-                component={ObservationCreate}
+                path={ROUTES.PROJECT + ':project_id' + ROUTES.RECORD_CREATE}
+                component={RecordCreate}
               />
               <Route
                 exact
                 path={
                   ROUTES.PROJECT +
                   ':project_id' +
-                  ROUTES.OBSERVATION +
-                  ':observation_id'
+                  ROUTES.RECORD +
+                  ':record_id' +
+                  ROUTES.REVISION +
+                  ':revision_id'
                 }
-                component={Observation}
+                component={Record}
               />
               <Route exact path="/" component={Index} />
               <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />

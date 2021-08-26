@@ -13,25 +13,22 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: users.ts
+ * Filename: TestIncompleteDraftObservation
  * Description:
  *   TODO
  */
+package org.fedarch.faims3;
 
-import {active_db} from './sync/databases';
-import {ProjectID} from './datamodel/core';
+import org.json.JSONException;
+/**
+ * Skeleton for Doable Task 2.2 - Incomplete/Draft Observations
+ * Relating to: FAIMS3-25: As a module developer, I want to be able to control
+ * when the record saves, either in "google docs" style, or "push save button" style.DONE
+ * @author Rini Angreani, CSIRO
+ *
+ */
+public interface TestIncompleteDraftObservation {
 
-export async function getFriendlyUserName(
-  project_id: ProjectID
-): Promise<string> {
-  const doc = await active_db.get(project_id);
-  if (doc.friendly_name === undefined) {
-    return doc.username || 'Dummy User';
-  }
-  return doc.friendly_name;
-}
+	public void testIncompleteDraft() throws JSONException, Exception;
 
-export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
-  const doc = await active_db.get(project_id);
-  return doc.username || 'Dummy User';
 }

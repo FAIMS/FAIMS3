@@ -24,11 +24,12 @@ import {
   ListingsObject,
   ProjectObject,
   ProjectMetaObject,
-  EncodedObservation,
+  ProjectDataObject,
   PeopleDoc,
   ConnectionInfo,
-} from '../datamodel';
+} from '../datamodel/database';
 import {ExistingActiveDoc, LocalDB} from './databases';
+import {ProjectID} from '../datamodel/core';
 
 export class DebugEmitter extends EventEmitter {
   constructor(opts?: {captureRejections?: boolean}) {
@@ -67,7 +68,7 @@ export interface DirectoryEmitter extends EventEmitter {
       listing: ListingsObject,
       active: ExistingActiveDoc,
       project: ProjectObject,
-      data: LocalDB<EncodedObservation>
+      data: LocalDB<ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -76,7 +77,7 @@ export interface DirectoryEmitter extends EventEmitter {
       listing: ListingsObject,
       active: ExistingActiveDoc,
       project: ProjectObject,
-      data: LocalDB<EncodedObservation>
+      data: LocalDB<ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -86,7 +87,7 @@ export interface DirectoryEmitter extends EventEmitter {
       active: ExistingActiveDoc,
       project: ProjectObject,
       meta: LocalDB<ProjectMetaObject>,
-      data: LocalDB<EncodedObservation>
+      data: LocalDB<ProjectDataObject>
     ) => unknown
   ): this;
   on(
@@ -152,7 +153,7 @@ export interface DirectoryEmitter extends EventEmitter {
 
   on(
     event: 'projects_known',
-    listener: (projects: Set<string>) => unknown
+    listener: (projects: Set<ProjectID>) => unknown
   ): this;
 
   on(
@@ -181,14 +182,14 @@ export interface DirectoryEmitter extends EventEmitter {
     listing: ListingsObject,
     active: ExistingActiveDoc,
     project: ProjectObject,
-    data: LocalDB<EncodedObservation>
+    data: LocalDB<ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_data_active',
     listing: ListingsObject,
     active: ExistingActiveDoc,
     project: ProjectObject,
-    data: LocalDB<EncodedObservation>
+    data: LocalDB<ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_local',
@@ -196,7 +197,7 @@ export interface DirectoryEmitter extends EventEmitter {
     active: ExistingActiveDoc,
     project: ProjectObject,
     meta: LocalDB<ProjectMetaObject>,
-    data: LocalDB<EncodedObservation>
+    data: LocalDB<ProjectDataObject>
   ): boolean;
   emit(
     event: 'project_error',
@@ -234,7 +235,7 @@ export interface DirectoryEmitter extends EventEmitter {
   emit(event: 'directory_active', listings: Set<string>): boolean;
   emit(event: 'directory_error', err: unknown): boolean;
   emit(event: 'listings_known', listings: Set<string>): boolean;
-  emit(event: 'projects_known', projects: Set<string>): boolean;
+  emit(event: 'projects_known', projects: Set<ProjectID>): boolean;
   emit(event: 'metas_complete', metas: MetasCompleteType): boolean;
   emit(event: 'projects_created'): boolean;
 }

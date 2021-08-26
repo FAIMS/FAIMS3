@@ -54,6 +54,17 @@ public interface E2ETest {
 	 */
 	String getLongitude();
 
+	/**
+	 * Validate JSON values on the app
+	 * @throws JSONException
+	 * @throws AssertionError
+	 */
 	void validateJSON() throws JSONException, AssertionError;
+
+	/**
+	 * Check the message on the top of the app against the string.
+	 * @param message String to check against
+	 */
+	void verifyMessage(String message);
 
 }

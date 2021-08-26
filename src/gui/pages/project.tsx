@@ -26,7 +26,7 @@ import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel';
+import {ProjectID} from '../../datamodel/core';
 
 export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -39,11 +39,7 @@ export default function Project() {
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
-      <ProjectCard
-        project={project_info}
-        showObservations={true}
-        listView={false}
-      />
+      <ProjectCard project={project_info} showRecords={true} listView={false} />
     </Container>
   ) : (
     <Redirect to="/404" />

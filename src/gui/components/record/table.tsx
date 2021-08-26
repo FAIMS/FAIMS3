@@ -28,47 +28,49 @@ import {Typography} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 
-import {ProjectID} from '../../../datamodel';
-import * as ROUTES from '../../../constants/routes';
-import {observationListTracker} from '../../../databaseAccess';
+import {recordListTracker} from '../../../databaseAccess';
 import {useDBTracker} from '../../pouchHook';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-type ObservationsTableProps = {
+import {ProjectID} from '../../../datamodel/core';
+import * as ROUTES from '../../../constants/routes';
+
+type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
 };
 
-export default function ObservationsTable(props: ObservationsTableProps) {
+export default function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows} = props;
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
 
-  const rows = useDBTracker(observationListTracker, [project_id] as [string]);
+  const rows = useDBTracker(recordListTracker, [project_id] as [string]);
 
   const columns: GridColDef[] = [
     {
-      field: 'observation_id',
+      field: 'record_id',
       headerName: 'Obs ID',
-      description: 'Observation ID',
+      description: 'Record ID',
       type: 'string',
       width: not_xs ? 300 : 100,
       renderCell: (params: GridCellParams) => (
         <Link
           component={RouterLink}
-          to={ROUTES.getObservationRoute(
+          to={ROUTES.getRecordRoute(
             project_id || 'dummy',
-            (params.getValue('observation_id') || '').toString()
+            (params.getValue('record_id') || '').toString(),
+            (params.getValue('revision_id') || '').toString()
           )}
         >
           {params.value}
         </Link>
       ),
     },
-    //{field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-    //{field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
+    {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+    {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
     {
       field: 'updated_by',
@@ -76,11 +78,17 @@ export default function ObservationsTable(props: ObservationsTableProps) {
       type: 'string',
       width: 200,
     },
+    {
+      field: 'conflicts',
+      headerName: 'Conflicts',
+      type: 'boolean',
+      width: 200,
+    },
   ];
 
   return (
     <div>
-      <Typography variant="overline">Recent Observations</Typography>
+      <Typography variant="overline">Recent Records</Typography>
       <div
         style={{
           width: '100%',
@@ -90,7 +98,7 @@ export default function ObservationsTable(props: ObservationsTableProps) {
         <DataGrid
           rows={Object.values(rows.value || {})}
           loading={rows.loading !== undefined}
-          getRowId={r => r.observation_id}
+          getRowId={r => r.record_id}
           columns={columns}
           autoHeight
           pageSize={
@@ -113,6 +121,6 @@ export default function ObservationsTable(props: ObservationsTableProps) {
     </div>
   );
 }
-ObservationsTable.defaultProps = {
+RecordsTable.defaultProps = {
   maxRows: null,
 };
