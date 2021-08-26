@@ -708,7 +708,8 @@ export async function setupExampleData(projname: string) {
       try {
         await upsertFAIMSData(projname, obs);
       } catch (err) {
-        console.error(err);
+        console.error('databases needs cleaning...');
+        console.debug(err);
       }
     }
   }
@@ -722,9 +723,19 @@ export async function setupExampleProjectMetadata(
   if (example_ui_spec === undefined) {
     console.error(`Unable to find example_ui_spec for ${projname}`);
   } else {
-    console.log(await setUiSpecForProject(meta_db, example_ui_spec));
+    try {
+      console.log(await setUiSpecForProject(meta_db, example_ui_spec));
+    } catch (err) {
+      console.error('databases needs cleaning...');
+      console.debug(err);
+    }
     for (const key in example_project_metadata) {
-      await setProjectMetadata(projname, key, example_project_metadata[key]);
+      try {
+        await setProjectMetadata(projname, key, example_project_metadata[key]);
+      } catch (err) {
+        console.error('databases needs cleaning...');
+        console.debug(err);
+      }
     }
   }
 }
