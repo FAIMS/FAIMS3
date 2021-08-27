@@ -122,7 +122,8 @@ export async function process_directory(
           if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
           events.emit(
             'directory_paused',
-            await get_active_listings_in_this_directory(),[]
+            await get_active_listings_in_this_directory(),
+            []
           );
         },
       });
@@ -274,81 +275,108 @@ async function process_listing(listing_object: ListingsObject) {
     listing_object,
     unupdated_projects_in_this_listing,
     local_people_db,
-    local_projects_db,
-    projects_connection
+    local_projects_db
   );
 
-  const people_sync_handler = () =>
-    new SyncHandler<PeopleDoc>(LISTINGS_TIMEOUT, {
-      active: () => {},
-      paused: () => {},
-      error: () => {},
-    });
+  if (USE_REAL_DATA) {
+    const people_sync_handler = () =>
+      new SyncHandler<PeopleDoc>(LISTINGS_TIMEOUT, {
+        active: () => {},
+        paused: () => {},
+        error: () => {},
+      });
 
-  // TODO: Ensure that when the user adds a new active project
-  // that these filters are updated.
-  ensure_synced_db(
-    people_local_id,
-    people_connection,
-    people_dbs,
-    people_sync_handler,
-    // Filters to only projects that are active
-    unupdated_projects_in_this_listing.map(v => v._id)
-  );
+    // TODO: Ensure that when the user adds a new active project
+    // that these filters are updated.
+    ensure_synced_db(
+      people_local_id,
+      people_connection,
+      people_dbs,
+      people_sync_handler,
+      // Filters to only projects that are active
+      unupdated_projects_in_this_listing.map(v => v._id)
+    );
 
-  const project_sync_handler = () =>
-    new SyncHandler<ProjectObject>(LISTINGS_TIMEOUT, {
-      active: async () =>
-        events.emit(
-          'listing_active',
-          listing_object,
-          await get_active_projects_in_this_listing(),
-          local_people_db,
-          local_projects_db,
-          projects_connection
-        ),
-      paused: async changes => {
-        if (!USE_REAL_DATA)
-          await setupExampleListing(
-            listing_object._id,
-            local_projects_db.local
+    const project_sync_handler = () =>
+      new SyncHandler<ProjectObject>(LISTINGS_TIMEOUT, {
+        active: async () =>
+          events.emit(
+            'listing_active',
+            listing_object,
+            await get_active_projects_in_this_listing(),
+            local_people_db,
+            local_projects_db,
+            projects_connection
+          ),
+        paused: async changes => {
+          if (!USE_REAL_DATA)
+            await setupExampleListing(
+              listing_object._id,
+              local_projects_db.local
+            );
+          events.emit(
+            'listing_paused',
+            listing_object,
+            await get_active_projects_in_this_listing(),
+            local_people_db,
+            local_projects_db,
+            projects_connection,
+            changes
           );
-        events.emit(
-          'listing_paused',
-          listing_object,
-          await get_active_projects_in_this_listing(),
-          local_people_db,
-          local_projects_db,
-          projects_connection,
-          changes
-        );
-      },
-      error: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleListing(
-            listing_object._id,
-            local_projects_db.local
+        },
+        error: async () => {
+          events.emit(
+            'listing_paused',
+            listing_object,
+            await get_active_projects_in_this_listing(),
+            local_people_db,
+            local_projects_db,
+            projects_connection,
+            []
           );
-        events.emit(
-          'listing_paused',
-          listing_object,
-          await get_active_projects_in_this_listing(),
-          local_people_db,
-          local_projects_db,
-          projects_connection,
-          []
-        );
-      },
-    });
+        },
+      });
 
-  ensure_synced_db(
-    projects_db_id,
-    projects_connection,
-    projects_dbs,
-    project_sync_handler,
-    // Filters to only projects that are active
-    unupdated_projects_in_this_listing.map(v => v._id)
-  );
+    ensure_synced_db(
+      projects_db_id,
+      projects_connection,
+      projects_dbs,
+      project_sync_handler,
+      // Filters to only projects that are active
+      unupdated_projects_in_this_listing.map(v => v._id)
+    );
+  } else {
+    // Dummy data
+    // This timeout 'yields' to allow other code to add 'paused' listeners
+    // before the only 'paused' events are fired
+    // Acts kind of like a dumber SyncHandler
+    setTimeout(() => {
+      setupExampleListing(listing_id, local_projects_db.local)
+        .then(async () => {
+          events.emit(
+            'listing_paused',
+            listing_object,
+            await get_active_projects_in_this_listing(),
+            local_people_db,
+            local_projects_db,
+            projects_connection,
+            []
+          );
+        })
+        .catch(async err => {
+          console.error('Error setting up dummy Listing', listing_id, err);
+          events.emit(
+            'listing_paused',
+            listing_object,
+            await get_active_projects_in_this_listing(),
+            local_people_db,
+            local_projects_db,
+            projects_connection,
+            []
+          );
+        });
+    });
+  }
 }
 
 async function autoactivate_projects(
@@ -485,87 +513,149 @@ async function process_project(
     project_object.data_db
   );
 
-  const meta_sync_handler = (meta_db: LocalDB<ProjectMetaObject>) =>
-    new SyncHandler<ProjectMetaObject>(PROJECT_TIMEOUT, {
-      active: async () =>
-        events.emit(
-          'project_meta_active',
-          listing,
-          active_project,
-          project_object,
-          meta_db
-        ),
-      paused: async changes => {
-        if (!USE_REAL_DATA)
-          await setupExampleProjectMetadata(active_project._id, meta_db.local);
-        events.emit(
-          'project_meta_paused',
-          listing,
-          active_project,
-          project_object,
-          meta_db,
-          changes
-        );
-      },
-      error: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleProjectMetadata(active_project._id, meta_db.local);
-        events.emit(
-          'project_meta_paused',
-          listing,
-          active_project,
-          project_object,
-          meta_db,
-          []
-        );
-      },
-    });
-  ensure_synced_db(
-    active_id,
-    meta_connection_info,
-    metadata_dbs,
-    meta_sync_handler
-  );
+  if (USE_REAL_DATA) {
+    const meta_sync_handler = (meta_db: LocalDB<ProjectMetaObject>) =>
+      new SyncHandler<ProjectMetaObject>(PROJECT_TIMEOUT, {
+        active: async () =>
+          events.emit(
+            'project_meta_active',
+            listing,
+            active_project,
+            project_object,
+            meta_db
+          ),
+        paused: async changes => {
+          if (!USE_REAL_DATA)
+            await setupExampleProjectMetadata(
+              active_project._id,
+              meta_db.local
+            );
+          events.emit(
+            'project_meta_paused',
+            listing,
+            active_project,
+            project_object,
+            meta_db,
+            changes
+          );
+        },
+        error: async () => {
+          if (!USE_REAL_DATA)
+            await setupExampleProjectMetadata(
+              active_project._id,
+              meta_db.local
+            );
+          events.emit(
+            'project_meta_paused',
+            listing,
+            active_project,
+            project_object,
+            meta_db,
+            []
+          );
+        },
+      });
+    ensure_synced_db(
+      active_id,
+      meta_connection_info,
+      metadata_dbs,
+      meta_sync_handler
+    );
 
-  const data_sync_handler = (data_db: LocalDB<ProjectDataObject>) =>
-    new SyncHandler<ProjectDataObject>(PROJECT_TIMEOUT, {
-      active: async () =>
-        events.emit(
-          'project_data_active',
-          listing,
-          active_project,
-          project_object,
-          data_db
-        ),
-      paused: async changes => {
-        if (!USE_REAL_DATA) await setupExampleData(active_project._id);
-        events.emit(
-          'project_data_paused',
-          listing,
-          active_project,
-          project_object,
-          data_db,
-          changes
-        );
-      },
-      error: async () => {
-        if (!USE_REAL_DATA) await setupExampleData(active_project._id);
-        events.emit(
-          'project_data_paused',
-          listing,
-          active_project,
-          project_object,
-          data_db,
-          []
-        );
-      },
-    });
+    const data_sync_handler = (data_db: LocalDB<ProjectDataObject>) =>
+      new SyncHandler<ProjectDataObject>(PROJECT_TIMEOUT, {
+        active: async () =>
+          events.emit(
+            'project_data_active',
+            listing,
+            active_project,
+            project_object,
+            data_db
+          ),
+        paused: async changes => {
+          events.emit(
+            'project_data_paused',
+            listing,
+            active_project,
+            project_object,
+            data_db,
+            changes
+          );
+        },
+        error: async () => {
+          events.emit(
+            'project_data_paused',
+            listing,
+            active_project,
+            project_object,
+            data_db,
+            []
+          );
+        },
+      });
 
-  ensure_synced_db(
-    active_id,
-    data_connection_info,
-    data_dbs,
-    data_sync_handler,
-    {push: {}}
-  );
+    ensure_synced_db(
+      active_id,
+      data_connection_info,
+      data_dbs,
+      data_sync_handler,
+      {push: {}}
+    );
+  } else {
+    // Dummy data
+    // This timeout 'yields' to allow other code to add 'paused' listeners
+    // before the only 'paused' events are fired
+    // Acts kind of like a dumber SyncHandler
+    setTimeout(() => {
+      setupExampleData(active_project._id)
+        .then(async () => {
+          events.emit(
+            'project_data_paused',
+            listing,
+            active_project,
+            project_object,
+            data_db_local,
+            []
+          );
+        })
+        .catch(async err => {
+          console.error('Error setting up dummy Data', active_project._id, err);
+          events.emit(
+            'project_data_paused',
+            listing,
+            active_project,
+            project_object,
+            data_db_local,
+            []
+          );
+        });
+
+      setupExampleProjectMetadata(active_project._id, meta_db_local.local)
+        .then(async () => {
+          events.emit(
+            'project_meta_paused',
+            listing,
+            active_project,
+            project_object,
+            meta_db_local,
+            []
+          );
+        })
+        .catch(async err => {
+          console.error(
+            'Error setting up dummy Metadata',
+            active_project._id,
+            err
+          );
+          events.emit(
+            'project_meta_paused',
+            listing,
+            active_project,
+            project_object,
+            meta_db_local,
+            []
+          );
+        });
+    }, 50);
+  }
 }

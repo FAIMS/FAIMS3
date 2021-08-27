@@ -45,7 +45,8 @@ export function listenSyncingProject(
 
 export function isSyncingProject(active_id: ProjectID) {
   if (data_dbs[active_id] === undefined) {
-    throw 'Projects not initialized yet';
+    // When the project starts syncing, it should trigger the listenSyncingProject
+    return false;
   }
 
   if (data_dbs[active_id].remote === null) {
