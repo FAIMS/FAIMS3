@@ -50,7 +50,8 @@ export function isSyncingProject(active_id: ProjectID) {
   }
 
   if (data_dbs[active_id].remote === null) {
-    throw 'Projects not yet syncing';
+    // When the project starts syncing, it should trigger the listenSyncingProject
+    return false;
   }
 
   return data_dbs[active_id].is_sync;
