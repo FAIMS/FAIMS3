@@ -22,7 +22,6 @@
 import {useContext, useEffect, useState} from 'react';
 import {store} from '../../store';
 import {RouteComponentProps} from 'react-router';
-import {LocalAuthDoc} from '../../datamodel/database';
 import {local_auth_db} from '../../sync/databases';
 import * as ROUTES from '../../constants/routes';
 import {ActionType} from '../../actions';

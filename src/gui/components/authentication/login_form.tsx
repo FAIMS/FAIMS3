@@ -1,14 +1,12 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
 import React, {useState} from 'react';
-import {Box, Button, CircularProgress, Tab, Tabs} from '@material-ui/core';
-import {makeStyles} from '@material-ui/core/styles';
+import {Box, Button, CircularProgress} from '@material-ui/core';
 import {
   AuthInfo,
   ListingsObject,
   LocalAuthDoc,
 } from '../../../datamodel/database';
-import {directory_db, local_auth_db} from '../../../sync/databases';
-import {useHistory} from 'react-router-dom';
+import {directory_db} from '../../../sync/databases';
 import {useEffect} from 'react';
 
 export type LoginFormProps = {
