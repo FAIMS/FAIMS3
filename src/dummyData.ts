@@ -565,7 +565,14 @@ const example_directory: ListingsObject[] = [
     name: 'AAO Internal FAIMS instance',
     description:
       'This FAIMS server is the instance used internally by the AAO for testing.',
-    auth_mechanisms: [{type: 'dc_password'}],
+    auth_mechanisms: [
+      {
+        type: 'oauth',
+        base_url: 'https://auth.datacentral.org.au/cas/login',
+        client_id: '5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au',
+        name: 'Data Central',
+      },
+    ],
     projects_db: {
       proto: 'http',
       host: '10.80.11.44',
@@ -587,7 +594,14 @@ const example_directory: ListingsObject[] = [
       lan: true,
       db_name: 'csiro_hosted_projects',
     },
-    auth_mechanisms: [{type: 'dc_password'}],
+    auth_mechanisms: [
+      {
+        type: 'oauth',
+        base_url: 'https://auth.datacentral.org.au/cas/login',
+        client_id: '5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au',
+        name: 'Data Central',
+      },
+    ],
   },
 ];
 

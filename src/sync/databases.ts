@@ -148,7 +148,14 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
         directory_connection_info,
         possibly_corrupted_instance.projects_db
       ),
-      auth_mechanisms: [{type: 'dc_password'}],
+      auth_mechanisms: [
+        {
+          type: 'oauth',
+          base_url: 'https://auth.datacentral.org.au/cas/login',
+          client_id: '5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au',
+          name: 'Data Central',
+        },
+      ],
     };
   }
   return default_instance;
