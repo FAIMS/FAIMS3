@@ -98,47 +98,71 @@ export async function process_directory(
   if (directory_db.remote !== null) {
     return; //Already hooked up
   }
-  const directory_paused = ConnectionInfo_create_pouch<ListingsObject>(
-    directory_connection_info
-  );
 
-  const sync_handler = () =>
-    new SyncHandler<ListingsObject>(DIRECTORY_TIMEOUT, {
-      active: async () =>
-        events.emit(
-          'directory_active',
-          await get_active_listings_in_this_directory()
-        ),
-      paused: async changes => {
-        if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-        events.emit(
-          'directory_paused',
-          await get_active_listings_in_this_directory(),
-          changes
-        );
-      },
-      error: async () => {
-        if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
-        events.emit(
-          'directory_paused',
-          await get_active_listings_in_this_directory(),
-          []
-        );
-      },
-    });
+  if (USE_REAL_DATA) {
+    const directory_paused = ConnectionInfo_create_pouch<ListingsObject>(
+      directory_connection_info
+    );
 
-  directory_db.remote = {
-    db: directory_paused,
-    connection: null,
-    create_handler: sync_handler,
-    handler: null,
-    info: directory_connection_info,
-    options: {},
-  };
+    const sync_handler = () =>
+      new SyncHandler<ListingsObject>(DIRECTORY_TIMEOUT, {
+        active: async () =>
+          events.emit(
+            'directory_active',
+            await get_active_listings_in_this_directory()
+          ),
+        paused: async changes => {
+          events.emit(
+            'directory_paused',
+            await get_active_listings_in_this_directory(),
+            changes
+          );
+        },
+        error: async () => {
+          if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
+          events.emit(
+            'directory_paused',
+            await get_active_listings_in_this_directory(),[]
+          );
+        },
+      });
 
-  setLocalConnection(
-    (directory_db as unknown) as Parameters<typeof setLocalConnection>[0]
-  );
+    directory_db.remote = {
+      db: directory_paused,
+      connection: null,
+      create_handler: sync_handler,
+      handler: null,
+      info: directory_connection_info,
+      options: {},
+    };
+
+    setLocalConnection(
+      (directory_db as unknown) as Parameters<typeof setLocalConnection>[0]
+    );
+  } else {
+    // Dummy data
+    // This timeout 'yields' to allow other code to add 'paused' listeners
+    // before the only 'paused' events are fired
+    // Acts kind of like a dumber SyncHandler
+    setTimeout(() => {
+      setupExampleDirectory(directory_db.local)
+        .then(async () => {
+          events.emit(
+            'directory_paused',
+            await get_active_listings_in_this_directory(),
+            []
+          );
+        })
+        .catch(async err => {
+          console.error('Error setting up dummy Directory', err);
+          events.emit(
+            'directory_paused',
+            await get_active_listings_in_this_directory(),
+            []
+          );
+        });
+    }, 50);
+  }
 }
 
 export function process_listings(
