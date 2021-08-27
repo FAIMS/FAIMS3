@@ -50,8 +50,8 @@ export class TemplatedStringField extends React.Component<
     };
   }
 
-  render() {
-    const {template, children, ...textFieldProps} = this.props;
+  componentDidUpdate() {
+    const {template, ...textFieldProps} = this.props;
 
     const field_values: FieldValues = {};
     for (const field_name in textFieldProps.form.values) {
@@ -59,17 +59,21 @@ export class TemplatedStringField extends React.Component<
         field_values[field_name] = textFieldProps.form.values[field_name];
       }
     }
+    const value = render_template(template, field_values);
+    if (value !== this.state.value) {
+      this.setState({value: value});
+      this.props.form.setFieldValue(this.props.field.name, value);
+    }
+  }
+
+  render() {
+    const {children, ...textFieldProps} = this.props;
 
     const text_props = fieldToTextField(textFieldProps);
     if (text_props.InputProps === undefined) {
       text_props.InputProps = {};
     }
     text_props.InputProps.readOnly = true;
-    const value = render_template(template, field_values);
-    if (value !== this.state.value) {
-      this.setState({value: value});
-      this.props.form.setFieldValue(this.props.field.name, value);
-    }
 
     return <MuiTextField {...text_props}>{children}</MuiTextField>;
   }
