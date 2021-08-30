@@ -48,7 +48,7 @@ jobs:
         node-version: ['lts/*'] # '14'
         experimental: [false]
         include:
-          - node-version: 'node' #, 16 'lts/*' is also valid, but I don't have a good way of automatically tagging active and current
+          - node-version: '16' #, 16 ok, it looks like v2 doesn't support /nv even though the docs say it does. Hardcoding version for now.
             experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
 
     steps:
