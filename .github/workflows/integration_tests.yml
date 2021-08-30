@@ -48,8 +48,8 @@ jobs:
         node-version: ['lts/*'] # '14'
         experimental: [false]
         include:
-          - node-version: 'current' #, 16 'lts/*' is also valid, but I don't have a good way of automatically tagging active and current
-            experimental: true
+          - node-version: 'node' #, 16 'lts/*' is also valid, but I don't have a good way of automatically tagging active and current
+            experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
 
     steps:
     - uses: actions/checkout@v2
