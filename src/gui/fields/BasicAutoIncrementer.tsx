@@ -59,7 +59,11 @@ export class BasicAutoIncrementer extends React.Component<
       form_id,
       field_id
     );
-    if (local_state.last_used_id === null || local_state.ranges.length === 0) {
+    console.debug(
+      `local_auto_inc for ${project_id} ${form_id} ${field_id} is`,
+      local_state
+    );
+    if (local_state.last_used_id === null && local_state.ranges.length === 0) {
       // We have no range allocations, block
       // TODO: add link to range allocation
       this.context.dispatch({
@@ -75,6 +79,7 @@ export class BasicAutoIncrementer extends React.Component<
       // We've got a clean slate with ranges allocated, start allocating ids
       const new_id = local_state.ranges[0].start;
       local_state.ranges[0].using = true;
+      local_state.last_used_id = new_id;
       await set_local_autoincrement_state_for_field(local_state);
       return new_id;
     }
@@ -127,7 +132,7 @@ export class BasicAutoIncrementer extends React.Component<
     const current_value = this.props.form.values[this.props.field.name];
 
     if (!this.state.has_run) {
-      console.error('running autoinc');
+      console.debug('running autoinc');
       if (current_value === null) {
         const new_id = await this.compute_id(this.props.num_digits || 4);
         if (new_id === undefined) {
@@ -155,7 +160,6 @@ export class BasicAutoIncrementer extends React.Component<
   }
 
   render() {
-    console.error(this.props);
     return (
       <Input
         name={this.props.field.name}

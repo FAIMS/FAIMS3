@@ -37,6 +37,8 @@ export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
 export const PROJECT_METADATA_PREFIX = 'project-metadata';
 export const RECORD_INDEX_NAME = 'record-version-index';
+export const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
+export const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 
 /*
  * This may already exist in pouchdb's typing, but lets make a temporary one for
@@ -201,12 +203,42 @@ export interface AttributeValuePair {
 }
 
 /*
+ * Autoincrementing types
+ */
+export interface LocalAutoIncrementRange {
+  start: number;
+  stop: number;
+  fully_used: boolean;
+  using: boolean;
+}
+
+export interface LocalAutoIncrementState {
+  _id: string;
+  _rev?: string;
+  last_used_id: number | null;
+  ranges: LocalAutoIncrementRange[];
+}
+
+export interface AutoIncrementReference {
+  project_id: ProjectID;
+  form_id: string;
+  field_id: string;
+}
+
+export interface AutoIncrementReferenceDoc {
+  _id: string;
+  _rev?: string;
+  references: AutoIncrementReference[];
+}
+
+/*
  * Elements of a Project's metadataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
+  | AutoIncrementReferenceDoc
   | ProjectPeople;
 
 /*

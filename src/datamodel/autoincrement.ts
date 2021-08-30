@@ -1,21 +1,14 @@
+import {getProjectDB} from '../sync/index';
 import {local_state_db} from '../sync/databases';
 import {ProjectID} from './core';
-
-const AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
-
-interface LocalAutoIncrementRange {
-  start: number;
-  stop: number;
-  fully_used: boolean;
-  using: boolean;
-}
-
-interface LocalAutoIncrementState {
-  _id: string;
-  _rev?: string;
-  last_used_id: number | null;
-  ranges: LocalAutoIncrementRange[];
-}
+import {
+  LOCAL_AUTOINCREMENT_PREFIX,
+  LOCAL_AUTOINCREMENT_NAME,
+  LocalAutoIncrementRange,
+  LocalAutoIncrementState,
+  AutoIncrementReference,
+  AutoIncrementReferenceDoc,
+} from './database';
 
 function get_pouch_id(
   project_id: ProjectID,
@@ -23,7 +16,13 @@ function get_pouch_id(
   field_id: string
 ): string {
   return (
-    AUTOINCREMENT_PREFIX + '-' + project_id + '-' + form_id + '-' + field_id
+    LOCAL_AUTOINCREMENT_PREFIX +
+    '-' +
+    project_id +
+    '-' +
+    form_id +
+    '-' +
+    field_id
   );
 }
 
@@ -72,4 +71,81 @@ export function create_new_autoincrement_range(
     using: false,
   };
   return doc;
+}
+
+export async function get_autoincrement_references_for_project(
+  project_id: ProjectID
+): Promise<AutoIncrementReference[]> {
+  const projdb = getProjectDB(project_id);
+  try {
+    const doc: AutoIncrementReferenceDoc = await projdb.get(
+      LOCAL_AUTOINCREMENT_NAME
+    );
+    return doc.references;
+  } catch (err) {
+    if (err.status === 404) {
+      // No autoincrementers
+      return [];
+    }
+    console.error(err);
+    throw Error('Unable to get local autoincrement references');
+  }
+}
+
+export async function add_autoincrement_reference_for_project(
+  project_id: ProjectID,
+  form_id: string,
+  field_id: string
+) {
+  const projdb = getProjectDB(project_id);
+  const ref: AutoIncrementReference = {
+    project_id: project_id,
+    form_id: form_id,
+    field_id: field_id,
+  };
+  try {
+    const doc: AutoIncrementReferenceDoc = await projdb.get(
+      LOCAL_AUTOINCREMENT_NAME
+    );
+    const ref_set = new Set(doc.references);
+    ref_set.add(ref);
+    doc.references = Array.from(ref_set.values());
+    await projdb.put(doc);
+  } catch (err) {
+    if (err.status === 404) {
+      // No autoincrementers currently
+      await projdb.put({
+        _id: LOCAL_AUTOINCREMENT_NAME,
+        references: [ref],
+      });
+    } else {
+      console.error(err);
+      throw Error('Unable to add local autoincrement reference');
+    }
+  }
+}
+
+export async function remove_autoincrement_reference_for_project(
+  project_id: ProjectID,
+  form_id: string,
+  field_id: string
+) {
+  const projdb = getProjectDB(project_id);
+  const ref: AutoIncrementReference = {
+    project_id: project_id,
+    form_id: form_id,
+    field_id: field_id,
+  };
+  try {
+    const doc: AutoIncrementReferenceDoc = await projdb.get(
+      LOCAL_AUTOINCREMENT_NAME
+    );
+    const ref_set = new Set(doc.references);
+    ref_set.delete(ref);
+    doc.references = Array.from(ref_set.values());
+    await projdb.put(doc);
+  } catch (err) {
+    console.error(err);
+    throw Error('Unable to remove local autoincrement reference');
+  }
 }
