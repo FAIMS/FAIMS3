@@ -31,6 +31,7 @@ import {ActionButton} from './fields/ActionButton';
 import {TakePoint} from './fields/TakePoint';
 import {Checkbox as FAIMSCheckbox} from './fields/checkbox';
 import {RadioGroup as FAIMSRadioGroup} from './fields/radio';
+import {TemplatedStringField} from './fields/TemplatedStringField';
 
 const componentRegistry: {
   [namespace: string]: {[name: string]: React.Component};
@@ -86,3 +87,4 @@ registerComponent('faims-custom', 'Checkbox', FAIMSCheckbox);
 registerComponent('faims-custom', 'RadioGroup', FAIMSRadioGroup);
 registerComponent('faims-custom', 'ActionButton', ActionButton);
 registerComponent('faims-custom', 'TakePoint', TakePoint);
+registerComponent('faims-custom', 'TemplatedStringField', TemplatedStringField);
