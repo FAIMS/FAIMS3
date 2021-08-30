@@ -32,9 +32,12 @@ import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
+import ProjectSettings from './gui/pages/project-settings';
 import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
+import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
+import AutoIncrementEdit from './gui/pages/autoincrement-edit';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './store';
 
@@ -95,6 +98,11 @@ export class App extends React.Component<AppProps, AppState> {
               />
               <Route
                 exact
+                path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS}
+                component={ProjectSettings}
+              />
+              <Route
+                exact
                 path={
                   ROUTES.PROJECT +
                   ':project_id' +
@@ -115,6 +123,23 @@ export class App extends React.Component<AppProps, AppState> {
                   ':revision_id'
                 }
                 component={Record}
+              />
+              <Route
+                exact
+                path={
+                  ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST
+                }
+                component={AutoIncrementBrowse}
+              />
+              <Route
+                exact
+                path={
+                  ROUTES.PROJECT +
+                  ':project_id' +
+                  ROUTES.AUTOINCREMENT +
+                  ':form_id/:field_id'
+                }
+                component={AutoIncrementEdit}
               />
               <Route exact path="/" component={Index} />
               <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />

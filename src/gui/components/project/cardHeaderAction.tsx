@@ -10,6 +10,7 @@ import {
 } from '@material-ui/core';
 import ShareIcon from '@material-ui/icons/Share';
 import AddIcon from '@material-ui/icons/Add';
+import SettingsIcon from '@material-ui/icons/Settings';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import {Link as RouterLink, NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
@@ -122,6 +123,12 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                 </MenuItem>
               ))}
             </Menu>
+            <IconButton
+              component={RouterLink}
+              to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SETTINGS}
+            >
+              <SettingsIcon />
+            </IconButton>
           </Box>
         </React.Fragment>
       ) : (
@@ -150,6 +157,15 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                 <ShareIcon fontSize="small" />
               </ListItemIcon>
               Share
+            </MenuItem>
+            <MenuItem
+              component={NavLink}
+              to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SETTINGS}
+            >
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              Project Settings
             </MenuItem>
           </Menu>
         </React.Fragment>

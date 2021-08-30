@@ -98,6 +98,55 @@ export function create_new_autoincrement_range(
   return doc;
 }
 
+export async function get_local_autoincrement_ranges_for_field(
+  project_id: ProjectID,
+  form_id: string,
+  field_id: string
+): Promise<LocalAutoIncrementRange[]> {
+  const state = await get_local_autoincrement_state_for_field(
+    project_id,
+    form_id,
+    field_id
+  );
+  return state.ranges;
+}
+
+export async function set_local_autoincrement_ranges_for_field(
+  project_id: ProjectID,
+  form_id: string,
+  field_id: string,
+  new_ranges: LocalAutoIncrementRange[]
+) {
+  const state = await get_local_autoincrement_state_for_field(
+    project_id,
+    form_id,
+    field_id
+  );
+  if (state.ranges.length === 0) {
+    state.ranges = new_ranges;
+    await set_local_autoincrement_state_for_field(state);
+  } else {
+    // We should check that we're not causing problems for existing ranges
+    for (const range of state.ranges) {
+      if (range.fully_used && !new_ranges.includes(range)) {
+        throw Error('Fully used range removed');
+      } else if (range.using) {
+        const new_using_range = new_ranges.find(r => r.using);
+        if (new_using_range === undefined) {
+          throw Error('Currently used range removed');
+        } else if (new_using_range.start !== range.start) {
+          throw Error('Currently used range start changed');
+        } else if (new_using_range.stop < range.stop) {
+          throw Error('Currently used range stop reduced');
+        }
+      }
+    }
+    // We having broken anything, update ranges and save
+    state.ranges = new_ranges;
+    await set_local_autoincrement_state_for_field(state);
+  }
+}
+
 export async function get_autoincrement_references_for_project(
   project_id: ProjectID
 ): Promise<AutoIncrementReference[]> {

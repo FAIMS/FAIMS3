@@ -31,6 +31,7 @@ import {TakePoint} from '../fields/TakePoint';
 import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
 import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
+import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
 import {registerComponent, setupComponentProperties} from './internals';
 
 /*
