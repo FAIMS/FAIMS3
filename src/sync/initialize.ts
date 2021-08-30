@@ -68,8 +68,19 @@ function initialize_dbs(): DirectoryEmitter {
   events
     .on('directory_local', listings => process_listings(listings, true))
     .on('directory_paused', listings => process_listings(listings, false))
-    .on('listing_local', (...args) => process_projects(...args, true))
-    .on('listing_paused', (...args) => process_projects(...args, false));
+    .on('listing_local', (...args) => process_projects(...args, false))
+    .on(
+      'listing_paused',
+      (listing, projects, people_db, projects_db, default_connection) =>
+        process_projects(
+          listing,
+          projects,
+          people_db,
+          projects_db,
+          default_connection,
+          true
+        )
+    );
 
   attach_all_listeners(events);
 

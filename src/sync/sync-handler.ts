@@ -17,9 +17,9 @@
  * Description:
  *   TODO
  */
-interface EmissionsArg {
+interface EmissionsArg<Content extends {}> {
   active(): unknown;
-  paused(err?: {}): unknown;
+  paused(changes: PouchDB.Core.ExistingDocument<Content>[]): unknown;
   error(err: {}): unknown;
 }
 /**
@@ -30,17 +30,18 @@ interface EmissionsArg {
  * Pouch should theoretically batch its updates, so in the future
  * I hope to be able to remove this class.
  */
-export class SyncHandler {
+export class SyncHandler<Content extends {}> {
   lastActive?: ReturnType<typeof Date.now>;
   timeout: number;
   timeout_track?: ReturnType<typeof setTimeout>;
-  emissions: EmissionsArg;
+  emissions: EmissionsArg<Content>;
+  tracked_changes: PouchDB.Core.ExistingDocument<Content>[] = [];
 
   listener_error?: (...args: any[]) => unknown;
   listener_changed?: (...args: any[]) => unknown;
   listener_paused?: (...args: any[]) => unknown;
 
-  constructor(timeout: number, emissions: EmissionsArg) {
+  constructor(timeout: number, emissions: EmissionsArg<Content>) {
     this.timeout = timeout;
 
     this.emissions = emissions;
@@ -48,14 +49,16 @@ export class SyncHandler {
     this.setTimeout().then(() => {
       // After 2 seconds of no initial activity,
       // Mark the data as stopped coming in
-      this.emissions.paused();
+      this.emissions.paused(this.tracked_changes);
+      this.tracked_changes = [];
     });
   }
   _inactiveCheckLoop() {
     if (this.lastActive! + this.timeout - 20 <= Date.now()) {
       // Timeout (minus wiggle room) (or more) has elapsed since being active
       this.lastActive = undefined;
-      this.emissions.paused();
+      this.emissions.paused(this.tracked_changes);
+      this.tracked_changes = [];
     } else {
       // Set a new timeout for the remaining time of the 2 seconds.
       this.setTimeout(this.lastActive! + this.timeout - Date.now()).then(
@@ -64,9 +67,11 @@ export class SyncHandler {
     }
   }
 
-  listen(
-    db: PouchDB.Replication.ReplicationEventEmitter<{}, unknown, unknown>
-  ) {
+  listen<
+    D extends
+      | PouchDB.Replication.Sync<Content>
+      | PouchDB.Replication.Replication<Content>
+  >(db: D, changes_include_doc: PouchDB.Core.Changes<Content>) {
     db.on(
       'paused',
       (this.listener_paused = (err?: {}) => {
@@ -77,41 +82,70 @@ export class SyncHandler {
         */
         this.lastActive = undefined;
         this.clearTimeout();
-        this.emissions.paused(err);
-      })
-    );
-    db.on(
-      'change',
-      (this.listener_changed = () => {
-        /*
-        This event fires when the replication starts actively processing changes;
-        e.g. when it recovers from an error or new changes are available.
-        */
-
-        if (
-          this.lastActive !== undefined &&
-          this.lastActive! + this.timeout - 20 <= Date.now()
-        ) {
-          console.warn(
-            "someone didn't clear the lastActive when clearTimeout called"
-          );
-          this.lastActive = undefined;
-        }
-
-        if (this.lastActive === undefined) {
-          this.lastActive = Date.now();
-          this.clearTimeout();
-          this.emissions.active();
-
-          // After 2 seconds of no more 'active' events,
-          // assume it's up to date
-          // (Otherwise, if it's still active, keep checking until it's not)
-          this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+        if (err === undefined || err === null) {
+          this.emissions.paused(this.tracked_changes);
+          this.tracked_changes = [];
         } else {
-          this.lastActive = Date.now();
+          this.emissions.error(err);
         }
       })
     );
+    this.listener_changed = (
+      changes: PouchDB.Core.ExistingDocument<Content>[]
+    ) => {
+      /*
+      This event fires when the replication starts actively processing changes;
+      e.g. when it recovers from an error or new changes are available.
+      */
+
+      this.tracked_changes.push(...changes);
+
+      if (
+        this.lastActive !== undefined &&
+        this.lastActive! + this.timeout - 20 <= Date.now()
+      ) {
+        console.warn(
+          "someone didn't clear the lastActive when clearTimeout called"
+        );
+        this.lastActive = undefined;
+      }
+
+      if (this.lastActive === undefined) {
+        this.lastActive = Date.now();
+        this.clearTimeout();
+        this.emissions.active();
+
+        // After 2 seconds of no more 'active' events,
+        // assume it's up to date
+        // (Otherwise, if it's still active, keep checking until it's not)
+        this.setTimeout().then(this._inactiveCheckLoop.bind(this));
+      } else {
+        this.lastActive = Date.now();
+      }
+    };
+    changes_include_doc.on('change', change => {
+      this.listener_changed!([change.doc!]);
+      this.tracked_changes.push(change.doc!);
+    });
+    // This is a valid conversion. Typescript doesn't like this, but
+    // it's valid because either thing that DB can be has a 'change' event,
+    // They give different argument types, though.
+    ((db as unknown) as {
+      on(
+        event: 'change',
+        listener: (
+          info:
+            | PouchDB.Replication.ReplicationResult<Content>
+            | PouchDB.Replication.SyncResult<Content>
+        ) => any
+      ): D;
+    }).on('change', changes => {
+      if ('direction' in changes && changes.direction === 'pull') {
+        this.listener_changed!(changes.change.docs);
+      } else if ('docs' in changes) {
+        this.listener_changed!(changes.docs);
+      }
+    });
     db.on(
       'error',
       (this.listener_error = err => {
