@@ -48,7 +48,7 @@ jobs:
         node-version: ['lts/*'] # '14'
         experimental: [false]
         include:
-          - node-version: ['current'] #, 16 'lts/*' is also valid, but I don't have a good way of automatically tagging active and current
+          - node-version: ['16'] #, 16 'lts/*' is also valid, but I don't have a good way of automatically tagging active and current
             experimental: true
 
     steps:
