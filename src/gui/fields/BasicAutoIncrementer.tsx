@@ -24,9 +24,15 @@ import {FieldProps} from 'formik';
 
 import {ActionType} from '../../actions';
 import {store} from '../../store';
+import {
+  get_local_autoincrement_state_for_field,
+  set_local_autoincrement_state_for_field,
+} from '../../datamodel/autoincrement';
 
 interface Props {
   num_digits: number;
+  // This could be dropped depending on how multi-stage forms are configured
+  form_id: string;
 }
 
 interface State {
@@ -45,7 +51,68 @@ export class BasicAutoIncrementer extends React.Component<
   }
 
   async get_id(): Promise<number | null> {
-    return null;
+    const project_id = this.props.form.values['_project_id'];
+    const form_id = this.props.form_id;
+    const field_id = this.props.field.name;
+    const local_state = await get_local_autoincrement_state_for_field(
+      project_id,
+      form_id,
+      field_id
+    );
+    if (local_state.last_used_id === null || local_state.ranges.length === 0) {
+      // We have no range allocations, block
+      // TODO: add link to range allocation
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'No ranges allocated for autoincrement ID, add ranges',
+          severity: 'error',
+        },
+      });
+      return null;
+    }
+    if (local_state.last_used_id === null) {
+      // We've got a clean slate with ranges allocated, start allocating ids
+      const new_id = local_state.ranges[0].start;
+      local_state.ranges[0].using = true;
+      await set_local_autoincrement_state_for_field(local_state);
+      return new_id;
+    }
+    // We're now using the allocated ranges, find where we've up to:
+    // If we're using a range, find it
+    for (const range of local_state.ranges) {
+      if (range.using) {
+        if (local_state.last_used_id + 1 < range.stop) {
+          const next_id = local_state.last_used_id + 1;
+          local_state.last_used_id = next_id;
+          await set_local_autoincrement_state_for_field(local_state);
+          return next_id;
+        }
+        range.fully_used = true;
+        await set_local_autoincrement_state_for_field(local_state);
+      }
+    }
+    // find a new range to use
+    for (const range of local_state.ranges) {
+      if (!range.fully_used) {
+        const next_id = range.start;
+        range.using = true;
+        await set_local_autoincrement_state_for_field(local_state);
+        return next_id;
+      }
+    }
+    // we've got no new ranges to use, either we block, or use the highest range
+    // as a starting point
+    // TODO: Add blocking logic
+    let max_stop = local_state.last_used_id;
+    for (const range of local_state.ranges) {
+      if (range.stop > max_stop) {
+        max_stop = range.stop;
+      }
+    }
+    local_state.last_used_id = max_stop;
+    await set_local_autoincrement_state_for_field(local_state);
+    return max_stop;
   }
 
   async compute_id(num_digits: number): Promise<string | undefined> {
