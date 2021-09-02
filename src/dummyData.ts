@@ -466,8 +466,18 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: '',
       },
     },
+    variants: {
+      main: {
+        views: ['start-view', 'next-view'],
+      },
+      photolog: {
+        views: ['next-view', 'photo-view'],
+      },
+    },
+    default_variants: ['main', 'photolog'],
     views: {
       'start-view': {
+        label: 'Main',
         fields: [
           'hrid-field',
           'take-point-field',
@@ -477,23 +487,30 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'str-field',
           'multi-str-field',
           'int-field',
-          'select-field',
           'multi-select-field',
           'checkbox-field',
           'radio-group-field',
-          // 'bool-field',
-          // 'date-field',
-          // 'time-field',
-        ], // ordering sets appearance order
+        ],
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
+      'next-view': {
+        label: 'Common',
+        next_label: 'Done!',
+        fields: ['int-field', 'select-field'],
+      },
+      'photo-view': {
+        label: 'Exclusive Photo view',
+        fields: ['checkbox-field'],
+      },
     },
-
-    start_view: 'start-view',
   },
   default_projectB: {
     fields: {},
+    variants: {
+      default: {
+        views: ['start-view'],
+      },
+    },
+    default_variants: ['default'],
     views: {
       'start-view': {
         fields: [
@@ -505,13 +522,16 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           // 'time-field',
         ], // ordering sets appearance order
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
     },
-    start_view: 'start-view',
   },
   default_projectC: {
     fields: {},
+    variants: {
+      default: {
+        views: ['start-view'],
+      },
+    },
+    default_variants: ['default'],
     views: {
       'start-view': {
         fields: [
@@ -523,10 +543,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           // 'time-field',
         ], // ordering sets appearance order
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
     },
-    start_view: 'start-view',
   },
 };
 

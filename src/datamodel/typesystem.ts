@@ -38,6 +38,18 @@ export interface ProjectUIFields {
   [key: string]: any;
 }
 
+export interface ProjectUIVariants {
+  [key: string]: {
+    label?: string;
+    views: string[];
+    submit_label?: string;
+  };
+}
+
 export interface ProjectUIViews {
-  [key: string]: any;
+  [key: string]: {
+    label?: string;
+    fields: string[];
+    next_label?: string;
+  };
 }
