@@ -24,7 +24,7 @@
  */
 
 import {ProjectID, RecordID, RevisionID} from './core';
-import {ProjectUIFields, ProjectUIViews} from './typesystem';
+import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
 export interface ProjectInformation {
   project_id: ProjectID;
@@ -40,7 +40,8 @@ export interface ProjectUIModel {
   _rev?: string; // optional as we may want to include the raw json in places
   fields: ProjectUIFields;
   views: ProjectUIViews;
-  start_view: string;
+  viewsets: ProjectUIViewsets;
+  visible_types: string[];
 }
 
 export interface RecordMetadata {

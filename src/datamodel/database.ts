@@ -29,6 +29,7 @@ import {
   FAIMSConstantCollection,
   FAIMSTypeCollection,
   ProjectUIFields,
+  ProjectUIViewsets,
   ProjectUIViews,
 } from './typesystem';
 
@@ -131,7 +132,8 @@ export interface EncodedProjectUIModel {
   _deleted?: boolean;
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
-  start_view: string;
+  viewsets: ProjectUIViewsets;
+  visible_types: string[];
 }
 
 export interface EncodedProjectMetadata {
