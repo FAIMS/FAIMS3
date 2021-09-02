@@ -22,7 +22,6 @@
  * User readable information about a project
  * Do not use with sync code; UI code only
  */
-
 import {ProjectID, RecordID, RevisionID} from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
@@ -79,3 +78,25 @@ export interface Record {
 export type RecordList = {
   [key: string]: Record;
 };
+
+/*
+ * This somehow needs to handle class-based components and function-based
+ * components...
+ */
+export type FAIMSFormField = any;
+export type FAIMSBuilderFormField = any;
+export type FAIMSBuilderIcon = any;
+
+export interface ComponentRegistryProperties {
+  human_readable_name: string;
+  description: string;
+  component: FAIMSFormField;
+  builder_component: FAIMSBuilderFormField;
+  icon: FAIMSBuilderIcon;
+}
+
+export type ComponentRegistryItem = {
+  [name: string]: ComponentRegistryProperties;
+};
+
+export type ComponentRegistry = {[namespace: string]: ComponentRegistryItem};
