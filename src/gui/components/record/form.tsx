@@ -32,6 +32,7 @@ import {
   Typography,
   Step,
   Stepper,
+  StepButton,
 } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
@@ -537,6 +538,7 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           <Stepper
+            nonLinear
             activeStep={this.props.uiSpec.viewsets[
               this.state.type_cached!
             ].views.indexOf(viewName)}
@@ -545,7 +547,13 @@ class RecordForm extends React.Component<
             {this.props.uiSpec.viewsets[this.state.type_cached!].views.map(
               (view_name: string) => (
                 <Step key={view_name}>
-                  <StepLabel>{view_name}</StepLabel>
+                  <StepButton
+                    onClick={() => {
+                      this.setState({view_cached: view_name});
+                    }}
+                  >
+                    {view_name}
+                  </StepButton>
                 </Step>
               )
             )}
