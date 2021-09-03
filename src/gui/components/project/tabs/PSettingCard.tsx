@@ -14,20 +14,21 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function PSettingCard(props:any){
-	const  { handelonClick,className, ...other } = props;
+	const  { handelonClick,key_id, ...other } = props;
 	const classes = useStyles();
+	console.log(key_id)
 	return (
 		<List component="nav" aria-label="settings bar" className={classes.root}>
-		  <ListItem button onClick={() => handelonClick(1)} key='list1'>
+		  <ListItem button onClick={() => handelonClick(1,key_id)} key='list1'>
 		    <SettingsIcon />
 		  </ListItem>
-		  <ListItem button onClick={() => handelonClick(3)} key='list2'>
+		  <ListItem button onClick={() => handelonClick(3,key_id)} key='list2'>
 		    <PlaylistAddCheckIcon />
 		  </ListItem>
-		  <ListItem button onClick={() => handelonClick(5)} key='list3'>
+		  <ListItem button onClick={() => handelonClick(5,key_id)} key='list3'>
 		    <GroupIcon />
 		  </ListItem>
-		  <ListItem button onClick={() => handelonClick(7)} key='list4'>
+		  <ListItem button onClick={() => handelonClick(7,key_id)} key='list4'>
 		    <NoteIcon />
 		  </ListItem>
 		</List>

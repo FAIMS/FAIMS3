@@ -37,31 +37,7 @@ type FormElement = {
   // fieldNames:any
 };
 
-
-export default function FormElement (props: FormElement){
-
-  const [currentView, setCurrentView] = useState(props.view);
-  const [designvalue,setDesignvalue] = useState(1);
-  const [uiSpec,setUISpec] = useState(props.uiSpec); 
-  const formProps=props.formProps;
-  const [fieldNames,setFieldNames]=useState<Array<any>>(uiSpec['views'][currentView]['fields'])
-  const [uidesign,setuidesign]=useState<string>(uiSpec['views'][currentView]['uidesign'])
-
-  const setnewPage = () =>{
-    // This method is to change form uispecific when uispecific changes=> inital value, uiSpefic, views
-    setFieldNames(uiSpec['views'][currentView]['fields'])
-    setuidesign(uiSpec['views'][currentView]['uidesign'])
-  }
-
-
-  // useEffect(() => {
-  //   console.log('ui changes')
-  //   console.log(uiSpec)
-
-  //    setnewPage()
-  //   }, [uiSpec,currentView]);
-
-  const getComponentFromField = (fieldName: string,formProps:any,uidesign='alert') =>{
+export const getComponentFromField = (uiSpec:any,fieldName: string,formProps:any,handleChangeC:any,uidesign='alert') =>{
     // console.log('getComponentFromField');
     
     const fields = uiSpec['fields'];
@@ -101,6 +77,32 @@ export default function FormElement (props: FormElement){
      );
     
   }
+
+
+export  function FormElement (props: FormElement){
+
+  const [currentView, setCurrentView] = useState(props.view);
+  const [designvalue,setDesignvalue] = useState(1);
+  const [uiSpec,setUISpec] = useState(props.uiSpec); 
+  const formProps=props.formProps;
+  const [fieldNames,setFieldNames]=useState<Array<any>>(uiSpec['views'][currentView]['fields'])
+  const [uidesign,setuidesign]=useState<string>(uiSpec['views'][currentView]['uidesign'])
+
+  const setnewPage = () =>{
+    // This method is to change form uispecific when uispecific changes=> inital value, uiSpefic, views
+    setFieldNames(uiSpec['views'][currentView]['fields'])
+    setuidesign(uiSpec['views'][currentView]['uidesign'])
+  }
+
+
+  // useEffect(() => {
+  //   console.log('ui changes')
+  //   console.log(uiSpec)
+
+  //    setnewPage()
+  //   }, [uiSpec,currentView]);
+
+  
    const handelonClickSetting = (id:any) => {
     setDesignvalue(id)
   }
@@ -112,11 +114,11 @@ export default function FormElement (props: FormElement){
     <React.Fragment>
     {uidesign==='form'?
       fieldNames.map(fieldName => {
-        return getComponentFromField(fieldName, formProps,uidesign);
+        return getComponentFromField(uiSpec,fieldName, formProps,handleChangeC,uidesign);
         }):
       <Grid container spacing={1} >
         <Grid item sm={4} xs={12} >
-          {fieldNames.length>0?getComponentFromField(fieldNames[0], formProps):''}
+          {fieldNames.length>0?getComponentFromField(uiSpec,fieldNames[0], formProps,handleChangeC):''}
         </Grid>
         <Grid item sm={1} xs={3} >          
           <PSettingCard handelonClick={handelonClickSetting} />       
@@ -124,9 +126,9 @@ export default function FormElement (props: FormElement){
         <Grid item sm={7} xs={9}>
           {uidesign==='settings'?fieldNames.length>designvalue+1?
             [designvalue,designvalue+1].map(value => {
-              return getComponentFromField(fieldNames[value], formProps,uidesign);
+              return getComponentFromField(uiSpec,fieldNames[value], formProps,handleChangeC,uidesign);
             }):''
-            :getComponentFromField(fieldNames[1], formProps,'alert')
+            :getComponentFromField(uiSpec,fieldNames[1], formProps,handleChangeC,'alert')
           }
         </Grid>
       </Grid>
