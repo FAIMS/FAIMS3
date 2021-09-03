@@ -26,7 +26,8 @@ import grey from '@material-ui/core/colors/grey';
 import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden} from '@material-ui/core';
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import FieldsListCard from './tabs/FieldsListCard';
-import FormElement from './FormElement';
+import PSettingCard from './tabs/PSettingCard';
+import {getComponentFromField} from './FormElement';
 import TestC from './tabs/TestC'
 import {projectaddfield,FieldSettings,getcomponent,getfieldname,convertuiSpecToProps,setProjectInitialValues} from './data/ComponentSetting'
 import {CusButton,CloseButton,UpButton,DownButton} from './tabs/ProjectButton'
@@ -64,11 +65,13 @@ export default function CreateProjectCard() {
     const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any}>({fields:{},views:{"start-view":{'fields':[],uidesign:'form'}}})
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState('start-view')
+    const [designvalue,setDesignvalue]=useState<any>(1)
 
-    //  useEffect(() => {
-    //  console.log(formcomponents)
 
-    // }, [formcomponents,initialValues]);
+     useEffect(() => {
+     console.log('update')
+
+    }, [formcomponents,initialValues]);
 
     const submithandler = (values:any) =>{
     console.log('SAVE')
@@ -130,7 +133,8 @@ export default function CreateProjectCard() {
       const fieldprops=convertuiSpecToProps(newfield)
       const newuiSpeclist=FieldSettings(newfield,name,fieldprops)
       setinitialValues({...initialValues,...setProjectInitialValues(newuiSpeclist,currentView,{})})
-      setFormComponents([...formcomponents,{id:length,uiSpec:newuiSpeclist}])
+      // setDesignvalue({...designvalue,length:1})
+      setFormComponents([...formcomponents,{id:length,uiSpec:newuiSpeclist,designvalue:1}])
       setFormuiSpec({fields:newuiSpec,views:newviews})
       console.log('ini')
       console.log(initialValues)
@@ -138,15 +142,15 @@ export default function CreateProjectCard() {
     }
 
     const handleRemoveField = (id:any)=>{
-      console.log(formcomponents[id])
+      console.log(id)
       
       
-      // const newviews=formuiSpec.views
-      // newviews[currentView]['fields']=newviews[currentView]['fields'].filter((field:any)=>field!==formcomponents[id]['uiSpec']['views'][currentView]['fields'][0])
-      // setFormuiSpec({fields:formuiSpec.fields,views:newviews})
-      // const newcom=formcomponents.filter(formcomponent=>formcomponent.id!==id)
-      // setFormComponents(newcom)
-      // console.log(newcom)
+      const newviews=formuiSpec.views
+      newviews[currentView]['fields']=newviews[currentView]['fields'].filter((field:any)=>field!=='newfield'+id)
+      setFormuiSpec({fields:formuiSpec.fields,views:newviews})
+      const newcom=formcomponents.filter(formcomponent=>formcomponent.id!==id)
+      setFormComponents(newcom)
+      console.log(newcom)
     }
     const handleAddFieldButton = ()=>{
       setIsAddField(true)
@@ -181,6 +185,13 @@ export default function CreateProjectCard() {
       
     }
 
+    const handelonClickSetting = (index:any,key:any) =>{
+      // const newvalue=designvalue
+      // newvalue[key]=index
+      setDesignvalue(index)
+      console.log(designvalue)
+    }
+
 
 
 
@@ -203,7 +214,21 @@ export default function CreateProjectCard() {
                 {formcomponents.length>0?formcomponents.map((formcomponent:any,index:any)=>
                 <Grid container className={classes.newfield} key={`formcompoenet-form-${index}`}>
                 <Grid item sm={10} xs={11}>
-                  <FormElement key={index} view='start-view' uiSpec={formcomponent.uiSpec}  formProps={formProps} handleChangeForm={handleChangeForm} />
+                  
+                  <Grid container spacing={1} >
+                    <Grid item sm={4} xs={12} >
+                      {formcomponent.uiSpec['views'][currentView]['fields'].length>0?getComponentFromField(formcomponent.uiSpec,formcomponent.uiSpec['views'][currentView]['fields'][0], formProps,handleChangeForm):''}
+                    </Grid>
+                    <Grid item sm={1} xs={3} >          
+                      <PSettingCard handelonClick={handelonClickSetting} key_id={formcomponent.id}/>       
+                    </Grid>
+                    <Grid item sm={7} xs={9}>
+                      {formcomponent.uiSpec['views'][currentView]['fields'].length>0?
+                      [designvalue,(designvalue+1)].map(value => {
+                        return getComponentFromField(formcomponent.uiSpec,formcomponent.uiSpec['views'][currentView]['fields'][value], formProps,handleChangeForm);
+                      }):''}
+                    </Grid>
+                  </Grid>
                 </Grid>
                 <Grid item sm={2} xs={12} className={classes.newfield_button}>
                   {index>0?<UpButton  onButtonClick={handleUpFieldButton} value={index} id={index} text='X' />:''}
