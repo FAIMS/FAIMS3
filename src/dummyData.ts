@@ -42,6 +42,7 @@ const example_records: {
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
+      variant: 'main',
       data: {
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
@@ -65,6 +66,7 @@ const example_records: {
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
+      variant: 'main',
       data: {
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',

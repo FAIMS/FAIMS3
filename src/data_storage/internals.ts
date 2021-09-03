@@ -276,6 +276,7 @@ export async function addNewRevisionFromForm(
     avps: avp_map,
     record_id: record.record_id,
     parents: parents,
+    variant: record.variant,
     created: record.updated.toISOString(),
     created_by: record.updated_by,
     type: record.type,

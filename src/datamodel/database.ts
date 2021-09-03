@@ -29,6 +29,7 @@ import {
   FAIMSConstantCollection,
   FAIMSTypeCollection,
   ProjectUIFields,
+  ProjectUIVariants,
   ProjectUIViews,
 } from './typesystem';
 
@@ -131,7 +132,8 @@ export interface EncodedProjectUIModel {
   _deleted?: boolean;
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
-  start_view: string;
+  variants: ProjectUIVariants;
+  default_variants: string[];
 }
 
 export interface EncodedProjectMetadata {
@@ -179,6 +181,7 @@ export interface Revision {
   avps: AttributeValuePairIDMap;
   record_id: RecordID;
   parents: RevisionID[];
+  variant: string; //Corresponds to a variant of the Project UI Model
   created: string;
   created_by: string;
   type: string;

@@ -201,6 +201,16 @@ export async function do3WayMerge(
     return await doFastForward(project_id, merge_result, base, them, us);
   }
 
+  if (them.variant !== us.variant) {
+    // Because changing variants it unsupported:
+    throw Error('Merging of revisions with differing variants is unsupported');
+  }
+
+  if (them.type !== us.type) {
+    // Because changing types it unsupported:
+    throw Error('Merging of revisions with differing types is unsupported');
+  }
+
   const attrs = getAttributes(base, them, us);
   for (const attr of attrs) {
     const base_avp_id = base.avps[attr];
@@ -254,9 +264,10 @@ export async function do3WayMerge(
       created: creation_time.toISOString(),
       created_by: creator,
       deleted: us.deleted && them.deleted ? true : false,
-      // TODO: Work out how to handle changing types if that's going to be a
+      // TODO: Work out how to handle changing types/variants if that's going to be a
       // thing
       type: us.type,
+      variant: us.variant,
     };
     await datadb.put(new_revision);
     await updateHeads(project_id, us.record_id, parents, new_revision_id);

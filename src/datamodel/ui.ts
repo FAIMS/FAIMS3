@@ -66,6 +66,7 @@ export interface Record {
   revision_id: RevisionID | null;
   type: string;
   data: {[field_name: string]: any};
+  variant: string;
   updated: Date;
   updated_by: string;
   /*

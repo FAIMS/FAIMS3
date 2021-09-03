@@ -66,24 +66,42 @@ describe('roundtrip reading and writing to db', () => {
     [
       fc.fullUnicodeString(),
       fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // fields
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // views
-      fc.fullUnicodeString(), // start-view
+      fc.dictionary(
+        fc.fullUnicodeString(),
+        fc.object({
+          key: fc.constant('fields'),
+          values: [fc.array(fc.fullUnicodeString())],
+        })
+      ),
+      //variants: Dict of arbitrary key, value is:
+      // dict of 'fields' key to array of string
+      fc.array(fc.fullUnicodeString()), //default_variants
+      fc.dictionary(
+        fc.fullUnicodeString(),
+        fc.object({
+          key: fc.constant('views'),
+          values: [fc.array(fc.fullUnicodeString())],
+        })
+      ),
+      //variants: Dict of arbitrary key, value is:
+      // dict of 'views' key to array of string
     ],
-    async (project_id, fields, views, start_view) => {
+    async (project_id, fields, views, default_variants, variants) => {
       await cleanProjectDBS();
       fc.pre(projdbs !== {});
 
       const uiInfo = {
         _id: UI_SPECIFICATION_NAME,
         fields: fields,
-        views: views,
-        start_view: start_view,
+        views: views as Record<string, Record<'fields', string[]>>,
+        variants: variants as Record<string, Record<'views', string[]>>,
+        default_variants: default_variants,
       };
 
       const meta_db = getProjectDB(project_id);
 
       return setUiSpecForProject(meta_db, uiInfo)
-        .then(result => {
+        .then(() => {
           return getUiSpecForProject(project_id);
         })
         .then(result => {

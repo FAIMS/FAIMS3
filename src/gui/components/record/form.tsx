@@ -32,7 +32,6 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import {transformAll} from '@demvsystems/yup-ast';
 
 import {getComponentByName} from '../../ComponentRegistry';
-import {getUiSpecForProject} from '../../../uiSpecification';
 import {ViewComponent} from '../../view';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
@@ -47,14 +46,30 @@ import RecordStagingState from '../../../sync/staging-observation';
 
 type RecordFormProps = {
   project_id: ProjectID;
+  // Might be given in the URL:
+  view_default?: string;
+  uiSpec: ProjectUIModel;
   record_id: RecordID;
-  revision_id: RevisionID | null;
-};
+} & (
+  | {
+      // When editing existing record, we require the caller to know its revision
+      revision_id: RevisionID;
+      // When editing existing record, variant comes from record
+      variant?: undefined;
+    }
+  | {
+      // When creating a new record,  revision is not yet created
+      revision_id?: undefined;
+      // When creating a new record, the user is prompted with variant
+      variant: string;
+    }
+);
 
 type RecordFormState = {
   stagingError: string | null;
-  currentView: string | null;
-  currentRev: string | null;
+  variant_cached: string | null;
+  view_cached: string | null;
+  revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
   last_saved: Date;
@@ -86,26 +101,23 @@ class RecordForm extends React.Component<
 > {
   staging: RecordStagingState;
 
-  uiSpec: ProjectUIModel | null = null;
-
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
 
   async componentDidUpdate(prevProps: RecordFormProps) {
-    if (prevProps.project_id !== this.props.project_id) {
-      // We need to re-fetch the view name if the project changed
-      // Although theoretically this shouldn't happen with 1 instance of a form.
-      this.uiSpec = null;
-    }
-
     if (
       prevProps.project_id !== this.props.project_id ||
       prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
-        this.state.currentRev !== this.props.revision_id)
+        this.state.revision_cached !== this.props.revision_id)
     ) {
       // Stop rendering immediately (i.e. go to loading screen immediately)
-      this.setState({initialValues: null});
+      this.setState({
+        initialValues: null,
+        variant_cached: null,
+        view_cached: null,
+        revision_cached: null,
+      });
       // Re-initialize basically everything.
       this.formChanged(true);
     }
@@ -115,12 +127,12 @@ class RecordForm extends React.Component<
     super(props);
     this.staging = new RecordStagingState({
       record_id: this.props.record_id,
-      revision_id: this.props.revision_id,
       project_id: this.props.project_id,
     });
     this.state = {
-      currentView: null,
-      currentRev: null,
+      variant_cached: null,
+      view_cached: null,
+      revision_cached: null,
       stagingError: null,
       initialValues: null,
       is_saving: false,
@@ -166,14 +178,56 @@ class RecordForm extends React.Component<
 
   async formChanged(staging_area_started_already: boolean) {
     try {
-      await Promise.all([this.setUISpec(), this.setLastRev()]);
+      let this_variant;
+      if (this.props.variant === undefined) {
+        const latest_record = await getFullRecordData(
+          this.props.project_id,
+          this.props.record_id,
+          this.props.revision_id
+        );
+        if (latest_record === null) {
+          this.setState({
+            stagingError: `Could not find data for record ${this.props.record_id}`,
+          });
+          this.context.dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message:
+                'Could not load existing record: ' + this.props.record_id,
+              severity: 'warnings',
+            },
+          });
+          return;
+        } else {
+          this_variant = latest_record.variant;
+        }
+      } else {
+        this_variant = this.props.variant;
+      }
+
+      if (!(this_variant in this.props.uiSpec.variants)) {
+        throw Error(`Variant '${this_variant}' is missing`);
+      }
+
+      if (!('views' in this.props.uiSpec.variants[this_variant])) {
+        throw Error(`Variant '${this_variant}' is missing 'views' property'`);
+      }
+
+      if (this.props.uiSpec.variants[this_variant].views === []) {
+        throw Error(`Variant '${this_variant}' has no views`);
+      }
+
+      await this.setState({
+        variant_cached: this_variant,
+        view_cached: this.props.uiSpec.variants[this_variant].views[0],
+        revision_cached: this.props.revision_id || null,
+      });
     } catch (err) {
       console.error('setUISpec/setLastRev error', err);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message:
-            'Project is not fully downloaded or not setup correctly (UI Specification Missing)',
+          message: `Project is not fully downloaded or not setup correctly (${err.toString()})`,
           severity: 'error',
         },
       });
@@ -183,22 +237,22 @@ class RecordForm extends React.Component<
     }
     try {
       // these come after setUISpec & setLastRev has set view_name & revision_id these to not null
-      const currentView = this.reqireCurrentView();
-      const currentRev = this.state.currentRev!;
+      const view_cached = this.requireView();
+      const revision_cached = this.state.revision_cached;
 
       // If the staging area .start() has already been called,
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
       if (staging_area_started_already) {
         this.staging.recordChangeHook(this.props, {
-          view_name: currentView,
-          revision_id: currentRev,
+          view_name: view_cached,
+          revision_id: revision_cached,
         });
       } else {
         this.staging.saveListener = this.saveListener.bind(this);
         await this.staging.start({
-          view_name: currentView,
-          revision_id: currentRev,
+          view_name: view_cached,
+          revision_id: revision_cached,
         });
       }
     } catch (err) {
@@ -229,55 +283,13 @@ class RecordForm extends React.Component<
     this.staging.stop();
   }
 
-  async setUISpec() {
-    // CurrentView & loadedStagedData are assumed to need updating when this is called
-    // (They need updating if this.props.record changes)
-    // but uiSpec might not need updating here
-
-    if (this.uiSpec === null) {
-      this.uiSpec = await getUiSpecForProject(this.props.project_id);
-    }
-
-    this.setState({
-      currentView: this.uiSpec['start_view'],
-    });
-  }
-
-  async setLastRev() {
-    if (
-      this.props.revision_id === undefined &&
-      this.state.currentRev === null &&
-      this.props.revision_id !== null
-    ) {
-      const latest_record = await getFullRecordData(
-        this.props.project_id,
-        this.props.record_id,
-        this.props.revision_id
-      );
-      if (latest_record === null) {
-        this.setState({
-          stagingError: `Could not find data for record ${this.props.record_id}`,
-        });
-        this.context.dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: 'Could not load existing record: ' + this.props.record_id,
-            severity: 'warnings',
-          },
-        });
-      } else {
-        this.setState({currentRev: latest_record.data._rev});
-      }
-    }
-  }
-
   async setInitialValues() {
     /***
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): staging area, database, ui schema
      */
     const database_data =
-      this.props.revision_id === null
+      this.props.revision_id === undefined
         ? {}
         : (
             await getFullRecordData(
@@ -323,25 +335,16 @@ class RecordForm extends React.Component<
     }, time);
   }
 
-  requireUiSpec(): ProjectUIModel {
-    if (this.uiSpec === null) {
-      throw Error(
-        'A function requring currentView/uiSpe was called before setUISpec finished'
-      );
-    }
-    return this.uiSpec;
-  }
-
-  reqireCurrentView(): string {
-    if (this.state.currentView === null) {
+  requireView(): string {
+    if (this.state.view_cached === null) {
       // What should prevent this from happening is the lack of getInitialValues,
       // getComponentFor, etc, function calls in the _Loading Skeleton_.
-      // And the loading skeleton is always shown if currentView === null
+      // And the loading skeleton is always shown if view_cached === null
       throw Error(
-        'A function requring currentView/uiSpe was called before setUISpec finished'
+        'A function requring view_cached/uiSpe was called before setUISpec finished'
       );
     }
-    return this.state.currentView;
+    return this.state.view_cached;
   }
 
   save(values: any) {
@@ -350,8 +353,9 @@ class RecordForm extends React.Component<
         const now = new Date();
         const doc = {
           record_id: this.props.record_id,
-          revision_id: this.props.revision_id,
+          revision_id: this.props.revision_id || null,
           type: '??:??', // TODO: get correct type
+          variant: this.state.variant_cached!,
           data: values,
           updated_by: userid,
           updated: now,
@@ -365,7 +369,7 @@ class RecordForm extends React.Component<
       .then(result => {
         console.debug(result);
         const message =
-          this.props.revision_id === null
+          this.props.revision_id === undefined
             ? 'Record successfully created'
             : 'Record successfully updated';
         this.context.dispatch({
@@ -378,7 +382,7 @@ class RecordForm extends React.Component<
       })
       .catch(err => {
         const message =
-          this.props.revision_id === null
+          this.props.revision_id === undefined
             ? 'Could not create record'
             : 'Could not update record';
         this.context.dispatch({
@@ -394,14 +398,14 @@ class RecordForm extends React.Component<
       // Clear the staging area (Possibly after redirecting back to project page)
       .then(() =>
         this.staging.clear({
-          view_name: this.reqireCurrentView(),
-          revision_id: this.state.currentRev!,
+          view_name: this.requireView(),
+          revision_id: this.state.revision_cached!,
         })
       )
       .then(() => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
-        if (this.props.revision_id === null) {
+        if (this.props.revision_id === undefined) {
           this.props.history.push(
             ROUTES.PROJECT + this.props.project_id + ROUTES.RECORD_CREATE
           );
@@ -415,8 +419,8 @@ class RecordForm extends React.Component<
   }
 
   updateView(viewName: string) {
-    if (viewName in this.requireUiSpec()['views']) {
-      this.setState({currentView: viewName});
+    if (viewName in this.props.uiSpec['views']) {
+      this.setState({view_cached: viewName});
       this.forceUpdate();
       // Probably not needed, but we *know* we need to rerender when this
       // changes, so let's be explicit.
@@ -427,7 +431,7 @@ class RecordForm extends React.Component<
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
     // console.log('getComponentFromField');
-    const uiSpec = this.requireUiSpec();
+    const uiSpec = this.props.uiSpec;
     const fields = uiSpec['fields'];
     return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
   }
@@ -483,15 +487,15 @@ class RecordForm extends React.Component<
   }
 
   getFieldNames() {
-    const currentView = this.reqireCurrentView();
-    const fieldNames: Array<string> = this.requireUiSpec()['views'][
-      currentView
-    ]['fields'];
+    const view_cached = this.requireView();
+    const fieldNames: Array<string> = this.props.uiSpec['views'][view_cached][
+      'fields'
+    ];
     return fieldNames;
   }
 
   getFields() {
-    const fields: {[key: string]: {[key: string]: any}} = this.requireUiSpec()[
+    const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
       'fields'
     ];
     return fields;
@@ -512,8 +516,8 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    const uiSpec = this.uiSpec;
-    const viewName = this.state.currentView;
+    const uiSpec = this.props.uiSpec;
+    const viewName = this.state.view_cached;
     if (
       viewName !== null &&
       this.state.initialValues !== null &&
@@ -576,10 +580,10 @@ class RecordForm extends React.Component<
                           disabled={formProps.isSubmitting}
                         >
                           {formProps.isSubmitting
-                            ? !(this.props.revision_id === null)
+                            ? !(this.props.revision_id === undefined)
                               ? 'Working...'
                               : 'Working...'
-                            : !(this.props.revision_id === null)
+                            : !(this.props.revision_id === undefined)
                             ? 'Update'
                             : 'Save and new'}
                           {formProps.isSubmitting && (
@@ -622,7 +626,7 @@ class RecordForm extends React.Component<
                             Once you are ready, click the{' '}
                             <Typography variant="button">
                               <b>
-                                {this.props.revision_id === null
+                                {this.props.revision_id === undefined
                                   ? 'save and new'
                                   : 'update'}
                               </b>

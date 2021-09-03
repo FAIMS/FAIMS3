@@ -37,16 +37,17 @@ type RelevantProps = {
   // revision_id is null, since that would make a new draft every time
   // a draft is created
   record_id: RecordID;
-  revision_id: RevisionID | null;
 };
 
 /**
  * Important properties that might not be present
  * until .start() is called. This is mainly used
  * in _fetchData and _saveData
+ *
+ * revision_id can be null if this is a new record
  */
 type LoadableProps = {
-  revision_id: RevisionID;
+  revision_id: RevisionID | null;
   view_name: string;
 };
 
