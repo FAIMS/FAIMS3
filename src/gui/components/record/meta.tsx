@@ -48,6 +48,7 @@ export default function RecordMeta(props: RecordMetaProps) {
         revision_id
       );
       setMeta({
+        Variant: record?.variant,
         Created: record?.created.toString(),
         Updated: record?.updated.toString(),
         'Created by': record?.created_by,

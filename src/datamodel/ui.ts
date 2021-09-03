@@ -48,6 +48,7 @@ export interface RecordMetadata {
   project_id: ProjectID;
   record_id: RecordID;
   revision_id: RevisionID;
+  variant: string;
   created: Date;
   created_by: string;
   updated: Date;

@@ -257,6 +257,7 @@ export async function getRecordMetadata(
       project_id: project_id,
       record_id: record_id,
       revision_id: revision_id,
+      variant: revision.variant,
       created: new Date(record.created),
       created_by: record.created_by,
       updated: new Date(revision.created),
