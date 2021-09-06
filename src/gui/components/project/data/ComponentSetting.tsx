@@ -1,7 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
 export const FieldModel =(props:any)=>{
-	const {name,namespace,component,type_return,required,initialValue,validationSchema,...others}=props
+	const {name,namespace,component,type_return,required,initialValue,validationSchema,meta,access,...others}=props
 	const uuid=uuidv4()
 	let isrequired=false;
 	if(required===true) isrequired=required
@@ -11,6 +11,8 @@ export const FieldModel =(props:any)=>{
         'component-namespace': namespace, // this says what web component to use to render/acquire value from
         'component-name': component,
         'type-returned': type_return, // matches a type in the Project Model
+        'meta':meta,
+        'access':access,
         'component-parameters': {
           name: name,
           id: name,          
@@ -36,7 +38,7 @@ const TextField=(props:any)=> {
         helperText:props.helperText,InputLabelProps: {
             label: props.label,
           },
-        initialValue:props.initialValue});
+        initialValue:props.initialValue,meta:props.meta,access:props.access});
 	}
 const CheckboxField=(props:any)=> {
 	return FieldModel({namespace:'faims-custom',type_return:'faims-core::Bool',component:'Checkbox',type:'checkbox',validationSchema:[
@@ -52,7 +54,6 @@ const compoents={
 }
 
 export const getcomponent=(type:string,props:any)=>{
-	// const compoent=compoents[props.type]
 	if(type==='CheckBoxField') return CheckboxField(props);
 	return TextField(props);
 }
@@ -67,7 +68,10 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
 	// 'validationSchema':fielduiSpec['validationSchema'],
 	'initialValue':fielduiSpec['initialValue'],
 	'required':fielduiSpec['component-parameters']['required'],
-	'type':fielduiSpec['component-name']}
+	'type':fielduiSpec['component-name'],
+	'meta':fielduiSpec['meta'],
+	'access':fielduiSpec['access'],
+	}
 	return props;
 }
 export const convertSettingTouiSpec = (props:any) =>{
@@ -83,35 +87,52 @@ export const getfieldname = (name:string,label:string) =>{
 //Add new field form or convert uiSpec to setting form convertuiSpectoSetting
 export const FieldSettings=(component:any,label:string,props:any)=>{
 	const fields=[
-        {name:'',lable:'',type:'TextField'},
-        {name:'label',lable:'Label',type:'TextField'},
-        {name:'helperText',lable:'Hit Text for Complete Form',type:'TextField'},
-        {name:'required',lable:'Check if is compusory',type:'CheckBoxField'},
-        {name:'validationSchema',lable:'',type:'TextField'},
-        {name:'isaccess',lable:'',type:'CheckBoxField'},
-        {name:'field_access',lable:'',type:'TextField'},
-        {name:'notes',lable:'put notes',type:'TextField'},
-        {name:'meta',lable:'meta input',type:'TextField'}
+        {name:'',lable:'',type:'TextField',view:'start-view'},
+        {name:'label',lable:'Label',type:'TextField',view:'settings'},
+        {name:'helperText',lable:'Hit Text for Complete Form',type:'TextField',view:'settings'},
+        {name:'required',lable:'Check if is compusory',type:'CheckBoxField',view:'valid'},
+        {name:'validationSchema',lable:'',type:'TextField',view:'valid'},
+        // {name:'isaccess',lable:'',type:'CheckBoxField',view:'access'},
+        {name:'access',lable:'access',type:'TextField',view:'access'},
+        {name:'meta',lable:'put notes',type:'TextField',view:'notes'},
+
         ]
 	const fields_label:Array<string>=[]
 	const fields_list:any={}
+	const view_list=['settings','valid','access','notes']
+	const views:any={'start-view':{fields:[],uidesign:'settings'}}
+	view_list.map(view=>views[view]={fields:[],uidesign:'settings'}
+		)
+	// const views:any={'start-view':{fields:[],uidesign:'settings'},
+	// 'settings':{fields:[],uidesign:'settings'},'valid':{fields:[],uidesign:'settings'},'access':{fields:[],uidesign:'settings'},'notes':{fields:[],uidesign:'settings'}}
 	
 	fields.map((field,index)=>{
 		const fieldname=field.name+`${label}`
 		fields_label[index]=fieldname
-		if(index===0) { fields_list[fieldname]=component}
-		else fields_list[fieldname]=getcomponent(field.type,{'name':fieldname,label:field.lable,initialValue:props[field.name],placeholder:props[field.name]})
-		if(field.name==='validationSchema')	console.log(props[field.name])
+		if(index===0) { 
+			fields_list[fieldname]=component;
+			const view=field.view
+			views[view]['fields'][0]=fieldname
+			views[view]['uidesign']='settings'
+		}else {
+			fields_list[fieldname]=getcomponent(field.type,{'name':fieldname,label:field.lable,initialValue:props[field.name],placeholder:props[field.name]});
+			const view=field.view
+			views[view]['fields']=[...views[view]['fields'],fieldname]
+			views[view]['uidesign']='settings'
+		}
 	})
 	return {
 		fields:fields_list,
-    'views': {
-      'start-view': {
-        fields:fields_label, 
-        uidesign:'settings',
-      },
-      'next-view-label': 'Done!',
-    },
+    'views':views ,
+    'view_list':view_list,
+    // 'views':{
+    	
+    //   'start-view': {
+    //     fields:fields_label, 
+    //     uidesign:'settings',
+    //   },
+    //   'next-view-label': 'Done!',
+    // },
 
     'start_view': 'start-view'
 
@@ -134,201 +155,6 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
   }
 
 
-export const projectaddfield={
-    'fields': {
-      'project-design-setion-add-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
-          fullWidth: true,
-          name: 'project-design-setion-add',
-          id: 'project-design-setion-add',
-          helperText: 'Enter a string between 2 and 50 characters long',
-          variant: 'outlined',
-          required: false,
-          InputProps: {
-            type: 'text', // must be a valid html type
-          },
-          SelectProps: {},
-          InputLabelProps: {
-            label: 'Label',
-          },
-          FormHelperTextProps: {},
-        },
-        'alert':false,
-        validationSchema: [
-          ['yup.string'],
-          ['yup.min', 0, 'Too Short!'],
-          ['yup.max', 50, 'Too Long!'],
-        ],
-        initialValue: '',
-      },
-      'project-design-setion-checkvalid-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'Checkbox',
-        'type-returned': 'faims-core::Bool', // matches a type in the Project Model
-        'component-parameters': {
-          name: 'project-design-setion-checkvalid',
-          id: 'project-design-setion-checkvalid',
-          required: false,
-          type: 'checkbox',
-          FormControlLabelProps: {
-            label: 'Validate this field',
-          },
-          FormHelperTextProps: {
-            children: '',
-          },
-          // Label: {label: 'Terms and Conditions'},
-        },
-        'alert':false,
-        validationSchema: [
-          ['yup.bool'],
-        ],
-        initialValue: false,
-      },
-      'project-design-setion-valid-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
-          fullWidth: true,
-          name: 'project-design-setion-valid',
-          id: 'project-design-setion-valid',
-          helperText: '',
-          variant: 'outlined',
-          required: false,
-          multiline: true,
-          InputProps: {
-            type: 'text',
-            rows: 3,
-          },
-          SelectProps: {},
-          InputLabelProps: {
-            label: 'Description',
-          },
-          FormHelperTextProps: {},
-        },
-        'alert':'Please follow the format',
-        validationSchema: [['yup.string']],
-        initialValue:'',
-      },'project-design-setion-checksetting-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'Checkbox',
-        'type-returned': 'faims-core::Bool', // matches a type in the Project Model
-        'component-parameters': {
-          name: 'project-design-setion-checksetting',
-          id: 'project-design-setion-checksetting',
-          required: false,
-          type: 'checkbox',
-          FormControlLabelProps: {
-            label: 'Settings',
-          },
-          FormHelperTextProps: {
-            children: '',
-          },
-          // Label: {label: 'Terms and Conditions'},
-        },
-        'alert':false,
-        validationSchema: [
-          ['yup.bool'],
-        ],
-        initialValue: false,
-      },
-      'project-design-setion-setting-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
-          fullWidth: true,
-          name: 'project-design-setion-setting',
-          id: 'project-design-setion-setting',
-          helperText: '',
-          variant: 'outlined',
-          required: false,
-          multiline: true,
-          InputProps: {
-            type: 'text',
-            rows: 3,
-          },
-          SelectProps: {},
-          InputLabelProps: {
-            label: 'Settings',
-          },
-          FormHelperTextProps: {},
-        },
-        'alert':'Please follow the format',
-        validationSchema: [['yup.string']],
-        initialValue:'',
-      },'project-design-setion-checkemail-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'Checkbox',
-        'type-returned': 'faims-core::Bool', // matches a type in the Project Model
-        'component-parameters': {
-          name: 'project-design-setion-checkemail',
-          id: 'project-design-setion-checkemail',
-          required: false,
-          type: 'checkbox',
-          FormControlLabelProps: {
-            label: 'Allow only centain users to see this field',
-          },
-          FormHelperTextProps: {
-            children: '',
-          },
-          // Label: {label: 'Terms and Conditions'},
-        },
-        'alert':false,
-        validationSchema: [
-          ['yup.bool'],
-        ],
-        initialValue: false,
-      },
-      'project-design-setion-add-email-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::Email', // matches a type in the Project Model
-        'component-parameters': {
-          fullWidth: true,
-          name: 'project-design-setion-add-email',
-          id: 'project-design-setion-add-email',
-          helperText: 'Please provide a valid email address',
-          variant: 'outlined',
-          required: false,
-          InputProps: {
-            type: 'email',
-          },
-          SelectProps: {},
-          InputLabelProps: {
-            label: 'Email Address',
-          },
-          FormHelperTextProps: {},
-        },
-        'alert':'any email address added here will be automatically added to INVITE tab',
-        validationSchema: [
-          ['yup.string'],
-          ['yup.email', 'Enter a valid email'],
-        ],
-        initialValue: '',
-      }
-    },
-    'views': {
-      'start-view': {
-        fields: [
-          'project-design-setion-add-field',
-          'project-design-setion-checksetting-field',
-          'project-design-setion-setting-field',
-          'project-design-setion-checkvalid-field',
-          'project-design-setion-valid-field',
-          'project-design-setion-checkemail-field',
-          'project-design-setion-add-email-field',
-        ], 
-        uidesign:'design',
-      },
-      'next-view-label': 'Done!',
-    },
-
-    'start_view': 'start-view'
-  }
 
 export function generateaddfieldui(){
 	return true;
