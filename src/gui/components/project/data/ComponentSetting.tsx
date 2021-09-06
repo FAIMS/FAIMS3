@@ -30,11 +30,7 @@ const TextField=(props:any)=> {
 		InputProps: {
             type: 'text',
           },fullWidth: true,placeholder:props.placeholder,
-		name:props.name,required:props.required,validationSchema:[
-          ['yup.string'],
-          ['yup.min', 0, 'Too Short!'],
-          ['yup.max', 50, 'Too Long!'],
-        ],
+		name:props.name,required:props.required,validationSchema:[['yup.string'],],
         helperText:props.helperText,InputLabelProps: {
             label: props.label,
           },
@@ -51,6 +47,10 @@ const CheckboxField=(props:any)=> {
 const compoents={
 	'TextField':TextField,
 	'CheckboxField':CheckboxField,
+}
+
+export const getid = ()=>{
+	return uuidv4().split('-')[0];
 }
 
 export const getcomponent=(type:string,props:any)=>{
@@ -103,17 +103,11 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
 	const views:any={'start-view':{fields:[],uidesign:'settings'}}
 	view_list.map(view=>views[view]={fields:[],uidesign:'settings'}
 		)
-	// const views:any={'start-view':{fields:[],uidesign:'settings'},
-	// 'settings':{fields:[],uidesign:'settings'},'valid':{fields:[],uidesign:'settings'},'access':{fields:[],uidesign:'settings'},'notes':{fields:[],uidesign:'settings'}}
-	
 	fields.map((field,index)=>{
 		const fieldname=field.name+`${label}`
 		fields_label[index]=fieldname
 		if(index===0) { 
 			fields_list[fieldname]=component;
-			const view=field.view
-			views[view]['fields'][0]=fieldname
-			views[view]['uidesign']='settings'
 		}else {
 			fields_list[fieldname]=getcomponent(field.type,{'name':fieldname,label:field.lable,initialValue:props[field.name],placeholder:props[field.name]});
 			const view=field.view
@@ -121,19 +115,11 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
 			views[view]['uidesign']='settings'
 		}
 	})
+	views['start-view']={'fields':fields_label,'uidesign':'settings'}
 	return {
 		fields:fields_list,
     'views':views ,
     'view_list':view_list,
-    // 'views':{
-    	
-    //   'start-view': {
-    //     fields:fields_label, 
-    //     uidesign:'settings',
-    //   },
-    //   'next-view-label': 'Done!',
-    // },
-
     'start_view': 'start-view'
 
 	}

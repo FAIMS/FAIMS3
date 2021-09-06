@@ -5,9 +5,10 @@ import {Button,IconButton} from '@material-ui/core';
 import CancelIcon from '@material-ui/icons/Cancel';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import AddIcon from '@material-ui/icons/Add';
 export function CusButton(props:any) {
   return (
-    <Button type={props.type} variant="contained" onClick={() => props.onButtonClick(props.id)} value={props.value} id={props.id}>{props.text}</Button>
+    <Button type={props.type} color={props.color} onClick={() => props.onButtonClick(props.id)} value={props.value} id={props.id}>{props.text}</Button>
   );
 }
 
@@ -32,3 +33,19 @@ export function DownButton(props:any){
         </IconButton>
 		)
 }
+
+export function AddButton(props:any) {
+  return ( 	
+
+	<Button
+        // variant="contained"
+        color="primary"
+        size="large"
+        startIcon={<AddIcon />}
+        type={props.type}  onClick={() => props.onButtonClick(props.id)} value={props.value} id={props.id}
+      >
+       {props.text}
+     </Button>
+  );
+}
+

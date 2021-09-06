@@ -23,7 +23,7 @@ const useStyles = makeStyles((theme) => ({
 export default function PSettingCard(props:any){
 	const  { handelonClick,key_id, ...other } = props;
 	const classes = useStyles();
-	console.log(key_id)
+
 	return (
 		<List component="nav" aria-label="settings bar" className={classes.root}>
 		  <ListItem button onClick={() => handelonClick('settings',key_id)} key='list1'  >
