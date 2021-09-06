@@ -8,7 +8,14 @@ import { makeStyles } from '@material-ui/core/styles';
 const useStyles = makeStyles((theme) => ({
   root: {
     backgroundColor:'#e1e4e8',
-    marginBottom:2
+    marginBottom:2,
+    '&$selected': {
+      backgroundColor: 'red',
+      '&:hover': {
+        backgroundColor: 'yellow',
+      }
+    },
+    selected: {},
   },
   
 }));
@@ -19,16 +26,16 @@ export default function PSettingCard(props:any){
 	console.log(key_id)
 	return (
 		<List component="nav" aria-label="settings bar" className={classes.root}>
-		  <ListItem button onClick={() => handelonClick(1,key_id)} key='list1'>
+		  <ListItem button onClick={() => handelonClick('settings',key_id)} key='list1'  >
 		    <SettingsIcon />
 		  </ListItem>
-		  <ListItem button onClick={() => handelonClick(3,key_id)} key='list2'>
+		  <ListItem button onClick={() => handelonClick('valid',key_id)} key='list2'>
 		    <PlaylistAddCheckIcon />
 		  </ListItem>
-		  <ListItem button onClick={() => handelonClick(5,key_id)} key='list3'>
+		  <ListItem button onClick={() => handelonClick('access',key_id)} key='list3' >
 		    <GroupIcon />
 		  </ListItem>
-		  <ListItem button onClick={() => handelonClick(7,key_id)} key='list4'>
+		  <ListItem button onClick={() => handelonClick('notes',key_id)} key='list4'>
 		    <NoteIcon />
 		  </ListItem>
 		</List>
