@@ -29,7 +29,7 @@ import FieldsListCard from './tabs/FieldsListCard';
 import PSettingCard from './tabs/PSettingCard';
 import {getComponentFromField} from './FormElement';
 import TestC from './tabs/TestC'
-import {FieldSettings,getcomponent,getfieldname,convertuiSpecToProps,setProjectInitialValues,getid} from './data/ComponentSetting'
+import {FieldSettings,getcomponent,getfieldname,convertuiSpecToProps,setProjectInitialValues,getid,sampleuispec} from './data/ComponentSetting'
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './tabs/ProjectButton'
 import { List,ListItem } from "@material-ui/core";
 const useStyles = makeStyles((theme) => ({
@@ -62,36 +62,66 @@ export default function CreateProjectCard() {
     const [projectvalue,setProjectValue]=useState(ini)
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
-    const [formcomponents,setFormComponents]= useState<any>({'section1':[]})
-    const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any}>({fields:{},views:{}})
+    const [formcomponents,setFormComponents]= useState<any>({'mainsection1':[]})
+    const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,variants:any,default_variants:any}>({fields:{},views:{},variants:{},default_variants:[]})
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState('section1')
     const [designvalue,setDesignvalue]=useState<any>('settings')
     const [designvalues,setDesignvalues]=useState<any>([])
     const [settingvalue,setsettingvalue]=useState<any>({fields:{},views:{}})
     const [formView,setFormView]=useState('start-view')
-    const [formv,setForm]= useState<any>({})
+    const [formvariants,setFormVariants]= useState<any>('main')
+    const [formuiview,setformuiview]=useState(formvariants+currentView)
+
 
 
      useEffect(() => {
      console.log('update')
      setinit();
+     console.log(formuiview)
     }, []);
 
-    const setinit =()=>{
-      const view='section1'
-      setCurrentView(view);
-      const formview=formuiSpec.views
-      formview[view]={'fields':[],uidesign:'form'}
-      setFormuiSpec({fields:formuiSpec.fields,views:formview})
+     const generateunifromformui = (formui:any) =>{
+      const newformcom=formcomponents
+      formui['default_variants'].map((variant:any)=>{
+        formui['variants'][variant]['views'].map((view:string)=>{
+          newformcom[view]=[]
+          formui['views'][view]['fields'].map((fieldname:string)=>{
+            const field=formui['fields'][fieldname]
+            const fieldprops=convertuiSpecToProps(field)
+            const newuiSpeclist=FieldSettings(field,fieldname,fieldprops)
+            newformcom[view]=[...newformcom[view],{id:fieldname.replace(NEWFIELDS,''),uiSpec:newuiSpeclist,designvalue:'settings'}];
+          })
+        })
 
-      setFormComponents((prevalue:any)=>{
-        const newvalue=prevalue
-        if(newvalue[view]===undefined) newvalue[view]=[]
-        return newvalue;
       })
-      console.log(formv)
+      setFormComponents(newformcom)
+      setFormuiSpec(formui)
+      console.log(formcomponents)
+      console.log('set from sample')
+      return true;
     }
+    // const is_true=generateunifromformui(sampleuispec)
+
+    const setinit =()=>{
+      // // generate empty form
+      // const view=formvariants+'section1'
+      // setCurrentView(view);
+      // const formview=formuiSpec.views
+      // formview[view]={'fields':[],uidesign:'form'}
+      // setFormuiSpec({fields:formuiSpec.fields,views:formview,variants:{'main':{views:[view,]}},default_variants:['main']})
+
+      // setFormComponents((prevalue:any)=>{
+      //   const newvalue=prevalue
+      //   if(newvalue[view]===undefined) newvalue[view]=[]
+      //   return newvalue;
+      // })
+      //generate form from uiSpecific
+      generateunifromformui(sampleuispec)
+
+    }
+
+    
 
     const submithandler = (values:any) =>{
 
@@ -123,7 +153,7 @@ export default function CreateProjectCard() {
         
         setFormComponents((prevalue:any)=>{
           const newvalue=prevalue
-          newvalue[currentView].map((item:any)=>{
+          newvalue[formuiview].map((item:any)=>{
             item.id===updatedfield.index?item['uiSpec']['fields']=changeuifield(newfieldname,newfield,item['uiSpec']['fields']):item
           })
           return newvalue;
@@ -148,20 +178,21 @@ export default function CreateProjectCard() {
       const newuiSpec=formuiSpec.fields;
       newuiSpec[name]=newfield
       const newviews=formuiSpec.views
-      newviews[currentView]['fields']=[...newviews[currentView]['fields'],name]
+      newviews[formuiview]['fields']=[...newviews[formuiview]['fields'],name]
       const fieldprops=convertuiSpecToProps(newfield)
       const newuiSpeclist=FieldSettings(newfield,name,fieldprops)
 
 
       setinitialValues({...initialValues,...setProjectInitialValues(newuiSpeclist,formView,{})})
       const newvalue=formcomponents
-      newvalue[currentView]=[...newvalue[currentView],{id:uuid,uiSpec:newuiSpeclist,designvalue:'settings'}];
+      newvalue[formuiview]=[...newvalue[formuiview],{id:uuid,uiSpec:newuiSpeclist,designvalue:'settings'}];
       setFormComponents(newvalue)
 
-      setFormuiSpec({fields:newuiSpec,views:newviews})
+      setFormuiSpec({fields:newuiSpec,views:newviews,variants:formuiSpec.variants,default_variants:formuiSpec.default_variants})
 
       setIsAddField(false)
       console.log(initialValues)
+      console.log(formcomponents)
     }
 
     const handleRemoveField = (id:any)=>{
@@ -169,10 +200,10 @@ export default function CreateProjectCard() {
       
       
       const newviews=formuiSpec.views
-      newviews[currentView]['fields']=newviews[currentView]['fields'].filter((field:any)=>field!==NEWFIELDS+id)
-      setFormuiSpec({fields:formuiSpec.fields,views:newviews})
+      newviews[formuiview]['fields']=newviews[formuiview]['fields'].filter((field:any)=>field!==NEWFIELDS+id)
+      setFormuiSpec({fields:formuiSpec.fields,views:newviews,variants:formuiSpec.variants,default_variants:formuiSpec.default_variants})
       const newcom=formcomponents
-      newcom[currentView].filter((formcomponent:any)=>formcomponent.id!==id)
+      newcom[formuiview].filter((formcomponent:any)=>formcomponent.id!==id)
       setFormComponents(newcom)
     }
     const handleAddFieldButton = ()=>{
@@ -180,22 +211,23 @@ export default function CreateProjectCard() {
     }
     const handleCloseFieldButton = () =>{
       setIsAddField(false)
+      console.log(formuiSpec)
     }
 
     const swithField = (index:any,type:boolean) =>{
       const newviews=formuiSpec.views
-      const fields=newviews[currentView]['fields']
+      const fields=newviews[formuiview]['fields']
       const field=fields[index]
       const components=formcomponents
-      const component=formcomponents[currentView][index]
+      const component=formcomponents[formuiview][index]
       fields.splice(index,1)
-      components[currentView].splice(index,1)
+      components[formuiview].splice(index,1)
       if(type) index=index+1 //down
       else index=index-1 //up
       fields.splice(index,0,field)
-      components[currentView].splice(index,0,component)
-      newviews[currentView]['fields']=fields
-      setFormuiSpec({fields:formuiSpec.fields,views:newviews})
+      components[formuiview].splice(index,0,component)
+      newviews[formuiview]['fields']=fields
+      setFormuiSpec({fields:formuiSpec.fields,views:newviews,variants:formuiSpec.variants,default_variants:formuiSpec.default_variants})
       setFormComponents(components)
     }
     const handleUpFieldButton = (index:any) =>{
@@ -210,7 +242,7 @@ export default function CreateProjectCard() {
     const handelonClickSetting = (index:any,key:any) =>{
 
       const formcomponent=formcomponents
-        formcomponent[currentView].map((item:any)=>{
+        formcomponent[formuiview].map((item:any)=>{
           item.id===key?item['designvalue']=index:item
         }
         )
@@ -226,28 +258,53 @@ export default function CreateProjectCard() {
     }
 
     const handelonChangeSection = (id:string) =>{
-
+      console.log(formvariants)
       setCurrentView(id)
-      const view=formuiSpec.views
-      if(view[id]===undefined){
-        view[id]={'fields':[],uidesign:'form'}
-        setFormuiSpec({fields:formuiSpec.fields,views:view})
+      setformuiview(formvariants+id)
+      const name=formvariants+id
+      const newuiSpec=formuiSpec
+      if(newuiSpec['views'][name]===undefined){
+        newuiSpec['views'][name]={'fields':[],uidesign:'form'}
+        newuiSpec['variants'][formvariants]['views']=[...newuiSpec['variants'][formvariants]['views'],name];
+        setFormuiSpec(newuiSpec)
+        setIsAddField(true)
       }
 
       const formview=formcomponents
-      if(formview[id]===undefined){
-        formview[id]=[]
+      if(formview[name]===undefined){
+        formview[name]=[]
         setFormComponents(formview)
       }
 
     }
 
+    const handelonChangeVariants = (id:string)=>{
+      setFormVariants(id)
+      const name=id+currentView
+      setformuiview(name)
+      console.log(formuiview)
+      const newuiSpec=formuiSpec
+      if(newuiSpec['variants'][id]===undefined){
+        newuiSpec['variants'][id]={views:[]}
+        newuiSpec['default_variants']=[...newuiSpec['default_variants'],id];
+        setFormuiSpec(newuiSpec)
+        setIsAddField(true)
+      }
+      const formview=formcomponents
+      if(formview[name]===undefined){
+        formview[name]=[]
+        setFormComponents(formview)
+      }
+    }
 
     
   return ( 
     <div className={classes.root}> 
      <Grid container  >
       <Grid item sm={8} xs={12}>
+         <CusButton  onButtonClick={handelonChangeVariants}  text='main' value='1' id='main' color={formvariants==='main'?'primary':''}/>
+        |<CusButton  onButtonClick={handelonChangeVariants}  text='photolog' value='1' id='photolog' color={formvariants==='photolog'?'primary':''}/>
+        <br/><br/>
         <CusButton  onButtonClick={handelonChangeSection}  text='Section1' value='1' id='section1' color={currentView==='section1'?'primary':''}/>
         |<CusButton  onButtonClick={handelonChangeSection}  text='Section2' value='1' id='section2' color={currentView==='section2'?'primary':''}/>
         <br/><br/>
@@ -264,7 +321,7 @@ export default function CreateProjectCard() {
         {formProps => {
               return (
                 <Form >
-                {formcomponents[currentView].length>0?formcomponents[currentView].map((formcomponent:any,index:any)=>(
+                {formcomponents[formuiview].length>0?formcomponents[formuiview].map((formcomponent:any,index:any)=>(
                 <Grid container className={classes.newfield} key={`formcompoenet-form-${index}`}>
                 <Grid item sm={10} xs={11}>
                   <Grid container spacing={1} >
@@ -286,7 +343,7 @@ export default function CreateProjectCard() {
                 </Grid>
                 <Grid item sm={2} xs={12} className={classes.newfield_button}>
                   {index>0?<UpButton  onButtonClick={handleUpFieldButton} value={index} id={index} text='X' />:''}
-                  {index<formcomponents[currentView].length-1?<DownButton  onButtonClick={handleDownFieldButton} value={index} id={index} text='X' />:''}
+                  {index<formcomponents[formuiview].length-1?<DownButton  onButtonClick={handleDownFieldButton} value={index} id={index} text='X' />:''}
                   <CloseButton  onButtonClick={handleRemoveField} value={formcomponent.id} id={formcomponent.id} text='X' />
                 </Grid>
                 </Grid>
