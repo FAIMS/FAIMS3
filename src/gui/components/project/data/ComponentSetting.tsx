@@ -146,3 +146,252 @@ export function generateaddfieldui(){
 	return true;
 }
 
+
+export const sampleuispec={
+  "fields": {
+    "newfieldfbdc6b60": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfieldfbdc6b60",
+        "id": "newfieldfbdc6b60",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "helperText": "type text",
+        "InputLabelProps": {
+          "label": "mainsection1"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    },
+    "newfieldc987f5d4": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfieldc987f5d4",
+        "id": "newfieldc987f5d4",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "InputLabelProps": {
+          "label": "photolog section1"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    },
+    "newfield840f1913": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfield840f1913",
+        "id": "newfield840f1913",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "InputLabelProps": {
+          "label": "photolog section1 1"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    },
+    "newfield52555ab2": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfield52555ab2",
+        "id": "newfield52555ab2",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "InputLabelProps": {
+          "label": "main section2"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    },
+    "newfielde332a0a4": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfielde332a0a4",
+        "id": "newfielde332a0a4",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "helperText": "",
+        "InputLabelProps": {
+          "label": "main section21"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    },
+    "newfielde14e2e9b": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfielde14e2e9b",
+        "id": "newfielde14e2e9b",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "InputLabelProps": {
+          "label": "main section22"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    },
+    "newfield5e7aba05": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfield5e7aba05",
+        "id": "newfield5e7aba05",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "InputLabelProps": {
+          "label": "main section23"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    },
+    "newfield04aaf150": {
+      "component-namespace": "formik-material-ui",
+      "component-name": "TextField",
+      "type-returned": "faims-core::String",
+      "component-parameters": {
+        "name": "newfield04aaf150",
+        "id": "newfield04aaf150",
+        "variant": "outlined",
+        "required": false,
+        "InputProps": {
+          "type": "text"
+        },
+        "fullWidth": true,
+        "InputLabelProps": {
+          "label": "photolog section2 1"
+        }
+      },
+      "alert": false,
+      "validationSchema": [
+        [
+          "yup.string"
+        ]
+      ],
+      "initialValue": ""
+    }
+  },
+  "views": {
+    "mainsection1": {
+      "fields": [
+        "newfieldfbdc6b60"
+      ],
+      "uidesign": "form"
+    },
+    "mainsection2": {
+      "fields": [
+        "newfield52555ab2",
+        "newfielde332a0a4",
+        "newfielde14e2e9b",
+        "newfield5e7aba05"
+      ],
+      "uidesign": "form"
+    },
+    "photologsection1": {
+      "fields": [],
+      "uidesign": "form"
+    },
+    "photologsection2": {
+      "fields": [
+        "newfield04aaf150"
+      ],
+      "uidesign": "form"
+    }
+  },
+  "variants": {
+    "main": {
+      "views": [
+        "mainsection1",
+        "mainsection2"
+      ]
+    },
+    "photolog": {
+      "views": ["photologsection1","photologsection2"]
+    }
+  },
+  "default_variants": [
+    "main",
+    "photolog"
+  ]
+}
