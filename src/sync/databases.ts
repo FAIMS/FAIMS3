@@ -51,6 +51,26 @@ export const directory_connection_info: ConnectionInfo = {
   db_name: 'directory',
 };
 
+export const self_listing_info : ListingsObject = {
+  _id: 'dummy_listing',
+  name: 'Dummy Listing (Replace me)',
+  description: 'This listing info is supposed to be replaced with config file',
+  projects_db: {
+    proto: DIRECTORY_PROTOCOL,
+    host: DIRECTORY_HOST,
+    port: DIRECTORY_PORT,
+    db_name: 'projects',
+  },
+  auth_mechanisms: [
+    {
+      "type": "oauth",
+      "base_url": "https://auth.datacentral.org.au/cas/login",
+      "client_id": "5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au",
+      "name": "Data Central"
+    }
+  ],
+};
+
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<ActiveDoc>;
 export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
 

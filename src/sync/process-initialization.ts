@@ -168,7 +168,7 @@ export function process_listings(
   });
 }
 
-async function process_listing(listing_object: ListingsObject) {
+export async function process_listing(listing_object: ListingsObject) {
   const listing_id = listing_object._id;
   console.debug(`Processing listing id ${listing_id}`);
 
