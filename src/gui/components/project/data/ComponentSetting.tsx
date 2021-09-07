@@ -1,7 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 
 export const FieldModel =(props:any)=>{
-	const {name,namespace,component,type_return,required,initialValue,validationSchema,meta,access,...others}=props
+	const {name,namespace,component,type_return,required,initialValue,validationSchema,meta_note,meta_type,access,...others}=props
 	const uuid=uuidv4()
 	let isrequired=false;
 	if(required===true) isrequired=required
@@ -11,7 +11,7 @@ export const FieldModel =(props:any)=>{
         'component-namespace': namespace, // this says what web component to use to render/acquire value from
         'component-name': component,
         'type-returned': type_return, // matches a type in the Project Model
-        'meta':meta,
+        'meta':{note:meta_note,type:meta_type},
         'access':access,
         'component-parameters': {
           name: name,
@@ -34,7 +34,7 @@ const TextField=(props:any)=> {
         helperText:props.helperText,InputLabelProps: {
             label: props.label,
           },
-        initialValue:props.initialValue,meta:props.meta,access:props.access});
+        initialValue:props.initialValue,meta_note:props.meta_note,meta_type:props.meta_type,access:props.access});
 	}
 const CheckboxField=(props:any)=> {
 	return FieldModel({namespace:'faims-custom',type_return:'faims-core::Bool',component:'Checkbox',type:'checkbox',validationSchema:[
@@ -69,7 +69,8 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
 	'initialValue':fielduiSpec['initialValue'],
 	'required':fielduiSpec['component-parameters']['required'],
 	'type':fielduiSpec['component-name'],
-	'meta':fielduiSpec['meta'],
+	'meta_note':fielduiSpec['meta']['note'],
+	'meta_type':fielduiSpec['meta']['type'],
 	'access':fielduiSpec['access'],
 	}
 	return props;
@@ -92,9 +93,9 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
         {name:'helperText',lable:'Hit Text for Complete Form',type:'TextField',view:'settings'},
         {name:'required',lable:'Check if is compusory',type:'CheckBoxField',view:'valid'},
         {name:'validationSchema',lable:'',type:'TextField',view:'valid'},
-        // {name:'isaccess',lable:'',type:'CheckBoxField',view:'access'},
         {name:'access',lable:'access',type:'TextField',view:'access'},
-        {name:'meta',lable:'put notes',type:'TextField',view:'notes'},
+        {name:'meta_note',lable:'put notes',type:'TextField',view:'notes'},
+        {name:'meta_type',lable:'Uncertain',type:'TextField',view:'notes'},
 
         ]
 	const fields_label:Array<string>=[]
