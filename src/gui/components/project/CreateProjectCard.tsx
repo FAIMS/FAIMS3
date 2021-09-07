@@ -63,7 +63,7 @@ export default function CreateProjectCard() {
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [formcomponents,setFormComponents]= useState<any>({'mainsection1':[]})
-    const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,variants:any,default_variants:any}>({fields:{},views:{},variants:{},default_variants:[]})
+    const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,viewsets:any,default_viewsets:any}>({fields:{},views:{},viewsets:{},default_viewsets:[]})
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState('section1')
     const [designvalue,setDesignvalue]=useState<any>('settings')
@@ -83,8 +83,8 @@ export default function CreateProjectCard() {
 
      const generateunifromformui = (formui:any) =>{
       const newformcom=formcomponents
-      formui['default_variants'].map((variant:any)=>{
-        formui['variants'][variant]['views'].map((view:string)=>{
+      formui['default_viewsets'].map((variant:any)=>{
+        formui['viewsets'][variant]['views'].map((view:string)=>{
           newformcom[view]=[]
           formui['views'][view]['fields'].map((fieldname:string)=>{
             const field=formui['fields'][fieldname]
@@ -101,23 +101,22 @@ export default function CreateProjectCard() {
       console.log('set from sample')
       return true;
     }
-    // const is_true=generateunifromformui(sampleuispec)
 
     const setinit =()=>{
-      // // generate empty form
-      // const view=formvariants+'section1'
-      // setCurrentView(view);
-      // const formview=formuiSpec.views
-      // formview[view]={'fields':[],uidesign:'form'}
-      // setFormuiSpec({fields:formuiSpec.fields,views:formview,variants:{'main':{views:[view,]}},default_variants:['main']})
+      // generate empty form
+      const view=formvariants+'section1'
+      setCurrentView(view);
+      const formview=formuiSpec.views
+      formview[view]={'fields':[],uidesign:'form'}
+      setFormuiSpec({fields:formuiSpec.fields,views:formview,viewsets:{'main':{views:[view,]}},default_viewsets:['main']})
 
-      // setFormComponents((prevalue:any)=>{
-      //   const newvalue=prevalue
-      //   if(newvalue[view]===undefined) newvalue[view]=[]
-      //   return newvalue;
-      // })
+      setFormComponents((prevalue:any)=>{
+        const newvalue=prevalue
+        if(newvalue[view]===undefined) newvalue[view]=[]
+        return newvalue;
+      })
       //generate form from uiSpecific
-      generateunifromformui(sampleuispec)
+      //generateunifromformui(sampleuispec)
 
     }
 
@@ -188,7 +187,7 @@ export default function CreateProjectCard() {
       newvalue[formuiview]=[...newvalue[formuiview],{id:uuid,uiSpec:newuiSpeclist,designvalue:'settings'}];
       setFormComponents(newvalue)
 
-      setFormuiSpec({fields:newuiSpec,views:newviews,variants:formuiSpec.variants,default_variants:formuiSpec.default_variants})
+      setFormuiSpec({fields:newuiSpec,views:newviews,viewsets:formuiSpec.viewsets,default_viewsets:formuiSpec.default_viewsets})
 
       setIsAddField(false)
       console.log(initialValues)
@@ -201,7 +200,7 @@ export default function CreateProjectCard() {
       
       const newviews=formuiSpec.views
       newviews[formuiview]['fields']=newviews[formuiview]['fields'].filter((field:any)=>field!==NEWFIELDS+id)
-      setFormuiSpec({fields:formuiSpec.fields,views:newviews,variants:formuiSpec.variants,default_variants:formuiSpec.default_variants})
+      setFormuiSpec({fields:formuiSpec.fields,views:newviews,viewsets:formuiSpec.viewsets,default_viewsets:formuiSpec.default_viewsets})
       const newcom=formcomponents
       newcom[formuiview].filter((formcomponent:any)=>formcomponent.id!==id)
       setFormComponents(newcom)
@@ -227,7 +226,7 @@ export default function CreateProjectCard() {
       fields.splice(index,0,field)
       components[formuiview].splice(index,0,component)
       newviews[formuiview]['fields']=fields
-      setFormuiSpec({fields:formuiSpec.fields,views:newviews,variants:formuiSpec.variants,default_variants:formuiSpec.default_variants})
+      setFormuiSpec({fields:formuiSpec.fields,views:newviews,viewsets:formuiSpec.viewsets,default_viewsets:formuiSpec.default_viewsets})
       setFormComponents(components)
     }
     const handleUpFieldButton = (index:any) =>{
@@ -265,7 +264,7 @@ export default function CreateProjectCard() {
       const newuiSpec=formuiSpec
       if(newuiSpec['views'][name]===undefined){
         newuiSpec['views'][name]={'fields':[],uidesign:'form'}
-        newuiSpec['variants'][formvariants]['views']=[...newuiSpec['variants'][formvariants]['views'],name];
+        newuiSpec['viewsets'][formvariants]['views']=[...newuiSpec['viewsets'][formvariants]['views'],name];
         setFormuiSpec(newuiSpec)
         setIsAddField(true)
       }
@@ -284,9 +283,9 @@ export default function CreateProjectCard() {
       setformuiview(name)
       console.log(formuiview)
       const newuiSpec=formuiSpec
-      if(newuiSpec['variants'][id]===undefined){
-        newuiSpec['variants'][id]={views:[]}
-        newuiSpec['default_variants']=[...newuiSpec['default_variants'],id];
+      if(newuiSpec['viewsets'][id]===undefined){
+        newuiSpec['viewsets'][id]={views:[]}
+        newuiSpec['default_viewsets']=[...newuiSpec['default_viewsets'],id];
         setFormuiSpec(newuiSpec)
         setIsAddField(true)
       }
