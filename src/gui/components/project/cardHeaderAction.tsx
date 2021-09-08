@@ -6,6 +6,7 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  CircularProgress,
 } from '@material-ui/core';
 import ShareIcon from '@material-ui/icons/Share';
 import AddIcon from '@material-ui/icons/Add';
@@ -68,6 +69,10 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
     );
   }, [project.project_id]);
 
+  if (viewSets === null) {
+    return <CircularProgress thickness={2} size={12} />;
+  }
+
   return (
     <React.Fragment>
       {not_xs ? (
@@ -80,15 +85,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               // If the list of views hasn't loaded yet
               // we can still show this button, except it will
               // redirect to the Record creation without known type
-              {...(viewSets === null
-                ? {
-                    component: RouterLink,
-                    to:
-                      ROUTES.PROJECT +
-                      project.project_id +
-                      ROUTES.RECORD_CREATE,
-                  }
-                : viewSets[1].length === 1
+              {...(viewSets[1].length === 1
                 ? {
                     component: RouterLink,
                     to:
@@ -104,31 +101,27 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
             >
               New Record
             </Button>
-            {viewSets === null ? (
-              <React.Fragment />
-            ) : (
-              <Menu
-                anchorEl={createAnchor}
-                keepMounted
-                open={Boolean(createAnchor)}
-                onClose={handleCreateClose}
-              >
-                {viewSets[1].map(viewset_name => (
-                  <MenuItem
-                    component={RouterLink}
-                    to={
-                      ROUTES.PROJECT +
-                      project.project_id +
-                      ROUTES.RECORD_CREATE +
-                      ROUTES.RECORD_TYPE +
-                      viewset_name
-                    }
-                  >
-                    {viewSets[0][viewset_name].label || viewset_name}
-                  </MenuItem>
-                ))}
-              </Menu>
-            )}
+            <Menu
+              anchorEl={createAnchor}
+              keepMounted
+              open={Boolean(createAnchor)}
+              onClose={handleCreateClose}
+            >
+              {viewSets[1].map(viewset_name => (
+                <MenuItem
+                  component={RouterLink}
+                  to={
+                    ROUTES.PROJECT +
+                    project.project_id +
+                    ROUTES.RECORD_CREATE +
+                    ROUTES.RECORD_TYPE +
+                    viewset_name
+                  }
+                >
+                  {viewSets[0][viewset_name].label || viewset_name}
+                </MenuItem>
+              ))}
+            </Menu>
           </Box>
         </React.Fragment>
       ) : (
