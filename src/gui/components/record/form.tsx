@@ -54,15 +54,20 @@ type RecordFormProps = {
   | {
       // When editing existing record, we require the caller to know its revision
       revision_id: RevisionID;
+      // When editing existing record, type comes from record
+      type?: undefined;
     }
   | {
       // When creating a new record,  revision is not yet created
       revision_id?: undefined;
+      // When creating a new record, the user is prompted with viewset/type
+      type: string;
     }
 );
 
 type RecordFormState = {
   stagingError: string | null;
+  type_cached: string | null;
   view_cached: string | null;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
@@ -109,6 +114,7 @@ class RecordForm extends React.Component<
       // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({
         initialValues: null,
+        type_cached: null,
         view_cached: null,
         revision_cached: null,
       });
@@ -124,6 +130,7 @@ class RecordForm extends React.Component<
       project_id: this.props.project_id,
     });
     this.state = {
+      type_cached: null,
       view_cached: null,
       revision_cached: null,
       stagingError: null,
@@ -171,8 +178,50 @@ class RecordForm extends React.Component<
 
   async formChanged(staging_area_started_already: boolean) {
     try {
+      let this_type;
+      if (this.props.type === undefined) {
+        const latest_record = await getFullRecordData(
+          this.props.project_id,
+          this.props.record_id,
+          this.props.revision_id
+        );
+        if (latest_record === null) {
+          this.setState({
+            stagingError: `Could not find data for record ${this.props.record_id}`,
+          });
+          this.context.dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message:
+                'Could not load existing record: ' + this.props.record_id,
+              severity: 'warnings',
+            },
+          });
+          return;
+        } else {
+          this_type = latest_record.type;
+        }
+      } else {
+        this_type = this.props.type;
+      }
+
+      if (!(this_type in this.props.uiSpec.viewsets)) {
+        throw Error(`Viewset for type '${this_type}' is missing`);
+      }
+
+      if (!('views' in this.props.uiSpec.viewsets[this_type])) {
+        throw Error(
+          `Viewset for type '${this_type}' is missing 'views' property'`
+        );
+      }
+
+      if (this.props.uiSpec.viewsets[this_type].views === []) {
+        throw Error(`Viewset for type '${this_type}' has no views`);
+      }
+
       await this.setState({
-        view_cached: this.props.uiSpec.start_view,
+        type_cached: this_type,
+        view_cached: this.props.uiSpec.viewsets[this_type].views[0],
         revision_cached: this.props.revision_id || null,
       });
     } catch (err) {
@@ -307,7 +356,7 @@ class RecordForm extends React.Component<
         const doc = {
           record_id: this.props.record_id,
           revision_id: this.props.revision_id || null,
-          type: '??:??', // TODO: get correct type
+          type: this.state.type_cached!,
           data: values,
           updated_by: userid,
           updated: now,

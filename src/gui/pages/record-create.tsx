@@ -49,6 +49,7 @@ export default function RecordCreate() {
 
   const project_info = getProjectInfo(project_id);
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+  const [type, setType] = useState(null as null | string);
   const [error, setError] = useState(null as null | {});
 
   const breadcrumbs = [
@@ -83,6 +84,24 @@ export default function RecordCreate() {
         <CircularProgress size={12} thickness={4} />
       </Container>
     );
+  } else if (type === null) {
+    // Pick a type after loading
+    return (
+      <Container maxWidth="lg">
+        {uiSpec.visible_types.map(type_name => {
+          const viewset_info = uiSpec.viewsets[type_name];
+          return (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setType(type_name)}
+            >
+              {viewset_info.label || type_name}
+            </Button>
+          );
+        })}
+      </Container>
+    );
   } else {
     // Loaded, variant picked, show form:
     return (
@@ -102,6 +121,7 @@ export default function RecordCreate() {
             <RecordForm
               project_id={project_id}
               record_id={generateFAIMSDataID()}
+              type={type}
               uiSpec={uiSpec}
             />
           </Box>
