@@ -41,15 +41,16 @@ import {ActionType} from '../../actions';
 import {store} from '../../store';
 
 export default function RecordCreate() {
-  const {project_id} = useParams<{
+  const {project_id, type_name} = useParams<{
     project_id: ProjectID;
+    type_name?: string;
   }>();
   const {dispatch} = useContext(store);
   const history = useHistory();
 
   const project_info = getProjectInfo(project_id);
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
-  const [type, setType] = useState(null as null | string);
+  const [type, setType] = useState(type_name as undefined | string);
   const [error, setError] = useState(null as null | {});
 
   const breadcrumbs = [
@@ -84,7 +85,7 @@ export default function RecordCreate() {
         <CircularProgress size={12} thickness={4} />
       </Container>
     );
-  } else if (type === null) {
+  } else if (type === undefined) {
     // Pick a type after loading
     return (
       <Container maxWidth="lg">

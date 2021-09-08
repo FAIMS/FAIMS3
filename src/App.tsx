@@ -103,6 +103,17 @@ export class App extends React.Component<AppProps, AppState> {
                 path={
                   ROUTES.PROJECT +
                   ':project_id' +
+                  ROUTES.RECORD_CREATE +
+                  ROUTES.RECORD_TYPE +
+                  ':type_name'
+                }
+                component={RecordCreate}
+              />
+              <Route
+                exact
+                path={
+                  ROUTES.PROJECT +
+                  ':project_id' +
                   ROUTES.RECORD +
                   ':record_id' +
                   ROUTES.REVISION +

@@ -31,6 +31,7 @@ export const PROJECT = '/projects/';
 export const RECORD_LIST = '/records';
 export const RECORD = '/records/';
 export const RECORD_CREATE = '/new-record';
+export const RECORD_TYPE = '/type/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 
