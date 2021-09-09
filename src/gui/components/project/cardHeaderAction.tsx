@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   Box,
   Button,
@@ -6,6 +6,7 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
+  CircularProgress,
 } from '@material-ui/core';
 import ShareIcon from '@material-ui/icons/Share';
 import AddIcon from '@material-ui/icons/Add';
@@ -17,6 +18,8 @@ import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
 import {ProjectInformation} from '../../../datamodel/ui';
+import {ProjectUIViewsets} from '../../../datamodel/typesystem';
+import {getUiSpecForProject} from '../../../uiSpecification';
 
 type ProjectCardActionProps = {
   project: ProjectInformation;
@@ -28,15 +31,47 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [actionAnchor, setActionAnchor] = React.useState<null | HTMLElement>(
+    null
+  );
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const handleActionClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setActionAnchor(event.currentTarget);
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
+  const handleActionClose = () => {
+    setActionAnchor(null);
   };
+
+  const [createAnchor, setCreateAnchor] = React.useState<null | HTMLElement>(
+    null
+  );
+
+  const handleCreateClose = () => {
+    setCreateAnchor(null);
+  };
+
+  const handleCreateClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setCreateAnchor(event.currentTarget);
+  };
+
+  // viewsets and the list of visible views
+  const [viewSets, setViewSets] = React.useState<
+    null | [ProjectUIViewsets, string[]]
+  >(null);
+
+  useEffect(() => {
+    getUiSpecForProject(project.project_id).then(
+      uiSpec => {
+        setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
+      },
+      () => {}
+    );
+  }, [project.project_id]);
+
+  if (viewSets === null) {
+    return <CircularProgress thickness={2} size={12} />;
+  }
 
   return (
     <React.Fragment>
@@ -47,24 +82,59 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               variant="outlined"
               color="primary"
               startIcon={<AddIcon />}
-              component={RouterLink}
-              to={ROUTES.PROJECT + project.project_id + ROUTES.RECORD_CREATE}
+              // If the list of views hasn't loaded yet
+              // we can still show this button, except it will
+              // redirect to the Record creation without known type
+              {...(viewSets[1].length === 1
+                ? {
+                    component: RouterLink,
+                    to:
+                      ROUTES.PROJECT +
+                      project.project_id +
+                      ROUTES.RECORD_CREATE +
+                      ROUTES.RECORD_TYPE +
+                      viewSets[1],
+                  }
+                : {
+                    onClick: handleCreateClick,
+                  })}
             >
               New Record
             </Button>
+            <Menu
+              anchorEl={createAnchor}
+              keepMounted
+              open={Boolean(createAnchor)}
+              onClose={handleCreateClose}
+            >
+              {viewSets[1].map(viewset_name => (
+                <MenuItem
+                  component={RouterLink}
+                  to={
+                    ROUTES.PROJECT +
+                    project.project_id +
+                    ROUTES.RECORD_CREATE +
+                    ROUTES.RECORD_TYPE +
+                    viewset_name
+                  }
+                >
+                  {viewSets[0][viewset_name].label || viewset_name}
+                </MenuItem>
+              ))}
+            </Menu>
           </Box>
         </React.Fragment>
       ) : (
         <React.Fragment>
-          <IconButton aria-label="settings" onClick={handleClick}>
+          <IconButton aria-label="settings" onClick={handleActionClick}>
             <MoreVertIcon />
           </IconButton>
           <Menu
             id="action-menu"
-            anchorEl={anchorEl}
+            anchorEl={actionAnchor}
             keepMounted
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
+            open={Boolean(actionAnchor)}
+            onClose={handleActionClose}
           >
             <MenuItem
               component={NavLink}

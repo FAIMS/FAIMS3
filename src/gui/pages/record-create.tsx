@@ -25,7 +25,6 @@ import {
   Typography,
   Paper,
   CircularProgress,
-  Button,
 } from '@material-ui/core';
 import {useHistory, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
@@ -41,15 +40,15 @@ import {ActionType} from '../../actions';
 import {store} from '../../store';
 
 export default function RecordCreate() {
-  const {project_id} = useParams<{
+  const {project_id, type_name} = useParams<{
     project_id: ProjectID;
+    type_name: string;
   }>();
   const {dispatch} = useContext(store);
   const history = useHistory();
 
   const project_info = getProjectInfo(project_id);
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
-  const [type, setType] = useState(null as null | string);
   const [error, setError] = useState(null as null | {});
 
   const breadcrumbs = [
@@ -84,24 +83,6 @@ export default function RecordCreate() {
         <CircularProgress size={12} thickness={4} />
       </Container>
     );
-  } else if (type === null) {
-    // Pick a type after loading
-    return (
-      <Container maxWidth="lg">
-        {uiSpec.visible_types.map(type_name => {
-          const viewset_info = uiSpec.viewsets[type_name];
-          return (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setType(type_name)}
-            >
-              {viewset_info.label || type_name}
-            </Button>
-          );
-        })}
-      </Container>
-    );
   } else {
     // Loaded, variant picked, show form:
     return (
@@ -121,7 +102,7 @@ export default function RecordCreate() {
             <RecordForm
               project_id={project_id}
               record_id={generateFAIMSDataID()}
-              type={type}
+              type={type_name}
               uiSpec={uiSpec}
             />
           </Box>

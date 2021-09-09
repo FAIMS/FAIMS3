@@ -24,7 +24,16 @@ import {RouteComponentProps} from 'react-router';
 
 import {Formik, Form, Field, FormikProps} from 'formik';
 
-import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
+import {
+  Button,
+  Grid,
+  Box,
+  ButtonGroup,
+  Typography,
+  Step,
+  Stepper,
+  StepButton,
+} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -528,6 +537,27 @@ class RecordForm extends React.Component<
 
       return (
         <React.Fragment>
+          <Stepper
+            nonLinear
+            activeStep={this.props.uiSpec.viewsets[
+              this.state.type_cached!
+            ].views.indexOf(viewName)}
+            alternativeLabel
+          >
+            {this.props.uiSpec.viewsets[this.state.type_cached!].views.map(
+              (view_name: string) => (
+                <Step key={view_name}>
+                  <StepButton
+                    onClick={() => {
+                      this.setState({view_cached: view_name});
+                    }}
+                  >
+                    {view_name}
+                  </StepButton>
+                </Step>
+              )
+            )}
+          </Stepper>
           <Formik
             initialValues={this.state.initialValues}
             validationSchema={this.getValidationSchema}
