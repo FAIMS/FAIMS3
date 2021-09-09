@@ -37,7 +37,7 @@ const example_records: {
     {
       record_id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       revision_id: null,
-      type: '??:??',
+      type: 'astro_sky:main',
       created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -60,7 +60,7 @@ const example_records: {
     {
       record_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
       revision_id: null,
-      type: '??:??',
+      type: 'astro_sky:main',
       created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -78,6 +78,20 @@ const example_records: {
         'multi-select-field': ['JPY'],
         'checkbox-field': true,
         'radio-group-field': '1',
+      },
+    },
+    {
+      record_id: '9a0782ba-937b-4f24-8489-58cd653eca88',
+      revision_id: null,
+      type: 'astro_sky:photolog',
+      created: randomDate(new Date(2012, 0, 1), new Date()),
+      created_by: 'Leia',
+      updated: randomDate(new Date(2021, 0, 1), new Date()),
+      updated_by: 'Luke',
+      data: {
+        'int-field': 20,
+        'select-field': ['EUR'],
+        'checkbox-field': true,
       },
     },
   ],
@@ -466,8 +480,18 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: '',
       },
     },
+    viewsets: {
+      'astro_sky:main': {
+        views: ['start-view', 'next-view'],
+      },
+      'astro_sky:photolog': {
+        views: ['next-view', 'photo-view'],
+      },
+    },
+    visible_types: ['astro_sky:main', 'astro_sky:photolog'],
     views: {
       'start-view': {
+        label: 'Main',
         fields: [
           'hrid-field',
           'take-point-field',
@@ -477,23 +501,30 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'str-field',
           'multi-str-field',
           'int-field',
-          'select-field',
           'multi-select-field',
           'checkbox-field',
           'radio-group-field',
-          // 'bool-field',
-          // 'date-field',
-          // 'time-field',
-        ], // ordering sets appearance order
+        ],
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
+      'next-view': {
+        label: 'Common',
+        next_label: 'Done!',
+        fields: ['int-field', 'select-field'],
+      },
+      'photo-view': {
+        label: 'Exclusive Photo view',
+        fields: ['checkbox-field'],
+      },
     },
-
-    start_view: 'start-view',
   },
   default_projectB: {
     fields: {},
+    viewsets: {
+      'projectB::default': {
+        views: ['start-view'],
+      },
+    },
+    visible_types: ['projectB::default'],
     views: {
       'start-view': {
         fields: [
@@ -505,13 +536,16 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           // 'time-field',
         ], // ordering sets appearance order
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
     },
-    start_view: 'start-view',
   },
   default_projectC: {
     fields: {},
+    viewsets: {
+      'projectC::default': {
+        views: ['start-view'],
+      },
+    },
+    visible_types: ['projectC::default'],
     views: {
       'start-view': {
         fields: [
@@ -523,10 +557,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           // 'time-field',
         ], // ordering sets appearance order
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
     },
-    start_view: 'start-view',
   },
 };
 
