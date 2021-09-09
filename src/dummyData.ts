@@ -25,7 +25,14 @@ import {
   ProjectMetaObject,
   ProjectObject,
   ProjectsList,
+  AutoIncrementReference,
 } from './datamodel/database';
+import {
+  add_autoincrement_reference_for_project,
+  get_local_autoincrement_state_for_field,
+  set_local_autoincrement_state_for_field,
+  create_new_autoincrement_range,
+} from './datamodel/autoincrement';
 import {Record, ProjectUIModel} from './datamodel/ui';
 import {setProjectMetadata} from './projectMetadata';
 import {upsertFAIMSData} from './data_storage';
@@ -102,6 +109,18 @@ function randomDate(start: Date, end: Date) {
     start.getTime() + Math.random() * (end.getTime() - start.getTime())
   );
 }
+
+const example_autoincrement_references: {
+  [key: string]: AutoIncrementReference[];
+} = {
+  default_astro_sky: [
+    {
+      project_id: 'default_astro_sky',
+      form_id: 'default', // TODO: This needs sorting
+      field_id: 'basic-autoincrementer-field',
+    },
+  ],
+};
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   default_astro_sky: {
@@ -466,18 +485,31 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           helperText: 'Human Readable ID',
           variant: 'outlined',
           required: true,
-          template: 'αβγ {{str-field}}',
+          template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
           InputProps: {
             type: 'text', // must be a valid html type
           },
-          SelectProps: {},
           InputLabelProps: {
             label: 'Human Readable ID',
           },
-          FormHelperTextProps: {},
         },
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
+      },
+      'basic-autoincrementer-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'BasicAutoIncrementer',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          name: 'basic-autoincrementer-field',
+          id: 'basic-autoincrementer-field',
+          variant: 'outlined',
+          required: true,
+          num_digits: 5,
+          form_id: 'default', // TODO: sort out this
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: null,
       },
     },
     viewsets: {
@@ -494,6 +526,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         label: 'Main',
         fields: [
           'hrid-field',
+          'basic-autoincrementer-field',
           'take-point-field',
           'bad-field',
           'action-field',
@@ -800,6 +833,31 @@ export async function setupExampleProjectMetadata(
     for (const key in example_project_metadata) {
       try {
         await setProjectMetadata(projname, key, example_project_metadata[key]);
+      } catch (err) {
+        console.error('databases needs cleaning...');
+        console.debug(err);
+      }
+    }
+  }
+  const example_autoincrement_refs = example_autoincrement_references[projname];
+  if (example_autoincrement_refs === undefined) {
+    console.error(`Unable to find example_autoincrement_refs for ${projname}`);
+  } else {
+    for (const ref of example_autoincrement_refs) {
+      try {
+        await add_autoincrement_reference_for_project(
+          ref.project_id,
+          ref.form_id,
+          ref.field_id
+        );
+        const new_range = create_new_autoincrement_range(0, 10000);
+        const doc = await get_local_autoincrement_state_for_field(
+          ref.project_id,
+          ref.form_id,
+          ref.field_id
+        );
+        doc.ranges.push(new_range);
+        await set_local_autoincrement_state_for_field(doc);
       } catch (err) {
         console.error('databases needs cleaning...');
         console.debug(err);

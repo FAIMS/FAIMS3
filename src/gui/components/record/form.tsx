@@ -281,7 +281,12 @@ class RecordForm extends React.Component<
         },
       });
       // Show an empty form
-      this.setState({initialValues: {_id: this.props.record_id!}});
+      this.setState({
+        initialValues: {
+          _id: this.props.record_id!,
+          _project_id: this.props.project_id,
+        },
+      });
     }
   }
 
@@ -317,6 +322,7 @@ class RecordForm extends React.Component<
 
     const initialValues: {[key: string]: any} = {
       _id: this.props.record_id!,
+      _project_id: this.props.project_id,
     };
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] = firstDefinedFromList([
