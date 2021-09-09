@@ -25,12 +25,6 @@ import {
   AttributeValuePairID,
   ProjectID,
 } from './core';
-import {
-  FAIMSConstantCollection,
-  FAIMSTypeCollection,
-  ProjectUIFields,
-  ProjectUIViews,
-} from './typesystem';
 
 export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
@@ -126,24 +120,6 @@ export type ProjectsList = {
   [key: string]: ProjectObject;
 };
 
-export interface ProjectSchema {
-  _id?: string; // optional as we may want to include the raw json in places
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
-  namespace: string;
-  constants: FAIMSConstantCollection;
-  types: FAIMSTypeCollection;
-}
-
-export interface EncodedProjectUIModel {
-  _id: string; // optional as we may want to include the raw json in places
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
-  fields: ProjectUIFields;
-  fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
-  start_view: string;
-}
-
 export interface EncodedProjectMetadata {
   _id: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
@@ -213,8 +189,8 @@ export interface AttributeValuePair {
  * discriminated by the prefix of the object's id
  */
 export type ProjectMetaObject =
-  | ProjectSchema
-  | EncodedProjectUIModel
+  // | ProjectSchema
+  // | EncodedProjectUIModel
   | EncodedProjectMetadata;
 
 /*

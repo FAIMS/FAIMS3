@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {USE_REAL_DATA, AUTOACTIVATE_PROJECTS} from '../buildconfig';
+import {AUTOACTIVATE_PROJECTS} from '../buildconfig';
 import {
   ConnectionInfo,
   ProjectDataObject,
@@ -26,12 +26,6 @@ import {
   ProjectMetaObject,
   ProjectObject,
 } from '../datamodel/database';
-import {
-  setupExampleDirectory,
-  setupExampleListing,
-  setupExampleProjectMetadata,
-  setupExampleData,
-} from '../dummyData';
 import {
   ConnectionInfo_create_pouch,
   materializeConnectionInfo,
@@ -108,14 +102,12 @@ export async function process_directory(
           await get_active_listings_in_this_directory()
         ),
       paused: async () => {
-        if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
         events.emit(
           'directory_paused',
           await get_active_listings_in_this_directory()
         );
       },
       error: async () => {
-        if (!USE_REAL_DATA) await setupExampleDirectory(directory_db.local);
         events.emit(
           'directory_paused',
           await get_active_listings_in_this_directory()
@@ -245,11 +237,6 @@ export async function process_listing(listing_object: ListingsObject) {
           projects_connection
         ),
       paused: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleListing(
-            listing_object._id,
-            local_projects_db.local
-          );
         events.emit(
           'listing_paused',
           listing_object,
@@ -259,11 +246,6 @@ export async function process_listing(listing_object: ListingsObject) {
         );
       },
       error: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleListing(
-            listing_object._id,
-            local_projects_db.local
-          );
         events.emit(
           'listing_paused',
           listing_object,
@@ -428,8 +410,6 @@ async function process_project(
           meta_db
         ),
       paused: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleProjectMetadata(active_project._id, meta_db.local);
         events.emit(
           'project_meta_paused',
           listing,
@@ -439,8 +419,6 @@ async function process_project(
         );
       },
       error: async () => {
-        if (!USE_REAL_DATA)
-          await setupExampleProjectMetadata(active_project._id, meta_db.local);
         events.emit(
           'project_meta_paused',
           listing,
@@ -468,7 +446,6 @@ async function process_project(
           data_db
         ),
       paused: async () => {
-        if (!USE_REAL_DATA) await setupExampleData(active_project._id);
         events.emit(
           'project_data_paused',
           listing,
@@ -478,7 +455,6 @@ async function process_project(
         );
       },
       error: async () => {
-        if (!USE_REAL_DATA) await setupExampleData(active_project._id);
         events.emit(
           'project_data_paused',
           listing,

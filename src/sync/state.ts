@@ -26,7 +26,6 @@ import {
   ActiveDoc,
   isRecord,
 } from '../datamodel/database';
-import {mergeHeads} from '../data_storage/merging';
 import {ExistingActiveDoc, LocalDB} from './databases';
 import {add_initial_listener} from './event-handler-registration';
 import {DirectoryEmitter} from './events';
@@ -220,42 +219,4 @@ function register_metas_complete(initializeEvents: DirectoryEmitter) {
   initializeEvents.on('projects_known', () => {
     emit_if_metas_complete();
   });
-}
-
-add_initial_listener(register_basic_automerge_resolver);
-/*
- * Registers a handler to do automerge on new records
- */
-function register_basic_automerge_resolver(initializeEvents: DirectoryEmitter) {
-  const already_listening = new Set<string>();
-  initializeEvents.on(
-    'project_data_paused',
-    (listing, active, project, data) => {
-      if (!(project._id in already_listening)) {
-        already_listening.add(project._id);
-        start_listening_for_changes(project._id, data);
-      }
-    }
-  );
-}
-
-function start_listening_for_changes(
-  proj_id: NonUniqueProjectID,
-  data_db: LocalDB<ProjectDataObject>
-) {
-  data_db.local
-    .changes({
-      since: 'now',
-      live: true,
-      include_docs: true,
-    })
-    .on('change', doc => {
-      if (doc !== undefined) {
-        const pdoc = doc.doc;
-
-        if (pdoc !== undefined && isRecord(pdoc)) {
-          mergeHeads(proj_id, doc.id);
-        }
-      }
-    });
 }
