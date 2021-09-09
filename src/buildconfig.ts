@@ -110,7 +110,7 @@ function directory_port(): number {
 
 function is_testing() {
   const jest_worker_is_running = process.env.JEST_WORKER_ID !== undefined;
-  const jest_imported = false;//typeof jest !== 'undefined';
+  const jest_imported = false; //typeof jest !== 'undefined';
   const test_node_env = process.env.NODE_ENV === 'test';
   return jest_worker_is_running || jest_imported || test_node_env;
 }

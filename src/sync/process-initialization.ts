@@ -83,7 +83,8 @@ export async function process_directory(
       active_listings_in_this_directory.map(doc => doc.listing_id)
     );
   };
-  const unupdated_listings_in_this_directory = await get_active_listings_in_this_directory();
+  const unupdated_listings_in_this_directory =
+    await get_active_listings_in_this_directory();
 
   events.emit('directory_local', unupdated_listings_in_this_directory);
 
@@ -125,7 +126,7 @@ export async function process_directory(
   };
 
   setLocalConnection(
-    (directory_db as unknown) as Parameters<typeof setLocalConnection>[0]
+    directory_db as unknown as Parameters<typeof setLocalConnection>[0]
   );
 }
 
@@ -216,7 +217,8 @@ export async function process_listing(listing_object: ListingsObject) {
    * NOTE: This isn't updated, call get_active_projects_in_this_listing
    * after sufficient time (i.e. if the code you're writing is in a pause handler)
    */
-  const unupdated_projects_in_this_listing = await get_active_projects_in_this_listing();
+  const unupdated_projects_in_this_listing =
+    await get_active_projects_in_this_listing();
 
   events.emit(
     'listing_local',
