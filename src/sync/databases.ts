@@ -33,6 +33,7 @@ import {
   ProjectDataObject,
   ProjectObject,
   LocalAuthDoc,
+  PouchUser,
 } from '../datamodel/database';
 import {
   ConnectionInfo_create_pouch,
@@ -112,6 +113,14 @@ export const directory_db: LocalDB<ListingsObject> = {
   remote: null,
   is_sync: true,
 };
+
+export const users_db: PouchDB.Database<PouchUser> =
+  ConnectionInfo_create_pouch({
+    db_name: '_users',
+    proto: DIRECTORY_PROTOCOL,
+    host: DIRECTORY_HOST,
+    port: DIRECTORY_PORT,
+  });
 
 /**
  * Active: A local (NOT synced) list of:

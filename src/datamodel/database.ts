@@ -193,6 +193,8 @@ export type ProjectMetaObject =
   // | EncodedProjectUIModel
   EncodedProjectMetadata;
 
+export type PouchUser = {};
+
 /*
  * Elements of a Project's dataDB can be any one of these,
  * discriminated by the prefix of the object's id

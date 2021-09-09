@@ -17,13 +17,16 @@
  * Description:
  *   TODO
  */
-import {
-  process_listing,
-  process_projects,
-} from './process-initialization';
-import {active_db, self_listing_info} from './databases';
+import {process_listing, process_projects} from './process-initialization';
+import {active_db, self_listing_info, users_db} from './databases';
 import {DirectoryEmitter, events} from './events';
 import {attach_all_listeners} from './event-handler-registration';
+import {ConnectionInfo_create_pouch} from './connection';
+import {
+  DIRECTORY_PROTOCOL,
+  DIRECTORY_HOST,
+  DIRECTORY_PORT,
+} from '../buildconfig';
 
 /**
  * To prevent initialize() being called multiple times
