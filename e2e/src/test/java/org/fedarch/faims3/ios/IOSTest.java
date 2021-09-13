@@ -20,8 +20,8 @@
 
 package org.fedarch.faims3.ios;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -66,10 +66,9 @@ public class IOSTest implements E2ETest {
 	 * Setup the IOSDriver based on parameter.
 	 * @param localTest If true, then we'll set up a local connection. Otherwise we'll set up a browserstack one.
 	 * @param testDesc Test description for browserstack
-	 * @return an IOSDriver instance
 	 * @throws MalformedURLException
 	 */
-	public static void setup(boolean localTest, String testDesc) throws MalformedURLException {
+	public void setup(boolean localTest, String testDesc) throws MalformedURLException {
 		DesiredCapabilities caps = new DesiredCapabilities();
 		// allow location services
 	    caps.setCapability(IOSMobileCapabilityType.LOCATION_SERVICES_ENABLED, "true");
@@ -255,18 +254,7 @@ public class IOSTest implements E2ETest {
 	 */
 	@Override
 	public void loadNewAstroSkyForm() {
-		// Click on "Projects"
-		WebElement projects = new WebDriverWait(driver, 10)
-				.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='/projects']")));
-		projects.click();
-
-		// workaround for FAIMS3-263
-		try {
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		loadProjects();
 
 		// Find the '+' button for new observation
 		WebElement newObservation = new WebDriverWait(driver, 10)
@@ -275,7 +263,7 @@ public class IOSTest implements E2ETest {
 		newObservation.click();
 	}
 
-	public static void tearDown() {
+	public void tearDown() {
 		// The driver.quit statement is required, otherwise the test continues to
 		// execute, leading to a timeout.
 		driver.quit();
@@ -360,5 +348,21 @@ public class IOSTest implements E2ETest {
 		WebDriverWait wait = new WebDriverWait(driver, 10);
 		wait.until(ExpectedConditions.presenceOfElementLocated(
 				By.xpath("//div[@class='MuiAlert-message' and @text='" + message + "']")));
+	}
+
+	@Override
+	public void loadProjects() {
+		// Click on "Projects"
+		WebElement projects = new WebDriverWait(driver, 10)
+				.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='/projects']")));
+		projects.click();
+
+		// workaround for FAIMS3-263
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
