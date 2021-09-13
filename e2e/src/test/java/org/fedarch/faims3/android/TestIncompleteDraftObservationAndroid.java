@@ -20,22 +20,22 @@
 
 package org.fedarch.faims3.android;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestIncompleteDraftObservation;
 import org.fedarch.faims3.TestUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import io.appium.java_client.MobileBy;
 import io.appium.java_client.android.AndroidElement;
@@ -51,15 +51,16 @@ import io.appium.java_client.android.AndroidElement;
 public class TestIncompleteDraftObservationAndroid extends AndroidTest implements TestIncompleteDraftObservation {
 
 	@BeforeClass
-	public static void setup() throws MalformedURLException {
+	public void setup() throws MalformedURLException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		AndroidTest.setup(false, "Test incomplete draft observation form (Android)");
+		super.setup(false, "Test incomplete draft observation form (Android)");
 	}
 
+	@Override
 	@AfterClass
-	public static void tearDown() {
-		AndroidTest.tearDown();
+	public void tearDown() {
+		super.tearDown();
 	}
 
 	@Override

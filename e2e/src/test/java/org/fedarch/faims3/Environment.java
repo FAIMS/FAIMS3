@@ -26,11 +26,11 @@ import org.springframework.context.annotation.PropertySource;
 
 /**
  * Bean for environment.properties
- * @author ang05a
+ * @author Rini Angreani, CSIRO
  *
  */
 @Configuration
-@PropertySource("classpath:/../environment.properties")
+@PropertySource("classpath:../resources/environment.properties")
 public class Environment {
 
 	 @Value("${REACT_APP_DIRECTORY_HOST}")
