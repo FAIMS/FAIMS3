@@ -1,0 +1,21 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="End to End Tests" verbose="2" annotations="JDK">
+  <test name="Alpha Tests" preserve-order="true" >
+    <classes>
+      <!-- Android tests -->      
+      <class name="org.fedarch.faims3.android.TestIncompleteDraftObservationAndroid" />
+      <class name="org.fedarch.faims3.android.TestPopulateFormAndroid" />
+      <class name="org.fedarch.faims3.android.TestStagingFormAndroid" />
+      <!-- Chrome tests -->
+      <class name="org.fedarch.faims3.chrome.TestIncompleteDraftObservationChrome" />
+      <class name="org.fedarch.faims3.chrome.TestPopulateFormChrome" />
+      <class name="org.fedarch.faims3.chrome.TestStagingFormChrome" />
+      <!-- iOS tests -->
+      <class name="org.fedarch.faims3.ios.TestIncompleteDraftObservationIOS" />
+      <class name="org.fedarch.faims3.ios.TestPopulateFormIOS" />
+      <class name="org.fedarch.faims3.ios.TestStagingFormIOS" />
+      <!-- This is a multi device parallel test that depends on records created from previous tests -->
+      <class name="org.fedarch.faims3.TestUpdateObservationsAndDraftDatabase" />
+    </classes>
+  </test>
+</suite>
