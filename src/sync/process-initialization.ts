@@ -399,7 +399,7 @@ async function activate_project(
   username: string | null,
   password: string | null,
   is_sync = true
-) {
+): Promise<ProjectID> {
   if (project_id.startsWith('_design/')) {
     throw Error(`Cannot activate design document ${project_id}`);
   }
@@ -421,6 +421,7 @@ async function activate_project(
         password: password,
         is_sync: is_sync,
       });
+      return active_id;
     } else {
       throw err;
     }

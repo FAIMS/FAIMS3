@@ -39,6 +39,7 @@ export const PROJECT_METADATA_PREFIX = 'project-metadata';
 export const RECORD_INDEX_NAME = 'record-version-index';
 export const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 export const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
+export const LOCALLY_CREATED_PROJECT_PREFIX = 'locallycreatedproject';
 
 /*
  * This may already exist in pouchdb's typing, but lets make a temporary one for
