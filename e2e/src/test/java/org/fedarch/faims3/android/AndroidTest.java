@@ -20,7 +20,7 @@
 
 package org.fedarch.faims3.android;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.assertEquals;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -68,10 +68,10 @@ public class AndroidTest implements E2ETest {
 	 * Setup the AndroidDriver based on parameter.
 	 * @param localTest If true, then we'll set up a local connection. Otherwise we'll set up a browserstack one.
 	 * @param testDesc Test description for browserstack
-	 * @return an AndroidDriver instance
+	 * @return
 	 * @throws MalformedURLException
 	 */
-	public static void setup(boolean localTest, String testDesc) throws MalformedURLException {
+	public void setup(boolean localTest, String testDesc) throws MalformedURLException {
 		DesiredCapabilities caps = new DesiredCapabilities();
 		// allow location services
 	    caps.setCapability(AndroidMobileCapabilityType.GPS_ENABLED, "true");
@@ -158,14 +158,12 @@ public class AndroidTest implements E2ETest {
 	 */
 	@Override
 	public void loadNewAstroSkyForm() {
+		loadProjects();
+
 		WebDriverWait wait = new WebDriverWait(driver, 20);
-		// Click on "Projects"
-		AndroidElement projects = (AndroidElement) wait.until(ExpectedConditions
-				.elementToBeClickable(MobileBy.xpath("//android.view.MenuItem[contains(@text, 'Projects')]")));
-		projects.click();
 
 		// Get the right project
-		AndroidElement AstroSky = (AndroidElement) wait.until(ExpectedConditions
+		wait.until(ExpectedConditions
 				.presenceOfElementLocated(MobileBy.xpath("//*[contains(@text, 'Astrosky')]")));
 
 		// workaround for FAIMS3-263
@@ -355,7 +353,7 @@ public class AndroidTest implements E2ETest {
 
 	}
 
-	public static void tearDown() {
+	public void tearDown() {
 		// The driver.quit statement is required, otherwise the test continues to
 		// execute, leading to a timeout.
 		driver.quit();
@@ -366,5 +364,14 @@ public class AndroidTest implements E2ETest {
 		WebDriverWait wait = new WebDriverWait(driver, 10);
 		wait.until(ExpectedConditions.visibilityOfElementLocated(
 				MobileBy.xpath("//*[@text='" + message + "']")));
+	}
+
+	@Override
+	public void loadProjects() {
+		WebDriverWait wait = new WebDriverWait(driver, 20);
+		// Click on "Projects"
+		AndroidElement projects = (AndroidElement) wait.until(ExpectedConditions
+				.elementToBeClickable(MobileBy.xpath("//android.view.MenuItem[contains(@text, 'Projects')]")));
+		projects.click();
 	}
 }

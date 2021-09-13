@@ -28,6 +28,11 @@ public interface E2ETest {
 
 	public boolean isUsingBrowserstack();
 
+    /**
+     * Go to "Projects"
+     */
+	void loadProjects();
+
 	/**
 	 * Load up new Test observation form
 	 */

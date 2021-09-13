@@ -19,9 +19,9 @@
  */
 package org.fedarch.faims3.chrome;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
@@ -31,11 +31,11 @@ import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestStagingForm;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Test populate the fields on the Android app:
@@ -47,10 +47,10 @@ import org.openqa.selenium.WebElement;
 public class TestStagingFormChrome extends ChromeTest implements TestStagingForm {
 
   @BeforeClass
-  public static void setup() throws MalformedURLException, JSONException {
+  public void setup() throws MalformedURLException, JSONException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  ChromeTest.setup(false,  "Test staging new Test Project observation form (Chrome)");
+	  super.setup(false,  "Test staging new Test Project observation form (Chrome)");
   }
 
   /**
@@ -131,9 +131,10 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
   }
 
   //TODO: switch via menu on the left
-  @AfterClass
-  public static void tearDown() {
+  @Override
+@AfterClass
+  public void tearDown() {
 	 // The driver.quit statement is required, otherwise the test continues to execute, leading to a timeout.
-	 ChromeTest.tearDown();
+	 super.tearDown();
   }
 }
