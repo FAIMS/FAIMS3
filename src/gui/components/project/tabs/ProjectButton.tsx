@@ -6,6 +6,9 @@ import CancelIcon from '@material-ui/icons/Cancel';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import AddIcon from '@material-ui/icons/Add';
+import EditIcon from '@material-ui/icons/Edit';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+
 export function CusButton(props:any) {
   return (
     <Button type={props.type} color={props.color} onClick={() => props.onButtonClick(props.id)} value={props.value} id={props.id}>{props.text}</Button>
@@ -33,7 +36,27 @@ export function DownButton(props:any){
         </IconButton>
 		)
 }
-
+export function AddSectionButton(props:any){
+	return (
+		<IconButton edge="end" aria-label={props.text} onClick={() => props.onButtonClick(props.id)} value={props.value} id={props.id}>
+            <AddIcon  fontSize='small'/>
+        </IconButton>
+		)
+}
+export function EditButton(props:any){
+	return (
+		<IconButton edge="end" aria-label={props.text} onClick={() => props.onButtonClick(props.id)} value={props.value} id={props.id}>
+            <EditIcon  fontSize='small'/>
+        </IconButton>
+		)
+}
+export function TickButton(props:any){
+	return (
+		<IconButton edge="end" type={props.type} id={props.id}>
+            <CheckCircleIcon  fontSize='small'/>
+        </IconButton>
+		)
+}
 export function AddButton(props:any) {
   return ( 	
 

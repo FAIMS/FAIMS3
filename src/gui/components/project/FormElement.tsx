@@ -24,8 +24,9 @@ import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import {getComponentByName} from '../../ComponentRegistry';
-import PSettingCard from './tabs/PSettingCard';
-
+import {SettingCard} from './tabs/PSettingCard';
+import {setProjectInitialValues} from './data/ComponentSetting';
+import {TickButton} from './tabs/ProjectButton';
 type FormElement = {
   // project_id: string;
   // revision_id?: string;
@@ -79,6 +80,45 @@ export const getComponentFromField = (uiSpec:any,fieldName: string,formProps:any
   }
 
 
+export function FormForm (props:any) {
+  const {currentView,handleChangeForm,...others}=props
+  const [uiSpec,setUISpec]=useState(props.uiSpec)
+  const initialValues=setProjectInitialValues(uiSpec,currentView,{})
+
+  return (<Formik
+          initialValues={initialValues}
+          validateOnMount={true}
+          onSubmit={(values, {setSubmitting}) => {
+            setTimeout(() => {
+              setSubmitting(false);
+              props.handleSubmit(values)
+            }, 500);}}
+        >
+
+        {formProps => {
+
+              return (
+
+                <Form >
+               <Grid container  >
+               <Grid item sm={11} xs={12}>
+                  <Grid container >
+                {uiSpec['views'][currentView]['fields'].map((field:any,index:any)=>(
+                  <Grid item sm={2} xs={12} key={field} >{getComponentFromField(uiSpec,field, formProps,handleChangeForm)}</Grid>
+                ))}
+                </Grid></Grid>
+                <Grid item sm={1} xs={12}>
+                <TickButton type="submit" />
+                </Grid>
+                </Grid>
+                </Form>
+              );
+        }}
+        </Formik>)
+}
+
+
+
 export  function FormElement (props: FormElement){
 
   const [currentView, setCurrentView] = useState(props.view);
@@ -121,7 +161,7 @@ export  function FormElement (props: FormElement){
           {fieldNames.length>0?getComponentFromField(uiSpec,fieldNames[0], formProps,handleChangeC):''}
         </Grid>
         <Grid item sm={1} xs={3} >          
-          <PSettingCard handelonClick={handelonClickSetting} />       
+          <SettingCard handelonClick={handelonClickSetting} />       
         </Grid>
         <Grid item sm={7} xs={9}>
           {uidesign==='settings'?fieldNames.length>designvalue+1?
