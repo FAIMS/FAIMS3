@@ -20,8 +20,8 @@
 
 package org.fedarch.faims3.ios;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.net.MalformedURLException;
 
@@ -29,14 +29,14 @@ import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestIncompleteDraftObservation;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Doable Task 2.2 - Incomplete/Draft Observations
@@ -49,15 +49,16 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class TestIncompleteDraftObservationIOS extends IOSTest implements TestIncompleteDraftObservation {
 
 	@BeforeClass
-	public static void setup() throws MalformedURLException, JSONException {
+	public void setup() throws MalformedURLException, JSONException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		IOSTest.setup(false, "Test incomplete draft observation form (iOS)");
+		super.setup(false, "Test incomplete draft observation form (iOS)");
 	}
 
+	@Override
 	@AfterClass
-	public static void tearDown() {
-		IOSTest.tearDown();
+	public void tearDown() {
+		super.tearDown();
 	}
 
 	@Override
