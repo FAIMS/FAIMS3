@@ -22,7 +22,7 @@
  * User readable information about a project
  * Do not use with sync code; UI code only
  */
-import {ProjectID, RecordID, RevisionID} from './core';
+import {ProjectID, RecordID, RevisionID, FAIMSTypeName} from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
 export interface ProjectInformation {
@@ -63,7 +63,7 @@ export interface Record {
   project_id?: ProjectID;
   record_id: RecordID;
   revision_id: RevisionID | null;
-  type: string;
+  type: FAIMSTypeName;
   data: {[field_name: string]: any};
   updated: Date;
   updated_by: string;
@@ -78,6 +78,13 @@ export interface Record {
 export type RecordList = {
   [key: string]: Record;
 };
+
+export interface RecordReference {
+  project_id?: ProjectID;
+  record_id: RecordID;
+  // This is for HRIDs or other non ID descriptions of reference
+  record_label: RecordID | string;
+}
 
 /*
  * This somehow needs to handle class-based components and function-based
