@@ -28,9 +28,11 @@ import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import FieldsListCard from './tabs/FieldsListCard';
 import {SettingCard} from './tabs/PSettingCard';
 import {getComponentFromField} from './FormElement';
-import TabTab from './tabs/TabTab'
+import {TabTab,TabEditable} from './tabs/TabTab'
 import {FieldSettings,getcomponent,getfieldname,convertuiSpecToProps,setProjectInitialValues,getid,sampleuispec} from './data/ComponentSetting'
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './tabs/ProjectButton'
+import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
+import {data_dbs, metadata_dbs} from '../../../sync/databases';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -87,6 +89,11 @@ export default function CreateProjectCard() {
      setinit();
      console.log(formuiview)
     }, []);
+
+     useEffect(() => {
+      saveformuiSpec()
+      console.log(formuiSpec)
+    }, [formuiSpec]);
 
      const generateunifromformui = (formui:any) =>{
       const newformcom=formcomponents
@@ -324,24 +331,34 @@ export default function CreateProjectCard() {
       }
 
     }
-    const handelonChangeLabel = (tabs:Array<string>) =>{
+    const handelonChangeLabel = (tabs:Array<string>,pretabs:Array<string>) =>{
       // update uiSpecific
       const newuiSpec=formuiSpec
+      
+      console.log(pretabs)
+      // tabs.map((tab:string,index:number)=>{
+      //   console.log(newuiSpec['visible_types'][index])
+      //   console.log(formuiSpec['visible_types'][index]+'updated'+tab)
+      //   if(formuiSpec['visible_types'][index]===undefined) {
+      //     newuiSpec['viewsets'][tab]={views:sections_default.map((section:string)=>section=tab+section)}
+      //     newuiSpec['viewsets'][tab]['views'].map((section:string)=>newuiSpec['views'][section]={'fields':[],uidesign:'form'})
+      //   }else{if(formuiSpec['visible_types'][index]!==tab){
+      //     newuiSpec['viewsets'][tab]=formuiSpec['viewsets'][formtabs[index]]
+      //     delete newuiSpec['viewsets'][formtabs[index]]
+      //   }}
+      // })
       newuiSpec['visible_types']=tabs
-      tabs.map((tab:string,index:number)=>{
-        console.log(formuiSpec['visible_types'][index]+'updated'+tab)
-        if(formuiSpec['visible_types'][index]===undefined) {
-          newuiSpec['viewsets'][tab]={views:sections_default.map((section:string)=>section=tab+section)}
-          newuiSpec['viewsets'][tab]['views'].map((section:string)=>newuiSpec['views'][section]={'fields':[],uidesign:'form'})
-        }else{if(formuiSpec['visible_types'][index]!==tab){
-          newuiSpec['viewsets'][tab]=formuiSpec['viewsets'][formtabs[index]]
-          delete newuiSpec['viewsets'][formtabs[index]]
-        }}
-      })
       setFormuiSpec(newuiSpec)
       setTablist(tabs)
       console.log(formuiSpec)
     }
+
+    const handelonChangeLabelSection = (tabs:Array<string>) =>{
+     console.log('update section')
+      console.log(formuiSpec)
+    }
+
+
 
     const handleChangetab = (event:any,index:number) =>{
       setProjecttabvalue(index)
@@ -355,7 +372,16 @@ export default function CreateProjectCard() {
       return '';
     }
 
-    
+
+    const saveformuiSpec = async  () =>{
+      try{
+        console.log(await setUiSpecForProject(metadata_dbs['default_astro_sky'].local, formuiSpec));
+      }catch (err) {
+      console.error('databases needs cleaning...');
+      console.debug(err);
+      }
+    }
+
 
 
     
@@ -368,8 +394,8 @@ export default function CreateProjectCard() {
         </AppBar>
       </Grid>
       <Grid item sm={12} xs={12}>
-        <TabTab tabs={formtabs} value={formtabs.indexOf(formvariants)} handleChange={handelonChangeVariants}  tab_id='subtab' handelonChangeLabel={handelonChangeLabel} />
-        <TabTab tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='subtab' handelonChangeLabel={handelonChangeLabel}/>
+        <TabEditable tabs={formtabs} value={formtabs.indexOf(formvariants)} handleChange={handelonChangeVariants}  tab_id='subtab' handelonChangeLabel={handelonChangeLabel} />
+        <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='subtab' handelonChangeLabel={handelonChangeLabelSection}/>
       </Grid>
       <Grid item sm={8} xs={12}>  
         <Formik

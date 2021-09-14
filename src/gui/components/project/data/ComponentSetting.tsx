@@ -1,14 +1,14 @@
 import {v4 as uuidv4} from 'uuid';
 const accessgroup=['admin','moderator','team']
 export const FieldModel =(props:any)=>{
-	const {name,namespace,component,type_return,required,initialValue,validationSchema,meta_note,meta_type,access,...others}=props
+	const {name,namespace,component,type_return,required,initialValue,validationSchema,annotation_label,meta_type,meta_type_label,access,...others}=props
 	let isrequired=false;
 	if(required===true) isrequired=required
 	return {
         'component-namespace': namespace, // this says what web component to use to render/acquire value from
         'component-name': component,
         'type-returned': type_return, // matches a type in the Project Model
-        'meta':{note:meta_note??'',type:meta_type??''},
+        'meta':{annotation_label:annotation_label??'annotation',uncertainty:{include:meta_type??false,label:meta_type_label??'uncertainty'}},
         'access':access??accessgroup,
         'component-parameters': {
           name: name,
@@ -23,22 +23,24 @@ export const FieldModel =(props:any)=>{
       }
 }
 const TextField=(props:any)=> {
+	const {label,helperText,validationSchema,initialValuename,...others}=props;
+	//annotation_label:props.annotation_label,meta_type:props.meta_type,meta_type_label:props.meta_type_label,access:props.access,props.name,required:props.required,placeholder:props.placeholder,
 	return FieldModel({namespace:'formik-material-ui',type_return:'faims-core::String',component:'TextField',
 		InputProps: {
             type: 'text',
-          },fullWidth: true,placeholder:props.placeholder,
-		name:props.name,required:props.required,validationSchema:[['yup.string'],],
-        helperText:props.helperText,InputLabelProps: {
-            label: props.label,
-          },
-        initialValue:props.initialValue,meta_note:props.meta_note,meta_type:props.meta_type,access:props.access});
+          },fullWidth: true,
+		validationSchema:[validationSchema??['yup.string'],],
+        helperText:helperText,InputLabelProps: {
+            label: label,
+          },initialValue:initialValuename,...others});
 	}
 const CheckboxField=(props:any)=> {
+	const {label,helperText,validationSchema,initialValuename,...others}=props;
 	return FieldModel({namespace:'faims-custom',type_return:'faims-core::Bool',component:'Checkbox',type:'checkbox',validationSchema:[
-          ['yup.bool'],
+          validationSchema??['yup.bool'],
         ],FormControlLabelProps: {
-            label: props.label,
-          },initialValue:false,name:props.name,FormHelperTextProps: {children:props.helperText}});
+            label:label,
+          },initialValue:false,FormHelperTextProps: {children:helperText}});
 	}
 
 const compoents={
@@ -66,8 +68,9 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
 	'initialValue':fielduiSpec['initialValue'],
 	'required':fielduiSpec['component-parameters']['required'],
 	'type':fielduiSpec['component-name'],
-	'meta_note':fielduiSpec['meta']['note'],
-	'meta_type':fielduiSpec['meta']['type'],
+	'meta_annotation_label':fielduiSpec['meta']['annotation_label'],
+	'meta_type':fielduiSpec['meta']['uncertainty']['include'],
+	'meta_type_label':fielduiSpec['meta']['uncertainty']['label'],
 	'access':fielduiSpec['access'],
 	}
 	return props;
@@ -91,8 +94,9 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
         {name:'required',lable:'Check if is compusory',type:'CheckBoxField',view:'valid'},
         {name:'validationSchema',lable:'',type:'TextField',view:'valid'},
         {name:'access',lable:'access',type:'TextField',view:'access'},
-        {name:'meta_note',lable:'put notes',type:'TextField',view:'notes'},
-        {name:'meta_type',lable:'Uncertain',type:'TextField',view:'notes'},
+        {name:'annotation_label',lable:'annotation Label',type:'TextField',view:'notes'},
+        {name:'meta_type',lable:'Include Uncertainty',type:'CheckBoxField',view:'notes'},
+        {name:'meta_type_label',lable:'Uncertainty Label',type:'TextField',view:'notes'},
 
         ]
 	const fields_label:Array<string>=[]
@@ -125,10 +129,14 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
 
 export const gettabform = (tabs:Array<string>) =>{
 	const fields_list:any={}
-	tabs.map((tab:string)=> fields_list[tab]=getcomponent('TextField',{name:tab, lable:tab, initialValue:tab, placeholder:tab}));
+	const fields:Array<string>=[]
+
+	tabs.map((tab:string,index:number)=> {fields_list['formelement'+index]=getcomponent('TextField',{name:'formelement'+index, lable:tab, initialValue:tab, placeholder:tab}); fields[index]='formelement'+index
+		});
+
 	return {
 		fields:fields_list,
-    'views':{'start-view':{fields:tabs}} ,
+    'views':{'start-view':{fields:fields}} ,
     'start_view': 'start-view'
 	}
 }

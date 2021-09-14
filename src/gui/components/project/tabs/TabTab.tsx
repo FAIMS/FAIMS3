@@ -39,9 +39,22 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
+export function TabTab(props:any){
+	const classes = useStyles();
+  	const {tabs,tab_id,value,handleChange, ...other} = props
+  	return (<Tabs
+          value={value}
+          onChange={handleChange}
+          aria-label={tab_id}
+          id={tab_id}
+      >
+        {tabs.map((tab:any,index:number)=>(
+          <Tab className={classes.root} key={`${tab_id}-${index}`} 
+          label={tab}  {...a11yProps(tab_id,index)} />  ))}  
+      </Tabs>);
+}
 
-
-export default function TabTab(props: any) {
+export function TabEditable(props: any) {
   const classes = useStyles();
   const {tabs,tab_id,value,handleChange, ...other} = props
   const [tablists,setTablist]=useState<Array<any>>(tabs)
@@ -79,14 +92,18 @@ export default function TabTab(props: any) {
   		
   		
   		const newtabs=tablists
+  		const pretabs=tablists
+  		console.log(pretabs)
   		Object.entries(values).map((value,index) =>newtabs[index]=value[1] )
+  		props.handelonChangeLabel(newtabs,pretabs)
+  		console.log(pretabs)
   		setTablist(newtabs) 
-  		// props.handelonChangeLabel(newtabs)
-  		console.log(tablists)
   		setisedited(false)
+  		
   	}
 
   	const handleChangeForm =(event:any) =>{
+  		// console.log(event.target.name+event.target.value)
   	}
 
 
@@ -116,8 +133,8 @@ export default function TabTab(props: any) {
 		      >
 		        {tablists.map((tab,index)=>(
 		          <Tab className={tab_id==='subtab'?  classes.subtab : classes.fieldtab} key={`${tab_id}-${index}`} label={tab}  {...a11yProps({tab_id},{index})}  />))}  
-		      </Tabs>
-		      : <FormForm uiSpec={gettabform(tablists)} currentView='start-view' handleChangeForm={handleChangeForm} handleSubmit={handleSubmitForm}/>}
+		      </Tabs>:
+		      <FormForm uiSpec={gettabform(tabs)} currentView='start-view' handleChangeForm={handleChangeForm} handleSubmit={handleSubmitForm}/>}
 		    </Grid>
 		    <Grid item sm={1} xs={12}>
 		    {isedited===false?<><EditButton onButtonClick={handleEdit} value={1} id='edit' text='X'/>
