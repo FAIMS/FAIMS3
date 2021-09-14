@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useMemo, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {
   Box,
   Container,
@@ -29,10 +29,9 @@ import {
 import {useHistory, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {generateFAIMSDataID} from '../../data_storage';
 import RecordForm from '../components/record/form';
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel/core';
+import {ProjectID, RecordID} from '../../datamodel/core';
 import {ProjectUIModel} from '../../datamodel/ui';
 import {useEffect} from 'react';
 import {getUiSpecForProject} from '../../uiSpecification';
@@ -40,9 +39,10 @@ import {ActionType} from '../../actions';
 import {store} from '../../store';
 
 export default function RecordCreate() {
-  const {project_id, type_name} = useParams<{
+  const {project_id, type_name, record_id} = useParams<{
     project_id: ProjectID;
     type_name: string;
+    record_id: RecordID;
   }>();
   const {dispatch} = useContext(store);
   const history = useHistory();
@@ -64,11 +64,6 @@ export default function RecordCreate() {
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
-
-  const stable_record_id = useMemo(generateFAIMSDataID, [
-    project_id,
-    type_name,
-  ]);
 
   if (error !== null) {
     dispatch({
@@ -106,7 +101,7 @@ export default function RecordCreate() {
           <Box p={3}>
             <RecordForm
               project_id={project_id}
-              record_id={stable_record_id}
+              record_id={record_id}
               type={type_name}
               uiSpec={uiSpec}
             />
