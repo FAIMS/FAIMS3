@@ -61,6 +61,7 @@ const NEWFIELDS='newfield'
 const sections_default=['section2']
 const variant_default=['main']
 const projecttabs=['Design','Preview']
+const form_defult={'mainsection2':[]}
 export default function CreateProjectCard() {
 
     const ini={_id:'new_notbook'}
@@ -68,12 +69,12 @@ export default function CreateProjectCard() {
     const [projectvalue,setProjectValue]=useState(ini)
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
-    const [formcomponents,setFormComponents]= useState<any>({'mainsection2':[]})
+    const [formcomponents,setFormComponents]= useState<any>(form_defult)
     const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState(sections_default[0])
     const [designvalue,setDesignvalue]=useState<any>('settings')
-    const [designvalues,setDesignvalues]=useState<any>([])
+    // const [designvalues,setDesignvalues]=useState<any>([])
     const [settingvalue,setsettingvalue]=useState<any>({fields:{},views:{}})
     const [formView,setFormView]=useState('start-view')
     const [formvariants,setFormVariants]= useState<any>(variant_default[0])
