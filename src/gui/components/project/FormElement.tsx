@@ -23,7 +23,7 @@ import { useState, useEffect } from 'react'
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
-import {getComponentByName} from '../../ComponentRegistry';
+import {getComponentByName} from '../../component_registry';
 import {SettingCard} from './tabs/PSettingCard';
 import {setProjectInitialValues} from './data/ComponentSetting';
 import {TickButton} from './tabs/ProjectButton';
