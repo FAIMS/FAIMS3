@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {
   Box,
   Container,
@@ -65,6 +65,11 @@ export default function RecordCreate() {
     getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
 
+  const stable_record_id = useMemo(generateFAIMSDataID, [
+    project_id,
+    type_name,
+  ]);
+
   if (error !== null) {
     dispatch({
       type: ActionType.ADD_ALERT,
@@ -101,7 +106,7 @@ export default function RecordCreate() {
           <Box p={3}>
             <RecordForm
               project_id={project_id}
-              record_id={generateFAIMSDataID()}
+              record_id={stable_record_id}
               type={type_name}
               uiSpec={uiSpec}
             />
