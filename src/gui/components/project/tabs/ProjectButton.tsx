@@ -1,4 +1,22 @@
-
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: ProjectButton.tsx
+ * Description: This file define a list of buttons is create notebook UI
+ *   TODO
+ */
 import AddCircleIcon from '@material-ui/icons/AddCircle';
 import React from 'react';
 import {Button,IconButton} from '@material-ui/core';
@@ -39,7 +57,7 @@ export function DownButton(props:any){
 export function AddSectionButton(props:any){
 	return (
 		<IconButton edge="end" aria-label={props.text} onClick={() => props.onButtonClick(props.id)} value={props.value} id={props.id}>
-            <AddIcon  fontSize='small'/>
+            <AddCircleIcon  fontSize='small'/>
         </IconButton>
 		)
 }
