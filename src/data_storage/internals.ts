@@ -341,6 +341,7 @@ export async function createNewRecord(
     created_by: record.updated_by,
     revisions: [revision_id],
     heads: [revision_id],
+    type: record.type,
   };
   try {
     await datadb.put(new_encoded_record);

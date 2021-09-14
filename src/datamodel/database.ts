@@ -24,6 +24,7 @@ import {
   RevisionID,
   AttributeValuePairID,
   ProjectID,
+  FAIMSTypeName,
 } from './core';
 import {
   FAIMSConstantCollection,
@@ -157,6 +158,7 @@ export interface EncodedRecord {
   created_by: string;
   revisions: RevisionID[];
   heads: RevisionID[];
+  type: FAIMSTypeName;
 }
 
 export type AttributeValuePairIDMap = {
@@ -185,7 +187,7 @@ export interface Revision {
   parents: RevisionID[];
   created: string;
   created_by: string;
-  type: string;
+  type: FAIMSTypeName;
   deleted?: boolean;
 }
 
@@ -195,7 +197,7 @@ export interface AttributeValuePair {
   _deleted?: boolean; // This is for couchdb deletion
   _attachments?: PouchAttachments;
   avp_format_version: number;
-  type: string;
+  type: FAIMSTypeName;
   data: any;
   revision_id: RevisionID;
   record_id: RecordID;
