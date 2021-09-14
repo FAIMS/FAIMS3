@@ -49,7 +49,7 @@ export const getComponentFromField = (uiSpec:any,fieldName: string,formProps:any
     try {
         Component = getComponentByName(namespace, name);
     } catch (err) {
-        return (<></>);
+        return (<>Error</>);
     }
     const value=formProps.values[fieldName]
     
@@ -84,7 +84,6 @@ export function FormForm (props:any) {
   const {currentView,handleChangeForm,...others}=props
   const [uiSpec,setUISpec]=useState(props.uiSpec)
   const initialValues=setProjectInitialValues(uiSpec,currentView,{})
-
   return (<Formik
           initialValues={initialValues}
           validateOnMount={true}
