@@ -55,7 +55,11 @@ import {events} from './events';
 import {createdProjects} from './state';
 import {setLocalConnection} from './databases';
 import {SyncHandler} from './sync-handler';
-import {NonUniqueProjectID, resolve_project_id} from '../datamodel/core';
+import {
+  NonUniqueProjectID,
+  ProjectID,
+  resolve_project_id,
+} from '../datamodel/core';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
 const DIRECTORY_TIMEOUT = 2000;
@@ -393,7 +397,7 @@ async function autoactivate_projects(
   }
 }
 
-async function activate_project(
+export async function activate_project(
   listing_id: string,
   project_id: NonUniqueProjectID,
   username: string | null,
@@ -410,6 +414,7 @@ async function activate_project(
   try {
     await active_db.get(active_id);
     console.debug('Have already activated', active_id);
+    return active_id;
   } catch (err) {
     if (err.status === 404) {
       // TODO: work out a better way to do this

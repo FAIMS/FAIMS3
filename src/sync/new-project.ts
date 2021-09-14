@@ -19,66 +19,26 @@
  */
 import {v4 as uuidv4} from 'uuid';
 
+import {ProjectID} from '../datamodel/core';
 import {
-  ActiveDoc,
-  ConnectionInfo,
   ListingsObject,
-  NonNullListingsObject,
-  PeopleDoc,
-  ProjectMetaObject,
-  ProjectDataObject,
-  ProjectObject,
   LOCALLY_CREATED_PROJECT_PREFIX,
 } from '../datamodel/database';
 import {
-    resolve_project_id, ProjectID
-} from '../datamodel/database';
-import {
-  ConnectionInfo_create_pouch,
-  local_pouch_options,
-  materializeConnectionInfo,
-} from './connection';
-import {
-  ConnectionInfo,
-  ProjectDataObject,
-  ListingsObject,
-  PeopleDoc,
-  ProjectMetaObject,
-  ProjectObject,
-} from '../datamodel/database';
-import {
-  setupExampleDirectory,
-  setupExampleListing,
-  setupExampleProjectMetadata,
-  setupExampleData,
-} from '../dummyData';
-import {
-  ConnectionInfo_create_pouch,
-  materializeConnectionInfo,
-} from './connection';
-import {
   directory_db,
   active_db,
-  get_default_instance,
   ensure_local_db,
-  people_dbs,
   projects_dbs,
-  ensure_synced_db,
-  ExistingActiveDoc,
-  LocalDB,
   metadata_dbs,
   data_dbs,
-  DEFAULT_LISTING_ID,
 } from './databases';
 import {events} from './events';
 import {createdProjects} from './state';
-import {setLocalConnection} from './databases';
-import {SyncHandler} from './sync-handler';
-import {NonUniqueProjectID, resolve_project_id} from '../datamodel/core';
-
+import {NonUniqueProjectID} from '../datamodel/core';
+import {activate_project} from './process-initialization';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
-  throw Error("not implemented yet");
+  throw Error('not implemented yet');
 }
 
 /*
@@ -99,16 +59,20 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
   const projects_db = ensure_locally_created_projects_db(listing._id);
   const new_project_id = generate_non_unique_project_id();
   const active_id = await activate_project(
-    listing._id, new_project_id, null, null, false
+    listing._id,
+    new_project_id,
+    null,
+    null,
+    false
   );
   const active_project = await active_db.get(active_id);
 
   const project_object = {
     _id: active_id,
     name: name,
-    status: "new", // TODO: work out proper status
-  }
-  await projects_db.put(project_object);
+    status: 'new', // TODO: work out proper status
+  };
+  await projects_db.local.put(project_object);
 
   const [, meta_db_local] = ensure_local_db(
     'metadata',
@@ -138,7 +102,7 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
     meta_db_local,
     data_db_local
   );
-  return active_doc._id;
+  return active_id;
 }
 
 function generate_non_unique_project_id(): NonUniqueProjectID {
@@ -147,18 +111,21 @@ function generate_non_unique_project_id(): NonUniqueProjectID {
 
 async function ensure_locally_created_project_listing(): Promise<ListingsObject> {
   try {
-    return directory_db.get(LOCALLY_CREATED_PROJECT_PREFIX);
+    const val = await directory_db.local.get(LOCALLY_CREATED_PROJECT_PREFIX);
+    console.debug(val);
+    return val;
   } catch (err) {
     if (err.status === 404) {
       const listing_object = {
         _id: LOCALLY_CREATED_PROJECT_PREFIX,
-        name: "Locally Created Projects",
-        description: "Projects created on this device (have not been submitted).",
+        name: 'Locally Created Projects',
+        description:
+          'Projects created on this device (have not been submitted).',
       };
-      await directory_db.put(listing_object);
+      await directory_db.local.put(listing_object);
       return listing_object;
     } else {
-        throw err;
+      throw err;
     }
   }
 }
