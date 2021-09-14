@@ -68,15 +68,15 @@ export default function CreateProjectCard() {
     const [projectvalue,setProjectValue]=useState(ini)
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
-    const [formcomponents,setFormComponents]= useState<any>({'mainsection1':[]})
+    const [formcomponents,setFormComponents]= useState<any>({'mainsection2':[]})
     const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [isAddField,setIsAddField]=useState(true)
-    const [currentView,setCurrentView]=useState('section1')
+    const [currentView,setCurrentView]=useState(sections_default[0])
     const [designvalue,setDesignvalue]=useState<any>('settings')
     const [designvalues,setDesignvalues]=useState<any>([])
     const [settingvalue,setsettingvalue]=useState<any>({fields:{},views:{}})
     const [formView,setFormView]=useState('start-view')
-    const [formvariants,setFormVariants]= useState<any>('main')
+    const [formvariants,setFormVariants]= useState<any>(variant_default[0])
     const [formuiview,setformuiview]=useState(formvariants+currentView)
     const [formtabs,setformTabs]=useState<Array<string>>([])
     const [sectiontabs,setsectiontabs]=useState<Array<string>>([])
@@ -314,7 +314,7 @@ export default function CreateProjectCard() {
         newuiSpec['viewsets'][id]={views:sections_default.map((section:string)=>section=id+section)}
         newuiSpec['viewsets'][id]['views'].map((section:string)=>newuiSpec['views'][section]={'fields':[],uidesign:'form'}
           )
-        newuiSpec['visible_types']=[...newuiSpec['visible_types'],id];
+        // newuiSpec['visible_types']=[...newuiSpec['visible_types'],id];
         setFormuiSpec(newuiSpec)
         setIsAddField(true)
       }
