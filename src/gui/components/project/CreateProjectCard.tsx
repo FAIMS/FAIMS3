@@ -33,6 +33,7 @@ import {FieldSettings,getcomponent,getfieldname,convertuiSpecToProps,setProjectI
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './tabs/ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
+import {ProjectUIModel} from '../../../datamodel/ui'
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -118,8 +119,6 @@ export default function CreateProjectCard() {
       setsectiontabs(formui['viewsets'][formvariants]['views'].map((tab:string)=>tab=tab.replace(formvariants,'')))
       setFormComponents(newformcom)
       setFormuiSpec(formui)
-      console.log(formcomponents)
-      console.log(formtabs)
       const tt:Array<any>=[]
       tabs.map((tab:any,index:any)=>tt[index]={label:tab,isedited:false})
       setTablist(tt)

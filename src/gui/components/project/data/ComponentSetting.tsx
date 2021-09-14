@@ -40,7 +40,7 @@ const CheckboxField=(props:any)=> {
           validationSchema??['yup.bool'],
         ],FormControlLabelProps: {
             label:label,
-          },initialValue:false,FormHelperTextProps: {children:helperText}});
+          },initialValue:false,FormHelperTextProps: {children:helperText??''}});
 	}
 
 const compoents={
@@ -62,9 +62,8 @@ export const updatecomponent=(component:any,props:any)=>{
 }
 export const convertuiSpecToProps =(fielduiSpec:any) =>{
 	const props:any={'name':fielduiSpec['component-parameters']['name'],
-	'label':fielduiSpec['component-parameters']['InputLabelProps']['label'],
-	'helperText':fielduiSpec['component-parameters']['InputLabelProps']['helperText'],
-	// 'validationSchema':fielduiSpec['validationSchema'],
+	'label':fielduiSpec['component-name']==="TextField"?fielduiSpec['component-parameters']['InputLabelProps']['label']:fielduiSpec['component-parameters']['FormControlLabelProps']['label'],
+	'helperText':fielduiSpec['component-name']==="TextField"?fielduiSpec['component-parameters']['InputLabelProps']['helperText']:fielduiSpec['component-parameters']['FormHelperTextProps']['children'],	// 'validationSchema':fielduiSpec['validationSchema'],
 	'initialValue':fielduiSpec['initialValue'],
 	'required':fielduiSpec['component-parameters']['required'],
 	'type':fielduiSpec['component-name'],
@@ -73,6 +72,7 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
 	'meta_type_label':fielduiSpec['meta']['uncertainty']['label'],
 	'access':fielduiSpec['access'],
 	}
+	console.log(props)
 	return props;
 }
 export const convertSettingTouiSpec = (props:any) =>{
