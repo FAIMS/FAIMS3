@@ -82,7 +82,10 @@ function eq(
     }
   }
 
-  if (a instanceof Error && b instanceof Error) {
+  // Equivalent to a instanceof Error && b instanceof Error
+  // however instanceof didn't seem to work
+  if (a !== null && typeof a === 'object' && 'name' in a && 'message' in a &&
+    b !== null && typeof b === 'object' && 'name' in b && 'message' in b) {
     return a.message == b.message;
   }
 
