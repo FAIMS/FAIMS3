@@ -423,7 +423,11 @@ class RecordForm extends React.Component<
         // the user to rapidly add more records
         if (this.props.revision_id === undefined) {
           this.props.history.push(
-            ROUTES.PROJECT + this.props.project_id + ROUTES.RECORD_CREATE
+            ROUTES.PROJECT +
+              this.props.project_id +
+              ROUTES.RECORD_CREATE +
+              ROUTES.RECORD_TYPE +
+              this.state.type_cached
           );
           window.scrollTo(0, 0);
           // scroll to top of page, seems to be needed on mobile devices

@@ -19,7 +19,12 @@
  */
 
 import React from 'react';
-import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Redirect,
+  Route,
+  Switch,
+} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import NavBar from './gui/components/navbar';
@@ -50,6 +55,7 @@ import {MuiThemeProvider} from '@material-ui/core/styles';
 import {createdProjects} from './sync/state';
 import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
+import {generateFAIMSDataID} from './data_storage';
 
 type AppProps = {};
 
@@ -87,7 +93,6 @@ export class App extends React.Component<AppProps, AppState> {
                 path={ROUTES.FORGOT_PASSWORD}
                 component={ForgotPassword}
               />
-
               <Route exact path={ROUTES.HOME} component={Home} />
               <Route exact path={ROUTES.RECORD_LIST} component={RecordList} />
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
@@ -101,6 +106,11 @@ export class App extends React.Component<AppProps, AppState> {
                 path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS}
                 component={ProjectSettings}
               />
+              /* Record creation happens by redirecting to a freshy minted UUID
+              This is to keep it stable until the user navigates away (As
+              opposed to keeping the UUID in RecordCreate, which means there's
+              no way to move on to a new UUID for a RecordCreate of the same
+              project and type) */
               <Route
                 exact
                 path={
@@ -108,9 +118,29 @@ export class App extends React.Component<AppProps, AppState> {
                   ':project_id' +
                   ROUTES.RECORD_CREATE +
                   ROUTES.RECORD_TYPE +
-                  ':type_name'
+                  ':type_name' +
+                  ROUTES.RECORD + //
+                  ':record_id'
                 }
                 component={RecordCreate}
+              />
+              <Redirect
+                from={
+                  ROUTES.PROJECT +
+                  ':project_id' +
+                  ROUTES.RECORD_CREATE +
+                  ROUTES.RECORD_TYPE +
+                  ':type_name'
+                }
+                to={
+                  ROUTES.PROJECT +
+                  ':project_id' +
+                  ROUTES.RECORD_CREATE +
+                  ROUTES.RECORD_TYPE +
+                  ':type_name' +
+                  ROUTES.RECORD + //
+                  generateFAIMSDataID()
+                }
               />
               <Route
                 exact

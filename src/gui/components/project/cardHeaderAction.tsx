@@ -143,15 +143,40 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
             open={Boolean(actionAnchor)}
             onClose={handleActionClose}
           >
-            <MenuItem
-              component={NavLink}
-              to={ROUTES.PROJECT + project.project_id + ROUTES.RECORD_CREATE}
-            >
-              <ListItemIcon>
-                <AddIcon fontSize="small" />
-              </ListItemIcon>
-              New Record
-            </MenuItem>
+            {viewSets[1].length === 1 ? (
+              <MenuItem
+                component={NavLink}
+                to={
+                  ROUTES.PROJECT +
+                  project.project_id +
+                  ROUTES.RECORD_CREATE +
+                  ROUTES.RECORD_TYPE +
+                  viewSets[1]
+                }
+              >
+                <ListItemIcon>
+                  <AddIcon fontSize="small" />
+                </ListItemIcon>
+                New Record
+              </MenuItem>
+            ) : (
+              <React.Fragment>
+                {viewSets[1].map(viewset_name => (
+                  <MenuItem
+                    component={RouterLink}
+                    to={
+                      ROUTES.PROJECT +
+                      project.project_id +
+                      ROUTES.RECORD_CREATE +
+                      ROUTES.RECORD_TYPE +
+                      viewset_name
+                    }
+                  >
+                    New {viewSets[0][viewset_name].label || viewset_name}
+                  </MenuItem>
+                ))}
+              </React.Fragment>
+            )}
             <MenuItem disabled={true}>
               <ListItemIcon>
                 <ShareIcon fontSize="small" />
