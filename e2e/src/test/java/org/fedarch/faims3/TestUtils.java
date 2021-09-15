@@ -115,7 +115,7 @@ public class TestUtils {
 	/**
 	 * Browserstack doesn't know when an assertion fail. We need to explicitly let it know.
 	 * https://www.browserstack.com/docs/automate/selenium/view-test-results/mark-tests-as-pass-fail#mark-test-status-from-the-test-script-using-javascriptexecutor
-	 * @param driver AndroidDriver
+	 * @param driver WebDriver
 	 * @param passed True if the test passed. False otherwise.
 	 * @param message Reason it passed/failed.
 	 */

@@ -19,15 +19,26 @@
  */
 package org.fedarch.faims3;
 
+import static org.testng.Assert.assertEquals;
+
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.android.AndroidTest;
 import org.fedarch.faims3.chrome.ChromeTest;
 import org.fedarch.faims3.ios.IOSTest;
 import org.json.JSONException;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import io.appium.java_client.MobileBy;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.AndroidElement;
 /**
  * Doable task 2.4 - Update Observations and the Draft Database
  * In this task, we demonstrate the robust append-only datastore provided by CouchDB.
@@ -73,43 +84,103 @@ public class TestUpdateObservationsAndDraftDatabase {
 	/**
 	 * Task 2.4.1 - Updating an Observation
 	 * Relates to: FAIMS3-190: As a test user, I want to load and update a record
+	 * @throws Exception
+	 * @throws InterruptedException
 	 */
 	@Test
-	public void testUpdateObservation() {
-		//Navigate to the projects view
-		androidDevice.loadProjects();
+	public void testUpdateObservation() throws Exception {
+		WebDriver driver = androidDevice.driver;
+		try {
+			// Navigate to the projects view
+			androidDevice.loadProjects();
 
-		//Load a observation of your choice.
+			// Load a observation of your choice.
+			// Note the first 6 characters of the UUID here (for ease of future reference)
+			String uuid = androidDevice.getRecordUuid();
+			androidDevice.loadObservationForm(uuid);
+			// Manually increment number of revisions every time we save to compare later
+			int revisionCount = androidDevice.getRevisions().length;
 
+			// Edit data. Wait for the draft to save, leave the observation
+			WebDriverWait androidWait = new WebDriverWait(driver, 20);
+			AndroidElement strField = (AndroidElement) androidWait.until(
+					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
 
-		//Note the first 6 characters of the UUID here (for ease of future reference) 459d03
+			final String FIRST_EDIT_ANDROID = "Green";
+			strField.sendKeys(FIRST_EDIT_ANDROID);
+			Thread.sleep(2000);
+			androidDevice.leaveObservationForm();
 
+			// Load the observation on a different device – observe that your changes have
+			// not propagated
+			driver = chromeDevice.driver;
+			chromeDevice.loadProjects();
+			chromeDevice.loadObservationForm(uuid);
+			WebDriverWait chromeWait = new WebDriverWait(driver, 20);
+			WebElement chromeStrField = chromeWait
+					.until(ExpectedConditions.presenceOfElementLocated(By.id("str-field")));
+			assertEquals(chromeStrField.getText(), AstroSky.COLOUR);
 
-		//Edit data. Wait for the draft to save, leave the observation
+			// On the original device, start a new observation, wait for the draft to save,
+			// leave the observation
+			driver = androidDevice.driver;
+			androidDevice.loadNewAstroSkyForm();
+			AndroidElement newStrField = (AndroidElement) androidWait.until(
+					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
 
+			final String ANDROID_DRAFT_EDIT = "Grey";
+			newStrField.sendKeys(ANDROID_DRAFT_EDIT);
+			Thread.sleep(2000);
+			androidDevice.leaveObservationForm();
 
-		//Load the observation on a different device – observe that your changes have not propagated
+			// Still on the original device, return to the observation you were initially
+			// editing, note that your edits were preserved
+			androidDevice.loadObservationForm(uuid);
+			strField = (AndroidElement) androidWait.until(
+					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
+			assertEquals(strField.getText(), FIRST_EDIT_ANDROID);
 
+			// Finish editing data, press UPDATE
+			TestUtils.scrollToText((AndroidDriver<AndroidElement>) driver, "UPDATE").click();
+			revisionCount++;
 
-		//On the original device, start a new observation, wait for the draft to save, leave the observation
+			// Edit data again, press UPDATE again
+			TestUtils.scrollToText(androidDevice.driver, FIRST_EDIT_ANDROID);
+			strField = (AndroidElement) androidWait.until(
+					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
+			strField.sendKeys("Black");
+			TestUtils.scrollToText((AndroidDriver<AndroidElement>) driver, "UPDATE").click();
+			revisionCount++;
 
+			// Click new observation and ensure that your draft new observation is still
+			// there.
+			androidDevice.leaveObservationForm();
+			androidDevice.loadNewAstroSkyForm();
+			newStrField = (AndroidElement) androidWait.until(
+					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
+			assertEquals(newStrField.getText(), ANDROID_DRAFT_EDIT);
 
-		//Still on the original device, return to the observation you were initially editing, note that your edits were preserved
+			// Return to the edited observation.
+			androidDevice.leaveObservationForm();
+			androidDevice.loadObservationForm(uuid);
 
-		//Finish editing data, press UPDATE
-
-		//Edit data again, press UPDATE again
-
-		//Click new observation and ensure that your draft new observation is still there.
-
-		//Return to the edited observation.
-
-		//Verify that a new revision has been created by selecting the REVISIONS tab at the top of the screen. This will show the ID for each of the revisions of the observation.
-
-		//Wait for the app to sync
-
-		//Ask the test manager to demonstrate the observation revision in CouchDB’s concurrency view by having them copy the revision ID from the revisions list and showing the JSON of the original observation. ( getting the json of the observation and appending ?rev=<REV-ID> will show the prior observation.
-	}
+			// Verify that a new revision has been created by selecting the REVISIONS tab at
+			// the top of the screen. This will show the ID for each of the revisions of the
+			// observation.
+			int numRevisions = androidDevice.getRevisions().length;
+			assertEquals(numRevisions, revisionCount);
+		} catch (Exception e) {
+			TestUtils.markBrowserstackTestResult(driver, androidDevice.isUsingBrowserstack(), false,
+					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
+			throw e;
+		} catch (AssertionError e) {
+			TestUtils.markBrowserstackTestResult(driver, androidDevice.isUsingBrowserstack(), false,
+					"Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
+			throw e;
+		}
+		TestUtils.markBrowserstackTestResult(driver, androidDevice.isUsingBrowserstack(), true,
+				"Android - TestPopulateForm.testNewObservationWithGPS() passed!");
+    }
 
 	/**
 	 * Task 2.4.2 - Draft database data preservation during updates
