@@ -19,8 +19,11 @@
  */
 package org.fedarch.faims3;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -112,7 +115,7 @@ public class TestUtils {
 	/**
 	 * Browserstack doesn't know when an assertion fail. We need to explicitly let it know.
 	 * https://www.browserstack.com/docs/automate/selenium/view-test-results/mark-tests-as-pass-fail#mark-test-status-from-the-test-script-using-javascriptexecutor
-	 * @param driver AndroidDriver
+	 * @param driver WebDriver
 	 * @param passed True if the test passed. False otherwise.
 	 * @param message Reason it passed/failed.
 	 */
@@ -156,5 +159,21 @@ public class TestUtils {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd yyyy");
 		Date date = new Date();
 		return dateFormat.format(date);
+	}
+
+	/**
+	 * Get environment variable of current process
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	protected static Map<String, String> getModifiableEnvironment() throws Exception
+	{
+	    Class<?> pe = Class.forName("java.lang.ProcessEnvironment");
+	    Method getenv = pe.getDeclaredMethod("getenv", String.class);
+	    getenv.setAccessible(true);
+	    Field props = pe.getDeclaredField("theCaseInsensitiveEnvironment");
+	    props.setAccessible(true);
+	    return (Map<String, String>) props.get(null);
 	}
 }

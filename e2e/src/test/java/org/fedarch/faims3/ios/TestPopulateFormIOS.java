@@ -13,12 +13,11 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: TestPopulateFormAndroid.java
+ * Filename: TestPopulateFormIOS.java
  * Description:
  *   TODO
  */
-
-package org.fedarch.faims3.android;
+package org.fedarch.faims3.ios;
 
 import static org.testng.Assert.assertEquals;
 
@@ -26,6 +25,7 @@ import java.net.MalformedURLException;
 
 import org.fedarch.faims3.TestPopulateForm;
 import org.fedarch.faims3.TestUtils;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -35,9 +35,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import io.appium.java_client.MobileBy;
-import io.appium.java_client.android.AndroidElement;
-
 /**
  * Test populate the fields on the Android app:
  * https://faimsproject.atlassian.net/browse/FAIMS3-153
@@ -45,13 +42,13 @@ import io.appium.java_client.android.AndroidElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestPopulateFormAndroid extends AndroidTest implements TestPopulateForm {
+public class TestPopulateFormIOS extends IOSTest implements TestPopulateForm {
 
 	@BeforeClass
-	public void setup() throws MalformedURLException {
+	public void setup() throws MalformedURLException, JSONException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		super.setup(false, "Test populate new Test Project observation form (Android)");
+		super.setup(false, "Test populate new Test Project observation form (iOS)");
 	}
 
 	/**
@@ -59,46 +56,42 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 	 * then click submit successfully.
 	 * Doable Task 2.1 - Observation creation
 	 * Doable Task 2.3 - GPS and Taking a Point
-	 * @throws Exception
+	 *
+	 * @throws JSONException
 	 */
 	@Test
 	@Override
-	public void testNewObservationWithGPS() throws Exception {
-
+	public void testNewObservationWithGPS() throws JSONException {
 		try {
-			// Start a new observation
+			// Load up Astro Sky form
 			loadNewAstroSkyForm();
 			// The form should load up
 			fillOutFormWithValidFields();
+			TestUtils.scrollDown(driver);
 			// validate JSON
 			validateJSON();
-			// Click save and new
-			WebElement submit = driver.findElement(By.xpath("//*[@text='SAVE AND NEW']"));
+			// Submit button
+			WebElement submit = driver.findElement(By.xpath("//button[@type='submit']"));
 			submit.click();
-
 			// Check the message
-			verifyMessage("Observation successfully created");
+			super.verifyMessage("Observation successfully created");
 
 			//return to the projects page
-			if (driver.findElementByXPath("//android.widget.Button[@text='Show path']").isDisplayed()) {
-				  driver.findElementByXPath("//android.widget.Button[@text='Show path']").click();
-			}
 			WebDriverWait wait = new WebDriverWait(driver, 10);
-			AndroidElement projects = (AndroidElement) wait.until(ExpectedConditions
-				  .elementToBeClickable(MobileBy.xpath("//android.widget.TextView[contains(@text, 'Projects')]")));
+			WebElement projects = wait.until(ExpectedConditions.elementToBeClickable(
+					  By.xpath("//a[@href='/projects']")));
 			projects.click();
 
 			//Load the just-created observation
 			wait.until(ExpectedConditions.visibilityOfElementLocated(
-					By.xpath("//*[contains(@text, '" + this.recordUuid + "')]"))).click();
+					By.xpath("//a[@href='/projects/default_test_proj/observations/" + this.recordUuid + "']")))
+			           .click();
 
 			//Ensure that location and change are still present in the data
 			validateLatLong();
 
-			TestUtils.scrollToText(driver, "UPDATE");
-
 			WebElement json = wait.until(ExpectedConditions.visibilityOf(
-					driver.findElement(MobileBy.xpath("//*[@text='DEVELOPER TOOL: FORM STATE']/following-sibling::android.view.View/android.view.View"))));
+					driver.findElement(By.xpath("//*[@id=\"root\"]/div[3]/div[3]/div/form/div/div[3]/div[2]/pre"))));
 			JSONObject jsonObject = new JSONObject(json.getText());
 			JSONObject values = jsonObject.getJSONObject("values");
 
@@ -106,7 +99,6 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 			assertEquals(this.latitude, gps.get("latitude").toString());
 		    assertEquals(this.longitude, gps.get("longitude").toString());
 			assertEquals("Change!", values.get("action-field").toString());
-
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
@@ -117,7 +109,7 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 			throw e;
 		}
 		TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true,
-				"Android - TestPopulateForm.testNewObservationWithGPS() passed!");
+				"iOS - TestPopulateForm.testNewObservationWithGPS() passed!");
 	}
 
 	@Override

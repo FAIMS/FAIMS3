@@ -20,8 +20,8 @@
 
 package org.fedarch.faims3.chrome;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.net.MalformedURLException;
 
@@ -29,19 +29,18 @@ import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestIncompleteDraftObservation;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Doable Task 2.2 - Incomplete/Draft Observations
  * Relating to: FAIMS3-25: As a module developer, I want to be able to control when the record saves,
- * either in "google docs" style, or "push save button" style.DONE
+ * either in "google docs" style, or "push save button" style.
  *
  * @author Rini Angreani, CSIRO
  *
@@ -49,15 +48,16 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class TestIncompleteDraftObservationChrome extends ChromeTest implements TestIncompleteDraftObservation {
 
 	@BeforeClass
-	public static void setup() throws MalformedURLException, JSONException {
+	public void setup() throws MalformedURLException, JSONException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		ChromeTest.setup(false, "Test incomplete draft observation form (Chrome)");
+		super.setup(false, "Test incomplete draft observation form (Chrome)");
 	}
 
+	@Override
 	@AfterClass
-	public static void tearDown() {
-		ChromeTest.tearDown();
+	public void tearDown() {
+		super.tearDown();
 	}
 
 	@Override
@@ -91,21 +91,10 @@ public class TestIncompleteDraftObservationChrome extends ChromeTest implements 
 			projects.click();
 
 			//Load a different observation and then return to the projects page
-			try {
-				WebElement anotherOb = wait.until(ExpectedConditions.presenceOfElementLocated(
-					By.xpath("//*[@class='MuiDataGrid-row Mui-even']/div[2]")));
-				anotherOb.click();
+			loadObservationForm(recordUuid);
 
-				//Click + New Observation
-			    loadNewAstroSkyForm();
-			} catch (TimeoutException e) {
-				// there's no other observations found..
-				// Find the '+' button for new observation
-				WebElement newObservation = new WebDriverWait(driver, 10)
-						.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='/projects/default_test_proj/new-observation']")));
-
-				newObservation.click();
-			}
+			// Click + New Observation
+			loadNewAstroSkyForm();
 
 			//Did your draft observation reappear?
 		    assertEquals(AstroSky.EMAIL_DRAFT_CHROME, driver.findElement(By.id("email-field")).getAttribute("value"));
