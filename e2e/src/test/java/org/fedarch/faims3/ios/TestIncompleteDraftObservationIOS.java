@@ -40,7 +40,7 @@ import org.testng.annotations.Test;
 /**
  * Doable Task 2.2 - Incomplete/Draft Observations
  * Relating to: FAIMS3-25: As a module developer, I want to be able to control when the record saves,
- * either in "google docs" style, or "push save button" style.DONE
+ * either in "google docs" style, or "push save button" style.
  *
  * @author Rini Angreani, CSIRO
  *
