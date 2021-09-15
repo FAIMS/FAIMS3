@@ -37,6 +37,7 @@ export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const AUTOINCREMENT_LIST = '/autoincrements';
 export const AUTOINCREMENT = '/autoincrements/';
+export const PROJECT_CREATE = '/new-notebook';
 
 export function getRecordRoute(
   project_id: ProjectID,
