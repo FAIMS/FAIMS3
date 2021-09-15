@@ -13,13 +13,11 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: TestPopulateForm.java
+ * Filename: TestPopulateFormChrome.java
  * Description:
  *   TODO
  */
 package org.fedarch.faims3.chrome;
-
-import static org.junit.Assert.assertEquals;
 
 import java.net.MalformedURLException;
 
@@ -27,13 +25,14 @@ import org.fedarch.faims3.TestPopulateForm;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Test populate the fields on the Android app:
@@ -45,10 +44,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class TestPopulateFormChrome extends ChromeTest implements TestPopulateForm {
 
 	@BeforeClass
-	public static void setup() throws MalformedURLException, JSONException {
+	public void setup() throws MalformedURLException, JSONException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		ChromeTest.setup(false, "Test populate new Test Project observation form (Chrome)");
+		super.setup(false, "Test populate new Test Project observation form (Chrome)");
 	}
 
 	/**
@@ -96,9 +95,9 @@ public class TestPopulateFormChrome extends ChromeTest implements TestPopulateFo
 			JSONObject values = jsonObject.getJSONObject("values");
 
 			JSONObject gps = values.getJSONObject("take-point-field");
-			assertEquals(this.latitude, gps.get("latitude").toString());
-		    assertEquals(this.longitude, gps.get("longitude").toString());
-			assertEquals("Change!", values.get("action-field").toString());
+			Assert.assertEquals(this.latitude, gps.get("latitude").toString());
+		    Assert.assertEquals(this.longitude, gps.get("longitude").toString());
+			Assert.assertEquals("Change!", values.get("action-field").toString());
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
@@ -112,9 +111,10 @@ public class TestPopulateFormChrome extends ChromeTest implements TestPopulateFo
 				"Chrome - TestPopulateForm.testNewObservationWithGPS() passed!");
 	}
 
+	@Override
 	@AfterClass
-	public static void tearDown() {
-		ChromeTest.tearDown();
+	public void tearDown() {
+		super.tearDown();
 	}
 
 }

@@ -13,12 +13,12 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: TestIncompleteDraftObservationAndroid.java
+ * Filename: TestIncompleteDraftObservationIOS.java
  * Description:
  *   TODO
  */
 
-package org.fedarch.faims3.android;
+package org.fedarch.faims3.ios;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -28,6 +28,7 @@ import java.net.MalformedURLException;
 import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestIncompleteDraftObservation;
 import org.fedarch.faims3.TestUtils;
+import org.json.JSONException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -35,9 +36,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import io.appium.java_client.MobileBy;
-import io.appium.java_client.android.AndroidElement;
 
 /**
  * Doable Task 2.2 - Incomplete/Draft Observations
@@ -47,13 +45,13 @@ import io.appium.java_client.android.AndroidElement;
  * @author Rini Angreani, CSIRO
  *
  */
-public class TestIncompleteDraftObservationAndroid extends AndroidTest implements TestIncompleteDraftObservation {
+public class TestIncompleteDraftObservationIOS extends IOSTest implements TestIncompleteDraftObservation {
 
 	@BeforeClass
-	public void setup() throws MalformedURLException {
+	public void setup() throws MalformedURLException, JSONException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		super.setup(false, "Test incomplete draft observation form (Android)");
+		super.setup(false, "Test incomplete draft observation form (iOS)");
 	}
 
 	@Override
@@ -66,51 +64,39 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 	@Test
 	public void testIncompleteDraft() throws Exception {
 		try {
-			//In Test Project “Astrosky” click + New Observation on both chrome and android.
+			//In Test Project “Astrosky” click + New Observation on both IOS and IOS.
 			loadNewAstroSkyForm();
 
 			//Enter a sample email address into the form:
-			//draft-observation-android-testername@faims.edu.au on the android
+			//draft-observation-IOS-testername@faims.edu.au on the IOS
 			WebDriverWait wait = new WebDriverWait(driver, 10);
-			AndroidElement emailField = (AndroidElement) wait.until(
-			        ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@resource-id='email-field']")));
-		    emailField.sendKeys(AstroSky.EMAIL_DRAFT_ANDROID);
+			WebElement emailField = wait.until(
+			        ExpectedConditions.presenceOfElementLocated((By.id("email-field"))));
+		    emailField.sendKeys(AstroSky.EMAIL_DRAFT_IOS);
 
 			//Wait 2 seconds but do not click SAVE AND NEW
 		    Thread.sleep(2000);
 
 			//Note the blue box at the top of the form notifying
 			//“✔ Draft last saved a few seconds ago DD Mmm dd hh:mm:ss GMT+1000 (AEST)”
-		    WebElement messages = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(
-		    		"//*[@text='TAKE POINT']/preceding-sibling::android.view.View/android.view.View[2]")));
-		    // Clean the html spaces
-		    String message = messages.getText().replace("\u00a0"," ").trim();
-		    // We can only compare the date, as the time zone is different with browserstack
-		    assertTrue(message.startsWith(
-		    		"Draft last saved a few seconds ago ".concat(TestUtils.getTodaysDate())));
-
+			WebElement messages = wait.until(ExpectedConditions.presenceOfElementLocated(
+					By.xpath("//*[@id='root']/div[3]/div[3]/div/form/div/div[1]/div/div/div[2]")));
+			// Get the date only, as we can't get the exact time
+			assertTrue(
+					messages.getText().trim().startsWith(
+							"Draft last saved a few seconds ago ".concat(TestUtils.getTodaysDate())));
 			//Leave the observation entry form
-		    if (driver.findElementByXPath("//android.widget.Button[@text='Show path']").isDisplayed()) {
-		    	driver.findElementByXPath("//android.widget.Button[@text='Show path']").click();
-		    }
-		    AndroidElement projects = (AndroidElement) wait.until(ExpectedConditions
-					.elementToBeClickable(MobileBy.xpath("//android.widget.TextView[contains(@text, 'Projects')]")));
-		    projects.click();
+		    WebElement projects = wait.until(ExpectedConditions.elementToBeClickable(
+		    		By.xpath("//a[@href='/projects']")));
+			projects.click();
 
 			//Load a different observation and then return to the projects page
-			loadObservationForm(recordUuid);
+			loadObservationForm(this.recordUuid);
 
-			leaveObservationForm();
-			//Click + New Observation
-			AndroidElement menuButton = driver.findElement(
-					MobileBy.xpath("//*[contains(@text, 'Astrosky')]/../android.view.View[3]/android.widget.Button"));
-			menuButton.click();
-			AndroidElement newButton = (AndroidElement) wait.until(ExpectedConditions.visibilityOfElementLocated(
-					By.xpath("//*[contains(@text, 'New Observation')]")));
-			newButton.click();
-
+			// Click + New Observation
+			loadNewAstroSkyForm();
 			//Did your draft observation reappear?
-		    assertEquals(AstroSky.EMAIL_DRAFT_ANDROID, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());
+		    assertEquals(AstroSky.EMAIL_DRAFT_IOS, driver.findElement(By.id("email-field")).getAttribute("value"));
 	  } catch (Exception e) {
 	      TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), false,
 	    		  "Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
@@ -121,7 +107,6 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 	      throw e;
 	  }
 	  // if we make it to the end with no exceptions, that means we passed!
-	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "Android - TestIncompleteDraftObservationAndroid.testIncompleteDraft() passed!");
+	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "IOS - TestIncompleteDraftObservationIOS.testIncompleteDraft() passed!");
   }
-
 }
