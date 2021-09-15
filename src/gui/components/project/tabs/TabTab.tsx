@@ -79,7 +79,7 @@ export function TabEditable(props: any) {
 	  	const newtabs=tablists;
 		newtabs[tablists.length]='New'+tablists.length
 		setTablist(newtabs)
-  		console.log("Add")
+  		// console.log("Add")
   		setIsset(!isset)
   	}
 
@@ -93,7 +93,6 @@ export function TabEditable(props: any) {
   		
   		const newtabs=tablists
   		const pretabs=tablists
-  		console.log(pretabs)
   		Object.entries(values).map((value,index) =>newtabs[index]=value[1] )
   		props.handelonChangeLabel(newtabs,pretabs)
   		console.log(pretabs)

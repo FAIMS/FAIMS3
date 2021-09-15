@@ -72,7 +72,6 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
 	'meta_type_label':fielduiSpec['meta']['uncertainty']['label'],
 	'access':fielduiSpec['access'],
 	}
-	console.log(props)
 	return props;
 }
 export const convertSettingTouiSpec = (props:any) =>{

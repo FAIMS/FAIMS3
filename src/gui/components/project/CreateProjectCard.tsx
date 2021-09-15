@@ -87,9 +87,9 @@ export default function CreateProjectCard() {
 
 
      useEffect(() => {
-     console.log('update')
+
      setinit();
-     console.log(formuiview)
+
     }, []);
 
      useEffect(() => {
@@ -101,7 +101,6 @@ export default function CreateProjectCard() {
       const newformcom=formcomponents
       const tabs=formtabs
       formui['visible_types'].map((variant:any,index:any)=>{
-        console.log(variant)
         tabs[index]=variant
         if(index===0)
         formui['viewsets'][variant]['views'].map((view:string)=>{
@@ -197,7 +196,6 @@ export default function CreateProjectCard() {
      }
 
     const handleAddField = (id:any) =>{
-      console.log(formuiview+'')
       const uuid=getid()
       const name=NEWFIELDS+uuid
       const newfield=getcomponent(id,{'name':name,label:id})
@@ -217,8 +215,7 @@ export default function CreateProjectCard() {
       setFormuiSpec({fields:newuiSpec,views:newviews,viewsets:formuiSpec.viewsets,visible_types:formuiSpec.visible_types})
 
       setIsAddField(false)
-      console.log(initialValues)
-      console.log(formcomponents)
+
     }
 
     const handleRemoveField = (id:any)=>{
@@ -237,7 +234,7 @@ export default function CreateProjectCard() {
     }
     const handleCloseFieldButton = () =>{
       setIsAddField(false)
-      console.log(formuiSpec)
+
     }
 
     const swithField = (index:any,type:boolean) =>{
@@ -288,14 +285,12 @@ export default function CreateProjectCard() {
       setCurrentView(id)
       setformuiview(formvariants+id)
       const name=formvariants+id
-      console.log('run here'+name+id)
       const newuiSpec=formuiSpec
       if(newuiSpec['views'][name]===undefined){
         newuiSpec['views'][name]={'fields':[],uidesign:'form'}
         newuiSpec['viewsets'][formvariants]['views']=[...newuiSpec['viewsets'][formvariants]['views'],name];
         setFormuiSpec(newuiSpec)
         setIsAddField(true)
-        console.log('run here Aded')
       }
 
       const formview=formcomponents
@@ -335,7 +330,7 @@ export default function CreateProjectCard() {
       // update uiSpecific
       const newuiSpec=formuiSpec
       
-      console.log(pretabs)
+      // console.log(pretabs)
       // tabs.map((tab:string,index:number)=>{
       //   console.log(newuiSpec['visible_types'][index])
       //   console.log(formuiSpec['visible_types'][index]+'updated'+tab)
@@ -350,19 +345,19 @@ export default function CreateProjectCard() {
       newuiSpec['visible_types']=tabs
       setFormuiSpec(newuiSpec)
       setTablist(tabs)
-      console.log(formuiSpec)
+      // console.log(formuiSpec)
     }
 
     const handelonChangeLabelSection = (tabs:Array<string>) =>{
      console.log('update section')
-      console.log(formuiSpec)
+      // console.log(formuiSpec)
     }
 
 
 
     const handleChangetab = (event:any,index:number) =>{
       setProjecttabvalue(index)
-      console.log(index)
+      // console.log(index)
     }
     const getfieldsFromCom = (formcomponent:any,view:string,formProps:any) =>{
       const fields=formcomponent.uiSpec['views'][view]['fields'];
