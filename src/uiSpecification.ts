@@ -41,7 +41,8 @@ export async function getUiSpecForProject(
       _rev: encUIInfo._rev,
       fields: encUIInfo.fields,
       views: encUIInfo.fviews,
-      start_view: encUIInfo.start_view,
+      viewsets: encUIInfo.viewsets,
+      visible_types: encUIInfo.visible_types,
     };
   } catch (err) {
     console.warn(err);
@@ -57,7 +58,8 @@ export async function setUiSpecForProject(
     _id: UI_SPECIFICATION_NAME,
     fields: uiInfo.fields,
     fviews: uiInfo.views,
-    start_view: uiInfo.start_view,
+    viewsets: uiInfo.viewsets,
+    visible_types: uiInfo.visible_types,
   };
   try {
     const existing_encUIInfo = await projdb.get(encUIInfo._id);

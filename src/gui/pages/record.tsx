@@ -18,8 +18,8 @@
  *   TODO
  */
 
-import React, {useEffect} from 'react';
-import {useParams} from 'react-router-dom';
+import React, {useContext, useEffect, useState} from 'react';
+import {useHistory, useParams} from 'react-router-dom';
 
 import {
   AppBar,
@@ -28,6 +28,7 @@ import {
   Typography,
   Paper,
   Tab,
+  CircularProgress,
 } from '@material-ui/core';
 import TabContext from '@material-ui/lab/TabContext';
 import TabList from '@material-ui/lab/TabList';
@@ -45,6 +46,10 @@ import InProgress from '../components/ui/inProgress';
 import BoxTab from '../components/ui/boxTab';
 import RecordMeta from '../components/record/meta';
 import RecordDelete from '../components/record/delete';
+import {ProjectUIModel} from '../../datamodel/ui';
+import {ActionType} from '../../actions';
+import {store} from '../../store';
+import {getUiSpecForProject} from '../../uiSpecification';
 
 export default function Record() {
   const {project_id, record_id, revision_id} = useParams<{
@@ -52,9 +57,16 @@ export default function Record() {
     record_id: RecordID;
     revision_id: RevisionID;
   }>();
+  const {dispatch} = useContext(store);
+  const history = useHistory();
+
   const [value, setValue] = React.useState('1');
 
   const project_info = getProjectInfo(project_id);
+  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+  const [revisions, setRevisions] = React.useState([] as string[]);
+  const [error, setError] = useState(null as null | {});
+
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {link: ROUTES.PROJECT_LIST, title: 'Projects'},
@@ -65,7 +77,11 @@ export default function Record() {
     {title: record_id},
     {title: revision_id},
   ];
-  const [revisions, setRevisions] = React.useState([] as string[]);
+
+  useEffect(() => {
+    getUiSpecForProject(project_id).then(setUISpec, setError);
+  }, [project_id]);
+
   useEffect(() => {
     setRevisions([]);
     listFAIMSRecordRevisions(project_id, record_id)
@@ -74,6 +90,7 @@ export default function Record() {
       })
       .catch(console.error /*TODO*/);
   }, [project_id, record_id]);
+
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
@@ -100,11 +117,31 @@ export default function Record() {
             </TabList>
           </AppBar>
           <TabPanel value="1">
-            <RecordForm
-              project_id={project_id}
-              record_id={record_id}
-              revision_id={revision_id}
-            />
+            {(() => {
+              if (error !== null) {
+                dispatch({
+                  type: ActionType.ADD_ALERT,
+                  payload: {
+                    message: 'Could not load form: ' + error.toString(),
+                    severity: 'warning',
+                  },
+                });
+                history.goBack();
+                return <React.Fragment />;
+              } else if (uiSpec === null) {
+                // Loading
+                return <CircularProgress size={12} thickness={4} />;
+              } else {
+                return (
+                  <RecordForm
+                    project_id={project_id}
+                    record_id={record_id}
+                    revision_id={revision_id}
+                    uiSpec={uiSpec}
+                  />
+                );
+              }
+            })()}
           </TabPanel>
           <TabPanel value="2">
             <InProgress />

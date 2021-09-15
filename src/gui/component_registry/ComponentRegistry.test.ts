@@ -20,7 +20,7 @@
 
 import Input from '@material-ui/core/Input';
 
-import {getComponentByName, registerComponent} from './ComponentRegistry';
+import {getComponentByName} from './index';
 
 test('no such namespace', () => {
   expect(() => getComponentByName('no-name', 'no-comp')).toThrow(

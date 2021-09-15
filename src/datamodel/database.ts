@@ -24,11 +24,13 @@ import {
   RevisionID,
   AttributeValuePairID,
   ProjectID,
+  FAIMSTypeName,
 } from './core';
 import {
   FAIMSConstantCollection,
   FAIMSTypeCollection,
   ProjectUIFields,
+  ProjectUIViewsets,
   ProjectUIViews,
 } from './typesystem';
 
@@ -36,6 +38,8 @@ export const UI_SPECIFICATION_NAME = 'ui-specification';
 export const PROJECT_SPECIFICATION_PREFIX = 'project-specification';
 export const PROJECT_METADATA_PREFIX = 'project-metadata';
 export const RECORD_INDEX_NAME = 'record-version-index';
+export const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
+export const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 
 /*
  * This may already exist in pouchdb's typing, but lets make a temporary one for
@@ -141,7 +145,8 @@ export interface EncodedProjectUIModel {
   _deleted?: boolean;
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
-  start_view: string;
+  viewsets: ProjectUIViewsets;
+  visible_types: string[];
 }
 
 export interface EncodedProjectMetadata {
@@ -163,6 +168,7 @@ export interface EncodedRecord {
   created_by: string;
   revisions: RevisionID[];
   heads: RevisionID[];
+  type: FAIMSTypeName;
 }
 
 export type AttributeValuePairIDMap = {
@@ -191,7 +197,7 @@ export interface Revision {
   parents: RevisionID[];
   created: string;
   created_by: string;
-  type: string;
+  type: FAIMSTypeName;
   deleted?: boolean;
 }
 
@@ -201,11 +207,40 @@ export interface AttributeValuePair {
   _deleted?: boolean; // This is for couchdb deletion
   _attachments?: PouchAttachments;
   avp_format_version: number;
-  type: string;
+  type: FAIMSTypeName;
   data: any;
   revision_id: RevisionID;
   record_id: RecordID;
   annotations: any;
+}
+
+/*
+ * Autoincrementing types
+ */
+export interface LocalAutoIncrementRange {
+  start: number;
+  stop: number;
+  fully_used: boolean;
+  using: boolean;
+}
+
+export interface LocalAutoIncrementState {
+  _id: string;
+  _rev?: string;
+  last_used_id: number | null;
+  ranges: LocalAutoIncrementRange[];
+}
+
+export interface AutoIncrementReference {
+  project_id: ProjectID;
+  form_id: string;
+  field_id: string;
+}
+
+export interface AutoIncrementReferenceDoc {
+  _id: string;
+  _rev?: string;
+  references: AutoIncrementReference[];
 }
 
 /*
@@ -215,7 +250,8 @@ export interface AttributeValuePair {
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | EncodedProjectMetadata;
+  | EncodedProjectMetadata
+  | AutoIncrementReferenceDoc;
 
 /*
  * Elements of a Project's dataDB can be any one of these,

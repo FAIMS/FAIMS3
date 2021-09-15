@@ -13,22 +13,16 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: reportWebVitals.ts
+ * Filename: defaults.tsx
  * Description:
  *   TODO
  */
-import {ReportHandler} from 'web-vitals';
+import BrokenImageIcon from '@material-ui/icons/BrokenImage';
 
-const reportWebVitals = (onPerfEntry?: ReportHandler) => {
-  if (onPerfEntry && typeof onPerfEntry === 'function') {
-    import('web-vitals').then(({getCLS, getFID, getFCP, getLCP, getTTFB}) => {
-      getCLS(onPerfEntry);
-      getFID(onPerfEntry);
-      getFCP(onPerfEntry);
-      getLCP(onPerfEntry);
-      getTTFB(onPerfEntry);
-    });
-  }
-};
+export function getDefaultBuilderComponent() {
+  return <p>This field has no configuration options.</p>;
+}
 
-export default reportWebVitals;
+export function getDefaultBuilderIcon() {
+  return <BrokenImageIcon />;
+}
