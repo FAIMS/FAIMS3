@@ -19,7 +19,7 @@
  */
 package org.fedarch.faims3.ios;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.assertEquals;
 
 import java.net.MalformedURLException;
 
@@ -27,13 +27,13 @@ import org.fedarch.faims3.TestPopulateForm;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Test populate the fields on the Android app:
@@ -45,10 +45,10 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 public class TestPopulateFormIOS extends IOSTest implements TestPopulateForm {
 
 	@BeforeClass
-	public static void setup() throws MalformedURLException, JSONException {
+	public void setup() throws MalformedURLException, JSONException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		IOSTest.setup(false, "Test populate new Test Project observation form (iOS)");
+		super.setup(false, "Test populate new Test Project observation form (iOS)");
 	}
 
 	/**
@@ -112,9 +112,10 @@ public class TestPopulateFormIOS extends IOSTest implements TestPopulateForm {
 				"iOS - TestPopulateForm.testNewObservationWithGPS() passed!");
 	}
 
+	@Override
 	@AfterClass
-	public static void tearDown() {
-		IOSTest.tearDown();
+	public void tearDown() {
+		super.tearDown();
 	}
 
 }

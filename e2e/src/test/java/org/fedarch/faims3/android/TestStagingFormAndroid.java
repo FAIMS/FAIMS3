@@ -20,7 +20,7 @@
 
 package org.fedarch.faims3.android;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.assertEquals;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
@@ -29,11 +29,11 @@ import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestStagingForm;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import io.appium.java_client.MobileBy;
 import io.appium.java_client.android.AndroidElement;
@@ -48,10 +48,10 @@ import io.appium.java_client.android.AndroidElement;
 public class TestStagingFormAndroid extends AndroidTest implements TestStagingForm {
 
   @BeforeClass
-  public static void setup() throws MalformedURLException {
+  public void setup() throws MalformedURLException {
 	  // Test with browserstack by default
 	  // Change to true for local test connection
-	  AndroidTest.setup(false, "Test staging new Test Project observation form (Android)");
+	  super.setup(false, "Test staging new Test Project observation form (Android)");
   }
 
   /**
@@ -124,8 +124,9 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
   }
 
   //TODO: switch via menu on the left
-  @AfterClass
-  public static void tearDown() {
-	 AndroidTest.tearDown();
+  @Override
+@AfterClass
+  public void tearDown() {
+	 super.tearDown();
   }
 }

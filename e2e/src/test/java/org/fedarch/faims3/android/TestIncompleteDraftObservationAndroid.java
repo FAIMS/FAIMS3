@@ -20,22 +20,21 @@
 
 package org.fedarch.faims3.android;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.net.MalformedURLException;
 
 import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestIncompleteDraftObservation;
 import org.fedarch.faims3.TestUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import io.appium.java_client.MobileBy;
 import io.appium.java_client.android.AndroidElement;
@@ -43,7 +42,7 @@ import io.appium.java_client.android.AndroidElement;
 /**
  * Doable Task 2.2 - Incomplete/Draft Observations
  * Relating to: FAIMS3-25: As a module developer, I want to be able to control when the record saves,
- * either in "google docs" style, or "push save button" style.DONE
+ * either in "google docs" style, or "push save button" style.
  *
  * @author Rini Angreani, CSIRO
  *
@@ -51,15 +50,16 @@ import io.appium.java_client.android.AndroidElement;
 public class TestIncompleteDraftObservationAndroid extends AndroidTest implements TestIncompleteDraftObservation {
 
 	@BeforeClass
-	public static void setup() throws MalformedURLException {
+	public void setup() throws MalformedURLException {
 		// Test with browserstack by default
 		// Change to true for local test connection
-		AndroidTest.setup(false, "Test incomplete draft observation form (Android)");
+		super.setup(false, "Test incomplete draft observation form (Android)");
 	}
 
+	@Override
 	@AfterClass
-	public static void tearDown() {
-		AndroidTest.tearDown();
+	public void tearDown() {
+		super.tearDown();
 	}
 
 	@Override
@@ -98,19 +98,9 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 		    projects.click();
 
 			//Load a different observation and then return to the projects page
-			try {
-				AndroidElement anotherOb = (AndroidElement) wait.until(ExpectedConditions.presenceOfElementLocated(
-					By.xpath("//*[contains(@text, 'Select Row checkbox')]/following-sibling::android.view.View")));
-				anotherOb.click();
-				if (driver.findElementByXPath("//android.widget.Button[@text='Show path']").isDisplayed()) {
-				   	driver.findElementByXPath("//android.widget.Button[@text='Show path']").click();
-				}
-				projects = (AndroidElement) wait.until(ExpectedConditions
-						.elementToBeClickable(MobileBy.xpath("//android.widget.TextView[contains(@text, 'Projects')]")));
-				projects.click();
-			} catch (TimeoutException e) {
-				// there's no other observations found.. just move on
-			}
+			loadObservationForm(recordUuid);
+
+			leaveObservationForm();
 			//Click + New Observation
 			AndroidElement menuButton = driver.findElement(
 					MobileBy.xpath("//*[contains(@text, 'Astrosky')]/../android.view.View[3]/android.widget.Button"));
@@ -133,4 +123,5 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 	  // if we make it to the end with no exceptions, that means we passed!
 	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "Android - TestIncompleteDraftObservationAndroid.testIncompleteDraft() passed!");
   }
+
 }
