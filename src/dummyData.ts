@@ -723,7 +723,7 @@ export async function setupExampleDirectory(
     let current_rev: {_rev?: undefined | string} = {};
     try {
       current_rev = {_rev: (await directory_db.get(listings_object._id))._rev};
-    } catch (err) {
+    } catch (err: any) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
         throw err;
@@ -750,7 +750,7 @@ export async function setupExampleActive(
     let current_rev: {_rev?: undefined | string} = {};
     try {
       current_rev = {_rev: (await active_db.get(doc._id))._rev};
-    } catch (err) {
+    } catch (err: any) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
         throw err;
@@ -783,7 +783,7 @@ export async function setupExampleListing(
     let current_rev: {_rev?: undefined | string} = {};
     try {
       current_rev = {_rev: (await projects_db.get(project._id))._rev};
-    } catch (err) {
+    } catch (err: any) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
         throw err;

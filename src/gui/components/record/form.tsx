@@ -233,7 +233,7 @@ class RecordForm extends React.Component<
         view_cached: this.props.uiSpec.viewsets[this_type].views[0],
         revision_cached: this.props.revision_id || null,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('setUISpec/setLastRev error', err);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
@@ -271,7 +271,7 @@ class RecordForm extends React.Component<
     }
     try {
       await this.setInitialValues();
-    } catch (err) {
+    } catch (err: any) {
       console.error('setInitialValues error', err);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,

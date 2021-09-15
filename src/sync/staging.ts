@@ -42,7 +42,7 @@ export async function getStagedData(
 
   try {
     return await staging_db.get(_id);
-  } catch (err) {
+  } catch (err: any) {
     if (err.message !== 'missing') {
       throw err;
     }
@@ -84,7 +84,7 @@ export async function setStagedData(
     if (_rev !== null) put_doc._rev = _rev;
 
     return await staging_db.put(put_doc);
-  } catch (possibleConflict) {
+  } catch (possibleConflict: any) {
     if (possibleConflict.name === 'conflict') {
       // Do it less efficiently if a conflict occurs, by doing a _rev lookup first.
       console.warn(`Conflict in local staging db: ${possibleConflict}`);
