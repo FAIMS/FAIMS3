@@ -29,7 +29,6 @@ import org.fedarch.faims3.AstroSky;
 import org.fedarch.faims3.TestIncompleteDraftObservation;
 import org.fedarch.faims3.TestUtils;
 import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -99,19 +98,9 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 		    projects.click();
 
 			//Load a different observation and then return to the projects page
-			try {
-				AndroidElement anotherOb = (AndroidElement) wait.until(ExpectedConditions.presenceOfElementLocated(
-					By.xpath("//*[contains(@text, 'Select Row checkbox')]/following-sibling::android.view.View")));
-				anotherOb.click();
-				if (driver.findElementByXPath("//android.widget.Button[@text='Show path']").isDisplayed()) {
-				   	driver.findElementByXPath("//android.widget.Button[@text='Show path']").click();
-				}
-				projects = (AndroidElement) wait.until(ExpectedConditions
-						.elementToBeClickable(MobileBy.xpath("//android.widget.TextView[contains(@text, 'Projects')]")));
-				projects.click();
-			} catch (TimeoutException e) {
-				// there's no other observations found.. just move on
-			}
+			loadObservationForm(recordUuid);
+
+			leaveObservationForm();
 			//Click + New Observation
 			AndroidElement menuButton = driver.findElement(
 					MobileBy.xpath("//*[contains(@text, 'Astrosky')]/../android.view.View[3]/android.widget.Button"));
@@ -134,4 +123,5 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 	  // if we make it to the end with no exceptions, that means we passed!
 	  TestUtils.markBrowserstackTestResult(driver, isUsingBrowserstack(), true, "Android - TestIncompleteDraftObservationAndroid.testIncompleteDraft() passed!");
   }
+
 }

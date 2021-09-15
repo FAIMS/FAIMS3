@@ -30,7 +30,6 @@ import org.fedarch.faims3.TestIncompleteDraftObservation;
 import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -92,22 +91,10 @@ public class TestIncompleteDraftObservationIOS extends IOSTest implements TestIn
 			projects.click();
 
 			//Load a different observation and then return to the projects page
-			try {
-				WebElement anotherOb = wait.until(ExpectedConditions.presenceOfElementLocated(
-					By.xpath("//*[@class='MuiDataGrid-row Mui-even']/div[2]")));
-				anotherOb.click();
+			loadObservationForm(this.recordUuid);
 
-				//Click + New Observation
-			    loadNewAstroSkyForm();
-			} catch (TimeoutException e) {
-				// there's no other observations found..
-				// Find the '+' button for new observation
-				WebElement newObservation = new WebDriverWait(driver, 10)
-						.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='/projects/default_test_proj/new-observation']")));
-
-				newObservation.click();
-			}
-
+			// Click + New Observation
+			loadNewAstroSkyForm();
 			//Did your draft observation reappear?
 		    assertEquals(AstroSky.EMAIL_DRAFT_IOS, driver.findElement(By.id("email-field")).getAttribute("value"));
 	  } catch (Exception e) {
