@@ -62,8 +62,8 @@ const sections_default=['section2']
 const variant_default=['main']
 const projecttabs=['Design','Preview']
 const form_defult={'mainsection2':[]}
-export default function CreateProjectCard() {
-
+export default function CreateProjectCard(props:any) {
+    // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const [projectvalue,setProjectValue]=useState(ini)
@@ -71,6 +71,7 @@ export default function CreateProjectCard() {
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [formcomponents,setFormComponents]= useState<any>(form_defult)
     const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>({fields:{},views:{},viewsets:{},visible_types:[]})
+    const [uiSpec,setUISpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>(props.uiSpec)
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState(sections_default[0])
     const [designvalue,setDesignvalue]=useState<any>('settings')
@@ -83,14 +84,26 @@ export default function CreateProjectCard() {
     const [sectiontabs,setsectiontabs]=useState<Array<string>>([])
     const [tablists,setTablist]=useState<Array<string>>([])
     const [projecttabvalue,setProjecttabvalue]=useState(0)
+    const [error, setError] = useState(null as null | {});
 
 
 
-     useEffect(() => {
+    useEffect(() => {
 
      setinit();
 
     }, []);
+
+    useEffect(() => {
+      if(uiSpec!==null) {
+
+        generateunifromformui(uiSpec)
+        setFormuiSpec(uiSpec);
+        console.log(formcomponents)
+      }
+      console.log(uiSpec)
+
+    }, [uiSpec]);
 
      useEffect(() => {
       saveformuiSpec()
@@ -115,8 +128,12 @@ export default function CreateProjectCard() {
         })
 
       })
+      console.log(formui)
+      const newformvariants=formui['visible_types'][0]
+      setFormVariants(newformvariants)
       setformTabs(tabs)
-      setsectiontabs(formui['viewsets'][formvariants]['views'].map((tab:string)=>tab=tab.replace(formvariants,'')))
+      console.log(formvariants)
+      setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=tab.replace(newformvariants,'')))
       setFormComponents(newformcom)
       setFormuiSpec(formui)
       const tt:Array<any>=[]
@@ -126,6 +143,12 @@ export default function CreateProjectCard() {
     }
 
     const setinit =()=>{
+      if(props.project_id!==undefined){
+        getUiSpecForProject(props.project_id).then(setUISpec, setError);
+        console.log(formuiSpec)
+      }
+
+      // if(props.project_id===undefined){
       // generate empty form
       const view=formvariants+sections_default[0]
       setCurrentView(view);
@@ -141,8 +164,9 @@ export default function CreateProjectCard() {
         if(newvalue[view]===undefined) newvalue[view]=[]
         return newvalue;
       })
-      // //generate form from uiSpecific
-      // generateunifromformui(sampleuispec)
+      // }else{
+      //   generateunifromformui(formuiSpec)
+      // }
 
     }
 
@@ -370,14 +394,14 @@ export default function CreateProjectCard() {
 
     const saveformuiSpec = async  () =>{
       try{
-        console.log(await setUiSpecForProject(metadata_dbs['default_astro_sky'].local, formuiSpec));
+        console.log(await setUiSpecForProject(metadata_dbs['default||test_proj'].local, formuiSpec));
       }catch (err) {
       console.error('databases needs cleaning...');
       console.debug(err);
       }
     }
 
-
+    console.log(metadata_dbs)
 
     
   return ( 

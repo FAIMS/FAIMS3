@@ -62,14 +62,14 @@ export const updatecomponent=(component:any,props:any)=>{
 }
 export const convertuiSpecToProps =(fielduiSpec:any) =>{
 	const props:any={'name':fielduiSpec['component-parameters']['name'],
-	'label':fielduiSpec['component-name']==="TextField"?fielduiSpec['component-parameters']['InputLabelProps']['label']:fielduiSpec['component-parameters']['FormControlLabelProps']['label'],
-	'helperText':fielduiSpec['component-name']==="TextField"?fielduiSpec['component-parameters']['InputLabelProps']['helperText']:fielduiSpec['component-parameters']['FormHelperTextProps']['children'],	// 'validationSchema':fielduiSpec['validationSchema'],
+	'label':fielduiSpec['component-name']==="TextField"?fielduiSpec['component-parameters']['InputLabelProps']['label']:'',//fielduiSpec['component-parameters']['FormControlLabelProps']['label']
+	'helperText':fielduiSpec['component-name']==="TextField"?fielduiSpec['component-parameters']['InputLabelProps']['helperText']:'',	// 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children']
 	'initialValue':fielduiSpec['initialValue'],
 	'required':fielduiSpec['component-parameters']['required'],
 	'type':fielduiSpec['component-name'],
-	'meta_annotation_label':fielduiSpec['meta']['annotation_label'],
-	'meta_type':fielduiSpec['meta']['uncertainty']['include'],
-	'meta_type_label':fielduiSpec['meta']['uncertainty']['label'],
+	'meta_annotation_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['annotation_label']:'annotation',
+	'meta_type':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['include']:false,
+	'meta_type_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['label']:'',
 	'access':fielduiSpec['access'],
 	}
 	return props;
