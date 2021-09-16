@@ -63,6 +63,7 @@ const sections_default=['section2']
 const variant_default=['main']
 const projecttabs=['Design','Preview']
 const form_defult={'mainsection2':[]}
+const projectname='newnotebook123'
 export default function CreateProjectCard(props:any) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
@@ -111,10 +112,10 @@ export default function CreateProjectCard(props:any) {
 
     }, [uiSpec]);
 
-    //  useEffect(() => {
-    //   saveformuiSpec()
-    //   console.log(formuiSpec)
-    // }, [formuiSpec]);
+     useEffect(() => {
+      saveformuiSpec()
+      console.log(formuiSpec)
+    }, [formuiSpec]);
 
      const generateunifromformui = (formui:any) =>{
       const newformcom=formcomponents
@@ -400,7 +401,14 @@ export default function CreateProjectCard(props:any) {
 
     const saveformuiSpec = async  () =>{
       try{
-        console.log(await setUiSpecForProject(metadata_dbs['default||test_proj'].local, formuiSpec));
+        console.log(project_id)
+        if(project_id===''||project_id===null){
+          console.log('no DB')
+          console.log(metadata_dbs)
+        }else{
+          console.log(await setUiSpecForProject(metadata_dbs[project_id].local, formuiSpec));
+          
+        }
       }catch (err) {
       console.error('databases needs cleaning...');
       console.debug(err);
@@ -409,7 +417,7 @@ export default function CreateProjectCard(props:any) {
 
     const getnewdb = async  () =>{
       try{
-       const p_id=await create_new_project_dbs('newnotebook1');
+       const p_id=await create_new_project_dbs(projectname);
        if(p_id!==null) setProjectID(p_id);
       }catch (err) {
       console.error('databases not created...');
@@ -417,6 +425,7 @@ export default function CreateProjectCard(props:any) {
       }
     }
 
+    
     
   return ( 
     <div className={classes.root}> 
