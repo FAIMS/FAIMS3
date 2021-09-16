@@ -55,7 +55,10 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      
+        with:
+          ref: browserstack
+          # This is to check out rini's branch
+          
       - name: Cache node modules
         uses: actions/cache@v2
         env:
