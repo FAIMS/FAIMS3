@@ -18,34 +18,49 @@
  *   TODO
  */
 
-import React from 'react';
+import React, { useState,useEffect} from 'react';
 import {useParams, Redirect} from 'react-router-dom';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import CreateProjectCard from '../components/project/CreateProjectCard';
 import * as ROUTES from '../../constants/routes';
 
 import {Typography,Container,Paper,Box} from '@material-ui/core';
+import {ProjectID} from '../../datamodel/core';
+import {getProjectInfo} from '../../databaseAccess';
+import {getUiSpecForProject} from '../../uiSpecification';
+import {ProjectUIModel} from '../../datamodel/ui';
 
 export default function ProjectCreate() {
-
+  const {project_id} = useParams<{project_id: ProjectID}>();
+  // if(typeof project_id!=='undefined') {
+  const project_info = getProjectInfo(project_id);
+  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+  const [error, setError] = useState(null as null | {});
+  // }
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
-    {title: 'Create New Notebook'},
+    {title: project_info !== null ? project_info.name : 'Create New Notebook'},
   ];
+  
+  useEffect(() => {
+    getUiSpecForProject(project_id).then(setUISpec, setError);
+    console.log(project_id+uiSpec)
+    
+  }, [project_id]);
+
    return  (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          Create Notebook
+          {project_info !== null ? 'Edit Notebook' : 'Create Notebook'}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Design and preview your new notebook before inviting team members and publising
+        {project_info !== null ? 'Design and preview your notebook' : 'Design and preview your new notebook before inviting team members and publising'}
         </Typography>
       </Box>
       <Paper square>
-        <CreateProjectCard />
+        <CreateProjectCard project_id={project_id} uiSpec={uiSpec}/>
       </Paper>
     </Container>
   );
