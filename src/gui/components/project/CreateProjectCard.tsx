@@ -34,6 +34,7 @@ import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './tabs/Projec
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel} from '../../../datamodel/ui'
+import {create_new_project_dbs}  from '../../../sync/new-project'
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -66,6 +67,7 @@ export default function CreateProjectCard(props:any) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
+    const [project_id,setProjectID]=useState('');
     const [projectvalue,setProjectValue]=useState(ini)
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
@@ -91,6 +93,10 @@ export default function CreateProjectCard(props:any) {
     useEffect(() => {
 
      setinit();
+     if(project_id===''||project_id===null){
+        getnewdb();
+     }
+      
 
     }, []);
 
@@ -105,10 +111,10 @@ export default function CreateProjectCard(props:any) {
 
     }, [uiSpec]);
 
-     useEffect(() => {
-      saveformuiSpec()
-      console.log(formuiSpec)
-    }, [formuiSpec]);
+    //  useEffect(() => {
+    //   saveformuiSpec()
+    //   console.log(formuiSpec)
+    // }, [formuiSpec]);
 
      const generateunifromformui = (formui:any) =>{
       const newformcom=formcomponents
@@ -401,7 +407,15 @@ export default function CreateProjectCard(props:any) {
       }
     }
 
-    console.log(metadata_dbs)
+    const getnewdb = async  () =>{
+      try{
+       const p_id=await create_new_project_dbs('newnotebook1');
+       if(p_id!==null) setProjectID(p_id);
+      }catch (err) {
+      console.error('databases not created...');
+      console.log(err);
+      }
+    }
 
     
   return ( 
