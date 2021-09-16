@@ -41,7 +41,7 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import {transformAll} from '@demvsystems/yup-ast';
 
 import {getComponentByName} from '../../component_registry';
-import {ViewComponent} from '../../view';
+import {ViewComponent} from './view';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
