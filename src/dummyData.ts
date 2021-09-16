@@ -511,6 +511,31 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
       },
+      'related-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'RelatedRecordSelector',
+        'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'related-field',
+          id: 'related-field',
+          helperText: 'Select a Photolog',
+          variant: 'outlined',
+          required: true,
+          related_type: 'astro_sky::photolog',
+          relation_type: 'faims-core::Child',
+          InputProps: {
+            type: 'text', // must be a valid html type
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Human Readable ID',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: '',
+      },
     },
     viewsets: {
       'astro_sky::main': {
@@ -531,6 +556,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'bad-field',
           'action-field',
           'email-field',
+          'related-field',
           'str-field',
           'multi-str-field',
           'int-field',
