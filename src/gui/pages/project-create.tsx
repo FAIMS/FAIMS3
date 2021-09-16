@@ -18,6 +18,7 @@
  *   TODO
  */
 
+
 import React, { useState,useEffect} from 'react';
 import {useParams, Redirect} from 'react-router-dom';
 import Breadcrumbs from '../components/ui/breadcrumbs';
@@ -25,6 +26,7 @@ import CreateProjectCard from '../components/project/CreateProjectCard';
 import * as ROUTES from '../../constants/routes';
 
 import {Typography,Container,Paper,Box} from '@material-ui/core';
+
 import {ProjectID} from '../../datamodel/core';
 import {getProjectInfo} from '../../databaseAccess';
 import {getUiSpecForProject} from '../../uiSpecification';
@@ -47,6 +49,7 @@ export default function ProjectCreate() {
     console.log(project_id+uiSpec)
     
   }, [project_id]);
+
 
    return  (
     <Container maxWidth="lg">

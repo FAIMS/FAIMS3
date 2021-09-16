@@ -97,7 +97,6 @@ export default function CreateProjectCard(props:any) {
      if(project_id===''||project_id===null){
         getnewdb();
      }
-      
 
     }, []);
 
@@ -401,6 +400,7 @@ export default function CreateProjectCard(props:any) {
 
     const saveformuiSpec = async  () =>{
       try{
+
         console.log(project_id)
         if(project_id===''||project_id===null){
           console.log('no DB')
@@ -409,11 +409,13 @@ export default function CreateProjectCard(props:any) {
           console.log(await setUiSpecForProject(metadata_dbs[project_id].local, formuiSpec));
           
         }
+
       }catch (err) {
       console.error('databases needs cleaning...');
       console.debug(err);
       }
     }
+
 
     const getnewdb = async  () =>{
       try{
@@ -425,8 +427,6 @@ export default function CreateProjectCard(props:any) {
       }
     }
 
-    
-    
   return ( 
     <div className={classes.root}> 
      <Grid container  >
