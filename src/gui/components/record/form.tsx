@@ -544,16 +544,17 @@ class RecordForm extends React.Component<
       uiSpec !== null
     ) {
       const fieldNames = this.getFieldNames();
+      const view_index = this.props.uiSpec.viewsets[
+        this.state.type_cached!
+      ].views.indexOf(viewName);
+      const is_final_view =
+        view_index + 1 ===
+        this.props.uiSpec.viewsets[this.state.type_cached!].views.length;
+      // this expression checks if we have the last element in the viewset array
 
       return (
         <React.Fragment>
-          <Stepper
-            nonLinear
-            activeStep={this.props.uiSpec.viewsets[
-              this.state.type_cached!
-            ].views.indexOf(viewName)}
-            alternativeLabel
-          >
+          <Stepper nonLinear activeStep={view_index} alternativeLabel>
             {this.props.uiSpec.viewsets[this.state.type_cached!].views.map(
               (view_name: string) => (
                 <Step key={view_name}>
@@ -612,34 +613,40 @@ class RecordForm extends React.Component<
                         color="primary"
                         aria-label="contained primary button group"
                       >
-                        <Button
-                          type="submit"
-                          color={formProps.isSubmitting ? 'default' : 'primary'}
-                          variant="contained"
-                          onClick={formProps.submitForm}
-                          disableElevation
-                          disabled={formProps.isSubmitting}
-                        >
-                          {formProps.isSubmitting
-                            ? !(this.props.revision_id === undefined)
-                              ? 'Working...'
-                              : 'Working...'
-                            : !(this.props.revision_id === undefined)
-                            ? 'Update'
-                            : 'Save and new'}
-                          {formProps.isSubmitting && (
-                            <CircularProgress
-                              size={24}
-                              style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                marginTop: -12,
-                                marginLeft: -12,
-                              }}
-                            />
-                          )}
-                        </Button>
+                        {is_final_view ? (
+                          <Button
+                            type="submit"
+                            color={
+                              formProps.isSubmitting ? 'default' : 'primary'
+                            }
+                            variant="contained"
+                            onClick={formProps.submitForm}
+                            disableElevation
+                            disabled={formProps.isSubmitting}
+                          >
+                            {formProps.isSubmitting
+                              ? !(this.props.revision_id === undefined)
+                                ? 'Working...'
+                                : 'Working...'
+                              : !(this.props.revision_id === undefined)
+                              ? 'Update'
+                              : 'Save and new'}
+                            {formProps.isSubmitting && (
+                              <CircularProgress
+                                size={24}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  marginTop: -12,
+                                  marginLeft: -12,
+                                }}
+                              />
+                            )}
+                          </Button>
+                        ) : (
+                          <p>Continue filling out form</p>
+                        )}
                       </ButtonGroup>
                     </Grid>
                     <Grid item sm={6} xs={12}>
