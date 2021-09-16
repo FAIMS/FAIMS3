@@ -22,35 +22,20 @@ import {FormikProps} from 'formik';
 import React from 'react';
 
 type ViewProps = {
-  viewList: Array<string>;
+  viewName: string;
   form: any; //FAIMSForm; @TODO fix type
   formProps: FormikProps<{[key: string]: unknown}>;
 };
 
-type ViewState = {
-  // validationCallbacks: any;
-};
-
-export class ViewComponent extends React.Component<ViewProps, ViewState> {
-  constructor(props: ViewProps) {
-    super(props);
-  }
-
-  componentDidMount() {}
-
-  save(values: any) {
-    console.log(values);
-  }
-
-  getForm() {
-    return this.props.form;
-  }
-
+export class ViewComponent extends React.Component<ViewProps> {
   render() {
     const form = this.props.form;
+    const viewName = this.props.viewName;
+    const fieldNames: Array<string> =
+      form.props.uiSpec['views'][viewName]['fields'];
     return (
       <React.Fragment>
-        {this.props.viewList.map(fieldName => {
+        {fieldNames.map(fieldName => {
           return form.getComponentFromField(fieldName, this);
         })}
       </React.Fragment>

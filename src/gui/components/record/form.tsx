@@ -543,7 +543,6 @@ class RecordForm extends React.Component<
       this.state.initialValues !== null &&
       uiSpec !== null
     ) {
-      const fieldNames = this.getFieldNames();
       const view_index = this.props.uiSpec.viewsets[
         this.state.type_cached!
       ].views.indexOf(viewName);
@@ -595,7 +594,7 @@ class RecordForm extends React.Component<
                     </Grid>
                     <Grid item sm={6} xs={12}>
                       <ViewComponent
-                        viewList={fieldNames}
+                        viewName={viewName}
                         form={this}
                         formProps={formProps}
                       />
