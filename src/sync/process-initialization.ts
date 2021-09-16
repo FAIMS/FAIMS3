@@ -410,7 +410,7 @@ async function activate_project(
   try {
     await active_db.get(active_id);
     console.debug('Have already activated', active_id);
-  } catch (err) {
+  } catch (err: any) {
     if (err.status === 404) {
       // TODO: work out a better way to do this
       await active_db.put({
