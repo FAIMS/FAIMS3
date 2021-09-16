@@ -176,10 +176,10 @@ public class AndroidTest implements E2ETest {
 
 		// Find the '+' button
 		AndroidElement menuButton = driver.findElement(
-				MobileBy.xpath("//*[contains(@text, 'Astrosky')]/../android.view.View[3]/android.widget.Button"));
+				MobileBy.xpath("//*[contains(@text, 'Astrosky')]/../android.view.View[5]/android.widget.Button"));
 		menuButton.click();
 		AndroidElement newButton = (AndroidElement) wait.until(ExpectedConditions.visibilityOfElementLocated(
-				By.xpath("//*[contains(@text, 'New Observation')]")));
+				By.xpath("//*[contains(@text, 'New astro_sky::main')]")));
 		newButton.click();
 	}
 
