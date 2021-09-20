@@ -50,7 +50,7 @@ export default function ProjectCreate() {
     
   }, [project_id]);
 
-
+console.log(project_info)
    return  (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />

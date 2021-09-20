@@ -1,5 +1,8 @@
 import {v4 as uuidv4} from 'uuid';
 const accessgroup=['admin','moderator','team']
+const VISIBLE_TYPE='visible_types'
+const NEWFIELDS='newfield'
+
 export const FieldModel =(props:any)=>{
 	const {name,namespace,component,type_return,required,initialValue,validationSchema,annotation_label,meta_type,meta_type_label,access,...others}=props
 	let isrequired=false;
@@ -161,222 +164,177 @@ export function generateaddfieldui(){
 }
 
 
-export const sampleuispec={
-  "fields": {
-    "newfield365bcf6d": {
-      "component-namespace": "formik-material-ui",
-      "component-name": "TextField",
-      "type-returned": "faims-core::String",
-      "meta": {
-        "note": "te",
-        "type": "uncertain"
-      },
-      "access": [
-        "admin",
-        "moderator",
-        "team"
-      ],
-      "component-parameters": {
-        "name": "newfield365bcf6d",
-        "id": "newfield365bcf6d",
-        "variant": "outlined",
-        "required": false,
-        "InputProps": {
-          "type": "text"
-        },
-        "fullWidth": true,
-        "InputLabelProps": {
-          "label": "label1"
-        }
-      },
-      "alert": false,
-      "validationSchema": [
-        [
-          "yup.string"
-        ]
-      ],
-      "initialValue": ""
-    },
-    "newfield0ed561ba": {
-      "component-namespace": "formik-material-ui",
-      "component-name": "TextField",
-      "type-returned": "faims-core::String",
-      "meta": {
-        "note": "",
-        "type": ""
-      },
-      "access": [
-        "admin",
-        "moderator",
-        "team"
-      ],
-      "component-parameters": {
-        "name": "newfield0ed561ba",
-        "id": "newfield0ed561ba",
-        "variant": "outlined",
-        "required": false,
-        "InputProps": {
-          "type": "text"
-        },
-        "fullWidth": true,
-        "InputLabelProps": {
-          "label": "second"
-        }
-      },
-      "alert": false,
-      "validationSchema": [
-        [
-          "yup.string"
-        ]
-      ],
-      "initialValue": ""
-    },
-    "newfield7e43e210": {
-      "component-namespace": "formik-material-ui",
-      "component-name": "TextField",
-      "type-returned": "faims-core::String",
-      "meta": {
-        "note": "",
-        "type": ""
-      },
-      "access": [
-        "admin",
-        "moderator",
-        "team"
-      ],
-      "component-parameters": {
-        "name": "newfield7e43e210",
-        "id": "newfield7e43e210",
-        "variant": "outlined",
-        "required": false,
-        "InputProps": {
-          "type": "text"
-        },
-        "fullWidth": true,
-        "InputLabelProps": {
-          "label": "photolog1"
-        }
-      },
-      "alert": false,
-      "validationSchema": [
-        [
-          "yup.string"
-        ]
-      ],
-      "initialValue": ""
-    },
-    "newfieldae52f0a8": {
-      "component-namespace": "formik-material-ui",
-      "component-name": "TextField",
-      "type-returned": "faims-core::String",
-      "meta": {
-        "note": "",
-        "type": ""
-      },
-      "access": [
-        "admin",
-        "moderator",
-        "team"
-      ],
-      "component-parameters": {
-        "name": "newfieldae52f0a8",
-        "id": "newfieldae52f0a8",
-        "variant": "outlined",
-        "required": false,
-        "InputProps": {
-          "type": "text"
-        },
-        "fullWidth": true,
-        "InputLabelProps": {
-          "label": "phtotolog2"
-        }
-      },
-      "alert": false,
-      "validationSchema": [
-        [
-          "yup.string"
-        ]
-      ],
-      "initialValue": ""
-    },
-    "newfieldc5cb35eb": {
-      "component-namespace": "formik-material-ui",
-      "component-name": "TextField",
-      "type-returned": "faims-core::String",
-      "meta": {
-        "note": "",
-        "type": ""
-      },
-      "access": [
-        "admin",
-        "moderator",
-        "team"
-      ],
-      "component-parameters": {
-        "name": "newfieldc5cb35eb",
-        "id": "newfieldc5cb35eb",
-        "variant": "outlined",
-        "required": false,
-        "InputProps": {
-          "type": "text"
-        },
-        "fullWidth": true,
-        "InputLabelProps": {
-          "label": "phot3"
-        }
-      },
-      "alert": false,
-      "validationSchema": [
-        [
-          "yup.string"
-        ]
-      ],
-      "initialValue": ""
-    }
-  },
-  "views": {
-    "mainsection1": {
-      "fields": [
-        "newfield365bcf6d"
-      ],
-      "uidesign": "form"
-    },
-    "mainsection2": {
-      "fields": [
-        "newfield0ed561ba"
-      ],
-      "uidesign": "form"
-    },
-    "photologsection3": {
-      "fields": [
-        
-      ],
-      "uidesign": "form"
-    },
-    "photologsection4": {
-      "fields": [
-        
-      ],
-      "uidesign": "form"
-    }
-  },
-  "viewsets": {
-    "main": {
-      "views": [
-        "mainsection1",
-        "mainsection2"
-      ]
-    },
-    "photolog": {
-      "views": [
-        "photologsection3",
-        "photologsection4"
-      ]
-    }
-  },
-  "visible_types": [
-    "main",
-    "photolog"
-  ]}
 
+
+export const updateuiSpec = (type:string,props:any) =>{
+  const newuiSpec=props.formuiSpec
+  const newformcom=props.formcomponents
+  switch (type) {
+    case 'formvariantsupdate':
+      return updatelabel(true,props);
+    case 'formvsectionupdate':
+      return updatelabel(false,props);
+    case 'formvariantsadd':
+      return formvariantsadd(props);
+    case 'formvsectionadd':
+      return formvsectionadd(props)
+    case 'newfromui':
+      return newfromui(props.formuiSpec,props.formcomponents);
+    case 'switch':
+      return swithField(props.index,props.type,props.formuiSpec,props.formcomponents,props.formuiview)
+    case 'removefield':
+      console.log('run here')
+      return removefield(props.index,props.formuiSpec,props.formcomponents,props.formuiview);
+    case 'addfield':
+      return addfield(props);
+    case 'updatefield':
+      return updatefield(props);
+    default: 
+      return newuiSpec;
+    }
+}
+
+const updatelabel = (type:boolean,props:any) =>{
+  const newviews=props.formuiSpec
+  const components=props.formcomponents
+  props.tabs.map((tab:string,index:number)=>{
+    if(type){
+      //update form label
+      const tabid=newviews[VISIBLE_TYPE][index]
+      newviews['viewsets'][tabid]['label']=tab
+    }else{
+      const tabid=newviews['viewsets'][props.formvariants]['views'][index]
+      newviews['views'][tabid]['label']=tab
+    }
+    
+  })
+  return {newviews,components}
+}
+
+const newfromui = (newuiSpec:any,newformcom:any) =>{
+  newuiSpec[VISIBLE_TYPE].map((variant:any,index:any)=>{
+        if(index===0)
+        newuiSpec['viewsets'][variant]['views'].map((view:string)=>{
+          newformcom[view]=[]    
+          newuiSpec['views'][view]['fields'].map((fieldname:string)=>{
+            console.log(fieldname)
+            const field=newuiSpec['fields'][fieldname]
+            const fieldprops=convertuiSpecToProps(field)
+            const newuiSpeclist=FieldSettings(field,fieldname,fieldprops)
+            newformcom[view]=[...newformcom[view],{id:fieldname.replace(NEWFIELDS,''),uiSpec:newuiSpeclist,designvalue:'settings'}];
+          })
+        })
+      })
+  return {uiSpec:newuiSpec,formcomponents:newformcom};
+}
+
+ const swithField = (index:any,type:boolean,formuiSpec:any,formcomponents:any,formuiview:string) =>{
+      const newviews=formuiSpec
+      const components=formcomponents
+      const fields=formuiSpec['views'][formuiview]['fields']
+      const field=fields[index]
+      const component=formcomponents[formuiview][index]
+      fields.splice(index,1)
+      components[formuiview].splice(index,1)
+      if(type) index=index+1 //down
+      else index=index-1 //up
+      fields.splice(index,0,field)
+      components[formuiview].splice(index,0,component)
+      newviews['views'][formuiview]['fields']=fields
+      return {newviews,components}
+      
+    }
+const removefield = (id:string,formuiSpec:any,formcomponents:any,formuiview:string) =>{
+  const name=NEWFIELDS+id
+  const components=formcomponents
+  components[formuiview]=components[formuiview].filter((formcomponent:any)=>formcomponent.id!==id)
+  const newviews=formuiSpec
+  newviews['views'][formuiview]['fields']=newviews['views'][formuiview]['fields'].filter((field:any)=>field!==name)
+  console.log(components)
+  return {newviews,components}
+}
+
+const addfield = (props:any) =>{
+  const {uuid,id,formuiSpec,formcomponents,formuiview}=props
+  const name=NEWFIELDS+uuid
+  const newfield=getcomponent(id,{'name':name,label:id})
+  const newuiSpec=formuiSpec.fields;
+  newuiSpec[name]=newfield
+  const newviews=formuiSpec.views
+  newviews[formuiview]['fields']=[...newviews[formuiview]['fields'],name]
+  const fieldprops=convertuiSpecToProps(newfield)
+  const newuiSpeclist=FieldSettings(newfield,name,fieldprops)
+  const components=formcomponents
+  components[formuiview]=[...components[formuiview],{id:uuid,uiSpec:newuiSpeclist,designvalue:'settings'}];
+  return {newviews,components,newuiSpeclist,newuiSpec}
+}
+
+const updatefield = (props:any) =>{
+  const {event,formuiSpec,formcomponents,formuiview}=props
+  const fieldname=event.target.name
+  const fieldvalue=event.target.value
+  const updatedfield=getfieldname(fieldname,NEWFIELDS);
+  const components=formcomponents
+  const newviews=formuiSpec
+
+  if (formuiSpec!==undefined && updatedfield.name!==''&& updatedfield.type!==''){
+    const newfieldname=updatedfield.name
+    const fieldtype=updatedfield.type
+    const fieldprops=convertuiSpecToProps(formuiSpec['fields'][newfieldname])
+    if(fieldtype==='required') fieldprops[fieldtype]=!fieldprops[fieldtype];
+    else fieldprops[fieldtype]=fieldvalue
+
+    const newfield=getcomponent(fieldprops['type'],fieldprops);
+    const fields=changeuifield(newfieldname,newfield,formuiSpec['fields'])
+
+    components[formuiview].map((item:any)=>{
+            item.id===updatedfield.index?item['uiSpec']['fields']=changeuifield(newfieldname,newfield,item['uiSpec']['fields']):item
+          }) 
+    newviews['fields']=fields
+  }
+  return {newviews,components}
+
+}
+
+ const changeuifield = (newfieldname:string,newfield:any,uiSpec:any) =>{
+      //update the formuiSpec
+      const fields=uiSpec
+      fields[newfieldname]=newfield
+      return fields;
+    }
+
+const formvsectionadd = (props:any) =>{
+  const {tabs,formuiSpec,formcomponents,formvariants}=props
+  const index=tabs.length-1
+  const newtabname=tabs[index]
+  const newviews=formuiSpec
+  const components=formcomponents
+  const name=formvariants+newtabname
+
+  console.log(formvariants)
+
+  if(newviews['views'][name]===undefined){
+    newviews['views'][name]={'fields':[],uidesign:'form',label:newtabname}
+    newviews['viewsets'][formvariants]['views']=[...newviews['viewsets'][formvariants]['views'],name];
+  }
+
+  if(components[name]===undefined){
+    components[name]=[]
+  }
+  return {newviews,components}
+}
+
+const formvariantsadd = (props:any) =>{
+  const {tabs,formuiSpec,formcomponents,formuiview}=props
+  const index=tabs.length-1
+  const newtabname=tabs[index]
+  const newviews=formuiSpec
+  const components=formcomponents
+  newviews[VISIBLE_TYPE]=[...newviews[VISIBLE_TYPE],newtabname]; //add new tab
+  if(newviews['viewsets'][newtabname]===undefined){
+    newviews['viewsets'][newtabname]={'views':[],label:newtabname}
+  }
+  return {newviews,components}
+
+}
 

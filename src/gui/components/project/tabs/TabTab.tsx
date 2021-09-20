@@ -77,9 +77,9 @@ export function TabEditable(props: any) {
   	}
   	const handleAdd =  (event:any) => {
 	  	const newtabs=tablists;
-		newtabs[tablists.length]='New'+tablists.length
-		setTablist(newtabs)
-  		console.log("Add")
+  		newtabs[tablists.length]='New'+tablists.length
+  		setTablist(newtabs)
+  		props.handelonChangeLabel(newtabs,'add')
   		setIsset(!isset)
   	}
 
@@ -93,10 +93,8 @@ export function TabEditable(props: any) {
   		
   		const newtabs=tablists
   		const pretabs=tablists
-  		console.log(pretabs)
   		Object.entries(values).map((value,index) =>newtabs[index]=value[1] )
-  		props.handelonChangeLabel(newtabs,pretabs)
-  		console.log(pretabs)
+  		props.handelonChangeLabel(newtabs,'update')
   		setTablist(newtabs) 
   		setisedited(false)
   		
