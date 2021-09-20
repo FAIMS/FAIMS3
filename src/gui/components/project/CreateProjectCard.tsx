@@ -27,14 +27,16 @@ import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden} from '@materia
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import FieldsListCard from './tabs/FieldsListCard';
 import {SettingCard} from './tabs/PSettingCard';
-import {getComponentFromField} from './FormElement';
-import {TabTab,TabEditable} from './tabs/TabTab'
-import {FieldSettings,getcomponent,getfieldname,convertuiSpecToProps,setProjectInitialValues,getid,updateuiSpec} from './data/ComponentSetting'
+import {getComponentFromField,FormForm} from './FormElement';
+import {TabTab,TabEditable} from './tabs/TabTab';
+import TabPanel from './tabs/TabPanel';
+import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform} from './data/ComponentSetting'
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './tabs/ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel} from '../../../datamodel/ui'
 import {create_new_project_dbs}  from '../../../sync/new-project'
+
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -61,7 +63,7 @@ const useStyles = makeStyles((theme) => ({
 const NEWFIELDS='newfield'
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
-const projecttabs=['Design','Preview']
+const projecttabs=['Info','Design','Preview']
 const form_defult={'FORM1SECTION1':[]}
 const projectname='newnotebook123'
 const VISIBLE_TYPE='visible_types'
@@ -71,7 +73,7 @@ export default function CreateProjectCard(props:any) {
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const [project_id,setProjectID]=useState('');
-    const [projectvalue,setProjectValue]=useState(ini)
+    const [projectvalue,setProjectValue]=useState<any>({})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [formcomponents,setFormComponents]= useState<any>(form_defult)
@@ -96,9 +98,9 @@ export default function CreateProjectCard(props:any) {
     useEffect(() => {
 
      setinit();
-     if(project_id===''||project_id===null){
-        getnewdb();
-     }
+     // if(project_id===''||project_id===null){
+     //    getnewdb();
+     // }
 
     }, []);
 
@@ -165,33 +167,11 @@ export default function CreateProjectCard(props:any) {
 
     }
 
-    
-
-    const submithandler = (values:any) =>{
-
-    }
-    
-   
-
-    const handleChangeForm = (event:any,type='change',value='') => {
-      
-      // setProjectValue()
-      saveorsync()
-      const {newviews,components}=updateuiSpec('updatefield',{event:event,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
-      setFormuiSpec({...formuiSpec,fields:newviews.fields})
-      setFormComponents(components)
-      // return true;
-     }
-
-     /****This function is to save data to DB TODO LIST*********/
-     const saveorsync = () =>{
-     }
-
     const handleAddField = (id:string) =>{
       const uuid=getid()
 
       const {newviews,components,newuiSpeclist,newuiSpec}=updateuiSpec('addfield',{uuid:uuid,id:id,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
-      setinitialValues({...initialValues,...setProjectInitialValues(newuiSpeclist,formView,{})})
+      setinitialValues({...initialValues,...setProjectInitialValues(newuiSpeclist,formView,{_id:project_id})})
       setFormComponents(components)
       setFormuiSpec({fields:newuiSpec,views:newviews,viewsets:formuiSpec.viewsets,visible_types:formuiSpec.visible_types})
       setIsAddField(false)
@@ -310,7 +290,7 @@ export default function CreateProjectCard(props:any) {
 
     const getnewdb = async  () =>{
       try{
-       const p_id=await create_new_project_dbs(projectname);
+       const p_id=await create_new_project_dbs(projectvalue.projectname);
        if(p_id!==null) setProjectID(p_id);
       }catch (err) {
       console.error('databases not created...');
@@ -318,14 +298,49 @@ export default function CreateProjectCard(props:any) {
       }
     }
 
+    const submithandler = (values:any) =>{
+
+    }
+    
+   
+
+    const handleChangeForm = (event:any,type='change',value='') => {
+      const {newviews,components}=updateuiSpec('updatefield',{event:event,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
+      setFormuiSpec({...formuiSpec,fields:newviews.fields})
+      setFormComponents(components)
+      return true;
+     }
+
+     /****This function is to save data to DB TODO LIST*********/
+    const saveorsync = () =>{
+     }
+
+    const handleChangeFormProject=(event:any) => {
+      console.log(event.target.name+event.target.value)
+      const newproject=projectvalue
+      newproject[event.target.name]=event.target.value
+      setProjectValue(newproject)
+      console.log(projectvalue)
+    }
+
+    const submithandlerProject = (values:any) =>{
+
+      console.log(values)
+      if(project_id===''||project_id===null){
+        getnewdb();
+      }
+    }
+
   return ( 
     <div className={classes.root}> 
-     <Grid container  >
-      <Grid item sm={12} xs={12}>
-        <AppBar position="static" color='primary'>
+     <AppBar position="static" color='primary'>
           <TabTab tabs={projecttabs} value={projecttabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
-        </AppBar>
-      </Grid>
+      </AppBar>
+      <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
+          <FormForm uiSpec={getprojectform(['projectname'])} currentView='start-view' handleChangeForm={handleChangeFormProject} handleSubmit={submithandlerProject}/>
+      </TabPanel>
+      <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
+      <Grid container  >
       <Grid item sm={12} xs={12}>
         <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='subtab' handelonChangeLabel={handelonChangeLabel} />
         <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='subtab' handelonChangeLabel={handelonChangeLabelSection}/>
@@ -392,7 +407,11 @@ export default function CreateProjectCard(props:any) {
               <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
         </Box>
       </Grid>
-    </Grid>
+      </Grid>
+      </TabPanel>
+      <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
+        
+      </TabPanel>
   </div>
 
   );

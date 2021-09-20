@@ -103,7 +103,7 @@ export function FormForm (props:any) {
                <Grid item sm={11} xs={12}>
                   <Grid container >
                 {uiSpec['views'][currentView]['fields'].map((field:any,index:any)=>(
-                  <Grid item sm={2} xs={12} key={field} >{getComponentFromField(uiSpec,field, formProps,handleChangeForm)}</Grid>
+                  <Grid item sm={uiSpec['views'][currentView]['fields'].length===1?11:2} xs={12} key={field} >{getComponentFromField(uiSpec,field, formProps,handleChangeForm)}</Grid>
                 ))}
                 </Grid></Grid>
                 <Grid item sm={1} xs={12}>

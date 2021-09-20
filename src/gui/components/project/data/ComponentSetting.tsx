@@ -143,7 +143,21 @@ export const gettabform = (tabs:Array<string>) =>{
 	}
 }
 
- export const setProjectInitialValues = (uiSpec:any,currentView:string,initialValues: any) => {
+export const getprojectform= (tabs:Array<string>) =>{
+  const fields_list:any={}
+  const fields:Array<string>=[]
+
+  tabs.map((tab:string,index:number)=> {fields_list[tab]=getcomponent('TextField',{name:tab, lable:tab, initialValue:'', placeholder:''}); fields[index]=tab
+    });
+
+  return {
+    fields:fields_list,
+    'views':{'start-view':{fields:fields}} ,
+    'start_view': 'start-view'
+  }
+}
+
+export const setProjectInitialValues = (uiSpec:any,currentView:string,initialValues: any) => {
     const existingData: {
       [viewName: string]: {[fieldName: string]: unknown};
     } = {};
