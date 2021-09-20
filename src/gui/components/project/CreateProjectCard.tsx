@@ -102,24 +102,24 @@ export default function CreateProjectCard(props:any) {
 
     }, []);
 
-    // useEffect(() => {
-    //   if(uiSpec!==null) {
+    useEffect(() => {
+      if(uiSpec!==null) {
 
-    //     generateunifromformui(uiSpec)
-    //     setFormuiSpec(uiSpec);
-    //     console.log(formcomponents)
-    //   }
-    //   console.log('Update Changes')
-    //   console.log(uiSpec)
-    // }, [uiSpec]);
+        generateunifromformui(uiSpec)
+        setFormuiSpec(uiSpec);
+        console.log(formcomponents)
+      }
+      console.log('Update Changes')
+      console.log(uiSpec)
+    }, [uiSpec]);
 
-    //  useEffect(() => {
-    //   if(project_id!==''&&project_id!==null){
-    //     saveformuiSpec()
-    //     console.log(formuiSpec)
-    //   }
+     useEffect(() => {
+      if(project_id!==''&&project_id!==null){
+        saveformuiSpec()
+        console.log(formuiSpec)
+      }
       
-    // }, [formuiSpec]);
+    }, [formuiSpec]);
 
      const generateunifromformui = (formuiS:any) =>{
       const tabs=formtabs
