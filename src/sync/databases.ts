@@ -123,6 +123,7 @@ export const users_db: PouchDB.Database<PouchUser> =
     proto: DIRECTORY_PROTOCOL,
     host: DIRECTORY_HOST,
     port: DIRECTORY_PORT,
+    auth: DIRECTORY_AUTH,
   });
 
 /**
