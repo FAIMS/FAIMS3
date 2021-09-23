@@ -23,6 +23,7 @@ import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
+  DIRECTORY_AUTH,
 } from '../buildconfig';
 import {
   ActiveDoc,
@@ -60,6 +61,7 @@ export const self_listing_info: ListingsObject = {
     host: DIRECTORY_HOST,
     port: DIRECTORY_PORT,
     db_name: 'projects',
+    auth: DIRECTORY_AUTH,
   },
   auth_mechanisms: [
     {
