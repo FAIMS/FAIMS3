@@ -70,6 +70,8 @@ function initialize_dbs(): DirectoryEmitter {
 
   attach_all_listeners(events);
 
+  events.emit('directory_paused', new Set([self_listing_info._id]));
+
   // It all starts here, once the events are all registered
   console.log('sync/initialize: listeners registered');
   process_listing(self_listing_info).catch(err =>
