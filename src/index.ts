@@ -2,7 +2,9 @@ import express from 'express';
 import {users_db} from './sync/databases';
 import passport from 'passport';
 import OAuth2Strategy from 'passport-oauth2';
-import { initialize } from './sync/initialize';
+import {initialize} from './sync/initialize';
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
 
 process.on('unhandledRejection', error => {
   console.error(error); // This prints error with stack included (as for normal errors)
@@ -37,11 +39,12 @@ passport.use(
   )
 );
 
-
 const app = express();
 app.get('/', async (req, res) => {
   res.send(await users_db.allDocs({include_docs: true}));
 });
+
+PouchDB.plugin(PouchDBFind);
 
 initialize().then(() => {
   app.listen(8080, () => {
