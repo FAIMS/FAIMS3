@@ -2,6 +2,7 @@ import express from 'express';
 import {users_db} from './sync/databases';
 import passport from 'passport';
 import OAuth2Strategy from 'passport-oauth2';
+import { initialize } from './sync/initialize';
 
 process.on('unhandledRejection', error => {
   console.error(error); // This prints error with stack included (as for normal errors)
@@ -36,10 +37,14 @@ passport.use(
   )
 );
 
+
 const app = express();
 app.get('/', async (req, res) => {
   res.send(await users_db.allDocs({include_docs: true}));
 });
-app.listen(8080, () => {
-  console.log('The hello is listening on port 8080!');
+
+initialize().then(() => {
+  app.listen(8080, () => {
+    console.log('The hello is listening on port 8080!');
+  });
 });
