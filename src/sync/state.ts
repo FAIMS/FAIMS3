@@ -30,12 +30,9 @@ import {ExistingActiveDoc, LocalDB} from './databases';
 import {add_initial_listener} from './event-handler-registration';
 import {DirectoryEmitter} from './events';
 
-add_initial_listener(register_listings_known, 'listings_known');
-add_initial_listener(register_projects_known, 'projects_known');
-
 export let listings_known = false;
 export let listings: null | Set<string> = null;
-function register_listings_known(initializeEvents: DirectoryEmitter) {
+export function register_listings_known(initializeEvents: DirectoryEmitter) {
   initializeEvents.on('directory_paused', known_listings => {
     listings_known = true;
     listings = known_listings;
@@ -66,7 +63,7 @@ export let projects_known: null | Set<ProjectID> = null;
  * Note: All of these events may emit more than once. Use .once('event_name', ...)
  * to only listen for the first trigger.
  */
-function register_projects_known(initializeEvents: DirectoryEmitter) {
+export function register_projects_known(initializeEvents: DirectoryEmitter) {
   // This is more complicated, as we have to first ensure that it's in a reasonable state to say
   // that everything is known & created, before waiting for project meta downloads.
   // (So that we don't accidentally trigger things if local DBs are empty but waiting)
@@ -141,9 +138,7 @@ export const createdProjects: {
 
 export let projects_created = false;
 
-add_initial_listener(register_metas_complete);
-
-function register_projects_created(initializeEvents: DirectoryEmitter) {
+export function register_projects_created(initializeEvents: DirectoryEmitter) {
   const project_statuses = new Map<string, boolean>();
 
   const emit_if_complete = () => {
@@ -169,8 +164,6 @@ function register_projects_created(initializeEvents: DirectoryEmitter) {
   });
 }
 
-add_initial_listener(register_projects_created);
-
 export type MetasCompleteType = {
   [active_id in ProjectID]:
     | [ActiveDoc, ProjectObject, LocalDB<ProjectMetaObject>]
@@ -189,7 +182,7 @@ export let metas_complete: null | MetasCompleteType = null;
  * and when all projects are known (see register_projects_known)
  * metas_complete event is triggered with list of all projects.
  */
-function register_metas_complete(initializeEvents: DirectoryEmitter) {
+export function register_metas_complete(initializeEvents: DirectoryEmitter) {
   const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
     projects_known !== null &&
     Array.from(projects_known.values()).every(v => v in map_obj);
