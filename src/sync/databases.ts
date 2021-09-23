@@ -28,7 +28,6 @@ import {
   ActiveDoc,
   ConnectionInfo,
   ListingsObject,
-  NonNullListingsObject,
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
@@ -133,32 +132,62 @@ export const data_dbs: LocalDBList<ProjectDataObject> = {};
  */
 export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
 
-let default_instance: null | NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_LISTING_ID) by get_default_instance
+let default_projects_db: null | ConnectionInfo = null;
 
-export async function get_default_instance(): Promise<NonNullListingsObject> {
-  if (default_instance === null) {
-    const possibly_corrupted_instance = await directory_db.local.get(
-      DEFAULT_LISTING_ID
-    );
-    default_instance = {
-      _id: possibly_corrupted_instance._id,
-      name: possibly_corrupted_instance.name,
-      description: possibly_corrupted_instance.description,
-      projects_db: materializeConnectionInfo(
+export async function get_base_connection_info(
+  listing_object: ListingsObject
+): Promise<ConnectionInfo> {
+  if (default_projects_db === null) {
+    try {
+      // Normal case of a single DEFAULT listing in the directory
+      const possibly_corrupted_instance = await directory_db.local.get(
+        DEFAULT_LISTING_ID
+      );
+      return (default_projects_db = materializeConnectionInfo(
         directory_connection_info,
         possibly_corrupted_instance.projects_db
-      ),
-      auth_mechanisms: [
-        {
-          type: 'oauth',
-          base_url: 'https://auth.datacentral.org.au/cas/login',
-          client_id: '5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au',
-          name: 'Data Central',
-        },
-      ],
-    };
+      ));
+    } catch (err: any) {
+      // Missing when directory_db has NOTHING in it
+      // i.e. current FAIMS app doesn't have a directory
+      // this is usually because it's the server, not the app.
+      if (err.message !== 'missing') {
+        // Other DB error
+        throw err;
+      }
+
+      const nullexcept = <T>(val: T | undefined | null, err: any): T => {
+        if (val === null || val === undefined) {
+          throw err;
+        }
+        return val;
+      };
+
+      // If running in server mode
+      // the listings object MUST have all the connection properties
+      return {
+        proto: nullexcept(
+          listing_object.projects_db?.proto,
+          'Server misconfigured: Missing proto'
+        ),
+        host: nullexcept(
+          listing_object.projects_db?.host,
+          'Server misconfigured: Missing host'
+        ),
+        port: nullexcept(
+          listing_object.projects_db?.port,
+          'Server misconfigured: Missing port'
+        ),
+        lan: listing_object.projects_db?.lan,
+        db_name: nullexcept(
+          listing_object.projects_db?.db_name,
+          'Server misconfigured: Missing db_name'
+        ),
+        auth: listing_object.projects_db?.auth,
+      };
+    }
   }
-  return default_instance;
+  return default_projects_db;
 }
 
 /**

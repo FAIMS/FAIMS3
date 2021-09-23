@@ -39,7 +39,7 @@ import {
 import {
   directory_db,
   active_db,
-  get_default_instance,
+  get_base_connection_info,
   ensure_local_db,
   projects_dbs,
   ensure_synced_db,
@@ -47,7 +47,6 @@ import {
   LocalDB,
   metadata_dbs,
   data_dbs,
-  DEFAULT_LISTING_ID,
 } from './databases';
 import {events} from './events';
 import {createdProjects} from './state';
@@ -199,18 +198,14 @@ async function process_listing(listing_object: ListingsObject) {
   const listing_id = listing_object._id;
   console.debug(`Processing listing id ${listing_id}`);
 
-  const projects_db_id = listing_object['projects_db']
-    ? listing_id
-    : DEFAULT_LISTING_ID;
-
   const projects_connection = materializeConnectionInfo(
-    (await get_default_instance())['projects_db'],
+    await get_base_connection_info(listing_object),
     listing_object['projects_db']
   );
 
   const [, local_projects_db] = ensure_local_db(
     'projects',
-    projects_db_id,
+    listing_id,
     true,
     projects_dbs
   );
@@ -300,7 +295,7 @@ async function process_listing(listing_object: ListingsObject) {
       });
 
     ensure_synced_db(
-      projects_db_id,
+      listing_id,
       projects_connection,
       projects_dbs,
       project_sync_handler,
