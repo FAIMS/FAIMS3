@@ -55,6 +55,10 @@ export interface ConnectionInfo {
   port: number;
   lan?: boolean;
   db_name: string;
+  auth?: {
+    username: string;
+    password: string;
+  };
 }
 
 /**
@@ -81,6 +85,10 @@ export type PossibleConnectionInfo =
       port?: number | undefined;
       lan?: boolean | undefined;
       db_name?: string | undefined;
+      auth?: {
+        username: string;
+        password: string;
+      };
     };
 
 export interface ListingsObject {
