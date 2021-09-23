@@ -231,7 +231,7 @@ function register_basic_automerge_resolver(initializeEvents: DirectoryEmitter) {
   initializeEvents.on(
     'project_data_paused',
     (listing, active, project, data) => {
-      if (!(project._id in already_listening)) {
+      if (!already_listening.has(project._id)) {
         already_listening.add(project._id);
         start_listening_for_changes(project._id, data);
       }

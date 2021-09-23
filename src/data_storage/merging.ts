@@ -201,6 +201,11 @@ export async function do3WayMerge(
     return await doFastForward(project_id, merge_result, base, them, us);
   }
 
+  if (them.type !== us.type) {
+    // Because changing types it unsupported:
+    throw Error('Merging of revisions with differing types is unsupported');
+  }
+
   const attrs = getAttributes(base, them, us);
   for (const attr of attrs) {
     const base_avp_id = base.avps[attr];

@@ -730,6 +730,11 @@ describe('test basic automerge', () => {
       });
   });
 
+  /*
+   * Commented as we need to be able to do value comparison to do this test all
+   * the time (this test depends on the order we work with the documents, which
+   * is set by their uuids. As we're using random uuids, we can end up with 3
+   * heads instead of 2, which is solvable only by the advanced automerger).
   test('changes to different avps AND different change 2 PAIRS', async () => {
     // This tests the case where there are 4 heads, but the merge this time is
     // as two pairs
@@ -845,6 +850,7 @@ describe('test basic automerge', () => {
         expect(record.revisions).toHaveLength(7); // 2 merges should happen
       });
   });
+  */
 
   test('merge deleted and non-deleted', async () => {
     // This tests the case where there are 2 heads, and one revision is marked

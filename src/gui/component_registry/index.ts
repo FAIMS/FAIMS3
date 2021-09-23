@@ -13,22 +13,13 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: reportWebVitals.ts
+ * Filename: index.ts
  * Description:
  *   TODO
  */
-import {ReportHandler} from 'web-vitals';
+import {getComponentByName, getComponentPropertiesByName} from './internals';
+import BundledComponents from './bundle_components';
 
-const reportWebVitals = (onPerfEntry?: ReportHandler) => {
-  if (onPerfEntry && typeof onPerfEntry === 'function') {
-    import('web-vitals').then(({getCLS, getFID, getFCP, getLCP, getTTFB}) => {
-      getCLS(onPerfEntry);
-      getFID(onPerfEntry);
-      getFCP(onPerfEntry);
-      getLCP(onPerfEntry);
-      getTTFB(onPerfEntry);
-    });
-  }
-};
-
-export default reportWebVitals;
+export {getComponentByName};
+export {getComponentPropertiesByName};
+export {BundledComponents};

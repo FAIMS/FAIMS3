@@ -55,6 +55,7 @@
     "@testing-library/react": "^11.2.5",
     "@testing-library/user-event": "^12.8.3",
     "@types/jest": "^26.0.21",
+    "@types/mustache": "^4.1.2",
     "@types/node": "^14.11.2",
     "@types/pouchdb": "^6.4.0",
     "@types/react": "^17.0.3",
@@ -68,6 +69,7 @@
     "jsonpointer": "^4.1.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
+    "mustache": "^4.2.0",
     "pouchdb": "^7.2.2",
     "pouchdb-adapter-memory": "^7.2.2",
     "pouchdb-find": "^7.2.2",
@@ -77,7 +79,6 @@
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.3",
     "react-share": "^4.4.0",
-    "typescript": "^4.2.3",
     "uuid": "^8.1.0",
     "web-vitals": "^1.1.1",
     "yup": "^0.32.9"
@@ -89,6 +90,6 @@
     "gts": "^3.1.0",
     "jest": "^26.6.0",
     "jest-fast-check": "^1.0.2",
-    "typescript": "^4.0.3"
+    "typescript": "^4.4.3"
   }
 }

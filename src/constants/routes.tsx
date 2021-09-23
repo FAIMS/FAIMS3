@@ -28,11 +28,15 @@ export const NOT_FOUND = '/not-found';
 export const HOME = '/home';
 export const PROJECT_LIST = '/projects';
 export const PROJECT = '/projects/';
+export const PROJECT_SETTINGS = '/settings';
 export const RECORD_LIST = '/records';
 export const RECORD = '/records/';
 export const RECORD_CREATE = '/new-record';
+export const RECORD_TYPE = '/type/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
+export const AUTOINCREMENT_LIST = '/autoincrements';
+export const AUTOINCREMENT = '/autoincrements/';
 
 export function getRecordRoute(
   project_id: ProjectID,

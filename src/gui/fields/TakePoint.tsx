@@ -20,12 +20,19 @@
 
 import React from 'react';
 import {FieldProps} from 'formik';
-import Button from '@material-ui/core/Button';
+import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins} from '@capacitor/core';
 
 const {Geolocation} = Plugins;
 
-export class TakePoint extends React.Component<FieldProps> {
+export class TakePoint extends React.Component<
+  FieldProps &
+    ButtonProps & {
+      ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
+      ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+      NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+    }
+> {
   async takePoint() {
     try {
       const coordinates = await Geolocation.getCurrentPosition();
@@ -35,7 +42,7 @@ export class TakePoint extends React.Component<FieldProps> {
         longitude: coordinates.coords.longitude,
       };
       this.props.form.setFieldValue(this.props.field.name, pos);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
@@ -46,24 +53,27 @@ export class TakePoint extends React.Component<FieldProps> {
     let postext = <span>No point taken.</span>;
     if (pos !== null) {
       postext = (
-        <span>
+        <span {...this.props['ValueTextProps']}>
           Lat: {pos.latitude}; Long: {pos.longitude}
         </span>
       );
     }
-    let error_text = <p></p>;
+    let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
-      error_text = <p>{error}</p>;
+      error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
     }
     return (
       <div>
         <Button
           variant="outlined"
           color={'primary'}
+          style={{marginRight: '10px'}}
+          {...this.props}
+          // Props from the metadata db will overwrite the above
+          // style attributes, but not overwrite the below onclick.
           onClick={async () => {
             await this.takePoint();
           }}
-          style={{marginRight: '10px'}}
         >
           Take Point
         </Button>

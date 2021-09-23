@@ -25,7 +25,14 @@ import {
   ProjectMetaObject,
   ProjectObject,
   ProjectsList,
+  AutoIncrementReference,
 } from './datamodel/database';
+import {
+  add_autoincrement_reference_for_project,
+  get_local_autoincrement_state_for_field,
+  set_local_autoincrement_state_for_field,
+  create_new_autoincrement_range,
+} from './datamodel/autoincrement';
 import {Record, ProjectUIModel} from './datamodel/ui';
 import {setProjectMetadata} from './projectMetadata';
 import {upsertFAIMSData} from './data_storage';
@@ -36,8 +43,8 @@ const example_records: {
   default_astro_sky: [
     {
       record_id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
-      revision_id: '1',
-      type: '??:??',
+      revision_id: null,
+      type: 'astro_sky::main',
       created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -59,8 +66,8 @@ const example_records: {
     },
     {
       record_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
-      revision_id: '1',
-      type: '??:??',
+      revision_id: null,
+      type: 'astro_sky::main',
       created: randomDate(new Date(2012, 0, 1), new Date()),
       created_by: 'John Smith',
       updated: randomDate(new Date(2021, 0, 1), new Date()),
@@ -80,6 +87,20 @@ const example_records: {
         'radio-group-field': '1',
       },
     },
+    {
+      record_id: '9a0782ba-937b-4f24-8489-58cd653eca88',
+      revision_id: null,
+      type: 'astro_sky::photolog',
+      created: randomDate(new Date(2012, 0, 1), new Date()),
+      created_by: 'Leia',
+      updated: randomDate(new Date(2021, 0, 1), new Date()),
+      updated_by: 'Luke',
+      data: {
+        'int-field': 20,
+        'select-field': ['EUR'],
+        'checkbox-field': true,
+      },
+    },
   ],
 };
 
@@ -88,6 +109,18 @@ function randomDate(start: Date, end: Date) {
     start.getTime() + Math.random() * (end.getTime() - start.getTime())
   );
 }
+
+const example_autoincrement_references: {
+  [key: string]: AutoIncrementReference[];
+} = {
+  default_astro_sky: [
+    {
+      project_id: 'default_astro_sky',
+      form_id: 'default', // TODO: This needs sorting
+      field_id: 'basic-autoincrementer-field',
+    },
+  ],
+};
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
   default_astro_sky: {
@@ -404,18 +437,30 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
               {
                 value: '1',
                 label: '1',
+                RadioProps: {
+                  id: 'radio-group-field-1',
+                },
               },
               {
                 value: '2',
                 label: '2',
+                RadioProps: {
+                  id: 'radio-group-field-2',
+                },
               },
               {
                 value: '3',
                 label: '3',
+                RadioProps: {
+                  id: 'radio-group-field-3',
+                },
               },
               {
                 value: '4',
                 label: '4',
+                RadioProps: {
+                  id: 'radio-group-field-4',
+                },
               },
             ],
           },
@@ -429,34 +474,116 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         // validationSchema: [['yup.number'], ['yup.lessThan', 2]],
         initialValue: '3',
       },
+      'hrid-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'TemplatedStringField',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'hrid-field',
+          id: 'hrid-field',
+          helperText: 'Human Readable ID',
+          variant: 'outlined',
+          required: true,
+          template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
+          InputProps: {
+            type: 'text', // must be a valid html type
+          },
+          InputLabelProps: {
+            label: 'Human Readable ID',
+          },
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: '',
+      },
+      'basic-autoincrementer-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'BasicAutoIncrementer',
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
+        'component-parameters': {
+          name: 'basic-autoincrementer-field',
+          id: 'basic-autoincrementer-field',
+          variant: 'outlined',
+          required: true,
+          num_digits: 5,
+          form_id: 'default', // TODO: sort out this
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: null,
+      },
+      'related-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'RelatedRecordSelector',
+        'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'related-field',
+          id: 'related-field',
+          helperText: 'Select a Photolog',
+          variant: 'outlined',
+          required: true,
+          related_type: 'astro_sky::photolog',
+          relation_type: 'faims-core::Child',
+          InputProps: {
+            type: 'text', // must be a valid html type
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Human Readable ID',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: '',
+      },
     },
+    viewsets: {
+      'astro_sky::main': {
+        views: ['start-view', 'next-view'],
+      },
+      'astro_sky::photolog': {
+        views: ['next-view', 'photo-view'],
+      },
+    },
+    visible_types: ['astro_sky::main', 'astro_sky::photolog'],
     views: {
       'start-view': {
+        label: 'Main',
         fields: [
+          'hrid-field',
+          'basic-autoincrementer-field',
           'take-point-field',
           'bad-field',
           'action-field',
           'email-field',
+          'related-field',
           'str-field',
           'multi-str-field',
           'int-field',
-          'select-field',
           'multi-select-field',
           'checkbox-field',
           'radio-group-field',
-          // 'bool-field',
-          // 'date-field',
-          // 'time-field',
-        ], // ordering sets appearance order
+        ],
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
+      'next-view': {
+        label: 'Common',
+        next_label: 'Done!',
+        fields: ['int-field', 'select-field'],
+      },
+      'photo-view': {
+        label: 'Exclusive Photo view',
+        fields: ['checkbox-field'],
+      },
     },
-
-    start_view: 'start-view',
   },
   default_projectB: {
     fields: {},
+    viewsets: {
+      'projectB::default': {
+        views: ['start-view'],
+      },
+    },
+    visible_types: ['projectB::default'],
     views: {
       'start-view': {
         fields: [
@@ -468,13 +595,16 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           // 'time-field',
         ], // ordering sets appearance order
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
     },
-    start_view: 'start-view',
   },
   default_projectC: {
     fields: {},
+    viewsets: {
+      'projectC::default': {
+        views: ['start-view'],
+      },
+    },
+    visible_types: ['projectC::default'],
     views: {
       'start-view': {
         fields: [
@@ -486,10 +616,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           // 'time-field',
         ], // ordering sets appearance order
       },
-      'next-view': 'another-view-id', // either this gets handled by a component, or we stick it here
-      'next-view-label': 'Done!',
     },
-    start_view: 'start-view',
   },
 };
 
@@ -622,7 +749,7 @@ export async function setupExampleDirectory(
     let current_rev: {_rev?: undefined | string} = {};
     try {
       current_rev = {_rev: (await directory_db.get(listings_object._id))._rev};
-    } catch (err) {
+    } catch (err: any) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
         throw err;
@@ -649,7 +776,7 @@ export async function setupExampleActive(
     let current_rev: {_rev?: undefined | string} = {};
     try {
       current_rev = {_rev: (await active_db.get(doc._id))._rev};
-    } catch (err) {
+    } catch (err: any) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
         throw err;
@@ -682,7 +809,7 @@ export async function setupExampleListing(
     let current_rev: {_rev?: undefined | string} = {};
     try {
       current_rev = {_rev: (await projects_db.get(project._id))._rev};
-    } catch (err) {
+    } catch (err: any) {
       if (err.message !== 'missing') {
         //.reason may be 'deleted' or 'missing'
         throw err;
@@ -708,7 +835,8 @@ export async function setupExampleData(projname: string) {
       try {
         await upsertFAIMSData(projname, obs);
       } catch (err) {
-        console.error(err);
+        console.error('databases needs cleaning...');
+        console.debug(err);
       }
     }
   }
@@ -718,9 +846,49 @@ export async function setupExampleProjectMetadata(
   projname: string,
   meta_db: PouchDB.Database<ProjectMetaObject>
 ) {
-  console.log(await setUiSpecForProject(meta_db, example_ui_specs[projname]));
-  for (const key in example_project_metadata) {
-    await setProjectMetadata(projname, key, example_project_metadata[key]);
+  const example_ui_spec = example_ui_specs[projname];
+  if (example_ui_spec === undefined) {
+    console.error(`Unable to find example_ui_spec for ${projname}`);
+  } else {
+    try {
+      console.log(await setUiSpecForProject(meta_db, example_ui_spec));
+    } catch (err) {
+      console.error('databases needs cleaning...');
+      console.debug(err);
+    }
+    for (const key in example_project_metadata) {
+      try {
+        await setProjectMetadata(projname, key, example_project_metadata[key]);
+      } catch (err) {
+        console.error('databases needs cleaning...');
+        console.debug(err);
+      }
+    }
+  }
+  const example_autoincrement_refs = example_autoincrement_references[projname];
+  if (example_autoincrement_refs === undefined) {
+    console.error(`Unable to find example_autoincrement_refs for ${projname}`);
+  } else {
+    for (const ref of example_autoincrement_refs) {
+      try {
+        await add_autoincrement_reference_for_project(
+          ref.project_id,
+          ref.form_id,
+          ref.field_id
+        );
+        const new_range = create_new_autoincrement_range(0, 10000);
+        const doc = await get_local_autoincrement_state_for_field(
+          ref.project_id,
+          ref.form_id,
+          ref.field_id
+        );
+        doc.ranges.push(new_range);
+        await set_local_autoincrement_state_for_field(doc);
+      } catch (err) {
+        console.error('databases needs cleaning...');
+        console.debug(err);
+      }
+    }
   }
 }
 

@@ -26,6 +26,7 @@ import {
   LocalDBRemote,
   setLocalConnection,
 } from './databases';
+import {add_initial_listener} from './event-handler-registration';
 
 const syncingProjectListeners: (
   | [ProjectID, (syncing: boolean) => unknown]
@@ -45,15 +46,29 @@ export function listenSyncingProject(
 
 export function isSyncingProject(active_id: ProjectID) {
   if (data_dbs[active_id] === undefined) {
-    throw 'Projects not initialized yet';
+    // When the project starts syncing, it should trigger the listenSyncingProject
+    return false;
   }
 
   if (data_dbs[active_id].remote === null) {
-    throw 'Projects not yet syncing';
+    // When the project starts syncing, it should trigger the listenSyncingProject
+    return false;
   }
 
   return data_dbs[active_id].is_sync;
 }
+
+add_initial_listener(initializeEvents => {
+  // If isSyncingProject happens to return before project_local is emitted,
+  // (Which in practice never happens) this will ensure that the state change
+  // is propagated
+  initializeEvents.on('project_local', active => {
+    const is_syncing = isSyncingProject(active._id);
+    syncingProjectListeners
+      .filter(l => l !== undefined && l![0] === active._id)
+      .forEach(l => l![1](is_syncing));
+  });
+});
 
 export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
   if (syncing === isSyncingProject(active_id)) {

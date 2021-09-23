@@ -70,8 +70,8 @@ export interface LocalDBRemote<Content extends {}> {
   options: DBReplicateOptions;
   create_handler: (
     remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler;
-  handler: null | SyncHandler;
+  ) => SyncHandler<Content>;
+  handler: null | SyncHandler<Content>;
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -107,7 +107,7 @@ export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 /**
  * This contains any local app state we want to keep across sessions
  */
-export const local_state_db = new PouchDB('local_state');
+export const local_state_db = new PouchDB('local_state', local_pouch_options);
 
 /**
  * Each listing has a Projects database and Users/People DBs
@@ -201,7 +201,7 @@ export function ensure_synced_db<Content extends {}>(
   global_dbs: LocalDBList<Content>,
   handler: (
     remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler,
+  ) => SyncHandler<Content>,
   options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
@@ -279,7 +279,10 @@ export function setLocalConnection<Content extends {}>(
 
     db_info.remote.connection = connection;
     db_info.remote.handler = db_info.remote.create_handler(db_info);
-    db_info.remote.handler.listen(connection);
+    db_info.remote.handler.listen(
+      connection,
+      db_info.local.changes({since: 'now', include_docs: true})
+    );
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
     db_info.remote.handler!.detach(db_info.remote.connection);

@@ -13,22 +13,30 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: reportWebVitals.ts
+ * Filename: queries.ts
  * Description:
  *   TODO
  */
-import {ReportHandler} from 'web-vitals';
+import {getDataDB} from '../sync';
+import {ProjectID, FAIMSTypeName} from '../datamodel/core';
+import {RecordReference} from '../datamodel/ui';
 
-const reportWebVitals = (onPerfEntry?: ReportHandler) => {
-  if (onPerfEntry && typeof onPerfEntry === 'function') {
-    import('web-vitals').then(({getCLS, getFID, getFCP, getLCP, getTTFB}) => {
-      getCLS(onPerfEntry);
-      getFID(onPerfEntry);
-      getFCP(onPerfEntry);
-      getLCP(onPerfEntry);
-      getTTFB(onPerfEntry);
-    });
-  }
-};
-
-export default reportWebVitals;
+export async function getAllRecordsOfType(
+  project_id: ProjectID,
+  type: FAIMSTypeName
+): Promise<RecordReference[]> {
+  const datadb = getDataDB(project_id);
+  const res = await datadb.find({
+    selector: {
+      record_format_version: 1,
+      type: type,
+    },
+  });
+  return res.docs.map(o => {
+    return {
+      project_id: project_id,
+      record_id: o._id,
+      record_label: o._id, // TODO: decide how we're getting HRIDs from db
+    };
+  });
+}

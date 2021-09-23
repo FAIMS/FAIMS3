@@ -66,10 +66,25 @@ describe('roundtrip reading and writing to db', () => {
     [
       fc.fullUnicodeString(),
       fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // fields
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // views
-      fc.fullUnicodeString(), // start-view
+      fc.dictionary(
+        fc.fullUnicodeString(),
+        fc.record({
+          label: fc.fullUnicodeString(),
+          next_label: fc.fullUnicodeString(),
+          fields: fc.array(fc.fullUnicodeString()),
+        })
+      ), // views
+      fc.dictionary(
+        fc.fullUnicodeString(),
+        fc.record({
+          label: fc.fullUnicodeString(),
+          submit_label: fc.fullUnicodeString(),
+          views: fc.array(fc.fullUnicodeString()),
+        })
+      ), // viewsets
+      fc.array(fc.fullUnicodeString()), // visible_types
     ],
-    async (project_id, fields, views, start_view) => {
+    async (project_id, fields, views, viewsets, visible_types) => {
       await cleanProjectDBS();
       fc.pre(projdbs !== {});
 
@@ -77,7 +92,8 @@ describe('roundtrip reading and writing to db', () => {
         _id: UI_SPECIFICATION_NAME,
         fields: fields,
         views: views,
-        start_view: start_view,
+        viewsets: viewsets,
+        visible_types: visible_types,
       };
 
       const meta_db = getProjectDB(project_id);
