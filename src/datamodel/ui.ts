@@ -98,6 +98,7 @@ export interface ComponentRegistryProperties {
   human_readable_name: string;
   description: string;
   component: FAIMSFormField;
+  componentname:string;
   builder_component: FAIMSBuilderFormField;
   icon: FAIMSBuilderIcon;
 }

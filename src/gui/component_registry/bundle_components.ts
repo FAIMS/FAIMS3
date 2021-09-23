@@ -33,7 +33,7 @@ import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
 import {registerComponent, setupComponentProperties} from './internals';
-
+import BookmarkIcon from '@material-ui/icons/Bookmark';
 /*
  * This should be enough to make typescript/the build system happy
  */
@@ -61,7 +61,7 @@ registerComponent(
 registerComponent(
   'formik-material-ui',
   'TextField',
-  setupComponentProperties('', '', FormikTextField)
+  setupComponentProperties('HTML input field', 'text plus sepcial characters', FormikTextField)
 );
 registerComponent(
   'formik-material-ui',
@@ -76,12 +76,12 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties('', '', FAIMSSelect)
+  setupComponentProperties('Select', '', FAIMSSelect,'FAIMSSelect')
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties('', '', FAIMSCheckbox)
+  setupComponentProperties('', '', FAIMSCheckbox,'FAIMSCheckbox')
 );
 registerComponent(
   'faims-custom',

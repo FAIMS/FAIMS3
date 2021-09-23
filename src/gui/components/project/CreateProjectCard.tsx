@@ -55,6 +55,9 @@ const useStyles = makeStyles((theme) => ({
     // border:'1px solid #e1e4e8',
     flexGrow: 1,
     padding: theme.spacing(2),
+  },
+  settingtab:{
+    backgroundColor:'#e1e4e8',
   }
 }));
 
@@ -366,7 +369,7 @@ export default function CreateProjectCard(props:any) {
                     <Grid item sm={4} xs={12} >
                       {getfieldsFromCom(formcomponent,'general',formProps)}
                     </Grid>
-                    <Grid item sm={1} xs={3} >          
+                    <Grid item sm={1} xs={3} className={classes.settingtab}>          
                       <SettingCard handelonClick={handelonClickSetting} key_id={formcomponent.id}/>  
                     </Grid>
                     <Grid item sm={7} xs={9}>

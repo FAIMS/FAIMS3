@@ -75,12 +75,14 @@ export function setupComponentProperties(
   human_readable_name: string,
   description: string,
   component: FAIMSFormField,
+  componentname: string| null = null,
   builder_component: FAIMSBuilderFormField | null = null,
   icon: FAIMSBuilderIcon | null = null
 ): ComponentRegistryProperties {
   const props: ComponentRegistryProperties = {
     human_readable_name: human_readable_name,
     description: description,
+    componentname:componentname!==null?componentname:'TextField',
     component: component,
     builder_component:
       builder_component !== null
@@ -97,3 +99,4 @@ function getNameSpace(namespace: string) {
   }
   return componentRegistry[namespace];
 }
+

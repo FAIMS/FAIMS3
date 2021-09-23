@@ -9,7 +9,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme) => ({
   settiglist: {
-    backgroundColor:'#e1e4e8',
+    // backgroundColor:'#e1e4e8',
     marginBottom:2,
     '&$selected': {
       backgroundColor: 'red',

@@ -26,3 +26,7 @@ export function getDefaultBuilderComponent() {
 export function getDefaultBuilderIcon() {
   return <BrokenImageIcon />;
 }
+
+export function getDefaultUiSpec(){
+  return '';
+}

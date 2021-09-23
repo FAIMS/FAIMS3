@@ -1,8 +1,7 @@
 import React from 'react';
 import {Grid,CardActionArea,CardActions,CardContent,Typography,Card,Button} from '@material-ui/core';
-import BookmarkIcon from '@material-ui/icons/Bookmark';
-import BeenhereIcon from '@material-ui/icons/Beenhere';
 import { makeStyles } from '@material-ui/core/styles';
+import {fields} from '../data/uiFieldsRegistry'
 
 const initialValues = {
 	title:'',
@@ -26,12 +25,9 @@ const useStyles = makeStyles((theme) => ({
     },
 
 }));
-export const fields=
-	[{name:'Text',des:'text plus sepcial characters',id:'TextField',icon:<BookmarkIcon />},
-	{name:'Text',des:'text plus sepcial characters',id:'TextField',icon:<BeenhereIcon />}
-	]
 
-	
+
+	console.log(fields)
 
 function FieldCard(props:any){
 	const  { className,handelonClick,fields, ...other } = props;
@@ -48,9 +44,9 @@ function FieldCard(props:any){
 				        		</Grid>
 				        		<Grid item sm={10} xs={12} >
 						        <Typography variant="body2" component="p">
-						         {field.name}
+						         {field.human_readable_name}
 						          <br />
-						          {field.des}
+						          {field.description}
 						        </Typography>
 					        	</Grid>
 					        </Grid>
