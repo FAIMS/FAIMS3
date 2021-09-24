@@ -43,7 +43,7 @@ function oauth_redirect_url(
   params.append('state', JSON.stringify({listing_id: listing_id}));
   params.append('redirect_uri', 'http://localhost:3000/signin-return');
   params.append('base_url', mode.base_url);
-  return proxy + '?' + params.toString();
+  return proxy + '/auth/' + listing_id + '?' + params.toString();
 }
 
 function LoginButton(props: LoginButtonProps) {
