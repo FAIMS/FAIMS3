@@ -1,3 +1,25 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: TabTab.tsx
+ * Description:
+ *   TODO
+ */
+
+
+
 import React from 'react';
 import {Tab,Tabs,Hidden,Grid} from '@material-ui/core';
 import Icon from '@material-ui/core/Icon';
@@ -8,13 +30,6 @@ import {AddSectionButton,EditButton,TickButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
 import {gettabform} from '../data/ComponentSetting';
 
-// type CTabProps = {
-//   tabs:Array<string>
-//   tab_id:string;
-//   value:number;
-//   handleChange:any;
-//   handelonChangeLabel:any|null
-// };
 
 function a11yProps(tabname:any,index:any) {
   return {
@@ -39,7 +54,16 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-export function TabTab(props:any){
+type TabProps={
+  tabs:Array<string>;
+  tab_id:string;
+  value:number;
+  handleChange:any;
+  handelonChangeLabel?:any;
+
+}
+
+export function TabTab(props:TabProps){
 	const classes = useStyles();
   	const {tabs,tab_id,value,handleChange, ...other} = props
   	return (<Tabs
@@ -47,6 +71,7 @@ export function TabTab(props:any){
           onChange={handleChange}
           aria-label={tab_id}
           id={tab_id}
+          orientation={tab_id==='primarytab'?  "horizontal" :"vertical" }
       >
         {tabs.map((tab:any,index:number)=>(
           <Tab className={classes.root} key={`${tab_id}-${index}`} 
@@ -54,7 +79,7 @@ export function TabTab(props:any){
       </Tabs>);
 }
 
-export function TabEditable(props: any) {
+export function TabEditable(props: TabProps) {
   const classes = useStyles();
   const {tabs,tab_id,value,handleChange, ...other} = props
   const [tablists,setTablist]=useState<Array<any>>(tabs)
@@ -64,12 +89,6 @@ export function TabEditable(props: any) {
      setTablist(tabs);
     }, [tabs]);
 
-
- //  	const handleDoubleClick = (key:number) =>{
-	// 	const newtabs=tablists;
-	// 	newtabs[key]=false
-	// 	setTablist(newtabs)
-	// }
 
 	const handleEdit = (event:any) => {
 	  	setisedited(true)

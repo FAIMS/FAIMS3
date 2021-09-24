@@ -13,9 +13,14 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: project-create.tsx
+ * Filename: CreateProjectCard.tsx
  * Description:
- *   TODO
+ *   TODO: seperate the tabs to different files
+ *   TODO: edit Project is not working, can't read information for project
+ *   TODO: setup project information 
+ *     TODO: Info, design, preview, User, Behaviour, submit
+ *   TODO: swith the form component, need to change to drag element
+ *   TODO: sync into and save to DB(??)
  */
 import React from 'react';
 import { useState, useEffect } from 'react'
@@ -101,9 +106,6 @@ export default function CreateProjectCard(props:any) {
     useEffect(() => {
 
      setinit();
-     // if(project_id===''||project_id===null){
-     //    getnewdb();
-     // }
 
     }, []);
 
@@ -327,8 +329,8 @@ export default function CreateProjectCard(props:any) {
     }
 
     const submithandlerProject = (values:any) =>{
-
-      console.log(values)
+      //this function is to save project information 
+      //TODO currently just save for projectname so added getnewdb function here, need to update it
       if(project_id===''||project_id===null){
         getnewdb();
       }
@@ -388,14 +390,14 @@ export default function CreateProjectCard(props:any) {
               );
         }}
         </Formik>
-        <AddButton  onButtonClick={handleAddFieldButton}  text='ADD' />
+        <AddButton id='AddField'  onButtonClick={handleAddFieldButton}  text='ADD' />
         {isAddField?
         <Grid container className={classes.addfield} >
           <Grid item sm={11} xs={11}>
           <FieldsListCard cretenefield={handleAddField} />
           </Grid>
           <Grid item sm={1} xs={1} className={classes.newfield_button}>  
-            <CloseButton  onButtonClick={handleCloseFieldButton} text='X' />
+            <CloseButton id='ColseAddField'  onButtonClick={handleCloseFieldButton} text='X' />
           </Grid>
         </Grid>
         :''}

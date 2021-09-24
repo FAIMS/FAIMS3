@@ -30,3 +30,7 @@ export function getDefaultBuilderIcon() {
 export function getDefaultUiSpec(){
   return '';
 }
+
+export function getDefaultuiSpecProps(){
+  return '';
+}

@@ -1,3 +1,28 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: ComponentSetting.ts
+ * Description:
+ *   TODO: ADD function to pass and update validationschema
+ *   TODO: ADD function to pass and update access
+ *   TODO: FieldSettings is hardcode, need to get value from bundle_components
+ *   TODO: any type
+ *   TODO: newfromui is the function to get form components for edit notebook, NOT WORKING
+ */
+
+
 import {v4 as uuidv4} from 'uuid';
 import {getcomponent,convertuiSpecToProps,getsettingform} from './uiFieldsRegistry'
 const VISIBLE_TYPE='visible_types'
@@ -23,16 +48,16 @@ export const getfieldname = (name:string,label:string) =>{
 export const FieldSettings=(component:any,label:string,props:any)=>{
 	const fields=[
         {name:'',lable:'',type:'TextField',view:'general'},
-        {name:'label',lable:'Label',type:'TextField',view:'settings'},
-        {name:'helperText',lable:'Hit Text for Complete Form',type:'TextField',view:'settings'},
-        {name:'required',lable:'Check if is compusory',type:'CheckBox',view:'valid'},
-        {name:'validationSchema',lable:'',type:'TextField',view:'valid'},
-        {name:'access',lable:'access',type:'TextField',view:'access'},
-        {name:'annotation_label',lable:'annotation Label',type:'TextField',view:'notes'},
-        {name:'meta_type',lable:'Include Uncertainty',type:'CheckBox',view:'notes'},
-        {name:'meta_type_label',lable:'Uncertainty Label',type:'TextField',view:'notes'},
+        {name:'label',lable:'Label',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
+        {name:'helperText',lable:'Hit Text for Complete Form',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
+        {name:'required',lable:'Check if is compusory',namespace:'faims-custom',componentName:'Checkbox',view:'valid'},
+        {name:'validationSchema',lable:'',namespace:'formik-material-ui',componentName:'TextField',view:'valid'},
+        {name:'access',lable:'access',namespace:'formik-material-ui',componentName:'TextField',view:'access'},
+        {name:'annotation_label',lable:'annotation Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
+        {name:'meta_type',lable:'Include Uncertainty',namespace:'faims-custom',componentName:'Checkbox',view:'notes'},
+        {name:'meta_type_label',lable:'Uncertainty Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
         ]
-  const settingsform=getsettingform('')
+  const settingsform=getsettingform(component)
   const length=fields.length;
   if(settingsform.length>0){
     settingsform.map((field:any,index:number)=>fields[length+index]=field
@@ -50,14 +75,16 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
 		if(index===0) { 
 			fields_list[fieldname]=component;
 		}else {//field.type,
-			fields_list[fieldname]=getcomponent({'name':fieldname,label:field.lable,initialValue:props[field.name],placeholder:props[field.name]!==undefined?props[field.name].toString():field.name});
+			fields_list[fieldname]=getcomponent({'name':fieldname,label:field.lable,initialValue:props[field.name],namespace:field.namespace,componentName:field.componentName,placeholder:props[field.name]!==undefined?props[field.name].toString():field.name});
 		}
 		const view=field.view
+    if(!(component['component-name']==='TemplatedStringField'&&field.name==='required'))
 			views[view]['fields']=[...views[view]['fields'],fieldname]
 			views[view]['uidesign']='settings'
 		
 	})
 	views['start-view']={'fields':fields_label,'uidesign':'settings'}
+  console.log(views)
 	return {
 		fields:fields_list,
     'views':views ,
@@ -251,7 +278,7 @@ const updatefield = (props:any) =>{
     components[formuiview].map((item:any)=>{
             item.id===updatedfield.index?item['uiSpec']['fields']=changeuifield(newfieldname,newfield,item['uiSpec']['fields']):item
           }) 
-    newviews['fields']=fields
+    // newviews['fields']=fields
   }
   return {newviews,components}
 

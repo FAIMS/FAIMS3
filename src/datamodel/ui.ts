@@ -93,12 +93,14 @@ export interface RecordReference {
 export type FAIMSFormField = any;
 export type FAIMSBuilderFormField = any;
 export type FAIMSBuilderIcon = any;
+export type FAIMSUiSpec = any;
 
 export interface ComponentRegistryProperties {
   human_readable_name: string;
   description: string;
   component: FAIMSFormField;
   componentname:string;
+  uiSpecProps:FAIMSUiSpec;
   builder_component: FAIMSBuilderFormField;
   icon: FAIMSBuilderIcon;
 }

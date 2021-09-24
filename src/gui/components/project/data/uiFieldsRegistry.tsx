@@ -1,71 +1,111 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: uiFieldsRegistry.tsx
+ * Description:
+ *   TODO: ADD function to pass and update validationschema
+ *   TODO: ADD function to pass and update access
+ *   TODO: function getfields Field icon not working
+ */
+
 import {getComponentByName,getComponentPropertiesByName} from '../../../component_registry';
 
-// export function setupComponentuiSpec(props:any
-//   ):string{
-//   const uiSpec=
-//   return uiSpec;
-// }
-export const fields=
-    [{name:'Text',des:'text plus sepcial characters',...getComponentPropertiesByName('formik-material-ui','TextField'),id:{namespace:'formik-material-ui',componentName:'TextField'}},
-    // {name:'Checkbox',des:'text plus sepcial characters',id:'CheckBox',...getComponentPropertiesByName('formik-material-ui','TextField')},
-    // {name:'MultiText',des:'text plus sepcial characters',id:'MultiTextField',...getComponentPropertiesByName('formik-material-ui','TextField')},
-    // {name:'Email',des:'text plus sepcial characters',id:'EmailField',...getComponentPropertiesByName('formik-material-ui','TextField')},
-    // {name:'Integer',des:'text plus sepcial characters',id:'IntegerField',...getComponentPropertiesByName('formik-material-ui','TextField')},
-    // {name:'Select',des:'text plus sepcial characters',id:'SelectBox',...getComponentPropertiesByName('formik-material-ui','TextField')},
-    // {name:'MutiSelect',des:'text plus sepcial characters',id:'MutiSelectBox',...getComponentPropertiesByName('formik-material-ui','TextField')}
-    ]
+type componentlist={namespace:string;componentName:string}
 
+const componentarray:Array<componentlist>=[
+{namespace:'formik-material-ui',componentName:'TextField'},
+{namespace:'faims-custom',componentName:'Select'},
+{namespace:'faims-custom',componentName:'Checkbox'},
+{namespace:'faims-custom',componentName:'ActionButton'},
+{namespace:'faims-custom',componentName:'TakePoint'},
+{namespace:'faims-custom',componentName:'TemplatedStringField'}]
 
-const componentarray=[{namespace:'formik-material-ui',componentName:'TextField'}]
+export const getfields = () => {
+    const fields:any={}
+    let fieldtabs:Array<string>=[]
+    componentarray.map((component:componentlist)=>{
+        const props=getComponentPropertiesByName(component.namespace,component.componentName)
+        
+        
+        if(!fieldtabs.includes(props.componentname)) {
+            fields[props.componentname]=[{...props}]
+            fieldtabs=[...fieldtabs,props.componentname]
+        }
+        else fields[props.componentname]=[...fields[props.componentname],{...props}]
+    }
+    )
+
+    return {fields,fieldtabs};
+}
 const accessgroup=['admin','moderator','team']
 
-export const getcomponent=(preprops:any)=>{
-    const props={...preprops,namespace:'formik-material-ui',componentName:'TextField'}
-    // if(type==='CheckBox'||type==='checkbox') return Checkbox(props);
-    // if(type==='EmailField') return EmailField(props);
-    // if(type==='MultiTextField') return MultiTextField(props);
-    // if(type==='IntegerField'||type==='number') return IntegerField(props);
-    // if(type==='SelectBox'||type==='Select'||type==='select') return SelectBox(props);
-    // if(type==='MutiSelectBox') return MutiSelectBox(props);
-    return TextField(props);
+export const getcomponent=(props:any)=>{
+
+    if(props.namespace===undefined) {
+        const newprops=getComponentPropertiesByName('formik-material-ui','TextField');
+        return TextField({...props,...newprops['uiSpecProps']})
+    } 
+    if(props.componentName==='Checkbox') return Checkbox(props);
+    if(props.componentName==='TakePoint') return SpecialField(props);
+    if(props.componentName==='TextField'||props.componentName==='Select') return TextField(props);
+    return SpecialField(props);
+
 }
 
-export const getsettingform = (component:string) =>{
-    if(component==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings'}]
-    if(component==='MultiTextField') return [{name:'multirows',lable:'Number of rows',type:'IntegerField',view:'settings'}]
+export const getsettingform = (component:any) =>{
+    if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings'}]
+    if(component['component-parameters']['multiline']===true) return [{name:'multirows',lable:'Number of rows',type:'IntegerField',view:'settings'}]
     return []
 }
 
-// export const updatecomponent=(component:any,props:any)=>{
-//     //{...compoent,props.type:props.value}
-//     return false;
-// }
+
 export const convertuiSpecToProps =(fielduiSpec:any) =>{
-    const props:any={
-    'component-name':fielduiSpec['component-name'],
+    const {name,select,helperText,InputLabelProps,InputProps,FormHelperTextProps,ElementProps,SelectProps,required,...others}=fielduiSpec['component-parameters']
+    let props:any={} //TODO: add extend filed here from component Specfic
+    props={...others,...{
+    'componentName':fielduiSpec['component-name'],
+    'namespace':fielduiSpec['component-namespace'],
     'name':fielduiSpec['component-parameters']['name'],
-    'label':["TextField","Select"].includes(fielduiSpec['component-name'])?fielduiSpec['component-parameters']['InputLabelProps']['label']:fielduiSpec['component-parameters']['FormControlLabelProps']['label'],//fielduiSpec['component-parameters']['FormControlLabelProps']['label']
-    'helperText':["TextField","Select"].includes(fielduiSpec['component-name'])?fielduiSpec['component-parameters']['InputLabelProps']['helperText']:'',   // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children']
-    'initialValue':fielduiSpec['initialValue'],
+    'type_return':fielduiSpec['type-returned'],
     'required':fielduiSpec['component-parameters']['required'],
-    'type':fielduiSpec['component-parameters']['InputProps']!==undefined?fielduiSpec['component-parameters']['InputProps']['type']:fielduiSpec['component-parameters']['type'],
+    'initialValue':fielduiSpec['initialValue'],
+    //'validationSchema':fielduiSpec['validationSchema'],  TODO: ADD function to pass and update validationschema
     'annotation_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['annotation_label']:'annotation',
     'meta_type':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['include']:false,
     'meta_type_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['label']:'',
-    'access':fielduiSpec['access'],
-    'multiline':fielduiSpec['component-parameters']['multiline']??false,
+    'access':fielduiSpec['access'],  //TODO: ADD function to pass and update access
+    'select':fielduiSpec['component-parameters']['select']===true?true:false,
+    'label':fielduiSpec['component-parameters']['InputLabelProps']!==undefined?fielduiSpec['component-parameters']['InputLabelProps']['label']:fielduiSpec['component-parameters']['FormControlLabelProps']!==undefined?fielduiSpec['component-parameters']['FormControlLabelProps']['label']:'',//fielduiSpec['component-parameters']['FormControlLabelProps']['label']
+    'helperText':fielduiSpec['component-parameters']['helperText']!==undefined?fielduiSpec['component-parameters']['helperText']:fielduiSpec['component-parameters']['FormHelperTextProps']['children'],   // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children'] 
+    'type':fielduiSpec['component-parameters']['InputProps']!==undefined?fielduiSpec['component-parameters']['InputProps']['type']:fielduiSpec['component-parameters']['type'],
+    'multiline':fielduiSpec['component-parameters']['multiline']===true?true:false,
     'multselect':fielduiSpec['component-name']==='Select'?fielduiSpec['component-parameters']['SelectProps']['multiple']:false,
     'multirows':fielduiSpec['component-parameters']['multiline']!==undefined&&fielduiSpec['component-parameters']['multiline']!==false?fielduiSpec['component-parameters']['InputProps']['rows']:1,
-    }
+    }}
+    if(fielduiSpec['component-parameters']['select']===true)
+    props['options']=fielduiSpec['component-parameters']['ElementProps']['options']
+    
     return props;
 }
 
 
 const FieldModel =(props:any)=>{
-	const {name,namespace,componentName,type_return,required,initialValue,validationSchema,multi,multirows,options,annotation_label,multselect,meta_type,meta_type_label,access,...others}=props
+	const {name,namespace,componentName,type_return,required,initialValue,validationSchema,multiline,multirows,select,options,multselect,annotation_label,meta_type,meta_type_label,access,...others}=props
 	let isrequired=false;
 	if(required===true) isrequired=required
-	return {
+	const uiSpec={
         'component-namespace': namespace, // this says what web component to use to render/acquire value from
         'component-name': componentName,
         'type-returned': type_return, // matches a type in the Project Model
@@ -75,13 +115,25 @@ const FieldModel =(props:any)=>{
           name: name,
           id: name,          
           variant: 'outlined',
-          required: isrequired,          
+          required: isrequired,
           ...others
         },
         'alert':false,
         validationSchema: validationSchema??[],
         initialValue: initialValue??'',
       }
+      if(select===true) {
+        uiSpec['component-parameters']['select']=true
+        uiSpec['component-parameters']['ElementProps']={options:options??[{
+                value: 'Default',
+                label: 'Default',
+              }]}
+        uiSpec['component-parameters']['SelectProps']={multiple: props.multselect??false,}
+    if(props.multselect===true) uiSpec.initialValue=initialValue??['']
+
+        }
+    if(componentName==='TakePoint') uiSpec.initialValue=initialValue??null
+    return uiSpec
 }
 
 const getspec = (type:string) => {
@@ -90,21 +142,20 @@ const getspec = (type:string) => {
     if(type==='SelectBox') return {type_return:'faims-core::Integer',validationSchema:[['yup.number'],],type:'number'}
     return {type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'}
 }
-const TextFieldslist = (type:string,props:any) =>{
+const TextField = (props:any) =>{
     const {label,helperText,validationSchema,initialValue,...others}=props;
-    const spec=getspec(type)
     return FieldModel({
         namespace:props.namespace,
-        type_return:spec.type_return,
+        type_return:props.type_return,
         componentName:props.componentName,
         InputProps: {
-            type: spec.type,
+            type: props.type,
             rows: props.multirows??1,
           },
         fullWidth: true,
-        multiline: props.multi??false,
-        validationSchema:validationSchema??spec.validationSchema,
-        helperText:helperText,
+        multiline: props.multiline??false,
+        validationSchema:validationSchema??props.validationSchema,
+        helperText:helperText??'',
         InputLabelProps: {
             label: label,
           },
@@ -112,53 +163,55 @@ const TextFieldslist = (type:string,props:any) =>{
         ...others}); 
 }
 
-const TextField=(props:any)=> {
-	return TextFieldslist('TextField',props)
-	}
+const SpecialField = (props:any) =>{
+    const {label,helperText,validationSchema,initialValue,...others}=props;
+    return FieldModel({
+        namespace:props.namespace,
+        type_return:props.type_return,
+        componentName:props.componentName,
+        fullWidth: true,
+        validationSchema:validationSchema??props.validationSchema,
+        helperText:helperText??'',
+        initialValue:initialValue,
+        ...others}); 
+}
+
+// const TextField=(props:any)=> {
+// 	return TextFieldslist('TextField',props)
+// 	}
 
 
-const EmailField=(props:any)=> {
-  return TextFieldslist('EmailField',props)
-  }
+// const EmailField=(props:any)=> {
+//   return TextFieldslist('EmailField',props)
+//   }
 
-const MultiTextField=(props:any)=> {
-    const newprops=props
-    newprops.multi=true;
-    newprops.multirows=4;
-    return TextFieldslist('MultiTextField',newprops)
-  }
+// const MultiTextField=(props:any)=> {
+//     const newprops=props
+//     newprops.multiline=true;
+//     newprops.multirows=4;
+//     return TextFieldslist('MultiTextField',newprops)
+//   }
 
-const IntegerField=(props:any)=> {
-  return TextFieldslist('IntegerField',props)
-  }
+// const IntegerField=(props:any)=> {
+//   return TextFieldslist('IntegerField',props)
+//   }
 
 const Checkbox=(props:any)=> {
 	const {label,helperText,validationSchema,initialValue,...others}=props;
-	return FieldModel({namespace:'faims-custom',type_return:'faims-core::Bool',component:'Checkbox',type:'checkbox',validationSchema:[
+	return FieldModel({namespace:'faims-custom',type_return:'faims-core::Bool',componentName:'Checkbox',type:'checkbox',validationSchema:[
           validationSchema??['yup.bool'],
         ],FormControlLabelProps: {
             label:label,
           },initialValue:false,FormHelperTextProps: {children:helperText??''},...others});
 	}
 
-const SelectBox=(props:any)=> {
-    const {label,helperText,validationSchema,initialValue,...others}=props;
-    const newprops=props;
-    const options=[{
-                value: 'Default',
-                label: 'Default',
-              }]
-    newprops.select=true
-    newprops.SelectProps={multiple: props.multselect??false,}
-    newprops.ElementProps={options:props.options??options}
-    return TextFieldslist('IntegerField',props);
-    }
-const MutiSelectBox=(props:any) =>{
-    const newprops=props;
-    newprops.multselect=true;
-    newprops.initialValue=['Default'];
-    return SelectBox(newprops);
-}
+
+// const MutiSelectBox=(props:any) =>{
+//     const newprops=props;
+//     newprops.multselect=true;
+//     newprops.initialValue=['Default'];
+//     return SelectBox(newprops);
+// }
 
 
 const compoents={

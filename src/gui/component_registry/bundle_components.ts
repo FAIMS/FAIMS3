@@ -61,7 +61,7 @@ registerComponent(
 registerComponent(
   'formik-material-ui',
   'TextField',
-  setupComponentProperties('HTML input field', 'text plus sepcial characters', FormikTextField)
+  setupComponentProperties('HTML input field', 'text plus sepcial characters', FormikTextField,'Text',{namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'})
 );
 registerComponent(
   'formik-material-ui',
@@ -76,12 +76,12 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties('Select', '', FAIMSSelect,'FAIMSSelect')
+  setupComponentProperties('Select', 'Select', FAIMSSelect,'Select',{namespace:'faims-custom',componentName:'Select',select: true,type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'select'})
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties('', '', FAIMSCheckbox,'FAIMSCheckbox')
+  setupComponentProperties('Checkbox', 'Checkbox', FAIMSCheckbox,'Select',{namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox'})
 );
 registerComponent(
   'faims-custom',
@@ -91,17 +91,27 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'ActionButton',
-  setupComponentProperties('', '', ActionButton)
+  setupComponentProperties('Take Action', '', ActionButton,'Special',{namespace:'faims-custom',componentName:'ActionButton',type_return:'faims-core::String',validationSchema:[['yup.string']],type: 'string'})
 );
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties('', '', TakePoint)
+  setupComponentProperties('Take Point', '', TakePoint,'Special',{namespace:'faims-custom',componentName:'TakePoint',type_return:'faims-pos::Location',initialValue: null,validationSchema:[
+          ['yup.object'],
+          ['yup.nullable'],
+          [
+            'yup.shape',
+            {
+              latitude: [['yup.number'], ['yup.required']],
+              longitude: [['yup.number'], ['yup.required']],
+            },
+          ],
+        ]})
 );
 registerComponent(
   'faims-custom',
   'TemplatedStringField',
-  setupComponentProperties('', '', TemplatedStringField)
+  setupComponentProperties('Unique ID', '', TemplatedStringField,'Special',{namespace:'faims-custom',componentName:'TemplatedStringField',type_return:'faims-core::String',required:true,validationSchema:[['yup.string'], ['yup.required']],type: 'text',template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',})
 );
 registerComponent(
   'faims-custom',
