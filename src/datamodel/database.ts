@@ -97,6 +97,7 @@ export interface ListingsObject {
   description: string;
   projects_db?: PossibleConnectionInfo;
   auth_mechanisms: AuthInfo[];
+  auth_proxy: string; // Url to give AuthInfo to get token(s)
 }
 
 export interface NonNullListingsObject extends ListingsObject {

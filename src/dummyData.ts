@@ -629,6 +629,7 @@ const example_directory: ListingsObject[] = [
     name: 'AAO Internal FAIMS instance',
     description:
       'This FAIMS server is the instance used internally by the AAO for testing.',
+    auth_proxy: 'http://127.0.0.1:8080',
     auth_mechanisms: [
       {
         type: 'oauth',
@@ -658,6 +659,7 @@ const example_directory: ListingsObject[] = [
       lan: true,
       db_name: 'csiro_hosted_projects',
     },
+    auth_proxy: 'http://127.0.0.1:8080',
     auth_mechanisms: [
       {
         type: 'oauth',
