@@ -17,6 +17,7 @@ export type LoginFormProps = {
 export type LoginButtonProps = {
   listing_id: string;
   auth_mechanism: AuthInfo;
+  auth_proxy: string;
 };
 
 /**
@@ -33,6 +34,7 @@ function authInfoTypeName(info: AuthInfo): string {
 
 function oauth_redirect_url(
   listing_id: string,
+  proxy: string,
   mode: AuthInfo & {type: 'oauth'}
 ): string {
   const params = new URLSearchParams();
@@ -40,7 +42,8 @@ function oauth_redirect_url(
   params.append('client_id', mode.client_id);
   params.append('state', JSON.stringify({listing_id: listing_id}));
   params.append('redirect_uri', 'http://localhost:3000/signin-return');
-  return mode.base_url + '?' + params.toString();
+  params.append('base_url', mode.base_url);
+  return proxy + '?' + params.toString();
 }
 
 function LoginButton(props: LoginButtonProps) {
@@ -48,7 +51,11 @@ function LoginButton(props: LoginButtonProps) {
     <Button
       variant="contained"
       color="primary"
-      href={oauth_redirect_url(props.listing_id, props.auth_mechanism)}
+      href={oauth_redirect_url(
+        props.listing_id,
+        props.auth_proxy,
+        props.auth_mechanism
+      )}
     >
       Sign-in with {authInfoTypeName(props.auth_mechanism)}
     </Button>
@@ -61,12 +68,12 @@ function LoginButton(props: LoginButtonProps) {
  */
 export function LoginForm(props: LoginFormProps) {
   const [listingInfo, setListingInfo] = useState(
-    null as null | AuthInfo[] | {error: {}}
+    null as null | [string, AuthInfo[]] | {error: {}}
   );
 
   useEffect(() => {
     directory_db.local.get(props.listing_id).then(
-      info => setListingInfo(info.auth_mechanisms),
+      info => setListingInfo([info.auth_proxy, info.auth_mechanisms]),
       (err: any) => {
         setListingInfo({error: err});
       }
@@ -79,7 +86,7 @@ export function LoginForm(props: LoginFormProps) {
     const change_listener = (
       change: PouchDB.Core.ChangesResponseChange<ListingsObject>
     ) => {
-      setListingInfo(change.doc!.auth_mechanisms);
+      setListingInfo([change.doc!.auth_proxy, change.doc!.auth_mechanisms]);
     };
     const error_listener = (err: any) => {
       setListingInfo({error: err});
@@ -99,8 +106,12 @@ export function LoginForm(props: LoginFormProps) {
   } else {
     return (
       <Box>
-        {listingInfo.map(mode => (
-          <LoginButton listing_id={props.listing_id} auth_mechanism={mode} />
+        {listingInfo[1].map(mode => (
+          <LoginButton
+            listing_id={props.listing_id}
+            auth_proxy={listingInfo[0]}
+            auth_mechanism={mode}
+          />
         ))}
       </Box>
     );
