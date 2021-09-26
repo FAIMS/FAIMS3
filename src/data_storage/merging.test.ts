@@ -263,7 +263,7 @@ describe('test basic automerge', () => {
     record.heads = record.revisions.concat();
     console.error(record.revisions);
     console.error(record.heads);
-    const datadb = getDataDB(project_id);
+    const datadb = await getDataDB(project_id);
     await datadb.put(record);
 
     return mergeHeads(project_id, record_id)

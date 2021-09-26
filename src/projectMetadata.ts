@@ -28,7 +28,7 @@ export async function getProjectMetadata(
   project_id: ProjectID,
   metadata_key: string
 ): Promise<any> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = await projdb.get(
       PROJECT_METADATA_PREFIX + '-' + metadata_key
@@ -45,7 +45,7 @@ export async function setProjectMetadata(
   metadata_key: string,
   metadata: any
 ) {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = {
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,

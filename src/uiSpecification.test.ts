@@ -96,7 +96,7 @@ describe('roundtrip reading and writing to db', () => {
         visible_types: visible_types,
       };
 
-      const meta_db = getProjectDB(project_id);
+      const meta_db = await getProjectDB(project_id);
 
       return setUiSpecForProject(meta_db, uiInfo)
         .then(result => {

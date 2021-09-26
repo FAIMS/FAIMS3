@@ -23,27 +23,28 @@ import PouchDBFind from 'pouchdb-find';
 import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject, ProjectMetaObject} from '../datamodel/database';
 import {data_dbs, metadata_dbs} from './databases';
+import {initialize} from './initialize';
 
 PouchDB.plugin(PouchDBFind);
 
-export function getDataDB(
+export async function getDataDB(
   active_id: ProjectID
-): PouchDB.Database<ProjectDataObject> {
+): Promise<PouchDB.Database<ProjectDataObject>> {
+  await initialize();
   if (data_dbs[active_id] !== undefined) {
     return data_dbs[active_id].local;
   } else {
-    console.warn(`Failed to look up ${active_id}`);
-    throw 'Projects not initialized yet';
+    throw `Project ${active_id} is not known`;
   }
 }
 
-export function getProjectDB(
+export async function getProjectDB(
   active_id: ProjectID
-): PouchDB.Database<ProjectMetaObject> {
+): Promise<PouchDB.Database<ProjectMetaObject>> {
+  await initialize();
   if (metadata_dbs[active_id] !== undefined) {
     return metadata_dbs[active_id].local;
   } else {
-    console.warn(`Failed to look up ${active_id}`);
-    throw 'Projects not initialized yet';
+    throw `Project ${active_id} is not known`;
   }
 }

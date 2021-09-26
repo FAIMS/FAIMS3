@@ -150,7 +150,7 @@ export async function set_local_autoincrement_ranges_for_field(
 export async function get_autoincrement_references_for_project(
   project_id: ProjectID
 ): Promise<AutoIncrementReference[]> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: AutoIncrementReferenceDoc = await projdb.get(
       LOCAL_AUTOINCREMENT_NAME
@@ -171,7 +171,7 @@ export async function add_autoincrement_reference_for_project(
   form_id: string,
   field_id: string
 ) {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   const ref: AutoIncrementReference = {
     project_id: project_id,
     form_id: form_id,
@@ -204,7 +204,7 @@ export async function remove_autoincrement_reference_for_project(
   form_id: string,
   field_id: string
 ) {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   const ref: AutoIncrementReference = {
     project_id: project_id,
     form_id: form_id,

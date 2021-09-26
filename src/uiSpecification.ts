@@ -31,7 +31,7 @@ import {ProjectUIModel} from './datamodel/ui';
 export async function getUiSpecForProject(
   project_id: ProjectID
 ): Promise<ProjectUIModel> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const encUIInfo: EncodedProjectUIModel = await projdb.get(
       UI_SPECIFICATION_NAME

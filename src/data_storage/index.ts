@@ -131,7 +131,7 @@ export async function listFAIMSRecordRevisions(
 export async function listFAIMSProjectRevisions(
   project_id: ProjectID
 ): Promise<ProjectRevisionListing> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   try {
     const result = await datadb.allDocs();
     const revmap: ProjectRevisionListing = {};
@@ -196,7 +196,7 @@ export async function setRecordAsDeleted(
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revid);
   const new_rev_id = generateFAIMSRevisionID();
@@ -222,7 +222,7 @@ export async function setRecordAsUndeleted(
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revid);
   const new_rev_id = generateFAIMSRevisionID();

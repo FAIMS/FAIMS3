@@ -189,7 +189,7 @@ export async function do3WayMerge(
   us_id: RevisionID
 ): Promise<MergeResult> {
   console.debug(`merging ${us_id} and ${them_id}`);
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   const merge_result = new MergeResult();
   const them = await getCachedRevision(project_id, revision_cache, them_id);
