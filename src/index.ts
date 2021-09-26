@@ -50,6 +50,20 @@ passport.use(
 );
 
 const app = express();
+
+app.get('/auth/:listing_id', (req, res) => {
+  passport.authenticate(req.params.listing_id)(req, res);
+});
+
+app.get(
+  '/auth/example/callback',
+  passport.authenticate('oauth2', {failureRedirect: '/login'}),
+  (req, res) => {
+    // Successful authentication, redirect home.
+    res.redirect('/');
+  }
+);
+
 app.get('/', async (req, res) => {
   res.send(await users_db.allDocs({include_docs: true, endkey: '_'}));
 });
