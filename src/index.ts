@@ -5,8 +5,13 @@ import OAuth2Strategy from 'passport-oauth2';
 import {initialize} from './sync/initialize';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
-import { add_initial_listener } from './sync/event-handler-registration';
-import { register_listings_known, register_projects_known, register_metas_complete, register_projects_created } from './sync/state';
+import {add_initial_listener} from './sync/event-handler-registration';
+import {
+  register_listings_known,
+  register_projects_known,
+  register_metas_complete,
+  register_projects_created,
+} from './sync/state';
 
 process.on('unhandledRejection', error => {
   console.error(error); // This prints error with stack included (as for normal errors)
