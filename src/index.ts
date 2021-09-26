@@ -51,7 +51,7 @@ passport.use(
 
 const app = express();
 app.get('/', async (req, res) => {
-  res.send(await users_db.allDocs({include_docs: true}));
+  res.send(await users_db.allDocs({include_docs: true, endkey: '_'}));
 });
 
 PouchDB.plugin(PouchDBFind);
