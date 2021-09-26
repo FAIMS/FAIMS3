@@ -18,7 +18,10 @@ process.on('unhandledRejection', error => {
   throw error; // Following best practices re-throw error and let the process exit with error code
 });
 
+const auth_strategies: {[listing_id: string]: OAuth2Strategy} = {};
+
 passport.use(
+  'default',
   new OAuth2Strategy(
     {
       authorizationURL:
