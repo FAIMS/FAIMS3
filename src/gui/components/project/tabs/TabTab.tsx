@@ -96,7 +96,10 @@ export function TabEditable(props: TabProps) {
   	}
   	const handleAdd =  (event:any) => {
 	  	const newtabs=tablists;
-  		newtabs[tablists.length]='New'+tablists.length
+      const length=tablists.length+1
+      let name='Section' 
+      if(tab_id==='formtab') name='Form'
+  		newtabs[tablists.length]=name+length
   		setTablist(newtabs)
   		props.handelonChangeLabel(newtabs,'add')
   		setIsset(!isset)
@@ -145,11 +148,11 @@ export function TabEditable(props: TabProps) {
 		          onChange={handleChange}
 		          aria-label={tab_id}
 		          id={tab_id}
-		          orientation={tab_id==='subtab'?  "horizontal" :"vertical" }
+		          orientation={tab_id==='fieldtab'?  "vertical" :"horizontal"}
 		          
 		      >
 		        {tablists.map((tab,index)=>(
-		          <Tab className={tab_id==='subtab'?  classes.subtab : classes.fieldtab} key={`${tab_id}-${index}`} label={tab}  {...a11yProps({tab_id},{index})}  />))}  
+		          <Tab className={tab_id==='fieldtab'? classes.fieldtab: classes.subtab } key={`${tab_id}-${index}`} label={tab}  {...a11yProps({tab_id},{index})}  />))}  
 		      </Tabs>:
 		      <FormForm uiSpec={gettabform(tabs)} currentView='start-view' handleChangeForm={handleChangeForm} handleSubmit={handleSubmitForm}/>}
 		    </Grid>

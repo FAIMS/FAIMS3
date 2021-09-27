@@ -15,9 +15,10 @@
  *
  * Filename: ProjectDesign.tsx
  * Description:This is the file about form design, all uiSpec related sould be defined here
- *   TODO: BUG when form tab changes, section tab should be reset(Should use tabPanels instead??)
- *   TODO: edit Project is not working, can't read information for project
+ *   TODO: [BUG] when form tab changes, section tab should be reset(Should use tabPanels instead??)
+ *   TODO: [BUG]edit Project is not working, can't read information for project
  *   TODO: swith the form component, need to change to drag element
+ *   TODO: [BUG]uiSpec is rewrite everytime tabs changes
  */
 import React from 'react';
 import { useState, useEffect } from 'react'
@@ -229,30 +230,41 @@ export default function ProjectDesignTab(props:any) {
     }
 
     const handelonChangeVariants = (event:any,index:number)=>{
-      const id=formuiSpec[VISIBLE_TYPE][index]
-      setFormVariants(id)
-      setformlabel(formtabs[index])
-      
-      if(formuiSpec['viewsets'][id]['views'].length>0){
-        const tabs:any=[]
-        if(formuiSpec['viewsets'][id]['views'].length>0){
-          formuiSpec['viewsets'][id]['views'].map((tab:string,number:number)=>tabs[number]=formuiSpec['views'][tab]['label'])
-        }
-        setsectiontabs(tabs)
-        setformuiview(formuiSpec['viewsets'][id]['views'][0])
-        setCurrentView(formuiSpec['viewsets'][id]['views'][0]) // this part seems not working, check it to fix the issue
-        
-      }
-      else{
-        setsectiontabs([]);
-        setformuiview('')
-        setCurrentView('')
-        
-      }
+      	const id=formuiSpec[VISIBLE_TYPE][index]
+      	ChangeVariants(id)
+      	setformlabel(formtabs[index])
     }
+
+    const ChangeVariants = (id:string) =>{
+    	  setFormVariants(id)
+	      console.log(formuiview+currentView)
+	      
+	      if(formuiSpec['viewsets'][id]['views'].length>0){
+	        const tabs:any=[]
+	        if(formuiSpec['viewsets'][id]['views'].length>0){
+	          formuiSpec['viewsets'][id]['views'].map((tab:string,number:number)=>tabs[number]=formuiSpec['views'][tab]['label'])
+	        }
+	        setsectiontabs(tabs)
+	        setformuiview(formuiSpec['viewsets'][id]['views'][0])
+	        setCurrentView(formuiSpec['viewsets'][id]['views'][0]) // this part seems not working, check it to fix the issue
+	        
+	      }
+	      else{
+	        setsectiontabs([]);
+	        setformuiview('')
+	        setCurrentView('')
+	        
+	      }
+    }
+
     const handelonChangeLabel = (tabs:Array<string>,type:string) =>{
       const {newviews,components}=updateuiSpec('formvariants'+type,{tabs:tabs,formuiSpec:formuiSpec,formcomponents:formcomponents})
       setFormuiSpec({fields:formuiSpec.fields,views:newviews.views,viewsets:newviews.viewsets,visible_types:newviews.visible_types})
+      if(type==='add'){// To fix the misread of tab names
+      	ChangeVariants(tabs[tabs.length-1])
+      	setformlabel(formtabs[tabs.length-1])
+      }
+
       
     }
 
@@ -260,6 +272,10 @@ export default function ProjectDesignTab(props:any) {
      const {newviews,components}=updateuiSpec('formvsection'+type,{tabs:tabs,formuiSpec:formuiSpec,formcomponents:formcomponents,formvariants:formvariants})
       setFormuiSpec({fields:formuiSpec.fields,views:newviews.views,viewsets:newviews.viewsets,visible_types:newviews.visible_types})
       setFormComponents(components)
+      if(type==='add'){ // To fix the misread of tab names
+      	setCurrentView(sectiontabs[sectiontabs.length-1])
+      	setformuiview(formuiSpec['viewsets'][formvariants]['views'][sectiontabs.length-1])
+      }
     }
 
 
@@ -329,8 +345,8 @@ export default function ProjectDesignTab(props:any) {
       <Grid container  >
       {project_id}
       <Grid item sm={12} xs={12}>
-        <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='subtab' handelonChangeLabel={handelonChangeLabel} />
-        <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='subtab' handelonChangeLabel={handelonChangeLabelSection}/>
+        <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
+        <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>
       </Grid>
       <Grid item sm={8} xs={12}>
       <Grid container  >
