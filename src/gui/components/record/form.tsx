@@ -229,7 +229,7 @@ class RecordForm extends React.Component<
     }
     try {
       // these come after setUISpec & setLastRev has set view_name & revision_id these to not null
-      const view_cached = this.requireView();
+      this.requireView();
       const revision_cached = this.state.revision_cached;
 
       // If the staging area .start() has already been called,
@@ -237,13 +237,11 @@ class RecordForm extends React.Component<
       // (saveListener is already bound at this point)
       if (staging_area_started_already) {
         this.staging.recordChangeHook(this.props, {
-          view_name: view_cached,
           revision_id: revision_cached,
         });
       } else {
         this.staging.saveListener = this.saveListener.bind(this);
         await this.staging.start({
-          view_name: view_cached,
           revision_id: revision_cached,
         });
       }
@@ -407,7 +405,6 @@ class RecordForm extends React.Component<
       // Clear the staging area (Possibly after redirecting back to project page)
       .then(() =>
         this.staging.clear({
-          view_name: this.requireView(),
           revision_id: this.state.revision_cached!,
         })
       )
@@ -498,7 +495,7 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              this.staging.renderHook(viewName, formProps.values);
+              this.staging.renderHook(formProps.values);
               return (
                 <Form>
                   <Grid container spacing={2}>

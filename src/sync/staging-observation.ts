@@ -48,7 +48,6 @@ type RelevantProps = {
  */
 type LoadableProps = {
   revision_id: RevisionID | null;
-  view_name: string;
 };
 
 type StagedData = {
@@ -75,7 +74,9 @@ class RecordStagingState {
   // this is kept in-sync with formik. The only reason
   // to duplicate the data is to keep track of which fields
   // have changed.
-  data: null | {fields: StagedData; view_name: string} = null;
+  // and this is only up to date with fields in the current view
+  // (view_fields)
+  data: null | {fields: StagedData} = null;
 
   data_listeners: [
     (data: StagedData) => unknown,
@@ -168,9 +169,35 @@ class RecordStagingState {
    * @param values FormikProps.values object, retrieved from the First argument
    *               of the callback to the Formik element's children:
    */
-  renderHook(view_name: string, values: FormikValues) {
+  renderHook(values: FormikValues) {
     if (this.fetch_error === null && this.data !== null) {
-      this.data = {view_name: view_name, fields: values};
+      // determine newly touched fields
+      // This is usually done by createNativeFieldHook's onBlur event being
+      // triggered before any code gets to renderHook(), but
+      // the diffing, here, is what Formik creators intended us to do,
+      // and ensures that user-implemented components that forget to use
+      // createCustomFieldHook's return (instead using setFieldValue) can still
+      // have touched fields
+      //
+      // This diffing should replace createNativeFieldHook/createCustomFieldHook
+
+      for (const field in this.data) {
+        // Formik & Pouch should give us comparable JSON objects.
+        // As long as it differs at the top level, we say it's touched
+        if (this.data.fields?.[field] !== values?.[field]) {
+          this.touched_fields.add(field);
+        }
+      }
+
+      this.data = {fields: values};
+    } else if (this.data === null) {
+      console.debug(
+        "This state shouldn't be encountered: Somehow, staging's renderHook " +
+          'was called before staging finished loading data from the local ' +
+          'staging Pouch. The dev should have waited for the staging data to ' +
+          'finish loading (you can wait on initialValues) before even ' +
+          'attempting to render components/call renderHook'
+      );
     }
   }
 
@@ -245,10 +272,8 @@ class RecordStagingState {
     const uninterrupted_fetch_sequence = this.fetch_sequence;
     this.data = null;
     try {
-      // TODO: Multiple view support
       const result = await getStagedData(
         this.props.project_id,
-        loadedProps.view_name,
         loadedProps.revision_id === null ? null : this.props.record_id,
         loadedProps.revision_id
       );
@@ -261,7 +286,7 @@ class RecordStagingState {
       }
 
       this.touched_fields = new Set(Object.keys(data));
-      this.data = {view_name: loadedProps.view_name, fields: data};
+      this.data = {fields: data};
       // Resolve any promises waiting for data
       const data_listeners = this.data_listeners;
       this.data_listeners = [];
@@ -323,7 +348,6 @@ class RecordStagingState {
         to_save,
         this.last_revision,
         this.props.project_id,
-        loadedProps.view_name,
         loadedProps.revision_id === null ? null : this.props.record_id,
         loadedProps.revision_id
       );
