@@ -61,7 +61,7 @@ registerComponent(
 registerComponent(
   'formik-material-ui',
   'TextField',
-  setupComponentProperties('HTML input field', 'text plus sepcial characters', FormikTextField,'Text',{namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'})
+  setupComponentProperties('HTML input field', 'text plus sepcial characters', FormikTextField,'Text',{namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'},null)
 );
 registerComponent(
   'formik-material-ui',

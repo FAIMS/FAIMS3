@@ -20,6 +20,7 @@
  *   TODO: FieldSettings is hardcode, need to get value from bundle_components
  *   TODO: any type
  *   TODO: newfromui is the function to get form components for edit notebook, NOT WORKING
+ *   TODO: function to create notebook create/update uiSpec
  */
 
 
@@ -108,11 +109,11 @@ export const gettabform = (tabs:Array<string>) =>{
 	}
 }
 
-export const getprojectform= (tabs:Array<string>) =>{
+export const getprojectform= (tabs:Array<string>,type: {namespace:string,componentName:string}={namespace:'formik-material-ui',componentName:'TextField'}) =>{ //this function is just template to get information about the project
   const fields_list:any={}
   const fields:Array<string>=[]
   //'TextField',
-  tabs.map((tab:string,index:number)=> {fields_list[tab]=getcomponent({name:tab, lable:tab, initialValue:'', placeholder:''}); fields[index]=tab
+  tabs.map((tab:string,index:number)=> {fields_list[tab]=getcomponent({name:tab, label:tab, initialValue:'', placeholder:'',...type}); fields[index]=tab
     });
 
   return {

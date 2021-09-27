@@ -43,7 +43,7 @@ const useStyles = makeStyles((theme) => ({
     
     textAlign:'left',
     minWidth:55,
-    backgroundColor:'#E7E9EB'
+    // backgroundColor:'#e1e4e8',
   },
   subtab:{
   	// borderTop:'1px solid',
@@ -74,7 +74,7 @@ export function TabTab(props:TabProps){
           orientation={tab_id==='primarytab'?  "horizontal" :"vertical" }
       >
         {tabs.map((tab:any,index:number)=>(
-          <Tab className={classes.root} key={`${tab_id}-${index}`} 
+          <Tab className={tab_id==='primarytab'?  classes.root :classes.fieldtab } key={`${tab_id}-${index}`} 
           label={tab}  {...a11yProps(tab_id,index)} />  ))}  
       </Tabs>);
 }

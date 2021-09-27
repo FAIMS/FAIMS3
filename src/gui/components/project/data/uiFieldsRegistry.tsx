@@ -22,12 +22,11 @@
 
 import {getComponentByName,getComponentPropertiesByName} from '../../../component_registry';
 
-type componentlist={namespace:string;componentName:string}
+type componentlist={namespace:string;componentName:string;props?:any}
 
 const componentarray:Array<componentlist>=[
 {namespace:'formik-material-ui',componentName:'TextField'},
 {namespace:'faims-custom',componentName:'Select'},
-{namespace:'faims-custom',componentName:'Checkbox'},
 {namespace:'faims-custom',componentName:'ActionButton'},
 {namespace:'faims-custom',componentName:'TakePoint'},
 {namespace:'faims-custom',componentName:'TemplatedStringField'}]
@@ -37,8 +36,6 @@ export const getfields = () => {
     let fieldtabs:Array<string>=[]
     componentarray.map((component:componentlist)=>{
         const props=getComponentPropertiesByName(component.namespace,component.componentName)
-        
-        
         if(!fieldtabs.includes(props.componentname)) {
             fields[props.componentname]=[{...props}]
             fieldtabs=[...fieldtabs,props.componentname]
