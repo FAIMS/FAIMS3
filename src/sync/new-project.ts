@@ -27,15 +27,11 @@ import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
 
 import {
   active_db,
-  data_dbs,
   directory_db,
   ensure_local_db,
-  metadata_dbs,
   projects_dbs,
 } from './databases';
-import {events} from './events';
-import {activate_project} from './process-initialization';
-import {createdProjects} from './state';
+import {activate_project, update_project} from './process-initialization';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
   throw Error('not implemented yet');
@@ -74,34 +70,8 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
   };
   await projects_db.local.put(project_object);
 
-  const [, meta_db_local] = ensure_local_db(
-    'metadata',
-    active_id,
-    active_project.is_sync,
-    metadata_dbs
-  );
-  const [, data_db_local] = ensure_local_db(
-    'data',
-    active_id,
-    active_project.is_sync,
-    data_dbs
-  );
+  update_project(listing, active_project, null, project_object);
 
-  createdProjects[active_id] = {
-    project: project_object,
-    active: active_project,
-    meta: meta_db_local,
-    data: data_db_local,
-  };
-
-  events.emit(
-    'project_local',
-    listing,
-    active_project,
-    project_object,
-    meta_db_local,
-    data_db_local
-  );
   return active_id;
 }
 

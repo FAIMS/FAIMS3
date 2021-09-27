@@ -18,14 +18,11 @@
  *   TODO
  */
 import {setupExampleActive} from '../dummyData';
-import {
-  process_listings,
-  process_projects,
-  process_directory,
-} from './process-initialization';
+import {update_directory} from './process-initialization';
 import {active_db, directory_connection_info} from './databases';
 import {DirectoryEmitter, events} from './events';
 import {attach_all_listeners} from './event-handler-registration';
+import {all_projects_updated} from './state';
 
 /**
  * To prevent initialize() being called multiple times
@@ -54,8 +51,15 @@ export function initialize() {
 async function initialize_nocheck() {
   await setupExampleActive(active_db);
 
-  const initialized = new Promise(resolve => {
-    events.once('projects_created', resolve);
+  const initialized = new Promise<void>(resolve => {
+    // Resolve once only
+    let resolved = false;
+    events.on('all_state', () => {
+      if (all_projects_updated && !resolved) {
+        resolved = true;
+        resolve();
+      }
+    });
   });
   console.log('sync/initialize: starting');
   initialize_dbs();
@@ -64,29 +68,11 @@ async function initialize_nocheck() {
 }
 
 function initialize_dbs(): DirectoryEmitter {
-  // Main sync propagation downwards to individual projects:
-  events
-    .on('directory_local', listings => process_listings(listings, true))
-    .on('directory_paused', listings => process_listings(listings, false))
-    .on('listing_local', (...args) => process_projects(...args, false))
-    .on(
-      'listing_paused',
-      (listing, projects, people_db, projects_db, default_connection) =>
-        process_projects(
-          listing,
-          projects,
-          people_db,
-          projects_db,
-          default_connection,
-          true
-        )
-    );
-
   attach_all_listeners(events);
 
   // It all starts here, once the events are all registered
   console.log('sync/initialize: listeners registered');
-  process_directory(directory_connection_info).catch(err =>
+  update_directory(directory_connection_info).catch(err =>
     events.emit('directory_error', err)
   );
   return events;

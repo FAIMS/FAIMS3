@@ -40,7 +40,8 @@ import {
   materializeConnectionInfo,
 } from './connection';
 import {staging_db} from './staging';
-import {SyncHandler} from './sync-handler';
+
+const DB_TIMEOUT = 2000;
 
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
@@ -56,6 +57,7 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
 
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
+  changes: PouchDB.Core.Changes<Content>;
   is_sync: boolean;
   remote: null | LocalDBRemote<Content>;
 }
@@ -68,10 +70,6 @@ export interface LocalDBRemote<Content extends {}> {
     | null;
   info: ConnectionInfo;
   options: DBReplicateOptions;
-  create_handler: (
-    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler<Content>;
-  handler: null | SyncHandler<Content>;
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -86,10 +84,32 @@ type DBReplicateOptions =
     };
 
 /**
+ * Each database has a changes stream.
+ * This is the template for which the changes stream is listened to
+ * Some databases might use options added to this like:
+ *  {...default_changes_opts, filter:'abc'}
+ * If they want to, for example, restrict to only listings in the active DB.
+ */
+export const default_changes_opts: PouchDB.Core.ChangesOptions &
+  PouchDB.Core.AllDocsOptions = {
+  live: true,
+  since: 'now',
+  timeout: DB_TIMEOUT,
+  include_docs: true,
+  conflicts: true,
+  attachments: true,
+};
+
+const directory_db_pouch = new PouchDB<ListingsObject>(
+  'directory',
+  local_pouch_options
+);
+/**
  * Directory: All (public, anyways) Faims instances
  */
 export const directory_db: LocalDB<ListingsObject> = {
-  local: new PouchDB('directory', local_pouch_options),
+  local: directory_db_pouch,
+  changes: directory_db_pouch.changes({...default_changes_opts, since: 'now'}),
   remote: null,
   is_sync: true,
 };
@@ -170,15 +190,18 @@ export function ensure_local_db<Content extends {}>(
   global_dbs: LocalDBList<Content>
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
+    global_dbs[local_db_id].is_sync = start_sync;
     return [false, global_dbs[local_db_id]];
   } else {
+    const db = new PouchDB<Content>(
+      prefix + POUCH_SEPARATOR + local_db_id,
+      local_pouch_options
+    );
     return [
       true,
       (global_dbs[local_db_id] = {
-        local: new PouchDB(
-          prefix + POUCH_SEPARATOR + local_db_id,
-          local_pouch_options
-        ),
+        local: db,
+        changes: db.changes(default_changes_opts),
         is_sync: start_sync,
         remote: null,
       }),
@@ -199,9 +222,6 @@ export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: ConnectionInfo,
   global_dbs: LocalDBList<Content>,
-  handler: (
-    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler<Content>,
   options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
   if (global_dbs[local_db_id] === undefined) {
@@ -230,8 +250,6 @@ export function ensure_synced_db<Content extends {}>(
       db: ConnectionInfo_create_pouch(connection_info),
       connection: null, //Connection initialized in setLocalConnection
       info: connection_info,
-      create_handler: handler,
-      handler: null,
       options: options,
     },
   });
@@ -278,14 +296,8 @@ export function setLocalConnection<Content extends {}>(
     }
 
     db_info.remote.connection = connection;
-    db_info.remote.handler = db_info.remote.create_handler(db_info);
-    db_info.remote.handler.listen(
-      connection,
-      db_info.local.changes({since: 'now', include_docs: true})
-    );
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
-    db_info.remote.handler!.detach(db_info.remote.connection);
     db_info.remote.connection.cancel();
     db_info.remote.connection = null;
   }
