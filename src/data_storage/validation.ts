@@ -25,7 +25,7 @@ import {getFieldsForViewSet, getFieldNamesFromFields} from '../uiSpecification';
 
 export function getValidationSchemaForViewset(
   ui_specification: ProjectUIModel,
-  viewset_name: string | null
+  viewset_name: string
 ) {
   /***
    * Formik requires a single object for validationSchema, collect these from

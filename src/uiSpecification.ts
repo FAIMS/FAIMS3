@@ -79,11 +79,8 @@ export async function setUiSpecForProject(
 
 export function getFieldsForViewSet(
   ui_specification: ProjectUIModel,
-  viewset_name: string | null
+  viewset_name: string
 ): {[key: string]: {[key: string]: any}} {
-  if (viewset_name === null) {
-    throw Error('viewset_name must not be null');
-  }
   const views = ui_specification.viewsets[viewset_name].views;
   const fields: {[key: string]: {[key: string]: any}} = {};
   for (const view of views) {

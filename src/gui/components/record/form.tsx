@@ -300,7 +300,7 @@ class RecordForm extends React.Component<
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
-      this.state.type_cached
+      this.requireViewsetName()
     );
     const fieldNames = getFieldNamesFromFields(fields);
 
@@ -338,14 +338,23 @@ class RecordForm extends React.Component<
 
   requireView(): string {
     if (this.state.view_cached === null) {
-      // What should prevent this from happening is the lack of getInitialValues,
-      // getComponentFor, etc, function calls in the _Loading Skeleton_.
-      // And the loading skeleton is always shown if view_cached === null
-      throw Error(
-        'A function requring view_cached/uiSpe was called before setUISpec finished'
-      );
+      throw Error('The view name has not been determined yet');
     }
     return this.state.view_cached;
+  }
+
+  requireViewsetName(): string {
+    if (this.state.type_cached === null) {
+      throw Error('The viewset name has not been determined yet');
+    }
+    return this.state.type_cached;
+  }
+
+  requireInitialValues() {
+    if (this.state.initialValues === null) {
+      throw Error('The initial values have not been determined yet');
+    }
+    return this.state.initialValues;
   }
 
   save(values: any) {
@@ -433,46 +442,51 @@ class RecordForm extends React.Component<
     }
   }
 
-  render() {
-    const ui_specification = this.props.ui_specification;
-    const viewName = this.state.view_cached;
-    const validationSchema = getValidationSchemaForViewset(
-      this.props.ui_specification,
-      this.state.type_cached
-    );
-    if (
-      viewName !== null &&
+  isReady(): boolean {
+    return (
+      this.state.type_cached !== null &&
       this.state.initialValues !== null &&
-      ui_specification !== null
-    ) {
-      const view_index = this.props.ui_specification.viewsets[
-        this.state.type_cached!
-      ].views.indexOf(viewName);
+      this.props.ui_specification !== null &&
+      this.state.view_cached !== null
+    );
+  }
+
+  render() {
+    if (this.isReady()) {
+      const ui_specification = this.props.ui_specification;
+      const viewName = this.requireView();
+      const viewsetName = this.requireViewsetName();
+      const initialValues = this.requireInitialValues();
+      const validationSchema = getValidationSchemaForViewset(
+        ui_specification,
+        viewsetName
+      );
+      const view_index = ui_specification.viewsets[viewsetName].views.indexOf(
+        viewName
+      );
       const is_final_view =
-        view_index + 1 ===
-        this.props.ui_specification.viewsets[this.state.type_cached!].views
-          .length;
+        view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
       // this expression checks if we have the last element in the viewset array
 
       return (
         <React.Fragment>
           <Stepper nonLinear activeStep={view_index} alternativeLabel>
-            {this.props.ui_specification.viewsets[
-              this.state.type_cached!
-            ].views.map((view_name: string) => (
-              <Step key={view_name}>
-                <StepButton
-                  onClick={() => {
-                    this.setState({view_cached: view_name});
-                  }}
-                >
-                  {view_name}
-                </StepButton>
-              </Step>
-            ))}
+            {ui_specification.viewsets[viewsetName].views.map(
+              (view_name: string) => (
+                <Step key={view_name}>
+                  <StepButton
+                    onClick={() => {
+                      this.setState({view_cached: view_name});
+                    }}
+                  >
+                    {view_name}
+                  </StepButton>
+                </Step>
+              )
+            )}
           </Stepper>
           <Formik
-            initialValues={this.state.initialValues}
+            initialValues={initialValues}
             validationSchema={validationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
@@ -498,7 +512,7 @@ class RecordForm extends React.Component<
                     <Grid item sm={6} xs={12}>
                       <ViewComponent
                         viewName={viewName}
-                        ui_specification={this.props.ui_specification}
+                        ui_specification={ui_specification}
                         formProps={formProps}
                         staging={this.staging}
                       />
