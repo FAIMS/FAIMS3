@@ -101,21 +101,21 @@ export default function CreateProjectCard(props:any) {
     // const [sectiontabs,setsectiontabs]=useState<Array<string>>([])
     // const [tablists,setTablist]=useState<Array<string>>([])
     
-    // const [error, setError] = useState(null as null | {});
+    const [error, setError] = useState(null as null | {});
     // const [fieldvalue,setfieldValue] = useState(0); //field tab 
 
 
 
-    // useEffect(() => {
+    useEffect(() => {
 
-    //  setinit();
+     setinit();
 
-    // }, []);
+    }, []);
 
     // useEffect(() => {
     //   if(uiSpec!==null) {
 
-    //     generateunifromformui(uiSpec)
+        
     //     setFormuiSpec(uiSpec);
     //     console.log(formcomponents)
     //   }
@@ -123,19 +123,37 @@ export default function CreateProjectCard(props:any) {
     //   console.log(uiSpec)
     // }, [uiSpec]);
 
-    //  useEffect(() => {
-    //   if(project_id!==''&&project_id!==null){
-    //     saveformuiSpec()
-    //     console.log(formuiSpec)
-    //   }
+     useEffect(() => {
+      if(project_id!==''&&project_id!==null){
+        saveformuiSpec()
+        console.log(formuiSpec)
+      }
       
-    // }, [formuiSpec]);
+    }, [formuiSpec]);
+
+
+     const saveformuiSpec = async  () =>{
+      try{
+          console.log(await setUiSpecForProject(metadata_dbs[project_id].local, formuiSpec));
+      }catch (err) {
+        console.error('databases needs cleaning...');
+        console.debug(err);
+      }
+    }
 
 
 
     const setinit =()=>{
       
-      
+      if(props.project_id!==undefined){
+        getUiSpecForProject(props.project_id).then(setUISpec, setError);
+
+      }
+      const view=variant_default[0]+sections_default[0]
+      const formview=formuiSpec
+      formview['views'][view]={'fields':[],uidesign:'form','label':sections_default[0]}
+      formview['viewsets']={'FORM1':{views:[view],label:'main'}}
+      setFormuiSpec({fields:formuiSpec.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
 
     }
 
@@ -190,7 +208,7 @@ export default function CreateProjectCard(props:any) {
           <FormForm uiSpec={getprojectform(['projectname'])} currentView='start-view' handleChangeForm={handleChangeFormProject} handleSubmit={submithandlerProject}/>
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
-      <ProjectDesignTab project_id={project_id} uiSpec={uiSpec}/>
+      <ProjectDesignTab project_id={project_id} uiSpec={uiSpec} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} />
       </TabPanel>
       <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
         {projecttabvalue!==2?'':'Project Preview'}

@@ -74,12 +74,9 @@ export default function ProjectDesignTab(props:any) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
-    const [project_id,setProjectID]=useState(props.project_id);
+    const {project_id,formuiSpec,setFormuiSpec,...others}=props
     const [initialValues,setinitialValues]=useState(ini)
-    const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [formcomponents,setFormComponents]= useState<any>(form_defult)
-    const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>({fields:{},views:{},viewsets:{},visible_types:[]})
-    const [uiSpec,setUISpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>(props.uiSpec)
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState(sections_default[0])
     const [formlabel,setformlabel]=useState(variant_label[0])
@@ -104,24 +101,12 @@ export default function ProjectDesignTab(props:any) {
     }, []);
 
     useEffect(() => {
-      if(uiSpec!==null) {
-
-        // generateunifromformui(uiSpec)
-        setFormuiSpec(uiSpec);
-        console.log(formcomponents)
-      }
+      //this function should be used to get new project ui when project_id changes??
       console.log('Update Changes'+project_id)
-      console.log(uiSpec)
-    }, [uiSpec,project_id]);
 
-     useEffect(() => {
-      if(project_id!==''&&project_id!==null){
-        saveformuiSpec()
-        
-      }
-      console.log('save'+project_id)
-      
-    }, [formuiSpec]);
+    }, [project_id]);
+
+    
 
      const generateunifromformui = (formuiS:any) =>{
       const tabs=formtabs
@@ -141,19 +126,13 @@ export default function ProjectDesignTab(props:any) {
     }
 
     const setinit =()=>{
-      if(props.project_id!==undefined){
-        getUiSpecForProject(props.project_id).then(setUISpec, setError);
-
-      }
+      
 
       // if(props.project_id===undefined){
       // generate empty form
       const view=formvariants+sections_default[0]
       setCurrentView(view);
-      const formview=formuiSpec
-      formview['views'][view]={'fields':[],uidesign:'form','label':sections_default[0]}
-      formview['viewsets']={'FORM1':{views:[view],label:'main'}}
-      setFormuiSpec({fields:formuiSpec.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
+      
       // const tabs=formview['visible_types'].map((tab:string)=>tab=formview['viewsets'][tab]['label'])
       setformTabs(variant_label)
       setsectiontabs(sections_default)
@@ -294,14 +273,7 @@ export default function ProjectDesignTab(props:any) {
     }
 
 
-    const saveformuiSpec = async  () =>{
-      try{
-          console.log(await setUiSpecForProject(metadata_dbs[project_id].local, formuiSpec));
-      }catch (err) {
-	      console.error('databases needs cleaning...');
-	      console.debug(err);
-      }
-    }
+    
 
 
 
