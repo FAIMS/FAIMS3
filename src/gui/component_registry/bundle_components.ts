@@ -47,70 +47,110 @@ export default bundle;
 registerComponent(
   'core-material-ui',
   'Input',
-  setupComponentProperties('HTML input field', 'Catchall field', Input)
+  setupComponentProperties(
+    'HTML input field',
+    'Catchall field',
+    'Advanced',
+    Input
+  )
 );
 registerComponent(
   'core-material-ui',
   'Checkbox',
-  setupComponentProperties('', '', Checkbox)
+  setupComponentProperties(
+    'HTML checkbox field',
+    'A simple checkbox',
+    'Simple',
+    Checkbox
+  )
 );
 registerComponent(
   'core-material-ui',
   'TextField',
-  setupComponentProperties('', '', TextField)
+  setupComponentProperties(
+    'HTML text field',
+    'A simple text field',
+    'Simple',
+    TextField
+  )
 );
 registerComponent(
   'formik-material-ui',
   'TextField',
-  setupComponentProperties('', '', FormikTextField)
+  setupComponentProperties('', '', 'Simple', FormikTextField)
 );
 registerComponent(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', FormikSelect)
+  setupComponentProperties('', '', 'Simple', FormikSelect)
 );
 registerComponent(
   'formik-material-ui',
   'RadioGroup',
-  setupComponentProperties('', '', FormikRadioGroup)
+  setupComponentProperties('', '', 'Simple', FormikRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties('', '', FAIMSSelect)
+  setupComponentProperties('', '', 'Simple', FAIMSSelect)
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties('', '', FAIMSCheckbox)
+  setupComponentProperties('', '', 'Simple', FAIMSCheckbox)
 );
 registerComponent(
   'faims-custom',
   'RadioGroup',
-  setupComponentProperties('', '', FAIMSRadioGroup)
+  setupComponentProperties('', '', 'Simple', FAIMSRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'ActionButton',
-  setupComponentProperties('', '', ActionButton)
+  setupComponentProperties(
+    'Action Button',
+    'Do an action',
+    'Test',
+    ActionButton
+  )
 );
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties('', '', TakePoint)
+  setupComponentProperties(
+    'Take Point',
+    'Take a GPS position',
+    'Position',
+    TakePoint
+  )
 );
 registerComponent(
   'faims-custom',
   'TemplatedStringField',
-  setupComponentProperties('', '', TemplatedStringField)
+  setupComponentProperties(
+    'Templated String',
+    'Build a value up from other fields',
+    'Advanced',
+    TemplatedStringField
+  )
 );
 registerComponent(
   'faims-custom',
   'BasicAutoIncrementer',
-  setupComponentProperties('', '', BasicAutoIncrementer)
+  setupComponentProperties(
+    'Basic AutoIncrementer',
+    'A basic autoincrementer to help create identifiers',
+    'Identifiers',
+    BasicAutoIncrementer
+  )
 );
 registerComponent(
   'faims-custom',
   'RelatedRecordSelector',
-  setupComponentProperties('', '', RelatedRecordSelector)
+  setupComponentProperties(
+    'Related field',
+    'Add relations between records',
+    'Relations',
+    RelatedRecordSelector
+  )
 );
