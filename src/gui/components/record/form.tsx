@@ -22,7 +22,7 @@ import React from 'react';
 import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 
-import {Formik, Form, Field, FormikProps} from 'formik';
+import {Formik, Form} from 'formik';
 
 import {
   Button,
@@ -44,7 +44,6 @@ import {firstDefinedFromList} from './helpers';
 import AutoSave from './autosave';
 import {ViewComponent} from './view';
 
-import {getComponentByName} from '../../component_registry';
 import BoxTab from '../ui/boxTab';
 
 import {ActionType} from '../../../actions';
@@ -134,7 +133,6 @@ class RecordForm extends React.Component<
       is_saving: false,
       last_saved: new Date(),
     };
-    this.getComponentFromField = this.getComponentFromField.bind(this);
     this.getValidationSchema = this.getValidationSchema.bind(this);
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -437,63 +435,6 @@ class RecordForm extends React.Component<
     }
   }
 
-  getComponentFromField(fieldName: string, view: ViewComponent) {
-    // console.log('getComponentFromField');
-    const ui_specification = this.props.ui_specification;
-    const fields = ui_specification['fields'];
-    return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
-  }
-
-  getComponentFromFieldConfig(
-    fieldConfig: any,
-    view: ViewComponent,
-    fieldName: string
-  ) {
-    // console.log('getComponentFromFieldConfig');
-    const namespace = fieldConfig['component-namespace'];
-    const name = fieldConfig['component-name'];
-    let Component: React.Component;
-    try {
-      Component = getComponentByName(namespace, name);
-    } catch (err) {
-      // console.debug(err);
-      // console.warn(`Failed to load component ${namespace}::${name}`);
-      return undefined;
-    }
-    const formProps: FormikProps<{[key: string]: unknown}> =
-      view.props.formProps;
-    return (
-      <Box mb={3} key={fieldName}>
-        <Field
-          component={Component} //e.g, TextField (default <input>)
-          name={fieldName}
-          onChange={this.staging.createNativeFieldHook<
-            React.ChangeEvent<{name: string}>,
-            ReturnType<typeof formProps.handleChange>
-          >(formProps.handleChange, fieldName)}
-          onBlur={this.staging.createNativeFieldHook<
-            React.FocusEvent<{name: string}>,
-            ReturnType<typeof formProps.handleBlur>
-          >(formProps.handleBlur, fieldName)}
-          stageValue={this.staging.createCustomFieldHook(
-            formProps.setFieldValue,
-            fieldName
-          )}
-          value={formProps.values[fieldName]}
-          // error={
-          //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
-          // }
-          // view={view}
-          {...fieldConfig['component-parameters']}
-          {...fieldConfig['component-parameters']['InputProps']}
-          {...fieldConfig['component-parameters']['SelectProps']}
-          {...fieldConfig['component-parameters']['InputLabelProps']}
-          {...fieldConfig['component-parameters']['FormHelperTextProps']}
-        />
-      </Box>
-    );
-  }
-
   getValidationSchema() {
     /***
      * Formik requires a single object for validationSchema, collect these from
@@ -572,8 +513,9 @@ class RecordForm extends React.Component<
                     <Grid item sm={6} xs={12}>
                       <ViewComponent
                         viewName={viewName}
-                        form={this}
+                        ui_specification={this.props.ui_specification}
                         formProps={formProps}
+                        staging={this.staging}
                       />
                       <br />
                       {formProps.isValid ? (
