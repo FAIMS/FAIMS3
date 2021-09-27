@@ -38,8 +38,6 @@ import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-import {transformAll} from '@demvsystems/yup-ast';
-
 import {firstDefinedFromList} from './helpers';
 import AutoSave from './autosave';
 import {ViewComponent} from './view';
@@ -51,6 +49,7 @@ import * as ROUTES from '../../../constants/routes';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
+import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
 import RecordStagingState from '../../../sync/staging-observation';
 import {
@@ -133,7 +132,6 @@ class RecordForm extends React.Component<
       is_saving: false,
       last_saved: new Date(),
     };
-    this.getValidationSchema = this.getValidationSchema.bind(this);
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
   }
@@ -435,26 +433,13 @@ class RecordForm extends React.Component<
     }
   }
 
-  getValidationSchema() {
-    /***
-     * Formik requires a single object for validationSchema, collect these from
-     * the ui schema and transform via yup.ast
-     */
-    const fields = getFieldsForViewSet(
-      this.props.ui_specification,
-      this.state.type_cached
-    );
-    const fieldNames = getFieldNamesFromFields(fields);
-    const validationSchema = Object();
-    fieldNames.forEach(fieldName => {
-      validationSchema[fieldName] = fields[fieldName]['validationSchema'];
-    });
-    return transformAll([['yup.object'], ['yup.shape', validationSchema]]);
-  }
-
   render() {
     const ui_specification = this.props.ui_specification;
     const viewName = this.state.view_cached;
+    const validationSchema = getValidationSchemaForViewset(
+      this.props.ui_specification,
+      this.state.type_cached
+    );
     if (
       viewName !== null &&
       this.state.initialValues !== null &&
@@ -488,7 +473,7 @@ class RecordForm extends React.Component<
           </Stepper>
           <Formik
             initialValues={this.state.initialValues}
-            validationSchema={this.getValidationSchema}
+            validationSchema={validationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
               this.setTimeout(() => {

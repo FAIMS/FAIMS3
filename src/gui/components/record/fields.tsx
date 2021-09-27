@@ -21,12 +21,7 @@
 import React from 'react';
 import {Field, FormikProps} from 'formik';
 
-import {
-  Box,
-} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
-import grey from '@material-ui/core/colors/grey';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import {Box} from '@material-ui/core';
 
 import {getComponentByName} from '../../component_registry';
 import RecordStagingState from '../../../sync/staging-observation';
