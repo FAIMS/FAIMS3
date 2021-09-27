@@ -32,7 +32,7 @@ export class ViewComponent extends React.Component<ViewProps> {
     const form = this.props.form;
     const viewName = this.props.viewName;
     const fieldNames: Array<string> =
-      form.props.uiSpec['views'][viewName]['fields'];
+      form.props.ui_specification['views'][viewName]['fields'];
     return (
       <React.Fragment>
         {fieldNames.map(fieldName => {

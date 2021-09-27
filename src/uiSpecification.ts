@@ -76,3 +76,27 @@ export async function setUiSpecForProject(
     throw Error('failed to set ui specification');
   }
 }
+
+export function getFieldsForViewSet(
+  ui_specification: ProjectUIModel,
+  viewset_name: string | null
+): {[key: string]: {[key: string]: any}} {
+  if (viewset_name === null) {
+    throw Error('viewset_name must not be null');
+  }
+  const views = ui_specification.viewsets[viewset_name].views;
+  const fields: {[key: string]: {[key: string]: any}} = {};
+  for (const view of views) {
+    const field_names = ui_specification.views[view].fields;
+    for (const field_name of field_names) {
+      fields[field_name] = ui_specification.fields[field_name];
+    }
+  }
+  return fields;
+}
+
+export function getFieldNamesFromFields(fields: {
+  [key: string]: {[key: string]: any};
+}): string[] {
+  return Object.keys(fields);
+}

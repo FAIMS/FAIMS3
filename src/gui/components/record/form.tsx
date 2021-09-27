@@ -40,24 +40,31 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 
 import {transformAll} from '@demvsystems/yup-ast';
 
-import {getComponentByName} from '../../component_registry';
+import {firstDefinedFromList} from './helpers';
+import AutoSave from './autosave';
 import {ViewComponent} from './view';
-import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
+
+import {getComponentByName} from '../../component_registry';
+import BoxTab from '../ui/boxTab';
+
+import {ActionType} from '../../../actions';
+import * as ROUTES from '../../../constants/routes';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {getCurrentUserId} from '../../../users';
-import BoxTab from '../ui/boxTab';
-import {ActionType} from '../../../actions';
+import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {store} from '../../../store';
-import AutoSave from './autosave';
-import * as ROUTES from '../../../constants/routes';
 import RecordStagingState from '../../../sync/staging-observation';
+import {
+  getFieldsForViewSet,
+  getFieldNamesFromFields,
+} from '../../../uiSpecification';
+import {getCurrentUserId} from '../../../users';
 
 type RecordFormProps = {
   project_id: ProjectID;
   // Might be given in the URL:
   view_default?: string;
-  uiSpec: ProjectUIModel;
+  ui_specification: ProjectUIModel;
   record_id: RecordID;
 } & (
   | {
@@ -83,26 +90,6 @@ type RecordFormState = {
   is_saving: boolean;
   last_saved: Date;
 };
-
-/**
- * Given a list of values, returns the first from the list that isn't null/undefined
- * This is to be used instead of list[0] || list[1] || list[2]
- * in the case that list can contain the number 0
- *
- * @param list List of undefineds, nulls, or anything else
- * @returns Always returns null or a defined value, this never returns undefined.
- */
-function firstDefinedFromList<T>(
-  list: NonNullable<T>[]
-): NonNullable<T> | null {
-  if (list.length === 0) {
-    return null;
-  } else if (list[0] === undefined || list[0] === null) {
-    return firstDefinedFromList(list.slice(1));
-  } else {
-    return list[0];
-  }
-}
 
 class RecordForm extends React.Component<
   RecordFormProps & RouteComponentProps,
@@ -151,8 +138,6 @@ class RecordForm extends React.Component<
     this.getValidationSchema = this.getValidationSchema.bind(this);
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
-    this.getFieldNames = this.getFieldNames.bind(this);
-    this.getFields = this.getFields.bind(this);
   }
 
   componentDidMount() {
@@ -214,23 +199,23 @@ class RecordForm extends React.Component<
         this_type = this.props.type;
       }
 
-      if (!(this_type in this.props.uiSpec.viewsets)) {
+      if (!(this_type in this.props.ui_specification.viewsets)) {
         throw Error(`Viewset for type '${this_type}' is missing`);
       }
 
-      if (!('views' in this.props.uiSpec.viewsets[this_type])) {
+      if (!('views' in this.props.ui_specification.viewsets[this_type])) {
         throw Error(
           `Viewset for type '${this_type}' is missing 'views' property'`
         );
       }
 
-      if (this.props.uiSpec.viewsets[this_type].views === []) {
+      if (this.props.ui_specification.viewsets[this_type].views === []) {
         throw Error(`Viewset for type '${this_type}' has no views`);
       }
 
       await this.setState({
         type_cached: this_type,
-        view_cached: this.props.uiSpec.viewsets[this_type].views[0],
+        view_cached: this.props.ui_specification.viewsets[this_type].views[0],
         revision_cached: this.props.revision_id || null,
       });
     } catch (err: any) {
@@ -317,8 +302,11 @@ class RecordForm extends React.Component<
 
     const staged_data = await this.staging.getInitialValues();
 
-    const fieldNames = this.getFieldNames();
-    const fields = this.getFields();
+    const fields = getFieldsForViewSet(
+      this.props.ui_specification,
+      this.state.type_cached
+    );
+    const fieldNames = getFieldNamesFromFields(fields);
 
     const initialValues: {[key: string]: any} = {
       _id: this.props.record_id!,
@@ -439,7 +427,7 @@ class RecordForm extends React.Component<
   }
 
   updateView(viewName: string) {
-    if (viewName in this.props.uiSpec['views']) {
+    if (viewName in this.props.ui_specification['views']) {
       this.setState({view_cached: viewName});
       this.forceUpdate();
       // Probably not needed, but we *know* we need to rerender when this
@@ -451,8 +439,8 @@ class RecordForm extends React.Component<
 
   getComponentFromField(fieldName: string, view: ViewComponent) {
     // console.log('getComponentFromField');
-    const uiSpec = this.props.uiSpec;
-    const fields = uiSpec['fields'];
+    const ui_specification = this.props.ui_specification;
+    const fields = ui_specification['fields'];
     return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
   }
 
@@ -506,28 +494,16 @@ class RecordForm extends React.Component<
     );
   }
 
-  getFieldNames() {
-    const view_cached = this.requireView();
-    const fieldNames: Array<string> = this.props.uiSpec['views'][view_cached][
-      'fields'
-    ];
-    return fieldNames;
-  }
-
-  getFields() {
-    const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
-      'fields'
-    ];
-    return fields;
-  }
-
   getValidationSchema() {
     /***
-     * Formik requires a single object for validationSchema, collect these from the ui schema
-     * and transform via yup.ast
+     * Formik requires a single object for validationSchema, collect these from
+     * the ui schema and transform via yup.ast
      */
-    const fieldNames = this.getFieldNames();
-    const fields = this.getFields();
+    const fields = getFieldsForViewSet(
+      this.props.ui_specification,
+      this.state.type_cached
+    );
+    const fieldNames = getFieldNamesFromFields(fields);
     const validationSchema = Object();
     fieldNames.forEach(fieldName => {
       validationSchema[fieldName] = fields[fieldName]['validationSchema'];
@@ -536,37 +512,38 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    const uiSpec = this.props.uiSpec;
+    const ui_specification = this.props.ui_specification;
     const viewName = this.state.view_cached;
     if (
       viewName !== null &&
       this.state.initialValues !== null &&
-      uiSpec !== null
+      ui_specification !== null
     ) {
-      const view_index = this.props.uiSpec.viewsets[
+      const view_index = this.props.ui_specification.viewsets[
         this.state.type_cached!
       ].views.indexOf(viewName);
       const is_final_view =
         view_index + 1 ===
-        this.props.uiSpec.viewsets[this.state.type_cached!].views.length;
+        this.props.ui_specification.viewsets[this.state.type_cached!].views
+          .length;
       // this expression checks if we have the last element in the viewset array
 
       return (
         <React.Fragment>
           <Stepper nonLinear activeStep={view_index} alternativeLabel>
-            {this.props.uiSpec.viewsets[this.state.type_cached!].views.map(
-              (view_name: string) => (
-                <Step key={view_name}>
-                  <StepButton
-                    onClick={() => {
-                      this.setState({view_cached: view_name});
-                    }}
-                  >
-                    {view_name}
-                  </StepButton>
-                </Step>
-              )
-            )}
+            {this.props.ui_specification.viewsets[
+              this.state.type_cached!
+            ].views.map((view_name: string) => (
+              <Step key={view_name}>
+                <StepButton
+                  onClick={() => {
+                    this.setState({view_cached: view_name});
+                  }}
+                >
+                  {view_name}
+                </StepButton>
+              </Step>
+            ))}
           </Stepper>
           <Formik
             initialValues={this.state.initialValues}
