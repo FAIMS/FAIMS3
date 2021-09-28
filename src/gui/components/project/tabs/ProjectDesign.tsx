@@ -101,22 +101,26 @@ export default function ProjectDesignTab(props:any) {
      console.log('initial value')
     }, []);
 
-    // useEffect(() => {
-    //   //this function should be used to get new project ui when project_id changes??
-    //   console.log('Update Changes'+project_id)
-
-    // }, [project_id]);
+    useEffect(() => {
+      //this function should be used to get new project ui when project_id changes??
+      console.log('Update Changes'+project_id)
+      setinit();
+    }, [project_id]);
 
     
 
      const generateunifromformui = (formui:any) =>{
-      const tabs=formtabs
+      const tabs:Array<string>=[];
+      formui[VISIBLE_TYPE].map((tab:string)=>tabs.push(formuiSpec['viewsets'][tab]['label']??tab))
       const newformcom=updateuiSpec('newfromui',{formuiSpec:formui,formcomponents:formcomponents})
+      console.log('FORM')
+      console.log(newformcom)
 
       const newformvariants=formui[VISIBLE_TYPE][0]
       setFormVariants(newformvariants)
-      setformTabs(formui[VISIBLE_TYPE].map((tab:string)=>tab=formui['viewsets'][tab]['label']))
-
+      setformTabs(tabs)
+      // const stabs:Array<string>=[]
+      // formui['viewsets'][newformvariants]['views'].map((tab:string)=>tabs.push(formuiSpec['views'][tab]['label']))
       setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=formuiSpec['views'][tab]['label']))
       setFormComponents(newformcom)
       setFormuiSpec(formui)
@@ -143,8 +147,12 @@ export default function ProjectDesignTab(props:any) {
         return newvalue;
       })
       // console.log(formuiSpec)
-      if(formuiSpec!==null)
+      if(formuiSpec!==null){
+      	console.log('get from uiSpec')
+      	console.log(formuiSpec)
       	generateunifromformui(formuiSpec)
+      }
+      	
 
     }
 
@@ -206,6 +214,7 @@ export default function ProjectDesignTab(props:any) {
       const id=formuiSpec['viewsets'][formvariants]['views'][index]
       setCurrentView(sectiontabs[index])
       setformuiview(id)
+      setfieldValue(0) //TODO: remove it
       
 
     }
@@ -228,12 +237,13 @@ export default function ProjectDesignTab(props:any) {
 	        setsectiontabs(tabs)
 	        setformuiview(formuiSpec['viewsets'][id]['views'][0])
 	        setCurrentView(formuiSpec['viewsets'][id]['views'][0]) // this part seems not working, check it to fix the issue
-	        
+	        setfieldValue(0) //TODO: remove it
 	      }
 	      else{
 	        setsectiontabs([]);
 	        setformuiview('')
 	        setCurrentView('')
+	        setfieldValue(1) //TODO: remove it
 	        
 	      }
     }
@@ -328,7 +338,11 @@ export default function ProjectDesignTab(props:any) {
       <TabTab tabs={['Component']} value={fieldvalue} handleChange={handleChangetabfield}  tab_id='fieldtab'/>
       </Grid>
       <Grid item sm={10} xs={12}>
+      <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
+       
+      </TabPanel>
       <TabPanel value={fieldvalue} index={0} tabname='fieldtab' >
+      <AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Save Form Design' />
       {formuiview!==''&&formcomponents[formuiview].length>0?formcomponents[formuiview].map((formcomponent:any,index:any)=>(
         <Formik
         key={index}

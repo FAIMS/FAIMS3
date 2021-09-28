@@ -42,7 +42,7 @@ import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification'
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel} from '../../../datamodel/ui'
 import {create_new_project_dbs}  from '../../../sync/new-project'
-
+import {getProjectInfo} from '../../../databaseAccess';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -81,7 +81,7 @@ export default function CreateProjectCard(props:any) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
-    const [project_id,setProjectID]=useState('');
+    const [project_id,setProjectID]=useState(props.project_id);
     const [projectvalue,setProjectValue]=useState<any>({})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
@@ -97,27 +97,35 @@ export default function CreateProjectCard(props:any) {
     useEffect(() => {
 
      setinit();
-
+     console.log('set ini value')
     }, []);
 
-    // useEffect(() => {
-    //   if(uiSpec!==null) {
+    useEffect(() => {
+
+     setinit();
+     setProjectID(props.project_id)
+     console.log('projectIDchanges'+props.project_id)
+
+    }, [props.project_id]);
+
+    useEffect(() => {
+      if(uiSpec!==null) {
 
         
-    //     setFormuiSpec(uiSpec);
-    //     console.log(formcomponents)
-    //   }
-    //   console.log('Update Changes')
-    //   console.log(uiSpec)
-    // }, [uiSpec]);
-
-     useEffect(() => {
-      if(project_id!==''&&project_id!==null){
-        saveformuiSpec()
-        console.log(formuiSpec)
+        setFormuiSpec(uiSpec);
       }
+      console.log('Update Changes'+uiSpec)
+    }, [uiSpec]);
+
+
+    //  useEffect(() => {
+    //   if(project_id!==''&&project_id!==null&&Object.keys(formuiSpec['fields']).length!==0){
+    //     saveformuiSpec()
+    //     console.log('save to DB')
+    //   }
       
-    }, [formuiSpec]);
+      
+    // }, [formuiSpec]);
 
 
      const saveformuiSpec = async  () =>{
@@ -136,12 +144,19 @@ export default function CreateProjectCard(props:any) {
       if(props.project_id!==undefined){
         getUiSpecForProject(props.project_id).then(setUISpec, setError);
 
+        console.log('get project ui from DBf')
       }
-      const view=variant_default[0]+sections_default[0]
-      const formview=formuiSpec
-      formview['views'][view]={'fields':[],uidesign:'form','label':sections_default[0]}
-      formview['viewsets']={'FORM1':{views:[view],label:'main'}}
-      setFormuiSpec({fields:formuiSpec.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
+      // if(uiSpec===null){
+        console.log('setup')
+        //if create new notebook then set an empty formUI
+        const view=variant_default[0]+sections_default[0]
+        const formview=formuiSpec
+        formview['views'][view]={'fields':[],uidesign:'form','label':sections_default[0]}
+        formview['viewsets']={'FORM1':{views:[view],label:'main'}}
+        setFormuiSpec({fields:formuiSpec.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
+      // }
+      // console.log(uiSpec)
+      setProjecttabvalue(0)
 
     }
 
@@ -180,10 +195,17 @@ export default function CreateProjectCard(props:any) {
     const submithandlerProject = (values:any) =>{
       //this function is to save project information 
       //TODO currently just save for projectname so added getnewdb function here, need to update it
-      if(project_id===''||project_id===null){
+      if(project_id===''||project_id===null||project_id===undefined){
         getnewdb();
+        console.log('save')
       }
       console.log(project_id)
+    }
+
+    const handleSaveUiSpec = () =>{
+      if(project_id!==''&&project_id!==null&&Object.keys(formuiSpec['fields']).length!==0){
+        saveformuiSpec()
+      }
     }
 
   return ( 
@@ -196,10 +218,10 @@ export default function CreateProjectCard(props:any) {
           <FormForm uiSpec={getprojectform(['projectname'])} currentView='start-view' handleChangeForm={handleChangeFormProject} handleSubmit={submithandlerProject}/>
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
-      <ProjectDesignTab project_id={project_id} uiSpec={uiSpec} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} />
+        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} uiSpec={uiSpec} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
-        {projecttabvalue!==2?'':'Project Preview'}
+        {projecttabvalue===2?'Project Preview':''}
       </TabPanel>
   </div>
 

@@ -50,7 +50,6 @@ export default function ProjectCreate() {
     
   }, [project_id]);
 
-console.log(project_info)
    return  (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
@@ -63,7 +62,7 @@ console.log(project_info)
         </Typography>
       </Box>
       <Paper square>
-        <CreateProjectCard project_id={project_id} uiSpec={uiSpec}/>
+        <CreateProjectCard project_id={project_id} uiSpec={uiSpec} project_info={project_info}/>
       </Paper>
     </Container>
   );

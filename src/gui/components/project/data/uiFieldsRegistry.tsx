@@ -63,11 +63,12 @@ export const getcomponent=(props:any)=>{
 
 export const getsettingform = (component:any) =>{
     if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings'}]
-    if(component['component-parameters']['multiline']===true) return [{name:'multirows',lable:'Number of rows',type:'IntegerField',view:'settings'}]
+    //if(component['component-parameters']['multiline']===true) return [{name:'multirows',lable:'Number of rows',type:'IntegerField',view:'settings'}]
     return []
 }
 
 const convertvalidation = (validationSchema:Array<any>) =>{
+    if(validationSchema===undefined) return ''
     let validationSchemaString='[';
     if(typeof validationSchema!=='string'&&validationSchema.length>0){
         validationSchema.map((validate:any)=>validationSchemaString=validationSchemaString+'['+validate.toString()+']')
