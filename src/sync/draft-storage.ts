@@ -13,18 +13,18 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: staging.ts
+ * Filename: draft-storage.ts
  * Description:
  *   TODO
  */
 
 import PouchDB from 'pouchdb';
 import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
-import {SavedView} from '../datamodel/staging';
+import {SavedView} from '../datamodel/drafts';
 
-export type StagingDB = PouchDB.Database<SavedView>;
+export type DraftDB = PouchDB.Database<SavedView>;
 
-export const staging_db: StagingDB = new PouchDB('staging');
+export const draft_db: DraftDB = new PouchDB('draft-storage');
 
 export async function getStagedData(
   active_id: ProjectID,
@@ -35,7 +35,7 @@ export async function getStagedData(
   const _id = determineId(active_id, existing_record_id, existing_revision_id);
 
   try {
-    return await staging_db.get(_id);
+    return await draft_db.get(_id);
   } catch (err: any) {
     if (err.message !== 'missing') {
       throw err;
@@ -70,12 +70,12 @@ export async function setStagedData(
     };
     if (_rev !== null) put_doc._rev = _rev;
 
-    return await staging_db.put(put_doc);
+    return await draft_db.put(put_doc);
   } catch (possibleConflict: any) {
     if (possibleConflict.name === 'conflict') {
       // Do it less efficiently if a conflict occurs, by doing a _rev lookup first.
-      console.warn(`Conflict in local staging db: ${possibleConflict}`);
-      const _rev = (await staging_db.get(_id))._rev;
+      console.warn(`Conflict in local draft db: ${possibleConflict}`);
+      const _rev = (await draft_db.get(_id))._rev;
       return await setStagedData(
         new_data,
         _rev,
@@ -94,7 +94,7 @@ export async function setStagedData(
  * based on the given parameters.
  *
  * Used for when you're trying to save or retrieve something
- * to/from the staging area, this gives you a pouch unique _id to use.
+ * to/from the draft area, this gives you a pouch unique _id to use.
  *
  * If you're trying to get/save data for when the user
  * is creating a new document, leave out existing_record or existing_revision

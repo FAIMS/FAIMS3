@@ -51,7 +51,7 @@ import {ProjectUIModel} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
-import RecordStagingState from '../../../sync/staging-observation';
+import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldsForViewSet,
   getFieldNamesFromFields,
@@ -80,7 +80,7 @@ type RecordFormProps = {
 );
 
 type RecordFormState = {
-  stagingError: string | null;
+  draftError: string | null;
   type_cached: string | null;
   view_cached: string | null;
   revision_cached: string | null;
@@ -93,7 +93,7 @@ class RecordForm extends React.Component<
   RecordFormProps & RouteComponentProps,
   RecordFormState
 > {
-  staging: RecordStagingState;
+  draftState: RecordDraftState;
 
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
@@ -119,7 +119,7 @@ class RecordForm extends React.Component<
 
   constructor(props: RecordFormProps & RouteComponentProps) {
     super(props);
-    this.staging = new RecordStagingState({
+    this.draftState = new RecordDraftState({
       record_id: this.props.record_id,
       project_id: this.props.project_id,
     });
@@ -127,7 +127,7 @@ class RecordForm extends React.Component<
       type_cached: null,
       view_cached: null,
       revision_cached: null,
-      stagingError: null,
+      draftError: null,
       initialValues: null,
       is_saving: false,
       last_saved: new Date(),
@@ -137,7 +137,7 @@ class RecordForm extends React.Component<
   }
 
   componentDidMount() {
-    // On mount, staging.start() must be called, so give this false:
+    // On mount, draftState.start() must be called, so give this false:
     this.formChanged(false);
   }
 
@@ -155,7 +155,7 @@ class RecordForm extends React.Component<
         (val as {message?: string}).message || val.toString();
       console.error('saveListener', val);
 
-      this.setState({is_saving: false, stagingError: error_message});
+      this.setState({is_saving: false, draftError: error_message});
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -166,7 +166,7 @@ class RecordForm extends React.Component<
     }
   }
 
-  async formChanged(staging_area_started_already: boolean) {
+  async formChanged(draft_saving_started_already: boolean) {
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -177,7 +177,7 @@ class RecordForm extends React.Component<
         );
         if (latest_record === null) {
           this.setState({
-            stagingError: `Could not find data for record ${this.props.record_id}`,
+            draftError: `Could not find data for record ${this.props.record_id}`,
           });
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
@@ -232,21 +232,21 @@ class RecordForm extends React.Component<
       this.requireView();
       const revision_cached = this.state.revision_cached;
 
-      // If the staging area .start() has already been called,
+      // If the draft saving has .start()'d already,
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
-      if (staging_area_started_already) {
-        this.staging.recordChangeHook(this.props, {
+      if (draft_saving_started_already) {
+        this.draftState.recordChangeHook(this.props, {
           revision_id: revision_cached,
         });
       } else {
-        this.staging.saveListener = this.saveListener.bind(this);
-        await this.staging.start({
+        this.draftState.saveListener = this.saveListener.bind(this);
+        await this.draftState.start({
           revision_id: revision_cached,
         });
       }
     } catch (err) {
-      console.error('rare staging error', err);
+      console.error('rare draft error', err);
     }
     try {
       await this.setInitialValues();
@@ -275,13 +275,13 @@ class RecordForm extends React.Component<
         (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]
       );
     }
-    this.staging.stop();
+    this.draftState.stop();
   }
 
   async setInitialValues() {
     /***
      * Formik requires a single object for initialValues, collect these from the
-     * (in order high priority to last resort): staging area, database, ui schema
+     * (in order high priority to last resort): draft storage, database, ui schema
      */
     const database_data =
       this.props.revision_id === undefined
@@ -294,7 +294,7 @@ class RecordForm extends React.Component<
             )
           )?.data || {};
 
-    const staged_data = await this.staging.getInitialValues();
+    const staged_data = await this.draftState.getInitialValues();
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
@@ -402,9 +402,9 @@ class RecordForm extends React.Component<
         console.warn(err);
         console.error('Failed to save data');
       })
-      // Clear the staging area (Possibly after redirecting back to project page)
+      // Clear the current draft area (Possibly after redirecting back to project page)
       .then(() =>
-        this.staging.clear({
+        this.draftState.clear({
           revision_id: this.state.revision_cached!,
         })
       )
@@ -495,7 +495,7 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              this.staging.renderHook(formProps.values);
+              this.draftState.renderHook(formProps.values);
               return (
                 <Form>
                   <Grid container spacing={2}>
@@ -503,7 +503,7 @@ class RecordForm extends React.Component<
                       <AutoSave
                         last_saved={this.state.last_saved}
                         is_saving={this.state.is_saving}
-                        error={this.state.stagingError}
+                        error={this.state.draftError}
                       />
                     </Grid>
                     <Grid item sm={6} xs={12}>
@@ -511,7 +511,7 @@ class RecordForm extends React.Component<
                         viewName={viewName}
                         ui_specification={ui_specification}
                         formProps={formProps}
-                        staging={this.staging}
+                        draftState={this.draftState}
                       />
                       <br />
                       {formProps.isValid ? (

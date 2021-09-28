@@ -24,13 +24,13 @@ import {Field, FormikProps} from 'formik';
 import {Box} from '@material-ui/core';
 
 import {getComponentByName} from '../../component_registry';
-import RecordStagingState from '../../../sync/staging-observation';
+import DraftState from '../../../sync/draft-state';
 
 export function getComponentFromFieldConfig(
   fieldConfig: any,
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>,
-  staging: RecordStagingState
+  draftstate: DraftState
 ) {
   // console.log('getComponentFromFieldConfig');
   const namespace = fieldConfig['component-namespace'];
@@ -48,15 +48,15 @@ export function getComponentFromFieldConfig(
       <Field
         component={Component} //e.g, TextField (default <input>)
         name={fieldName}
-        onChange={staging.createNativeFieldHook<
+        onChange={draftstate.createNativeFieldHook<
           React.ChangeEvent<{name: string}>,
           ReturnType<typeof formProps.handleChange>
         >(formProps.handleChange, fieldName)}
-        onBlur={staging.createNativeFieldHook<
+        onBlur={draftstate.createNativeFieldHook<
           React.FocusEvent<{name: string}>,
           ReturnType<typeof formProps.handleBlur>
         >(formProps.handleBlur, fieldName)}
-        stageValue={staging.createCustomFieldHook(
+        stageValue={draftstate.createCustomFieldHook(
           formProps.setFieldValue,
           fieldName
         )}

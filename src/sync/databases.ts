@@ -39,7 +39,7 @@ import {
   local_pouch_options,
   materializeConnectionInfo,
 } from './connection';
-import {staging_db} from './staging';
+import {draft_db} from './draft-storage';
 import {SyncHandler} from './sync-handler';
 
 export const DEFAULT_LISTING_ID = 'default';
@@ -316,7 +316,7 @@ async function delete_synced_dbs(db_list: LocalDBList<any>) {
 }
 
 export async function wipe_all_pouch_databases() {
-  const local_only_dbs_to_wipe = [active_db, local_state_db, staging_db];
+  const local_only_dbs_to_wipe = [active_db, local_state_db, draft_db];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
   await delete_synced_dbs(people_dbs);
