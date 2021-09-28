@@ -45,6 +45,7 @@ import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation} from '../../../datamodel/ui';
+import DraftsTable from '../record/draft_table';
 import RecordsTable from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
@@ -55,6 +56,7 @@ import ProjectSync from './sync';
 type ProjectCardProps = {
   project: ProjectInformation;
   showRecords: boolean;
+  showDrafts: boolean;
   listView: boolean;
   dashboard: boolean;
 };
@@ -99,7 +101,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export default function Card(props: ProjectCardProps) {
-  const {project, showRecords, listView, dashboard} = props;
+  const {project, showRecords, showDrafts, listView, dashboard} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
@@ -292,6 +294,17 @@ export default function Card(props: ProjectCardProps) {
               )}
             </Typography>
 
+            {showDrafts ? (
+              <Box mt={1}>
+                <DraftsTable
+                  project_id={project.project_id}
+                  maxRows={listView ? 10 : 25}
+                />
+              </Box>
+            ) : (
+              ''
+            )}
+
             {showRecords ? (
               <Box mt={1}>
                 <RecordsTable
@@ -364,6 +377,7 @@ export default function Card(props: ProjectCardProps) {
 }
 Card.defaultProps = {
   showRecords: false,
+  showDrafts: true,
   listView: false,
   dashboard: false,
 };
