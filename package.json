@@ -64,6 +64,7 @@
     "@types/react-router-dom": "^5.1.7",
     "@types/uuid": "^8.3.0",
     "clsx": "^1.1.1",
+    "fast-json-stable-stringify": "^2.1.0",
     "formik": "^2.2.6",
     "formik-material-ui": "^3.0.1",
     "jsonpointer": "^4.1.0",

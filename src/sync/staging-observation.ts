@@ -26,6 +26,7 @@
 import {FormikValues} from 'formik';
 import {getStagedData, setStagedData} from './staging';
 import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
+import stable_stringify from 'fast-json-stable-stringify';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const STAGING_SAVE_CYCLE = 5000;
@@ -184,7 +185,14 @@ class RecordStagingState {
       for (const field in this.data) {
         // Formik & Pouch should give us comparable JSON objects.
         // As long as it differs at the top level, we say it's touched
-        if (this.data.fields?.[field] !== values?.[field]) {
+        // BUT we don't want things like {} to not equal another {} (or [] != [])
+        // So we use JSON stable stringify to compare
+        //
+        // undefined in gives undefined out. Which is prefectly fine
+        if (
+          stable_stringify(this.data.fields?.[field]) !==
+          stable_stringify(values?.[field])
+        ) {
           this.touched_fields.add(field);
         }
       }
