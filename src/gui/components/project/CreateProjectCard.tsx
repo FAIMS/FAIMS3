@@ -97,14 +97,14 @@ export default function CreateProjectCard(props:any) {
     useEffect(() => {
 
      setinit();
-     console.log('set ini value')
+
     }, []);
 
     useEffect(() => {
 
      setinit();
      setProjectID(props.project_id)
-     console.log('projectIDchanges'+props.project_id)
+
 
     }, [props.project_id]);
 
@@ -114,7 +114,7 @@ export default function CreateProjectCard(props:any) {
         
         setFormuiSpec(uiSpec);
       }
-      console.log('Update Changes'+uiSpec)
+      
     }, [uiSpec]);
 
 
@@ -144,7 +144,6 @@ export default function CreateProjectCard(props:any) {
       if(props.project_id!==undefined){
         getUiSpecForProject(props.project_id).then(setUISpec, setError);
 
-        console.log('get project ui from DBf')
       }
       // if(uiSpec===null){
         console.log('setup')

@@ -85,7 +85,6 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
 		
 	})
 	views['start-view']={'fields':fields_label,'uidesign':'settings'}
-  console.log(views)
 	return {
 		fields:fields_list,
     'views':views ,
@@ -193,11 +192,10 @@ const updatelabel = (type:boolean,props:any) =>{
 
 const newfromui = (newuiSpec:any,newformcom:any) =>{
   newuiSpec[VISIBLE_TYPE].map((variant:any,index:any)=>{
-        if(index===0)
+       
         newuiSpec['viewsets'][variant]['views'].map((view:string)=>{
           newformcom[view]=[]    
           newuiSpec['views'][view]['fields'].map((fieldname:string)=>{
-            console.log(fieldname)
             const field=newuiSpec['fields'][fieldname]
             const fieldprops=convertuiSpecToProps(field)
             const newuiSpeclist=FieldSettings(field,fieldname,fieldprops)

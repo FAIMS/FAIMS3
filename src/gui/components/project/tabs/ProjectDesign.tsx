@@ -98,12 +98,12 @@ export default function ProjectDesignTab(props:any) {
     useEffect(() => {
 
      setinit();
-     console.log('initial value')
+
     }, []);
 
     useEffect(() => {
       //this function should be used to get new project ui when project_id changes??
-      console.log('Update Changes'+project_id)
+      
       setinit();
     }, [project_id]);
 
@@ -113,8 +113,7 @@ export default function ProjectDesignTab(props:any) {
       const tabs:Array<string>=[];
       formui[VISIBLE_TYPE].map((tab:string)=>tabs.push(formuiSpec['viewsets'][tab]['label']??tab))
       const newformcom=updateuiSpec('newfromui',{formuiSpec:formui,formcomponents:formcomponents})
-      console.log('FORM')
-      console.log(newformcom)
+
 
       const newformvariants=formui[VISIBLE_TYPE][0]
       setFormVariants(newformvariants)
@@ -148,8 +147,7 @@ export default function ProjectDesignTab(props:any) {
       })
       // console.log(formuiSpec)
       if(formuiSpec!==null){
-      	console.log('get from uiSpec')
-      	console.log(formuiSpec)
+
       	generateunifromformui(formuiSpec)
       }
       	
@@ -164,7 +162,7 @@ export default function ProjectDesignTab(props:any) {
       setFormComponents(components)
       setFormuiSpec({fields:newuiSpec,views:newviews,viewsets:formuiSpec.viewsets,visible_types:formuiSpec.visible_types})
       setIsAddField(false)
-      console.log(initialValues)
+      
 
     }
 
@@ -227,9 +225,10 @@ export default function ProjectDesignTab(props:any) {
 
     const ChangeVariants = (id:string) =>{
     	  setFormVariants(id)
-	      console.log(formuiview+currentView)
+	      
 	      
 	      if(formuiSpec['viewsets'][id]['views'].length>0){
+	      	console.log(formuiSpec['viewsets'][id]['views'][0])
 	        const tabs:any=[]
 	        if(formuiSpec['viewsets'][id]['views'].length>0){
 	          formuiSpec['viewsets'][id]['views'].map((tab:string,number:number)=>tabs[number]=formuiSpec['views'][tab]['label'])
@@ -327,7 +326,7 @@ export default function ProjectDesignTab(props:any) {
   return ( 
 
       <Grid container  >
-      {project_id}
+      {project_id}<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Save Form Design' />
       <Grid item sm={12} xs={12}>
         <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
         <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>
@@ -342,7 +341,7 @@ export default function ProjectDesignTab(props:any) {
        
       </TabPanel>
       <TabPanel value={fieldvalue} index={0} tabname='fieldtab' >
-      <AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Save Form Design' />
+      
       {formuiview!==''&&formcomponents[formuiview].length>0?formcomponents[formuiview].map((formcomponent:any,index:any)=>(
         <Formik
         key={index}
