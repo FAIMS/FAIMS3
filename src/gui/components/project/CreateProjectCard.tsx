@@ -89,20 +89,8 @@ export default function CreateProjectCard(props:any) {
     const [formcomponents,setFormComponents]= useState<any>(form_defult)
     const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [uiSpec,setUISpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>(props.uiSpec)
-    // const [isAddField,setIsAddField]=useState(true)
-    // const [currentView,setCurrentView]=useState(sections_default[0])
-    // const [formlabel,setformlabel]=useState(variant_label[0])
-    // const [designvalue,setDesignvalue]=useState<any>('settings')
-    // const [settingvalue,setsettingvalue]=useState<any>({fields:{},views:{}})
-    // const [formView,setFormView]=useState('start-view')
-    // const [formvariants,setFormVariants]= useState<any>(variant_default[0])
-    // const [formuiview,setformuiview]=useState(formvariants+currentView)
-    const [formtabs,setformTabs]=useState<Array<string>>([])
-    // const [sectiontabs,setsectiontabs]=useState<Array<string>>([])
-    // const [tablists,setTablist]=useState<Array<string>>([])
-    
+    const [formtabs,setformTabs]=useState<Array<string>>([])    
     const [error, setError] = useState(null as null | {});
-    // const [fieldvalue,setfieldValue] = useState(0); //field tab 
 
 
 

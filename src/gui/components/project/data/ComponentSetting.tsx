@@ -52,7 +52,7 @@ export const FieldSettings=(component:any,label:string,props:any)=>{
         {name:'label',lable:'Label',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
         {name:'helperText',lable:'Hit Text for Complete Form',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
         {name:'required',lable:'Check if is compusory',namespace:'faims-custom',componentName:'Checkbox',view:'valid'},
-        {name:'validationSchema',lable:'',namespace:'formik-material-ui',componentName:'TextField',view:'valid'},
+        {name:'validationSchema',lable:'validationSchema',namespace:'formik-material-ui',componentName:'TextField',view:'valid'},
         {name:'access',lable:'access',namespace:'formik-material-ui',componentName:'TextField',view:'access'},
         {name:'annotation_label',lable:'annotation Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
         {name:'meta_type',lable:'Include Uncertainty',namespace:'faims-custom',componentName:'Checkbox',view:'notes'},
@@ -205,7 +205,7 @@ const newfromui = (newuiSpec:any,newformcom:any) =>{
           })
         })
       })
-  return {uiSpec:newuiSpec,formcomponents:newformcom};
+  return newformcom;
 }
 
  const swithField = (index:any,type:boolean,formuiSpec:any,formcomponents:any,formuiview:string) =>{

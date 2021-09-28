@@ -16,9 +16,10 @@
  * Filename: ProjectDesign.tsx
  * Description:This is the file about form design, all uiSpec related sould be defined here
  *   TODO: [BUG] when form tab changes, section tab should be reset(Should use tabPanels instead??)
- *   TODO: [BUG]edit Project is not working, can't read information for project
+ *   TODO: [BUG] edit Project is not working, can't read information for project
  *   TODO: swith the form component, need to change to drag element
- *   TODO: [BUG]uiSpec is rewrite everytime tabs changes
+ *   TODO: [BUG] Validationschma 
+ *   TODO: [BUG] uiSpec and formcomponent issue ini setup issue [Fixed, need to double check]
  */
 import React from 'react';
 import { useState, useEffect } from 'react'
@@ -100,17 +101,17 @@ export default function ProjectDesignTab(props:any) {
      console.log('initial value')
     }, []);
 
-    useEffect(() => {
-      //this function should be used to get new project ui when project_id changes??
-      console.log('Update Changes'+project_id)
+    // useEffect(() => {
+    //   //this function should be used to get new project ui when project_id changes??
+    //   console.log('Update Changes'+project_id)
 
-    }, [project_id]);
+    // }, [project_id]);
 
     
 
-     const generateunifromformui = (formuiS:any) =>{
+     const generateunifromformui = (formui:any) =>{
       const tabs=formtabs
-      const {formui,newformcom}=updateuiSpec('newfromui',{formuiSpec:formuiS,formcomponents:formcomponents})
+      const newformcom=updateuiSpec('newfromui',{formuiSpec:formui,formcomponents:formcomponents})
 
       const newformvariants=formui[VISIBLE_TYPE][0]
       setFormVariants(newformvariants)
@@ -133,7 +134,6 @@ export default function ProjectDesignTab(props:any) {
       const view=formvariants+sections_default[0]
       setCurrentView(view);
       
-      // const tabs=formview['visible_types'].map((tab:string)=>tab=formview['viewsets'][tab]['label'])
       setformTabs(variant_label)
       setsectiontabs(sections_default)
 
@@ -142,7 +142,9 @@ export default function ProjectDesignTab(props:any) {
         if(newvalue[view]===undefined) newvalue[view]=[]
         return newvalue;
       })
-      
+      // console.log(formuiSpec)
+      if(formuiSpec!==null)
+      	generateunifromformui(formuiSpec)
 
     }
 

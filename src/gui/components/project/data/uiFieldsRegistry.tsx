@@ -67,7 +67,14 @@ export const getsettingform = (component:any) =>{
     return []
 }
 
-
+const convertvalidation = (validationSchema:Array<any>) =>{
+    let validationSchemaString='[';
+    if(typeof validationSchema!=='string'&&validationSchema.length>0){
+        validationSchema.map((validate:any)=>validationSchemaString=validationSchemaString+'['+validate.toString()+']')
+    }
+    validationSchemaString=validationSchemaString+']';
+    return validationSchemaString;
+}
 export const convertuiSpecToProps =(fielduiSpec:any) =>{
     const {name,select,helperText,InputLabelProps,InputProps,FormHelperTextProps,ElementProps,SelectProps,required,...others}=fielduiSpec['component-parameters']
     let props:any={} //TODO: add extend filed here from component Specfic
@@ -78,7 +85,7 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
     'type_return':fielduiSpec['type-returned'],
     'required':fielduiSpec['component-parameters']['required'],
     'initialValue':fielduiSpec['initialValue'],
-    //'validationSchema':fielduiSpec['validationSchema'],  TODO: ADD function to pass and update validationschema
+    'validationSchema':convertvalidation(fielduiSpec['validationSchema']),  //TODO: ADD function to pass and update validationschema
     'annotation_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['annotation_label']:'annotation',
     'meta_type':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['include']:false,
     'meta_type_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['label']:'',
