@@ -13,23 +13,23 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: staging-observation.ts
+ * Filename: draft-state.ts
  * Description:
- *   Implementation of the staging area, but only:
+ *   Implementation of the draft area, but only:
  *     * Timers
  *     * blur/focus event handlers
  *     * Handling complexities of async saving
  *     * Save & Load functions
  *   This is used from the Record form component,
- *   and relies on the sync/staging.ts file for actual Databases access
+ *   and relies on the sync/draft-storage.ts file for actual Databases access
  */
 import {FormikValues} from 'formik';
-import {getStagedData, setStagedData} from './staging';
+import {getStagedData, setStagedData} from './draft-storage';
 import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
 import stable_stringify from 'fast-json-stable-stringify';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
-const STAGING_SAVE_CYCLE = 5000;
+const DRAFT_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
   project_id: ProjectID;
@@ -56,10 +56,10 @@ type StagedData = {
 };
 
 /**
- * Intermediary between React and Pouch Staging area.
+ * Intermediary between React and Pouch Draft storage.
  *
- * Because staging data must be accessable synchronously
- * (due to Formik) this stores a copy of the staging data.
+ * Because draft data must be accessable synchronously
+ * (due to Formik) this stores a copy of the draft data.
  * (Just for this form, it's not much)
  *
  * Unless you open the same record on 2 tabs, it's
@@ -70,7 +70,7 @@ type StagedData = {
  * this.data !== null, or this.fetch_error !== null
  * This invariant doesn't hold before start() or after stop()
  */
-class RecordStagingState {
+class RecordDraftState {
   // Up-to-date data direct from formik
   // this is kept in-sync with formik. The only reason
   // to duplicate the data is to keep track of which fields
@@ -86,7 +86,7 @@ class RecordStagingState {
 
   /**
    * Set to true when the touched fields are being iterated on
-   * or the staging data is being pushed to Pouch,
+   * or the draft data is being pushed to Pouch,
    * Set to false once Pouch has returned, or once pouch
    * throws an error
    *
@@ -96,7 +96,7 @@ class RecordStagingState {
   is_saving = false;
 
   /**
-   * Return from setInterval, when the staging save is running.
+   * Return from setInterval, when the draft save is running.
    */
   interval: null | number = null;
 
@@ -104,20 +104,20 @@ class RecordStagingState {
    * Keeps track of any fields that have changed from their initial values
    * This is different from formik's FormikProps.touched, in that it tracks
    * when the values change before the blur event (i.e. listens for onChange AND onBlur)
-   * And it loads whatever was previously touched in the staging area.
-   * Used for determining what to save to the staging area.
+   * And it loads whatever was previously touched in the draft storage.
+   * Used for determining what to save to the draft storage.
    */
   touched_fields = new Set<string>();
 
   /**
-   * (Incrementally increasing) revision ID from staging docs
+   * (Incrementally increasing) revision ID from draft docs
    * Reset when current record/project changes
-   * Used to avoid collision-avoid lookup before setStagingData
-   * Whenever setStagingData is called, save the revision to this.
+   * Used to avoid collision-avoid lookup before setDraftData
+   * Whenever setDraftData is called, save the revision to this.
    */
   last_revision: null | string = null;
 
-  // +1 every time setStagingData errors out. Set to 0 when it doesn't error.
+  // +1 every time setDraftData errors out. Set to 0 when it doesn't error.
   errors = 0;
 
   /**
@@ -141,14 +141,14 @@ class RecordStagingState {
 
   /**
    * Starts any timeouts/timers that need to be started,
-   * *Starts fetching staging data* (use getInitialValues() after calling this)
+   * *Starts fetching draft data* (use getInitialValues() after calling this)
    */
   start(loadedProps: LoadableProps) {
     this._fetchData(loadedProps);
 
     this.interval = window.setInterval(
       this._saveData.bind(this, loadedProps),
-      STAGING_SAVE_CYCLE
+      DRAFT_SAVE_CYCLE
     );
   }
 
@@ -200,9 +200,9 @@ class RecordStagingState {
       this.data = {fields: values};
     } else if (this.data === null) {
       console.debug(
-        "This state shouldn't be encountered: Somehow, staging's renderHook " +
-          'was called before staging finished loading data from the local ' +
-          'staging Pouch. The dev should have waited for the staging data to ' +
+        "This state shouldn't be encountered: Somehow, draft-storages renderHook " +
+          'was called before draft finished loading data from the local ' +
+          'draft Pouch. The dev should have waited for the draft data to ' +
           'finish loading (you can wait on initialValues) before even ' +
           'attempting to render components/call renderHook'
       );
@@ -267,12 +267,12 @@ class RecordStagingState {
   fetch_sequence = 0;
 
   /**
-   * Called from within this class, fetches the latest data from the staging area
+   * Called from within this class, fetches the latest data from the draft storage
    * puts it into data and then resolves any promises waiting for said data.
    *
-   * This should be called whenever the ID of the staging document changes:
+   * This should be called whenever the ID of the draft document changes:
    * this ID is made from the project id, (with listing id), record id and
-   * possibly the view (View-specific staging not implemented yet, TBD)
+   * possibly the view (View-specific draft not implemented yet, TBD)
    * So if the project changes, this _fetchData() should be run.
    * This should also be run at construction of this class.
    */
@@ -336,13 +336,13 @@ class RecordStagingState {
   }
 
   /**
-   * Pushes the currently touched values into the staging DB
+   * Pushes the currently touched values into the draft DB
    *
    * This is awaitable as a normal async function
    */
   async _saveData(loadedProps: LoadableProps): Promise<void> {
     if (this.is_saving) {
-      console.warn('Last stage save took longer than ', STAGING_SAVE_CYCLE);
+      console.warn('Last stage save took longer than ', DRAFT_SAVE_CYCLE);
       // Leave thes existing running _saveData function to finish its work
       // Doesn't schedule any more saves to happen
       return;
@@ -366,7 +366,7 @@ class RecordStagingState {
         this.saveListener(true);
       } else {
         this.errors += 1;
-        this.save_error = Error('Saving to staging returned not OK');
+        this.save_error = Error('Saving to draft returned not OK');
         if (this.errors === MAX_CONSEQUTIVE_SAVE_ERRORS) {
           this.saveListener(this.save_error);
         }
@@ -383,7 +383,7 @@ class RecordStagingState {
 
   /**
    * Called by setInitialValues, this function retrieves any existing
-   * data from the staging area for this current record/revision
+   * data from the draft storage for this current record/revision
    */
   async getInitialValues(): Promise<StagedData> {
     return this._touchedData();
@@ -397,7 +397,7 @@ class RecordStagingState {
 
   /**
    * Called from RecordForm.componentDidUpdate,
-   * this determines if staging data must be changed/refreshed
+   * this determines if draft data must be changed/refreshed
    * and does so.
    *
    * setInitialValues of your form must be run after this function,
@@ -409,7 +409,7 @@ class RecordStagingState {
    *       only trigger this when any of the following props of your
    *       component changes:
    *           record_id, revision_id
-   *       Or other props that change which data the staging area
+   *       Or other props that change which data the draft storage
    *       should fetch
    *
    * This may trigger a change of state of the RecordForm
@@ -426,7 +426,7 @@ class RecordStagingState {
 
   /**
    * Called after save & new button is pressed,
-   * This clears the staging area of ALL data
+   * This clears the draft storage of ALL data
    *
    * This is done for existing observations and new observations
    */
@@ -436,4 +436,4 @@ class RecordStagingState {
   }
 }
 
-export default RecordStagingState;
+export default RecordDraftState;
