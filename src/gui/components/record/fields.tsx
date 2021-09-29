@@ -24,13 +24,11 @@ import {Field, FormikProps} from 'formik';
 import {Box} from '@material-ui/core';
 
 import {getComponentByName} from '../../component_registry';
-import DraftState from '../../../sync/draft-state';
 
 export function getComponentFromFieldConfig(
   fieldConfig: any,
   fieldName: string,
-  formProps: FormikProps<{[key: string]: unknown}>,
-  draftstate: DraftState
+  formProps: FormikProps<{[key: string]: unknown}>
 ) {
   // console.log('getComponentFromFieldConfig');
   const namespace = fieldConfig['component-namespace'];
@@ -48,18 +46,6 @@ export function getComponentFromFieldConfig(
       <Field
         component={Component} //e.g, TextField (default <input>)
         name={fieldName}
-        onChange={draftstate.createNativeFieldHook<
-          React.ChangeEvent<{name: string}>,
-          ReturnType<typeof formProps.handleChange>
-        >(formProps.handleChange, fieldName)}
-        onBlur={draftstate.createNativeFieldHook<
-          React.FocusEvent<{name: string}>,
-          ReturnType<typeof formProps.handleBlur>
-        >(formProps.handleBlur, fieldName)}
-        stageValue={draftstate.createCustomFieldHook(
-          formProps.setFieldValue,
-          fieldName
-        )}
         value={formProps.values[fieldName]}
         {...fieldConfig['component-parameters']}
         {...fieldConfig['component-parameters']['InputProps']}

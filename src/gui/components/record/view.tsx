@@ -44,8 +44,7 @@ export class ViewComponent extends React.Component<ViewProps> {
           return getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
-            this.props.formProps,
-            this.props.draftState
+            this.props.formProps
           );
         })}
       </React.Fragment>

@@ -325,55 +325,6 @@ class RecordDraftState {
   newDraftListener: null | ((draft_id: string) => unknown) = null;
 
   /**
-   * Creates a listener that is compatible with onChange/onBlur of <Field>s with components
-   * that are native HTML components (i.e. components that do call onChange/onBlur and have
-   * said listeners on their props)
-   *
-   * The purpose of this hook is to run an inner handler (from Formik) but also to
-   * ensure that any blur/focus event adds the element to the touched elements list.
-   *
-   * @param innerHandler Formik's handleChange/handleBlur function to call with the event
-   * @param fieldName Name of the current field this listener should be for
-   * @returns A listener to pass to a <Field> whos component has onChange/onBlur events
-   */
-  createNativeFieldHook<E extends React.SyntheticEvent<{name: string}>, R>(
-    innerHandler: (evt: E) => R,
-    fieldName: string
-  ): (evt: E) => R {
-    return (evt: E): R => {
-      const ret = innerHandler(evt);
-      this.touched_fields.add(fieldName);
-      return ret;
-    };
-  }
-
-  /**
-   * Creates a listener that is compatible with stageValue of <Field>s with components
-   * that are custom FAIMS components.
-   *
-   * The purpose of this hook is to set the value in the formik form, but also to
-   * ensure that event adds the element to the touched elements list.
-   *
-   * @param innerHandler Formik's handleChange/handleBlur function to call with the event
-   * @param fieldName Name of the current field this listener should be for
-   * @returns A listener to pass to a <Field> whos component has onChange/onBlur events
-   */
-  createCustomFieldHook(
-    /* setFieldValue straight from FormikHelpers<any> */
-    setFieldValue: (
-      field: string,
-      value: any,
-      shouldValidate?: boolean | undefined
-    ) => void,
-    fieldName: string
-  ): (value: any) => void {
-    return (value: any) => {
-      setFieldValue(fieldName, value);
-      this.touched_fields.add(fieldName);
-    };
-  }
-
-  /**
    * Allows the _fetchData to be interrupted.
    * Any future _fetchData calls, or any interruptions
    * just have to increment this value and _fetchData will check
