@@ -240,6 +240,10 @@ class RecordDraftState {
       //
       // This diffing should replace createNativeFieldHook/createCustomFieldHook
 
+      // TODO: Figure out why autoincrement components trigger the comparison,
+      // hence causing all forms with an autoincrement component to always
+      // create new drafts when viewing them.
+
       if (this.data.fields === null) {
         // 1st call to renderHook establishes the 'default' initial data
         this.data.fields = values;
@@ -282,6 +286,15 @@ class RecordDraftState {
               ...this.data,
               draft_id: Promise.resolve(new_draft_id),
             };
+            // If anyone is listening for when a new draft is created
+            // they probably expect the draft to be saved, so save it
+            // then call that listener:
+
+            setStagedData(new_draft_id, this.data.fields).then(() => {
+              if (this.newDraftListener !== null) {
+                this.newDraftListener(new_draft_id);
+              }
+            });
           }
           // this.data, in an impossibly rare execution, might be set to
           // something other than 'edited' (possibly when clear() is called
@@ -304,6 +317,12 @@ class RecordDraftState {
       );
     }
   }
+
+  /**
+   * Called if this state goes from unedited => edited
+   * (i.e. the user changed a value in the form)
+   */
+  newDraftListener: null | ((draft_id: string) => unknown) = null;
 
   /**
    * Creates a listener that is compatible with onChange/onBlur of <Field>s with components
