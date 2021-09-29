@@ -61,6 +61,8 @@ import {
   getFieldNamesFromFields,
 } from '../../../uiSpecification';
 import {getCurrentUserId} from '../../../users';
+import {Link} from '@material-ui/core';
+import {Link as RouterLink} from 'react-router-dom';
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -106,6 +108,12 @@ type RecordFormState = {
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
   last_saved: Date;
+  /**
+   * Set only by newDraftListener, but this is only non-null
+   * for a single render. In that render, a notification will pop up to the user
+   * letting them redirect to the draft's URL
+   */
+  draft_created: string | null;
 };
 
 class RecordForm extends React.Component<
@@ -147,6 +155,7 @@ class RecordForm extends React.Component<
       initialValues: null,
       is_saving: false,
       last_saved: new Date(),
+      draft_created: null,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -155,6 +164,10 @@ class RecordForm extends React.Component<
   componentDidMount() {
     // On mount, draftState.start() must be called, so give this false:
     this.formChanged(false);
+  }
+
+  newDraftListener(draft_id: string) {
+    this.setState({draft_created: draft_id});
   }
 
   saveListener(val: boolean | {}) {
@@ -255,6 +268,7 @@ class RecordForm extends React.Component<
         });
       } else {
         this.draftState.saveListener = this.saveListener.bind(this);
+        this.draftState.newDraftListener = this.newDraftListener.bind(this);
         await this.draftState.start({type: this.state.type_cached!});
       }
     } catch (err) {
@@ -456,6 +470,38 @@ class RecordForm extends React.Component<
   }
 
   render() {
+    if (this.state.draft_created !== null) {
+      // If a draft was created, that implies this form started from
+      // a non draft, so it must have been an existing record (see props
+      // as it's got a type {existing record} | {draft already created})
+      this.context.dispatch({
+        type: ActionType.ADD_CUSTOM_ALERT,
+        payload: {
+          severity: 'success',
+          element: (
+            <React.Fragment>
+              <Link
+                component={RouterLink}
+                to={
+                  ROUTES.PROJECT +
+                  this.props.project_id +
+                  ROUTES.RECORD_EXISTING +
+                  this.props.record_id! +
+                  ROUTES.REVISION +
+                  this.props.revision_id! +
+                  ROUTES.RECORD_DRAFT +
+                  this.state.draft_created
+                }
+              >
+                Created new draft
+              </Link>
+            </React.Fragment>
+          ),
+        },
+      });
+      this.setState({draft_created: null});
+    }
+
     if (this.isReady()) {
       const ui_specification = this.props.ui_specification;
       const viewName = this.requireView();
