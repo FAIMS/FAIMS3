@@ -123,7 +123,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       setformTabs(tabs)
       // const stabs:Array<string>=[]
       // formui['viewsets'][newformvariants]['views'].map((tab:string)=>tabs.push(formuiSpec['views'][tab]['label']))
-      setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=formuiSpec['views'][tab]['label']))
+      setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=formuiSpec['views'][tab]['label']??tab))
       setFormComponents(newformcom)
       setFormuiSpec(formui)
 

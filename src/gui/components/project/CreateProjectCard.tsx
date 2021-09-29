@@ -25,20 +25,13 @@
 import React from 'react';
 import { useState, useEffect } from 'react'
 import { makeStyles } from '@material-ui/core/styles';
-import {v4 as uuidv4} from 'uuid';
-import grey from '@material-ui/core/colors/grey';
-
-import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden} from '@material-ui/core';
+import { Grid,AppBar} from '@material-ui/core';
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
-import FieldsListCard from './tabs/FieldsListCard';
-import {SettingCard} from './tabs/PSettingCard';
-import {getComponentFromField,FormForm} from './FormElement';
 import {TabTab,TabEditable} from './tabs/TabTab';
 import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
-import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType,projectvalueType} from './data/ComponentSetting'
-import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './tabs/ProjectButton'
+import {handlertype,uiSpecType,projectvalueType} from './data/ComponentSetting'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel,ProjectInformation} from '../../../datamodel/ui'
@@ -51,21 +44,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.palette.background.paper,
     padding: theme.spacing(2),
   },
-  newfield:{
-    // backgroundColor:'#e1e4e8',
-    // borderTop:'1px solid #e1e4e8',
-  },
-  newfield_button:{
-    textAlign:'right',
-  },
-  addfield:{
-    // border:'1px solid #e1e4e8',
-    flexGrow: 1,
-    padding: theme.spacing(2),
-  },
-  settingtab:{
-    backgroundColor:'#e1e4e8',
-  }
+
 }));
 
 
@@ -80,6 +59,7 @@ const sections_default=['SECTION1']
 const variant_default=['FORM1']
 const projecttabs=['Info','Design','Preview']
 const variant_label=['main']
+
 export default function CreateProjectCard(props:CreateProjectCardProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
@@ -89,7 +69,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [projecttabvalue,setProjecttabvalue]=useState(0)
-    const [uiSpec,setUISpec]=useState<uiSpecType|null>(props.uiSpec)
+    // const [uiSpec,setUISpec]=useState<uiSpecType|null>(props.uiSpec)
     const [formuiSpec,setFormuiSpec]=useState<uiSpecType>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [formtabs,setformTabs]=useState<Array<string>>([])    
     const [error, setError] = useState(null as null | {});
@@ -104,20 +84,22 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
     useEffect(() => {
 
-     setinit();
-     setProjectID(props.project_id)
+      setinit();
+      setProjectID(props.project_id)
 
 
     }, [props.project_id]);
 
     useEffect(() => {
-      if(uiSpec!==null) {
-
-        
-        setFormuiSpec(uiSpec);
+      if(props.uiSpec!==null) {
+        setFormuiSpec(props.uiSpec);
+        console.log('Change UiSpec'+props.uiSpec)
+      }else{
+        setinit();
+        console.log('Change UiSpec'+props.uiSpec)
       }
       
-    }, [uiSpec]);
+    }, [props.uiSpec]);
 
 
     //  useEffect(() => {
@@ -143,19 +125,22 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
     const setinit =()=>{
       
-      if(props.project_id!==undefined){
-        getUiSpecForProject(props.project_id).then(setUISpec, setError);
+      // if(props.project_id!==undefined){
+      //   getUiSpecForProject(props.project_id).then(setFormuiSpec, setError);
 
-      }
-      // if(uiSpec===null){
+      // }
+      if(props.uiSpec===null){
         console.log('setup')
         //if create new notebook then set an empty formUI
         const view=variant_default[0]+sections_default[0]
         const formview=formuiSpec
+        formview['fields']={}
+        formview['views']={}
+        formview['viewsets']={}
         formview['views'][view]={'fields':[],uidesign:'form','label':sections_default[0]}
         formview['viewsets']={'FORM1':{views:[view],label:variant_label}}
-        setFormuiSpec({fields:formuiSpec.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
-      // }
+        setFormuiSpec({fields:formview.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
+      }
       // console.log(uiSpec)
       setProjecttabvalue(0)
 

@@ -145,7 +145,6 @@ const FieldModel =(props:any)=>{
 
 const TextField = (props:any) =>{
     const {label,helperText,validationSchema,initialValue,multiline,...others}=props;
-    console.log(props.multiline)
     return FieldModel({
         type_return:props.type_return??'faims-core::String',
         InputProps: {

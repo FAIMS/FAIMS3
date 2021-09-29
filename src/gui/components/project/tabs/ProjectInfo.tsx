@@ -59,19 +59,11 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-
-const NEWFIELDS='newfield'
-const sections_default=['SECTION1']
-const variant_default=['FORM1']
-const form_defult={'FORM1SECTION1':[]}
-const VISIBLE_TYPE='visible_types'
-const variant_label=['main']
-
 type ProjectInfoProps={ 
 	project_id:string;
 	projectvalue:projectvalueType;
-  setProjectValue:any;
-  handleSubmit:any
+  setProjectValue:handlertype;
+  handleSubmit:handlertype;
 }
 
 export default function ProjectInfoTab(props:ProjectInfoProps) {

@@ -90,7 +90,6 @@ export const FieldSettings=(component:signlefieldType,label:string,props:any)=>{
 		
 	})
 	views['start-view']={'fields':fields_label,'uidesign':'settings'}
-  console.log(fields_list)
 	return {
 		fields:fields_list,
     'views':views ,
