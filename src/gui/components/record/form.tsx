@@ -48,7 +48,11 @@ import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
+import {
+  upsertFAIMSData,
+  getFullRecordData,
+  generateFAIMSDataID,
+} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
 import RecordDraftState from '../../../sync/draft-state';
@@ -63,24 +67,39 @@ type RecordFormProps = {
   // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
-  record_id: RecordID;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
+      record_id: RecordID;
       revision_id: RevisionID;
-      // When editing existing record, type comes from record
+      // The user can view records without editing them, and to facilitate this,
+      // having a draft id is optional.
+      // In this mode, when the user starts editing, a draft ID is created and
+      // stored as state on RecordForm.
+      draft_id?: string;
+
+      // To avoid 'type' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
       type?: undefined;
     }
   | {
-      // When creating a new record,  revision is not yet created
-      revision_id?: undefined;
-      // When creating a new record, the user is prompted with viewset/type
+      // When creating a new record,  revision is not yet created.
+      // the user had to have already been prompted with viewset/type
       type: string;
+
+      // Draft id, when creating a new record, is created by a redirect
+      draft_id: string;
+
+      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
+      record_id?: undefined;
+      revision_id?: undefined;
     }
 );
 
 type RecordFormState = {
   draftError: string | null;
+  // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   revision_cached: string | null;
@@ -119,15 +138,12 @@ class RecordForm extends React.Component<
 
   constructor(props: RecordFormProps & RouteComponentProps) {
     super(props);
-    this.draftState = new RecordDraftState({
-      record_id: this.props.record_id,
-      project_id: this.props.project_id,
-    });
+    this.draftState = new RecordDraftState(this.props);
     this.state = {
-      type_cached: null,
+      draftError: null,
+      type_cached: this.props.type ?? null,
       view_cached: null,
       revision_cached: null,
-      draftError: null,
       initialValues: null,
       is_saving: false,
       last_saved: new Date(),
@@ -230,20 +246,16 @@ class RecordForm extends React.Component<
     try {
       // these come after setUISpec & setLastRev has set view_name & revision_id these to not null
       this.requireView();
-      const revision_cached = this.state.revision_cached;
-
       // If the draft saving has .start()'d already,
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
       if (draft_saving_started_already) {
         this.draftState.recordChangeHook(this.props, {
-          revision_id: revision_cached,
+          type: this.state.type_cached!,
         });
       } else {
         this.draftState.saveListener = this.saveListener.bind(this);
-        await this.draftState.start({
-          revision_id: revision_cached,
-        });
+        await this.draftState.start({type: this.state.type_cached!});
       }
     } catch (err) {
       console.error('rare draft error', err);
@@ -360,8 +372,8 @@ class RecordForm extends React.Component<
       .then(userid => {
         const now = new Date();
         const doc = {
-          record_id: this.props.record_id,
-          revision_id: this.props.revision_id || null,
+          record_id: this.props.record_id ?? generateFAIMSDataID(),
+          revision_id: this.props.revision_id ?? null,
           type: this.state.type_cached!,
           data: values,
           updated_by: userid,
@@ -403,11 +415,7 @@ class RecordForm extends React.Component<
         console.error('Failed to save data');
       })
       // Clear the current draft area (Possibly after redirecting back to project page)
-      .then(() =>
-        this.draftState.clear({
-          revision_id: this.state.revision_cached!,
-        })
-      )
+      .then(() => this.draftState.clear())
       .then(() => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
