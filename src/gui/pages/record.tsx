@@ -52,10 +52,11 @@ import {store} from '../../store';
 import {getUiSpecForProject} from '../../uiSpecification';
 
 export default function Record() {
-  const {project_id, record_id, revision_id} = useParams<{
+  const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
     revision_id: RevisionID;
+    draft_id?: string;
   }>();
   const {dispatch} = useContext(store);
   const history = useHistory();
@@ -138,6 +139,7 @@ export default function Record() {
                     record_id={record_id}
                     revision_id={revision_id}
                     ui_specification={uiSpec}
+                    draft_id={draft_id}
                   />
                 );
               }

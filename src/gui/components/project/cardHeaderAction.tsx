@@ -93,7 +93,6 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                       ROUTES.PROJECT +
                       project.project_id +
                       ROUTES.RECORD_CREATE +
-                      ROUTES.RECORD_TYPE +
                       viewSets[1],
                   }
                 : {
@@ -115,7 +114,6 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                     ROUTES.PROJECT +
                     project.project_id +
                     ROUTES.RECORD_CREATE +
-                    ROUTES.RECORD_TYPE +
                     viewset_name
                   }
                 >
@@ -150,7 +148,6 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                   ROUTES.PROJECT +
                   project.project_id +
                   ROUTES.RECORD_CREATE +
-                  ROUTES.RECORD_TYPE +
                   viewSets[1]
                 }
               >
@@ -168,7 +165,6 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                       ROUTES.PROJECT +
                       project.project_id +
                       ROUTES.RECORD_CREATE +
-                      ROUTES.RECORD_TYPE +
                       viewset_name
                     }
                   >
