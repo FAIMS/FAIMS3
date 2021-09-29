@@ -18,7 +18,7 @@
  *   TODO: seperate the tabs to different files
  *   TODO: edit Project is not working, can't read information for project
  *   TODO: setup project information 
- *     TODO: Info, design, preview, User, Behaviour, submit
+ *     TODO:  preview, User, Behaviour, submit
  *   TODO: swith the form component, need to change to drag element
  *   TODO: sync into and save to DB(??)
  */
@@ -36,11 +36,12 @@ import {getComponentFromField,FormForm} from './FormElement';
 import {TabTab,TabEditable} from './tabs/TabTab';
 import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
-import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform} from './data/ComponentSetting'
+import ProjectInfoTab from './tabs/ProjectInfo';
+import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType,projectvalueType} from './data/ComponentSetting'
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './tabs/ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
-import {ProjectUIModel} from '../../../datamodel/ui'
+import {ProjectUIModel,ProjectInformation} from '../../../datamodel/ui'
 import {create_new_project_dbs}  from '../../../sync/new-project'
 import {getProjectInfo} from '../../../databaseAccess';
 
@@ -68,27 +69,28 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
+type CreateProjectCardProps={
+  project_id:string;
+  uiSpec:uiSpecType|null;
+  project_info:ProjectInformation | null
+}
 
-const NEWFIELDS='newfield'
+
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
 const projecttabs=['Info','Design','Preview']
-const form_defult={'FORM1SECTION1':[]}
-const projectname='newnotebook123'
-const VISIBLE_TYPE='visible_types'
 const variant_label=['main']
-export default function CreateProjectCard(props:any) {
+export default function CreateProjectCard(props:CreateProjectCardProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const [project_id,setProjectID]=useState(props.project_id);
-    const [projectvalue,setProjectValue]=useState<any>({})
+    const [projectvalue,setProjectValue]=useState<projectvalueType>({})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [projecttabvalue,setProjecttabvalue]=useState(0)
-    const [formcomponents,setFormComponents]= useState<any>(form_defult)
-    const [formuiSpec,setFormuiSpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>({fields:{},views:{},viewsets:{},visible_types:[]})
-    const [uiSpec,setUISpec]=useState<{fields:any,views:any,viewsets:any,visible_types:any}>(props.uiSpec)
+    const [uiSpec,setUISpec]=useState<uiSpecType|null>(props.uiSpec)
+    const [formuiSpec,setFormuiSpec]=useState<uiSpecType>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [formtabs,setformTabs]=useState<Array<string>>([])    
     const [error, setError] = useState(null as null | {});
 
@@ -151,7 +153,7 @@ export default function CreateProjectCard(props:any) {
         const view=variant_default[0]+sections_default[0]
         const formview=formuiSpec
         formview['views'][view]={'fields':[],uidesign:'form','label':sections_default[0]}
-        formview['viewsets']={'FORM1':{views:[view],label:'main'}}
+        formview['viewsets']={'FORM1':{views:[view],label:variant_label}}
         setFormuiSpec({fields:formuiSpec.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
       // }
       // console.log(uiSpec)
@@ -214,10 +216,10 @@ export default function CreateProjectCard(props:any) {
       </AppBar>
       <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
       {'Project Name:'+projectvalue.projectname+' Project ID:'+project_id}
-          <FormForm uiSpec={getprojectform(['projectname'])} currentView='start-view' handleChangeForm={handleChangeFormProject} handleSubmit={submithandlerProject}/>
+          <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleSubmit={submithandlerProject}/>
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
-        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} uiSpec={uiSpec} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
+        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
         {projecttabvalue===2?'Project Preview':''}

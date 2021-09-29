@@ -18,6 +18,7 @@
  *   TODO: ADD function to pass and update validationschema
  *   TODO: ADD function to pass and update access
  *   TODO: function getfields Field icon not working
+ *   TODO: initial value for options, validationschema
  */
 
 import {getComponentByName,getComponentPropertiesByName} from '../../../component_registry';
@@ -49,7 +50,6 @@ export const getfields = () => {
 const accessgroup=['admin','moderator','team']
 
 export const getcomponent=(props:any)=>{
-
     if(props.namespace===undefined) {
         const newprops=getComponentPropertiesByName('formik-material-ui','TextField');
         return TextField({...props,...newprops['uiSpecProps']})
@@ -62,8 +62,8 @@ export const getcomponent=(props:any)=>{
 }
 
 export const getsettingform = (component:any) =>{
-    if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings'}]
-    //if(component['component-parameters']['multiline']===true) return [{name:'multirows',lable:'Number of rows',type:'IntegerField',view:'settings'}]
+    if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings',multiline:true,multirows:4,initialValue:'Default',helperText:'Type options here, speprate by Space(will edit)'}]
+    if(component['component-parameters']['multiline']!==undefined) if(component['component-parameters']['multiline']===true)return [{name:'multirows',lable:'Number of rows',type:'IntegerField',view:'settings'}]
     return []
 }
 
@@ -127,39 +127,34 @@ const FieldModel =(props:any)=>{
         validationSchema: validationSchema??[],
         initialValue: initialValue??'',
       }
-      if(select===true) {
+    if(select===true) {
         uiSpec['component-parameters']['select']=true
         uiSpec['component-parameters']['ElementProps']={options:options??[{
                 value: 'Default',
                 label: 'Default',
               }]}
         uiSpec['component-parameters']['SelectProps']={multiple: props.multselect??false,}
-    if(props.multselect===true) uiSpec.initialValue=initialValue??['']
+        if(props.multselect===true) uiSpec.initialValue=initialValue??['']
 
-        }
+    }
+    if(multiline===true) uiSpec['component-parameters']['multiline']=true
     if(componentName==='TakePoint') uiSpec.initialValue=initialValue??null
     return uiSpec
 }
 
-const getspec = (type:string) => {
-    if(type==='EmailField') return {type_return:'faims-core::Email',validationSchema:[['yup.string'],['yup.email', 'Enter a valid email']],type:'email'} 
-    if(type==='IntegerField') return {type_return:'faims-core::Integer',validationSchema:[['yup.number'],],type:'number'}
-    if(type==='SelectBox') return {type_return:'faims-core::Integer',validationSchema:[['yup.number'],],type:'number'}
-    return {type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'}
-}
+
 const TextField = (props:any) =>{
-    const {label,helperText,validationSchema,initialValue,...others}=props;
+    const {label,helperText,validationSchema,initialValue,multiline,...others}=props;
+    console.log(props.multiline)
     return FieldModel({
-        namespace:props.namespace,
-        type_return:props.type_return,
-        componentName:props.componentName,
+        type_return:props.type_return??'faims-core::String',
         InputProps: {
-            type: props.type,
+            type: props.type??'text',
             rows: props.multirows??1,
           },
         fullWidth: true,
-        multiline: props.multiline??false,
-        validationSchema:validationSchema??props.validationSchema,
+        multiline: multiline??false,
+        validationSchema:validationSchema??[['yup.string']],
         helperText:helperText??'',
         InputLabelProps: {
             label: label,
@@ -181,9 +176,6 @@ const SpecialField = (props:any) =>{
         ...others}); 
 }
 
-// const TextField=(props:any)=> {
-// 	return TextFieldslist('TextField',props)
-// 	}
 
 
 // const EmailField=(props:any)=> {

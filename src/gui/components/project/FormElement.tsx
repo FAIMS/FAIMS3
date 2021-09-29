@@ -51,7 +51,7 @@ export const getComponentFromField = (uiSpec:any,fieldName: string,formProps:any
     
       return (
       
-      <Box mb={3} key={fieldName}>
+      <Box  key={fieldName}>
         <Field
           component={Component} 
           name={fieldName}

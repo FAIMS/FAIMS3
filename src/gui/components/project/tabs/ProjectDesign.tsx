@@ -19,7 +19,7 @@
  *   TODO: [BUG] edit Project is not working, can't read information for project
  *   TODO: swith the form component, need to change to drag element
  *   TODO: [BUG] Validationschma 
- *   TODO: [BUG] uiSpec and formcomponent issue ini setup issue [Fixed, need to double check]
+ *   TODO: [BUG] uiSpec ini setup issue for creating new notebook, and formcomponent issue for edit existing project
  */
 import React from 'react';
 import { useState, useEffect } from 'react'
@@ -33,18 +33,13 @@ import {SettingCard} from './PSettingCard';
 import {getComponentFromField,FormForm} from '../FormElement';
 import {TabTab,TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
-import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform} from '../data/ComponentSetting'
+import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType} from '../data/ComponentSetting'
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 
 
 const useStyles = makeStyles((theme) => ({
-  root: {
-    flexGrow: 1,
-    backgroundColor: theme.palette.background.paper,
-    padding: theme.spacing(2),
-  },
   newfield:{
     // backgroundColor:'#e1e4e8',
     // borderTop:'1px solid #e1e4e8',
@@ -68,27 +63,35 @@ const NEWFIELDS='newfield'
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
 const form_defult={'FORM1SECTION1':[]}
-const projectname='newnotebook123'
 const VISIBLE_TYPE='visible_types'
 const variant_label=['main']
-export default function ProjectDesignTab(props:any) {
+
+type ProjectDesignProps={ 
+	project_id:string;
+	formuiSpec:uiSpecType;
+	setFormuiSpec:handlertype; 
+	handleSaveUiSpec:handlertype;
+}
+type formcomponents=any
+
+export default function ProjectDesignTab(props:ProjectDesignProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const {project_id,formuiSpec,setFormuiSpec,...others}=props
     const [initialValues,setinitialValues]=useState(ini)
-    const [formcomponents,setFormComponents]= useState<any>(form_defult)
+    const [formcomponents,setFormComponents]= useState<formcomponents>(form_defult)
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState(sections_default[0])
     const [formlabel,setformlabel]=useState(variant_label[0])
-    const [designvalue,setDesignvalue]=useState<any>('settings')
-    const [settingvalue,setsettingvalue]=useState<any>({fields:{},views:{}})
+    const [designvalue,setDesignvalue]=useState<string>('settings')
+    const [settingvalue,setsettingvalue]=useState<{fields:{},views:{}}>({fields:{},views:{}})
     const [formView,setFormView]=useState('start-view')
-    const [formvariants,setFormVariants]= useState<any>(variant_default[0])
+    const [formvariants,setFormVariants]= useState<string>(variant_default[0])
     const [formuiview,setformuiview]=useState(formvariants+currentView)
     const [formtabs,setformTabs]=useState<Array<string>>([])
     const [sectiontabs,setsectiontabs]=useState<Array<string>>([])
-    const [tablists,setTablist]=useState<Array<string>>([])
+    
     const [projecttabvalue,setProjecttabvalue]=useState(0)
     const [error, setError] = useState(null as null | {});
     const [fieldvalue,setfieldValue] = useState(0); //field tab 
@@ -109,7 +112,7 @@ export default function ProjectDesignTab(props:any) {
 
     
 
-     const generateunifromformui = (formui:any) =>{
+     const generateunifromformui = (formui:uiSpecType) =>{
       const tabs:Array<string>=[];
       formui[VISIBLE_TYPE].map((tab:string)=>tabs.push(formuiSpec['viewsets'][tab]['label']??tab))
       const newformcom=updateuiSpec('newfromui',{formuiSpec:formui,formcomponents:formcomponents})
@@ -123,9 +126,7 @@ export default function ProjectDesignTab(props:any) {
       setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=formuiSpec['views'][tab]['label']))
       setFormComponents(newformcom)
       setFormuiSpec(formui)
-      const tt:Array<any>=[]
-      tabs.map((tab:any,index:any)=>tt[index]={label:tab,isedited:false})
-      setTablist(tt)
+
       return true;
     }
 
@@ -140,7 +141,7 @@ export default function ProjectDesignTab(props:any) {
       setformTabs(variant_label)
       setsectiontabs(sections_default)
 
-      setFormComponents((prevalue:any)=>{
+      setFormComponents((prevalue:formcomponents)=>{
         const newvalue=prevalue
         if(newvalue[view]===undefined) newvalue[view]=[]
         return newvalue;
@@ -181,12 +182,12 @@ export default function ProjectDesignTab(props:any) {
     }
 
 
-    const handleUpFieldButton = (index:any) =>{
+    const handleUpFieldButton = (index:number) =>{
       const {newviews,components}=updateuiSpec('switch',{index:index,type:false,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
       setFormuiSpec({...formuiSpec,views:newviews.views})
       setFormComponents(components)
     }
-    const handleDownFieldButton = (index:any) =>{
+    const handleDownFieldButton = (index:number) =>{
       
       const {newviews,components}=updateuiSpec('switch',{index:index,type:true,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
       setFormuiSpec({...formuiSpec,views:newviews.views})
@@ -194,7 +195,7 @@ export default function ProjectDesignTab(props:any) {
       
     }
 
-    const handelonClickSetting = (index:any,key:any) =>{
+    const handelonClickSetting = (index:string,key:string) =>{
 
       const formcomponent=formcomponents
         formcomponent[formuiview].map((item:any)=>{
@@ -275,7 +276,7 @@ export default function ProjectDesignTab(props:any) {
       setfieldValue(index)
       
     }
-    const getfieldsFromCom = (formcomponent:any,view:string,formProps:any) =>{
+    const getfieldsFromCom = (formcomponent:formcomponents,view:string,formProps:any) =>{
       const fields=formcomponent.uiSpec['views'][view]['fields'];
       if(fields.length>0) 
         return fields.map((field:any) => {return getComponentFromField(formcomponent.uiSpec,field, formProps,handleChangeForm);
@@ -326,7 +327,7 @@ export default function ProjectDesignTab(props:any) {
   return ( 
 
       <Grid container  >
-      {project_id}<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Save Form Design' />
+      <AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />{project_id} //**This button should be removed after auto sync is working
       <Grid item sm={12} xs={12}>
         <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
         <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>

@@ -41,7 +41,7 @@ export default function ProjectCreate() {
   // }
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
-    {title: project_info !== null ? project_info.name : 'Create New Notebook'},
+    {title: project_info !== null ? project_info.name : 'New Notebook'},
   ];
   
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function ProjectCreate() {
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info !== null ? 'Edit Notebook' : 'Create Notebook'}
+          {project_info !== null ? 'Edit Notebook '+project_info.name : 'Create Notebook'}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
         {project_info !== null ? 'Design and preview your notebook' : 'Design and preview your new notebook before inviting team members and publising'}
