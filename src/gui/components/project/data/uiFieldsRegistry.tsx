@@ -86,7 +86,7 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
     'type_return':fielduiSpec['type-returned'],
     'required':fielduiSpec['component-parameters']['required'],
     'initialValue':fielduiSpec['initialValue'],
-    'validationSchema':convertvalidation(fielduiSpec['validationSchema']),  //TODO: ADD function to pass and update validationschema
+    'validationSchema':fielduiSpec['validationSchema'],  //TODO: ADD function to pass and update validationschema
     'annotation_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['annotation_label']:'annotation',
     'meta_type':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['include']:false,
     'meta_type_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['label']:'',

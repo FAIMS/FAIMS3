@@ -56,7 +56,7 @@ export const FieldSettings=(component:signlefieldType,label:string,props:any)=>{
         {name:'label',lable:'Label',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
         {name:'helperText',lable:'Hit Text for Complete Form',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
         {name:'required',lable:'Check if is compusory',namespace:'faims-custom',componentName:'Checkbox',view:'valid'},
-        {name:'validationSchema',lable:'validationSchema',namespace:'formik-material-ui',componentName:'TextField',view:'valid',multiline:true,multirows:4},
+        {name:'validationSchema',lable:'validationSchema',namespace:'formik-material-ui',componentName:'TextField',view:'valid',multiline:true,multirows:4,disabled:true,helperText:'Now disbaled, Will be enabled after validation been added.'},
         {name:'access',lable:'access',namespace:'formik-material-ui',componentName:'TextField',view:'access',multiline:true,multirows:4,helperText:'Type user roles here, speprate by ,(will moved to NEW field chips added, input and select field)'},
         {name:'annotation_label',lable:'annotation Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
         {name:'meta_type',lable:'Include Uncertainty',namespace:'faims-custom',componentName:'Checkbox',view:'notes',initialValue:true},
@@ -263,6 +263,7 @@ const updatefield = (props:any) =>{
   if (formuiSpec!==undefined && updatedfield.name!==''&& updatedfield.type!==''){
     const newfieldname=updatedfield.name
     const fieldtype=updatedfield.type
+    if(fieldtype==='validationSchema') return {newviews,components}
     const fieldprops=convertuiSpecToProps(formuiSpec['fields'][newfieldname])
     console.log(fieldprops['component-name'])
     if(fieldtype==='required'||fieldtype==='meta_type') fieldprops[fieldtype]=!fieldprops[fieldtype];
@@ -272,13 +273,18 @@ const updatefield = (props:any) =>{
       const options=fieldvalue.split(' ');
       options.map((option:string,index:number)=>fieldprops[fieldtype][index]={
                 value: option,
-                label: option,
+                label: option
               });
     }
     if(fieldtype==='access') {
       fieldprops[fieldtype]=[];
       const accesses=fieldvalue.split(',');
       accesses.map((access:string,index:number)=>fieldprops[fieldtype][index]=access);
+    }
+    if(fieldtype==='validationSchema') {
+      fieldprops[fieldtype]=[];
+      const validationSchemas=fieldvalue.split(',');
+      validationSchemas.map((validationSchema:string,index:number)=>fieldprops[fieldtype][index]=[validationSchema]); // this function need to be updated
     }
     const newfield=getcomponent(fieldprops);//fieldprops['type']??fieldprops['component-name'],
     const fields=changeuifield(newfieldname,newfield,formuiSpec['fields'])
