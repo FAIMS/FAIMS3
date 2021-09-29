@@ -19,12 +19,7 @@
  */
 
 import React from 'react';
-import {
-  BrowserRouter as Router,
-  Redirect,
-  Route,
-  Switch,
-} from 'react-router-dom';
+import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import NavBar from './gui/components/navbar';
@@ -56,7 +51,6 @@ import {MuiThemeProvider} from '@material-ui/core/styles';
 import {createdProjects} from './sync/state';
 import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
-import {generateFAIMSDataID} from './data_storage';
 
 type AppProps = {};
 
@@ -117,51 +111,63 @@ export class App extends React.Component<AppProps, AppState> {
                 path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS}
                 component={ProjectSettings}
               />
-              /* Record creation happens by redirecting to a freshy minted UUID
-              This is to keep it stable until the user navigates away (As
-              opposed to keeping the UUID in RecordCreate, which means there's
-              no way to move on to a new UUID for a RecordCreate of the same
-              project and type) */
+              /* Draft creation happens by redirecting to a freshy minted UUID
+              This is to keep it stable until the user navigates away. So the
+              draft_id is optional, and when RecordCreate is instantiated
+              without one, it immediately mints a UUID and redirects to it */
               <Route
                 exact
                 path={
                   ROUTES.PROJECT +
                   ':project_id' +
                   ROUTES.RECORD_CREATE +
-                  ROUTES.RECORD_TYPE +
                   ':type_name' +
-                  ROUTES.RECORD + //
-                  ':record_id'
+                  ROUTES.RECORD_DRAFT + //
+                  ':draft_id'
                 }
                 component={RecordCreate}
               />
-              <Redirect
-                from={
+              <Route
+                exact
+                path={
                   ROUTES.PROJECT +
                   ':project_id' +
                   ROUTES.RECORD_CREATE +
-                  ROUTES.RECORD_TYPE +
                   ':type_name'
                 }
-                to={
+                component={RecordCreate}
+              />
+              /* Record editing and viewing is a seprate affair, separated by
+              the presence/absence of draft_id prop OR draft_id being in the
+              state of the Record component. So if the user clicks a draft to
+              make continued changes, the draft_id is in the URL here.
+              Otherwise, they can make changes to a record they view (Which
+              should at some point, TODO, redirect to the same Record form but
+              with the newly minted draft_id attached. BUt this TODO is in the
+              record/form.tsx */
+              <Route
+                exact
+                path={
                   ROUTES.PROJECT +
                   ':project_id' +
-                  ROUTES.RECORD_CREATE +
-                  ROUTES.RECORD_TYPE +
-                  ':type_name' +
-                  ROUTES.RECORD + //
-                  generateFAIMSDataID()
+                  ROUTES.RECORD_EXISTING +
+                  ':record_id' +
+                  ROUTES.REVISION +
+                  ':revision_id'
                 }
+                component={Record}
               />
               <Route
                 exact
                 path={
                   ROUTES.PROJECT +
                   ':project_id' +
-                  ROUTES.RECORD +
+                  ROUTES.RECORD_EXISTING +
                   ':record_id' +
                   ROUTES.REVISION +
-                  ':revision_id'
+                  ':revision_id' +
+                  ROUTES.RECORD_DRAFT +
+                  ':draft_id'
                 }
                 component={Record}
               />

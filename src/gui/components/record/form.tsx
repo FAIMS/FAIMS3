@@ -424,7 +424,6 @@ class RecordForm extends React.Component<
             ROUTES.PROJECT +
               this.props.project_id +
               ROUTES.RECORD_CREATE +
-              ROUTES.RECORD_TYPE +
               this.state.type_cached
           );
           window.scrollTo(0, 0);
