@@ -50,6 +50,8 @@ const example_records: {
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
+        'basic-autoincrementer-field': 1,
+        'hrid-field': 'αβγ blurple-1',
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
         'action-field': 'hello',
@@ -73,6 +75,8 @@ const example_records: {
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
+        'basic-autoincrementer-field': 2,
+        'hrid-field': 'αβγ blurple-2',
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
         'action-field': 'hello',
