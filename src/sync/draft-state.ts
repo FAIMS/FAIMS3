@@ -278,7 +278,16 @@ class RecordDraftState {
           ...this.data,
           state: 'edited',
           fields: values,
-          draft_id: newStagedData(this.props.project_id, null, this.data.type),
+          draft_id: newStagedData(
+            this.props.project_id,
+            // Since this.data is in an 'unedited' state, we know FOR SURE
+            // that revision_id and record_id were passed in.
+            {
+              revision_id: this.props.revision_id!,
+              record_id: this.props.record_id!,
+            },
+            this.data.type
+          ),
         };
         this.data.draft_id.then(new_draft_id => {
           if (this.data.state === 'edited') {
