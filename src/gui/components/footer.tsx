@@ -47,7 +47,23 @@ export default function Footer() {
             bgcolor={grey[100]}
           />
           <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}}>
-            <pre>{JSON.stringify(globalState.state, null, 2)}</pre>
+            <pre>
+              {JSON.stringify(
+                {
+                  ...globalState.state,
+                  alerts: globalState.state.alerts.map(alert => {
+                    if ('element' in alert) {
+                      // Alerts made with custom elements aren't JSON-stringifiable
+                      return alert.toString();
+                    } else {
+                      return alert; //Regular alert
+                    }
+                  }),
+                },
+                null,
+                2
+              )}
+            </pre>
           </Box>
         </Grid>
       </Grid>
