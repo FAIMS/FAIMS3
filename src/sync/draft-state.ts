@@ -24,7 +24,12 @@
  *   and relies on the sync/draft-storage.ts file for actual Databases access
  */
 import {FormikValues} from 'formik';
-import {getStagedData, setStagedData} from './draft-storage';
+import {
+  deleteStagedData,
+  getStagedData,
+  newStagedData,
+  setStagedData,
+} from './draft-storage';
 import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
 import stable_stringify from 'fast-json-stable-stringify';
 
@@ -33,22 +38,41 @@ const DRAFT_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
   project_id: ProjectID;
-  // When this is a fresh object, revision_id is null,
-  // BUT, Until we support multiple drafts, record_id shouldn't be used if
-  // revision_id is null, since that would make a new draft every time
-  // a draft is created
-  record_id: RecordID;
-};
+} & (
+  | {
+      // When editing existing record, we require the caller to know its revision
+      record_id: RecordID;
+      revision_id: RevisionID;
+      // This draft state usually requires a draft to keep
+      // track of, BUT if the user is viewing an existing record,
+      // A draft ID won't exist until edits are made
+      draft_id?: string;
+      // Type is required only because that's otherwise another pouchdb lookup,
+      // when form.tsx already has type cached.
+
+      // To avoid 'type' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
+      type?: undefined;
+    }
+  | {
+      // Editing a new record. Type required to create the draft
+      draft_id: string;
+      type: string;
+
+      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
+      record_id?: undefined;
+      revision_id?: undefined;
+    }
+);
 
 /**
  * Important properties that might not be present
  * until .start() is called. This is mainly used
  * in _fetchData and _saveData
- *
- * revision_id can be null if this is a new record
  */
 type LoadableProps = {
-  revision_id: RevisionID | null;
+  type: string;
 };
 
 type StagedData = {
@@ -71,13 +95,47 @@ type StagedData = {
  * This invariant doesn't hold before start() or after stop()
  */
 class RecordDraftState {
-  // Up-to-date data direct from formik
-  // this is kept in-sync with formik. The only reason
-  // to duplicate the data is to keep track of which fields
-  // have changed.
-  // and this is only up to date with fields in the current view
-  // (view_fields)
-  data: null | {fields: StagedData} = null;
+  data:
+    | {
+        state: 'uninitialized';
+      }
+    | {
+        state: 'unedited';
+        // Once this.data moves out of this state into 'edited', _fetchData will
+        // fetch the fields
+        type: string;
+        // In order to know when to save edits, the renderHook is called by
+        // the form component. But we don't know, at this point, what initial
+        // data we should compare the Formik values against, so the first call
+        // to renderHook establishes said data here:
+        // (A more correct way to do this, to avoid possibly loosing a bit of data
+        // in a certain execution, would be to pass down initialValues from
+        // the form component, but that's more complicated.)
+        fields: StagedData | null;
+      }
+    | {
+        state: 'edited';
+        // Up-to-date data direct from draft storage
+        // this is kept in-sync with formik. The only reason
+        // to duplicate the data is to keep track of which fields
+        // have changed.
+        // and this is only up to date with fields in the current view
+        // (view_fields)
+        fields: StagedData;
+        type: string;
+        // Same as props.draft_id, EXCEPT this can also be set to non-null
+        // when changes are made to a revision that hasn't been edited yet
+        //
+        // The reason this is a promise is that there is a state of draft-state
+        // where the draft is being created (by pouch local), which is unfortunately
+        // async, so the promise serves as a way to wait for the draft to be
+        // created
+        draft_id: Promise<string>;
+      } = {state: 'uninitialized'};
+
+  // NOTE: When data === 'unedited_existing', then draft_id is null.
+  // When draft_id is null, data may be null or 'unedited_existing', depending
+  // on if _fetchData has been run
 
   data_listeners: [
     (data: StagedData) => unknown,
@@ -147,7 +205,7 @@ class RecordDraftState {
     this._fetchData(loadedProps);
 
     this.interval = window.setInterval(
-      this._saveData.bind(this, loadedProps),
+      this._saveData.bind(this),
       DRAFT_SAVE_CYCLE
     );
   }
@@ -171,7 +229,7 @@ class RecordDraftState {
    *               of the callback to the Formik element's children:
    */
   renderHook(values: FormikValues) {
-    if (this.fetch_error === null && this.data !== null) {
+    if (this.fetch_error === null && this.data.state !== 'uninitialized') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being
       // triggered before any code gets to renderHook(), but
@@ -182,7 +240,16 @@ class RecordDraftState {
       //
       // This diffing should replace createNativeFieldHook/createCustomFieldHook
 
-      for (const field in this.data) {
+      if (this.data.fields === null) {
+        // 1st call to renderHook establishes the 'default' initial data
+        this.data.fields = values;
+      }
+
+      // Don't compare things that are in the staging area
+      // but are completley absent from the form
+      // as those components are just not in the current view
+      // Only compare fields in the current view:
+      for (const field in values) {
         // Formik & Pouch should give us comparable JSON objects.
         // As long as it differs at the top level, we say it's touched
         // BUT we don't want things like {} to not equal another {} (or [] != [])
@@ -197,7 +264,36 @@ class RecordDraftState {
         }
       }
 
-      this.data = {fields: values};
+      if (this.touched_fields.size === 0) {
+        return;
+      }
+
+      // If anything changed, we create the draft:
+      if (this.data.state === 'unedited') {
+        this.data = {
+          ...this.data,
+          state: 'edited',
+          fields: values,
+          draft_id: newStagedData(this.props.project_id, null, this.data.type),
+        };
+        this.data.draft_id.then(new_draft_id => {
+          if (this.data.state === 'edited') {
+            this.data = {
+              ...this.data,
+              draft_id: Promise.resolve(new_draft_id),
+            };
+          }
+          // this.data, in an impossibly rare execution, might be set to
+          // something other than 'edited' (possibly when clear() is called
+          // before resuming). In which case we don't want to set more data.
+        });
+      } else {
+        // Edit existing document by setting data
+        this.data = {
+          ...this.data,
+          fields: {...this.data.fields, ...values},
+        };
+      }
     } else if (this.data === null) {
       console.debug(
         "This state shouldn't be encountered: Somehow, draft-storages renderHook " +
@@ -276,35 +372,43 @@ class RecordDraftState {
    * So if the project changes, this _fetchData() should be run.
    * This should also be run at construction of this class.
    */
-  async _fetchData(loadedProps: LoadableProps): Promise<void> {
+  async _fetchData(loadedprops: LoadableProps): Promise<void> {
     const uninterrupted_fetch_sequence = this.fetch_sequence;
-    this.data = null;
-    try {
-      const result = await getStagedData(
-        this.props.project_id,
-        loadedProps.revision_id === null ? null : this.props.record_id,
-        loadedProps.revision_id
-      );
-      this.last_revision = result?._rev || null;
+    this.data = {state: 'uninitialized'};
 
-      const data = result?.fields || {};
+    if (this.props.draft_id !== undefined) {
+      // Editing an existing draft
+      try {
+        const result = await getStagedData(this.props.draft_id);
 
-      if (this.fetch_sequence !== uninterrupted_fetch_sequence) {
-        return; // Assume another fetch has taken control, don't run data_listener errors
+        if (this.fetch_sequence !== uninterrupted_fetch_sequence) {
+          return; // Assume another fetch has taken control, don't run data_listener errors
+        }
+
+        this.last_revision = result._rev;
+        this.touched_fields = new Set(Object.keys(result.fields));
+        this.data = {
+          state: 'edited',
+          fields: result.fields,
+          type: result.type,
+          draft_id: Promise.resolve(this.props.draft_id),
+        };
+        // Resolve any promises waiting for data
+        const data_listeners = this.data_listeners;
+        this.data_listeners = [];
+        data_listeners.forEach(f => f[0].call(this, result.fields));
+      } catch (err: any) {
+        this.fetch_error = err;
+        // Reject any promises waiting for data
+        const data_listeners = this.data_listeners;
+        this.data_listeners = [];
+        data_listeners.forEach(f => f[1].call(this, err));
       }
-
-      this.touched_fields = new Set(Object.keys(data));
-      this.data = {fields: data};
-      // Resolve any promises waiting for data
-      const data_listeners = this.data_listeners;
-      this.data_listeners = [];
-      data_listeners.forEach(f => f[0].call(this, data));
-    } catch (err: any) {
-      this.fetch_error = err;
-      // Reject any promises waiting for data
-      const data_listeners = this.data_listeners;
-      this.data_listeners = [];
-      data_listeners.forEach(f => f[1].call(this, err));
+    } else {
+      // No draft exists yet
+      // Drafts are created (And types needed) when
+      this.data = {state: 'unedited', type: loadedprops.type, fields: null};
+      // this.draft_id hasn't needed to be created yet, keep as null
     }
   }
 
@@ -324,8 +428,10 @@ class RecordDraftState {
     };
 
     // Wait for data to exist before returning:
-    if (this.data !== null) {
+    if (this.data.state === 'edited') {
       return with_data(this.data.fields);
+    } else if (this.data.state === 'unedited') {
+      return with_data({});
     } else if (this.fetch_error !== null) {
       throw this.fetch_error;
     } else {
@@ -340,7 +446,7 @@ class RecordDraftState {
    *
    * This is awaitable as a normal async function
    */
-  async _saveData(loadedProps: LoadableProps): Promise<void> {
+  async _saveData(): Promise<void> {
     if (this.is_saving) {
       console.warn('Last stage save took longer than ', DRAFT_SAVE_CYCLE);
       // Leave thes existing running _saveData function to finish its work
@@ -352,13 +458,12 @@ class RecordDraftState {
     let result;
     try {
       const to_save = await this._touchedData();
-      result = await setStagedData(
-        to_save,
-        this.last_revision,
-        this.props.project_id,
-        loadedProps.revision_id === null ? null : this.props.record_id,
-        loadedProps.revision_id
-      );
+      if (this.data.state !== 'edited') {
+        // Nothing to save yet, probably the user hasn't touched an
+        // existing record
+        return;
+      }
+      result = await setStagedData(await this.data.draft_id, to_save);
 
       if (result.ok) {
         this.last_revision = result.rev;
@@ -415,7 +520,7 @@ class RecordDraftState {
    * This may trigger a change of state of the RecordForm
    */
   recordChangeHook(newProps: RelevantProps, loadedProps: LoadableProps) {
-    this.data = null;
+    this.data = {state: 'uninitialized'};
     this.last_revision = null;
     this.touched_fields.clear();
 
@@ -426,13 +531,21 @@ class RecordDraftState {
 
   /**
    * Called after save & new button is pressed,
-   * This clears the draft storage of ALL data
+   * This deletes the draft from the draft database
    *
-   * This is done for existing observations and new observations
+   * This is done for existing observations and new observations, and therefore
+   * reverts RecordDraftState to as if it was given draft_id === null
+   * (Even for editing new drafts)
    */
-  async clear(loadedProps: LoadableProps) {
+  async clear() {
+    if (this.data.state === 'edited') {
+      await deleteStagedData(await this.data.draft_id, this.last_revision);
+    }
+
+    this.data = {state: 'uninitialized'};
     this.touched_fields.clear();
-    await this._saveData(loadedProps);
+
+    this.last_revision = null;
   }
 }
 
