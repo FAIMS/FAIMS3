@@ -18,33 +18,56 @@
  *   TODO
  */
 
+import {events} from './events';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject, ProjectMetaObject} from '../datamodel/database';
 import {data_dbs, metadata_dbs} from './databases';
-import {initialize} from './initialize';
+import {all_projects_updated} from './state';
 
 PouchDB.plugin(PouchDBFind);
 
 export async function getDataDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> {
-  await initialize();
-  if (data_dbs[active_id] !== undefined) {
-    return data_dbs[active_id].local;
+  if (!all_projects_updated) {
+    // Wait for all_projects_updated to possibly change before re-polling
+    // all_projects_updated and returning error/data DB if it's ready.
+    return new Promise((resolve, reject) => {
+      const listener = () => {
+        getDataDB(active_id).then(resolve, reject);
+        events.removeListener('all_state', listener);
+      };
+      events.addListener('all_state', listener);
+    });
   } else {
-    throw `Project ${active_id} is not known`;
+    if (active_id in data_dbs) {
+      return data_dbs[active_id].local;
+    } else {
+      throw `Project ${active_id} is not known`;
+    }
   }
 }
 
 export async function getProjectDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> {
-  await initialize();
-  if (metadata_dbs[active_id] !== undefined) {
-    return metadata_dbs[active_id].local;
+  if (!all_projects_updated) {
+    // Wait for all_projects_updated to possibly change before re-polling
+    // all_projects_updated and returning error/data DB if it's ready.
+    return new Promise((resolve, reject) => {
+      const listener = () => {
+        getDataDB(active_id).then(resolve, reject);
+        events.removeListener('all_state', listener);
+      };
+      events.addListener('all_state', listener);
+    });
   } else {
-    throw `Project ${active_id} is not known`;
+    if (active_id in metadata_dbs) {
+      return metadata_dbs[active_id].local;
+    } else {
+      throw `Project ${active_id} is not known`;
+    }
   }
 }
