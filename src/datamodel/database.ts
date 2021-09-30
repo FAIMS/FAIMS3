@@ -52,18 +52,13 @@ export interface ConnectionInfo {
 }
 
 /**
- * To extend this to SSO or other mechanisms,
- * do a union with,
- *
- * For example, to add FAA-based auth, which is
- * an SSO mechanism that we allow restricting based on institution (domain)
- * {type: 'FAA', domains: [] | null}
+ * User-facing description of an Authentication mechanism.
+ * The actual auth mechanisms are stored in authconfig.ts in the FAIMS3-conductor
+ * in the auth proxy of the listing that this auth is for.
  */
 export type AuthInfo = {
+  portal: string; // Url to give AuthInfo to get token(s)
   type: 'oauth';
-  domains?: [];
-  base_url: string;
-  client_id: string;
   name: string;
 };
 
@@ -86,7 +81,7 @@ export interface ListingsObject {
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  auth_mechanisms: AuthInfo[];
+  auth_mechanisms: {[key: string]: AuthInfo};
 }
 
 export interface NonNullListingsObject extends ListingsObject {

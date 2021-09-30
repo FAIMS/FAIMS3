@@ -35,6 +35,7 @@ import {
   ProjectObject,
   LocalAuthDoc,
   PouchUser,
+  AuthInfo,
 } from '../datamodel/database';
 import {
   ConnectionInfo_create_pouch,
@@ -63,7 +64,10 @@ export const self_listing_info: ListingsObject = {
     db_name: 'projects',
     auth: DIRECTORY_AUTH,
   },
-  auth_mechanisms: auth_mechanisms.map(m => m.public),
+  auth_mechanisms: Object.keys(auth_mechanisms).reduce((acc, auth_id) => {
+    acc[auth_id] = auth_mechanisms[auth_id].public;
+    return acc;
+  }, {} as {[auth_id: string]: AuthInfo}),
 };
 
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<ActiveDoc>;

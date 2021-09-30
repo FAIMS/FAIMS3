@@ -2,15 +2,16 @@ import OAuth2Strategy from 'passport-oauth2';
 import {AuthInfo} from './datamodel/database';
 
 export const auth_mechanisms: {
-  public: AuthInfo;
-  strategy: OAuth2Strategy.StrategyOptions;
-}[] = [
-  {
+  [auth_id: string]: {
+    public: AuthInfo;
+    strategy: OAuth2Strategy.StrategyOptions;
+  };
+} = {
+  default: {
     // Should be in sync with clients
     public: {
+      portal: 'http://127.0.0.1:8080',
       type: 'oauth',
-      base_url: 'https://auth.datacentral.org.au/cas/login',
-      client_id: '5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au',
       name: 'Data Central',
     },
     // Not visible to clients
@@ -24,4 +25,4 @@ export const auth_mechanisms: {
       callbackURL: 'http://localhost:3000/signin-return/',
     },
   },
-];
+};
