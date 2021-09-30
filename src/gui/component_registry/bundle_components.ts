@@ -32,6 +32,7 @@ import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
 import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
+import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
 import {registerComponent, setupComponentProperties} from './internals';
 import BookmarkIcon from '@material-ui/icons/Bookmark';
 /*
@@ -117,4 +118,9 @@ registerComponent(
   'faims-custom',
   'BasicAutoIncrementer',
   setupComponentProperties('', '', BasicAutoIncrementer)
+);
+registerComponent(
+  'faims-custom',
+  'RelatedRecordSelector',
+  setupComponentProperties('', '', RelatedRecordSelector)
 );

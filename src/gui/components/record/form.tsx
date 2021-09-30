@@ -22,7 +22,7 @@ import React from 'react';
 import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 
-import {Formik, Form, Field, FormikProps} from 'formik';
+import {Formik, Form} from 'formik';
 
 import {
   Button,
@@ -38,77 +38,89 @@ import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-import {transformAll} from '@demvsystems/yup-ast';
+import {firstDefinedFromList} from './helpers';
+import AutoSave from './autosave';
+import {ViewComponent} from './view';
 
-import {getComponentByName} from '../../component_registry';
-import {ViewComponent} from '../../view';
-import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
+import BoxTab from '../ui/boxTab';
+
+import {ActionType} from '../../../actions';
+import * as ROUTES from '../../../constants/routes';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {getCurrentUserId} from '../../../users';
-import BoxTab from '../ui/boxTab';
-import {ActionType} from '../../../actions';
+import {
+  upsertFAIMSData,
+  getFullRecordData,
+  generateFAIMSDataID,
+} from '../../../data_storage';
+import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
-import AutoSave from './autosave';
-import * as ROUTES from '../../../constants/routes';
-import RecordStagingState from '../../../sync/staging-observation';
+import RecordDraftState from '../../../sync/draft-state';
+import {
+  getFieldsForViewSet,
+  getFieldNamesFromFields,
+} from '../../../uiSpecification';
+import {getCurrentUserId} from '../../../users';
+import {Link} from '@material-ui/core';
+import {Link as RouterLink} from 'react-router-dom';
 
 type RecordFormProps = {
   project_id: ProjectID;
   // Might be given in the URL:
   view_default?: string;
-  uiSpec: ProjectUIModel;
-  record_id: RecordID;
+  ui_specification: ProjectUIModel;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
+      record_id: RecordID;
       revision_id: RevisionID;
-      // When editing existing record, type comes from record
+      // The user can view records without editing them, and to facilitate this,
+      // having a draft id is optional.
+      // In this mode, when the user starts editing, a draft ID is created and
+      // stored as state on RecordForm.
+      draft_id?: string;
+
+      // To avoid 'type' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
       type?: undefined;
     }
   | {
-      // When creating a new record,  revision is not yet created
-      revision_id?: undefined;
-      // When creating a new record, the user is prompted with viewset/type
+      // When creating a new record,  revision is not yet created.
+      // the user had to have already been prompted with viewset/type
       type: string;
+
+      // Draft id, when creating a new record, is created by a redirect
+      draft_id: string;
+
+      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
+      record_id?: undefined;
+      revision_id?: undefined;
     }
 );
 
 type RecordFormState = {
-  stagingError: string | null;
+  draftError: string | null;
+  // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
   last_saved: Date;
+  /**
+   * Set only by newDraftListener, but this is only non-null
+   * for a single render. In that render, a notification will pop up to the user
+   * letting them redirect to the draft's URL
+   */
+  draft_created: string | null;
 };
-
-/**
- * Given a list of values, returns the first from the list that isn't null/undefined
- * This is to be used instead of list[0] || list[1] || list[2]
- * in the case that list can contain the number 0
- *
- * @param list List of undefineds, nulls, or anything else
- * @returns Always returns null or a defined value, this never returns undefined.
- */
-function firstDefinedFromList<T>(
-  list: NonNullable<T>[]
-): NonNullable<T> | null {
-  if (list.length === 0) {
-    return null;
-  } else if (list[0] === undefined || list[0] === null) {
-    return firstDefinedFromList(list.slice(1));
-  } else {
-    return list[0];
-  }
-}
 
 class RecordForm extends React.Component<
   RecordFormProps & RouteComponentProps,
   RecordFormState
 > {
-  staging: RecordStagingState;
+  draftState: RecordDraftState;
 
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
@@ -134,30 +146,28 @@ class RecordForm extends React.Component<
 
   constructor(props: RecordFormProps & RouteComponentProps) {
     super(props);
-    this.staging = new RecordStagingState({
-      record_id: this.props.record_id,
-      project_id: this.props.project_id,
-    });
+    this.draftState = new RecordDraftState(this.props);
     this.state = {
-      type_cached: null,
+      draftError: null,
+      type_cached: this.props.type ?? null,
       view_cached: null,
       revision_cached: null,
-      stagingError: null,
       initialValues: null,
       is_saving: false,
       last_saved: new Date(),
+      draft_created: null,
     };
-    this.getComponentFromField = this.getComponentFromField.bind(this);
-    this.getValidationSchema = this.getValidationSchema.bind(this);
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
-    this.getFieldNames = this.getFieldNames.bind(this);
-    this.getFields = this.getFields.bind(this);
   }
 
   componentDidMount() {
-    // On mount, staging.start() must be called, so give this false:
+    // On mount, draftState.start() must be called, so give this false:
     this.formChanged(false);
+  }
+
+  newDraftListener(draft_id: string) {
+    this.setState({draft_created: draft_id});
   }
 
   saveListener(val: boolean | {}) {
@@ -174,7 +184,7 @@ class RecordForm extends React.Component<
         (val as {message?: string}).message || val.toString();
       console.error('saveListener', val);
 
-      this.setState({is_saving: false, stagingError: error_message});
+      this.setState({is_saving: false, draftError: error_message});
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -185,7 +195,7 @@ class RecordForm extends React.Component<
     }
   }
 
-  async formChanged(staging_area_started_already: boolean) {
+  async formChanged(draft_saving_started_already: boolean) {
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -196,7 +206,7 @@ class RecordForm extends React.Component<
         );
         if (latest_record === null) {
           this.setState({
-            stagingError: `Could not find data for record ${this.props.record_id}`,
+            draftError: `Could not find data for record ${this.props.record_id}`,
           });
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
@@ -214,23 +224,23 @@ class RecordForm extends React.Component<
         this_type = this.props.type;
       }
 
-      if (!(this_type in this.props.uiSpec.viewsets)) {
+      if (!(this_type in this.props.ui_specification.viewsets)) {
         throw Error(`Viewset for type '${this_type}' is missing`);
       }
 
-      if (!('views' in this.props.uiSpec.viewsets[this_type])) {
+      if (!('views' in this.props.ui_specification.viewsets[this_type])) {
         throw Error(
           `Viewset for type '${this_type}' is missing 'views' property'`
         );
       }
 
-      if (this.props.uiSpec.viewsets[this_type].views === []) {
+      if (this.props.ui_specification.viewsets[this_type].views === []) {
         throw Error(`Viewset for type '${this_type}' has no views`);
       }
 
       await this.setState({
         type_cached: this_type,
-        view_cached: this.props.uiSpec.viewsets[this_type].views[0],
+        view_cached: this.props.ui_specification.viewsets[this_type].views[0],
         revision_cached: this.props.revision_id || null,
       });
     } catch (err: any) {
@@ -248,26 +258,21 @@ class RecordForm extends React.Component<
     }
     try {
       // these come after setUISpec & setLastRev has set view_name & revision_id these to not null
-      const view_cached = this.requireView();
-      const revision_cached = this.state.revision_cached;
-
-      // If the staging area .start() has already been called,
+      this.requireView();
+      // If the draft saving has .start()'d already,
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
-      if (staging_area_started_already) {
-        this.staging.recordChangeHook(this.props, {
-          view_name: view_cached,
-          revision_id: revision_cached,
+      if (draft_saving_started_already) {
+        this.draftState.recordChangeHook(this.props, {
+          type: this.state.type_cached!,
         });
       } else {
-        this.staging.saveListener = this.saveListener.bind(this);
-        await this.staging.start({
-          view_name: view_cached,
-          revision_id: revision_cached,
-        });
+        this.draftState.saveListener = this.saveListener.bind(this);
+        this.draftState.newDraftListener = this.newDraftListener.bind(this);
+        await this.draftState.start({type: this.state.type_cached!});
       }
     } catch (err) {
-      console.error('rare staging error', err);
+      console.error('rare draft error', err);
     }
     try {
       await this.setInitialValues();
@@ -296,13 +301,13 @@ class RecordForm extends React.Component<
         (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]
       );
     }
-    this.staging.stop();
+    this.draftState.stop();
   }
 
   async setInitialValues() {
     /***
      * Formik requires a single object for initialValues, collect these from the
-     * (in order high priority to last resort): staging area, database, ui schema
+     * (in order high priority to last resort): draft storage, database, ui schema
      */
     const database_data =
       this.props.revision_id === undefined
@@ -315,10 +320,13 @@ class RecordForm extends React.Component<
             )
           )?.data || {};
 
-    const staged_data = await this.staging.getInitialValues();
+    const staged_data = await this.draftState.getInitialValues();
 
-    const fieldNames = this.getFieldNames();
-    const fields = this.getFields();
+    const fields = getFieldsForViewSet(
+      this.props.ui_specification,
+      this.requireViewsetName()
+    );
+    const fieldNames = getFieldNamesFromFields(fields);
 
     const initialValues: {[key: string]: any} = {
       _id: this.props.record_id!,
@@ -354,14 +362,23 @@ class RecordForm extends React.Component<
 
   requireView(): string {
     if (this.state.view_cached === null) {
-      // What should prevent this from happening is the lack of getInitialValues,
-      // getComponentFor, etc, function calls in the _Loading Skeleton_.
-      // And the loading skeleton is always shown if view_cached === null
-      throw Error(
-        'A function requring view_cached/uiSpe was called before setUISpec finished'
-      );
+      throw Error('The view name has not been determined yet');
     }
     return this.state.view_cached;
+  }
+
+  requireViewsetName(): string {
+    if (this.state.type_cached === null) {
+      throw Error('The viewset name has not been determined yet');
+    }
+    return this.state.type_cached;
+  }
+
+  requireInitialValues() {
+    if (this.state.initialValues === null) {
+      throw Error('The initial values have not been determined yet');
+    }
+    return this.state.initialValues;
   }
 
   save(values: any) {
@@ -369,8 +386,8 @@ class RecordForm extends React.Component<
       .then(userid => {
         const now = new Date();
         const doc = {
-          record_id: this.props.record_id,
-          revision_id: this.props.revision_id || null,
+          record_id: this.props.record_id ?? generateFAIMSDataID(),
+          revision_id: this.props.revision_id ?? null,
           type: this.state.type_cached!,
           data: values,
           updated_by: userid,
@@ -411,13 +428,8 @@ class RecordForm extends React.Component<
         console.warn(err);
         console.error('Failed to save data');
       })
-      // Clear the staging area (Possibly after redirecting back to project page)
-      .then(() =>
-        this.staging.clear({
-          view_name: this.requireView(),
-          revision_id: this.state.revision_cached!,
-        })
-      )
+      // Clear the current draft area (Possibly after redirecting back to project page)
+      .then(() => this.draftState.clear())
       .then(() => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
@@ -426,7 +438,6 @@ class RecordForm extends React.Component<
             ROUTES.PROJECT +
               this.props.project_id +
               ROUTES.RECORD_CREATE +
-              ROUTES.RECORD_TYPE +
               this.state.type_cached
           );
           window.scrollTo(0, 0);
@@ -439,7 +450,7 @@ class RecordForm extends React.Component<
   }
 
   updateView(viewName: string) {
-    if (viewName in this.props.uiSpec['views']) {
+    if (viewName in this.props.ui_specification['views']) {
       this.setState({view_cached: viewName});
       this.forceUpdate();
       // Probably not needed, but we *know* we need to rerender when this
@@ -449,112 +460,68 @@ class RecordForm extends React.Component<
     }
   }
 
-  getComponentFromField(fieldName: string, view: ViewComponent) {
-    // console.log('getComponentFromField');
-    const uiSpec = this.props.uiSpec;
-    const fields = uiSpec['fields'];
-    return this.getComponentFromFieldConfig(fields[fieldName], view, fieldName);
-  }
-
-  getComponentFromFieldConfig(
-    fieldConfig: any,
-    view: ViewComponent,
-    fieldName: string
-  ) {
-    // console.log('getComponentFromFieldConfig');
-    const namespace = fieldConfig['component-namespace'];
-    const name = fieldConfig['component-name'];
-    let Component: React.Component;
-    try {
-      Component = getComponentByName(namespace, name);
-    } catch (err) {
-      // console.debug(err);
-      // console.warn(`Failed to load component ${namespace}::${name}`);
-      return undefined;
-    }
-    const formProps: FormikProps<{[key: string]: unknown}> =
-      view.props.formProps;
+  isReady(): boolean {
     return (
-      <Box mb={3} key={fieldName}>
-        <Field
-          component={Component} //e.g, TextField (default <input>)
-          name={fieldName}
-          onChange={this.staging.createNativeFieldHook<
-            React.ChangeEvent<{name: string}>,
-            ReturnType<typeof formProps.handleChange>
-          >(formProps.handleChange, fieldName)}
-          onBlur={this.staging.createNativeFieldHook<
-            React.FocusEvent<{name: string}>,
-            ReturnType<typeof formProps.handleBlur>
-          >(formProps.handleBlur, fieldName)}
-          stageValue={this.staging.createCustomFieldHook(
-            formProps.setFieldValue,
-            fieldName
-          )}
-          value={formProps.values[fieldName]}
-          // error={
-          //   formProps.touched[fieldName] && Boolean(formProps.errors[fieldName])
-          // }
-          // view={view}
-          {...fieldConfig['component-parameters']}
-          {...fieldConfig['component-parameters']['InputProps']}
-          {...fieldConfig['component-parameters']['SelectProps']}
-          {...fieldConfig['component-parameters']['InputLabelProps']}
-          {...fieldConfig['component-parameters']['FormHelperTextProps']}
-        />
-      </Box>
+      this.state.type_cached !== null &&
+      this.state.initialValues !== null &&
+      this.props.ui_specification !== null &&
+      this.state.view_cached !== null
     );
   }
 
-  getFieldNames() {
-    const view_cached = this.requireView();
-    const fieldNames: Array<string> = this.props.uiSpec['views'][view_cached][
-      'fields'
-    ];
-    return fieldNames;
-  }
-
-  getFields() {
-    const fields: {[key: string]: {[key: string]: any}} = this.props.uiSpec[
-      'fields'
-    ];
-    return fields;
-  }
-
-  getValidationSchema() {
-    /***
-     * Formik requires a single object for validationSchema, collect these from the ui schema
-     * and transform via yup.ast
-     */
-    const fieldNames = this.getFieldNames();
-    const fields = this.getFields();
-    const validationSchema = Object();
-    fieldNames.forEach(fieldName => {
-      validationSchema[fieldName] = fields[fieldName]['validationSchema'];
-    });
-    return transformAll([['yup.object'], ['yup.shape', validationSchema]]);
-  }
-
   render() {
-    const uiSpec = this.props.uiSpec;
-    const viewName = this.state.view_cached;
-    if (
-      viewName !== null &&
-      this.state.initialValues !== null &&
-      uiSpec !== null
-    ) {
-      const fieldNames = this.getFieldNames();
+    if (this.state.draft_created !== null) {
+      // If a draft was created, that implies this form started from
+      // a non draft, so it must have been an existing record (see props
+      // as it's got a type {existing record} | {draft already created})
+      this.context.dispatch({
+        type: ActionType.ADD_CUSTOM_ALERT,
+        payload: {
+          severity: 'success',
+          element: (
+            <React.Fragment>
+              <Link
+                component={RouterLink}
+                to={
+                  ROUTES.PROJECT +
+                  this.props.project_id +
+                  ROUTES.RECORD_EXISTING +
+                  this.props.record_id! +
+                  ROUTES.REVISION +
+                  this.props.revision_id! +
+                  ROUTES.RECORD_DRAFT +
+                  this.state.draft_created
+                }
+              >
+                Created new draft
+              </Link>
+            </React.Fragment>
+          ),
+        },
+      });
+      this.setState({draft_created: null});
+    }
+
+    if (this.isReady()) {
+      const ui_specification = this.props.ui_specification;
+      const viewName = this.requireView();
+      const viewsetName = this.requireViewsetName();
+      const initialValues = this.requireInitialValues();
+      const validationSchema = getValidationSchemaForViewset(
+        ui_specification,
+        viewsetName
+      );
+      const view_index = ui_specification.viewsets[viewsetName].views.indexOf(
+        viewName
+      );
+      const is_final_view =
+        view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
+      // this expression checks if we have the last element in the viewset array
 
       return (
         <React.Fragment>
-          <Stepper
-            nonLinear
-            activeStep={this.props.uiSpec.viewsets[
-              this.state.type_cached!
-            ].views.indexOf(viewName)}
-            alternativeLabel
-          >
-            {this.props.uiSpec.viewsets[this.state.type_cached!].views.map(
+          <Stepper nonLinear activeStep={view_index} alternativeLabel>
+            {ui_specification.viewsets[viewsetName].views.map(
               (view_name: string) => (
                 <Step key={view_name}>
                   <StepButton
@@ -569,8 +536,8 @@ class RecordForm extends React.Component<
             )}
           </Stepper>
           <Formik
-            initialValues={this.state.initialValues}
-            validationSchema={this.getValidationSchema}
+            initialValues={initialValues}
+            validationSchema={validationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
               this.setTimeout(() => {
@@ -581,7 +548,7 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              this.staging.renderHook(viewName, formProps.values);
+              this.draftState.renderHook(formProps.values);
               return (
                 <Form>
                   <Grid container spacing={2}>
@@ -589,14 +556,15 @@ class RecordForm extends React.Component<
                       <AutoSave
                         last_saved={this.state.last_saved}
                         is_saving={this.state.is_saving}
-                        error={this.state.stagingError}
+                        error={this.state.draftError}
                       />
                     </Grid>
                     <Grid item sm={6} xs={12}>
                       <ViewComponent
-                        viewList={fieldNames}
-                        form={this}
+                        viewName={viewName}
+                        ui_specification={ui_specification}
                         formProps={formProps}
+                        draftState={this.draftState}
                       />
                       <br />
                       {formProps.isValid ? (
@@ -612,34 +580,40 @@ class RecordForm extends React.Component<
                         color="primary"
                         aria-label="contained primary button group"
                       >
-                        <Button
-                          type="submit"
-                          color={formProps.isSubmitting ? 'default' : 'primary'}
-                          variant="contained"
-                          onClick={formProps.submitForm}
-                          disableElevation
-                          disabled={formProps.isSubmitting}
-                        >
-                          {formProps.isSubmitting
-                            ? !(this.props.revision_id === undefined)
-                              ? 'Working...'
-                              : 'Working...'
-                            : !(this.props.revision_id === undefined)
-                            ? 'Update'
-                            : 'Save and new'}
-                          {formProps.isSubmitting && (
-                            <CircularProgress
-                              size={24}
-                              style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                marginTop: -12,
-                                marginLeft: -12,
-                              }}
-                            />
-                          )}
-                        </Button>
+                        {is_final_view ? (
+                          <Button
+                            type="submit"
+                            color={
+                              formProps.isSubmitting ? 'default' : 'primary'
+                            }
+                            variant="contained"
+                            onClick={formProps.submitForm}
+                            disableElevation
+                            disabled={formProps.isSubmitting}
+                          >
+                            {formProps.isSubmitting
+                              ? !(this.props.revision_id === undefined)
+                                ? 'Working...'
+                                : 'Working...'
+                              : !(this.props.revision_id === undefined)
+                              ? 'Update'
+                              : 'Save and new'}
+                            {formProps.isSubmitting && (
+                              <CircularProgress
+                                size={24}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  marginTop: -12,
+                                  marginLeft: -12,
+                                }}
+                              />
+                            )}
+                          </Button>
+                        ) : (
+                          <p>Continue filling out form</p>
+                        )}
                       </ButtonGroup>
                     </Grid>
                     <Grid item sm={6} xs={12}>

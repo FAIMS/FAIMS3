@@ -41,7 +41,12 @@ interface InitialStateProps {
 
   active_project: ProjectObject | null;
   active_record: Record | null;
-  alerts: Array<{message: string; severity: Color; key: string}>;
+  alerts: Array<
+    {
+      severity: Color;
+      key: string;
+    } & ({message: string} | {element: JSX.Element[]})
+  >;
 }
 
 const InitialState = {
@@ -113,6 +118,19 @@ const StateProvider = (props: any) => {
             alerts: state.alerts.filter(
               alert => alert.key !== action.payload.key
             ),
+          };
+        }
+        case ActionType.ADD_CUSTOM_ALERT: {
+          console.log('ADD CUSTOM ALERT', action.payload);
+          const alert = {
+            ...action.payload,
+            key: uuidv4(),
+            element: action.payload.element,
+            severity: action.payload.severity,
+          };
+          return {
+            ...state,
+            alerts: [...state.alerts, alert],
           };
         }
 

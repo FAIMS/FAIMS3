@@ -50,6 +50,8 @@ const example_records: {
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
+        'basic-autoincrementer-field': 1,
+        'hrid-field': 'αβγ blurple-1',
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
         'action-field': 'hello',
@@ -73,6 +75,8 @@ const example_records: {
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
+        'basic-autoincrementer-field': 2,
+        'hrid-field': 'αβγ blurple-2',
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
         'action-field': 'hello',
@@ -511,6 +515,31 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
       },
+      'related-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'RelatedRecordSelector',
+        'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'related-field',
+          id: 'related-field',
+          helperText: 'Select a Photolog',
+          variant: 'outlined',
+          required: true,
+          related_type: 'astro_sky::photolog',
+          relation_type: 'faims-core::Child',
+          InputProps: {
+            type: 'text', // must be a valid html type
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Human Readable ID',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: '',
+      },
     },
     viewsets: {
       'astro_sky::main': {
@@ -531,6 +560,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'bad-field',
           'action-field',
           'email-field',
+          'related-field',
           'str-field',
           'multi-str-field',
           'int-field',
