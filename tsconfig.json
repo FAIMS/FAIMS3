@@ -24,7 +24,8 @@
     "jsx": "react-jsx"
   },
   "typedocOptions":{
-    "entryPoints": ["src/App.tsx"],
+    "entryPoints": ["src/"],
+    "entryPointStrategy": "Expand",
     "out": "docs",
     "exclude": "**/*.sh",
     "readme": "README.md",
