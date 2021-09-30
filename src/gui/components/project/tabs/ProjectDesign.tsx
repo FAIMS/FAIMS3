@@ -71,6 +71,7 @@ type ProjectDesignProps={
 	formuiSpec:uiSpecType;
 	setFormuiSpec:handlertype; 
 	handleSaveUiSpec:handlertype;
+	accessgroup:Array<string>;
 }
 type formcomponents=any
 
@@ -78,7 +79,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
-    const {project_id,formuiSpec,setFormuiSpec,...others}=props
+    const {project_id,formuiSpec,setFormuiSpec,accessgroup,...others}=props
     const [initialValues,setinitialValues]=useState(ini)
     const [formcomponents,setFormComponents]= useState<formcomponents>(form_defult)
     const [isAddField,setIsAddField]=useState(true)
@@ -158,7 +159,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
     const handleAddField = (id:string) =>{
       const uuid=getid()
 
-      const {newviews,components,newuiSpeclist,newuiSpec}=updateuiSpec('addfield',{uuid:uuid,id:id,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
+      const {newviews,components,newuiSpeclist,newuiSpec}=updateuiSpec('addfield',{uuid:uuid,id:id,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview,accessgroup:accessgroup})
       setinitialValues({...initialValues,...setProjectInitialValues(newuiSpeclist,formView,{_id:project_id})})
       setFormComponents(components)
       setFormuiSpec({fields:newuiSpec,views:newviews,viewsets:formuiSpec.viewsets,visible_types:formuiSpec.visible_types})
@@ -327,7 +328,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
   return ( 
 
       <Grid container  >
-      <AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />{project_id} //**This button should be removed after auto sync is working
+      <AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />
       <Grid item sm={12} xs={12}>
         <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
         <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: CreateProjectCard.tsx
- * Description:
+ * Description: No autosync in Notebook creation/edit in this Stage
  *   TODO: seperate the tabs to different files
  *   TODO: edit Project is not working, can't read information for project
  *   TODO: setup project information 
@@ -54,6 +54,7 @@ type CreateProjectCardProps={
   project_info:ProjectInformation | null
 }
 
+const accessgroup=['admin','moderator','team']
 
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
@@ -65,7 +66,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const [project_id,setProjectID]=useState(props.project_id);
-    const [projectvalue,setProjectValue]=useState<projectvalueType>({})
+    const [projectvalue,setProjectValue]=useState<projectvalueType>({accesses:accessgroup})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [projecttabvalue,setProjecttabvalue]=useState(0)
@@ -86,7 +87,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
       setinit();
       setProjectID(props.project_id)
-
+      console.log('changes')
 
     }, [props.project_id]);
 
@@ -154,7 +155,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     const getnewdb = async  () =>{
       try{
        const p_id=await create_new_project_dbs(projectvalue.projectname);
-       if(p_id!==null) setProjectID(p_id);
+       if(p_id!==null) {setProjectID(p_id); setProjectValue({...projectvalue,project_id:p_id})}
        console.log(project_id)
       }catch (err) {
       console.error('databases not created...');
@@ -176,16 +177,17 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       const newproject=projectvalue
       newproject[event.target.name]=event.target.value
       setProjectValue(newproject)
+      console.log(newproject)
     }
 
     const submithandlerProject = (values:any) =>{
       //this function is to save project information 
       //TODO currently just save for projectname so added getnewdb function here, need to update it
-      if(project_id===''||project_id===null||project_id===undefined){
+      if(project_id===undefined){
         getnewdb();
-        console.log('save')
+        console.log('save New')
       }
-      console.log(project_id)
+      console.log(project_id+projectvalue.project_id)
     }
 
     const handleSaveUiSpec = () =>{
@@ -201,10 +203,10 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       </AppBar>
       <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
       {'Project Name:'+projectvalue.projectname+' Project ID:'+project_id}
-          <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleSubmit={submithandlerProject}/>
+          <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject}/>
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
-        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
+        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
         {projecttabvalue===2?'Project Preview':''}

@@ -42,7 +42,6 @@ export const getid = ()=>{
 
 
 
-
 export const getfieldname = (name:string,label:string) =>{
 	const names=name.split(label);
 	if(names.length>1)
@@ -113,17 +112,31 @@ export const gettabform = (tabs:Array<string>) =>{
 	}
 }
 
-export const getprojectform= (tabs:Array<string>,type: {namespace:string,componentName:string}={namespace:'formik-material-ui',componentName:'TextField'}) =>{ //this function is just template to get information about the project
+type projectuilistType=any
+export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any=null) =>{ //this function is just template to get information about the project
   const fields_list:any={}
-  const fields:Array<string>=[]
-  //'TextField',
-  tabs.map((tab:string,index:number)=> {fields_list[tab]=getcomponent({name:tab, label:tab, initialValue:'', placeholder:'',...type}); fields[index]=tab
+  const fieldsarray:Array<string>=[]
+  const section_info=[
+  {name:'sectionname',label:'Section Name',namespace:'formik-material-ui',componentName:'TextField',view:'section_info',required:true},
+  {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section_info',multiline:true,multirows:4}]
+  const fields:projectuilistType={info_general:[
+  {name:'projectname',label:'Project Name',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',required:true},
+  {name:'description',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',multiline:true,multirows:4}],
+  info_group:[
+  {name:'accessadded',label:'Add User Roles',namespace:'formik-material-ui',componentName:'TextField',view:'info_group',required:false,value:projectvalue['accessadded']}],
+  design_section:[],
+  }  
+  fields[tab].map((field:any,index:number)=> {
+     const {name,view,...others}=field
+    fields_list[field.name]=getcomponent({name:name,initialValue:projectvalue[name], placeholder:'',...others}); 
+    fieldsarray[index]=field.name
     });
-
   return {
     fields:fields_list,
-    'views':{'start-view':{fields:fields}} ,
-    'start_view': 'start-view'
+    'views':{'start-view':{fields:fieldsarray,'uidesign':'general'}} ,
+    'start_view': 'start-view',
+     viewsets:{},
+     visible_types:[]
   }
 }
 
@@ -233,21 +246,19 @@ const removefield = (id:string,formuiSpec:uiSpecType,formcomponents:any,formuivi
   components[formuiview]=components[formuiview].filter((formcomponent:any)=>formcomponent.id!==id)
   const newviews=formuiSpec
   newviews['views'][formuiview]['fields']=newviews['views'][formuiview]['fields'].filter((field:any)=>field!==name)
-  console.log(components)
   return {newviews,components}
 }
 
 const addfield = (props:any) =>{
-  const {uuid,id,formuiSpec,formcomponents,formuiview}=props
+  const {uuid,id,formuiSpec,formcomponents,formuiview,accessgroup}=props
   const name=NEWFIELDS+uuid
-  const newfield=getcomponent({'name':name,label:id.componentName,...id})
+  const newfield=getcomponent({'name':name,label:id.componentName,access:accessgroup,...id})
   const newuiSpec=formuiSpec.fields;
   newuiSpec[name]=newfield
   const newviews=formuiSpec.views
   const fieldprops=convertuiSpecToProps(newfield)
   const newuiSpeclist=FieldSettings(newfield,name,fieldprops)
   const components=formcomponents
-  console.log(newfield)
   newviews[formuiview]['fields']=[...newviews[formuiview]['fields'],name]
   components[formuiview]=[...components[formuiview],{id:uuid,uiSpec:newuiSpeclist,designvalue:'settings'}];
   return {newviews,components,newuiSpeclist,newuiSpec}

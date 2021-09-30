@@ -30,7 +30,7 @@ import {getComponentFromField,FormForm} from '../FormElement';
 import {TabTab,TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
 import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType,projectvalueType} from '../data/ComponentSetting'
-import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './ProjectButton'
+import {TickButton} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import {getProjectInfo} from '../../../../databaseAccess';
@@ -64,22 +64,84 @@ type ProjectInfoProps={
 	projectvalue:projectvalueType;
   setProjectValue:handlertype;
   handleSubmit:handlertype;
+  handleChangeFormProject:handlertype;
 }
 
 export default function ProjectInfoTab(props:ProjectInfoProps) {
   const {projectvalue,setProjectValue,project_id,...others}=props
   const [projectInfo,setProjectInfo]=useState<any>(getProjectInfo(project_id))
+  const [infotabvalue,setinfotabvalue]=useState(0)
+  const [uiSpec_general,setUISpecG]=useState<uiSpecType>(getprojectform(projectvalue,'info_general'))
+  
+  const [accessgroup,setaccessgroup]=useState([])
+  
+  const [uiSpec_access,setUISpecA]=useState<uiSpecType>(getprojectform(projectvalue,'info_group'))
+  const [initialValues,setinitialValues]=useState(setProjectInitialValues(uiSpec_access,'start-view',{_id:project_id}))
+
+  useEffect(() => {
+
+     setUISpecA(getprojectform(projectvalue,'info_group'))
+     console.log('New user added')
+    }, [accessgroup]);
+
   const handleChangeFormProject=(event:any) => {
       const newproject=projectvalue
       newproject[event.target.name]=event.target.value
       setProjectValue(newproject)
+      // console.log(projectvalue)
+  }
+  const handleChangetab = (event:any,index:number) =>{
+      setinfotabvalue(index)
     }
 
+  const handleSubmitAccess = (values:any) =>{
+    // props.handleSubmit(values)
+    const newproject=projectvalue
+    newproject['accesses']=[...newproject['accesses'],values['accessadded']] //need to reset the add user role value
+    setProjectValue(newproject)
+    setaccessgroup(newproject['accesses'])
+    console.log(projectvalue)
+  }
+
+  const handleformchangeAccess = (event:any) =>{
+
+  }
+
   return (
-    <>
-    <FormForm uiSpec={getprojectform(['projectname'])} currentView='start-view' handleChangeForm={handleChangeFormProject} handleSubmit={props.handleSubmit}/>
+    <Grid container>
+    <Grid item sm={8} xs={12}>
+    <TabTab tabs={['general','group']} value={infotabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
+    <TabPanel value={infotabvalue} index={0} tabname='primarytab' >
+    <FormForm uiSpec={uiSpec_general} currentView='start-view' handleChangeForm={props.handleChangeFormProject} handleSubmit={props.handleSubmit}/>
     <pre>{JSON.stringify(projectInfo, null, 2)}</pre>
-    </>
+    </TabPanel>
+    <TabPanel value={infotabvalue} index={1} tabname='primarytab' >
+    <Formik
+          initialValues={initialValues}
+          validateOnMount={true}
+          onSubmit={(values, {setSubmitting}) => {
+            setTimeout(() => {
+              setSubmitting(false);
+              handleSubmitAccess(values)
+            }, 500);}}
+        >
+
+        {formProps => {
+              return (
+                <Form >
+                {uiSpec_access['views']['start-view']['fields'].map((fieldName:string)=>
+                  getComponentFromField(uiSpec_access,fieldName,formProps,handleformchangeAccess))}
+                <TickButton id='submit' type="submit" />
+                </Form>
+              );
+        }}
+        </Formik>
+    </TabPanel>
+    </Grid>
+    <Grid item sm={4} xs={12}>
+    <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
+    </Grid>
+    </Grid>
     )
 }
 

@@ -86,14 +86,14 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
     'type_return':fielduiSpec['type-returned'],
     'required':fielduiSpec['component-parameters']['required'],
     'initialValue':fielduiSpec['initialValue'],
-    'validationSchema':fielduiSpec['validationSchema'],  //TODO: ADD function to pass and update validationschema
+    'validationSchema':getdefaultvalidschema(fielduiSpec,fielduiSpec['validationSchema']??[]),  //TODO: ADD function to pass and update validationschema
     'annotation_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['annotation_label']:'annotation',
     'meta_type':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['include']:false,
     'meta_type_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['label']:'',
     'access':fielduiSpec['access'],  //TODO: ADD function to pass and update access
     'select':fielduiSpec['component-parameters']['select']===true?true:false,
     'label':fielduiSpec['component-parameters']['InputLabelProps']!==undefined?fielduiSpec['component-parameters']['InputLabelProps']['label']:fielduiSpec['component-parameters']['FormControlLabelProps']!==undefined?fielduiSpec['component-parameters']['FormControlLabelProps']['label']:'',//fielduiSpec['component-parameters']['FormControlLabelProps']['label']
-    'helperText':fielduiSpec['component-parameters']['helperText']!==undefined?fielduiSpec['component-parameters']['helperText']:fielduiSpec['component-parameters']['FormHelperTextProps']['children'],   // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children'] 
+    'helperText':fielduiSpec['component-parameters']['helperText']!==undefined?fielduiSpec['component-parameters']['helperText']:fielduiSpec['component-parameters']['FormHelperTextProps']!==undefined?fielduiSpec['component-parameters']['FormHelperTextProps']['children']:'',   // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children'] 
     'type':fielduiSpec['component-parameters']['InputProps']!==undefined?fielduiSpec['component-parameters']['InputProps']['type']:fielduiSpec['component-parameters']['type'],
     'multiline':fielduiSpec['component-parameters']['multiline']===true?true:false,
     'multselect':fielduiSpec['component-name']==='Select'?fielduiSpec['component-parameters']['SelectProps']['multiple']:false,
@@ -105,7 +105,11 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
     return props;
 }
 
-
+const getdefaultvalidschema = (component:any,validation:Array<any>) =>{
+    const validationSchema = validation
+      
+    return validationSchema
+}
 const FieldModel =(props:any)=>{
 	const {name,namespace,componentName,type_return,required,initialValue,validationSchema,multiline,multirows,select,options,multselect,annotation_label,meta_type,meta_type_label,access,...others}=props
 	let isrequired=false;
