@@ -16,34 +16,16 @@ export type LoginFormProps = {
 
 export type LoginButtonProps = {
   listing_id: string;
-  auth_mechanism: AuthInfo;
-  auth_proxy: string;
+  auth_id: string; // ID to use with the portal
+  auth_info: AuthInfo; // User-visible name
 };
 
-/**
- * Generates a user-facing name for authentication mechanism
- * @param info AuthInfo from a listings object or project object
- * @returns String name
- */
-function authInfoTypeName(info: AuthInfo): string {
-  switch (info.type) {
-    case 'oauth':
-      return info.name;
-  }
-}
-
-function oauth_redirect_url(
+function redirect_url(
   listing_id: string,
-  proxy: string,
-  mode: AuthInfo & {type: 'oauth'}
+  portal_url: string,
+  auth_id: string
 ): string {
-  const params = new URLSearchParams();
-  params.append('response_type', 'code');
-  params.append('client_id', mode.client_id);
-  params.append('state', JSON.stringify({listing_id: listing_id}));
-  params.append('redirect_uri', 'http://localhost:3000/signin-return');
-  params.append('base_url', mode.base_url);
-  return proxy + '/auth/' + listing_id + '?' + params.toString();
+  return portal_url + '/auth/' + auth_id + '?state=' + listing_id;
 }
 
 function LoginButton(props: LoginButtonProps) {
@@ -51,13 +33,13 @@ function LoginButton(props: LoginButtonProps) {
     <Button
       variant="contained"
       color="primary"
-      href={oauth_redirect_url(
+      href={redirect_url(
         props.listing_id,
-        props.auth_proxy,
-        props.auth_mechanism
+        props.auth_info.portal,
+        props.auth_id
       )}
     >
-      Sign-in with {authInfoTypeName(props.auth_mechanism)}
+      Sign-in with {props.auth_info.name}
     </Button>
   );
 }
@@ -68,12 +50,12 @@ function LoginButton(props: LoginButtonProps) {
  */
 export function LoginForm(props: LoginFormProps) {
   const [listingInfo, setListingInfo] = useState(
-    null as null | [string, AuthInfo[]] | {error: {}}
+    null as null | ListingsObject | {error: {}}
   );
 
   useEffect(() => {
     directory_db.local.get(props.listing_id).then(
-      info => setListingInfo([info.auth_proxy, info.auth_mechanisms]),
+      info => setListingInfo(info),
       (err: any) => {
         setListingInfo({error: err});
       }
@@ -86,7 +68,7 @@ export function LoginForm(props: LoginFormProps) {
     const change_listener = (
       change: PouchDB.Core.ChangesResponseChange<ListingsObject>
     ) => {
-      setListingInfo([change.doc!.auth_proxy, change.doc!.auth_mechanisms]);
+      setListingInfo(change.doc!);
     };
     const error_listener = (err: any) => {
       setListingInfo({error: err});
@@ -106,11 +88,11 @@ export function LoginForm(props: LoginFormProps) {
   } else {
     return (
       <Box>
-        {listingInfo[1].map(mode => (
+        {Object.keys(listingInfo.auth_mechanisms).map(auth_id => (
           <LoginButton
-            listing_id={props.listing_id}
-            auth_proxy={listingInfo[0]}
-            auth_mechanism={mode}
+            listing_id={listingInfo._id}
+            auth_id={auth_id}
+            auth_info={listingInfo.auth_mechanisms[auth_id]}
           />
         ))}
       </Box>

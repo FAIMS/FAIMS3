@@ -120,8 +120,8 @@ async function ensure_locally_created_project_listing(): Promise<ListingsObject>
         description:
           'Projects created on this device (have not been submitted).',
       };
-      await directory_db.local.put(listing_object);
-      return listing_object;
+      await directory_db.local.put(listing_object as ListingsObject);
+      return listing_object as ListingsObject;
     } else {
       throw err;
     }

@@ -49,7 +49,7 @@ function tryParseStateFromQueryValue(
       }
       return json_parsed;
     }
-  } catch (err) {
+  } catch (err: any) {
     return {error: err};
   }
 }
