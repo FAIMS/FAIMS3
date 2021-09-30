@@ -23,6 +23,13 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
+  "typedocOptions":{
+    "entryPoints": ["src/index.tsx"],
+    "out": "docs",
+    "exclude": "**/*.sh",
+    "readme": "README.md",
+    "githubPages": true
+  },
   "include": [
     "src"
   ]

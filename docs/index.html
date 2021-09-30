@@ -1,0 +1,45 @@
+<!DOCTYPE html><html class="default no-js"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>faims3</title><meta name="description" content="Documentation for faims3"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script async src="assets/search.js" id="search-script"></script></head><body><header><div class="tsd-page-toolbar"><div class="container"><div class="table-wrap"><div class="table-cell" id="tsd-search" data-base="."><div class="field"><label for="tsd-search-field" class="tsd-widget search no-caption">Search</label><input type="text" id="tsd-search-field"/></div><ul class="results"><li class="state loading">Preparing search index...</li><li class="state failure">The search index is not available</li></ul><a href="index.html" class="title">faims3</a></div><div class="table-cell" id="tsd-widgets"><div id="tsd-filter"><a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a><div class="tsd-filter-group"><div class="tsd-select" id="tsd-filter-visibility"><span class="tsd-select-label">All</span><ul class="tsd-select-list"><li data-value="public">Public</li><li data-value="protected">Public/Protected</li><li data-value="private" class="selected">All</li></ul></div> <input type="checkbox" id="tsd-filter-inherited" checked/><label class="tsd-widget" for="tsd-filter-inherited">Inherited</label><input type="checkbox" id="tsd-filter-externals" checked/><label class="tsd-widget" for="tsd-filter-externals">Externals</label></div></div><a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a></div></div></div></div><div class="tsd-page-title"><div class="container"><h1> faims3</h1></div></div></header><div class="container container-main"><div class="row"><div class="col-8 col-content"><div class="tsd-panel tsd-typography">
+<a href="#faims3" id="faims3" style="color: inherit; text-decoration: none;">
+  <h1>FAIMS3</h1>
+</a>
+<p>FAIMS3 is currently in pre-alpha development. This repository is our main
+codebase for development. See <a href="https://faims.edu.au">https://faims.edu.au</a> for updates (soon).</p>
+
+<a href="#setup-and-development-quick-start" id="setup-and-development-quick-start" style="color: inherit; text-decoration: none;">
+  <h2>Setup and development (quick-start)</h2>
+</a>
+<p>Before you do anything (apart from cloning this repository), you should run
+npm install<code>to get all the dependencies for the scripts installed (If you have been doing some development, either stashing or committing your changes before running</code>npm install` would be wise).</p>
+<p>Once the dependencies are installed, you should check any changes that have been
+made, and commit them if needed.</p>
+<p>There are a number of helper scripts (which can be seen in the <code>package.json</code>),
+but the ones that should always exist
+are:</p>
+<ul>
+<li><code>npm run build</code>: builds the webapp (not the Android/iOS apps)</li>
+<li><code>npm run test</code>: runs the main test suite</li>
+<li><code>npm run serve</code>: runs the webapp in a browser (currently via capacitor&#39;s
+ system, to ensure that the webapp and the phone apps are as similar as
+ possible).</li>
+<li><code>npm run start</code>: runs the webapp in a browser (unoptimized dev build).</li>
+</ul>
+<p>You should also be aware of the
+<a href="https://capacitorjs.com/docs/cli">cli interface to capacitor</a>, as that does the
+building/management of the Android/iOS
+apps.</p>
+<p>Further build/install instructions can be found at
+<a href="https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp">https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp</a>.</p>
+
+<a href="#choosing-couchdb-instances" id="choosing-couchdb-instances" style="color: inherit; text-decoration: none;">
+  <h2>Choosing couchdb instances</h2>
+</a>
+<p>The <code>server_configs</code> directory contains sourcable scripts for some of the
+development servers, but primarily exporting:</p>
+<pre><code class="language-!shell">export REACT_APP_DIRECTORY_HOST=&lt;couchdb_host_name&gt;
+export REACT_APP_DIRECTORY_PORT=&lt;couchdb_port&gt;
+</code></pre>
+<p>will allow you to choose which couchdb instance to use. Remember to add the
+host-port pair of the system the <em>FAIMS</em> app is running on (in most cases
+<code>localhost:3000</code>) to the CORS allow list via the Fauxton running on the couchdb
+server (located at <code>http://&lt;couchdb_host_name&gt;:&lt;couchdb_port&gt;/_utils/</code>).</p>
+</div></div><div class="col-4 col-menu menu-sticky-wrap menu-highlight"><nav class="tsd-navigation primary"><ul><li class="current"><a href="modules.html">Exports</a></li></ul></nav><nav class="tsd-navigation secondary menu-sticky"><ul></ul></nav></div></div></div><footer class="with-border-bottom"><div class="container"><h2>Settings</h2><p>Theme <select id="theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></p></div></footer><div class="container tsd-generator"><p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></div><div class="overlay"></div><script src="assets/main.js"></script></body></html>
