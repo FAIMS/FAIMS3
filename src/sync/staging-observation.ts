@@ -266,7 +266,7 @@ class RecordStagingState {
       const data_listeners = this.data_listeners;
       this.data_listeners = [];
       data_listeners.forEach(f => f[0].call(this, data));
-    } catch (err) {
+    } catch (err: any) {
       this.fetch_error = err;
       // Reject any promises waiting for data
       const data_listeners = this.data_listeners;
@@ -339,7 +339,7 @@ class RecordStagingState {
           this.saveListener(this.save_error);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       this.errors += 1;
       this.save_error = err;
       if (this.errors === MAX_CONSEQUTIVE_SAVE_ERRORS) {

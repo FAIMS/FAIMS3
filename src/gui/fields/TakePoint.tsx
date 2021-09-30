@@ -42,7 +42,7 @@ export class TakePoint extends React.Component<
         longitude: coordinates.coords.longitude,
       };
       this.props.form.setFieldValue(this.props.field.name, pos);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }

@@ -59,7 +59,7 @@ export async function get_local_autoincrement_state_for_field(
   const pouch_id = get_pouch_id(project_id, form_id, field_id);
   try {
     return await local_state_db.get(pouch_id);
-  } catch (err) {
+  } catch (err: any) {
     if (err.status === 404) {
       // We haven't initialised this yet
       const doc = {
@@ -156,7 +156,7 @@ export async function get_autoincrement_references_for_project(
       LOCAL_AUTOINCREMENT_NAME
     );
     return doc.references;
-  } catch (err) {
+  } catch (err: any) {
     if (err.status === 404) {
       // No autoincrementers
       return [];
@@ -185,7 +185,7 @@ export async function add_autoincrement_reference_for_project(
     ref_set.add(ref);
     doc.references = Array.from(ref_set.values());
     await projdb.put(doc);
-  } catch (err) {
+  } catch (err: any) {
     if (err.status === 404) {
       // No autoincrementers currently
       await projdb.put({
