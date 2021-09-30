@@ -19,6 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
+import {auth_mechanisms} from '../authconfig';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -29,13 +30,11 @@ import {
   ActiveDoc,
   ConnectionInfo,
   ListingsObject,
-  NonNullListingsObject,
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
   LocalAuthDoc,
   PouchUser,
-  PossibleConnectionInfo,
 } from '../datamodel/database';
 import {
   ConnectionInfo_create_pouch,
@@ -64,14 +63,7 @@ export const self_listing_info: ListingsObject = {
     db_name: 'projects',
     auth: DIRECTORY_AUTH,
   },
-  auth_mechanisms: [
-    {
-      type: 'oauth',
-      base_url: 'https://auth.datacentral.org.au/cas/login',
-      client_id: '5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au',
-      name: 'Data Central',
-    },
-  ],
+  auth_mechanisms: auth_mechanisms.map(m => m.public),
 };
 
 export type ExistingActiveDoc = PouchDB.Core.ExistingDocument<ActiveDoc>;
