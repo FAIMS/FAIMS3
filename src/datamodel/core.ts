@@ -72,3 +72,6 @@ export type RevisionID = string;
 export type AttributeValuePairID = string;
 
 export type FAIMSTypeName = string;
+
+// This should be locked down more
+export type Annotations = any;
