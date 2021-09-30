@@ -24,7 +24,7 @@
     "jsx": "react-jsx"
   },
   "typedocOptions":{
-    "entryPoints": ["src/index.tsx"],
+    "entryPoints": ["src/App.tsx"],
     "out": "docs",
     "exclude": "**/*.sh",
     "readme": "README.md",
