@@ -20,9 +20,12 @@
 import {setupExampleActive} from '../dummyData';
 import {update_directory} from './process-initialization';
 import {active_db, directory_connection_info} from './databases';
-import {DirectoryEmitter, events} from './events';
-import {attach_all_listeners} from './event-handler-registration';
-import {all_projects_updated} from './state';
+import {events} from './events';
+import {
+  all_projects_updated,
+  register_basic_automerge_resolver,
+  register_sync_state,
+} from './state';
 
 /**
  * To prevent initialize() being called multiple times
@@ -51,6 +54,9 @@ export function initialize() {
 async function initialize_nocheck() {
   await setupExampleActive(active_db);
 
+  register_sync_state(events);
+  register_basic_automerge_resolver(events);
+
   const initialized = new Promise<void>(resolve => {
     // Resolve once only
     let resolved = false;
@@ -61,19 +67,11 @@ async function initialize_nocheck() {
       }
     });
   });
-  console.log('sync/initialize: starting');
-  initialize_dbs();
-  await initialized;
-  console.log('sync/initialize: finished');
-}
-
-function initialize_dbs(): DirectoryEmitter {
-  attach_all_listeners(events);
-
   // It all starts here, once the events are all registered
-  console.log('sync/initialize: listeners registered');
+  console.log('sync/initialize: starting');
   update_directory(directory_connection_info).catch(err =>
     events.emit('directory_error', err)
   );
-  return events;
+  await initialized;
+  console.log('sync/initialize: finished');
 }

@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {NonUniqueProjectID, ProjectID} from '../datamodel/core';
+import {ProjectID} from '../datamodel/core';
 import {
   ProjectObject,
   ProjectMetaObject,
@@ -30,7 +30,6 @@ import {
 } from '../datamodel/database';
 import {mergeHeads} from '../data_storage/merging';
 import {ExistingActiveDoc, LocalDB} from './databases';
-import {add_initial_listener} from './event-handler-registration';
 import {DirectoryEmitter} from './events';
 
 export type createdProjectsInterface = {
@@ -123,8 +122,7 @@ export let all_data_synced = false;
 export const projects_meta_synced = new Map<ProjectID, boolean>();
 export const projects_data_synced = new Map<ProjectID, boolean>();
 
-add_initial_listener(register_sync_state, 'all_projects_updated');
-function register_sync_state(initializeEvents: DirectoryEmitter) {
+export function register_sync_state(initializeEvents: DirectoryEmitter) {
   // Emits project_known if all listings have their projects added to known_projects.
   const common_check = () => {
     all_projects_updated =
@@ -215,40 +213,34 @@ export type MetasCompleteType = {
     | [ActiveDoc, unknown];
 };
 
-add_initial_listener(register_basic_automerge_resolver);
 /*
  * Registers a handler to do automerge on new records
  */
-function register_basic_automerge_resolver(initializeEvents: DirectoryEmitter) {
-  const already_listening = new Set<string>();
-  initializeEvents.on(
-    'project_data_paused',
-    (listing, active, project, data) => {
-      if (!already_listening.has(project._id)) {
-        already_listening.add(project._id);
-        start_listening_for_changes(project._id, data);
-      }
-    }
-  );
+export function register_basic_automerge_resolver(
+  initializeEvents: DirectoryEmitter
+) {
+  initializeEvents.on('data_sync_state', (syncing, listing, active) => {
+    // Only when finished syncing
+    if (syncing) return;
+    // The data_sync_state event is only triggered on initial page load,
+    // and when the actual data DB changes: So .changes
+    // (as called in start_listening_for_changes) is called once per PouchDB)
+    start_listening_for_changes(active._id);
+  });
 }
 
-function start_listening_for_changes(
-  proj_id: NonUniqueProjectID,
-  data_db: LocalDB<ProjectDataObject>
-) {
-  data_db.local
-    .changes({
-      since: 'now',
-      live: true,
-      include_docs: true,
-    })
-    .on('change', doc => {
-      if (doc !== undefined) {
-        const pdoc = doc.doc;
+function start_listening_for_changes(proj_id: ProjectID) {
+  createdProjects[proj_id]!.data.local.changes({
+    since: 'now',
+    live: true,
+    include_docs: true,
+  }).on('change', doc => {
+    if (doc !== undefined) {
+      const pdoc = doc.doc;
 
-        if (pdoc !== undefined && isRecord(pdoc)) {
-          mergeHeads(proj_id, doc.id);
-        }
+      if (pdoc !== undefined && isRecord(pdoc)) {
+        mergeHeads(proj_id, doc.id);
       }
-    });
+    }
+  });
 }
