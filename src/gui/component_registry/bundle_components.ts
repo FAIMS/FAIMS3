@@ -34,6 +34,10 @@ import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
 import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
 import {registerComponent, setupComponentProperties} from './internals';
+
+// Mapping plugin imports
+import MapFormField from '../fields/mapping/MapFormField';
+
 /*
  * This should be enough to make typescript/the build system happy
  */
@@ -214,5 +218,15 @@ registerComponent(
     'Add relations between records',
     'Relations',
     RelatedRecordSelector
+  )
+);
+// Mapping Plugin registration
+registerComponent(
+  'mapping-plugin',
+  'MapFormField',
+  setupComponentProperties(
+    'Map Input Field',
+    'Input Geo Data via a map',
+    MapFormField
   )
 );
