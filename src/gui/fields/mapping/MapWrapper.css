@@ -1,0 +1,18 @@
+
+
+.map-input-widget {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100%;
+    display: grid;
+    grid-template-rows: 1fr 100px;
+    z-index: 100    ;
+}
+.map-container {
+    grid-row: 1;
+}
+.map-submit-button {
+    grid-row: 2;
+}
