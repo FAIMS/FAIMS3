@@ -536,6 +536,29 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
       },
+      'map-field': {
+        'component-namespace': 'mapping-plugin', // this says what web component to use to render/acquire value from
+        'component-name': 'MapFormField',
+        'type-returned': 'faims-core::JSON', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'map-field',
+          id: 'map-field',
+          helperText: 'This will one day be a map',
+          variant: 'outlined',
+          required: true,
+          InputProps: {
+            featureType: 'Point',
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Mapping',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: {},
+      },
     },
     viewsets: {
       'astro_sky::main': {
@@ -553,6 +576,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'hrid-field',
           'basic-autoincrementer-field',
           'take-point-field',
+          'map-field',
           'bad-field',
           'action-field',
           'email-field',
