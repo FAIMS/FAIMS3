@@ -22,7 +22,7 @@ export const auth_mechanisms: {
       clientID: '5c1dca8c5c10f7b96f50e5829816a260-datacentral.org.au',
       clientSecret:
         '3478721c4c92e9e6118aaa315712854087ebc4b01abb9e7977bd17dc66d0c67c',
-      callbackURL: 'http://localhost:3000/signin-return/',
+      callbackURL: 'http://localhost:8080/auth-return/',
     },
   },
 };
