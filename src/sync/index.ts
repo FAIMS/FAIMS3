@@ -24,9 +24,35 @@ import PouchDBFind from 'pouchdb-find';
 import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject, ProjectMetaObject} from '../datamodel/database';
 import {data_dbs, ExistingActiveDoc, metadata_dbs} from './databases';
-import {all_projects_updated, createdProjectsInterface} from './state';
+import {
+  all_projects_updated,
+  createdProjects,
+  createdProjectsInterface,
+} from './state';
 
 PouchDB.plugin(PouchDBFind);
+
+export async function getProjectInfo(
+  active_id: ProjectID
+): Promise<createdProjectsInterface> {
+  if (!all_projects_updated) {
+    // Wait for all_projects_updated to possibly change before re-polling
+    // all_projects_updated and returning error/data DB if it's ready.
+    return new Promise((resolve, reject) => {
+      const listener = () => {
+        getProjectInfo(active_id).then(resolve, reject);
+        events.removeListener('all_state', listener);
+      };
+      events.addListener('all_state', listener);
+    });
+  } else {
+    if (active_id in data_dbs) {
+      return createdProjects[active_id];
+    } else {
+      throw `Project ${active_id} is not known`;
+    }
+  }
+}
 
 export async function getDataDB(
   active_id: ProjectID

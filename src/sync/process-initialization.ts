@@ -193,7 +193,7 @@ function process_listing(
     delete createdListings[listing_id];
 
     // DON'T MOVE THIS PAST AN AWAIT POINT
-    events.emit('listing_update', 'delete', false, false, listing);
+    events.emit('listing_update', ['delete'], false, false, listing);
   } else {
     // Create listing, convert from async to event emitter
     const listing_id = typeof args[1] === 'string' ? args[1] : args[1]._id;
@@ -254,7 +254,7 @@ export async function update_listing(
 
   // These createdListings objects are created as soon as possible
   // (As soon as the DBs are availabe)
-  const updates_existing = listing_id in createdListings;
+  const old_value = createdListings?.[listing_id];
   createdListings[listing_id] = {
     listing: listing_object,
     projects: projects_local,
@@ -263,7 +263,7 @@ export async function update_listing(
   // DON'T MOVE THIS PAST AN AWAIT POINT
   events.emit(
     'listing_update',
-    updates_existing ? 'update' : 'create',
+    old_value === undefined ? ['create'] : ['update', old_value],
     projects_did_change,
     people_did_change,
     listing_object
@@ -460,7 +460,7 @@ function process_project(
     // DON'T MOVE THIS PAST AN AWAIT POINT
     events.emit(
       'project_update',
-      'delete',
+      ['delete'],
       false,
       false,
       listing,
@@ -516,7 +516,7 @@ export async function update_project(
 
   // These createdProjects objects are created as soon as possible
   // (As soon as the DBs are availabe)
-  const updates_existing = active_id in createdProjects;
+  const old_value = createdProjects?.[active_id];
   createdProjects[active_id] = {
     project: project_object,
     active: active_project,
@@ -526,7 +526,7 @@ export async function update_project(
   // DON'T MOVE THIS PAST AN AWAIT POINT
   events.emit(
     'project_update',
-    updates_existing ? 'update' : 'create',
+    old_value === undefined ? ['create'] : ['update', old_value],
     data_did_change,
     meta_did_change,
     listing,
