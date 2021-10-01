@@ -19,7 +19,7 @@
  */
 
 import {EventEmitter} from 'events';
-import {MetasCompleteType} from './state';
+import {createdListingsInterface, createdProjectsInterface, MetasCompleteType} from './state';
 import {ListingsObject, ProjectObject} from '../datamodel/database';
 import {ExistingActiveDoc} from './databases';
 import {ProjectID} from '../datamodel/core';
@@ -75,11 +75,13 @@ export interface DirectoryEmitter extends EventEmitter {
    * Also, if the data db in createdProjects[active._id] is new (i.e.
    * doesn't have any change listeners) data_changed is true.
    * Same for meta_changed
+   *
+   * 'update' type will give you the previous value
    */
   on(
     event: 'project_update',
     listener: (
-      type: 'update' | 'delete' | 'create',
+      type: ['update', createdProjectsInterface] | ['delete'] | ['create'],
       meta_changed: boolean,
       data_changed: boolean,
       ...args: ProjectEventInfo
@@ -115,11 +117,13 @@ export interface DirectoryEmitter extends EventEmitter {
    * Also, if the projects db in createdListings[listing._id] is new (i.e.
    * doesn't have any change listeners) projects_changed is true.
    * Same for people_changed
+   *
+   * 'update' type will give you the previous value
    */
   on(
     event: 'listing_update',
     listener: (
-      type: 'update' | 'delete' | 'create',
+      type: ['update', createdListingsInterface] | ['delete'] | ['create'],
       projects_changed: boolean,
       people_changed: boolean,
       listing: ListingsObject
@@ -164,7 +168,7 @@ export interface DirectoryEmitter extends EventEmitter {
   ): boolean;
   emit(
     event: 'project_update',
-    type: 'update' | 'delete' | 'create',
+    type: ['update', createdProjectsInterface] | ['delete'] | ['create'],
     meta_changed: boolean,
     data_changed: boolean,
     ...args: ProjectEventInfo
@@ -182,7 +186,7 @@ export interface DirectoryEmitter extends EventEmitter {
   ): boolean;
   emit(
     event: 'listing_update',
-    type: 'update' | 'delete' | 'create',
+    type: ['update', createdListingsInterface] | ['delete'] | ['create'],
     projects_changed: boolean,
     people_changed: boolean,
     listing: ListingsObject
