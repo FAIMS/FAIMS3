@@ -146,7 +146,7 @@ export async function listStagedData(
 
 /**
  * Returns a list of not deleted records
- * @param project_id Project ID to get list of record for
+ * @param project_id Project ID to get list of draft for
  * @returns key: record id, value: record (NOT NULL)
  */
 export async function listDraftMetadata(
@@ -167,11 +167,9 @@ export async function listDraftMetadata(
         filter_type:record.existing===null?'created':'updated'
       };
     });
-    console.log(records)
     return out;
   } catch (err) {
     console.warn(err);
-    console.log(err);
     throw Error('failed to get metadata');
   }
 }

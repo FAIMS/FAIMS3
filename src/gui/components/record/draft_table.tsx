@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: table.tsx
- * Description:
- *   TODO
+ * Filename: draft_table.tsx
+ * Description: This duocument is to get all draft record
+ *   TODO need to check created draft route
  */
 
 import React, {useEffect, useState} from 'react';
@@ -79,7 +79,6 @@ export default function DraftsTable(props: DraftsTableProps) {
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
     // on load - if the record list is updated, the callback should be fired
-    console.log('run')
     if (project_id === undefined) return; //dummy project
     const destroyListener = listenDrafts(
       project_id,
@@ -91,7 +90,6 @@ export default function DraftsTable(props: DraftsTableProps) {
         }
       }
     );
-    console.log('has data');
     return destroyListener; // destroyListener called when this component unmounts.
 
   }, [project_id, rows]);
