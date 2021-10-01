@@ -61,7 +61,9 @@ export default function SystemAlert() {
             onClose={() => handleClose(oldest_alert.key)}
             severity={oldest_alert.severity}
           >
-            {oldest_alert.message}
+            {'message' in oldest_alert
+              ? oldest_alert.message
+              : oldest_alert.element}
           </MuiAlert>
         </Snackbar>
       ) : (

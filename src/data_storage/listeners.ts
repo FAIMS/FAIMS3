@@ -25,6 +25,8 @@ import {ExistingActiveDoc} from '../sync/databases';
 import {events} from '../sync/events';
 import {add_initial_listener} from '../sync/event-handler-registration';
 import {listRecordMetadata} from './internals';
+import {draft_db, listStagedData,listDraftMetadata} from '../sync/draft-storage';
+import {DraftMetadataList} from '../datamodel/drafts';
 
 // note the string below is a ProjectID, but typescript is kinda silly and
 // doesn't let us do that
@@ -65,4 +67,31 @@ export function listenRecordsList(
   if (recordsUpdated[project_id]) runCallback();
 
   return () => events.removeListener('project_data_paused', listener_func);
+}
+
+export function listenDrafts(
+  project_id: ProjectID,
+  filter: 'updates' | 'created' | 'all',
+  callback: (draftList: DraftMetadataList) => unknown
+): () => void {
+  const runCallback = () =>
+    listDraftMetadata(project_id, filter)
+      .then(callback)
+      .catch(err => console.error('Uncaught draft list error', err));
+
+  const changes = draft_db
+    .changes({
+      since: 'now',
+      include_docs: true,
+      live: true,
+    })
+    .on('change', info => {
+      console.log(info)
+      if (info.doc!.project_id === project_id) {
+        runCallback();
+      }
+    })
+    .on('error', err => console.error('Uncaught draft list error', err));
+
+  return changes.cancel.bind(changes);
 }

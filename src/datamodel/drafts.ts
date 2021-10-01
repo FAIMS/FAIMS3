@@ -13,15 +13,43 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: staging.ts
+ * Filename: draft-storage.ts
  * Description:
  *   TODO
  */
 
+import {ProjectID, RecordID, RevisionID} from './core';
+
 export interface SavedView {
-  // ID: active_id + '/' + view_name
-  // OR: active_id + '/' + view_name + '/' + existing.record + '/' + existing.revision
   _id: string;
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
+  project_id: ProjectID;
+  // If this draft is for the user updating an existing record, the following
+  // is non-null, the record it's editing.
+  existing: null | {
+    record_id: RecordID;
+    revision_id: RevisionID;
+  };
+  created: string;
+  updated: string;
+  type: string;
 }
+
+//to get the metadata for the draft, for draft_table
+export interface DraftMetadata {
+  project_id: ProjectID;
+  existing: null | {
+    record_id: RecordID;
+    revision_id: RevisionID;
+  };
+  record_id: RecordID;
+  created: Date;
+  updated: Date;
+  type: string;
+  filter_type:string;
+}
+
+export type DraftMetadataList = {
+  [key: string]: DraftMetadata;
+};

@@ -1,3 +1,25 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: TabTab.tsx
+ * Description:
+ *   TODO
+ */
+
+
+
 import React from 'react';
 import {Tab,Tabs,Hidden,Grid} from '@material-ui/core';
 import Icon from '@material-ui/core/Icon';
@@ -8,13 +30,6 @@ import {AddSectionButton,EditButton,TickButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
 import {gettabform} from '../data/ComponentSetting';
 
-// type CTabProps = {
-//   tabs:Array<string>
-//   tab_id:string;
-//   value:number;
-//   handleChange:any;
-//   handelonChangeLabel:any|null
-// };
 
 function a11yProps(tabname:any,index:any) {
   return {
@@ -28,7 +43,7 @@ const useStyles = makeStyles((theme) => ({
     
     textAlign:'left',
     minWidth:55,
-    backgroundColor:'#E7E9EB'
+    // backgroundColor:'#e1e4e8',
   },
   subtab:{
   	// borderTop:'1px solid',
@@ -39,7 +54,16 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-export function TabTab(props:any){
+type TabProps={
+  tabs:Array<string>;
+  tab_id:string;
+  value:number;
+  handleChange:any;
+  handelonChangeLabel?:any;
+
+}
+
+export function TabTab(props:TabProps){
 	const classes = useStyles();
   	const {tabs,tab_id,value,handleChange, ...other} = props
   	return (<Tabs
@@ -47,14 +71,15 @@ export function TabTab(props:any){
           onChange={handleChange}
           aria-label={tab_id}
           id={tab_id}
+          orientation={tab_id==='primarytab'?  "horizontal" :"vertical" }
       >
         {tabs.map((tab:any,index:number)=>(
-          <Tab className={classes.root} key={`${tab_id}-${index}`} 
+          <Tab className={tab_id==='primarytab'?  classes.root :classes.fieldtab } key={`${tab_id}-${index}`} 
           label={tab}  {...a11yProps(tab_id,index)} />  ))}  
       </Tabs>);
 }
 
-export function TabEditable(props: any) {
+export function TabEditable(props: TabProps) {
   const classes = useStyles();
   const {tabs,tab_id,value,handleChange, ...other} = props
   const [tablists,setTablist]=useState<Array<any>>(tabs)
@@ -65,19 +90,16 @@ export function TabEditable(props: any) {
     }, [tabs]);
 
 
- //  	const handleDoubleClick = (key:number) =>{
-	// 	const newtabs=tablists;
-	// 	newtabs[key]=false
-	// 	setTablist(newtabs)
-	// }
-
 	const handleEdit = (event:any) => {
 	  	setisedited(true)
   	
   	}
   	const handleAdd =  (event:any) => {
 	  	const newtabs=tablists;
-  		newtabs[tablists.length]='New'+tablists.length
+      const length=tablists.length+1
+      let name='Section' 
+      if(tab_id==='formtab') name='Form'
+  		newtabs[tablists.length]=name+length
   		setTablist(newtabs)
   		props.handelonChangeLabel(newtabs,'add')
   		setIsset(!isset)
@@ -126,11 +148,11 @@ export function TabEditable(props: any) {
 		          onChange={handleChange}
 		          aria-label={tab_id}
 		          id={tab_id}
-		          orientation={tab_id==='subtab'?  "horizontal" :"vertical" }
+		          orientation={tab_id==='fieldtab'?  "vertical" :"horizontal"}
 		          
 		      >
 		        {tablists.map((tab,index)=>(
-		          <Tab className={tab_id==='subtab'?  classes.subtab : classes.fieldtab} key={`${tab_id}-${index}`} label={tab}  {...a11yProps({tab_id},{index})}  />))}  
+		          <Tab className={tab_id==='fieldtab'? classes.fieldtab: classes.subtab } key={`${tab_id}-${index}`} label={tab}  {...a11yProps({tab_id},{index})}  />))}  
 		      </Tabs>:
 		      <FormForm uiSpec={gettabform(tabs)} currentView='start-view' handleChangeForm={handleChangeForm} handleSubmit={handleSubmitForm}/>}
 		    </Grid>

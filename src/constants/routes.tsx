@@ -30,9 +30,9 @@ export const PROJECT_LIST = '/projects';
 export const PROJECT = '/projects/';
 export const PROJECT_SETTINGS = '/settings';
 export const RECORD_LIST = '/records';
-export const RECORD = '/records/';
-export const RECORD_CREATE = '/new-record';
-export const RECORD_TYPE = '/type/';
+export const RECORD_EXISTING = '/records/';
+export const RECORD_CREATE = '/new/';
+export const RECORD_DRAFT = '/draft/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
 export const AUTOINCREMENT_LIST = '/autoincrements';
@@ -46,7 +46,49 @@ export function getRecordRoute(
   revision_id: RevisionID
 ) {
   if (!!project_id && !!record_id && !!revision_id) {
-    return PROJECT + project_id + RECORD + record_id + REVISION + revision_id;
+    return (
+      PROJECT +
+      project_id +
+      RECORD_EXISTING +
+      record_id +
+      REVISION +
+      revision_id
+    );
+  }
+  throw Error(
+    'project_id, record_id and revision_id are required for this route'
+  );
+}
+
+// this function is to get route for draft-- depend on edit draft or created draft??? TODO need to check created draft route
+export function getDraftRoute(
+  project_id: ProjectID,
+  record_id: RecordID,
+  filter_type: string,
+  existing: null | any,
+  type_name:string
+) {
+  if (!!project_id && !!record_id) {
+    if(filter_type==='updated')
+      return (
+        PROJECT +
+        project_id +
+        RECORD_EXISTING +
+        // existing+
+        existing.record_id +
+        REVISION +
+        existing.revision_id +
+        RECORD_DRAFT +
+        record_id
+      );
+    else return (
+        PROJECT +
+        project_id +
+        RECORD_CREATE +
+        type_name +
+        RECORD_DRAFT + 
+        record_id
+      );
   }
   throw Error(
     'project_id, record_id and revision_id are required for this route'

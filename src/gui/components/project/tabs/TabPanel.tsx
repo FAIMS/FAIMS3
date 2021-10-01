@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: boxTab.tsx
+ * Filename: TabPanel.tsx
  * Description:
  *   TODO
  */
@@ -49,7 +49,13 @@ const useStyles = makeStyles((theme) => ({
 }
 ));
 
-export default function TabPanel(props: any) {
+type TabPanelProps={
+  children:any;
+  value:number;
+  tabname:string;
+  index:number;
+}
+export default function TabPanel(props: TabPanelProps) {
   const { children, value, tabname,index, ...other } = props;
   const classes = useStyles();
 

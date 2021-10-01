@@ -34,38 +34,61 @@ import {ProjectUIModel} from '../../datamodel/ui';
 
 export default function ProjectCreate() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  // if(typeof project_id!=='undefined') {
-  const project_info = getProjectInfo(project_id);
-  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
-  const [error, setError] = useState(null as null | {});
-  // }
-  const breadcrumbs = [
+  if(project_id===undefined) {
+    const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
-    {title: project_info !== null ? project_info.name : 'Create New Notebook'},
-  ];
-  
-  useEffect(() => {
-    getUiSpecForProject(project_id).then(setUISpec, setError);
-    console.log(project_id+uiSpec)
-    
-  }, [project_id]);
-
-console.log(project_info)
-   return  (
+    {title:  'New Notebook'},
+    ];
+    return  (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info !== null ? 'Edit Notebook' : 'Create Notebook'}
+          Create Notebook
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-        {project_info !== null ? 'Design and preview your notebook' : 'Design and preview your new notebook before inviting team members and publising'}
+        Design and preview your new notebook before inviting team members and publising
         </Typography>
       </Box>
       <Paper square>
-        <CreateProjectCard project_id={project_id} uiSpec={uiSpec}/>
+      <CreateProjectCard project_id={project_id} uiSpec={null} project_info={null}/>
       </Paper>
     </Container>
-  );
+    );
+  }else{
+    const project_info = getProjectInfo(project_id);
+    const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+    const [error, setError] = useState(null as null | {});
+    const breadcrumbs = [
+      {link: ROUTES.INDEX, title: 'Index'},
+      {title: project_info !== null ? project_info.name : 'New Notebook'},
+    ];
+    
+    useEffect(() => {
+      setUISpec(null)
+      if(project_id!==undefined) //only get UISpec when project is defined
+        getUiSpecForProject(project_id).then(setUISpec, setError);
+      console.log(uiSpec)
+      console.log('project_id changed'+project_id)
+    }, [project_id]);
+
+     return  (
+      <Container maxWidth="lg">
+        <Breadcrumbs data={breadcrumbs} />
+        <Box mb={2}>
+          <Typography variant={'h2'} component={'h1'}>
+            {project_info !== null ? 'Edit Notebook '+project_info.name : 'Create Notebook'}
+          </Typography>
+          <Typography variant={'subtitle1'} gutterBottom>
+          {project_info !== null ? 'Design and preview your notebook' : 'Design and preview your new notebook before inviting team members and publising'}
+          </Typography>
+        </Box>
+        <Paper square>
+          <CreateProjectCard project_id={project_id} uiSpec={uiSpec} project_info={project_info}/>
+        </Paper>
+      </Container>
+    );
+  }
+  
   
 }
