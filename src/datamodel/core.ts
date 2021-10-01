@@ -34,12 +34,31 @@ export function resolve_project_id(
   return cleaned_listing_id + '||' + nonunique_id;
 }
 
+export function split_full_project_id(
+  full_proj_id: ProjectID
+): {listing_id: string; project_id: NonUniqueProjectID} {
+  const splitid = full_proj_id.split('||');
+  if (
+    splitid.length !== 2 ||
+    splitid[0].trim() === '' ||
+    splitid[1].trim() === ''
+  ) {
+    throw Error('Not a valid full project id');
+  }
+  const cleaned_listing_id = splitid[0].replace('\\|\\|', '||');
+  const cleaned_project_id = splitid[1].replace('\\|\\|', '||');
+  return {
+    listing_id: cleaned_listing_id,
+    project_id: cleaned_project_id,
+  };
+}
+
 // There are two internal ID for records, the former is unique to a
 // project, the latter unique to the system (i.e. includes project_id)
 export type RecordID = string;
 export type FullyResolvedRecordID = string;
 export interface SplitRecordID {
-  project_id: string;
+  project_id: ProjectID;
   record_id: RecordID;
 }
 
@@ -51,9 +70,9 @@ export function resolve_record_id(
 }
 
 export function split_full_record_id(
-  full_proj_id: FullyResolvedRecordID
+  full_record_id: FullyResolvedRecordID
 ): SplitRecordID {
-  const splitid = full_proj_id.split('||');
+  const splitid = full_record_id.split('||');
   if (
     splitid.length !== 2 ||
     splitid[0].trim() === '' ||
