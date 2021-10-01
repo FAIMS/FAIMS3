@@ -33,9 +33,9 @@ import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
 import {ProjectID} from '../../../datamodel/core';
-import {RecordMetadata} from '../../../datamodel/ui';
+import {DraftMetadata} from '../../../datamodel/drafts';
 import * as ROUTES from '../../../constants/routes';
-import {listenRecordsList} from '../../../data_storage/listeners';
+import {listenDrafts,listenRecordsList} from '../../../data_storage/listeners';
 
 type DraftsTableProps = {
   project_id: ProjectID;
@@ -48,21 +48,23 @@ export default function DraftsTable(props: DraftsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  const [rows, setRows] = useState<Array<RecordMetadata>>([]);
+  const [rows, setRows] = useState<Array<DraftMetadata>>([]);
   const columns: GridColDef[] = [
     {
       field: 'record_id',
-      headerName: 'Obs ID',
-      description: 'Record ID',
+      headerName: 'ID',
+      description: 'Draft ID',
       type: 'string',
       width: not_xs ? 300 : 100,
       renderCell: (params: GridCellParams) => (
         <Link
           component={RouterLink}
-          to={ROUTES.getRecordRoute(
+          to={ROUTES.getDraftRoute(
             project_id || 'dummy',
             (params.getValue('record_id') || '').toString(),
-            (params.getValue('revision_id') || '').toString()
+            (params.getValue('filter_type')|| '').toString(),
+            params.getValue('existing')|| null,
+            (params.getValue('type')|| '').toString()
           )}
         >
           {params.value}
@@ -70,28 +72,18 @@ export default function DraftsTable(props: DraftsTableProps) {
       ),
     },
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-    {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
+    {field: 'filter_type', headerName: 'Type', type: 'string', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
-    {
-      field: 'updated_by',
-      headerName: 'Last updated by',
-      type: 'string',
-      width: 200,
-    },
-    {
-      field: 'conflicts',
-      headerName: 'Conflicts',
-      type: 'boolean',
-      width: 200,
-    },
   ];
 
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
     // on load - if the record list is updated, the callback should be fired
+    console.log('run')
     if (project_id === undefined) return; //dummy project
-    const destroyListener = listenRecordsList(
+    const destroyListener = listenDrafts(
       project_id,
+      'all',
       newPouchRecordList => {
         setLoading(false);
         if (!_.isEqual(Object.values(newPouchRecordList), rows)) {
@@ -99,12 +91,14 @@ export default function DraftsTable(props: DraftsTableProps) {
         }
       }
     );
+    console.log('has data');
     return destroyListener; // destroyListener called when this component unmounts.
+
   }, [project_id, rows]);
 
   return (
     <div>
-      <Typography variant="overline">Recent Records</Typography>
+      <Typography variant="overline">New Draft</Typography>
       <div
         style={{
           width: '100%',
@@ -112,6 +106,7 @@ export default function DraftsTable(props: DraftsTableProps) {
         }}
       >
         <DataGrid
+          key={'drafttable'}
           rows={rows}
           loading={loading}
           getRowId={r => r.record_id}

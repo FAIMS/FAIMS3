@@ -22,6 +22,7 @@ import PouchDB from 'pouchdb';
 import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
 import {SavedView} from '../datamodel/drafts';
 import {v4 as uuidv4} from 'uuid';
+import {DraftMetadataList} from '../datamodel/drafts';
 
 export type DraftDB = PouchDB.Database<SavedView>;
 
@@ -141,3 +142,37 @@ export async function listStagedData(
     })
   ).docs;
 }
+
+
+/**
+ * Returns a list of not deleted records
+ * @param project_id Project ID to get list of record for
+ * @returns key: record id, value: record (NOT NULL)
+ */
+export async function listDraftMetadata(
+  project_id: ProjectID,
+  filter: 'updates' | 'created' | 'all'
+): Promise<DraftMetadataList> {
+  try {
+    const records = await listStagedData(project_id,filter);
+    const out: DraftMetadataList = {};
+    records.forEach((record) => {
+      out[record._id] = {
+        project_id: project_id,
+        record_id: record._id,
+        created: new Date(record.created),
+        existing: record.existing,
+        updated: new Date(record.updated),
+        type:record.type,
+        filter_type:record.existing===null?'created':'updated'
+      };
+    });
+    console.log(records)
+    return out;
+  } catch (err) {
+    console.warn(err);
+    console.log(err);
+    throw Error('failed to get metadata');
+  }
+}
+

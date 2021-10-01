@@ -25,8 +25,8 @@ import {ExistingActiveDoc} from '../sync/databases';
 import {events} from '../sync/events';
 import {add_initial_listener} from '../sync/event-handler-registration';
 import {listRecordMetadata} from './internals';
-import {draft_db, listStagedData} from '../sync/draft-storage';
-import {SavedView} from '../datamodel/drafts';
+import {draft_db, listStagedData,listDraftMetadata} from '../sync/draft-storage';
+import {SavedView,DraftMetadataList} from '../datamodel/drafts';
 
 // note the string below is a ProjectID, but typescript is kinda silly and
 // doesn't let us do that
@@ -72,10 +72,10 @@ export function listenRecordsList(
 export function listenDrafts(
   project_id: ProjectID,
   filter: 'updates' | 'created' | 'all',
-  callback: (draftList: SavedView[]) => unknown
+  callback: (draftList: DraftMetadataList) => unknown
 ): () => void {
   const runCallback = () =>
-    listStagedData(project_id, filter)
+    listDraftMetadata(project_id, filter)
       .then(callback)
       .catch(err => console.error('Uncaught draft list error', err));
 
@@ -86,6 +86,7 @@ export function listenDrafts(
       live: true,
     })
     .on('change', info => {
+      console.log(info)
       if (info.doc!.project_id === project_id) {
         runCallback();
       }
@@ -93,4 +94,13 @@ export function listenDrafts(
     .on('error', err => console.error('Uncaught draft list error', err));
 
   return changes.cancel.bind(changes);
+  // const listener_func = (listing: unknown, active: ActiveDoc) => {
+  //   if (active._id === project_id) runCallback();
+  // };
+
+  // events.on('project_data_paused', listener_func);
+
+  // if (recordsUpdated[project_id]) runCallback();
+
+  // return () => events.removeListener('project_data_paused', listener_func);
 }

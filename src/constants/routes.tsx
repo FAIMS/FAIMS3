@@ -59,3 +59,37 @@ export function getRecordRoute(
     'project_id, record_id and revision_id are required for this route'
   );
 }
+
+export function getDraftRoute(
+  project_id: ProjectID,
+  record_id: RecordID,
+  filter_type: string,
+  existing: null | any,
+  type_name:string
+) {
+  if (!!project_id && !!record_id) {
+    if(filter_type==='updated')
+      return (
+        PROJECT +
+        project_id +
+        RECORD_EXISTING +
+        // existing+
+        existing.record_id +
+        REVISION +
+        existing.revision_id +
+        RECORD_DRAFT +
+        record_id
+      );
+    else return (
+        PROJECT +
+        project_id +
+        RECORD_CREATE +
+        type_name +
+        RECORD_DRAFT + 
+        record_id
+      );
+  }
+  throw Error(
+    'project_id, record_id and revision_id are required for this route'
+  );
+}
