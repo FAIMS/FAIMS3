@@ -60,11 +60,10 @@ export default function DraftsTable(props: DraftsTableProps) {
         <Link
           component={RouterLink}
           to={ROUTES.getDraftRoute(
-            project_id || 'dummy',
-            (params.getValue('record_id') || '').toString(),
-            (params.getValue('filter_type')|| '').toString(),
-            params.getValue('existing')|| null,
-            (params.getValue('type')|| '').toString()
+            project_id ?? 'dummy',
+            params.getValue('_id') as DraftMetadata['_id'],
+            params.getValue('existing')! as DraftMetadata['existing'],
+            params.getValue('type')! as DraftMetadata['type']
           )}
         >
           {params.value}
@@ -72,7 +71,6 @@ export default function DraftsTable(props: DraftsTableProps) {
       ),
     },
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-    {field: 'filter_type', headerName: 'Type', type: 'string', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
   ];
 

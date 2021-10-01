@@ -38,16 +38,15 @@ export interface SavedView {
 
 //to get the metadata for the draft, for draft_table
 export interface DraftMetadata {
+  _id: string;
   project_id: ProjectID;
   existing: null | {
     record_id: RecordID;
     revision_id: RevisionID;
   };
-  record_id: RecordID;
   created: Date;
   updated: Date;
   type: string;
-  filter_type:string;
 }
 
 export type DraftMetadataList = {

@@ -63,34 +63,25 @@ export function getRecordRoute(
 // this function is to get route for draft-- depend on edit draft or created draft??? TODO need to check created draft route
 export function getDraftRoute(
   project_id: ProjectID,
-  record_id: RecordID,
-  filter_type: string,
-  existing: null | any,
-  type_name:string
+  draft_id: string,
+  existing: null | {record_id: RecordID; revision_id: RevisionID},
+  type_name: string
 ) {
-  if (!!project_id && !!record_id) {
-    if(filter_type==='updated')
-      return (
-        PROJECT +
-        project_id +
-        RECORD_EXISTING +
-        // existing+
-        existing.record_id +
-        REVISION +
-        existing.revision_id +
-        RECORD_DRAFT +
-        record_id
-      );
-    else return (
-        PROJECT +
-        project_id +
-        RECORD_CREATE +
-        type_name +
-        RECORD_DRAFT + 
-        record_id
-      );
+  if (existing !== null)
+    return (
+      PROJECT +
+      project_id +
+      RECORD_EXISTING +
+      // existing+
+      existing.record_id +
+      REVISION +
+      existing.revision_id +
+      RECORD_DRAFT +
+      draft_id
+    );
+  else {
+    return (
+      PROJECT + project_id + RECORD_CREATE + type_name + RECORD_DRAFT + draft_id
+    );
   }
-  throw Error(
-    'project_id, record_id and revision_id are required for this route'
-  );
 }

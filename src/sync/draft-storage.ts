@@ -143,7 +143,6 @@ export async function listStagedData(
   ).docs;
 }
 
-
 /**
  * Returns a list of not deleted records
  * @param project_id Project ID to get list of draft for
@@ -154,17 +153,16 @@ export async function listDraftMetadata(
   filter: 'updates' | 'created' | 'all'
 ): Promise<DraftMetadataList> {
   try {
-    const records = await listStagedData(project_id,filter);
+    const records = await listStagedData(project_id, filter);
     const out: DraftMetadataList = {};
-    records.forEach((record) => {
+    records.forEach(record => {
       out[record._id] = {
         project_id: project_id,
-        record_id: record._id,
+        _id: record._id,
         created: new Date(record.created),
         existing: record.existing,
         updated: new Date(record.updated),
-        type:record.type,
-        filter_type:record.existing===null?'created':'updated'
+        type: record.type,
       };
     });
     return out;
@@ -173,4 +171,3 @@ export async function listDraftMetadata(
     throw Error('failed to get metadata');
   }
 }
-
