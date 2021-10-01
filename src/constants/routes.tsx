@@ -60,6 +60,7 @@ export function getRecordRoute(
   );
 }
 
+// this function is to get route for draft-- depend on edit draft or created draft??? TODO need to check created draft route
 export function getDraftRoute(
   project_id: ProjectID,
   record_id: RecordID,

@@ -36,10 +36,9 @@ export interface SavedView {
   type: string;
 }
 
+//to get the metadata for the draft, for draft_table
 export interface DraftMetadata {
   project_id: ProjectID;
-  // If this draft is for the user updating an existing record, the following
-  // is non-null, the record it's editing.
   existing: null | {
     record_id: RecordID;
     revision_id: RevisionID;
