@@ -35,3 +35,22 @@ export interface SavedView {
   updated: string;
   type: string;
 }
+
+export interface DraftMetadata {
+  project_id: ProjectID;
+  // If this draft is for the user updating an existing record, the following
+  // is non-null, the record it's editing.
+  existing: null | {
+    record_id: RecordID;
+    revision_id: RevisionID;
+  };
+  record_id: RecordID;
+  created: Date;
+  updated: Date;
+  type: string;
+  filter_type:string;
+}
+
+export type DraftMetadataList = {
+  [key: string]: DraftMetadata;
+};
