@@ -139,6 +139,8 @@ export function listenDataDB(
 
   const detach_cb = () => {
     if (current_changes[0] !== null) {
+      // Detatch while the DB is still running
+      // from external event (e.g. react element being destroyed
       current_changes[0].cancel();
     }
     events.removeListener('project_update', project_update_cb);
@@ -235,6 +237,8 @@ export function listenProjectDB(
 
   const detach_cb = () => {
     if (current_changes[0] !== null) {
+      // Detatch while the DB is still running
+      // from external event (e.g. react element being destroyed
       current_changes[0].cancel();
     }
     events.removeListener('project_update', project_update_cb);
