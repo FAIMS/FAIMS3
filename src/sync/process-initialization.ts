@@ -293,11 +293,18 @@ export async function update_listing(
           // Some listing activated
           to_sync[info.doc!.listing_id] = info.doc!;
           // Need to fetch it first though.
-          directory_db.local
+          projects_local.local
             .get(info.doc!.listing_id)
             // If get succeeds, undelete/create:
             .then(
-              existing_listing => process_listing(false, existing_listing),
+              existing_project =>
+                process_project(
+                  false,
+                  listing_object,
+                  to_sync[info.id],
+                  projects_connection,
+                  existing_project
+                ),
               // Even for 404 errors, since the listing is active, it should exist
               // so it's an error if it doesn't exist.
               err => events.emit('listing_error', info.doc!.listing_id, err)
