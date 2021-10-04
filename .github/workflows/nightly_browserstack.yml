@@ -19,7 +19,7 @@ on:
   push:
     branches:
       - browserstack
-        
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   check_date:
@@ -31,7 +31,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: print latest_commit
         run: echo ${{ github.sha }}
-        ref: browserstack
+        with:
+          ref: browserstack
       - id: should_run
         continue-on-error: true
         name: check latest commit is less than a day
@@ -52,7 +53,8 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-        ref: browserstack
+        with:
+          ref: browserstack
       - name: Cache node modules
         uses: actions/cache@v2
         env:
