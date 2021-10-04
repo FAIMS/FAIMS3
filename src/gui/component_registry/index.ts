@@ -17,9 +17,14 @@
  * Description:
  *   TODO
  */
-import {getComponentByName, getComponentPropertiesByName} from './internals';
+import {
+  getComponentByName,
+  getComponentPropertiesByName,
+  getAvailableComponents,
+} from './internals';
 import BundledComponents from './bundle_components';
 
 export {getComponentByName};
 export {getComponentPropertiesByName};
 export {BundledComponents};
+export {getAvailableComponents};

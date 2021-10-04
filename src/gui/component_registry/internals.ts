@@ -24,6 +24,7 @@ import {
   FAIMSFormField,
   FAIMSBuilderFormField,
   FAIMSBuilderIcon,
+  FormComponentList,
 } from '../../datamodel/ui';
 import {getDefaultBuilderComponent, getDefaultBuilderIcon} from './defaults';
 
@@ -74,6 +75,7 @@ export function registerComponent(
 export function setupComponentProperties(
   human_readable_name: string,
   description: string,
+  category: string,
   component: FAIMSFormField,
   builder_component: FAIMSBuilderFormField | null = null,
   icon: FAIMSBuilderIcon | null = null
@@ -81,6 +83,7 @@ export function setupComponentProperties(
   const props: ComponentRegistryProperties = {
     human_readable_name: human_readable_name,
     description: description,
+    category: category,
     component: component,
     builder_component:
       builder_component !== null
@@ -96,4 +99,18 @@ function getNameSpace(namespace: string) {
     componentRegistry[namespace] = {};
   }
   return componentRegistry[namespace];
+}
+
+export function getAvailableComponents(): FormComponentList {
+  const components: FormComponentList = [];
+  for (const namespace in componentRegistry) {
+    for (const component_name in componentRegistry[namespace]) {
+      components.push({
+        namespace: namespace,
+        component_name: component_name,
+        component_properties: componentRegistry[namespace][component_name],
+      });
+    }
+  }
+  return components;
 }
