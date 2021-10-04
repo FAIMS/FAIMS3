@@ -201,7 +201,7 @@ public class AndroidTest implements E2ETest {
 		WebDriverWait wait = new WebDriverWait(driver, 10);
 		//Press the Take Point Button.
 		AndroidElement gpsPoint = (AndroidElement) wait.until(
-		        ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@text='TAKE POINT']")));
+		        ExpectedConditions.elementToBeClickable(By.xpath("//*[@resource-id='take-point-field']")));
 		gpsPoint.click();
 
 		//Observe your longitude and latitude output rendered beside the button, and in the developer side-panel as a JSON object
@@ -210,7 +210,7 @@ public class AndroidTest implements E2ETest {
 		validateLatLong();
 
 		//Press the Action button, note that the JSON debug view now shows Change! rather than hello
-		AndroidElement action = driver.findElement(MobileBy.xpath("//*[@text='ACTION!']"));
+		AndroidElement action = TestUtils.scrollToResourceId(driver, "action-field");
 		action.click();
 
 		// Finish the observation
