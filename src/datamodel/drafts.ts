@@ -20,7 +20,7 @@
 
 import {ProjectID, RecordID, RevisionID} from './core';
 
-export interface SavedView {
+export interface EncodedDraft {
   _id: string;
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
@@ -44,6 +44,7 @@ export interface DraftMetadata {
     record_id: RecordID;
     revision_id: RevisionID;
   };
+  // Only difference: Date is a date, not string
   created: Date;
   updated: Date;
   type: string;

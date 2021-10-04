@@ -20,17 +20,17 @@
 
 import PouchDB from 'pouchdb';
 import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
-import {SavedView} from '../datamodel/drafts';
+import {EncodedDraft} from '../datamodel/drafts';
 import {v4 as uuidv4} from 'uuid';
 import {DraftMetadataList} from '../datamodel/drafts';
 
-export type DraftDB = PouchDB.Database<SavedView>;
+export type DraftDB = PouchDB.Database<EncodedDraft>;
 
 export const draft_db: DraftDB = new PouchDB('draft-storage');
 
 export async function getStagedData(
   draft_id: string
-): Promise<SavedView & PouchDB.Core.GetMeta> {
+): Promise<EncodedDraft & PouchDB.Core.GetMeta> {
   return await draft_db.get(draft_id);
 }
 
@@ -121,10 +121,10 @@ export async function deleteStagedData(
  *               Otherwise, it will show when listing by 'all' or 'created'.
  * @returns List of drafts filtered.
  */
-export async function listStagedData(
+export async function listDraftsEncoded(
   project_id: string,
   filter: 'updates' | 'created' | 'all'
-): Promise<SavedView[]> {
+): Promise<EncodedDraft[]> {
   return (
     await draft_db.find({
       selector: {
@@ -153,7 +153,7 @@ export async function listDraftMetadata(
   filter: 'updates' | 'created' | 'all'
 ): Promise<DraftMetadataList> {
   try {
-    const records = await listStagedData(project_id, filter);
+    const records = await listDraftsEncoded(project_id, filter);
     const out: DraftMetadataList = {};
     records.forEach(record => {
       out[record._id] = {

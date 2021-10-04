@@ -25,7 +25,7 @@ import {ExistingActiveDoc} from '../sync/databases';
 import {events} from '../sync/events';
 import {add_initial_listener} from '../sync/event-handler-registration';
 import {listRecordMetadata} from './internals';
-import {draft_db, listStagedData,listDraftMetadata} from '../sync/draft-storage';
+import {draft_db, listDraftMetadata} from '../sync/draft-storage';
 import {DraftMetadataList} from '../datamodel/drafts';
 
 // note the string below is a ProjectID, but typescript is kinda silly and
