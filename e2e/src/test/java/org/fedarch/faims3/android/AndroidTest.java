@@ -114,8 +114,7 @@ public class AndroidTest implements E2ETest {
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "Google Pixel 3");
-	    // Must use v9 to work around bug FAIMS3-297
-	    caps.setCapability("os_version", "9.0");
+	    caps.setCapability("os_version", "10.0");
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
@@ -159,6 +158,15 @@ public class AndroidTest implements E2ETest {
 	 */
 	@Override
 	public void loadNewAstroSkyForm() {
+		//TODO: remove when FAIMS3-297 is fixed
+		// temporary workaround for the bug
+		try {
+			Thread.sleep(12000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		loadProjects();
 
 		WebDriverWait wait = new WebDriverWait(driver, 20);
