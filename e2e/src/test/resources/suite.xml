@@ -12,11 +12,12 @@
       <class name="org.fedarch.faims3.chrome.TestStagingFormChrome" />      
       <class name="org.fedarch.faims3.chrome.TestIncompleteDraftObservationChrome" />
       <!-- iOS tests -->
+      <!-- temporarily disable IOS because they're not ready
       <class name="org.fedarch.faims3.ios.TestPopulateFormIOS" />
       <class name="org.fedarch.faims3.ios.TestStagingFormIOS" />      
-      <class name="org.fedarch.faims3.ios.TestIncompleteDraftObservationIOS" />
+      <class name="org.fedarch.faims3.ios.TestIncompleteDraftObservationIOS" />-->
       <!-- This is a multi device parallel test that depends on records created from previous tests -->
-      <class name="org.fedarch.faims3.TestUpdateObservationsAndDraftDatabase" />
+      <!-- <class name="org.fedarch.faims3.TestUpdateObservationsAndDraftDatabaseIOS" /> -->
     </classes>
   </test>
 </suite>
