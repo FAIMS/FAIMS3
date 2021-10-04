@@ -36,7 +36,10 @@ interface option {
   key: string;
   value: string;
   label: string;
-  FormControlProps: Omit<FormControlLabelProps, 'control' | 'value' | 'key'>;
+  FormControlProps: Omit<
+    FormControlLabelProps,
+    'control' | 'value' | 'key' | 'label'
+  >;
   RadioProps: RadioProps;
 }
 

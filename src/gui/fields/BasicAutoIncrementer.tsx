@@ -132,6 +132,7 @@ export class BasicAutoIncrementer extends React.Component<
     const current_value = this.props.form.values[this.props.field.name];
 
     if (!this.state.has_run) {
+      this.setState({has_run: true});
       console.debug('running autoinc');
       if (current_value === null) {
         const new_id = await this.compute_id(this.props.num_digits || 4);
@@ -146,7 +147,6 @@ export class BasicAutoIncrementer extends React.Component<
         } else {
           this.props.form.setFieldValue(this.props.field.name, new_id);
         }
-        this.setState({has_run: true});
       }
     }
   }

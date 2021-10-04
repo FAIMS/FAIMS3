@@ -137,7 +137,7 @@ export default function Record() {
                     project_id={project_id}
                     record_id={record_id}
                     revision_id={revision_id}
-                    uiSpec={uiSpec}
+                    ui_specification={uiSpec}
                   />
                 );
               }

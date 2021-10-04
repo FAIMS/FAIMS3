@@ -27,6 +27,7 @@ import {
   ProjectMetaObject,
   ProjectObject,
 } from '../datamodel/database';
+import {ProjectID} from '../datamodel/core';
 import {
   setupExampleDirectory,
   setupExampleListing,
@@ -393,24 +394,25 @@ async function autoactivate_projects(
   }
 }
 
-async function activate_project(
+export async function activate_project(
   listing_id: string,
   project_id: NonUniqueProjectID,
   username: string | null,
   password: string | null,
   is_sync = true
-) {
+): Promise<ProjectID> {
   if (project_id.startsWith('_design/')) {
     throw Error(`Cannot activate design document ${project_id}`);
   }
   if (project_id.startsWith('_')) {
-    console.error('Projects should not start with a underscore: ', project_id);
+    throw Error(`Projects should not start with a underscore: ${project_id}`);
   }
   const active_id = resolve_project_id(listing_id, project_id);
   try {
     await active_db.get(active_id);
     console.debug('Have already activated', active_id);
-  } catch (err) {
+    return active_id;
+  } catch (err: any) {
     if (err.status === 404) {
       // TODO: work out a better way to do this
       await active_db.put({
@@ -421,6 +423,7 @@ async function activate_project(
         password: password,
         is_sync: is_sync,
       });
+      return active_id;
     } else {
       throw err;
     }

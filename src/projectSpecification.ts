@@ -157,7 +157,7 @@ async function getOrCreateSpecDoc(
       throw Error('namespace names do not match!');
     }
     return specdoc;
-  } catch (err) {
+  } catch (err: any) {
     if (err.status === 404) {
       return {
         _id: PROJECT_SPECIFICATION_PREFIX + '-' + namespace,

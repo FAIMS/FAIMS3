@@ -18,40 +18,35 @@
  *   TODO
  */
 
-import {FormikProps} from 'formik';
 import React from 'react';
+import {FormikProps} from 'formik';
+
+import {getComponentFromFieldConfig} from './fields';
+import {ProjectUIModel} from '../../../datamodel/ui';
+import RecordStagingState from '../../../sync/staging-observation';
 
 type ViewProps = {
-  viewList: Array<string>;
-  form: any; //FAIMSForm; @TODO fix type
+  viewName: string;
+  ui_specification: ProjectUIModel;
   formProps: FormikProps<{[key: string]: unknown}>;
+  staging: RecordStagingState;
 };
 
-type ViewState = {
-  // validationCallbacks: any;
-};
-
-export class ViewComponent extends React.Component<ViewProps, ViewState> {
-  constructor(props: ViewProps) {
-    super(props);
-  }
-
-  componentDidMount() {}
-
-  save(values: any) {
-    console.log(values);
-  }
-
-  getForm() {
-    return this.props.form;
-  }
-
+export class ViewComponent extends React.Component<ViewProps> {
   render() {
-    const form = this.props.form;
+    const ui_specification = this.props.ui_specification;
+    const viewName = this.props.viewName;
+    const fieldNames: string[] = ui_specification.views[viewName].fields;
+    const fields = ui_specification.fields;
     return (
       <React.Fragment>
-        {this.props.viewList.map(fieldName => {
-          return form.getComponentFromField(fieldName, this);
+        {fieldNames.map(fieldName => {
+          return getComponentFromFieldConfig(
+            fields[fieldName],
+            fieldName,
+            this.props.formProps,
+            this.props.staging
+          );
         })}
       </React.Fragment>
     );

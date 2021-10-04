@@ -103,7 +103,7 @@ export default function RecordCreate() {
               project_id={project_id}
               record_id={record_id}
               type={type_name}
-              uiSpec={uiSpec}
+              ui_specification={uiSpec}
             />
           </Box>
         </Paper>
