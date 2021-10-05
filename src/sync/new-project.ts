@@ -38,6 +38,7 @@ import {activate_project} from './process-initialization';
 import {createdProjects} from './state';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
+  console.debug(`Requesting allocation for ${project_id}`);
   throw Error('not implemented yet');
 }
 
