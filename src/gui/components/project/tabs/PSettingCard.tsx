@@ -20,53 +20,71 @@
  *   TODO: any type
  */
 
-
 import React from 'react';
-import { List,ListItem } from '@material-ui/core';
+import {List, ListItem} from '@material-ui/core';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PlaylistAddCheckIcon from '@material-ui/icons/PlaylistAddCheck';
 import GroupIcon from '@material-ui/icons/Group';
 import NoteIcon from '@material-ui/icons/Note';
-import { makeStyles } from '@material-ui/core/styles';
+import {makeStyles} from '@material-ui/core/styles';
 
-
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
   settiglist: {
     // backgroundColor:'#e1e4e8',
-    marginBottom:2,
+    marginBottom: 2,
     '&$selected': {
       backgroundColor: 'red',
       '&:hover': {
         backgroundColor: 'yellow',
-      }
+      },
     },
     selected: {},
-  }
+  },
 }));
 
-type SettingCard={
-	handelonClick:any;
-	key_id:string;
-}
+type SettingCard = {
+  handelonClick: any;
+  key_id: string;
+};
 
-export function SettingCard(props:SettingCard){
-	const  { handelonClick,key_id, ...other } = props;
-	const classes = useStyles();
+export function SettingCard(props: SettingCard) {
+  const {handelonClick, key_id, ...other} = props;
+  const classes = useStyles();
 
-	return (
-		<List component="nav" aria-label="settings bar" className={classes.settiglist}>
-		  <ListItem button onClick={() => handelonClick('settings',key_id)} key='list1'  >
-		    <SettingsIcon />
-		  </ListItem>
-		  <ListItem button onClick={() => handelonClick('valid',key_id)} key='list2'>
-		    <PlaylistAddCheckIcon />
-		  </ListItem>
-		  <ListItem button onClick={() => handelonClick('access',key_id)} key='list3' >
-		    <GroupIcon />
-		  </ListItem>
-		  <ListItem button onClick={() => handelonClick('notes',key_id)} key='list4'>
-		    <NoteIcon />
-		  </ListItem>
-		</List>
-		);
+  return (
+    <List
+      component="nav"
+      aria-label="settings bar"
+      className={classes.settiglist}
+    >
+      <ListItem
+        button
+        onClick={() => handelonClick('settings', key_id)}
+        key="list1"
+      >
+        <SettingsIcon />
+      </ListItem>
+      <ListItem
+        button
+        onClick={() => handelonClick('valid', key_id)}
+        key="list2"
+      >
+        <PlaylistAddCheckIcon />
+      </ListItem>
+      <ListItem
+        button
+        onClick={() => handelonClick('access', key_id)}
+        key="list3"
+      >
+        <GroupIcon />
+      </ListItem>
+      <ListItem
+        button
+        onClick={() => handelonClick('notes', key_id)}
+        key="list4"
+      >
+        <NoteIcon />
+      </ListItem>
+    </List>
+  );
 }

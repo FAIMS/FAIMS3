@@ -20,105 +20,125 @@
  */
 
 import React from 'react';
-import { useState, useEffect } from 'react'
-import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
+import {useState, useEffect} from 'react';
+import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import {getComponentByName} from '../../component_registry';
 import {setProjectInitialValues} from './data/ComponentSetting';
 import {TickButton} from './tabs/ProjectButton';
 type FormElement = {
-  uiSpec:any;
-  handleChangeForm:any;
-  currentView:string;
-  handleSubmit?:any;
+  uiSpec: any;
+  handleChangeForm: any;
+  currentView: string;
+  handleSubmit?: any;
 };
 
-export const getComponentFromField = (uiSpec:any,fieldName: string,formProps:any,handleChangeC:any,uidesign='alert') =>{
-    // console.log('getComponentFromField');
-    
-    const fields = uiSpec['fields'];
-    const fieldConfig=fields[fieldName]
-    const namespace = fieldConfig['component-namespace'];
-    const name = fieldConfig['component-name'];
-    let Component: React.Component;
-    try {
-        Component = getComponentByName(namespace, name);
-    } catch (err) {
-        return (<>Error</>);
-    }
-    const value=formProps.values[fieldName]
-    
-      return (
-      
-      <Box  key={fieldName}>
-        <Field
-          component={Component} 
-          name={fieldName}
-          onChange={(e:React.FocusEvent<{name: string}>)=> {
-           formProps.handleChange(e);
-           handleChangeC(e)
-          }}
-          onBlur={(e:React.FocusEvent<{name: string}>)=> {
-           formProps.handleChange(e);
-           handleChangeC(e)
-          }}
-          value={value}
-          {...fieldConfig['component-parameters']}
-          {...fieldConfig['component-parameters']['InputProps']}
-          {...fieldConfig['component-parameters']['SelectProps']}
-          {...fieldConfig['component-parameters']['InputLabelProps']}
-          {...fieldConfig['component-parameters']['FormHelperTextProps']}
-        />
-      </Box>
-     );
-    
+export const getComponentFromField = (
+  uiSpec: any,
+  fieldName: string,
+  formProps: any,
+  handleChangeC: any,
+  uidesign = 'alert'
+) => {
+  // console.log('getComponentFromField');
+
+  const fields = uiSpec['fields'];
+  const fieldConfig = fields[fieldName];
+  const namespace = fieldConfig['component-namespace'];
+  const name = fieldConfig['component-name'];
+  let Component: React.Component;
+  try {
+    Component = getComponentByName(namespace, name);
+  } catch (err) {
+    return <>Error</>;
   }
+  const value = formProps.values[fieldName];
 
-
-export function FormForm (props:FormElement) {
-  const {currentView,handleChangeForm,...others}=props
-  const [uiSpec,setUISpec]=useState(props.uiSpec)
-  const initialValues=setProjectInitialValues(uiSpec,currentView,{})
-  return (<Formik
-          initialValues={initialValues}
-          validateOnMount={true}
-          onSubmit={(values, {setSubmitting}) => {
-            setTimeout(() => {
-              setSubmitting(false);
-              props.handleSubmit(values)
-            }, 500);}}
-        >
-
-        {formProps => {
-
-              return (
-
-              <Form id='form'>
-               <Grid container  >
-               <Grid item sm={11} xs={12}>
-                  <Grid container >
-                {uiSpec['views'][currentView]['fields'].map((field:any,index:any)=>(
-                  <Grid item sm={uiSpec['views'][currentView]['fields'].length===1?11:2} xs={12} key={field} >{getComponentFromField(uiSpec,field, formProps,handleChangeForm)}</Grid>
-                ))}
-                </Grid></Grid>
-                <Grid item sm={1} xs={12}>
-                <TickButton id='submit' type="submit" />
-                </Grid>
-                </Grid>
-                </Form>
-              );
+  return (
+    <Box key={fieldName}>
+      <Field
+        component={Component}
+        name={fieldName}
+        onChange={(e: React.FocusEvent<{name: string}>) => {
+          formProps.handleChange(e);
+          handleChangeC(e);
         }}
-        </Formik>)
+        onBlur={(e: React.FocusEvent<{name: string}>) => {
+          formProps.handleChange(e);
+          handleChangeC(e);
+        }}
+        value={value}
+        {...fieldConfig['component-parameters']}
+        {...fieldConfig['component-parameters']['InputProps']}
+        {...fieldConfig['component-parameters']['SelectProps']}
+        {...fieldConfig['component-parameters']['InputLabelProps']}
+        {...fieldConfig['component-parameters']['FormHelperTextProps']}
+      />
+    </Box>
+  );
+};
+
+export function FormForm(props: FormElement) {
+  const {currentView, handleChangeForm, ...others} = props;
+  const [uiSpec, setUISpec] = useState(props.uiSpec);
+  const initialValues = setProjectInitialValues(uiSpec, currentView, {});
+  return (
+    <Formik
+      initialValues={initialValues}
+      validateOnMount={true}
+      onSubmit={(values, {setSubmitting}) => {
+        setTimeout(() => {
+          setSubmitting(false);
+          props.handleSubmit(values);
+        }, 500);
+      }}
+    >
+      {formProps => {
+        return (
+          <Form id="form">
+            <Grid container>
+              <Grid item sm={11} xs={12}>
+                <Grid container>
+                  {uiSpec['views'][currentView]['fields'].map(
+                    (field: any, index: any) => (
+                      <Grid
+                        item
+                        sm={
+                          uiSpec['views'][currentView]['fields'].length === 1
+                            ? 11
+                            : 2
+                        }
+                        xs={12}
+                        key={field}
+                      >
+                        {getComponentFromField(
+                          uiSpec,
+                          field,
+                          formProps,
+                          handleChangeForm
+                        )}
+                      </Grid>
+                    )
+                  )}
+                </Grid>
+              </Grid>
+              <Grid item sm={1} xs={12}>
+                <TickButton id="submit" type="submit" />
+              </Grid>
+            </Grid>
+          </Form>
+        );
+      }}
+    </Formik>
+  );
 }
-
-
 
 // export  function FormElement (props: FormElement){
 
 //   const [currentView, setCurrentView] = useState(props.view);
 //   const [designvalue,setDesignvalue] = useState(1);
-//   const [uiSpec,setUISpec] = useState(props.uiSpec); 
+//   const [uiSpec,setUISpec] = useState(props.uiSpec);
 //   const formProps=props.formProps;
 //   const [fieldNames,setFieldNames]=useState<Array<any>>(uiSpec['views'][currentView]['fields'])
 //   const [uidesign,setuidesign]=useState<string>(uiSpec['views'][currentView]['uidesign'])
@@ -129,7 +149,6 @@ export function FormForm (props:FormElement) {
 //     setuidesign(uiSpec['views'][currentView]['uidesign'])
 //   }
 
-
 //   // useEffect(() => {
 //   //   console.log('ui changes')
 //   //   console.log(uiSpec)
@@ -137,7 +156,6 @@ export function FormForm (props:FormElement) {
 //   //    setnewPage()
 //   //   }, [uiSpec,currentView]);
 
-  
 //    const handelonClickSetting = (id:any) => {
 //     setDesignvalue(id)
 //   }
@@ -155,8 +173,8 @@ export function FormForm (props:FormElement) {
 //         <Grid item sm={4} xs={12} >
 //           {fieldNames.length>0?getComponentFromField(uiSpec,fieldNames[0], formProps,handleChangeC):''}
 //         </Grid>
-//         <Grid item sm={1} xs={3} >          
-//           <SettingCard handelonClick={handelonClickSetting} />       
+//         <Grid item sm={1} xs={3} >
+//           <SettingCard handelonClick={handelonClickSetting} />
 //         </Grid>
 //         <Grid item sm={7} xs={9}>
 //           {uidesign==='settings'?fieldNames.length>designvalue+1?
@@ -167,9 +185,8 @@ export function FormForm (props:FormElement) {
 //           }
 //         </Grid>
 //       </Grid>
-//     }         
+//     }
 //     </React.Fragment>
 //     );
-  
-// }
 
+// }

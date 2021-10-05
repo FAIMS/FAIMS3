@@ -99,8 +99,8 @@ export interface ComponentRegistryProperties {
   human_readable_name: string;
   description: string;
   component: FAIMSFormField;
-  componentname:string;
-  uiSpecProps:FAIMSUiSpec;
+  componentname: string;
+  uiSpecProps: FAIMSUiSpec;
   builder_component: FAIMSBuilderFormField;
   icon: FAIMSBuilderIcon;
 }

@@ -21,88 +21,100 @@
  */
 
 import React from 'react';
-import { useState } from 'react'
-import {Grid,CardActionArea,CardActions,CardContent,Typography,Card,Button} from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
-import {getfields} from '../data/uiFieldsRegistry'
+import {useState} from 'react';
+import {
+  Grid,
+  CardActionArea,
+  CardActions,
+  CardContent,
+  Typography,
+  Card,
+  Button,
+} from '@material-ui/core';
+import {makeStyles} from '@material-ui/core/styles';
+import {getfields} from '../data/uiFieldsRegistry';
 
-const useStyles = makeStyles((theme) => ({
-	content: {
+const useStyles = makeStyles(theme => ({
+  content: {
     minHeight: 100,
     minWidth: 280,
-    [theme.breakpoints.down('sm')]:{
-      width:'100%',
-    }
+    [theme.breakpoints.down('sm')]: {
+      width: '100%',
     },
-    inputfieldscard: {
-    backgroundColor:'#353b40',
-    color:'#fff',
-    textAlign:'right',
-    [theme.breakpoints.down('sm')]:{
-      marginBottom:15,
-      marginTop:10,
-    }
+  },
+  inputfieldscard: {
+    backgroundColor: '#353b40',
+    color: '#fff',
+    textAlign: 'right',
+    [theme.breakpoints.down('sm')]: {
+      marginBottom: 15,
+      marginTop: 10,
     },
-    settingtab:{
-    backgroundColor:'#e1e4e8',
-  }
-
+  },
+  settingtab: {
+    backgroundColor: '#e1e4e8',
+  },
 }));
 
-
-
-
-function FieldCard(props:any){
-	const  { className,handelonClick,fields, ...other } = props;
-	return (
-	<Grid container spacing={2}  >
-		{fields.map((field:any,index:any)=>(
-			<Grid item key={`${field.uiSpecProps.componentname}-${index}`} id={`${field.uiSpecProps.componentname}-${index}`} className={className}>
-				<Card>
-					< CardActionArea onClick={() => handelonClick(field.uiSpecProps)}>
-				        <CardContent  >
-				        	<Grid container spacing={2} key={`${field.uiSpecProps.componentname}-card-${index}`}>
-                    			<Grid item sm={2} xs={12}>
-				        		{field.icon}
-				        		</Grid>
-				        		<Grid item sm={10} xs={12} >
-						        <Typography variant="body2" component="p">
-						         {field.human_readable_name}
-						          <br />
-						          {field.description}
-						        </Typography>
-					        	</Grid>
-					        </Grid>
-					    </CardContent>
-					      
-				    </ CardActionArea>
-				</Card>
-			</Grid>       
-		))} 
-	</Grid>
-	);
+function FieldCard(props: any) {
+  const {className, handelonClick, fields, ...other} = props;
+  return (
+    <Grid container spacing={2}>
+      {fields.map((field: any, index: any) => (
+        <Grid
+          item
+          key={`${field.uiSpecProps.componentname}-${index}`}
+          id={`${field.uiSpecProps.componentname}-${index}`}
+          className={className}
+        >
+          <Card>
+            <CardActionArea onClick={() => handelonClick(field.uiSpecProps)}>
+              <CardContent>
+                <Grid
+                  container
+                  spacing={2}
+                  key={`${field.uiSpecProps.componentname}-card-${index}`}
+                >
+                  <Grid item sm={2} xs={12}>
+                    {field.icon}
+                  </Grid>
+                  <Grid item sm={10} xs={12}>
+                    <Typography variant="body2" component="p">
+                      {field.human_readable_name}
+                      <br />
+                      {field.description}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
 }
 
 export default function FieldsListCard(props: any) {
-	const classes = useStyles();
-	const {fields,fieldtabs}=getfields();
+  const classes = useStyles();
+  const {fields, fieldtabs} = getfields();
 
-	return (
-		< >
-		{fieldtabs.map((fieldtab:string,index:number)=>
-		<Grid container spacing={2} key={fieldtab+index}>
-		<Grid item sm={2} xs={12} className={classes.settingtab}>
-		{fieldtab}
-		</Grid>
-		<Grid item sm={10} xs={12}>
-			
-				<FieldCard className={classes.content} handelonClick={props.cretenefield}  fields={fields[fieldtab]}/>
-				
-		</Grid>
-		</Grid>
-		)}
-		</>
-    )
+  return (
+    <>
+      {fieldtabs.map((fieldtab: string, index: number) => (
+        <Grid container spacing={2} key={fieldtab + index}>
+          <Grid item sm={2} xs={12} className={classes.settingtab}>
+            {fieldtab}
+          </Grid>
+          <Grid item sm={10} xs={12}>
+            <FieldCard
+              className={classes.content}
+              handelonClick={props.cretenefield}
+              fields={fields[fieldtab]}
+            />
+          </Grid>
+        </Grid>
+      ))}
+    </>
+  );
 }
-
-

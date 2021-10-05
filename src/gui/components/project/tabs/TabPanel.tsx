@@ -18,45 +18,39 @@
  *   TODO
  */
 
-
 import React from 'react';
 import {Box, Typography} from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
+import {makeStyles} from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
   TabPanel_F: {
-    paddingTop:5,
+    paddingTop: 5,
 
-    [theme.breakpoints.down('sm')]:{
-      
-      paddingLeft:5,
-      paddingRight:5,
-      
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 5,
+      paddingRight: 5,
     },
-    "& .MuiBox-root": {
-      paddingTop:10,
-    [theme.breakpoints.down('sm')]:{
-      
-      paddingLeft:5,
-      paddingRight:5,
-      
-    }},
-    "& .MuiTabs":{
-      paddingBottom:10,
-    }
+    '& .MuiBox-root': {
+      paddingTop: 10,
+      [theme.breakpoints.down('sm')]: {
+        paddingLeft: 5,
+        paddingRight: 5,
+      },
+    },
+    '& .MuiTabs': {
+      paddingBottom: 10,
+    },
   },
+}));
 
-}
-));
-
-type TabPanelProps={
-  children:any;
-  value:number;
-  tabname:string;
-  index:number;
-}
+type TabPanelProps = {
+  children: any;
+  value: number;
+  tabname: string;
+  index: number;
+};
 export default function TabPanel(props: TabPanelProps) {
-  const { children, value, tabname,index, ...other } = props;
+  const {children, value, tabname, index, ...other} = props;
   const classes = useStyles();
 
   return (
@@ -76,4 +70,3 @@ export default function TabPanel(props: TabPanelProps) {
     </div>
   );
 }
-

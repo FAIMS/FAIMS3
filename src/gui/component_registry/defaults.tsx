@@ -27,10 +27,10 @@ export function getDefaultBuilderIcon() {
   return <BrokenImageIcon />;
 }
 
-export function getDefaultUiSpec(){
+export function getDefaultUiSpec() {
   return '';
 }
 
-export function getDefaultuiSpecProps(){
+export function getDefaultuiSpecProps() {
   return '';
 }

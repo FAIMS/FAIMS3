@@ -127,7 +127,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               component={RouterLink}
               to={ROUTES.PROJECT_DESIGN + project.project_id}
             >
-              <TimelapseIcon  />
+              <TimelapseIcon />
             </IconButton>
             <IconButton
               component={RouterLink}
