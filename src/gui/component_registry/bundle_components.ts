@@ -105,25 +105,39 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties('Select', 'Select', 'Simple', FAIMSSelect, 'Select', {
-    namespace: 'faims-custom',
-    componentName: 'Select',
-    select: true,
-    type_return: 'faims-core::String',
-    validationSchema: [['yup.string']],
-    type: 'select',
-  })
+  setupComponentProperties(
+    'Select',
+    'Select',
+    'Simple',
+    FAIMSSelect,
+    'Select',
+    {
+      namespace: 'faims-custom',
+      componentName: 'Select',
+      select: true,
+      type_return: 'faims-core::String',
+      validationSchema: [['yup.string']],
+      type: 'select',
+    }
+  )
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties('Checkbox', 'Checkbox', 'Simple', FAIMSCheckbox, 'Select', {
-    namespace: 'faims-custom',
-    componentName: 'Checkbox',
-    type_return: 'faims-core::Bool',
-    validationSchema: [['yup.bool']],
-    type: 'checkbox',
-  })
+  setupComponentProperties(
+    'Checkbox',
+    'Checkbox',
+    'Simple',
+    FAIMSCheckbox,
+    'Select',
+    {
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+    }
+  )
 );
 registerComponent(
   'faims-custom',
@@ -165,15 +179,22 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'TemplatedStringField',
-  setupComponentProperties('Templated String', 'Build a value up from other fields', 'Advanced', TemplatedStringField, 'Special', {
-    namespace: 'faims-custom',
-    componentName: 'TemplatedStringField',
-    type_return: 'faims-core::String',
-    required: true,
-    validationSchema: [['yup.string'], ['yup.required']],
-    type: 'text',
-    template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
-  })
+  setupComponentProperties(
+    'Templated String',
+    'Build a value up from other fields',
+    'Advanced',
+    TemplatedStringField,
+    'Special',
+    {
+      namespace: 'faims-custom',
+      componentName: 'TemplatedStringField',
+      type_return: 'faims-core::String',
+      required: true,
+      validationSchema: [['yup.string'], ['yup.required']],
+      type: 'text',
+      template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
+    }
+  )
 );
 registerComponent(
   'faims-custom',

@@ -147,13 +147,11 @@ export function TabEditable(props: TabProps) {
               onChange={handleChange}
               aria-label={tab_id}
               id={tab_id}
-              orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
+              orientation={'horizontal'}
             >
               {tablists.map((tab, index) => (
                 <Tab
-                  className={
-                    tab_id === 'fieldtab' ? classes.fieldtab : classes.subtab
-                  }
+                  className={classes.subtab}
                   key={`${tab_id}-${index}`}
                   label={tab}
                   {...a11yProps({tab_id}, {index})}

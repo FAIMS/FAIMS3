@@ -431,11 +431,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
             />
           </Grid>
           <Grid item sm={10} xs={12}>
-            <TabPanel
-              value={fieldvalue}
-              index={1}
-              tabname="fieldtab"
-            ></TabPanel>
             <TabPanel value={fieldvalue} index={0} tabname="fieldtab">
               {formuiview !== '' && formcomponents[formuiview].length > 0
                 ? formcomponents[formuiview].map(
