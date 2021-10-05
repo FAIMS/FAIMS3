@@ -47,57 +47,72 @@ export default bundle;
 registerComponent(
   'core-material-ui',
   'Input',
-  setupComponentProperties('HTML input field', 'Catchall field', Input)
+  setupComponentProperties(
+    'HTML input field',
+    'Catchall field',
+    'Advanced',
+    Input
+  )
 );
 registerComponent(
   'core-material-ui',
   'Checkbox',
-  setupComponentProperties('', '', Checkbox)
+  setupComponentProperties(
+    'HTML checkbox field',
+    'A simple checkbox',
+    'Simple',
+    Checkbox
+  )
 );
 registerComponent(
   'core-material-ui',
   'TextField',
-  setupComponentProperties('', '', TextField)
+  setupComponentProperties(
+    'HTML text field',
+    'A simple text field',
+    'Simple',
+    TextField
+  )
 );
 registerComponent(
   'formik-material-ui',
   'TextField',
-  setupComponentProperties('HTML input field', 'text plus sepcial characters', FormikTextField,'Text',{namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'},null)
+  setupComponentProperties('HTML input field', 'text plus sepcial characters','Text', FormikTextField,'Text',{namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'},null)
 );
 registerComponent(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', FormikSelect)
+  setupComponentProperties('', '', 'Select', FormikSelect)
 );
 registerComponent(
   'formik-material-ui',
   'RadioGroup',
-  setupComponentProperties('', '', FormikRadioGroup)
+  setupComponentProperties('', '', 'Select', FormikRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties('Select', 'Select', FAIMSSelect,'Select',{namespace:'faims-custom',componentName:'Select',select: true,type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'select'})
+  setupComponentProperties('Select', 'Select','Select', FAIMSSelect,'Select',{namespace:'faims-custom',componentName:'Select',select: true,type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'select'})
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties('Checkbox', 'Checkbox', FAIMSCheckbox,'Select',{namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox'})
+  setupComponentProperties('Checkbox', 'Checkbox','Select', FAIMSCheckbox,'Select',{namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox'})
 );
 registerComponent(
   'faims-custom',
   'RadioGroup',
-  setupComponentProperties('', '', FAIMSRadioGroup)
+  setupComponentProperties('', '', 'Simple', FAIMSRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'ActionButton',
-  setupComponentProperties('Take Action', '', ActionButton,'Special',{namespace:'faims-custom',componentName:'ActionButton',type_return:'faims-core::String',validationSchema:[['yup.string']],type: 'string'})
+  setupComponentProperties('Action Button', 'Do an action','Test', ActionButton,'Special',{namespace:'faims-custom',componentName:'ActionButton',type_return:'faims-core::String',validationSchema:[['yup.string']],type: 'string'})
 );
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties('Take Point', '', TakePoint,'Special',{namespace:'faims-custom',componentName:'TakePoint',type_return:'faims-pos::Location',initialValue: null,validationSchema:[
+  setupComponentProperties('Take Point', 'Take a GPS position', TakePoint,'Special',{namespace:'faims-custom',componentName:'TakePoint',type_return:'faims-pos::Location',initialValue: null,validationSchema:[
           ['yup.object'],
           ['yup.nullable'],
           [
@@ -112,15 +127,25 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'TemplatedStringField',
-  setupComponentProperties('Unique ID', '', TemplatedStringField,'Special',{namespace:'faims-custom',componentName:'TemplatedStringField',type_return:'faims-core::String',required:true,validationSchema:[['yup.string'], ['yup.required']],type: 'text',template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',})
+  setupComponentProperties('Unique ID', 'Build a value up from other fields','Special', TemplatedStringField,'Special',{namespace:'faims-custom',componentName:'TemplatedStringField',type_return:'faims-core::String',required:true,validationSchema:[['yup.string'], ['yup.required']],type: 'text',template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',})
 );
 registerComponent(
   'faims-custom',
   'BasicAutoIncrementer',
-  setupComponentProperties('', '', BasicAutoIncrementer)
+  setupComponentProperties(
+    'Basic AutoIncrementer',
+    'A basic autoincrementer to help create identifiers',
+    'Identifiers',
+    BasicAutoIncrementer
+  )
 );
 registerComponent(
   'faims-custom',
   'RelatedRecordSelector',
-  setupComponentProperties('', '', RelatedRecordSelector)
+  setupComponentProperties(
+    'Related field',
+    'Add relations between records',
+    'Relations',
+    RelatedRecordSelector
+  )
 );

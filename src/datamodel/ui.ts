@@ -98,6 +98,7 @@ export type FAIMSUiSpec = any;
 export interface ComponentRegistryProperties {
   human_readable_name: string;
   description: string;
+  category: string;
   component: FAIMSFormField;
   componentname:string;
   uiSpecProps:FAIMSUiSpec;
@@ -110,3 +111,10 @@ export type ComponentRegistryItem = {
 };
 
 export type ComponentRegistry = {[namespace: string]: ComponentRegistryItem};
+
+export interface FormComponent {
+  namespace: string;
+  component_name: string;
+  component_properties: ComponentRegistryProperties;
+}
+export type FormComponentList = FormComponent[];
