@@ -80,6 +80,19 @@ export class PromiseState<S, L extends null | {}> {
   }
 }
 
+export function eventsDontChangePromiseArgs<A extends unknown[]>(
+  attacher: (
+    ...args: [...A, () => void | (() => void), (err: {}) => void]
+  ) => () => void,
+  ...args: A
+): (
+  trigger_callback: (...args: A) => void,
+  error_callback: (error: {}) => void
+) => void | (() => void) {
+  return (trig, err) =>
+    attacher(...(args.slice(0, -2) as A), () => trig(...args), err);
+}
+
 /**
  * React hook abtracting the use of an EventEmitter combined with a Promise
  *
@@ -112,7 +125,7 @@ export class PromiseState<S, L extends null | {}> {
  *          Function to manually trigger the Promise to re-run as if an event or
  *          error occurred
  */
-export function useEventedPromise<V, A extends []>(
+export function useEventedPromise<A extends Array<unknown>, V>(
   startGetting: (...args: A) => Promise<V>,
   startListening: (
     trigger_callback: (...args: A) => void,
