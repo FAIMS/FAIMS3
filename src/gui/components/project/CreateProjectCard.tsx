@@ -25,25 +25,20 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Grid, AppBar} from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import {TabTab, TabEditable} from './tabs/TabTab';
+import {AppBar} from '@material-ui/core';
+
+import {TabTab} from './tabs/TabTab';
 import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
-import {
-  handlertype,
-  uiSpecType,
-  projectvalueType,
-} from './data/ComponentSetting';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../uiSpecification';
-import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
+import {uiSpecType, projectvalueType} from './data/ComponentSetting';
+import {setUiSpecForProject} from '../../../uiSpecification';
+import {ProjectInformation} from '../../../datamodel/ui';
 import {getProjectDB} from '../../../sync/index';
 import {create_new_project_dbs} from '../../../sync/new-project';
-import {getProjectInfo} from '../../../databaseAccess';
+
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -66,12 +61,9 @@ const variant_label = ['main'];
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
   // if(props.project_id===undefined) console.log('New Project'+props.project_id)
-  const ini = {_id: 'new_notbook'};
   const classes = useStyles();
   const [project_id, setProjectID] = useState(props.project_id);
   const [projectvalue, setProjectValue] = useState<projectvalueType>({});
-  const [initialValues, setinitialValues] = useState(ini);
-  const [projectuiSpec, setProjectuiSpec] = useState<Array<any>>();
   const [projecttabvalue, setProjecttabvalue] = useState(0);
   // const [uiSpec,setUISpec]=useState<uiSpecType|null>(props.uiSpec)
   const [formuiSpec, setFormuiSpec] = useState<uiSpecType>({
@@ -80,8 +72,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     viewsets: {},
     visible_types: [],
   });
-  const [formtabs, setformTabs] = useState<Array<string>>([]);
-  const [error, setError] = useState(null as null | {});
 
   useEffect(() => {
     setinit();
@@ -161,8 +151,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       console.log(err);
     }
   };
-
-  const submithandler = (values: any) => {};
 
   const handleChangetab = (event: any, index: number) => {
     setProjecttabvalue(index);

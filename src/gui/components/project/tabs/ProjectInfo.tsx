@@ -17,49 +17,20 @@
  * Description:This is the file about Project Info
  *
  */
-import React from 'react';
-import {useState, useEffect} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
+import {useState} from 'react';
 
+import {makeStyles} from '@material-ui/core/styles';
+
+import {FormForm} from '../FormElement';
 import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  AppBar,
-  Hidden,
-} from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard} from './PSettingCard';
-import {getComponentFromField, FormForm} from '../FormElement';
-import {TabTab, TabEditable} from './TabTab';
-import TabPanel from './TabPanel';
-import {
-  setProjectInitialValues,
-  getid,
-  updateuiSpec,
-  gettabform,
   getprojectform,
   handlertype,
-  uiSpecType,
   projectvalueType,
 } from '../data/ComponentSetting';
-import {
-  CusButton,
-  CloseButton,
-  UpButton,
-  DownButton,
-  AddButton,
-} from './ProjectButton';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import {getProjectInfo} from '../../../../databaseAccess';
+
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
 
 const useStyles = makeStyles(theme => ({
   root: {

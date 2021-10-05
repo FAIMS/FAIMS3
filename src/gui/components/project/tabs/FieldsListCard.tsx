@@ -20,19 +20,18 @@
  *   TODO: Field icon not working
  */
 
-import React from 'react';
-import {useState} from 'react';
 import {
   Grid,
   CardActionArea,
-  CardActions,
   CardContent,
   Typography,
   Card,
-  Button,
 } from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
 import {getfields} from '../data/uiFieldsRegistry';
+
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
 
 const useStyles = makeStyles(theme => ({
   content: {

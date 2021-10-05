@@ -33,6 +33,9 @@ import {
 const VISIBLE_TYPE = 'visible_types';
 const NEWFIELDS = 'newfield';
 
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
+
 export type handlertype = any;
 export type uiSpecType = {
   fields: any;

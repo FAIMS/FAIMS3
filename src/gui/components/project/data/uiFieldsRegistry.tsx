@@ -21,10 +21,11 @@
  *   TODO: initial value for options, validationschema
  */
 
-import {
-  getComponentByName,
-  getComponentPropertiesByName,
-} from '../../../component_registry';
+import {getComponentPropertiesByName} from '../../../component_registry';
+
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
+
 
 type componentlist = {namespace: string; componentName: string; props?: any};
 

@@ -20,13 +20,15 @@
  *   TODO: any type
  */
 
-import React from 'react';
 import {List, ListItem} from '@material-ui/core';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PlaylistAddCheckIcon from '@material-ui/icons/PlaylistAddCheck';
 import GroupIcon from '@material-ui/icons/Group';
 import NoteIcon from '@material-ui/icons/Note';
 import {makeStyles} from '@material-ui/core/styles';
+
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
 
 const useStyles = makeStyles(theme => ({
   settiglist: {

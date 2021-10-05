@@ -21,47 +21,30 @@
  *   TODO: [BUG] Validationschma
  *   TODO: [BUG] uiSpec ini setup issue for creating new notebook, and formcomponent issue for edit existing project
  */
-import React from 'react';
 import {useState, useEffect} from 'react';
+
+import {Grid, Box} from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  AppBar,
-  Hidden,
-} from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
+import {Formik, Form} from 'formik';
+
 import FieldsListCard from './FieldsListCard';
 import {SettingCard} from './PSettingCard';
-import {getComponentFromField, FormForm} from '../FormElement';
+import {getComponentFromField} from '../FormElement';
 import {TabTab, TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
 import {
   setProjectInitialValues,
   getid,
   updateuiSpec,
-  gettabform,
-  getprojectform,
   handlertype,
   uiSpecType,
 } from '../data/ComponentSetting';
-import {
-  CusButton,
-  CloseButton,
-  UpButton,
-  DownButton,
-  AddButton,
-} from './ProjectButton';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../../sync/databases';
+import {CloseButton, UpButton, DownButton, AddButton} from './ProjectButton';
+
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
 
 const useStyles = makeStyles(theme => ({
   newfield: {

@@ -19,7 +19,7 @@
  */
 
 import React, {useState, useEffect} from 'react';
-import {useParams, Redirect} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import CreateProjectCard from '../components/project/CreateProjectCard';
 import * as ROUTES from '../../constants/routes';
@@ -67,6 +67,9 @@ export default function ProjectCreate() {
       {link: ROUTES.INDEX, title: 'Index'},
       {title: project_info !== null ? project_info.name : 'New Notebook'},
     ];
+    if (error !== null) {
+      console.error(error);
+    }
 
     useEffect(() => {
       setUISpec(null);

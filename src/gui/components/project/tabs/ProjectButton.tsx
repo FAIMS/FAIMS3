@@ -19,7 +19,6 @@
  *   TODO clean the buttons
  */
 import AddCircleIcon from '@material-ui/icons/AddCircle';
-import React from 'react';
 import {Button, IconButton} from '@material-ui/core';
 import CancelIcon from '@material-ui/icons/Cancel';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';

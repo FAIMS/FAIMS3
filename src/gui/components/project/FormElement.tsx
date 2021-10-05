@@ -20,13 +20,16 @@
  */
 
 import React from 'react';
-import {useState, useEffect} from 'react';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
+import {useState} from 'react';
+import {Formik, Form, Field} from 'formik';
+import {Grid, Box} from '@material-ui/core';
 import {getComponentByName} from '../../component_registry';
 import {setProjectInitialValues} from './data/ComponentSetting';
 import {TickButton} from './tabs/ProjectButton';
+
+/* TODO: fix eslint @KateSHENG */
+/* eslint-disable */
+
 type FormElement = {
   uiSpec: any;
   handleChangeForm: any;
