@@ -32,47 +32,75 @@ import {
 
 PouchDB.plugin(PouchDBFind);
 
+/**
+ * Allows the user to asynchronously await for any of listings_updated,
+ * all_projects_updated, listing_projects_synced, all_meta_synced,
+ * all_data_updated, or anything else that is updated along with an emission
+ * of the 'all_state' event from DirectoryEmitter.
+ *
+ * This will only resolve when the given predicate returns true.
+ *
+ * @param statePredicate Function to run, return true: will cause this
+ *  waitForStateOnce to resolve. Otherwise, return of false will not cause
+ *  anything to happen (yet). If returned false, it may be called again.
+ *  Errors bubble up to this waitForStateOnce's promise.
+ * @returns Promise that resolves/rejects when state changes.
+ */
+export async function waitForStateOnce(
+  statePredicate: () => boolean
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const all_state_cb = () => {
+      // Don't let errors in statePredicatae go uncaught
+      let do_resolve = false;
+      try {
+        do_resolve = statePredicate();
+      } catch (err: unknown) {
+        directory_error_cb(err);
+      }
+      // Only resolve this promise if the predicate returned true
+      if (do_resolve) {
+        // Cleanup
+        events.removeListener('all_state', all_state_cb);
+        events.removeListener('directory_error', directory_error_cb);
+        resolve();
+      }
+    };
+    const directory_error_cb = (err: unknown) => {
+      // Cleanup
+      events.removeListener('all_state', all_state_cb);
+      events.removeListener('directory_error', directory_error_cb);
+      // Bubble up to main promise
+      reject(err);
+    };
+    events.on('all_state', all_state_cb);
+    events.on('directory_error', directory_error_cb);
+  });
+}
+
 export async function getProjectInfo(
   active_id: ProjectID
 ): Promise<createdProjectsInterface> {
-  if (!all_projects_updated) {
-    // Wait for all_projects_updated to possibly change before re-polling
-    // all_projects_updated and returning error/data DB if it's ready.
-    return new Promise((resolve, reject) => {
-      const listener = () => {
-        getProjectInfo(active_id).then(resolve, reject);
-        events.removeListener('all_state', listener);
-      };
-      events.addListener('all_state', listener);
-    });
+  // Wait for all_projects_updated to possibly change before returning
+  // error/data DB if it's ready.
+  await waitForStateOnce(() => all_projects_updated);
+  if (active_id in data_dbs) {
+    return createdProjects[active_id];
   } else {
-    if (active_id in data_dbs) {
-      return createdProjects[active_id];
-    } else {
-      throw `Project ${active_id} is not known`;
-    }
+    throw `Project ${active_id} is not known`;
   }
 }
 
 export async function getDataDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> {
-  if (!all_projects_updated) {
-    // Wait for all_projects_updated to possibly change before re-polling
-    // all_projects_updated and returning error/data DB if it's ready.
-    return new Promise((resolve, reject) => {
-      const listener = () => {
-        getDataDB(active_id).then(resolve, reject);
-        events.removeListener('all_state', listener);
-      };
-      events.addListener('all_state', listener);
-    });
+  // Wait for all_projects_updated to possibly change before returning
+  // error/data DB if it's ready.
+  await waitForStateOnce(() => all_projects_updated);
+  if (active_id in data_dbs) {
+    return data_dbs[active_id].local;
   } else {
-    if (active_id in data_dbs) {
-      return data_dbs[active_id].local;
-    } else {
-      throw `Project ${active_id} is not known`;
-    }
+    throw `Project ${active_id} is not known`;
   }
 }
 
@@ -176,22 +204,13 @@ export function listenDataDB(
 export async function getProjectDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> {
-  if (!all_projects_updated) {
-    // Wait for all_projects_updated to possibly change before re-polling
-    // all_projects_updated and returning error/data DB if it's ready.
-    return new Promise((resolve, reject) => {
-      const listener = () => {
-        getDataDB(active_id).then(resolve, reject);
-        events.removeListener('all_state', listener);
-      };
-      events.addListener('all_state', listener);
-    });
+  // Wait for all_projects_updated to possibly change before returning
+  // error/data DB if it's ready.
+  waitForStateOnce(() => all_projects_updated);
+  if (active_id in metadata_dbs) {
+    return metadata_dbs[active_id].local;
   } else {
-    if (active_id in metadata_dbs) {
-      return metadata_dbs[active_id].local;
-    } else {
-      throw `Project ${active_id} is not known`;
-    }
+    throw `Project ${active_id} is not known`;
   }
 }
 
