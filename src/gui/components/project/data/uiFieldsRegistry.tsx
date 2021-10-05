@@ -25,17 +25,19 @@ import {getComponentByName,getComponentPropertiesByName,getAvailableComponents} 
 import {FormComponent} from '../../../../datamodel/ui'
 
 export const getfields = () => {
-    console.log(getAvailableComponents())
     const fields:any={}
     let fieldtabs:Array<string>=[]
     getAvailableComponents().map((component:FormComponent)=>{
         const category=component.component_properties.category
         const props=component.component_properties
-        if(!fieldtabs.includes(category)) {
+        if(props.human_readable_name!==''&& ['Text','Select','Special'].includes(props.category)){ //TODO: required to update in the future
+            if(!fieldtabs.includes(category)) {
             fields[category]=[{...props}]
             fieldtabs=[...fieldtabs,category]
+            }
+            else fields[category]=[...fields[category],{...props}]
         }
-        else fields[category]=[...fields[category],{...props}]
+        
     }
     )
 
@@ -53,12 +55,6 @@ export const getcomponent=(props:any)=>{
     if(props.componentName==='TextField'||props.componentName==='Select') return TextField(props);
     return SpecialField(props);
 
-}
-
-export const getsettingform = (component:any) =>{
-    if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings',multiline:true,multirows:4,initialValue:'Default',helperText:'Type options here, speprate by Space(will edit)'}]
-    if(component['component-parameters']['multiline']!==undefined) if(component['component-parameters']['multiline']===true)return [{name:'multirows',lable:'Number of rows',type:'IntegerField',view:'settings'}]
-    return []
 }
 
 const convertvalidation = (validationSchema:Array<any>) =>{
@@ -136,7 +132,10 @@ const FieldModel =(props:any)=>{
 
     }
     if(multiline===true) uiSpec['component-parameters']['multiline']=true
-    if(componentName==='TakePoint') uiSpec.initialValue=initialValue??null
+    if(componentName==='TakePoint') {
+        if(initialValue!==''&&initialValue!==undefined) uiSpec.initialValue=initialValue 
+        else uiSpec.initialValue=null
+    }
     return uiSpec
 }
 

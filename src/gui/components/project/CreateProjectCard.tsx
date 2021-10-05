@@ -37,6 +37,7 @@ import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel,ProjectInformation} from '../../../datamodel/ui'
 import {create_new_project_dbs}  from '../../../sync/new-project'
 import {getProjectInfo} from '../../../databaseAccess';
+import {setProjectMetadata} from '../../../projectMetadata';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -59,7 +60,7 @@ const accessgroup=['admin','moderator','team']
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
 const projecttabs=['Info','Design','Preview']
-const variant_label=['main']
+const variant_label='main'
 
 export default function CreateProjectCard(props:CreateProjectCardProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
@@ -71,9 +72,11 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [projecttabvalue,setProjecttabvalue]=useState(0)
     // const [uiSpec,setUISpec]=useState<uiSpecType|null>(props.uiSpec)
-    const [formuiSpec,setFormuiSpec]=useState<uiSpecType>({fields:{},views:{},viewsets:{},visible_types:[]})
+    const [formuiSpec,setFormuiSpec]=useState<ProjectUIModel>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [formtabs,setformTabs]=useState<Array<string>>([])    
     const [error, setError] = useState(null as null | {});
+
+    const [projectInfo,setProjectInfo]=useState<any>()
 
 
 
@@ -102,6 +105,11 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       
     }, [props.uiSpec]);
 
+    useEffect (()=>{
+      if(projectInfo!==undefined)
+        setProjectValue({...projectvalue,...projectInfo});
+    },[projectInfo])
+
 
     //  useEffect(() => {
     //   if(project_id!==''&&project_id!==null&&Object.keys(formuiSpec['fields']).length!==0){
@@ -126,10 +134,6 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
     const setinit =()=>{
       
-      // if(props.project_id!==undefined){
-      //   getUiSpecForProject(props.project_id).then(setFormuiSpec, setError);
-
-      // }
       if(props.uiSpec===null){
         console.log('setup')
         //if create new notebook then set an empty formUI
@@ -138,12 +142,17 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         formview['fields']={}
         formview['views']={}
         formview['viewsets']={}
-        formview['views'][view]={'fields':[],uidesign:'form','label':sections_default[0]}
+        const fields:string[]=[]
+        formview['views'][view]={'fields':fields,uidesign:'form','label':sections_default[0]}
         formview['viewsets']={'FORM1':{views:[view],label:variant_label}}
         setFormuiSpec({fields:formview.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
       }
-      // console.log(uiSpec)
+
+      if(project_id!==undefined) setProjectInfo(getProjectInfo(project_id))
+
       setProjecttabvalue(0)
+
+      
 
     }
 
@@ -154,9 +163,29 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
     const getnewdb = async  () =>{
       try{
-       const p_id=await create_new_project_dbs(projectvalue.projectname);
+       const p_id=await create_new_project_dbs(projectvalue.name);
        if(p_id!==null) {setProjectID(p_id); setProjectValue({...projectvalue,project_id:p_id})}
-       console.log(project_id)
+      }catch (err) {
+      console.error('databases not created...');
+      console.log(err);
+      }
+    }
+
+    const updateproject = async (values:any) =>{
+      try{
+        for (const key in values) {
+          if(key!=='name'){ //TODO: check if name can editable or not
+            try {
+              console.log(await setProjectMetadata(project_id, key, values[key]));
+              console.log('update'+key)
+            } catch (err) {
+              console.error('databases needs cleaning...');
+              console.debug(err);
+            }
+          }
+        
+      }
+        
       }catch (err) {
       console.error('databases not created...');
       console.log(err);
@@ -177,7 +206,6 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       const newproject=projectvalue
       newproject[event.target.name]=event.target.value
       setProjectValue(newproject)
-      console.log(newproject)
     }
 
     const submithandlerProject = (values:any) =>{
@@ -185,9 +213,9 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       //TODO currently just save for projectname so added getnewdb function here, need to update it
       if(project_id===undefined){
         getnewdb();
-        console.log('save New')
+      }else{
+        updateproject(values);
       }
-      console.log(project_id+projectvalue.project_id)
     }
 
     const handleSaveUiSpec = () =>{
@@ -202,7 +230,6 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
           <TabTab tabs={projecttabs} value={projecttabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
       </AppBar>
       <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
-      {'Project Name:'+projectvalue.projectname+' Project ID:'+project_id}
           <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject}/>
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >

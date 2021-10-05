@@ -27,6 +27,7 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import PlaylistAddCheckIcon from '@material-ui/icons/PlaylistAddCheck';
 import GroupIcon from '@material-ui/icons/Group';
 import NoteIcon from '@material-ui/icons/Note';
+import AccountTree from '@material-ui/icons/AccountTree';
 import { makeStyles } from '@material-ui/core/styles';
 import {getconnections} from '../data/ComponentSetting'
 // import NoteIcon from '@material-ui/icons/NoteIcon';
@@ -86,7 +87,7 @@ export function FormConnectionCard(props:any){
         
         <ListItem key='list1'  >
         <ListItemIcon>
-          <NoteIcon />
+          <AccountTree />
         </ListItemIcon>
         <ListItemText
           primary={tab}

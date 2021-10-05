@@ -29,14 +29,13 @@ import {getfields} from '../data/uiFieldsRegistry'
 const useStyles = makeStyles((theme) => ({
 	content: {
     minHeight: 100,
-    // minWidth: 200,
+    minWidth: 200,
     [theme.breakpoints.down('sm')]:{
       width:'100%',
     }
     },
     inputfieldscard: {
     backgroundColor:'#353b40',
-    color:'#fff',
     textAlign:'right',
     [theme.breakpoints.down('sm')]:{
       marginBottom:15,

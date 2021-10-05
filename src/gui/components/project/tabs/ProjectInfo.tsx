@@ -34,6 +34,7 @@ import {TickButton} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import {getProjectInfo} from '../../../../databaseAccess';
+import {ProjectUIModel,ProjectInformation} from '../../../../datamodel/ui'
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -69,14 +70,19 @@ type ProjectInfoProps={
 
 export default function ProjectInfoTab(props:ProjectInfoProps) {
   const {projectvalue,setProjectValue,project_id,...others}=props
-  const [projectInfo,setProjectInfo]=useState<any>(getProjectInfo(project_id))
+  const [projectInfo,setProjectInfo]=useState<ProjectInformation|null>(getProjectInfo(project_id))
   const [infotabvalue,setinfotabvalue]=useState(0)
-  const [uiSpec_general,setUISpecG]=useState<uiSpecType>(getprojectform(projectvalue,'info_general'))
+  const [uiSpec_general,setUISpecG]=useState<ProjectUIModel>(getprojectform(projectvalue,'info_group'))
   
   const [accessgroup,setaccessgroup]=useState([])
   
-  const [uiSpec_access,setUISpecA]=useState<uiSpecType>(getprojectform(projectvalue,'info_group'))
-  const [initialValues,setinitialValues]=useState(setProjectInitialValues(uiSpec_access,'start-view',{_id:project_id}))
+  const [uiSpec_access,setUISpecA]=useState<ProjectUIModel>({fields:{},views:{},viewsets:{},visible_types:[]})
+  const [initialValues,setinitialValues]=useState<{}>({})
+
+  useEffect(() => {
+
+     setini();
+    }, []);
 
   useEffect(() => {
 
@@ -84,14 +90,28 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
      console.log('New user added')
     }, [accessgroup]);
 
+  useEffect(() => {
+     setUISpecG(getprojectform(projectvalue,'info_general'))
+     setinitialValues(setProjectInitialValues(uiSpec_general,'start-view',{_id:project_id}))
+    }, [projectvalue]);
+
+  const setini = () =>{
+    setUISpecA(getprojectform(projectvalue,'info_group'))
+    setUISpecG(getprojectform(projectvalue,'info_general'))
+    setinitialValues(setProjectInitialValues(uiSpec_general,'start-view',{_id:project_id}))
+  }
+
   const handleChangeFormProject=(event:any) => {
       const newproject=projectvalue
       newproject[event.target.name]=event.target.value
-      setProjectValue(newproject)
-      // console.log(projectvalue)
+      setProjectValue({...newproject})
   }
   const handleChangetab = (event:any,index:number) =>{
-      setinfotabvalue(index)
+     
+      if(index===0) setinitialValues(setProjectInitialValues(uiSpec_general,'start-view',{_id:project_id}))
+      if(index===1) setinitialValues(setProjectInitialValues(uiSpec_access,'start-view',{_id:project_id}))
+        console.log(initialValues)
+       setinfotabvalue(index)
     }
 
   const handleSubmitAccess = (values:any) =>{
@@ -100,7 +120,6 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
     newproject['accesses']=[...newproject['accesses'],values['accessadded']] //need to reset the add user role value
     setProjectValue(newproject)
     setaccessgroup(newproject['accesses'])
-    console.log(projectvalue)
   }
 
   const handleformchangeAccess = (event:any) =>{
@@ -109,14 +128,32 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
 
   return (
     <Grid container>
-    <Grid item sm={8} xs={12}>
-    <TabTab tabs={['general','group']} value={infotabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
-    <TabPanel value={infotabvalue} index={0} tabname='primarytab' >
-    <FormForm uiSpec={uiSpec_general} currentView='start-view' handleChangeForm={props.handleChangeFormProject} handleSubmit={props.handleSubmit}/>
-    <pre>{JSON.stringify(projectInfo, null, 2)}</pre>
-    </TabPanel>
-    <TabPanel value={infotabvalue} index={1} tabname='primarytab' >
-    <Formik
+      <Grid item sm={8} xs={12}>
+        <TabTab tabs={['general','group']} value={infotabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
+        <TabPanel value={infotabvalue} index={0} tabname='primarytab' >
+          <Formik
+          initialValues={initialValues}
+          validateOnMount={true}
+          onSubmit={(values, {setSubmitting}) => {
+            setTimeout(() => {
+              setSubmitting(false);
+              props.handleSubmit(values)
+            }, 500);}}
+          >
+            {formProps => {
+              return (
+                <Form >
+                {uiSpec_general['views']['start-view']!==undefined?uiSpec_general['views']['start-view']['fields'].map((fieldName:string)=>
+                  getComponentFromField(uiSpec_general,fieldName,formProps,handleChangeFormProject)):''}
+                <TickButton id='submit' type="submit" />
+                </Form>
+              );
+            }}
+          </Formik>
+        </TabPanel>
+        <TabPanel value={infotabvalue} index={1} tabname='primarytab' >
+        {infotabvalue===1?
+          <Formik
           initialValues={initialValues}
           validateOnMount={true}
           onSubmit={(values, {setSubmitting}) => {
@@ -124,24 +161,25 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
               setSubmitting(false);
               handleSubmitAccess(values)
             }, 500);}}
-        >
+          >
 
-        {formProps => {
+            {formProps => {
               return (
                 <Form >
-                {uiSpec_access['views']['start-view']['fields'].map((fieldName:string)=>
-                  getComponentFromField(uiSpec_access,fieldName,formProps,handleformchangeAccess))}
+                {uiSpec_access['views']['start-view']!==undefined?uiSpec_access['views']['start-view']['fields'].map((fieldName:string)=>
+                  getComponentFromField(uiSpec_access,fieldName,formProps,handleformchangeAccess)):''}
                 <TickButton id='submit' type="submit" />
                 </Form>
               );
-        }}
-        </Formik>
-    </TabPanel>
+            }}
+          </Formik>
+          :''}
+        </TabPanel>
+      </Grid>
+      <Grid item sm={4} xs={12}>
+        <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
+        <pre>{JSON.stringify(projectInfo, null, 2)}</pre>
+      </Grid>
     </Grid>
-    <Grid item sm={4} xs={12}>
-    <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
-    </Grid>
-    </Grid>
-    )
-}
+  )}
 

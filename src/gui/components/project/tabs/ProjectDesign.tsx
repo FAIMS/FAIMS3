@@ -37,6 +37,8 @@ import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,han
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import {useTheme} from '@material-ui/core/styles';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -64,7 +66,7 @@ const sections_default=['SECTION1']
 const variant_default=['FORM1']
 const form_defult={'FORM1SECTION1':[]}
 const VISIBLE_TYPE='visible_types'
-const variant_label=['main']
+const variant_label='main'
 
 type ProjectDesignProps={ 
 	project_id:string;
@@ -77,14 +79,17 @@ type formcomponents=any
 
 export default function ProjectDesignTab(props:ProjectDesignProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
-    const ini={_id:'new_notbook'}
-    const classes = useStyles();
+    
+    const theme = useTheme();
+    const classes = useStyles(theme);
+    const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
     const {project_id,formuiSpec,setFormuiSpec,accessgroup,...others}=props
+    const ini={_id:project_id??'new_notbook'}
     const [initialValues,setinitialValues]=useState(ini)
     const [formcomponents,setFormComponents]= useState<formcomponents>(form_defult)
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState(sections_default[0])
-    const [formlabel,setformlabel]=useState<string>(variant_label[0])
+    const [formlabel,setformlabel]=useState<string>(variant_label)
     const [designvalue,setDesignvalue]=useState<string>('settings')
     const [settingvalue,setsettingvalue]=useState<{fields:{},views:{}}>({fields:{},views:{}})
     const [formView,setFormView]=useState('start-view')
@@ -140,7 +145,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       const view=formvariants+sections_default[0]
       setCurrentView(view);
       
-      setformTabs(variant_label)
+      setformTabs([variant_label])
       setsectiontabs(sections_default)
 
       setFormComponents((prevalue:formcomponents)=>{
@@ -329,7 +334,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
   return ( 
 
       <Grid container  >
-      <AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />
+      {project_id!==''&&project_id!==null&&project_id!==undefined?<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />:''}
       <Grid item sm={12} xs={12}>
         <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
         <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>
@@ -401,8 +406,9 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         :''}
         </TabPanel></Grid></Grid>
       </Grid>
+      {not_xs?
       <Grid item sm={4} xs={12}>
-        <FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel}/>
+        {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel}/>}
         <Box
               bgcolor={grey[200]}
               pl={2}
@@ -411,7 +417,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
             >
               <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
         </Box>
-      </Grid>
+      </Grid>:''}
       </Grid>
 
   );

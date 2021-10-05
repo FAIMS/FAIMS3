@@ -26,7 +26,8 @@
 
 
 import {v4 as uuidv4} from 'uuid';
-import {getcomponent,convertuiSpecToProps,getsettingform} from './uiFieldsRegistry'
+import {getcomponent,convertuiSpecToProps} from './uiFieldsRegistry'
+import {getComponentPropertiesByName} from '../../../component_registry';
 const VISIBLE_TYPE='visible_types'
 const NEWFIELDS='newfield'
 
@@ -50,6 +51,19 @@ export const getfieldname = (name:string,label:string) =>{
 	if(names.length>1)
 		return {'type':names[0],'name':label+names[1],'index':names[1]};
 	return {'type':'','name':'',index:0};
+}
+
+const getsettingform = (component:any) =>{
+    if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings',multiline:true,multirows:4,initialValue:'Default',helperText:'Type options here, speprate by Space(will edit)'}]
+    try{
+      const props=getComponentPropertiesByName(component['component-namespace'],component['component-name'])
+      console.log(props)
+    }catch(err: any) {
+      console.error('setUISpec/setLastRev error', err);
+
+    }
+    
+    return []
 }
 //Add new field form or convert uiSpec to setting form convertuiSpectoSetting
 export const FieldSettings=(component:signlefieldType,label:string,props:any)=>{
@@ -122,16 +136,19 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   const section_info=[
   {name:'sectionname',label:'Section Name',namespace:'formik-material-ui',componentName:'TextField',view:'section_info',required:true},
   {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section_info',multiline:true,multirows:4}]
+
   const fields:projectuilistType={info_general:[
-  {name:'projectname',label:'Project Name',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',required:true},
-  {name:'description',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',multiline:true,multirows:4}],
+  {name:'name',label:'Project Name',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',required:true},
+  {name:'description',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',multiline:true,multirows:4},
+  {name:'project_lead',label:'Lead',namespace:'formik-material-ui',componentName:'TextField',view:'info_general'},
+  {name:'lead_institution',label:'lead_institution',namespace:'formik-material-ui',componentName:'TextField',view:'info_general'}],
   info_group:[
   {name:'accessadded',label:'Add User Roles',namespace:'formik-material-ui',componentName:'TextField',view:'info_group',required:false,value:projectvalue['accessadded']}],
   design_section:[],
   }  
   fields[tab].map((field:any,index:number)=> {
      const {name,view,...others}=field
-    fields_list[field.name]=getcomponent({name:name,initialValue:projectvalue[name], placeholder:'',...others}); 
+    fields_list[field.name]=getcomponent({name:name,initialValue:projectvalue[name], placeholder:projectvalue[name],...others}); 
     fieldsarray[index]=field.name
     });
   return {

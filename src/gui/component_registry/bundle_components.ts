@@ -74,6 +74,18 @@ registerComponent(
     TextField
   )
 );
+//this is for testing
+registerComponent(
+  'formik-material-ui',
+  'MultipleTextField',
+  setupComponentProperties(
+    'Multiple HTML input Box', 
+    'text plus sepcial characters',
+    'Text', 
+    Input,
+    {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',multiline:true,multirows:4},
+    {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::Integer',validationSchema:[['yup.number'],['yup.positive'],],type:'text',name:'multirows',label:'Number of Line'}
+));
 
 registerComponent(
   'formik-material-ui',
