@@ -100,7 +100,6 @@ export interface ComponentRegistryProperties {
   description: string;
   category: string;
   component: FAIMSFormField;
-  componentname:string;
   uiSpecProps:FAIMSUiSpec;
   builder_component: FAIMSBuilderFormField;
   icon: FAIMSBuilderIcon;

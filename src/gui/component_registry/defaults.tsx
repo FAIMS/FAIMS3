@@ -32,5 +32,5 @@ export function getDefaultUiSpec(){
 }
 
 export function getDefaultuiSpecProps(){
-  return '';
+  return {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'};
 }

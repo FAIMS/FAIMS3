@@ -26,7 +26,7 @@ import { useState, useEffect } from 'react'
 import { makeStyles } from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden} from '@material-ui/core';
+import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden,Paper} from '@material-ui/core';
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import FieldsListCard from './FieldsListCard';
 import {SettingCard,FormConnectionCard} from './PSettingCard';
@@ -50,7 +50,7 @@ const useStyles = makeStyles((theme) => ({
   addfield:{
     // border:'1px solid #e1e4e8',
     flexGrow: 1,
-    padding: theme.spacing(2),
+    padding: theme.spacing(1),
   },
   settingtab:{
     backgroundColor:'#e1e4e8',
@@ -388,6 +388,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         </Formik>)):''}
         <AddButton id='AddField'  onButtonClick={handleAddFieldButton}  text='ADD' />
         {isAddField?
+          <Paper >
         <Grid container className={classes.addfield} >
           <Grid item sm={11} xs={11}>
           <FieldsListCard cretenefield={handleAddField} />
@@ -396,6 +397,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
             <CloseButton id='ColseAddField'  onButtonClick={handleCloseFieldButton} text='X' />
           </Grid>
         </Grid>
+        </Paper>
         :''}
         </TabPanel></Grid></Grid>
       </Grid>

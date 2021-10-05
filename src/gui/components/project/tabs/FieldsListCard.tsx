@@ -29,7 +29,7 @@ import {getfields} from '../data/uiFieldsRegistry'
 const useStyles = makeStyles((theme) => ({
 	content: {
     minHeight: 100,
-    minWidth: 280,
+    // minWidth: 280,
     [theme.breakpoints.down('sm')]:{
       width:'100%',
     }
@@ -61,7 +61,7 @@ function FieldCard(props:any){
 				<Card>
 					< CardActionArea onClick={() => handelonClick(field.uiSpecProps)}>
 				        <CardContent  >
-				        	<Grid container spacing={2} key={`${field.uiSpecProps.componentname}-card-${index}`}>
+				        	<Grid container spacing={2} key={`${field.uiSpecProps.category}-card-${index}`}>
                     			<Grid item sm={2} xs={12}>
 				        		{field.icon}
 				        		</Grid>
@@ -88,7 +88,7 @@ export default function FieldsListCard(props: any) {
 	const {fields,fieldtabs}=getfields();
 
 	return (
-		< >
+		<>
 		{fieldtabs.map((fieldtab:string,index:number)=>
 		<Grid container spacing={2} key={fieldtab+index}>
 		<Grid item sm={2} xs={12} className={classes.settingtab}>

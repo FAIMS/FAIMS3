@@ -21,27 +21,21 @@
  *   TODO: initial value for options, validationschema
  */
 
-import {getComponentByName,getComponentPropertiesByName} from '../../../component_registry';
-
-type componentlist={namespace:string;componentName:string;props?:any}
-
-const componentarray:Array<componentlist>=[
-{namespace:'formik-material-ui',componentName:'TextField'},
-{namespace:'faims-custom',componentName:'Select'},
-{namespace:'faims-custom',componentName:'ActionButton'},
-{namespace:'faims-custom',componentName:'TakePoint'},
-{namespace:'faims-custom',componentName:'TemplatedStringField'}]
+import {getComponentByName,getComponentPropertiesByName,getAvailableComponents} from '../../../component_registry';
+import {FormComponent} from '../../../../datamodel/ui'
 
 export const getfields = () => {
+    console.log(getAvailableComponents())
     const fields:any={}
     let fieldtabs:Array<string>=[]
-    componentarray.map((component:componentlist)=>{
-        const props=getComponentPropertiesByName(component.namespace,component.componentName)
-        if(!fieldtabs.includes(props.componentname)) {
-            fields[props.componentname]=[{...props}]
-            fieldtabs=[...fieldtabs,props.componentname]
+    getAvailableComponents().map((component:FormComponent)=>{
+        const category=component.component_properties.category
+        const props=component.component_properties
+        if(!fieldtabs.includes(category)) {
+            fields[category]=[{...props}]
+            fieldtabs=[...fieldtabs,category]
         }
-        else fields[props.componentname]=[...fields[props.componentname],{...props}]
+        else fields[category]=[...fields[category],{...props}]
     }
     )
 

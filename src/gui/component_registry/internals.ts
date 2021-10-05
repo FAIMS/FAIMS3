@@ -78,7 +78,6 @@ export function setupComponentProperties(
   description: string,
   category: string,
   component: FAIMSFormField,
-  componentname: string| null = null,
   uiSpecProps:FAIMSUiSpec |null = null,
   builder_component: FAIMSBuilderFormField | null = null,
   icon: FAIMSBuilderIcon | null = null
@@ -88,7 +87,6 @@ export function setupComponentProperties(
     description: description,
     category: category,
     component: component,
-    componentname: componentname !== null ? componentname :'Text',
     builder_component:
       builder_component !== null
         ? builder_component
