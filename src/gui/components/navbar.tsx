@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -49,9 +49,10 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {getProjectList} from '../../databaseAccess';
+import {getProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from './alert';
 import {ProjectInformation} from '../../datamodel/ui';
+import {useEventedPromiseCatchNow} from '../pouchHook';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -167,7 +168,14 @@ export default function Navbar() {
   // const [error, setError] = useState<string | null>(null);
   const toggle = () => setIsOpen(!isOpen);
 
-  const pouchProjectList = getProjectList();
+  const pouchProjectList = useEventedPromiseCatchNow(
+    getProjectList,
+    listenProjectList,
+    true,
+    [],
+    [],
+    []
+  );
 
   const topMenuItems: Array<MenuItemProps> = [
     {
@@ -176,7 +184,14 @@ export default function Navbar() {
       to: ROUTES.HOME,
       disabled: false,
     },
-    getNestedProjects(pouchProjectList),
+    pouchProjectList === null
+      ? {
+          title: '[loading]',
+          icon: <AccountTree />,
+          to: '/',
+          disabled: true,
+        }
+      : getNestedProjects(pouchProjectList),
     {
       title: 'Tools',
       icon: <BuildIcon />,

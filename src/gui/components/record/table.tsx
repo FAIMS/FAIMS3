@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import _ from 'lodash';
 import {
   DataGrid,
@@ -33,9 +33,10 @@ import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
 import {ProjectID} from '../../../datamodel/core';
-import {RecordMetadata} from '../../../datamodel/ui';
 import * as ROUTES from '../../../constants/routes';
-import {listenRecordsList} from '../../../data_storage/listeners';
+import {listenDataDB} from '../../../sync';
+import {listRecordMetadata} from '../../../data_storage/internals';
+import {useEventedPromise} from '../../pouchHook';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -44,11 +45,24 @@ type RecordsTableProps = {
 
 export default function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows} = props;
-  const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  const [rows, setRows] = useState<Array<RecordMetadata>>([]);
+  const [rows, fetchRows] = useEventedPromise(
+    async (project_id: ProjectID) =>
+      Object.values(await listRecordMetadata(project_id)),
+    (trig, err) =>
+      listenDataDB(
+        project_id,
+        {since: 'now', live: true},
+        () => trig(project_id),
+        err
+      ),
+    false,
+    [project_id]
+  );
+  useEffect(() => fetchRows(project_id), [project_id]);
+
   const columns: GridColDef[] = [
     {
       field: 'record_id',
@@ -86,22 +100,6 @@ export default function RecordsTable(props: RecordsTableProps) {
     },
   ];
 
-  useEffect(() => {
-    //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the record list is updated, the callback should be fired
-    if (project_id === undefined) return; //dummy project
-    const destroyListener = listenRecordsList(
-      project_id,
-      newPouchRecordList => {
-        setLoading(false);
-        if (!_.isEqual(Object.values(newPouchRecordList), rows)) {
-          setRows(Object.values(newPouchRecordList));
-        }
-      }
-    );
-    return destroyListener; // destroyListener called when this component unmounts.
-  }, [project_id, rows]);
-
   return (
     <div>
       <Typography variant="overline">Recent Records</Typography>
@@ -112,8 +110,8 @@ export default function RecordsTable(props: RecordsTableProps) {
         }}
       >
         <DataGrid
-          rows={rows}
-          loading={loading}
+          rows={rows.value ?? []}
+          loading={rows.loading !== undefined}
           getRowId={r => r.record_id}
           columns={columns}
           autoHeight

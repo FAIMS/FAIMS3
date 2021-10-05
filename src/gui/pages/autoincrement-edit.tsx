@@ -25,10 +25,11 @@ import {Box, Container, Typography, Paper} from '@material-ui/core';
 
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel/core';
-import {getProjectInfo} from '../../databaseAccess';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementEditForm from '../components/autoincrement/edit-form';
+import {useEventedPromiseCatchNow, constantArgsShared} from '../pouchHook';
 
 export default function AutoIncrementEdit() {
   const {project_id, form_id, field_id} = useParams<{
@@ -37,7 +38,15 @@ export default function AutoIncrementEdit() {
     field_id: string;
   }>();
   const name = `${form_id} (${field_id})`;
-  const project_info = getProjectInfo(project_id);
+  const project_info = useEventedPromiseCatchNow(
+    getProjectInfo,
+    constantArgsShared(listenProjectInfo, project_id),
+    false,
+    [project_id],
+    [project_id],
+    [project_id]
+  );
+
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {link: ROUTES.PROJECT_LIST, title: 'Projects'},

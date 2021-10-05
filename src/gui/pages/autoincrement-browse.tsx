@@ -21,29 +21,44 @@
 import React, {useEffect} from 'react';
 import {useParams} from 'react-router-dom';
 
-import {Box, Container, Typography, Paper} from '@material-ui/core';
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  CircularProgress,
+} from '@material-ui/core';
 
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel/core';
 import {AutoIncrementReference} from '../../datamodel/database';
 import {get_autoincrement_references_for_project} from '../../datamodel/autoincrement';
-import {getProjectInfo} from '../../databaseAccess';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementConfigForm from '../components/autoincrement/browse-form';
+import {constantArgsShared, useEventedPromiseCatchNow} from '../pouchHook';
 
 export default function Record() {
   const {project_id} = useParams<{
     project_id: ProjectID;
   }>();
 
-  const project_info = getProjectInfo(project_id);
+  const project_info = useEventedPromiseCatchNow(
+    getProjectInfo,
+    constantArgsShared(listenProjectInfo, project_id),
+    false,
+    [project_id],
+    [project_id],
+    [project_id]
+  );
+
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {link: ROUTES.PROJECT_LIST, title: 'Projects'},
     {
       link: ROUTES.PROJECT + project_id,
-      title: project_info !== null ? project_info.name : project_id,
+      title: project_info?.name ?? project_id,
     },
     {title: 'AutoIncrement Settings'},
   ];
@@ -79,7 +94,7 @@ export default function Record() {
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Update the settings for the AutoIncrementer for
-          {project_info !== null ? project_info.name : project_id}.
+          {project_info?.name ?? <CircularProgress />}.
         </Typography>
       </Box>
       <Paper square>{autoincremeter_links}</Paper>
