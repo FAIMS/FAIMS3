@@ -29,7 +29,7 @@ import {getfields} from '../data/uiFieldsRegistry'
 const useStyles = makeStyles((theme) => ({
 	content: {
     minHeight: 100,
-    // minWidth: 280,
+    minWidth: 200,
     [theme.breakpoints.down('sm')]:{
       width:'100%',
     }
