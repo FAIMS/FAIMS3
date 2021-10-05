@@ -32,6 +32,7 @@ import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
 import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
+import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
 import {registerComponent, setupComponentProperties} from './internals';
 /*
  * This should be enough to make typescript/the build system happy
@@ -45,17 +46,32 @@ export default bundle;
 registerComponent(
   'core-material-ui',
   'Input',
-  setupComponentProperties('HTML input field', 'Catchall field', Input)
+  setupComponentProperties(
+    'HTML input field',
+    'Catchall field',
+    'Advanced',
+    Input
+  )
 );
 registerComponent(
   'core-material-ui',
   'Checkbox',
-  setupComponentProperties('', '', Checkbox)
+  setupComponentProperties(
+    'HTML checkbox field',
+    'A simple checkbox',
+    'Simple',
+    Checkbox
+  )
 );
 registerComponent(
   'core-material-ui',
   'TextField',
-  setupComponentProperties('', '', TextField)
+  setupComponentProperties(
+    'HTML text field',
+    'A simple text field',
+    'Simple',
+    TextField
+  )
 );
 registerComponent(
   'formik-material-ui',
@@ -63,6 +79,7 @@ registerComponent(
   setupComponentProperties(
     'HTML input field',
     'text plus sepcial characters',
+    'Simple',
     FormikTextField,
     'Text',
     {
@@ -78,17 +95,17 @@ registerComponent(
 registerComponent(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', FormikSelect)
+  setupComponentProperties('', '', 'Simple', FormikSelect)
 );
 registerComponent(
   'formik-material-ui',
   'RadioGroup',
-  setupComponentProperties('', '', FormikRadioGroup)
+  setupComponentProperties('', '', 'Simple', FormikRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties('Select', 'Select', FAIMSSelect, 'Select', {
+  setupComponentProperties('Select', 'Select', 'Simple', FAIMSSelect, 'Select', {
     namespace: 'faims-custom',
     componentName: 'Select',
     select: true,
@@ -100,7 +117,7 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties('Checkbox', 'Checkbox', FAIMSCheckbox, 'Select', {
+  setupComponentProperties('Checkbox', 'Checkbox', 'Simple', FAIMSCheckbox, 'Select', {
     namespace: 'faims-custom',
     componentName: 'Checkbox',
     type_return: 'faims-core::Bool',
@@ -111,12 +128,12 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'RadioGroup',
-  setupComponentProperties('', '', FAIMSRadioGroup)
+  setupComponentProperties('', '', 'Simple', FAIMSRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'ActionButton',
-  setupComponentProperties('Take Action', '', ActionButton, 'Special', {
+  setupComponentProperties('Take Action', '', 'Test', ActionButton, 'Special', {
     namespace: 'faims-custom',
     componentName: 'ActionButton',
     type_return: 'faims-core::String',
@@ -127,7 +144,7 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties('Take Point', '', TakePoint, 'Special', {
+  setupComponentProperties('Take Point', '', 'Position', TakePoint, 'Special', {
     namespace: 'faims-custom',
     componentName: 'TakePoint',
     type_return: 'faims-pos::Location',
@@ -148,7 +165,7 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'TemplatedStringField',
-  setupComponentProperties('Unique ID', '', TemplatedStringField, 'Special', {
+  setupComponentProperties('Templated String', 'Build a value up from other fields', 'Advanced', TemplatedStringField, 'Special', {
     namespace: 'faims-custom',
     componentName: 'TemplatedStringField',
     type_return: 'faims-core::String',
@@ -161,5 +178,20 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'BasicAutoIncrementer',
-  setupComponentProperties('', '', BasicAutoIncrementer)
+  setupComponentProperties(
+    'Basic AutoIncrementer',
+    'A basic autoincrementer to help create identifiers',
+    'Identifiers',
+    BasicAutoIncrementer
+  )
+);
+registerComponent(
+  'faims-custom',
+  'RelatedRecordSelector',
+  setupComponentProperties(
+    'Related field',
+    'Add relations between records',
+    'Relations',
+    RelatedRecordSelector
+  )
 );
