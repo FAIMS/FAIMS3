@@ -75,22 +75,229 @@ export async function waitForStateOnce(
     };
     events.on('all_state', all_state_cb);
     events.on('directory_error', directory_error_cb);
+    // Initial call when no event occurs.
+    all_state_cb();
   });
 }
 
-export async function getProjectInfo(
-  active_id: ProjectID
+export async function getProject(
+  project_id: ProjectID
 ): Promise<createdProjectsInterface> {
   // Wait for all_projects_updated to possibly change before returning
   // error/data DB if it's ready.
   await waitForStateOnce(() => all_projects_updated);
-  if (active_id in data_dbs) {
-    return createdProjects[active_id];
+  if (project_id in data_dbs) {
+    return createdProjects[project_id];
   } else {
-    throw `Project ${active_id} is not known`;
+    throw `Project ${project_id} is not known`;
   }
 }
 
+/**
+ * Allows you to listen for changes from a Project's Data/Meta DBs or other
+ * project info like if it's to be synced or not (from createdProjects)
+ * This is a working alternative to getDataDB.changes
+ * (as getDataDB.changes that may detach after updates to the owning listing
+ * or the owning active DB, or if the sync is toggled on/off)
+ *
+ * @param project_id Full Project ID to listen on the DB for.
+ * @param listener
+ *     Called whenever the project you're listening on is available
+ *     __Not necessarily has the data or metadata fully synced__
+ *     But the data & metadata dbs will be in data_dbs, meta_dbs,
+ *     and createdProjects.
+ *     * meta_changed and data_changed events flow from
+ *     the 'project_update' event in events.ts, and signal if the
+ *     PouchDB databases have been recretated (and might need to
+ *     be re-listened on)
+ *     * error is available for the listener to call to asynchronously
+ *     throw errors up to the error_listener. Use this instead of
+ *     what you give into error_listener to ensure cleanup is done.
+ *     * returns a destructor: This destructor is called when either
+ *       * listenProject's destructor is called
+ *       * Errors occur that mean we stop listening
+ *       * The project info is *updated* (replaced will be true)
+ *       * The project info is dropped (e.g. the user left)
+ *     * Returning _'keep'_ changes behaviour: If this is a project info update,
+ *       the destructor previsously returned or kept from listener isn't run,
+ *       and in fact, sticks around until next listener() (not returning keep)
+ *       or other detach/error scenario.
+ *     * Returning _'noop'_ returns a constructor doing nothing
+ *       (This is not 'void' )
+ * @param error_listener
+ *     Called once at the first error condition.
+ *     * All projects are synced, but project_id isn't a known project
+ *     * errors in listener()
+ *     * errors thrown asynchronously form listener
+ *     * errors in the destructor from listener
+ * @returns Detach function: call this to stop all changes
+ */
+export function listenProject(
+  project_id: ProjectID,
+  // Listener, returning a destructor
+  // Listener receives an 'error' function to let it asynchronously throw errors.
+  // The destructor is called before a second listener is called
+  // but the destructor is optional
+  listener: (
+    value: createdProjectsInterface,
+    throw_error: (err: any) => void,
+    meta_changed: boolean,
+    data_changed: boolean
+  ) => 'keep' | 'noop' | ((replaced: boolean) => void),
+  error_listener: (value: unknown) => any
+): () => void {
+  // This is an array to allow it to be read/writeable from closures
+  const destructor: ['deleted' | 'initial' | ((replaced: boolean) => void)] = [
+    'initial',
+  ];
+
+  /* Set on a first error, to avoid multiple calls to error_listener */
+  const current_error: [null | {}] = [null];
+
+  /* Called when errors occur. Propagates to error_listener
+  but also runs cleanup */
+  const self_destruct = (err: unknown, detach = true) => {
+    // Only call error_listener once
+    if (current_error[0] === null) {
+      current_error[0] = (err as null | {}) ?? (Error('undefined error') as {});
+      try {
+        error_listener(err);
+      } catch (err: unknown) {
+        console.error('Uncaught Error in listenProject error handler', err);
+        if (detach) {
+          detach_cb();
+        }
+        throw err; // Allow node to report as uncaught
+      }
+      if (detach) {
+        detach_cb();
+      }
+    }
+  };
+
+  const project_update_cb = (
+    type: ['update', createdProjectsInterface] | ['delete'] | ['create'],
+    meta_changed: boolean,
+    data_changed: boolean,
+    _listing: unknown,
+    active: ExistingActiveDoc
+  ) => {
+    if (project_id === active._id) {
+      if (type[0] === 'delete') {
+        // Run destructor when the createdProjectsInterface object is deleted.
+        if (typeof destructor[0] !== 'function') {
+          console.error(
+            'Non-fatal: listenProject destructor has gone ' +
+              "missing OR 'delete' event did not follow " +
+              "'update' or 'create' event"
+          );
+        } else {
+          destructor[0](false);
+        }
+        destructor[0] = 'deleted';
+      } else {
+        try {
+          const returned = listener(
+            createdProjects[active._id],
+            self_destruct,
+            meta_changed,
+            data_changed
+          );
+          if (returned !== 'keep') {
+            // If this is an update (destructor exists) then run destructor,
+            // and set the new destructor
+            if (typeof destructor[0] === 'function') {
+              if (type[0] !== 'update') {
+                console.warn(
+                  "Why is the destructor still around? either '" +
+                    `${type[0]} was triggered in the wrong place or some part` +
+                    " of this function didn't remove the destructor after use"
+                );
+              }
+              destructor[0](true);
+            }
+            if (returned === 'noop') {
+              // if the listener returned void
+              destructor[0] = () => {};
+            } else {
+              destructor[0] = returned;
+            }
+          }
+        } catch (err: unknown) {
+          self_destruct(err);
+        }
+      }
+    }
+  };
+
+  /*
+  All state is monitored because, just like getDataDB, when all projects are
+  know and the changes hasn't been set yet, the user has tried to listen on
+  a Data DB that doesn't exist.
+  */
+  const all_state_cb = () => {
+    if (all_projects_updated && destructor[0] === 'initial') {
+      self_destruct(Error(`Project ${project_id} is not known`));
+    } else if (all_projects_updated && destructor[0] === 'deleted') {
+      /*
+      In a flow that doesn't hit this warning:
+      1. The project is deleted, e.g. by the user leaving the project
+      2. project_update 'delete' event is emitted
+      3. __User of this function receives the delete event, and detaches
+           by calling the return of this function.__
+      3a. destructor is NOT CALLED with type: 'deleted'
+      4. Eventually (Or immediately after) all_state event is emitted with
+         all_projects_updated === true.
+      5. This function is NOT CALLED due to it being detached
+
+      As long as the user calls the detacher (Return of this function) between
+      a project_update 'delete' event and all_state is emitted, this warning is
+      not given.
+
+      Note: Event if 3a ('deleted') destructor is called before the user calls
+        the detacher, it still wouldn't error out because whilst the destructor
+        would run with 'deleted' and set to 'deleted', all_state would detach
+        by the user calling the detach function.
+      */
+      console.warn(
+        `Project ${project_id} did exist, was deleted, but a function` +
+          "listening to events on it's data DB didn't call the listener's " +
+          'detacher function at the right time (immediately after' +
+          'project_update event for the corresponding project id)'
+      );
+      // Allow the project to be undeleted & have listeners still work:
+      // So don't detach_cb here.
+    }
+  };
+
+  const detach_cb = () => {
+    events.removeListener('project_update', project_update_cb);
+    events.removeListener('all_state', all_state_cb);
+    if (destructor[0] !== null && typeof destructor[0] === 'function') {
+      try {
+        destructor[0](false);
+      } catch (err: unknown) {
+        self_destruct(err, false);
+      }
+    }
+  };
+
+  events.on('project_update', project_update_cb);
+  events.on('all_state', all_state_cb);
+
+  return detach_cb;
+}
+
+/**
+ * Returns the current Data PouchDB of a project. This waits for the initial
+ * sync to finish enough to know if the project exists or not before returning
+ * (Hence, use this instead of createdProjects)
+ *
+ * @param active_id Full Project ID to get Pouch data DB of.
+ * @returns Pouch Data DB (May become invalid at some point in the future,
+ *     If, for example, the project changes remote DB.
+ *     Make sure to use listenProject to avoid this)
+ */
 export async function getDataDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> {
@@ -120,87 +327,39 @@ export function listenDataDB(
   active_id: ProjectID,
   change_opts: PouchDB.Core.ChangesOptions,
   change_listener: (
-    value: PouchDB.Core.ChangesResponseChange<ProjectDataObject>
+    value: PouchDB.Core.ChangesResponseChange<ProjectMetaObject>
   ) => any,
   error_listener: (value: any) => any
 ): () => void {
   // This is an array to allow it to be read/writeable from closures
-  // Its value: Changes from the Data DB of the project we're listening on, if
-  // said Data DB is available & valid. (Only after 'update' | 'create' events)
-  const current_changes: [
-    'deleted' | null | PouchDB.Core.Changes<ProjectDataObject>
-  ] = [null];
-
-  const project_update_cb = (
-    type: ['update', createdProjectsInterface] | ['delete'] | ['create'],
-    meta_changed: boolean,
-    data_changed: boolean,
-    listing: unknown,
-    active: ExistingActiveDoc
-  ) => {
-    if (active_id === active._id) {
+  const changes: [null | PouchDB.Core.Changes<ProjectMetaObject>] = [null];
+  return listenProject(
+    active_id,
+    (project, throw_error, _meta_changed, data_changed) => {
       if (data_changed) {
-        // Database has changed, re-attach
-        current_changes[0] = data_dbs[active_id]!.local.changes(change_opts);
-        current_changes[0].on('change', change_listener);
-        current_changes[0].on('error', error_listener);
-
-        // As long as this database continues to exist, all_state doesn't need
-        // to check. Since event emitters are limited in size, remove unnecessary:
-        // (However, if a 'delete' event comes in, all_state will be needed again)
-        events.removeListener('all_state', all_state_cb);
-      } else if (type[0] === 'delete') {
-        // The following could cause the next all_state_cb call to throw an error
-        // Because once a project is deleted, this is called first then
-        // all_state_cb will know current_changes[0] === null.
-        // UNLESS the user calls the destructor (detach_cb) between
-        // a project_update event and all_state event. Which they should be
-        // doing (since they should be listening on project_update to
-        // destroy themselves. (e.g. react elements)).
-        events.on('all_state', all_state_cb);
-        current_changes[0] = 'deleted';
+        changes[0] = project.meta.local.changes(change_opts);
+        changes[0].on('change', change_listener);
+        changes[0].on('error', throw_error);
       }
-    }
-  };
-
-  events.on('project_update', project_update_cb);
-
-  /*
-  All state is monitored because, just like getDataDB, when all projects are
-  know and the changes hasn't been set yet, the user has tried to listen on
-  a Data DB that doesn't exist.
-  */
-  const all_state_cb = () => {
-    if (all_projects_updated && current_changes[0] === null) {
-      error_listener(Error(`Project ${active_id} is not known`));
-      detach_cb();
-    } else if (all_projects_updated && current_changes[0] === 'deleted') {
-      console.warn(
-        `Project ${active_id} did exist, was deleted, but a function` +
-          "listening to events on it's data DB didn't call the listener's " +
-          'detacher function at the right time (immediately after' +
-          'project_update event for the corresponding project id)'
-      );
-      // Allow the project to be undeleted & have listeners still work:
-      // So don't detach_cb here.
-    }
-  };
-
-  events.on('all_state', all_state_cb);
-
-  const detach_cb = () => {
-    if (current_changes[0] !== null && current_changes[0] !== 'deleted') {
-      // Detatch while the DB is still running
-      // from external event (e.g. react element being destroyed
-      current_changes[0].cancel();
-    }
-    events.removeListener('project_update', project_update_cb);
-    events.removeListener('all_state', all_state_cb);
-  };
-
-  return detach_cb;
+      return () => {
+        changes[0]!.cancel();
+      };
+    },
+    error_listener
+  );
 }
 
+
+/**
+ * Returns the current Meta PouchDB of a project. This waits for the initial
+ * sync to finish enough to know if the project exists or not before returning
+ * (Hence, use this instead of createdProjects)
+ *
+ * @param active_id Full Project ID to get Pouch data DB of.
+ * @returns Pouch Data DB (May become invalid at some point in the future,
+ *     If, for example, the project changes remote DB.
+ *     Make sure to use listenProject to avoid this)
+ */
 export async function getProjectDB(
   active_id: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> {
@@ -235,80 +394,19 @@ export function listenProjectDB(
   error_listener: (value: any) => any
 ): () => void {
   // This is an array to allow it to be read/writeable from closures
-  // Its value: Changes from the Meta DB of the project we're listening on, if
-  // said Meta DB is available & valid. (Only after 'update' | 'create' events)
-  const current_changes: [
-    'deleted' | null | PouchDB.Core.Changes<ProjectMetaObject>
-  ] = [null];
-
-  const project_update_cb = (
-    type: ['update', createdProjectsInterface] | ['delete'] | ['create'],
-    meta_changed: boolean,
-    data_changed: boolean,
-    listing: unknown,
-    active: ExistingActiveDoc
-  ) => {
-    if (active_id === active._id) {
+  const changes: [null | PouchDB.Core.Changes<ProjectMetaObject>] = [null];
+  return listenProject(
+    active_id,
+    (project, throw_error, meta_changed) => {
       if (meta_changed) {
-        // Database has changed, re-attach
-        current_changes[0] = metadata_dbs[active_id]!.local.changes(
-          change_opts
-        );
-        current_changes[0].on('change', change_listener);
-        current_changes[0].on('error', error_listener);
-
-        // As long as this database continues to exist, all_state doesn't need
-        // to check. Since event emitters are limited in size, remove unnecessary:
-        // (However, if a 'delete' event comes in, all_state will be needed again)
-        events.removeListener('all_state', all_state_cb);
-      } else if (type[0] === 'delete') {
-        // The following could cause the next all_state_cb call to throw an error
-        // Because once a project is deleted, this is called first then
-        // all_state_cb will know current_changes[0] === null.
-        // UNLESS the user calls the destructor (detach_cb) between
-        // a project_update event and all_state event. Which they should be
-        // doing (since they should be listening on project_update to
-        // destroy themselves. (e.g. react elements)).
-        events.on('all_state', all_state_cb);
-        current_changes[0] = null;
+        changes[0] = project.meta.local.changes(change_opts);
+        changes[0].on('change', change_listener);
+        changes[0].on('error', throw_error);
       }
-    }
-  };
-
-  events.on('project_update', project_update_cb);
-
-  /*
-  All state is monitored because, just like getProjectDB, when all projects are
-  know and the changes hasn't been set yet, the user has tried to listen on
-  a Meta DB that doesn't exist.
-  */
-  const all_state_cb = () => {
-    if (all_projects_updated && current_changes[0] === null) {
-      error_listener(Error(`Project ${active_id} is not known`));
-      detach_cb();
-    } else if (all_projects_updated && current_changes[0] === 'deleted') {
-      console.warn(
-        `Project ${active_id} did exist, was deleted, but a function` +
-          "listening to events on it's data DB didn't call the listener's " +
-          'detacher function at the right time (immediately after' +
-          'project_update event for the corresponding project id)'
-      );
-      // Allow the project to be undeleted & have listeners still work:
-      // So don't detach_cb here.
-    }
-  };
-
-  events.on('all_state', all_state_cb);
-
-  const detach_cb = () => {
-    if (current_changes[0] !== null && current_changes[0] !== 'deleted') {
-      // Detatch while the DB is still running
-      // from external event (e.g. react element being destroyed
-      current_changes[0].cancel();
-    }
-    events.removeListener('project_update', project_update_cb);
-    events.removeListener('all_state', all_state_cb);
-  };
-
-  return detach_cb;
+      return () => {
+        changes[0]!.cancel();
+      };
+    },
+    error_listener
+  );
 }
