@@ -94,21 +94,40 @@ export class PromiseState<S, L extends null | {}> {
  *
  * @param attacher prototype of a common listen function that takes a set of A
  *     arguments, then the OK & error callbacks. See databaseAccess.tsx for e.g.
+ * @param args Arguments to pass to the trigger_callback
+ * @returns
+ */
+export function constantArgs<FirstArgs extends unknown[]>(
+  attacher: (
+    listener: () => void | (() => void),
+    error_cb: (err: {}) => void
+  ) => () => void,
+  ...first_args: FirstArgs
+): (
+  trigger_callback: (...args: FirstArgs) => void,
+  error_callback: (error: {}) => void
+) => void | (() => void) {
+  return (trig, err) => attacher(() => trig(...first_args), err);
+}
+
+/**
+ *
+ * @param attacher prototype of a common listen function that takes a set of A
+ *     arguments, then the OK & error callbacks. See databaseAccess.tsx for e.g.
  * @param args Arguments to pass as the first arguments to attacher &
  *     (More importantly) to the trigger_callback
  * @returns
  */
-export function eventsDontChangePromiseArgs<A extends unknown[]>(
+export function constantArgsShared<FirstArgs extends unknown[]>(
   attacher: (
-    ...args: [...A, () => void | (() => void), (err: {}) => void]
+    ...args: [...FirstArgs, () => void | (() => void), (err: {}) => void]
   ) => () => void,
-  ...args: A
+  ...first_args: FirstArgs
 ): (
-  trigger_callback: (...args: A) => void,
+  trigger_callback: (...args: FirstArgs) => void,
   error_callback: (error: {}) => void
 ) => void | (() => void) {
-  return (trig, err) =>
-    attacher(...(args.slice(0, -2) as A), () => trig(...args), err);
+  return (trig, err) => attacher(...first_args, () => trig(...first_args), err);
 }
 
 /**
@@ -236,7 +255,6 @@ export function useEventedPromise<A extends Array<unknown>, V>(
 
   return [state, trigger_listener, error_listener];
 }
-
 
 /**
  * More ergonomic, but restrictive, version of useEventedPromise that *always*
