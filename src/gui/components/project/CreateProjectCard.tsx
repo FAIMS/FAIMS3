@@ -33,8 +33,8 @@ import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
 import {handlertype,uiSpecType,projectvalueType} from './data/ComponentSetting'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel,ProjectInformation} from '../../../datamodel/ui'
+import {getProjectDB, getDataDB} from '../../../sync/index';
 import {create_new_project_dbs}  from '../../../sync/new-project'
 import {getProjectInfo} from '../../../databaseAccess';
 
@@ -114,9 +114,9 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
      const saveformuiSpec = async  () =>{
       try{
-          console.log(await setUiSpecForProject(metadata_dbs[project_id].local, formuiSpec));
+          console.log(await setUiSpecForProject(getProjectDB(project_id), formuiSpec));
       }catch (err) {
-        console.error('databases needs cleaning...');
+        console.error('Failed to save UI Spec');
         console.debug(err);
       }
     }
