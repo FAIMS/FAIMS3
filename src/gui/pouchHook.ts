@@ -38,7 +38,17 @@ export class PromiseState<S, L extends null | {}> {
     }
   }
 
-  catch(...fs: ((error: {}) => {} | void)[]): PromiseState<S, L> {
+  expect(): S | null {
+    if (this.value !== undefined) {
+      return this.value;
+    } else if (this.error !== undefined) {
+      throw this.error;
+    } else {
+      return null;
+    }
+  }
+
+  map_err(...fs: ((error: {}) => {} | void)[]): PromiseState<S, L> {
     if (this.error !== undefined) {
       // Convert all errors in the fs conversion funcs list, recursively
       if (fs === []) {
@@ -46,7 +56,7 @@ export class PromiseState<S, L extends null | {}> {
         return new PromiseState<S, L>({error: this.error});
       } else {
         // Recursive case: Convert using the first function given.
-        return new PromiseState<S, L>({error: fs[0](this.error) || {}}).catch(
+        return new PromiseState<S, L>({error: fs[0](this.error) || {}}).map_err(
           ...fs.slice(1)
         );
       }
@@ -80,6 +90,14 @@ export class PromiseState<S, L extends null | {}> {
   }
 }
 
+/**
+ *
+ * @param attacher prototype of a common listen function that takes a set of A
+ *     arguments, then the OK & error callbacks. See databaseAccess.tsx for e.g.
+ * @param args Arguments to pass as the first arguments to attacher &
+ *     (More importantly) to the trigger_callback
+ * @returns
+ */
 export function eventsDontChangePromiseArgs<A extends unknown[]>(
   attacher: (
     ...args: [...A, () => void | (() => void), (err: {}) => void]
@@ -217,4 +235,60 @@ export function useEventedPromise<A extends Array<unknown>, V>(
   }, listener_dependencies);
 
   return [state, trigger_listener, error_listener];
+}
+
+
+/**
+ * More ergonomic, but restrictive, version of useEventedPromise that *always*
+ * starts the startGetter immediately (using useEffect) and *always* throws
+ * errors using a throw in the hook here. (Returns null when [re]loading)
+ * React hook abtracting the use of an EventEmitter combined with a Promise
+ *
+ * Allows you to wait for events to occur, then when they do occur, further
+ * wait for a Promise to resolve before give you a final value.
+ * In the intermediate state, you can render something different.
+ *
+ * This can also (because of PouchDB Change events) cause the promise to re-run
+ * whenever an EventEmitter emits an event. (Attaching to this event emitter
+ * is left to the user. The user gets a callback to attach)
+ *
+ * @param startGetting Main promise that gets the value you want
+ * @param startListening Gives you a callback that you attach to an EventEmitter
+ *                       Also, if the user needs to detach this, this should return
+ *                       A 'destructor' to detach it
+ * @param listener_dependencies When values in this list change, startListening and stopListening will re-trigger.
+ *                              You'd usually use this if startListening listens on different things
+ *                              depending on some values, in which case, put said values in this array.
+ * @param stopAtError Determines behaviour of error handling:
+ *                    true: Whenever an error is thrown from the main promise OR
+ *                          from the startListening's error_callback, everything
+ *                          part of this hook stops, only returning the last error
+ *                    false: An error is treated like a regular value: If new events
+ *                           from the listener are triggered, or dependencies change,
+ *                           the error is discarded and the promise is re-run.
+ * @param start_args Arguments used to call startGetting for the first time, and
+ *                   for any subsequent times where a dependency array changes
+ * @param start_dependencies Dependency array to cause the startGetting function
+ *                           to start running again
+ * @returns Current state of the promise: Loading, or Resolved.
+ */
+export function useEventedPromiseCatchNow<A extends Array<unknown>, V>(
+  startGetting: (...args: A) => Promise<V>,
+  startListening: (
+    trigger_callback: (...args: A) => void,
+    error_callback: (error: {}) => void
+  ) => void | (() => void), //<- Destructor to detach
+  stopAtError: boolean,
+  listener_dependencies: React.DependencyList,
+  start_args: A,
+  start_dependencies: React.DependencyList
+): null | V {
+  const [result, fetch] = useEventedPromise(
+    startGetting,
+    startListening,
+    stopAtError,
+    listener_dependencies
+  );
+  useEffect(() => fetch(...start_args), start_dependencies);
+  return result.expect();
 }
