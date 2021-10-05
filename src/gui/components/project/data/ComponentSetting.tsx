@@ -40,7 +40,10 @@ export const getid = ()=>{
 	return uuidv4().split('-')[0];
 }
 
-
+export const getconnections = (comparetab:string, uiSpec:uiSpecType,origintab:string) =>{
+  const conection='child';
+  return conection;
+}
 
 export const getfieldname = (name:string,label:string) =>{
 	const names=name.split(label);

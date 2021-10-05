@@ -22,13 +22,14 @@
 
 
 import React from 'react';
-import { List,ListItem } from '@material-ui/core';
+import { List,ListItem,ListItemText,ListItemIcon } from '@material-ui/core';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PlaylistAddCheckIcon from '@material-ui/icons/PlaylistAddCheck';
 import GroupIcon from '@material-ui/icons/Group';
 import NoteIcon from '@material-ui/icons/Note';
 import { makeStyles } from '@material-ui/core/styles';
-
+import {getconnections} from '../data/ComponentSetting'
+// import NoteIcon from '@material-ui/icons/NoteIcon';
 
 const useStyles = makeStyles((theme) => ({
   settiglist: {
@@ -41,6 +42,9 @@ const useStyles = makeStyles((theme) => ({
       }
     },
     selected: {},
+  },
+  formconnection: {
+
   }
 }));
 
@@ -70,3 +74,31 @@ export function SettingCard(props:SettingCard){
 		</List>
 		);
 }
+
+export function FormConnectionCard(props:any){
+  const classes = useStyles();
+  const tabs=props.tabs.filter((tab:string)=>tab!==props.tabname)
+  console.log(props.tabs)
+  return (
+    <List component="nav" aria-label="settings bar" className={classes.formconnection}>
+      {props.tabname}
+      {tabs.map((tab:string)=>
+        
+        <ListItem key='list1'  >
+        <ListItemIcon>
+          <NoteIcon />
+        </ListItemIcon>
+        <ListItemText
+          primary={tab}
+          secondary={getconnections(tab,props.formuiSpec,props.tabname)}
+        />
+        </ListItem>
+        
+      
+        )}
+        
+      
+    </List>
+    );
+}
+

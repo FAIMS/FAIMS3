@@ -29,7 +29,7 @@ import grey from '@material-ui/core/colors/grey';
 import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden} from '@material-ui/core';
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import FieldsListCard from './FieldsListCard';
-import {SettingCard} from './PSettingCard';
+import {SettingCard,FormConnectionCard} from './PSettingCard';
 import {getComponentFromField,FormForm} from '../FormElement';
 import {TabTab,TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
@@ -84,7 +84,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
     const [formcomponents,setFormComponents]= useState<formcomponents>(form_defult)
     const [isAddField,setIsAddField]=useState(true)
     const [currentView,setCurrentView]=useState(sections_default[0])
-    const [formlabel,setformlabel]=useState(variant_label[0])
+    const [formlabel,setformlabel]=useState<string>(variant_label[0])
     const [designvalue,setDesignvalue]=useState<string>('settings')
     const [settingvalue,setsettingvalue]=useState<{fields:{},views:{}}>({fields:{},views:{}})
     const [formView,setFormView]=useState('start-view')
@@ -121,12 +121,13 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
 
       const newformvariants=formui[VISIBLE_TYPE][0]
       setFormVariants(newformvariants)
-      setformTabs(tabs)
+      setformTabs(formui[VISIBLE_TYPE].map((tab:string)=>tab=formuiSpec['viewsets'][tab]['label']??tab))
       // const stabs:Array<string>=[]
       // formui['viewsets'][newformvariants]['views'].map((tab:string)=>tabs.push(formuiSpec['views'][tab]['label']))
       setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=formuiSpec['views'][tab]['label']??tab))
       setFormComponents(newformcom)
       setFormuiSpec(formui)
+      setformlabel(formtabs[0])
 
       return true;
     }
@@ -399,6 +400,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         </TabPanel></Grid></Grid>
       </Grid>
       <Grid item sm={4} xs={12}>
+        <FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel}/>
         <Box
               bgcolor={grey[200]}
               pl={2}
