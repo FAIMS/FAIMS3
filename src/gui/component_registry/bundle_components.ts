@@ -112,7 +112,7 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties('Take Point', 'Take a GPS position', TakePoint,'Special',{namespace:'faims-custom',componentName:'TakePoint',type_return:'faims-pos::Location',initialValue: null,validationSchema:[
+  setupComponentProperties('Take Point', 'Take a GPS position', 'Special',TakePoint,'Special',{namespace:'faims-custom',componentName:'TakePoint',type_return:'faims-pos::Location',initialValue: null,validationSchema:[
           ['yup.object'],
           ['yup.nullable'],
           [

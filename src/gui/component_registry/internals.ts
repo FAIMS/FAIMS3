@@ -88,6 +88,7 @@ export function setupComponentProperties(
     description: description,
     category: category,
     component: component,
+    componentname: componentname !== null ? componentname :'Text',
     builder_component:
       builder_component !== null
         ? builder_component
