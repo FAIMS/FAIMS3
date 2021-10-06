@@ -38,9 +38,9 @@ function MapFormField({field, form, ...props}: MapFieldProps) {
       </div>
     );
   } else {
-    new GeoJSON().writeFeaturesObject(drawnFeatures, {
-      dataProjection: 'EPSG:3857',
-    });
+    // const gj = new GeoJSON().writeFeaturesObject(drawnFeatures, {
+    //   dataProjection: 'EPSG:3857',
+    // });
 
     return (
       <div>
