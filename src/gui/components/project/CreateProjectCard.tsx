@@ -67,16 +67,16 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const [project_id,setProjectID]=useState(props.project_id);
-    const [projectvalue,setProjectValue]=useState<projectvalueType>({accesses:accessgroup})
+    const [projectvalue,setProjectValue]=useState<projectvalueType>({accesses:accessgroup,project_id:project_id})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
-    const [projecttabvalue,setProjecttabvalue]=useState(0)
+    const [projecttabvalue,setProjecttabvalue]=useState(-1)
     // const [uiSpec,setUISpec]=useState<uiSpecType|null>(props.uiSpec)
     const [formuiSpec,setFormuiSpec]=useState<ProjectUIModel>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [formtabs,setformTabs]=useState<Array<string>>([])    
     const [error, setError] = useState(null as null | {});
 
-    const [projectInfo,setProjectInfo]=useState<any>()
+    // const [projectInfo,setProjectInfo]=useState<any>()
 
 
 
@@ -90,25 +90,26 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
       setinit();
       setProjectID(props.project_id)
-      console.log('changes')
+      console.debug('change project_id')
 
     }, [props.project_id]);
 
     useEffect(() => {
       if(props.uiSpec!==null) {
         setFormuiSpec(props.uiSpec);
-        console.log('Change UiSpec'+props.uiSpec)
+        console.debug('change project_ui for edit')
       }else{
         setinit();
-        console.log('Change UiSpec'+props.uiSpec)
+        console.debug('change project_ui for add')
       }
       
     }, [props.uiSpec]);
 
     useEffect (()=>{
-      if(projectInfo!==undefined)
-        setProjectValue({...projectvalue,...projectInfo});
-    },[projectInfo])
+      if(props.project_info!==undefined&&props.uiSpec!==null){
+        setProjectValue({...projectvalue,...props.project_info});
+      }else setProjectValue({accesses:accessgroup})
+    },[props.project_info])
 
 
     //  useEffect(() => {
@@ -148,11 +149,11 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         setFormuiSpec({fields:formview.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
       }
 
-      if(project_id!==undefined) setProjectInfo(getProjectInfo(project_id))
+      if(props.project_id===undefined) {setProjectValue({accesses:accessgroup}); console.log('No project ID')}
+
+      // if(project_id!==undefined) setProjectInfo(getProjectInfo(project_id))
 
       setProjecttabvalue(0)
-
-      
 
     }
 
@@ -230,7 +231,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
           <TabTab tabs={projecttabs} value={projecttabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
       </AppBar>
       <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
-          <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject}/>
+        {projecttabvalue===0?  <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject}/>:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
         {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}

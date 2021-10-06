@@ -121,12 +121,22 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
      const generateunifromformui = (formui:uiSpecType) =>{
       const tabs:Array<string>=[];
       formui[VISIBLE_TYPE].map((tab:string)=>tabs.push(formuiSpec['viewsets'][tab]['label']??tab))
-      const newformcom=updateuiSpec('newfromui',{formuiSpec:formui,formcomponents:formcomponents})
-
+      const newformcom=updateuiSpec('newfromui',{formuiSpec:formui,formcomponents:formcomponents,access:accessgroup})
+      console.log(newformcom)
 
       const newformvariants=formui[VISIBLE_TYPE][0]
+
       setFormVariants(newformvariants)
       setformTabs(formui[VISIBLE_TYPE].map((tab:string)=>tab=formuiSpec['viewsets'][tab]['label']??tab))
+      let newini=initialValues
+      for (const [key,value] of Object.entries(newformcom)) {
+        newformcom[key].map((fieldlist:any)=>
+          newini={...ini,...setProjectInitialValues(fieldlist['uiSpec'],formView,{})}
+          )
+      }
+      console.log(newini)
+      setinitialValues({...initialValues,...newini})
+      console.log(initialValues)
       // const stabs:Array<string>=[]
       // formui['viewsets'][newformvariants]['views'].map((tab:string)=>tabs.push(formuiSpec['views'][tab]['label']))
       setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=formuiSpec['views'][tab]['label']??tab))

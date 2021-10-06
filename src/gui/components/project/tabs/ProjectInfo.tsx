@@ -70,35 +70,47 @@ type ProjectInfoProps={
 
 export default function ProjectInfoTab(props:ProjectInfoProps) {
   const {projectvalue,setProjectValue,project_id,...others}=props
-  const [projectInfo,setProjectInfo]=useState<ProjectInformation|null>(getProjectInfo(project_id))
-  const [infotabvalue,setinfotabvalue]=useState(0)
-  const [uiSpec_general,setUISpecG]=useState<ProjectUIModel>(getprojectform(projectvalue,'info_group'))
+  // const [projectInfo,setProjectInfo]=useState<ProjectInformation|null>(getProjectInfo(project_id))
+  const [infotabvalue,setinfotabvalue]=useState(-1)
+  const [uiSpec_general,setUISpecG]=useState<ProjectUIModel>({fields:{},views:{},viewsets:{},visible_types:[]})
   
   const [accessgroup,setaccessgroup]=useState([])
   
   const [uiSpec_access,setUISpecA]=useState<ProjectUIModel>({fields:{},views:{},viewsets:{},visible_types:[]})
-  const [initialValues,setinitialValues]=useState<{}>({})
+  const [initialValues,setinitialValues]=useState<any>({})
 
   useEffect(() => {
-
      setini();
     }, []);
 
   useEffect(() => {
 
      setUISpecA(getprojectform(projectvalue,'info_group'))
-     console.log('New user added')
     }, [accessgroup]);
 
   useEffect(() => {
-     setUISpecG(getprojectform(projectvalue,'info_general'))
-     setinitialValues(setProjectInitialValues(uiSpec_general,'start-view',{_id:project_id}))
+    if(projectvalue['name']!==undefined&&projectvalue['name']!==''){
+      const newuiSpecg=getprojectform(projectvalue,'info_general')
+      const newini=setProjectInitialValues(newuiSpecg,'start-view',{_id:project_id})
+      setinitialValues(setProjectInitialValues(newuiSpecg,'start-view',{_id:project_id}))
+      console.debug(initialValues)
+      setUISpecG(newuiSpecg)
+      console.debug('update')
+      console.log(newuiSpecg)
+    }
     }, [projectvalue]);
 
   const setini = () =>{
     setUISpecA(getprojectform(projectvalue,'info_group'))
-    setUISpecG(getprojectform(projectvalue,'info_general'))
-    setinitialValues(setProjectInitialValues(uiSpec_general,'start-view',{_id:project_id}))
+    
+    const iniuiSpecg=getprojectform(projectvalue,'info_general')
+    const ini=setProjectInitialValues(iniuiSpecg,'start-view',{_id:project_id})
+    setinitialValues(setProjectInitialValues(iniuiSpecg,'start-view',{_id:project_id}))
+    console.debug(initialValues)
+    setUISpecG({...iniuiSpecg})
+    console.debug('ini')
+    setinfotabvalue(0)
+
   }
 
   const handleChangeFormProject=(event:any) => {
@@ -131,7 +143,7 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
       <Grid item sm={8} xs={12}>
         <TabTab tabs={['general','group']} value={infotabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
         <TabPanel value={infotabvalue} index={0} tabname='primarytab' >
-          <Formik
+          {(project_id!==undefined&&projectvalue.name!==''&&projectvalue.name!==undefined&&initialValues.name!=='')||project_id===undefined?<Formik
           initialValues={initialValues}
           validateOnMount={true}
           onSubmit={(values, {setSubmitting}) => {
@@ -149,7 +161,7 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
                 </Form>
               );
             }}
-          </Formik>
+          </Formik>:''}
         </TabPanel>
         <TabPanel value={infotabvalue} index={1} tabname='primarytab' >
         {infotabvalue===1?
@@ -178,7 +190,7 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
       </Grid>
       <Grid item sm={4} xs={12}>
         <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
-        <pre>{JSON.stringify(projectInfo, null, 2)}</pre>
+        
       </Grid>
     </Grid>
   )}
