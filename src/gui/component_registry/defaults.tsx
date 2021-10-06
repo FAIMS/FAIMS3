@@ -32,5 +32,5 @@ export function getDefaultuiSpecProps(){
 }
 
 export function getDefaultuisettings(){
-  return {};
+  return {settings:false};
 }

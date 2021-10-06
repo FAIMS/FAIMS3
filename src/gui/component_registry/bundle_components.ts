@@ -71,7 +71,7 @@ registerComponent(
     'HTML text field',
     'A simple text field',
     'Simple',
-    TextField
+    TextField,
   )
 );
 //this is for testing
@@ -170,7 +170,7 @@ registerComponent(
     'Basic AutoIncrementer',
     'A basic autoincrementer to help create identifiers',
     'Identifiers',
-    BasicAutoIncrementer
+    BasicAutoIncrementer,
   )
 );
 registerComponent(
@@ -180,7 +180,7 @@ registerComponent(
     'Related field',
     'Add relations between records',
     'Relations',
-    RelatedRecordSelector
+    RelatedRecordSelector,
   )
 );
 
@@ -189,10 +189,9 @@ registerComponent(
   'MultipleTextField',
   setupComponentProperties(
     'Multiple HTML input Box', 
-    'text plus sepcial characters',
+    'Murltupile line text plus sepcial characters',
     'Text', 
-    Input,
-    {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',multiline:true,multirows:4},
-    'Ndfd',
-    {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::Integer',validationSchema:[['yup.number'],['yup.positive'],],type:'text',name:'multirows',label:'Number of Line'},
+    FormikTextField,
+    {namespace:'formik-material-ui',componentName:'MultipleTextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',multiline:true,multirows:4},
+    {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::Integer',validationSchema:[['yup.number'],['yup.positive'],],type:'number',name:'multirows',label:'Number of Line'},
 ));

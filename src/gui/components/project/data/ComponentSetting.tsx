@@ -58,7 +58,10 @@ const getsettingform = (component:any) =>{
     if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings',multiline:true,multirows:4,initialValue:'Default',helperText:'Type options here, speprate by Space(will edit)'}]
     try{
       const props=getComponentPropertiesByName(component['component-namespace'],component['component-name'])
-      console.log(props)
+      if(props['settingsProps']['settings']===undefined){
+        return [{...props['settingsProps'],view:'settings'}]
+        // return [props['settingsProps']]
+      }
     }catch(err: any) {
       console.error('setUISpec/setLastRev error', err);
 

@@ -52,7 +52,7 @@ export const getcomponent=(props:any)=>{
     } 
     if(props.componentName==='Checkbox') return Checkbox(props);
     if(props.componentName==='TakePoint') return SpecialField(props);
-    if(props.componentName==='TextField'||props.componentName==='Select') return TextField(props);
+    if(props.componentName==='TextField'||props.componentName==='Select'||props.componentName==='MultipleTextField') return TextField(props);
     return SpecialField(props);
 
 }
