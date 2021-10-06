@@ -33,7 +33,6 @@ import org.fedarch.faims3.TestUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.openqa.selenium.By;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -215,17 +214,15 @@ public class AndroidTest implements E2ETest {
 
 		// Finish the observation
 	    // Email field
-	    AndroidElement emailField = driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']"));
+	    AndroidElement emailField = TestUtils.scrollToResourceId(driver, "email-field");
 	    emailField.sendKeys(AstroSky.EMAIL_ANDROID);
 
 	    // Colour field
-	    AndroidElement strField = driver.findElement(MobileBy.xpath("//*[@resource-id='str-field']"));
+	    AndroidElement strField = TestUtils.scrollToResourceId(driver, "str-field");
 	    strField.sendKeys(AstroSky.COLOUR);
 
-	    TestUtils.scrollToResourceId(driver, "multi-str-field");
-
 	    // Text area - test unicode
-	    AndroidElement textField = driver.findElement(MobileBy.xpath("//*[@resource-id='multi-str-field']"));
+	    AndroidElement textField = TestUtils.scrollToResourceId(driver, "multi-str-field");
 	    textField.sendKeys(AstroSky.UNICODE);
 
 	    AndroidElement intField = driver.findElement(By.xpath("//*[@resource-id='int-field']"));
@@ -235,20 +232,6 @@ public class AndroidTest implements E2ETest {
 	    driver.pressKey(new KeyEvent(AndroidKey.DIGIT_6));
 	    driver.pressKey(new KeyEvent(AndroidKey.ENTER));
 
-	    // Currency field
-	    AndroidElement currencyField = driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']"));
-	    currencyField.click();
-
-	    // wait for list of currencies to load
-	    AndroidElement currencyList = (AndroidElement) wait.until(
-	    		ExpectedConditions.presenceOfElementLocated(MobileBy.className("android.widget.ListView")));
-	    // choose the second value: Euro
-	    try {
-	        currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
-	    } catch(StaleElementReferenceException e) {
-	    	// sometimes this happens.. try again
-	    	currencyList.findElements(MobileBy.className("android.view.View")).get(1).click();
-        }
 	    // Multiple currency field
 	    AndroidElement multiCurrField = (AndroidElement) wait.until(
 	            ExpectedConditions.elementToBeClickable(

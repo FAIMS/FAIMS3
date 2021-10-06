@@ -194,17 +194,6 @@ public class IOSTest implements E2ETest {
 	    intField.sendKeys(Keys.chord(Keys.CONTROL,"a", Keys.DELETE));
 	    intField.sendKeys(AstroSky.INTEGER);
 
-	    // Currency field
-	    WebElement currencyField = driver.findElement(By.id("select-field"));
-	    currencyField.click();
-
-	    // wait for list of currencies to load
-	    WebElement currencyList = wait.until(
-	    		ExpectedConditions.presenceOfElementLocated(
-	    				By.xpath("//*[@id=\"menu-select-field\"]/div[3]/ul")));
-	    // choose the second value: Euro
-	    currencyList.findElements(By.tagName("li")).get(1).click();
-
 	    // Multiple currency field
 	    WebElement multiCurrField = wait.until(
 	            ExpectedConditions.elementToBeClickable(

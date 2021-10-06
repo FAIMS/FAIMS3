@@ -72,8 +72,7 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 			//Enter a sample email address into the form:
 			//draft-observation-android-testername@faims.edu.au on the android
 			WebDriverWait wait = new WebDriverWait(driver, 10);
-			AndroidElement emailField = (AndroidElement) wait.until(
-			        ExpectedConditions.elementToBeClickable(MobileBy.xpath("//*[@resource-id='email-field']")));
+			AndroidElement emailField = TestUtils.scrollToResourceId(driver, "email-field");
 		    emailField.sendKeys(AstroSky.EMAIL_DRAFT_ANDROID);
 
 			//Wait 2 seconds but do not click SAVE AND NEW

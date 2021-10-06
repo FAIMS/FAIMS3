@@ -233,17 +233,6 @@ public class ChromeTest implements E2ETest {
 	    intField.sendKeys(Keys.chord(Keys.CONTROL,"a", Keys.DELETE));
 	    intField.sendKeys(AstroSky.INTEGER);
 
-	    // Currency field
-	    WebElement currencyField = driver.findElement(By.id("select-field"));
-	    currencyField.click();
-
-	    // wait for list of currencies to load
-	    WebElement currencyList = wait.until(
-	    		ExpectedConditions.presenceOfElementLocated(
-	    				By.xpath("//*[@id=\"menu-select-field\"]/div[3]/ul")));
-	    // choose the second value: Euro
-	    currencyList.findElements(By.tagName("li")).get(1).click();
-
 	    // Multiple currency field
 	    WebElement multiCurrField = wait.until(
 	            ExpectedConditions.elementToBeClickable(
@@ -391,6 +380,15 @@ public class ChromeTest implements E2ETest {
 
 	@Override
 	public void loadProjects() {
+		//TODO: remove when FAIMS3-297 is fixed
+		// temporary workaround for the bug
+		try {
+			Thread.sleep(12000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 		// Click on "Projects"
 		WebElement projects = new WebDriverWait(driver, 10)
 				.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='/projects']")));
