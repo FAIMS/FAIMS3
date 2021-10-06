@@ -90,5 +90,6 @@ function initialize_dbs(): DirectoryEmitter {
   process_directory(directory_connection_info).catch(err =>
     events.emit('directory_error', err)
   );
+  console.log('sync/initialize: processed directory');
   return events;
 }

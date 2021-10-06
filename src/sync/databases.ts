@@ -197,7 +197,7 @@ export function ensure_local_db<Content extends {}>(
  */
 export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
-  connection_info: ConnectionInfo,
+  connection_info: ConnectionInfo | null,
   global_dbs: LocalDBList<Content>,
   handler: (
     remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
@@ -208,13 +208,14 @@ export function ensure_synced_db<Content extends {}>(
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
-  // Already connected/connecting
+  // Already connected/connecting, or local-only database
   if (
-    global_dbs[local_db_id].remote !== null &&
-    JSON.stringify(global_dbs[local_db_id].remote!.info) ===
-      JSON.stringify(connection_info) &&
-    JSON.stringify(global_dbs[local_db_id].remote!.options) ===
-      JSON.stringify(options)
+    connection_info === null ||
+    (global_dbs[local_db_id].remote !== null &&
+      JSON.stringify(global_dbs[local_db_id].remote!.info) ===
+        JSON.stringify(connection_info) &&
+      JSON.stringify(global_dbs[local_db_id].remote!.options) ===
+        JSON.stringify(options))
   ) {
     return [
       false,

@@ -89,7 +89,8 @@ export async function process_directory(
     }
 
     console.debug(
-      `The active listing ids are ${active_listings_in_this_directory}`
+      'The active listing ids are:',
+      active_listings_in_this_directory
     );
 
     return new Set(
@@ -204,40 +205,52 @@ export function process_listings(
   });
 }
 
-async function process_listing(listing_object: ListingsObject) {
+export async function process_listing(listing_object: ListingsObject) {
   const listing_id = listing_object._id;
+  const local_only = listing_object.local_only ?? false;
   console.debug(`Processing listing id ${listing_id}`);
 
-  const projects_db_id = listing_object['projects_db']
-    ? listing_id
-    : DEFAULT_LISTING_ID;
+  const projects_db_id =
+    listing_object['projects_db'] || local_only
+      ? listing_id
+      : DEFAULT_LISTING_ID;
 
-  const projects_connection = materializeConnectionInfo(
-    (await get_default_instance())['projects_db'],
-    listing_object['projects_db']
-  );
+  const projects_connection = local_only
+    ? null
+    : materializeConnectionInfo(
+        (await get_default_instance())['projects_db'],
+        listing_object['projects_db']
+      );
 
-  const people_local_id = listing_object['people_db']
-    ? listing_id
-    : DEFAULT_LISTING_ID;
+  const people_local_id =
+    listing_object['people_db'] || local_only ? listing_id : DEFAULT_LISTING_ID;
 
-  const people_connection = materializeConnectionInfo(
-    (await get_default_instance())['people_db'],
-    listing_object['people_db']
-  );
+  const people_connection = local_only
+    ? null
+    : materializeConnectionInfo(
+        (await get_default_instance())['people_db'],
+        listing_object['people_db']
+      );
 
-  const [, local_people_db] = ensure_local_db(
+  const [people_created, local_people_db] = ensure_local_db(
     'people',
     people_local_id,
     true,
     people_dbs
   );
-  const [, local_projects_db] = ensure_local_db(
+  if (people_created) {
+    console.debug(`Created people db ${people_local_id}`);
+  }
+
+  const [projects_created, local_projects_db] = ensure_local_db(
     'projects',
     projects_db_id,
     true,
     projects_dbs
   );
+  if (projects_created) {
+    console.debug(`Created projects db ${projects_db_id}`);
+  }
 
   // Only sync active projects:
   const get_active_projects_in_this_listing = async () => {
@@ -447,7 +460,7 @@ export function process_projects(
   active_projects: ExistingActiveDoc[],
   people_db: LocalDB<PeopleDoc>,
   projects_db: LocalDB<ProjectObject>,
-  default_connection: ConnectionInfo,
+  default_connection: ConnectionInfo | null,
   allow_nonexistant: boolean
 ) {
   active_projects.forEach(ap => {
@@ -472,7 +485,7 @@ export function process_projects(
 async function process_project(
   listing: ListingsObject,
   active_project: ExistingActiveDoc,
-  projects_db_connection: ConnectionInfo,
+  projects_db_connection: ConnectionInfo | null,
   project_object: ProjectObject
 ): Promise<void> {
   /**
@@ -482,18 +495,29 @@ async function process_project(
   const active_id = active_project._id;
   console.debug(`Processing project ${active_id}`);
 
-  const [, meta_db_local] = ensure_local_db(
+  // The project is local only if either the listing specifies that, or the
+  // base connection info was set as null
+  const local_only =
+    (listing.local_only ?? false) || projects_db_connection === null;
+
+  const [meta_created, meta_db_local] = ensure_local_db(
     'metadata',
     active_id,
     active_project.is_sync,
     metadata_dbs
   );
-  const [, data_db_local] = ensure_local_db(
+  if (meta_created) {
+    console.debug(`Created meta db ${active_id}`);
+  }
+  const [data_created, data_db_local] = ensure_local_db(
     'data',
     active_id,
     active_project.is_sync,
     data_dbs
   );
+  if (data_created) {
+    console.debug(`Created data db ${active_id}`);
+  }
 
   createdProjects[active_id] = {
     project: project_object,
@@ -512,21 +536,25 @@ async function process_project(
   );
 
   // Defaults to the same couch as the projects db, but different database name:
-  const meta_connection_info = materializeConnectionInfo(
-    {
-      ...projects_db_connection,
-      db_name: METADATA_DBNAME_PREFIX + project_object._id,
-    },
-    project_object.metadata_db
-  );
+  const meta_connection_info = local_only
+    ? null
+    : materializeConnectionInfo(
+        {
+          ...projects_db_connection,
+          db_name: METADATA_DBNAME_PREFIX + project_object._id,
+        },
+        project_object.metadata_db
+      );
 
-  const data_connection_info = materializeConnectionInfo(
-    {
-      ...projects_db_connection,
-      db_name: DATA_DBNAME_PREFIX + project_object._id,
-    },
-    project_object.data_db
-  );
+  const data_connection_info = local_only
+    ? null
+    : materializeConnectionInfo(
+        {
+          ...projects_db_connection,
+          db_name: DATA_DBNAME_PREFIX + project_object._id,
+        },
+        project_object.data_db
+      );
 
   if (USE_REAL_DATA) {
     const meta_sync_handler = (meta_db: LocalDB<ProjectMetaObject>) =>

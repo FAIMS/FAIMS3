@@ -74,6 +74,7 @@ export interface ListingsObject {
   description: string;
   projects_db?: PossibleConnectionInfo;
   people_db?: PossibleConnectionInfo;
+  local_only?: boolean;
 }
 
 export interface NonNullListingsObject extends ListingsObject {
