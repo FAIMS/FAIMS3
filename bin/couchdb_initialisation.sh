@@ -9,20 +9,27 @@ initialise_couchdb() {
 
     # setup directory
     $curl_cmd "$base_url/directory"
-    $curl_cmd "$base_url/directory/default" -d "{
+    $curl_cmd "$base_url/directory/default" -d "
+      {
         \"_id\": \"default\",
         \"name\": \"Default instance\",
         \"description\": \"Default FAIMS instance\",
-        \"auth_mechanisms\": [{type: \"dc_password\"}],
-        }, \"projects_db\": {
-            \"proto\": \"$1\",
-            \"host\": \"$2\",
-            \"port\": $3,
-            \"lan\": true,
-            \"db_name\":
-            \"projects\"
+        \"auth_mechanisms\": {
+          \"default\": {
+            \"portal\": \"http://127.0.0.1:8080\",
+            \"type\": \"oauth\",
+            \"name\": \"Data Central\"
+          }
+        },
+        \"projects_db\": {
+          \"proto\": \"$1\",
+          \"host\": \"$2\",
+          \"port\": $3,
+          \"lan\": true,
+          \"db_name\": \"projects\"
         }
-    }"
+      }
+    "
 
     # setup test_proj with default
     $curl_cmd "$base_url/projects"
