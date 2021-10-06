@@ -84,6 +84,10 @@ export async function process_directory(
       })
     ).docs;
 
+    if (AUTOACTIVATE_PROJECTS) {
+      return new Set(all_listing_ids_in_this_directory);
+    }
+
     console.debug(
       `The active listing ids are ${active_listings_in_this_directory}`
     );
