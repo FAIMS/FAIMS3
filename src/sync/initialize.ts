@@ -18,6 +18,7 @@
  *   TODO
  */
 import {setupExampleActive} from '../dummyData';
+import {USE_REAL_DATA} from '../buildconfig';
 import {
   process_listings,
   process_projects,
@@ -52,7 +53,7 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  await setupExampleActive(active_db);
+  if (!USE_REAL_DATA) await setupExampleActive(active_db);
 
   const initialized = new Promise(resolve => {
     events.once('projects_created', resolve);
