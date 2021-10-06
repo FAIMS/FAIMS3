@@ -23,13 +23,13 @@ import {FormikProps} from 'formik';
 
 import {getComponentFromFieldConfig} from './fields';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import RecordStagingState from '../../../sync/staging-observation';
+import RecordDraftState from '../../../sync/draft-state';
 
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
   formProps: FormikProps<{[key: string]: unknown}>;
-  staging: RecordStagingState;
+  draftState: RecordDraftState;
 };
 
 export class ViewComponent extends React.Component<ViewProps> {
@@ -44,8 +44,7 @@ export class ViewComponent extends React.Component<ViewProps> {
           return getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
-            this.props.formProps,
-            this.props.staging
+            this.props.formProps
           );
         })}
       </React.Fragment>

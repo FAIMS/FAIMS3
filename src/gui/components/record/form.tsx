@@ -48,52 +48,79 @@ import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
+import {
+  upsertFAIMSData,
+  getFullRecordData,
+  generateFAIMSDataID,
+} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
-import RecordStagingState from '../../../sync/staging-observation';
+import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldsForViewSet,
   getFieldNamesFromFields,
 } from '../../../uiSpecification';
 import {getCurrentUserId} from '../../../users';
+import {Link} from '@material-ui/core';
+import {Link as RouterLink} from 'react-router-dom';
 
 type RecordFormProps = {
   project_id: ProjectID;
   // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
-  record_id: RecordID;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
+      record_id: RecordID;
       revision_id: RevisionID;
-      // When editing existing record, type comes from record
+      // The user can view records without editing them, and to facilitate this,
+      // having a draft id is optional.
+      // In this mode, when the user starts editing, a draft ID is created and
+      // stored as state on RecordForm.
+      draft_id?: string;
+
+      // To avoid 'type' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
       type?: undefined;
     }
   | {
-      // When creating a new record,  revision is not yet created
-      revision_id?: undefined;
-      // When creating a new record, the user is prompted with viewset/type
+      // When creating a new record,  revision is not yet created.
+      // the user had to have already been prompted with viewset/type
       type: string;
+
+      // Draft id, when creating a new record, is created by a redirect
+      draft_id: string;
+
+      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
+      // you get back undefined:
+      record_id?: undefined;
+      revision_id?: undefined;
     }
 );
 
 type RecordFormState = {
-  stagingError: string | null;
+  draftError: string | null;
+  // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
   last_saved: Date;
+  /**
+   * Set only by newDraftListener, but this is only non-null
+   * for a single render. In that render, a notification will pop up to the user
+   * letting them redirect to the draft's URL
+   */
+  draft_created: string | null;
 };
 
 class RecordForm extends React.Component<
   RecordFormProps & RouteComponentProps,
   RecordFormState
 > {
-  staging: RecordStagingState;
+  draftState: RecordDraftState;
 
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
@@ -119,26 +146,28 @@ class RecordForm extends React.Component<
 
   constructor(props: RecordFormProps & RouteComponentProps) {
     super(props);
-    this.staging = new RecordStagingState({
-      record_id: this.props.record_id,
-      project_id: this.props.project_id,
-    });
+    this.draftState = new RecordDraftState(this.props);
     this.state = {
-      type_cached: null,
+      draftError: null,
+      type_cached: this.props.type ?? null,
       view_cached: null,
       revision_cached: null,
-      stagingError: null,
       initialValues: null,
       is_saving: false,
       last_saved: new Date(),
+      draft_created: null,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
   }
 
   componentDidMount() {
-    // On mount, staging.start() must be called, so give this false:
+    // On mount, draftState.start() must be called, so give this false:
     this.formChanged(false);
+  }
+
+  newDraftListener(draft_id: string) {
+    this.setState({draft_created: draft_id});
   }
 
   saveListener(val: boolean | {}) {
@@ -155,7 +184,7 @@ class RecordForm extends React.Component<
         (val as {message?: string}).message || val.toString();
       console.error('saveListener', val);
 
-      this.setState({is_saving: false, stagingError: error_message});
+      this.setState({is_saving: false, draftError: error_message});
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -166,7 +195,7 @@ class RecordForm extends React.Component<
     }
   }
 
-  async formChanged(staging_area_started_already: boolean) {
+  async formChanged(draft_saving_started_already: boolean) {
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -177,7 +206,7 @@ class RecordForm extends React.Component<
         );
         if (latest_record === null) {
           this.setState({
-            stagingError: `Could not find data for record ${this.props.record_id}`,
+            draftError: `Could not find data for record ${this.props.record_id}`,
           });
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
@@ -230,23 +259,20 @@ class RecordForm extends React.Component<
     try {
       // these come after setUISpec & setLastRev has set view_name & revision_id these to not null
       this.requireView();
-      const revision_cached = this.state.revision_cached;
-
-      // If the staging area .start() has already been called,
+      // If the draft saving has .start()'d already,
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
-      if (staging_area_started_already) {
-        this.staging.recordChangeHook(this.props, {
-          revision_id: revision_cached,
+      if (draft_saving_started_already) {
+        this.draftState.recordChangeHook(this.props, {
+          type: this.state.type_cached!,
         });
       } else {
-        this.staging.saveListener = this.saveListener.bind(this);
-        await this.staging.start({
-          revision_id: revision_cached,
-        });
+        this.draftState.saveListener = this.saveListener.bind(this);
+        this.draftState.newDraftListener = this.newDraftListener.bind(this);
+        await this.draftState.start({type: this.state.type_cached!});
       }
     } catch (err) {
-      console.error('rare staging error', err);
+      console.error('rare draft error', err);
     }
     try {
       await this.setInitialValues();
@@ -275,13 +301,13 @@ class RecordForm extends React.Component<
         (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]
       );
     }
-    this.staging.stop();
+    this.draftState.stop();
   }
 
   async setInitialValues() {
     /***
      * Formik requires a single object for initialValues, collect these from the
-     * (in order high priority to last resort): staging area, database, ui schema
+     * (in order high priority to last resort): draft storage, database, ui schema
      */
     const database_data =
       this.props.revision_id === undefined
@@ -294,7 +320,7 @@ class RecordForm extends React.Component<
             )
           )?.data || {};
 
-    const staged_data = await this.staging.getInitialValues();
+    const staged_data = await this.draftState.getInitialValues();
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
@@ -360,8 +386,8 @@ class RecordForm extends React.Component<
       .then(userid => {
         const now = new Date();
         const doc = {
-          record_id: this.props.record_id,
-          revision_id: this.props.revision_id || null,
+          record_id: this.props.record_id ?? generateFAIMSDataID(),
+          revision_id: this.props.revision_id ?? null,
           type: this.state.type_cached!,
           data: values,
           updated_by: userid,
@@ -402,12 +428,8 @@ class RecordForm extends React.Component<
         console.warn(err);
         console.error('Failed to save data');
       })
-      // Clear the staging area (Possibly after redirecting back to project page)
-      .then(() =>
-        this.staging.clear({
-          revision_id: this.state.revision_cached!,
-        })
-      )
+      // Clear the current draft area (Possibly after redirecting back to project page)
+      .then(() => this.draftState.clear())
       .then(() => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
@@ -416,7 +438,6 @@ class RecordForm extends React.Component<
             ROUTES.PROJECT +
               this.props.project_id +
               ROUTES.RECORD_CREATE +
-              ROUTES.RECORD_TYPE +
               this.state.type_cached
           );
           window.scrollTo(0, 0);
@@ -449,6 +470,38 @@ class RecordForm extends React.Component<
   }
 
   render() {
+    if (this.state.draft_created !== null) {
+      // If a draft was created, that implies this form started from
+      // a non draft, so it must have been an existing record (see props
+      // as it's got a type {existing record} | {draft already created})
+      this.context.dispatch({
+        type: ActionType.ADD_CUSTOM_ALERT,
+        payload: {
+          severity: 'success',
+          element: (
+            <React.Fragment>
+              <Link
+                component={RouterLink}
+                to={
+                  ROUTES.PROJECT +
+                  this.props.project_id +
+                  ROUTES.RECORD_EXISTING +
+                  this.props.record_id! +
+                  ROUTES.REVISION +
+                  this.props.revision_id! +
+                  ROUTES.RECORD_DRAFT +
+                  this.state.draft_created
+                }
+              >
+                Created new draft
+              </Link>
+            </React.Fragment>
+          ),
+        },
+      });
+      this.setState({draft_created: null});
+    }
+
     if (this.isReady()) {
       const ui_specification = this.props.ui_specification;
       const viewName = this.requireView();
@@ -495,7 +548,7 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              this.staging.renderHook(formProps.values);
+              this.draftState.renderHook(formProps.values);
               return (
                 <Form>
                   <Grid container spacing={2}>
@@ -503,7 +556,7 @@ class RecordForm extends React.Component<
                       <AutoSave
                         last_saved={this.state.last_saved}
                         is_saving={this.state.is_saving}
-                        error={this.state.stagingError}
+                        error={this.state.draftError}
                       />
                     </Grid>
                     <Grid item sm={6} xs={12}>
@@ -511,7 +564,7 @@ class RecordForm extends React.Component<
                         viewName={viewName}
                         ui_specification={ui_specification}
                         formProps={formProps}
-                        staging={this.staging}
+                        draftState={this.draftState}
                       />
                       <br />
                       {formProps.isValid ? (
