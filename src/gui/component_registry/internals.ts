@@ -79,7 +79,7 @@ export function setupComponentProperties(
   category: string,
   component: FAIMSFormField,
   uiSpecProps:FAIMSUiSpec| null = null,
-  settingsProps:FAIMSUiSpec  | null = null,
+  settingsProps:Array<FAIMSUiSpec>  | null = null,
   builder_component: FAIMSBuilderFormField | null = null,
   icon: FAIMSBuilderIcon | null = null
 ): ComponentRegistryProperties {

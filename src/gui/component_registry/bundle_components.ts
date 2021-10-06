@@ -162,7 +162,7 @@ registerComponent(
     'Special', 
     TemplatedStringField,
     {namespace:'faims-custom',componentName:'TemplatedStringField',type_return:'faims-core::String',required:true,validationSchema:[['yup.string'], ['yup.required']],type: 'text',template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',},
-    {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',name:'template',label:'Template'},
+    [{namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',name:'template',label:'Template'}],
     )
 );
 registerComponent(
@@ -195,5 +195,5 @@ registerComponent(
     'Text', 
     FormikTextField,
     {namespace:'formik-material-ui',componentName:'MultipleTextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',multiline:true,multirows:4},
-    {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::Integer',validationSchema:[['yup.number'],['yup.positive'],],type:'number',name:'multirows',label:'Number of Line'},
+    [{namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::Integer',validationSchema:[['yup.number'],['yup.positive'],],type:'number',name:'multirows',label:'Number of Line'}],
 ));

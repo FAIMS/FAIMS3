@@ -28,6 +28,8 @@
 import {v4 as uuidv4} from 'uuid';
 import {getcomponent,convertuiSpecToProps} from './uiFieldsRegistry'
 import {getComponentPropertiesByName} from '../../../component_registry';
+import {FAIMSUiSpec} from '../../../../datamodel/ui';
+
 const VISIBLE_TYPE='visible_types'
 const NEWFIELDS='newfield'
 const DEFAULT_accessgroup=['admin','moderator']
@@ -58,10 +60,10 @@ const getsettingform = (component:any) =>{
     if(component['component-name']==='Select')  return [{name:'options',lable:'options',type:'TextField',view:'settings',multiline:true,multirows:4,initialValue:'Default',helperText:'Type options here, speprate by Space(will edit)'}]
     try{
       const props=getComponentPropertiesByName(component['component-namespace'],component['component-name'])
-      if(props['settingsProps']['settings']===undefined){
-        return [{...props['settingsProps'],view:'settings'}]
-        // return [props['settingsProps']]
-      }
+      const settingsarray:Array<FAIMSUiSpec>=[]
+      props['settingsProps'].map( (setting:FAIMSUiSpec) =>
+        setting['settings']===undefined?settingsarray.push({...setting,view:'settings'}):setting)
+      return settingsarray;
     }catch(err: any) {
       console.error('setUISpec/setLastRev error', err);
 
