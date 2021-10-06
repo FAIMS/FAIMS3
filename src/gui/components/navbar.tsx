@@ -178,6 +178,12 @@ export default function Navbar() {
     },
     getNestedProjects(pouchProjectList),
     {
+      title: 'New Notebook',
+      icon: <BuildIcon />,
+      to: ROUTES.PROJECT_CREATE,
+      disabled: false,
+    },
+    {
       title: 'Tools',
       icon: <BuildIcon />,
       to: '/',

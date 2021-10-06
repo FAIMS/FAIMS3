@@ -93,11 +93,15 @@ export interface RecordReference {
 export type FAIMSFormField = any;
 export type FAIMSBuilderFormField = any;
 export type FAIMSBuilderIcon = any;
+export type FAIMSUiSpec = any;
 
 export interface ComponentRegistryProperties {
   human_readable_name: string;
   description: string;
+  category: string;
   component: FAIMSFormField;
+  componentname: string;
+  uiSpecProps: FAIMSUiSpec;
   builder_component: FAIMSBuilderFormField;
   icon: FAIMSBuilderIcon;
 }
@@ -107,3 +111,10 @@ export type ComponentRegistryItem = {
 };
 
 export type ComponentRegistry = {[namespace: string]: ComponentRegistryItem};
+
+export interface FormComponent {
+  namespace: string;
+  component_name: string;
+  component_properties: ComponentRegistryProperties;
+}
+export type FormComponentList = FormComponent[];

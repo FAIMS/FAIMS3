@@ -59,9 +59,9 @@ import {SyncHandler} from './sync-handler';
 import {NonUniqueProjectID, resolve_project_id} from '../datamodel/core';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
-const DIRECTORY_TIMEOUT = 2000;
-const LISTINGS_TIMEOUT = 2000;
-const PROJECT_TIMEOUT = 2000;
+const DIRECTORY_TIMEOUT = 6000;
+const LISTINGS_TIMEOUT = 6000;
+const PROJECT_TIMEOUT = 6000;
 
 export async function process_directory(
   directory_connection_info: ConnectionInfo
@@ -84,6 +84,10 @@ export async function process_directory(
       })
     ).docs;
 
+    if (AUTOACTIVATE_PROJECTS) {
+      return new Set(all_listing_ids_in_this_directory);
+    }
+
     console.debug(
       `The active listing ids are ${active_listings_in_this_directory}`
     );
@@ -97,7 +101,8 @@ export async function process_directory(
   events.emit('directory_local', unupdated_listings_in_this_directory);
 
   if (directory_db.remote !== null) {
-    return; //Already hooked up
+    console.debug('Directory already hooked up.');
+    return;
   }
 
   if (USE_REAL_DATA) {
@@ -138,6 +143,7 @@ export async function process_directory(
       options: {},
     };
 
+    console.debug('Setting up directory local connection');
     setLocalConnection(
       (directory_db as unknown) as Parameters<typeof setLocalConnection>[0]
     );
@@ -293,9 +299,12 @@ async function process_listing(listing_object: ListingsObject) {
       people_local_id,
       people_connection,
       people_dbs,
-      people_sync_handler,
-      // Filters to only projects that are active
-      unupdated_projects_in_this_listing.map(v => v._id)
+      people_sync_handler
+      // We no longer use this filter, as it cannot be changed
+      // and the first call to unupdated_projects_in_this_listing may go
+      // stale so new projects won't come in (and in fact existing ones
+      // don't come in either.)
+      // {doc_ids: unupdated_projects_in_this_listing.map(v => v._id)}
     );
 
     const project_sync_handler = () =>
@@ -342,9 +351,12 @@ async function process_listing(listing_object: ListingsObject) {
       projects_db_id,
       projects_connection,
       projects_dbs,
-      project_sync_handler,
-      // Filters to only projects that are active
-      unupdated_projects_in_this_listing.map(v => v._id)
+      project_sync_handler
+      // We no longer use this filter, as it cannot be changed
+      // and the first call to unupdated_projects_in_this_listing may go
+      // stale so new projects won't come in (and in fact existing ones
+      // don't come in either.)
+      // {doc_ids: unupdated_projects_in_this_listing.map(v => v._id)}
     );
   } else {
     // Dummy data

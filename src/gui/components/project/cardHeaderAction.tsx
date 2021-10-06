@@ -21,7 +21,7 @@ import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {ProjectInformation} from '../../../datamodel/ui';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
-
+import TimelapseIcon from '@material-ui/icons/Timelapse';
 type ProjectCardActionProps = {
   project: ProjectInformation;
 };
@@ -123,6 +123,12 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                 </MenuItem>
               ))}
             </Menu>
+            <IconButton
+              component={RouterLink}
+              to={ROUTES.PROJECT_DESIGN + project.project_id}
+            >
+              <TimelapseIcon />
+            </IconButton>
             <IconButton
               component={RouterLink}
               to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SETTINGS}

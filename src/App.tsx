@@ -41,6 +41,7 @@ import ProjectSettings from './gui/pages/project-settings';
 import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
+import ProjectCreate from './gui/pages/project-create';
 import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
 import AutoIncrementEdit from './gui/pages/autoincrement-edit';
 import NotFound404 from './gui/pages/404';
@@ -96,6 +97,16 @@ export class App extends React.Component<AppProps, AppState> {
               <Route exact path={ROUTES.HOME} component={Home} />
               <Route exact path={ROUTES.RECORD_LIST} component={RecordList} />
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
+              <Route
+                exact
+                path={ROUTES.PROJECT_CREATE}
+                component={ProjectCreate}
+              />
+              <Route
+                exact
+                path={ROUTES.PROJECT_DESIGN + ':project_id'}
+                component={ProjectCreate}
+              />
               <Route
                 exact
                 path={ROUTES.PROJECT + ':project_id'}
