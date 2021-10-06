@@ -363,7 +363,6 @@ public class ChromeTest implements E2ETest {
         assertEquals(AstroSky.COLOUR, values.get("str-field").toString());
         assertEquals(AstroSky.UNICODE, values.get("multi-str-field").toString());
         assertEquals(AstroSky.INTEGER, values.get("int-field").toString());
-        assertEquals("EUR", values.get("select-field").toString());
         assertEquals("[\"USD\",\"EUR\"]", values.get("multi-select-field").toString());
         assertEquals("true", values.get("checkbox-field").toString());
         assertEquals("4", values.get("radio-group-field").toString());

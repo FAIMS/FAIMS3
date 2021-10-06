@@ -94,7 +94,6 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
 			assertEquals(AstroSky.INTEGER, wait.until(
 					ExpectedConditions.visibilityOfElementLocated(
 							MobileBy.xpath("//*[@resource-id='int-field']"))).getText());
-			assertEquals("Currency €", driver.findElement(MobileBy.xpath("//*[@resource-id='select-field']")).getText());
 			assertEquals("Currencies $, €", driver.findElement(MobileBy.xpath("//*[@resource-id='multi-select-field']")).getText());
 			assertEquals("true", driver.findElement(MobileBy.xpath("//*[@resource-id='checkbox-field']")).getAttribute("checked"));
 			for (AndroidElement radioButton : driver.findElementsByClassName("android.widget.RadioButton")) {

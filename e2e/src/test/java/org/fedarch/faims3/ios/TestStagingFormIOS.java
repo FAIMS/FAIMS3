@@ -100,7 +100,6 @@ public class TestStagingFormIOS extends IOSTest implements TestStagingForm {
 			TestUtils.scrollDown(driver);
 
 			assertEquals(AstroSky.INTEGER, driver.findElement(By.id("int-field")).getAttribute("value"));
-			assertEquals("Currency €", driver.findElement(By.id("select-field")).getAttribute("value"));
 			assertEquals("Currencies $, €", driver.findElement(By.id("multi-select-field")).getAttribute("value"));
 			assertEquals("true", driver.findElement(By.id("checkbox-field")).getAttribute("checked"));
 

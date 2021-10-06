@@ -321,7 +321,6 @@ public class AndroidTest implements E2ETest {
         assertEquals(AstroSky.COLOUR, values.get("str-field").toString());
         assertEquals(AstroSky.UNICODE, values.get("multi-str-field").toString());
         assertEquals(AstroSky.INTEGER, values.get("int-field").toString());
-        assertEquals("EUR", values.get("select-field").toString());
         assertEquals("[\"USD\",\"EUR\"]", values.get("multi-select-field").toString());
         // FIXME: seems like an appium bug. The values below aren't updating despite us waiting and reretrieving them
         // Our attempt as below:
