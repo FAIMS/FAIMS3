@@ -93,5 +93,7 @@ export function listenDrafts(
     })
     .on('error', err => console.error('Uncaught draft list error', err));
 
+  runCallback();
+
   return changes.cancel.bind(changes);
 }

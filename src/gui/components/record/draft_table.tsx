@@ -104,7 +104,7 @@ export default function DraftsTable(props: DraftsTableProps) {
           key={'drafttable'}
           rows={rows}
           loading={loading}
-          getRowId={r => r.record_id}
+          getRowId={r => r._id}
           columns={columns}
           autoHeight
           pageSize={
