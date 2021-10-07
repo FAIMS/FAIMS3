@@ -33,7 +33,7 @@ import {SettingCard,FormConnectionCard} from './PSettingCard';
 import {getComponentFromField,FormForm} from '../FormElement';
 import {TabTab,TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
-import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType} from '../data/ComponentSetting'
+import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType,projectvalueType} from '../data/ComponentSetting'
 import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
@@ -74,6 +74,8 @@ type ProjectDesignProps={
 	setFormuiSpec:handlertype; 
 	handleSaveUiSpec:handlertype;
 	accessgroup:Array<string>;
+  projectvalue:projectvalueType;
+  setProjectValue:handlertype; 
 }
 type formcomponents=any
 
@@ -122,7 +124,6 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       const tabs:Array<string>=[];
       formui[VISIBLE_TYPE].map((tab:string)=>tabs.push(formuiSpec['viewsets'][tab]['label']??tab))
       const newformcom=updateuiSpec('newfromui',{formuiSpec:formui,formcomponents:formcomponents,access:accessgroup})
-      console.log(newformcom)
 
       const newformvariants=formui[VISIBLE_TYPE][0]
 
@@ -134,9 +135,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
           newini={...ini,...setProjectInitialValues(fieldlist['uiSpec'],formView,{})}
           )
       }
-      console.log(newini)
       setinitialValues({...initialValues,...newini})
-      console.log(initialValues)
       // const stabs:Array<string>=[]
       // formui['viewsets'][newformvariants]['views'].map((tab:string)=>tabs.push(formuiSpec['views'][tab]['label']))
       setsectiontabs(formui['viewsets'][newformvariants]['views'].map((tab:string)=>tab=formuiSpec['views'][tab]['label']??tab))
@@ -260,7 +259,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
 	        setsectiontabs([]);
 	        setformuiview('')
 	        setCurrentView('')
-	        setfieldValue(1) //TODO: remove it
+	        setfieldValue(3) //TODO: remove it
 	        
 	      }
     }
@@ -284,6 +283,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       	setCurrentView(sectiontabs[sectiontabs.length-1])
       	setformuiview(formuiSpec['viewsets'][formvariants]['views'][sectiontabs.length-1])
       }
+      setfieldValue(0) //TODO: remove it
     }
 
 
@@ -341,6 +341,17 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       
     }
 
+    const handleChangeFormSection = (event:any) =>{
+
+    }
+
+    const handleSubmitFormSection = (values:any) =>{
+      const newprojectvalue=props.projectvalue
+      if(newprojectvalue['sections']===undefined) newprojectvalue['sections']={}
+      newprojectvalue['sections'][formuiview]=values
+      props.setProjectValue({...props.projectvalue,sections:newprojectvalue.sections})
+    }
+
   return ( 
 
       <Grid container  >
@@ -350,17 +361,21 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>
       </Grid>
       <Grid item sm={8} xs={12}>
+      {fieldvalue!==3?
       <Grid container  >
       <Grid item sm={2} xs={12} className={classes.settingtab}>  
-      <TabTab tabs={['Component']} value={fieldvalue} handleChange={handleChangetabfield}  tab_id='fieldtab'/>
+      <TabTab tabs={['Info','Component']} value={fieldvalue} handleChange={handleChangetabfield}  tab_id='fieldtab'/>
       </Grid>
       <Grid item sm={10} xs={12}>
-      <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
-       
+      <TabPanel value={fieldvalue} index={3} tabname='fieldtab' >
+      ''
       </TabPanel>
       <TabPanel value={fieldvalue} index={0} tabname='fieldtab' >
+       <FormForm currentView='start-view' handleChangeForm={handleChangeFormSection} handleSubmit={handleSubmitFormSection} uiSpec={getprojectform(props.projectvalue,'section',{sectionname:formuiview})} />
+      </TabPanel>
+      <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
       
-      {formuiview!==''&&formcomponents[formuiview].length>0?formcomponents[formuiview].map((formcomponent:any,index:any)=>(
+      {fieldvalue===1&&formuiview!==''&&formcomponents[formuiview].length>0?formcomponents[formuiview].map((formcomponent:any,index:any)=>(
         <Formik
         key={index}
           initialValues={initialValues}
@@ -414,7 +429,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         </Grid>
         </Paper>
         :''}
-        </TabPanel></Grid></Grid>
+        </TabPanel></Grid></Grid>:''}
       </Grid>
       {not_xs?
       <Grid item sm={4} xs={12}>

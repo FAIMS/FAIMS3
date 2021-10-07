@@ -45,7 +45,7 @@ export const getid = ()=>{
 }
 
 export const getconnections = (comparetab:string, uiSpec:uiSpecType,origintab:string) =>{
-  const conection='child';
+  const conection='TO be added';
   return conection;
 }
 
@@ -149,8 +149,10 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   const fields_list:any={}
   const fieldsarray:Array<string>=[]
   const section_info=[
-  {name:'sectionname',label:'Section Name',namespace:'formik-material-ui',componentName:'TextField',view:'section_info',required:true},
-  {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section_info',multiline:true,multirows:4}]
+  {name:'sectionname',label:'Section Name',namespace:'formik-material-ui',componentName:'TextField',view:'section',required:true},
+  {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4},
+  {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,initialValue:projectvalue.accesses},
+  ]
 
   const fields:projectuilistType={info_general:[
   {name:'name',label:'Project Name',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',required:true},
@@ -159,7 +161,7 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   {name:'lead_institution',label:'lead_institution',namespace:'formik-material-ui',componentName:'TextField',view:'info_general'}],
   info_group:[
   {name:'accessadded',label:'Add User Roles',namespace:'formik-material-ui',componentName:'TextField',view:'info_group',required:false,value:projectvalue['accessadded']}],
-  design_section:[],
+  section:[],
   }  
 
   // This part will be updated in the future TODO
@@ -167,10 +169,15 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
     fields['info_general'][0].disabled=true;
     fields['info_general'][1].disabled=true;
   }
+  if(tab==='section'){
+    section_info.map((section:any,index:number)=>fields[tab][index]={...section,name:section.name+props.sectionname}
+      )
+    
+  }
   console.log(fields)
   fields[tab].map((field:any,index:number)=> {
-     const {name,view,...others}=field
-    fields_list[field.name]=getcomponent({name:name,initialValue:projectvalue[name], placeholder:projectvalue[name],...others}); 
+     const {name,view,initialValue,...others}=field
+    fields_list[field.name]=getcomponent({name:name,initialValue:initialValue??projectvalue[name], placeholder:projectvalue[name],...others}); 
     fieldsarray[index]=field.name
     });
   return {

@@ -85,7 +85,7 @@ export function FormConnectionCard(props:any){
       {props.tabname}
       {tabs.map((tab:string)=>
         
-        <ListItem key='list1'  >
+        <ListItem key={props.tabname+'relationlist'}  >
         <ListItemIcon>
           <AccountTree />
         </ListItemIcon>

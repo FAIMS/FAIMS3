@@ -234,7 +234,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         {projecttabvalue===0?  <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject}/>:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
-        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
+        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
         {projecttabvalue===2?'Project Preview':''}
