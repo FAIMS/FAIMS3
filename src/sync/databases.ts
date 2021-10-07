@@ -199,23 +199,20 @@ export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: ConnectionInfo | null,
   global_dbs: LocalDBList<Content>,
-  handler: (
-    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler<Content>,
+  handler: (remote: LocalDB<Content>) => SyncHandler<Content>,
   options: DBReplicateOptions = {}
-): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
+): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
   // Already connected/connecting, or local-only database
   if (
-    connection_info === null ||
-    (global_dbs[local_db_id].remote !== null &&
-      JSON.stringify(global_dbs[local_db_id].remote!.info) ===
-        JSON.stringify(connection_info) &&
-      JSON.stringify(global_dbs[local_db_id].remote!.options) ===
-        JSON.stringify(options))
+    global_dbs[local_db_id].remote !== null &&
+    JSON.stringify(global_dbs[local_db_id].remote!.info) ===
+      JSON.stringify(connection_info) &&
+    JSON.stringify(global_dbs[local_db_id].remote!.options) ===
+      JSON.stringify(options)
   ) {
     return [
       false,
@@ -225,6 +222,19 @@ export function ensure_synced_db<Content extends {}>(
       },
     ];
   }
+
+  // Special case for local-only projects
+  // Synchandler is created to manage it, but since local only PouchDB's aren't
+  // reused, we're not worried about recovering/deleting the Synchandlers
+  // So they don't have to go into a global variable
+  if (connection_info === null) {
+    const sync_handler = handler(global_dbs[local_db_id]);
+    sync_handler.listen_local(
+      global_dbs[local_db_id].local.changes({since: 'now', include_docs: true})
+    );
+    return [false, global_dbs[local_db_id]];
+  }
+
   const db_info = (global_dbs[local_db_id] = {
     ...global_dbs[local_db_id],
     remote: {
