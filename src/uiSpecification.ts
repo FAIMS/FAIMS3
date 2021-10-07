@@ -46,7 +46,7 @@ export async function getUiSpecForProject(
     };
   } catch (err) {
     console.warn(err);
-    throw Error('failed to find ui specification');
+    throw Error(`failed to find ui specification for ${project_id}`);
   }
 }
 
