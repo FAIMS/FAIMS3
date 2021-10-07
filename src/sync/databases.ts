@@ -281,7 +281,7 @@ export function setLocalConnection<Content extends {}>(
 
     db_info.remote.connection = connection;
     db_info.remote.handler = db_info.remote.create_handler(db_info);
-    db_info.remote.handler.listen(
+    db_info.remote.handler.listen_remote(
       connection,
       db_info.local.changes({since: 'now', include_docs: true})
     );
