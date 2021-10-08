@@ -69,11 +69,11 @@ const VISIBLE_TYPE='visible_types'
 const variant_label='main'
 
 type ProjectDesignProps={ 
-	project_id:string;
-	formuiSpec:uiSpecType;
-	setFormuiSpec:handlertype; 
-	handleSaveUiSpec:handlertype;
-	accessgroup:Array<string>;
+  project_id:string;
+  formuiSpec:uiSpecType;
+  setFormuiSpec:handlertype; 
+  handleSaveUiSpec:handlertype;
+  accessgroup:Array<string>;
   projectvalue:projectvalueType;
   setProjectValue:handlertype; 
 }
@@ -103,6 +103,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
     const [projecttabvalue,setProjecttabvalue]=useState(0)
     const [error, setError] = useState(null as null | {});
     const [fieldvalue,setfieldValue] = useState(0); //field tab 
+    const [formsectionvalue,setformsectionvalue]=useState(0)
 
 
 
@@ -165,9 +166,9 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       // console.log(formuiSpec)
       if(formuiSpec!==null){
 
-      	generateunifromformui(formuiSpec)
+        generateunifromformui(formuiSpec)
       }
-      	
+        
 
     }
 
@@ -226,50 +227,53 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
     }
 
     const handelonChangeSection = (event:any,index:number) =>{
-      const id=formuiSpec['viewsets'][formvariants]['views'][index]
-      setCurrentView(sectiontabs[index])
+      console.log(index)
+      const id=formuiSpec['viewsets'][formvariants]['views'][index-1]
+      console.log(id)
+      setCurrentView(sectiontabs[index-1])
       setformuiview(id)
       setfieldValue(0) //TODO: remove it
+      setformsectionvalue(index)
       
 
     }
 
     const handelonChangeVariants = (event:any,index:number)=>{
-      	const id=formuiSpec[VISIBLE_TYPE][index]
-      	ChangeVariants(id)
-      	setformlabel(formtabs[index])
+        const id=formuiSpec[VISIBLE_TYPE][index]
+        ChangeVariants(id)
+        setformlabel(formtabs[index])
     }
 
     const ChangeVariants = (id:string) =>{
-    	  setFormVariants(id)
-	      
-	      
-	      if(formuiSpec['viewsets'][id]['views'].length>0){
-	      	console.log(formuiSpec['viewsets'][id]['views'][0])
-	        const tabs:any=[]
-	        if(formuiSpec['viewsets'][id]['views'].length>0){
-	          formuiSpec['viewsets'][id]['views'].map((tab:string,number:number)=>tabs[number]=formuiSpec['views'][tab]['label'])
-	        }
-	        setsectiontabs(tabs)
-	        setformuiview(formuiSpec['viewsets'][id]['views'][0])
-	        setCurrentView(formuiSpec['viewsets'][id]['views'][0]) // this part seems not working, check it to fix the issue
-	        setfieldValue(0) //TODO: remove it
-	      }
-	      else{
-	        setsectiontabs([]);
-	        setformuiview('')
-	        setCurrentView('')
-	        setfieldValue(3) //TODO: remove it
-	        
-	      }
+        setFormVariants(id)
+        
+        
+        if(formuiSpec['viewsets'][id]['views'].length>0){
+          console.log(formuiSpec['viewsets'][id]['views'][0])
+          const tabs:any=[]
+          if(formuiSpec['viewsets'][id]['views'].length>0){
+            formuiSpec['viewsets'][id]['views'].map((tab:string,number:number)=>tabs[number]=formuiSpec['views'][tab]['label'])
+          }
+          setsectiontabs(tabs)
+          setformuiview(formuiSpec['viewsets'][id]['views'][0])
+          setCurrentView(formuiSpec['viewsets'][id]['views'][0]) // this part seems not working, check it to fix the issue
+          setfieldValue(0) //TODO: remove it
+        }
+        else{
+          setsectiontabs([]);
+          setformuiview('')
+          setCurrentView('')
+          setfieldValue(3) //TODO: remove it
+          
+        }
     }
 
     const handelonChangeLabel = (tabs:Array<string>,type:string) =>{
       const {newviews,components}=updateuiSpec('formvariants'+type,{tabs:tabs,formuiSpec:formuiSpec,formcomponents:formcomponents})
       setFormuiSpec({fields:formuiSpec.fields,views:newviews.views,viewsets:newviews.viewsets,visible_types:newviews.visible_types})
       if(type==='add'){// To fix the misread of tab names
-      	ChangeVariants(tabs[tabs.length-1])
-      	setformlabel(formtabs[tabs.length-1])
+        ChangeVariants(tabs[tabs.length-1])
+        setformlabel(formtabs[tabs.length-1])
       }
 
       
@@ -280,8 +284,8 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       setFormuiSpec({fields:formuiSpec.fields,views:newviews.views,viewsets:newviews.viewsets,visible_types:newviews.visible_types})
       setFormComponents(components)
       if(type==='add'){ // To fix the misread of tab names
-      	setCurrentView(sectiontabs[sectiontabs.length-1])
-      	setformuiview(formuiSpec['viewsets'][formvariants]['views'][sectiontabs.length-1])
+        setCurrentView(sectiontabs[sectiontabs.length-1])
+        setformuiview(formuiSpec['viewsets'][formvariants]['views'][sectiontabs.length-1])
       }
       setfieldValue(0) //TODO: remove it
     }
@@ -316,6 +320,8 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       const {newviews,components}=updateuiSpec('updatefield',{event:event,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
       setFormuiSpec({...formuiSpec,fields:newviews.fields})
       setFormComponents(components)
+      console.log(event.target.name)
+      console.log(initialValues)
       return true;
      }
 
@@ -326,23 +332,13 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
 
 
 
-    const handleChangeFormField = (event:any) =>{
-      //could pass value to uiSpec: visible_type, access initialvalue
-      //could pass value to project: setting info: name, description, access role, option or not
-      //TEMPARY: just handle visible_type
-
-      if(formuiSpec['visible_types'].length===1&&event.target.value===false) console.log('not change value')
-      else{
-        //update visible_type for uiSpec
-      }
-    }
-
-    const submithandlerField = (values:any)=>{
-      
-    }
 
     const handleChangeFormSection = (event:any) =>{
-
+      const newprojectvalue=props.projectvalue
+      if(newprojectvalue['sections']===undefined) newprojectvalue['sections']={}
+      if(newprojectvalue['sections'][formuiview]===undefined) newprojectvalue['sections'][formuiview]={}
+      newprojectvalue['sections'][formuiview][event.target.name]=event.target.value
+      props.setProjectValue({...props.projectvalue,sections:newprojectvalue.sections})
     }
 
     const handleSubmitFormSection = (values:any) =>{
@@ -351,6 +347,25 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       newprojectvalue['sections'][formuiview]=values
       props.setProjectValue({...props.projectvalue,sections:newprojectvalue.sections})
     }
+
+    const handleChangeFormAction = (event:any) =>{
+      const newproject=props.projectvalue
+      newproject[event.target.name]=event.target.value
+      props.setProjectValue(newproject)
+
+      if(event.target.name==='submitAction'+formvariants){
+        //update uiSpecf
+        const newviews=formuiSpec
+        newviews['viewsets'][formvariants]['action']=event.target.value
+        setFormuiSpec({...formuiSpec,viewsets:newviews.viewsets})
+      }
+
+    }
+
+    const handleSubmitFormAction = () =>{
+
+    }
+
 
     const compnentPanel = () => {
       return (formcomponents[formuiview].map((formcomponent:any,index:any)=>(
@@ -397,16 +412,12 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       );
     }
 
-  return ( 
-
-      <Grid container  >
-      {project_id!==''&&project_id!==null&&project_id!==undefined?<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />:''}
-      <Grid item sm={12} xs={12}>
-        <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
-        <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>
-      </Grid>
-      <Grid item sm={8} xs={12}>
-      {fieldvalue!==3?
+  const FieldPanel = () =>{
+    /****section tab: 
+     * InfotTab
+     * component Tab
+    ***/
+    return fieldvalue!==3?(
       <Grid container  >
       <Grid item sm={2} xs={12} className={classes.settingtab}>  
       <TabTab tabs={['Info','Component']} value={fieldvalue} handleChange={handleChangetabfield}  tab_id='fieldtab'/>
@@ -433,21 +444,64 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         </Grid>
         </Paper>
         :''}
-        </TabPanel></Grid></Grid>:''}
-      </Grid>
-      {not_xs?
-      <Grid item sm={4} xs={12}>
-        {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel}/>}
+        </TabPanel></Grid></Grid>
+      ):(<p>Next </p>);
+  }
+  const SectionPanel = () =>{
+    return (
+      <>
+      {props.projectvalue!==undefined&&<FormForm currentView='start-view' handleChangeForm={handleChangeFormAction} handleSubmit={handleSubmitFormAction} uiSpec={getprojectform(props.projectvalue,'form',{formname:formvariants})} />}
+      <TabEditable tabs={sectiontabs} value={formsectionvalue} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection} />
+      {sectiontabs.map((sectiontab:string,index:number)=>
+        <TabPanel value={formsectionvalue} index={index} tabname='sectiontab' key={'sectiontab'+index}> 
+          {FieldPanel()}
+        </TabPanel>
+      )}
+      </>
+      );
+  }
+
+// 
+
+  const FormPanel = () =>{
+    const value=formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0
+    return (
+      <Grid container  >
+        <Grid item sm={12} xs={12}>
+        <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
+        </Grid>
+        <Grid item sm={not_xs?8:12} xs={12}>
+        
+      {formtabs.map((formtab:string,index:number)=>
+        
+        <TabPanel value={value} index={index} tabname='formtab' key={'formtab'+index}>
+          {SectionPanel()}
+        </TabPanel>
+        )}
+        </Grid>
+        {not_xs?
+        (<Grid item sm={4} xs={12}>
+        
         <Box
               bgcolor={grey[200]}
               pl={2}
               pr={2}
               style={{overflowX: 'scroll'}}
             >
-            <pre>{fieldvalue===0?JSON.stringify(props.projectvalue, null, 2):JSON.stringify(formuiSpec, null, 2)}</pre>
+            {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel??'form'}/>}
+            <pre>{JSON.stringify(props.projectvalue, null, 2)}</pre>
+            <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
         </Box>
-      </Grid>:''}
-      </Grid>
+        </Grid>):('')}
+      </Grid>)
+  }
+
+  return (
+    <>
+      {project_id!==''&&project_id!==null&&project_id!==undefined?
+      (<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />):('')}
+      {FormPanel()}
+    </>
 
   );
 }

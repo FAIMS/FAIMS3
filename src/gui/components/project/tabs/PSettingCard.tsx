@@ -79,7 +79,6 @@ export function SettingCard(props:SettingCard){
 export function FormConnectionCard(props:any){
   const classes = useStyles();
   const tabs=props.tabs.filter((tab:string)=>tab!==props.tabname)
-  console.log(props.tabs)
   return (
     <List component="nav" aria-label="settings bar" className={classes.formconnection}>
       {props.tabname}

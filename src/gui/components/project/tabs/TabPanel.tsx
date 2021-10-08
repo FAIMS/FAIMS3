@@ -35,6 +35,8 @@ const useStyles = makeStyles((theme) => ({
     },
     "& .MuiBox-root": {
       paddingTop:10,
+      paddingLeft:5,
+      paddingRight:0,
     [theme.breakpoints.down('sm')]:{
       
       paddingLeft:5,

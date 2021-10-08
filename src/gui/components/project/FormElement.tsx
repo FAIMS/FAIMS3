@@ -80,7 +80,6 @@ export function FormForm (props:FormElement) {
   const {currentView,handleChangeForm,...others}=props
   const [uiSpec,setUISpec]=useState(props.uiSpec)
   const initialValues=setProjectInitialValues(uiSpec,currentView,{})
-  console.log(uiSpec)
   return (<Formik
           initialValues={initialValues}
           validateOnMount={true}
@@ -96,12 +95,12 @@ export function FormForm (props:FormElement) {
               return (
 
               <Form id='form'>
-              {uiSpec['views'][currentView]['uidesign']==='general'?
+              {uiSpec['views'][currentView]['uidesign']!=='tab'?
               <Grid>
               {uiSpec['views'][currentView]['fields'].map((field:any,index:any)=>(
                   getComponentFromField(uiSpec,field, formProps,handleChangeForm)
                 ))}
-              <TickButton id='submit' type="submit" />
+              {uiSpec['views'][currentView]['uidesign']==='section'?<TickButton id='submit' type="submit" />:''}
               </Grid>
               
               :
@@ -109,7 +108,7 @@ export function FormForm (props:FormElement) {
                <Grid item sm={11} xs={12}>
                   <Grid container >
                 {uiSpec['views'][currentView]['fields'].map((field:any,index:any)=>(
-                  <Grid item sm={uiSpec['views'][currentView]['fields'].length===1?11:2} xs={12} key={field} >{getComponentFromField(uiSpec,field, formProps,handleChangeForm)}</Grid>
+                  <Grid item sm={2} xs={12} key={field} >{getComponentFromField(uiSpec,field, formProps,handleChangeForm)}</Grid>
                 ))}
                 </Grid></Grid>
                 <Grid item sm={1} xs={12}>

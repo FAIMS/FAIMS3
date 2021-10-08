@@ -45,7 +45,7 @@ export const getid = ()=>{
 }
 
 export const getconnections = (comparetab:string, uiSpec:uiSpecType,origintab:string) =>{
-  const conection='TO be added';
+  const conection='To be added';
   return conection;
 }
 
@@ -79,7 +79,6 @@ export const FieldSettings=(component:signlefieldType,label:string,props:any,acc
                 value: option,
                 label: option
               })
-  console.log(options)
 	const fields=[
         {name:'',lable:'',type:'TextField',view:'general'},
         {name:'label',lable:'Label',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
@@ -138,7 +137,7 @@ export const gettabform = (tabs:Array<string>) =>{
 
 	return {
 		fields:fields_list,
-    'views':{'start-view':{fields:fields}} ,
+    'views':{'start-view':{fields:fields,'uidesign':'tab'}} ,
     'start_view': 'start-view'
 	}
 }
@@ -152,6 +151,10 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4},
   {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,initialValue:projectvalue.accesses,disabled:true,helperText:'Now disbaled, Will be enabled after access field been defined.'},
   ]
+  const form_info = [
+  // {name:'Formdescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'form',multiline:true,multirows:4},
+  {name:'submitAction',label:'Submit Action',namespace:'formik-material-ui',componentName:'TextField',view:'form',required:true},
+  ]
 
   const fields:projectuilistType={info_general:[
   {name:'name',label:'Project Name',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',required:true},
@@ -161,6 +164,7 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   info_group:[
   {name:'accessadded',label:'Add User Roles',namespace:'formik-material-ui',componentName:'TextField',view:'info_group',required:false,value:projectvalue['accessadded']}],
   section:[],
+  form:[]
   }  
 
   // This part will be updated in the future TODO
@@ -180,6 +184,18 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
       fields[tab][index]={...newfield}
     })
   }
+  if(tab==='form'){
+    //create new section form for each section 
+    form_info.map((field:any,index:number)=>{
+      const fieldname=field.name+props.formname
+      const newfield={...field,name:fieldname}
+      // if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
+      //   if(projectvalue['forms'][props.props.formname]!==undefined) newfield['initialValue']=['forms'][props.props.formname][fieldname]
+      // else if(newfield['initialValue']===undefined)
+      //   newfield['initialValue']=undefined
+      fields[tab][index]={...newfield}
+    })
+  }
   if(fields[tab].length>0){
     fields[tab].map((field:any,index:number)=> {
      const {name,view,initialValue,...others}=field
@@ -190,7 +206,7 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   
   return {
     fields:fields_list,
-    'views':{'start-view':{fields:fieldsarray,'uidesign':'general'}} ,
+    'views':{'start-view':{fields:fieldsarray,'uidesign':tab}} ,
     'start_view': 'start-view',
      viewsets:{},
      visible_types:[]
@@ -322,6 +338,7 @@ const addfield = (props:any) =>{
 }
 
 const updatefield = (props:any) =>{
+  //TODO: check this part
   const {event,formuiSpec,formcomponents,formuiview,access}=props
   const fieldname=event.target.name
   const fieldvalue=event.target.value
@@ -333,7 +350,6 @@ const updatefield = (props:any) =>{
     const fieldtype=updatedfield.type
     if(fieldtype==='validationSchema') return {newviews,components}
     const fieldprops=convertuiSpecToProps(formuiSpec['fields'][newfieldname])
-    console.log(fieldprops['access'])
     if(fieldtype==='required'||fieldtype==='meta_type') fieldprops[fieldtype]=!fieldprops[fieldtype];
     else fieldprops[fieldtype]=fieldvalue
     if(fieldtype==='options') {
@@ -345,10 +361,8 @@ const updatefield = (props:any) =>{
               });
     }
     if(fieldtype==='access') {
-      console.log(fieldprops[fieldtype])
       if(typeof fieldprops[fieldtype]==='string') fieldprops[fieldtype]=[fieldprops[fieldtype]]
       DEFAULT_accessgroup.map((accessrole:string)=>fieldprops[fieldtype].includes(accessrole)?accessrole:fieldprops[fieldtype]=[...fieldprops[fieldtype],accessrole])
-      console.log(fieldprops[fieldtype])
     }
     if(fieldtype==='validationSchema') {
       fieldprops[fieldtype]=[];
@@ -361,7 +375,6 @@ const updatefield = (props:any) =>{
     components[formuiview].map((item:any)=>{
             item.id===updatedfield.index?item['uiSpec']['fields']=changeuifield(newfieldname,newfield,item['uiSpec']['fields']):item
           }) 
-    // newviews['fields']=fields
   }
   return {newviews,components}
 
