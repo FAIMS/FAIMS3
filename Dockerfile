@@ -26,7 +26,7 @@ ENV REACT_APP_DIRECTORY_PORT 443
 RUN echo $REACT_APP_CURRENT_VERSION
 RUN npm run-script build
 
-FROM nginx:1.21.0-alpine
+FROM nginx:1.21.0-alpine@sha256:cc8c413c74aba9fef9dae7f3da736725136bad1e3f24fbc93788aea1944f51c4
 RUN rm -rf /usr/share/nginx/html/*
 # not /app/www but /app/build because react
 COPY ./.nginx/nginx.conf /etc/nginx/nginx.conf
