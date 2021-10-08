@@ -51,7 +51,7 @@ export default function DraftsTable(props: DraftsTableProps) {
   const [rows, setRows] = useState<Array<DraftMetadata>>([]);
   const columns: GridColDef[] = [
     {
-      field: 'record_id',
+      field: '_id',
       headerName: 'ID',
       description: 'Draft ID',
       type: 'string',
@@ -104,7 +104,7 @@ export default function DraftsTable(props: DraftsTableProps) {
           key={'drafttable'}
           rows={rows}
           loading={loading}
-          getRowId={r => r.record_id}
+          getRowId={r => r._id}
           columns={columns}
           autoHeight
           pageSize={
