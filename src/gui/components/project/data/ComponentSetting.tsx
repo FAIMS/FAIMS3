@@ -119,7 +119,6 @@ export const FieldSettings=(component:signlefieldType,label:string,props:any,acc
 		
 	})
 	views['start-view']={'fields':fields_label,'uidesign':'settings'}
-  console.log(fields_list)
 
 	return {
 		fields:fields_list,
@@ -151,7 +150,7 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   const section_info=[
   {name:'sectionname',label:'Section Name',namespace:'formik-material-ui',componentName:'TextField',view:'section',required:true},
   {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4},
-  {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,initialValue:projectvalue.accesses},
+  {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,initialValue:projectvalue.accesses,disabled:true,helperText:'Now disbaled, Will be enabled after access field been defined.'},
   ]
 
   const fields:projectuilistType={info_general:[
@@ -170,16 +169,25 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
     fields['info_general'][1].disabled=true;
   }
   if(tab==='section'){
-    section_info.map((section:any,index:number)=>fields[tab][index]={...section,name:section.name+props.sectionname}
-      )
-    
+    //create new section form for each section 
+    section_info.map((field:any,index:number)=>{
+      const fieldname=field.name+props.sectionname
+      const newfield={...field,name:fieldname}
+      if(projectvalue['sections']!==undefined&&newfield['initialValue']===undefined)
+        if(projectvalue['sections'][props.sectionname]!==undefined) newfield['initialValue']=projectvalue['sections'][props.sectionname][fieldname]
+      else if(newfield['initialValue']===undefined)
+        newfield['initialValue']=undefined
+      fields[tab][index]={...newfield}
+    })
   }
-  console.log(fields)
-  fields[tab].map((field:any,index:number)=> {
+  if(fields[tab].length>0){
+    fields[tab].map((field:any,index:number)=> {
      const {name,view,initialValue,...others}=field
     fields_list[field.name]=getcomponent({name:name,initialValue:initialValue??projectvalue[name], placeholder:projectvalue[name],...others}); 
     fieldsarray[index]=field.name
     });
+  }
+  
   return {
     fields:fields_list,
     'views':{'start-view':{fields:fieldsarray,'uidesign':'general'}} ,

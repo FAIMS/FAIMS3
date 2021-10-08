@@ -352,30 +352,8 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       props.setProjectValue({...props.projectvalue,sections:newprojectvalue.sections})
     }
 
-  return ( 
-
-      <Grid container  >
-      {project_id!==''&&project_id!==null&&project_id!==undefined?<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />:''}
-      <Grid item sm={12} xs={12}>
-        <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
-        <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>
-      </Grid>
-      <Grid item sm={8} xs={12}>
-      {fieldvalue!==3?
-      <Grid container  >
-      <Grid item sm={2} xs={12} className={classes.settingtab}>  
-      <TabTab tabs={['Info','Component']} value={fieldvalue} handleChange={handleChangetabfield}  tab_id='fieldtab'/>
-      </Grid>
-      <Grid item sm={10} xs={12}>
-      <TabPanel value={fieldvalue} index={3} tabname='fieldtab' >
-      ''
-      </TabPanel>
-      <TabPanel value={fieldvalue} index={0} tabname='fieldtab' >
-       <FormForm currentView='start-view' handleChangeForm={handleChangeFormSection} handleSubmit={handleSubmitFormSection} uiSpec={getprojectform(props.projectvalue,'section',{sectionname:formuiview})} />
-      </TabPanel>
-      <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
-      
-      {fieldvalue===1&&formuiview!==''&&formcomponents[formuiview].length>0?formcomponents[formuiview].map((formcomponent:any,index:any)=>(
+    const compnentPanel = () => {
+      return (formcomponents[formuiview].map((formcomponent:any,index:any)=>(
         <Formik
         key={index}
           initialValues={initialValues}
@@ -415,10 +393,36 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
                 </Form>
               );
         }}
-        </Formik>)):''}
+        </Formik>))
+      );
+    }
+
+  return ( 
+
+      <Grid container  >
+      {project_id!==''&&project_id!==null&&project_id!==undefined?<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />:''}
+      <Grid item sm={12} xs={12}>
+        <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
+        <TabEditable tabs={sectiontabs} value={sectiontabs.indexOf(currentView)>0?sectiontabs.indexOf(currentView):0} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection}/>
+      </Grid>
+      <Grid item sm={8} xs={12}>
+      {fieldvalue!==3?
+      <Grid container  >
+      <Grid item sm={2} xs={12} className={classes.settingtab}>  
+      <TabTab tabs={['Info','Component']} value={fieldvalue} handleChange={handleChangetabfield}  tab_id='fieldtab'/>
+      </Grid>
+      <Grid item sm={10} xs={12}>
+      <TabPanel value={fieldvalue} index={3} tabname='fieldtab' >
+      ''
+      </TabPanel>
+      <TabPanel value={fieldvalue} index={0} tabname='fieldtab' >
+       <FormForm currentView='start-view' handleChangeForm={handleChangeFormSection} handleSubmit={handleSubmitFormSection} uiSpec={getprojectform(props.projectvalue,'section',{sectionname:formuiview})} />
+      </TabPanel>
+      <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
+      {fieldvalue===1&&formuiview!==''&&formcomponents[formuiview].length>0?compnentPanel():''}
         <AddButton id='AddField'  onButtonClick={handleAddFieldButton}  text='ADD' />
         {isAddField?
-          <Paper >
+        <Paper >
         <Grid container className={classes.addfield} >
           <Grid item sm={11} xs={11}>
           <FieldsListCard cretenefield={handleAddField} />
@@ -440,7 +444,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
               pr={2}
               style={{overflowX: 'scroll'}}
             >
-              <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
+            <pre>{fieldvalue===0?JSON.stringify(props.projectvalue, null, 2):JSON.stringify(formuiSpec, null, 2)}</pre>
         </Box>
       </Grid>:''}
       </Grid>

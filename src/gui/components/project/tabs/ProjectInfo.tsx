@@ -71,7 +71,7 @@ type ProjectInfoProps={
 export default function ProjectInfoTab(props:ProjectInfoProps) {
   const {projectvalue,setProjectValue,project_id,...others}=props
   // const [projectInfo,setProjectInfo]=useState<ProjectInformation|null>(getProjectInfo(project_id))
-  const [infotabvalue,setinfotabvalue]=useState(-1)
+  const [infotabvalue,setinfotabvalue]=useState(0)
   const [uiSpec_general,setUISpecG]=useState<ProjectUIModel>({fields:{},views:{},viewsets:{},visible_types:[]})
   
   const [accessgroup,setaccessgroup]=useState([])
@@ -189,8 +189,14 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
         </TabPanel>
       </Grid>
       <Grid item sm={4} xs={12}>
-        <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
-        
+         <Box
+              bgcolor={grey[200]}
+              pl={2}
+              pr={2}
+              style={{overflowX: 'scroll'}}
+            >
+            <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
+        </Box>
       </Grid>
     </Grid>
   )}
