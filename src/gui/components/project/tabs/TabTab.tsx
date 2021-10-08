@@ -19,17 +19,12 @@
  */
 
 import React from 'react';
-import {useState, useEffect} from 'react';
-
 import {Tab, Tabs, Grid} from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
-
+import {useState, useEffect} from 'react';
 import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
 import {gettabform} from '../data/ComponentSetting';
-
-/* TODO: fix eslint @KateSHENG */
-/* eslint-disable */
 
 function a11yProps(tabname: any, index: any) {
   return {
@@ -38,6 +33,7 @@ function a11yProps(tabname: any, index: any) {
   };
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({
   fieldtab: {
     textAlign: 'left',
@@ -61,7 +57,10 @@ type TabProps = {
 
 export function TabTab(props: TabProps) {
   const classes = useStyles();
-  const {tabs, tab_id, value, handleChange, ...other} = props;
+  const tabs = props.tabs;
+  const tab_id = props.tab_id;
+  const value = props.value;
+  const handleChange = props.handleChange;
   return (
     <Tabs
       value={value}
@@ -84,7 +83,10 @@ export function TabTab(props: TabProps) {
 
 export function TabEditable(props: TabProps) {
   const classes = useStyles();
-  const {tabs, tab_id, value, handleChange, ...other} = props;
+  const tabs = props.tabs;
+  const tab_id = props.tab_id;
+  const value = props.value;
+  const handleChange = props.handleChange;
   const [tablists, setTablist] = useState<Array<any>>(tabs);
   const [isedited, setisedited] = useState(false);
   const [isset, setIsset] = useState(false);
@@ -93,9 +95,11 @@ export function TabEditable(props: TabProps) {
   }, [tabs]);
 
   const handleEdit = (event: any) => {
+    console.debug(event);
     setisedited(true);
   };
   const handleAdd = (event: any) => {
+    console.debug(event);
     const newtabs = tablists;
     const length = tablists.length + 1;
     let name = 'Section';
@@ -106,14 +110,8 @@ export function TabEditable(props: TabProps) {
     setIsset(!isset);
   };
 
-  const handleSubmit = (event: any) => {
-    console.log(event);
-    setisedited(false);
-  };
-
   const handleSubmitForm = (values: any) => {
     const newtabs = tablists;
-    const pretabs = tablists;
     Object.entries(values).map((value, index) => (newtabs[index] = value[1]));
     props.handelonChangeLabel(newtabs, 'update');
     setTablist(newtabs);
@@ -121,78 +119,60 @@ export function TabEditable(props: TabProps) {
   };
 
   const handleChangeForm = (event: any) => {
-    // console.log(event.target.name+event.target.value)
+    console.debug(event.target.name + event.target.value);
   };
 
-  return tab_id === 'primarytab' ? (
-    <React.Fragment>
-      <Tabs
-        value={value}
-        onChange={handleChange}
-        aria-label={tab_id}
-        id={tab_id}
-      >
-        {tablists.map((tab, index) => (
-          <Tab
-            className={classes.root}
-            key={`${tab_id}-${index}`}
-            label={tab}
-            {...a11yProps(tab_id, index)}
+  return (
+    <Grid container className={classes.subtab}>
+      <Grid item sm={11} xs={12}>
+        {isedited === false ? (
+          <Tabs
+            value={value}
+            onChange={handleChange}
+            aria-label={tab_id}
+            id={tab_id}
+            orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
+          >
+            {tablists.map((tab, index) => (
+              <Tab
+                className={
+                  tab_id === 'fieldtab' ? classes.fieldtab : classes.subtab
+                }
+                key={`${tab_id}-${index}`}
+                label={tab}
+                {...a11yProps({tab_id}, {index})}
+              />
+            ))}
+          </Tabs>
+        ) : (
+          <FormForm
+            uiSpec={gettabform(tabs)}
+            currentView="start-view"
+            handleChangeForm={handleChangeForm}
+            handleSubmit={handleSubmitForm}
           />
-        ))}
-      </Tabs>
-
-      <Grid container className={classes.subtab}>
-        <Grid item sm={11} xs={12}>
-          {isedited === false ? (
-            <Tabs
-              value={value}
-              onChange={handleChange}
-              aria-label={tab_id}
-              id={tab_id}
-              orientation={'horizontal'}
-            >
-              {tablists.map((tab, index) => (
-                <Tab
-                  className={classes.subtab}
-                  key={`${tab_id}-${index}`}
-                  label={tab}
-                  {...a11yProps({tab_id}, {index})}
-                />
-              ))}
-            </Tabs>
-          ) : (
-            <FormForm
-              uiSpec={gettabform(tabs)}
-              currentView="start-view"
-              handleChangeForm={handleChangeForm}
-              handleSubmit={handleSubmitForm}
-            />
-          )}
-        </Grid>
-        <Grid item sm={1} xs={12}>
-          {isedited === false ? (
-            <>
-              <EditButton
-                onButtonClick={handleEdit}
-                value={1}
-                id="edit"
-                text="X"
-              />
-              <AddSectionButton
-                onButtonClick={handleAdd}
-                value={1}
-                id="add"
-                text="X"
-              />
-            </>
-          ) : (
-            ''
-          )}
-        </Grid>
+        )}
       </Grid>
-    </React.Fragment>
-  ) : (
-    <p>Unknown tab_id</p>
+      <Grid item sm={1} xs={12}>
+        {isedited === false ? (
+          <>
+            <EditButton
+              onButtonClick={handleEdit}
+              value={1}
+              id="edit"
+              text="X"
+            />
+            <AddSectionButton
+              onButtonClick={handleAdd}
+              value={1}
+              id="add"
+              text="X"
+            />
+          </>
+        ) : (
+          ''
+        )}
+      </Grid>
+    </Grid>
   );
 }
