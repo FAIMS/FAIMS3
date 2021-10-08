@@ -18,6 +18,10 @@
  *   TODO
  */
 
+export type GroupName = string;
+export type FieldComponentParameters = any;
+export type ValidationSchema = any;
+
 export interface FAIMSType {
   [key: string]: any; // any for now until we lock down the json
 }
@@ -34,22 +38,38 @@ export interface FAIMSConstantCollection {
   [key: string]: FAIMSConstant;
 }
 
+export interface ProjectUIViewset {
+  label?: string;
+  views: string[];
+  submit_label?: string;
+  editable_by?: GroupName[];
+}
+
+export interface ProjectUIView {
+  label?: string;
+  fields: string[];
+  next_label?: string;
+  editable_by?: GroupName[];
+}
+
+export interface ProjectUIField {
+  component_namespace: string;
+  component_name: string;
+  type_returned: string;
+  component_parameters: FieldComponentParameters;
+  validationSchema: ValidationSchema;
+  initialValue: any;
+  editable_by?: GroupName[];
+}
+
 export interface ProjectUIFields {
-  [key: string]: any;
+  [key: string]: ProjectUIField;
 }
 
 export interface ProjectUIViewsets {
-  [type: string]: {
-    label?: string;
-    views: string[];
-    submit_label?: string;
-  };
+  [type: string]: ProjectUIViewset;
 }
 
 export interface ProjectUIViews {
-  [key: string]: {
-    label?: string;
-    fields: string[];
-    next_label?: string;
-  };
+  [key: string]: ProjectUIView;
 }

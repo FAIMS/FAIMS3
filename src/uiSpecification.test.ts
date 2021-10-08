@@ -65,13 +65,25 @@ describe('roundtrip reading and writing to db', () => {
     'ui roundtrip',
     [
       fc.fullUnicodeString(),
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // fields
+      fc.dictionary(
+        fc.fullUnicodeString(),
+        fc.record({
+          component_namespace: fc.fullUnicodeString(),
+          component_name: fc.fullUnicodeString(),
+          type_returned: fc.fullUnicodeString(),
+          component_parameters: fc.unicodeJsonObject(),
+          validationSchema: fc.unicodeJsonObject(),
+          initialValue: fc.unicodeJsonObject(),
+          editable_by: fc.array(fc.fullUnicodeString()),
+        })
+      ), // fields
       fc.dictionary(
         fc.fullUnicodeString(),
         fc.record({
           label: fc.fullUnicodeString(),
           next_label: fc.fullUnicodeString(),
           fields: fc.array(fc.fullUnicodeString()),
+          editable_by: fc.array(fc.fullUnicodeString()),
         })
       ), // views
       fc.dictionary(
@@ -80,6 +92,7 @@ describe('roundtrip reading and writing to db', () => {
           label: fc.fullUnicodeString(),
           submit_label: fc.fullUnicodeString(),
           views: fc.array(fc.fullUnicodeString()),
+          editable_by: fc.array(fc.fullUnicodeString()),
         })
       ), // viewsets
       fc.array(fc.fullUnicodeString()), // visible_types

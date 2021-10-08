@@ -130,10 +130,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
   default_astro_sky: {
     fields: {
       'bad-field': {
-        'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
-        'component-name': 'NotAComponent',
-        'type-returned': 'faims-core::Email', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'fakefakefake', // this says what web component to use to render/acquire value from
+        component_name: 'NotAComponent',
+        type_returned: 'faims-core::Email', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'email-field',
           id: 'email-field',
@@ -156,10 +156,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: '',
       },
       'action-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'ActionButton',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'ActionButton',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'action-field',
           id: 'action-field',
@@ -179,10 +179,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: 'hello',
       },
       'email-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::Email', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'formik-material-ui', // this says what web component to use to render/acquire value from
+        component_name: 'TextField',
+        type_returned: 'faims-core::Email', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'email-field',
           id: 'email-field',
@@ -206,10 +206,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: '',
       },
       'str-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'formik-material-ui', // this says what web component to use to render/acquire value from
+        component_name: 'TextField',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'str-field',
           id: 'str-field',
@@ -234,10 +234,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: 'yellow',
       },
       'multi-str-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'formik-material-ui', // this says what web component to use to render/acquire value from
+        component_name: 'TextField',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'multi-str-field',
           id: 'multi-str-field',
@@ -260,10 +260,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       },
       'int-field': {
-        'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
-        'component-name': 'TextField',
-        'type-returned': 'faims-core::Integer', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'formik-material-ui', // this says what web component to use to render/acquire value from
+        component_name: 'TextField',
+        type_returned: 'faims-core::Integer', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'int-field',
           id: 'int-field',
@@ -289,10 +289,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: 1,
       },
       'take-point-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'TakePoint',
-        'type-returned': 'faims-pos::Location', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'TakePoint',
+        type_returned: 'faims-pos::Location', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'take-point-field',
           id: 'take-point-field',
@@ -313,10 +313,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: null,
       },
       'select-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'Select',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'Select',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'select-field',
           id: 'select-field',
@@ -357,10 +357,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: '',
       },
       'multi-select-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'Select',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'Select',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'multi-select-field',
           id: 'multi-select-field',
@@ -404,10 +404,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: [],
       },
       'checkbox-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'Checkbox',
-        'type-returned': 'faims-core::Bool', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'Checkbox',
+        type_returned: 'faims-core::Bool', // matches a type in the Project Model
+        component_parameters: {
           name: 'checkbox-field',
           id: 'checkbox-field',
           required: true,
@@ -428,10 +428,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: false,
       },
       'radio-group-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'RadioGroup',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'RadioGroup',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           name: 'radio-group-field',
           id: 'radio-group-field',
           variant: 'outlined',
@@ -475,14 +475,14 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
             children: 'Make sure you choose the right one!',
           },
         },
-        // validationSchema: [['yup.number'], ['yup.lessThan', 2]],
+        validationSchema: [['yup.number'], ['yup.lessThan', 2]],
         initialValue: '3',
       },
       'hrid-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'TemplatedStringField',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'TemplatedStringField',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'hrid-field',
           id: 'hrid-field',
@@ -501,10 +501,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: '',
       },
       'basic-autoincrementer-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'BasicAutoIncrementer',
-        'type-returned': 'faims-core::String', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'BasicAutoIncrementer',
+        type_returned: 'faims-core::String', // matches a type in the Project Model
+        component_parameters: {
           name: 'basic-autoincrementer-field',
           id: 'basic-autoincrementer-field',
           variant: 'outlined',
@@ -516,10 +516,10 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         initialValue: null,
       },
       'related-field': {
-        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-        'component-name': 'RelatedRecordSelector',
-        'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
-        'component-parameters': {
+        component_namespace: 'faims-custom', // this says what web component to use to render/acquire value from
+        component_name: 'RelatedRecordSelector',
+        type_returned: 'faims-core::Relationship', // matches a type in the Project Model
+        component_parameters: {
           fullWidth: true,
           name: 'related-field',
           id: 'related-field',
