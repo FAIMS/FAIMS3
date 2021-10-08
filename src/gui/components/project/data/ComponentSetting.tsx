@@ -40,6 +40,7 @@ export type projectvalueType=any
 type signlefieldType=any
 type fieldlistType=any
 type viewlistType=any
+type optionType={value:string;label:string}
 export const getid = ()=>{
 	return uuidv4().split('-')[0];
 }
@@ -73,7 +74,7 @@ const getsettingform = (component:any) =>{
 }
 //Add new field form or convert uiSpec to setting form convertuiSpectoSetting
 export const FieldSettings=(component:signlefieldType,label:string,props:any,access:Array<string>=DEFAULT_accessgroup_d)=>{
-  const options:Array<{value:string;label:string}>=[];
+  const options:Array<optionType>=[];
   const limitaccess=access.filter((access:string)=>!(access==='admin'||access==='moderator'))
   limitaccess.map((option:string,index:number)=>options[index]={
                 value: option,
@@ -151,9 +152,16 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4},
   {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,initialValue:projectvalue.accesses,disabled:true,helperText:'Now disbaled, Will be enabled after access field been defined.'},
   ]
+  const form_info_options:Array<optionType>=[{
+                value:'Save and New',
+                label:'Save and New'
+              },{
+                value:'Jump to Upper Level',
+                label:'Jump to Upper Level'
+              }];
   const form_info = [
   // {name:'Formdescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'form',multiline:true,multirows:4},
-  {name:'submitAction',label:'Submit Action',namespace:'formik-material-ui',componentName:'TextField',view:'form',required:true},
+  {name:'submitAction',label:'Form Submit Action',namespace:'faims-custom',componentName:'Select',select: true,type:'select',options:form_info_options,view:'form',required:true,helperText:'Action is after User Submit Record, Save button will direct user to create new record or back to parent record'},
   ]
 
   const fields:projectuilistType={info_general:[
@@ -189,10 +197,11 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
     form_info.map((field:any,index:number)=>{
       const fieldname=field.name+props.formname
       const newfield={...field,name:fieldname}
+      //TODO Maybe set pre-select value for user
       // if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
       //   if(projectvalue['forms'][props.props.formname]!==undefined) newfield['initialValue']=['forms'][props.props.formname][fieldname]
       // else if(newfield['initialValue']===undefined)
-      //   newfield['initialValue']=undefined
+      //   newfield['initialValue']='Save and New'
       fields[tab][index]={...newfield}
     })
   }
