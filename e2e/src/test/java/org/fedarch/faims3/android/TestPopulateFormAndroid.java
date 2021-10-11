@@ -73,7 +73,7 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 			// validate JSON
 			validateJSON();
 			// Click save and new
-			WebElement submit = driver.findElement(By.xpath("//*[@text='SAVE AND NEW']"));
+			WebElement submit = TestUtils.scrollToText(driver, "SAVE AND NEW");
 			submit.click();
 
 			// Check the message

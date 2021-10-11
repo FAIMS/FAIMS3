@@ -74,6 +74,7 @@ public class AndroidTest implements E2ETest {
 		DesiredCapabilities caps = new DesiredCapabilities();
 		// allow location services
 	    caps.setCapability(AndroidMobileCapabilityType.GPS_ENABLED, "true");
+	    caps.setCapability(AndroidMobileCapabilityType.SUPPORTS_LOCATION_CONTEXT, "true");
 	    // allow everything else so we don't get permission popups
 	    caps.setCapability(AndroidMobileCapabilityType.AUTO_GRANT_PERMISSIONS, "true");
 	    // Use UIAutomator2 for devices higher than 7
@@ -230,7 +231,8 @@ public class AndroidTest implements E2ETest {
 	    driver.pressKey(new KeyEvent(AndroidKey.DEL));
 	    driver.pressKey(new KeyEvent(AndroidKey.DIGIT_1));
 	    driver.pressKey(new KeyEvent(AndroidKey.DIGIT_6));
-	    driver.pressKey(new KeyEvent(AndroidKey.ENTER));
+	    // Hide the number keyboard so we can see the rest of the screen
+	    driver.hideKeyboard();
 
 	    // Multiple currency field
 	    AndroidElement multiCurrField = (AndroidElement) wait.until(
@@ -248,8 +250,6 @@ public class AndroidTest implements E2ETest {
 
 	    // click out of the dropdown
 	    driver.pressKey(new KeyEvent(AndroidKey.ESCAPE));
-
-	    TestUtils.scrollDown(driver);
 
 	    // tick the checkbox
 	    AndroidElement checkbox = (AndroidElement) wait.until(
@@ -304,6 +304,8 @@ public class AndroidTest implements E2ETest {
 	@Override
 	public void validateJSON() throws JSONException, AssertionError {
 		// Find JSON
+		TestUtils.scrollToText(driver, "DEVELOPER TOOL: FORM STATE");
+
 		WebDriverWait wait = new WebDriverWait(driver, 10);
 		WebElement json = wait.until(ExpectedConditions.visibilityOf(
 				driver.findElement(MobileBy.xpath("//*[@text='DEVELOPER TOOL: FORM STATE']/following-sibling::android.view.View/android.view.View"))));
