@@ -284,11 +284,21 @@ public class ChromeTest implements E2ETest {
 	public void loadNewAstroSkyForm() {
 		loadProjects();
 
-		// Find the '+' button for new observation
-		WebElement newObservation = new WebDriverWait(driver, 10)
-				.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[@href='/projects/default_test_proj/new-observation']")));
+		WebDriverWait wait = new WebDriverWait(driver, 10);
 
+		// Find AstroSky project
+		WebElement astroSky = wait.until(
+				ExpectedConditions.presenceOfElementLocated(
+						By.xpath("//div[@class='MuiCardHeader-content']/span/div/b[contains(., 'Astrosky')]")));
+
+		// Find the '+' button for new observation
+		WebElement newObservation = astroSky.findElement(By.xpath("../../../..//button[span='New Record']"));
 		newObservation.click();
+
+		// Choose astrosky main
+		wait.until(ExpectedConditions.presenceOfElementLocated(
+				By.xpath("//a[@href='/projects/default||test_proj/new-record/type/astro_sky::main']")))
+		    .click();
 	}
 
 	public void tearDown() {
