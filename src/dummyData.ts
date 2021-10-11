@@ -552,7 +552,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           variant: 'outlined',
           required: true,
           InputProps: {
-            featureType: 'Point',
+            featureType: 'Polygon',
           },
           SelectProps: {},
           InputLabelProps: {
