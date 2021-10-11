@@ -1,6 +1,6 @@
 #https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
 
-FROM node:16.10.0-alpine3.14@sha256:4348589598e18251212266117f1b0af23ed3549bbf9392bbde8e2b1d1101f399 as build
+FROM node:16.10.0-alpine3.14@sha256:8924fe15ceecfbdd5de1dd16b2a17ad53376e828f28c0bfa3d9b87a4e3cf1e61 as build
 ARG REACT_APP_COMMIT_VERSION
 ARG REACT_APP_DIRECTORY_HOST
 
