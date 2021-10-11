@@ -1,5 +1,5 @@
 {
-  "name": "faims3",
+  "name": "@faims-project/faims3",
   "version": "0.1.0",
   "private": true,
   "eslintConfig": {
