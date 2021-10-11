@@ -25,11 +25,12 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
-import {listenProjectList} from '../../databaseAccess';
+import {getProjectList, listenProjectList} from '../../databaseAccess';
 import {ProjectInformation} from '../../datamodel/ui';
 import {useState} from 'react';
 import {useEffect} from 'react';
 import {CircularProgress} from '@material-ui/core';
+import { useEventedPromiseCatchNow } from '../pouchHook';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -64,27 +65,28 @@ const useStyles = makeStyles(theme => ({
 export default function ProjectList() {
   const classes = useStyles();
   // const globalState = useContext(store);
-  const [projectList, setProjectList] = useState(
-    null as null | ProjectInformation[]
+  const pouchProjectList = useEventedPromiseCatchNow(
+    getProjectList,
+    listenProjectList,
+    true,
+    [],
+    [],
+    []
   );
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {title: 'Projects'},
   ];
 
-  useEffect(() => {
-    return listenProjectList(setProjectList);
-  }, []);
-
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {projectList === null ? (
+          {pouchProjectList === null ? (
             <CircularProgress size={24} thickness={6} />
           ) : (
-            projectList.map(project_info => {
+            pouchProjectList.map(project_info => {
               return (
                 <Grid
                   item

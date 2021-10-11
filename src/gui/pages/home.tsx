@@ -21,14 +21,23 @@
 import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {Link as RouterLink} from 'react-router-dom';
-import {Container, Typography, Box, Grid, Paper, Link} from '@material-ui/core';
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  Paper,
+  Link,
+  CircularProgress,
+} from '@material-ui/core';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
-import {getProjectList} from '../../databaseAccess';
+import {getProjectList, listenProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
+import {useEventedPromiseCatchNow} from '../pouchHook';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -65,7 +74,14 @@ const useStyles = makeStyles(theme => ({
 export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
-  const pouchProjectList = getProjectList();
+  const pouchProjectList = useEventedPromiseCatchNow(
+    getProjectList,
+    listenProjectList,
+    true,
+    [],
+    [],
+    []
+  );
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Index'}, {title: 'Home'}];
   return (
     <Container maxWidth="lg">
@@ -74,7 +90,7 @@ export default function Home() {
         <Grid item xs={12}>
           <Typography variant="overline">Add new Record</Typography>
           <Paper className={classes.paper}>
-            <DashboardActions pouchProjectList={pouchProjectList} />
+            <DashboardActions pouchProjectList={pouchProjectList ?? []} />
           </Paper>
         </Grid>
         {/* Recent Records */}
@@ -115,7 +131,9 @@ export default function Home() {
           <Typography variant="overline">My Projects</Typography>
           <Paper className={classes.paper}>
             <Grid container spacing={1}>
-              {Object.keys(pouchProjectList).length === 0 ? (
+              {pouchProjectList === null ? (
+                <CircularProgress />
+              ) : Object.keys(pouchProjectList).length === 0 ? (
                 <span>No projects found</span>
               ) : (
                 pouchProjectList.map(project_info => {

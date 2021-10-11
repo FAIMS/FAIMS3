@@ -22,23 +22,48 @@ import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
 import {Link as RouterLink} from 'react-router-dom';
 
-import {Box, Button, Container, Typography, Paper} from '@material-ui/core';
+import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  Paper,
+  CircularProgress,
+} from '@material-ui/core';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
-import {getProjectInfo} from '../../databaseAccess';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
+import {useEventedPromiseCatchNow, constantArgsShared} from '../pouchHook';
+import {ProjectInformation} from '../../datamodel/ui';
 
 export default function ProjectSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  const project_info = getProjectInfo(project_id);
+  let project_info: ProjectInformation | null;
+  try {
+    project_info = useEventedPromiseCatchNow(
+      getProjectInfo,
+      constantArgsShared(listenProjectInfo, project_id),
+      false,
+      [project_id],
+      [project_id],
+      [project_id]
+    );
+  } catch (err: any) {
+    if (err.message === 'missing') {
+      return <Redirect to="/404" />;
+    } else {
+      throw err;
+    }
+  }
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {link: ROUTES.PROJECT_LIST, title: 'Projects'},
     {
       link: ROUTES.PROJECT + project_id,
-      title: project_info !== null ? project_info.name : '',
+      title: project_info !== null ? project_info.name : '[loading]',
     },
     {title: 'Settings'},
   ];
@@ -48,11 +73,11 @@ export default function ProjectSettings() {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info !== null ? project_info.name : project_id} Settings
+          {project_info.name} Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Update the project settings for
-          {project_info !== null ? project_info.name : project_id}.
+          {project_info.name}.
         </Typography>
       </Box>
       <Paper square>
@@ -66,6 +91,6 @@ export default function ProjectSettings() {
       </Paper>
     </Container>
   ) : (
-    <Redirect to="/404" />
+    <CircularProgress />
   );
 }
