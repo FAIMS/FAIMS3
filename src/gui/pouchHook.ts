@@ -137,9 +137,6 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
  * wait for a Promise to resolve before give you a final value.
  * In the intermediate state, you can render something different.
  *
- * If you need to start the promise immediately, use useEffect to run the
- * second return value, the manual_trigger
- *
  * This can also (because of PouchDB Change events) cause the promise to re-run
  * whenever an EventEmitter emits an event. (Attaching to this event emitter
  * is left to the user. The user gets a callback to attach)
@@ -147,10 +144,15 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
  * @param startGetting Main promise that gets the value you want
  * @param startListening Gives you a callback that you attach to an EventEmitter
  *                       Also, if the user needs to detach this, this should return
- *                       A 'destructor' to detach it
- * @param listener_dependencies When values in this list change, startListening and stopListening will re-trigger.
- *                              You'd usually use this if startListening listens on different things
- *                              depending on some values, in which case, put said values in this array.
+ *                       A 'destructor' to detach it (or if listener_dependencies changes)
+ * @param dependencies When values in this list change, the promise re-runs,
+ *                     and startListening re-runs, (The stored output of previous call
+ *                     to startListening, i.e. last destructor, is run as well)
+ *                     You'd usually use this if startListening listens on different things
+ *                     depending on some values, in which case, put said values in this array.
+ *                     Developer note: I had separate promise and startListening dependencies,
+ *                     But in practice they ended up being the same in most use cases,
+ *                     and if you've setup destructors properly, it doesn't hurt.
  * @param stopAtError Determines behaviour of error handling:
  *                    true: Whenever an error is thrown from the main promise OR
  *                          from the startListening's error_callback, everything
@@ -158,6 +160,8 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
  *                    false: An error is treated like a regular value: If new events
  *                           from the listener are triggered, or dependencies change,
  *                           the error is discarded and the promise is re-run.
+ * @param args Arguments used to call startGetting for the first time, and
+ *             for any subsequent times where a dependency array changes
  * @returns Current state of the promise: Loading, Error, or Resolved, and
  *          Function to manually trigger the Promise to re-run as if an event or
  *          error occurred
@@ -165,12 +169,13 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
 export function useEventedPromise<A extends Array<unknown>, V>(
   startGetting: (...args: A) => Promise<V>,
   startListening: (
-    trigger_callback: (...args: A) => void,
+    trigger_callback: () => void,
     error_callback: (error: {}) => void
   ) => void | (() => void), //<- Destructor to detach
   stopAtError: boolean,
-  listener_dependencies: React.DependencyList
-): [PromiseState<V, A>, (...args: A) => void, (err: {}) => void] {
+  dependencies: React.DependencyList,
+  ...args: A
+): PromiseState<V, A> {
   const [state, setState] = useState(
     new PromiseState<V, A>({loading: undefined})
   );
@@ -200,113 +205,62 @@ export function useEventedPromise<A extends Array<unknown>, V>(
     }
   };
 
-  const promise_error_callback = (
-    thisValuesTriggerCount: number
-  ) => (new_error: {}) => {
+  const set_error = (new_error: {}) => {
     // Don't do anything if we stopped for an error
     if (state.error !== undefined && stopAtError) {
       return;
     }
+    setState(new PromiseState({error: new_error}));
+  };
+
+  const promise_error_callback = (
+    thisValuesTriggerCount: number
+  ) => (new_error: {}) => {
     // Discard the result if another promise has started later
     // than the current receiving one did start
-    if (triggerCount.current === thisValuesTriggerCount) {
-      setState(new PromiseState({error: new_error}));
+    // UNLESS we stopAtError, which is the first error only.
+    if (
+      triggerCount.current === thisValuesTriggerCount ||
+      (state.error === undefined && stopAtError)
+    ) {
+      set_error(new_error);
     }
   };
 
-  const start_waiting_safe = (...args: A) => {
+  const start_waiting_safe = () => {
+    // Don't do anything if we stopped for an error
+    if (state.error !== undefined && stopAtError) {
+      return;
+    }
     setState(
       new PromiseState<V, A>({loading: args})
     );
     triggerCount.current += 1;
-    startGetting(...args).then(
-      promise_value_callback(triggerCount.current),
-      promise_error_callback(triggerCount.current)
-    );
-  };
-
-  const trigger_listener = (...args: A) => {
-    // Don't do anything if we stopped for an error
-    if (state.error !== undefined && stopAtError) {
-      return;
-    }
-    // Start loading a new value for the promise when an event occurs
-    start_waiting_safe(...args);
-  };
-
-  const error_listener = (new_error: {}) => {
-    // Don't change an error that's already set
-    if (state.error !== undefined && stopAtError) {
-      return;
-    }
-    setState(
-      new PromiseState<V, A>({error: new_error})
-    );
-  };
-
-  // Listener-triggered loads
-  useEffect(() => {
     try {
-      startListening(trigger_listener, error_listener);
+      startGetting(...args).then(
+        promise_value_callback(triggerCount.current),
+        promise_error_callback(triggerCount.current)
+      );
     } catch (err: any) {
-      error_listener(err);
+      promise_value_callback(triggerCount.current)(err);
     }
-  }, listener_dependencies);
+  };
 
-  return [state, trigger_listener, error_listener];
-}
+  // Starting loading as well as start listening for further events.
+  useEffect(() => {
+    start_waiting_safe();
+    let destruct: (() => void) | undefined = undefined;
+    try {
+      const val = startListening(start_waiting_safe, set_error);
+      if (typeof val === 'function') {
+        // It's either val or void,
+        destruct = val;
+      }
+    } catch (err: any) {
+      set_error(err);
+    }
+    return destruct;
+  }, dependencies);
 
-/**
- * More ergonomic, but restrictive, version of useEventedPromise that *always*
- * starts the startGetter immediately (using useEffect) and *always* throws
- * errors using a throw in the hook here. (Returns null when [re]loading)
- * React hook abtracting the use of an EventEmitter combined with a Promise
- *
- * Allows you to wait for events to occur, then when they do occur, further
- * wait for a Promise to resolve before give you a final value.
- * In the intermediate state, you can render something different.
- *
- * This can also (because of PouchDB Change events) cause the promise to re-run
- * whenever an EventEmitter emits an event. (Attaching to this event emitter
- * is left to the user. The user gets a callback to attach)
- *
- * @param startGetting Main promise that gets the value you want
- * @param startListening Gives you a callback that you attach to an EventEmitter
- *                       Also, if the user needs to detach this, this should return
- *                       A 'destructor' to detach it
- * @param listener_dependencies When values in this list change, startListening and stopListening will re-trigger.
- *                              You'd usually use this if startListening listens on different things
- *                              depending on some values, in which case, put said values in this array.
- * @param stopAtError Determines behaviour of error handling:
- *                    true: Whenever an error is thrown from the main promise OR
- *                          from the startListening's error_callback, everything
- *                          part of this hook stops, only returning the last error
- *                    false: An error is treated like a regular value: If new events
- *                           from the listener are triggered, or dependencies change,
- *                           the error is discarded and the promise is re-run.
- * @param start_args Arguments used to call startGetting for the first time, and
- *                   for any subsequent times where a dependency array changes
- * @param start_dependencies Dependency array to cause the startGetting function
- *                           to start running again
- * @returns Current state of the promise: Loading, or Resolved.
- */
-export function useEventedPromiseCatchNow<A extends Array<unknown>, V>(
-  startGetting: (...args: A) => Promise<V>,
-  startListening: (
-    trigger_callback: (...args: A) => void,
-    error_callback: (error: {}) => void
-  ) => void | (() => void), //<- Destructor to detach
-  stopAtError: boolean,
-  listener_dependencies: React.DependencyList,
-  start_args: A,
-  start_dependencies: React.DependencyList
-): null | V {
-  const [result, fetch] = useEventedPromise(
-    startGetting,
-    startListening,
-    stopAtError,
-    listener_dependencies
-  );
-  useEffect(() => fetch(...start_args), start_dependencies);
-  return result.expect();
+  return state;
 }
