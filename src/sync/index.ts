@@ -331,19 +331,17 @@ export function listenDataDB(
   ) => any,
   error_listener: (value: any) => any
 ): () => void {
-  // This is an array to allow it to be read/writeable from closures
-  const changes: [null | PouchDB.Core.Changes<ProjectMetaObject>] = [null];
   return listenProject(
     active_id,
     (project, throw_error, _meta_changed, data_changed) => {
       if (data_changed) {
-        changes[0] = project.meta.local.changes(change_opts);
-        changes[0].on('change', change_listener);
-        changes[0].on('error', throw_error);
+        const changes = project.meta.local.changes(change_opts);
+        changes.on('change', change_listener);
+        changes.on('error', throw_error);
+        return changes.cancel.bind(changes);
+      } else {
+        return 'keep';
       }
-      return () => {
-        changes[0]!.cancel();
-      };
     },
     error_listener
   );
@@ -393,19 +391,17 @@ export function listenProjectDB(
   ) => any,
   error_listener: (value: any) => any
 ): () => void {
-  // This is an array to allow it to be read/writeable from closures
-  const changes: [null | PouchDB.Core.Changes<ProjectMetaObject>] = [null];
   return listenProject(
     active_id,
     (project, throw_error, meta_changed) => {
       if (meta_changed) {
-        changes[0] = project.meta.local.changes(change_opts);
-        changes[0].on('change', change_listener);
-        changes[0].on('error', throw_error);
+        const changes = project.meta.local.changes(change_opts);
+        changes.on('change', change_listener);
+        changes.on('error', throw_error);
+        return changes.cancel.bind(changes);
+      } else {
+        return 'keep';
       }
-      return () => {
-        changes[0]!.cancel();
-      };
     },
     error_listener
   );
