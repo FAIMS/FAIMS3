@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useEffect} from 'react';
+import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {useHistory} from 'react-router-dom';
 import {Grid, Button, TextField} from '@material-ui/core';
@@ -26,9 +26,11 @@ import Autocomplete from '@material-ui/lab/Autocomplete';
 // import Skeleton from '@material-ui/lab/Skeleton';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
-import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
+import {useEventedPromise} from '../../pouchHook';
+import {listenProjectList} from '../../../databaseAccess';
+import { listenProjectDB } from '../../../sync';
 type DashboardActionProps = {
   pouchProjectList: ProjectInformation[];
 };
@@ -57,27 +59,41 @@ export default function DashboardActions(props: DashboardActionProps) {
     }
   };
 
-  // viewsets and the list of visible views
-  // for each project in the list
-  const [viewSets, setViewSets] = React.useState<
-    {
-      [key in ProjectID]: [ProjectUIViewsets, string[]];
-    }
-  >({});
-
-  useEffect(() => {
-    pouchProjectList.map(project_info => {
-      getUiSpecForProject(project_info.project_id).then(
-        uiSpec => {
-          setViewSets({
-            ...viewSets,
-            [project_info.project_id]: [uiSpec.viewsets, uiSpec.visible_types],
-          });
-        },
-        () => {}
-      );
-    });
-  }, [pouchProjectList]);
+  const viewSets = useEventedPromise(
+    async () => {
+      const viewSets = {} as {
+        [ProjectID: string]: [ProjectUIViewsets, string[]];
+      };
+      const promises = [] as Promise<unknown>[];
+      for (const project_info of pouchProjectList) {
+        promises.push(
+          getUiSpecForProject(project_info.project_id).then(uiSpec => {
+            viewSets[project_info.project_id] = [
+              uiSpec.viewsets,
+              uiSpec.visible_types,
+            ];
+          })
+        );
+      }
+      return Promise.all(promises).then(() => viewSets);
+    },
+    // Both a change in the whole list of projects as well
+    // as a change in the individual project metadata DBs (for uiSpec)
+    // can trigger updat
+    (trig, err) => {
+      const project_list_detach = listenProjectList(trig, err);
+      const individual_project_detachs = pouchProjectList.map(project_info => {
+        const project_id = project_info.project_id;
+        return listenProjectDB(project_id, {since: 'now'}, trig, err);
+      });
+      return () => {
+        project_list_detach();
+        individual_project_detachs.forEach(detach => detach());
+      };
+    },
+    true,
+    [] //pouchProjectList is dependency, but events come from listenProjectList
+  ).expect();
 
   return (
     <React.Fragment>
@@ -111,7 +127,7 @@ export default function DashboardActions(props: DashboardActionProps) {
                 )}
               />
             </Grid>
-            {value !== null && value.value in viewSets ? (
+            {value !== null && viewSets !== null && value.value in viewSets ? (
               <Grid>
                 {viewSets[value.value][1].map(viewset_name => (
                   <Button

@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import {getProjectDB} from './sync/index';
+import {getProjectDB, listenProjectDB} from './sync/index';
 import {ProjectID} from './datamodel/core';
 import {
   PROJECT_METADATA_PREFIX,

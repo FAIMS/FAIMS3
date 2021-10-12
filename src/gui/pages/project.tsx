@@ -27,7 +27,7 @@ import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
-import {useEventedPromiseCatchNow, constantArgsShared} from '../pouchHook';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@material-ui/core';
 import {ProjectInformation} from '../../datamodel/ui';
 
@@ -35,14 +35,13 @@ export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   let project_info: ProjectInformation | null;
   try {
-    project_info = useEventedPromiseCatchNow(
+    project_info = useEventedPromise(
       getProjectInfo,
       constantArgsShared(listenProjectInfo, project_id),
       false,
       [project_id],
-      [project_id],
-      [project_id]
-    );
+      project_id
+    ).expect();
   } catch (err: any) {
     if (err.message !== 'missing') {
       throw err;

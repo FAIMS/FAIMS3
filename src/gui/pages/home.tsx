@@ -37,7 +37,7 @@ import {getProjectList, listenProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
-import {useEventedPromiseCatchNow} from '../pouchHook';
+import {useEventedPromise} from '../pouchHook';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -74,14 +74,12 @@ const useStyles = makeStyles(theme => ({
 export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
-  const pouchProjectList = useEventedPromiseCatchNow(
+  const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
     true,
-    [],
-    [],
     []
-  );
+  ).expect();
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Index'}, {title: 'Home'}];
   return (
     <Container maxWidth="lg">

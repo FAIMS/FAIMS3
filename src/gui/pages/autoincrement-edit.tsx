@@ -29,7 +29,7 @@ import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementEditForm from '../components/autoincrement/edit-form';
-import {useEventedPromiseCatchNow, constantArgsShared} from '../pouchHook';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
 
 export default function AutoIncrementEdit() {
   const {project_id, form_id, field_id} = useParams<{
@@ -38,14 +38,13 @@ export default function AutoIncrementEdit() {
     field_id: string;
   }>();
   const name = `${form_id} (${field_id})`;
-  const project_info = useEventedPromiseCatchNow(
+  const project_info = useEventedPromise(
     getProjectInfo,
     constantArgsShared(listenProjectInfo, project_id),
     false,
     [project_id],
-    [project_id],
-    [project_id]
-  );
+    project_id
+  ).expect();
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},

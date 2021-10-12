@@ -48,20 +48,14 @@ export default function RecordsTable(props: RecordsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  const [rows, fetchRows] = useEventedPromise(
+  const rows = useEventedPromise(
     async (project_id: ProjectID) =>
       Object.values(await listRecordMetadata(project_id)),
-    (trig, err) =>
-      listenDataDB(
-        project_id,
-        {since: 'now', live: true},
-        () => trig(project_id),
-        err
-      ),
+    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
     false,
-    [project_id]
+    [project_id],
+    project_id
   );
-  useEffect(() => fetchRows(project_id), [project_id]);
 
   const columns: GridColDef[] = [
     {

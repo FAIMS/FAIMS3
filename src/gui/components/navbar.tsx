@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -52,7 +52,7 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from './alert';
 import {ProjectInformation} from '../../datamodel/ui';
-import {useEventedPromiseCatchNow} from '../pouchHook';
+import {useEventedPromise} from '../pouchHook';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -168,14 +168,12 @@ export default function Navbar() {
   // const [error, setError] = useState<string | null>(null);
   const toggle = () => setIsOpen(!isOpen);
 
-  const pouchProjectList = useEventedPromiseCatchNow(
+  const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
     true,
-    [],
-    [],
     []
-  );
+  ).expect();
 
   const topMenuItems: Array<MenuItemProps> = [
     {

@@ -37,21 +37,20 @@ import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementConfigForm from '../components/autoincrement/browse-form';
-import {constantArgsShared, useEventedPromiseCatchNow} from '../pouchHook';
+import {constantArgsShared, useEventedPromise} from '../pouchHook';
 
 export default function Record() {
   const {project_id} = useParams<{
     project_id: ProjectID;
   }>();
 
-  const project_info = useEventedPromiseCatchNow(
+  const project_info = useEventedPromise(
     getProjectInfo,
     constantArgsShared(listenProjectInfo, project_id),
     false,
     [project_id],
-    [project_id],
-    [project_id]
-  );
+    project_id
+  ).expect();
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},

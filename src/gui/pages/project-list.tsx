@@ -26,11 +26,8 @@ import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
-import {ProjectInformation} from '../../datamodel/ui';
-import {useState} from 'react';
-import {useEffect} from 'react';
 import {CircularProgress} from '@material-ui/core';
-import { useEventedPromiseCatchNow } from '../pouchHook';
+import {useEventedPromise} from '../pouchHook';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -65,14 +62,12 @@ const useStyles = makeStyles(theme => ({
 export default function ProjectList() {
   const classes = useStyles();
   // const globalState = useContext(store);
-  const pouchProjectList = useEventedPromiseCatchNow(
+  const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
     true,
-    [],
-    [],
     []
-  );
+  ).expect();
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {title: 'Projects'},

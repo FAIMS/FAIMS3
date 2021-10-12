@@ -18,10 +18,12 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
 import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel/core';
+import {listenProjectDB} from '../../sync';
+import {useEventedPromise} from '../pouchHook';
 
 type MetadataProps = {
   project_id: ProjectID;
@@ -33,19 +35,14 @@ export default function MetadataRenderer(props: MetadataProps) {
   const project_id = props.project_id;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
-  const [metadata_value, setMetadata] = useState(null as string | null);
-
-  useEffect(() => {
-    const getMeta = async () => {
-      try {
-        const meta = await getProjectMetadata(project_id, metadata_key);
-        setMetadata(meta);
-      } catch (err) {
-        setMetadata('Unknown');
-      }
-    };
-    getMeta();
-  }, []);
+  const metadata_value = useEventedPromise(
+    getProjectMetadata,
+    listenProjectDB.bind(null, project_id, {since: 'now'}),
+    true,
+    [project_id, metadata_key],
+    project_id,
+    metadata_key
+  );
 
   return (
     <Chip
