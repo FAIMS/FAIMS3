@@ -52,6 +52,7 @@ export interface RecordMetadata {
   updated: Date;
   updated_by: string;
   conflicts: boolean;
+  deleted: boolean;
 }
 
 export type RecordMetadataList = {

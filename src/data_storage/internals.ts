@@ -158,6 +158,7 @@ export async function listRecordMetadata(
         updated: new Date(revision.created),
         updated_by: revision.created_by,
         conflicts: record.heads.length > 1,
+        deleted: revision.deleted ? true : false,
       };
     });
     return out;

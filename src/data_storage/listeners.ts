@@ -51,10 +51,24 @@ add_initial_listener(initializeEvents => {
  */
 export function listenRecordsList(
   project_id: ProjectID,
-  callback: (recordList: RecordMetadataList) => unknown
+  callback: (recordList: RecordMetadataList) => unknown,
+  filter_deleted = true
 ): () => void {
   const runCallback = () =>
     listRecordMetadata(project_id)
+      .then(record_list => {
+        if (filter_deleted) {
+          const new_record_list: RecordMetadataList = {};
+          for (const [key, metadata] of Object.entries(record_list)) {
+            if (!metadata.deleted) {
+              new_record_list[key] = metadata;
+            }
+          }
+          return new_record_list;
+        } else {
+          return record_list;
+        }
+      })
       .then(callback)
       .catch(err => console.error('Uncaught record list error', err));
 

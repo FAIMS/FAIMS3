@@ -44,6 +44,9 @@ type RecordsTableProps = {
 
 export default function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows} = props;
+  // TODO: make this a prop and add logic around whether to display deleted or
+  // not
+  const filter_deleted = true;
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -97,7 +100,8 @@ export default function RecordsTable(props: RecordsTableProps) {
         if (!_.isEqual(Object.values(newPouchRecordList), rows)) {
           setRows(Object.values(newPouchRecordList));
         }
-      }
+      },
+      filter_deleted
     );
     return destroyListener; // destroyListener called when this component unmounts.
   }, [project_id, rows]);
