@@ -36,7 +36,7 @@ import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
 import {registerComponent, setupComponentProperties} from './internals';
 
 // Mapping plugin imports
-import {MapFormField} from 'faims3-map-input';
+import {MapFormField} from '@faims-project/faims3-map-input';
 
 /*
  * This should be enough to make typescript/the build system happy

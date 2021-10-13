@@ -64,7 +64,7 @@
     "@types/react-router-dom": "^5.1.7",
     "@types/uuid": "^8.3.0",
     "clsx": "^1.1.1",
-    "faims3-map-input": "https://github.com/FAIMS/faims3-map-input.git",
+    "@faims-project/faims3-map-input": "^1.0.0",
     "fast-json-stable-stringify": "^2.1.0",
     "formik": "^2.2.6",
     "formik-material-ui": "^3.0.1",
