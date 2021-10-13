@@ -391,7 +391,6 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         {formProps => {
               return (
                 <Form >
-                
                 <Grid container className={classes.newfield} key={`formcompoenet-form-${index}`}>
                 <Grid item sm={10} xs={12}>
                   <Grid container spacing={1} >
@@ -478,7 +477,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         <Grid item sm={12} xs={12}>
         <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
         </Grid>
-        <Grid item sm={not_xs?8:12} xs={12}>
+        <Grid item sm={not_xs&&formtabs.length>1?8:12} xs={12}>
         
       {formtabs.map((formtab:string,index:number)=>
         
@@ -487,7 +486,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         </TabPanel>
         )}
         </Grid>
-        {not_xs?
+        {not_xs&&formtabs.length>1?
         (<Grid item sm={4} xs={12}>
         
         <Box
@@ -497,8 +496,6 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
               style={{overflowX: 'scroll'}}
             >
             {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel??'form'}/>}
-            <pre>{JSON.stringify(props.projectvalue, null, 2)}</pre>
-            <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
         </Box>
         </Grid>):('')}
       </Grid>)

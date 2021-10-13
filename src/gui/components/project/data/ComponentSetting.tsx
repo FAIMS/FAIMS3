@@ -177,7 +177,12 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   info_group:[
   {name:'accessadded',label:'Add User Roles',namespace:'formik-material-ui',componentName:'TextField',view:'info_group',required:false,value:projectvalue['accessadded']}],
   section:[],
-  form:[]
+  form:[],
+  users:[ //users info will be defined by access groups
+  ],
+  behaviours:[
+  {name:'Sync',label:'Sync or not',namespace:'formik-material-ui',componentName:'Checkbox',view:'behaviours',required:true,initialValue:true},
+  ],
   }  
 
   // This part will be updated in the future TODO
@@ -210,6 +215,10 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
       fields[tab][index]={...newfield}
     })
   }
+  if(tab==='project'){
+    fields['project']=[...fields['info_general'],...fields['behaviours']];
+  }
+
   if(fields[tab].length>0){
     fields[tab].map((field:any,index:number)=> {
      const {name,view,initialValue,...others}=field

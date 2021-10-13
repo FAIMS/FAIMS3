@@ -50,7 +50,7 @@ const useStyles = makeStyles((theme) => ({
   	// borderTopColor:theme.palette.primary.main
   },
   root:{
-
+    minWidth:55,
   }
 }));
 
@@ -60,13 +60,16 @@ type TabProps={
   value:number;
   handleChange:any;
   handelonChangeLabel?:any;
-
+  not_xs?:boolean;
 }
 
 export function TabTab(props:TabProps){
 	const classes = useStyles();
   	const {tabs,tab_id,value,handleChange, ...other} = props
-  	return (<Tabs
+    const not_xs=props.not_xs??true;
+    console.log(not_xs)
+  	return not_xs?(
+      <Tabs
           value={value}
           onChange={handleChange}
           aria-label={tab_id}
@@ -76,7 +79,19 @@ export function TabTab(props:TabProps){
         {tabs.map((tab:any,index:number)=>(
           <Tab className={tab_id==='primarytab'?  classes.root :classes.fieldtab } key={`${tab_id}-${index}`} 
           label={tab}  {...a11yProps(tab_id,index)} />  ))}  
-      </Tabs>);
+      </Tabs>):(
+      <Tabs
+          value={value}
+          onChange={handleChange}
+          aria-label={tab_id}
+          id={tab_id}
+          orientation={"vertical" }
+      >
+        {tabs.map((tab:any,index:number)=>(
+          <Tab className={tab_id==='primarytab'?  classes.root :classes.fieldtab } key={`${tab_id}-${index}`} 
+          label={tab}  {...a11yProps(tab_id,index)} />  ))}  
+      </Tabs>
+      );
 }
 
 export function TabEditable(props: TabProps) {

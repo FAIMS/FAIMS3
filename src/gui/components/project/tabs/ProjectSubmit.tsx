@@ -58,10 +58,10 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
                             before re-submitting.
       </Alert>
       :''}
-        {projectvalue.ispublic!==true &&<ProjectSubmit id='submit_save' type='submit' isSubmitting={isSubmitting} text='Save' onButtonClick={onButtonClick} />}
+        {projectvalue.ispublic!==true && <ProjectSubmit id='submit_save' type='submit' isSubmitting={isSubmitting} text='Save' onButtonClick={onButtonClick} />}
         <Typography>{state===true&&projectvalue.ispublic!==true?'NoteBook is Saved but not Published yet, Click Submit button to Send Request':state===false&&projectvalue.ispublic!==true?'Click Button to Save Notebook':''}
         </Typography>
-        <ProjectSubmit id='submit_publish' type='submit' isSubmitting={state===false&&projectvalue.ispublic!==true?'false':isSubmitting} issubmittext='Publish' text={projectvalue.ispublic!==true ?'Publish':'Update'} onButtonClick={props.handlepublish} />
+        <ProjectSubmit id='submit_publish' type='submit' isSubmitting={state===false&&projectvalue.ispublic!==true?true:isSubmitting} issubmittext='Publish' text={projectvalue.ispublic!==true ?'Publish':'Update'} onButtonClick={props.handlepublish} />
         <Typography>{projectvalue.ispublic===true?'Project is Online Save your new design by Click Update Button': ''}
         {projectvalue.ispublic!==true&&state===false?'Save Notebook Firstly then click Publish Button to send request': ''}
         </Typography>
@@ -79,7 +79,6 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
             <Typography >
             Once your project has been approved, user will received and email inviting them to join this project. Approval timescales are wiaround 72 hours, depending on staff avaliablity and the current number of request
             </Typography>
-            <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
         </Box>
       </Grid>
     </Grid>

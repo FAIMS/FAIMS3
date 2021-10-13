@@ -25,20 +25,23 @@
 import React from 'react';
 import { useState, useEffect } from 'react'
 import { makeStyles } from '@material-ui/core/styles';
-import { Grid,AppBar} from '@material-ui/core';
+import { Grid,AppBar,Box} from '@material-ui/core';
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import {TabTab,TabEditable} from './tabs/TabTab';
 import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
 import ProjectSubmitTab from './tabs/ProjectSubmit';
-import {handlertype,uiSpecType,projectvalueType} from './data/ComponentSetting'
+import {setProjectInitialValues,handlertype,uiSpecType,projectvalueType,getprojectform} from './data/ComponentSetting'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel,ProjectInformation} from '../../../datamodel/ui'
 import {create_new_project_dbs}  from '../../../sync/new-project'
 import {getProjectInfo} from '../../../databaseAccess';
 import {setProjectMetadata} from '../../../projectMetadata';
+import grey from '@material-ui/core/colors/grey';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import {useTheme} from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -67,12 +70,15 @@ const ini_projectvalue={accesses:accessgroup,submitActionFORM1:"Save and New",is
 export default function CreateProjectCard(props:CreateProjectCardProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
-    const classes = useStyles();
+    const theme = useTheme();
+    const classes = useStyles(theme);
+    const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+
     const [project_id,setProjectID]=useState(props.project_id);
     const [projectvalue,setProjectValue]=useState<projectvalueType>({...ini_projectvalue,project_id:project_id})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
-    const [projecttabvalue,setProjecttabvalue]=useState(-1)
+    const [projecttabvalue,setProjecttabvalue]=useState(0)
     // const [uiSpec,setUISpec]=useState<uiSpecType|null>(props.uiSpec)
     const [formuiSpec,setFormuiSpec]=useState<ProjectUIModel>({fields:{},views:{},viewsets:{},visible_types:[]})
     const [formtabs,setformTabs]=useState<Array<string>>([])    
@@ -82,11 +88,11 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
 
 
-    useEffect(() => {
+    // useEffect(() => {
 
-     setinit();
+    //  setinit();
 
-    }, []);
+    // }, []);
 
     useEffect(() => {
 
@@ -152,8 +158,10 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       }
 
       if(props.project_id===undefined) {
-
-        setProjectValue({...ini_projectvalue,project_id:project_id}); console.log('No project ID')
+        const newprojectvalue=setProjectInitialValues(getprojectform(projectvalue,'project'),'start-view',ini_projectvalue)
+        setProjectValue({...newprojectvalue})
+        console.log(newprojectvalue)
+        console.log(projectvalue)
       }
 
       // if(project_id!==undefined) setProjectInfo(getProjectInfo(project_id))
@@ -250,9 +258,12 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
 
   return ( 
     <div className={classes.root}> 
-     <AppBar position="static" color='primary'>
-          <TabTab tabs={projecttabs} value={projecttabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
-      </AppBar>
+      <AppBar position="static" color='primary'>
+        <TabTab not_xs={not_xs} tabs={projecttabs} value={projecttabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
+       </AppBar>
+     <Grid container>
+      <Grid item sm={8} xs={12}>
+      
       <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
         {projecttabvalue===0?  <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject}/>:''}
       </TabPanel>
@@ -265,6 +276,20 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       <TabPanel value={projecttabvalue} index={6} tabname='primarytab' >
         <ProjectSubmitTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleSubmit={handlerprojectsubmit_pounch} handlepublish={handlerprojectsubmit_counch} />
       </TabPanel>
+      </Grid>
+      <Grid item sm={4} xs={12}>
+        <Box
+              bgcolor={grey[200]}
+              pl={2}
+              pr={2}
+              style={{overflowX: 'scroll'}}
+            >
+            <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
+        <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
+        </Box>
+      
+       </Grid>
+       </Grid>
   </div>
 
   );

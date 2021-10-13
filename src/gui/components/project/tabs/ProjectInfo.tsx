@@ -140,7 +140,7 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
 
   return (
     <Grid container>
-      <Grid item sm={8} xs={12}>
+      <Grid item sm={12} xs={12}>
         <TabTab tabs={['general','group']} value={infotabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
         <TabPanel value={infotabvalue} index={0} tabname='primarytab' >
           {(project_id!==undefined&&projectvalue.name!==''&&projectvalue.name!==undefined&&initialValues.name!=='')||project_id===undefined?<Formik
@@ -187,16 +187,6 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
           </Formik>
           :''}
         </TabPanel>
-      </Grid>
-      <Grid item sm={4} xs={12}>
-         <Box
-              bgcolor={grey[200]}
-              pl={2}
-              pr={2}
-              style={{overflowX: 'scroll'}}
-            >
-            <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
-        </Box>
       </Grid>
     </Grid>
   )}
