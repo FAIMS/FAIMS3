@@ -22,7 +22,7 @@ import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
 
 import {LOCALLY_CREATED_PROJECT_PREFIX} from '../datamodel/database';
-import {create_new_project_dbs} from './new-project';
+import {create_new_project_dbs} from '../sync/new-project';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
