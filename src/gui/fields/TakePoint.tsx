@@ -21,27 +21,69 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
-import {Plugins} from '@capacitor/core';
+import {Plugins, GeolocationPosition} from '@capacitor/core';
+
+import {FAIMSPosition} from '../../datamodel/geo';
 
 const {Geolocation} = Plugins;
 
+function capacitor_coordindates_to_faims_pos(
+  coordinates: GeolocationPosition
+): FAIMSPosition {
+  const position = coordinates.coords;
+  const timestamp = coordinates.timestamp;
+  return {
+    type: 'Feature',
+    properties: {
+      timestamp: timestamp,
+      altitude: position.altitude ?? null,
+      speed: position.speed ?? null,
+      heading: position.heading ?? null,
+      accuracy: position.accuracy,
+      altitude_accuracy: position.altitudeAccuracy ?? null,
+    },
+    geometry: {
+      type: 'Point',
+      coordinates: [position.latitude, position.longitude],
+    },
+  };
+}
+
+interface Props {
+  enableHighAccuracy?: boolean;
+  timeout?: number;
+  maximumAge?: number;
+}
+
 export class TakePoint extends React.Component<
   FieldProps &
+    Props &
     ButtonProps & {
       ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
       ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
       NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
     }
 > {
+  getPositionOptions() {
+    return {
+      // override the default capacitor setting for enableHighAccuracy as we
+      // almost always want the high accuracy version, and users should only
+      // opt out when they understand when it's not needed
+      enableHighAccuracy: this.props.enableHighAccuracy ?? true,
+      // same default as capacitor
+      timeout: this.props.timeout ?? 10000, // in milliseconds
+      // same default as capacitor
+      maximumAge: this.props.maximumAge ?? 0, // in milliseconds
+    };
+  }
+
   async takePoint() {
     try {
-      const coordinates = await Geolocation.getCurrentPosition();
+      const coordinates = capacitor_coordindates_to_faims_pos(
+        await Geolocation.getCurrentPosition(this.getPositionOptions())
+      );
       console.debug('Take point coord', coordinates);
-      const pos = {
-        latitude: coordinates.coords.latitude,
-        longitude: coordinates.coords.longitude,
-      };
-      this.props.form.setFieldValue(this.props.field.name, pos);
+      this.props.form.setFieldValue(this.props.field.name, coordinates);
     } catch (err: any) {
       console.error(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
@@ -54,7 +96,10 @@ export class TakePoint extends React.Component<
     if (pos !== null) {
       postext = (
         <span {...this.props['ValueTextProps']}>
-          Lat: {pos.latitude}; Long: {pos.longitude}
+          Lat: {pos.geometry.coordinates[0]}; Long:{' '}
+          {pos.geometry.coordinates[0]}; Acc: {pos.properties.accuracy}; Alt:{' '}
+          {pos.properties.altitude ?? 'Not captured'}; AltAcc:{' '}
+          {pos.properties.altitude_accuracy ?? 'Not captured'};
         </span>
       );
     }
