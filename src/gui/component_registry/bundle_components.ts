@@ -25,6 +25,7 @@ import {TextField as FormikTextField} from 'formik-material-ui';
 import {Select as FormikSelect} from 'formik-material-ui';
 import {RadioGroup as FormikRadioGroup} from 'formik-material-ui';
 // import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-material-ui';
+
 import {Select as FAIMSSelect} from '../fields/select';
 import {ActionButton} from '../fields/ActionButton';
 import {TakePoint} from '../fields/TakePoint';
@@ -36,7 +37,7 @@ import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
 import {registerComponent, setupComponentProperties} from './internals';
 
 // Mapping plugin imports
-import {MapFormField} from 'faims3-map-input';
+import {MapFormField} from '@faims-project/faims3-map-input';
 
 /*
  * This should be enough to make typescript/the build system happy
