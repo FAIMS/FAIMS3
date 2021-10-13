@@ -31,6 +31,7 @@ import {TabTab,TabEditable} from './tabs/TabTab';
 import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
+import ProjectSubmitTab from './tabs/ProjectSubmit';
 import {handlertype,uiSpecType,projectvalueType} from './data/ComponentSetting'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
@@ -59,15 +60,16 @@ const accessgroup=['admin','moderator','team']
 
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
-const projecttabs=['Info','Design','Preview']
+const projecttabs=['Info','Design','Overview','Preview','User','Behaviour','Submit']
 const variant_label='main'
+const ini_projectvalue={accesses:accessgroup,submitActionFORM1:"Save and New",ispublic:false,errors:[]}
 
 export default function CreateProjectCard(props:CreateProjectCardProps) {
     // if(props.project_id===undefined) console.log('New Project'+props.project_id)
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const [project_id,setProjectID]=useState(props.project_id);
-    const [projectvalue,setProjectValue]=useState<projectvalueType>({accesses:accessgroup,project_id:project_id,submitActionFORM1:"Save and New"})
+    const [projectvalue,setProjectValue]=useState<projectvalueType>({...ini_projectvalue,project_id:project_id})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [projecttabvalue,setProjecttabvalue]=useState(-1)
@@ -150,8 +152,8 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       }
 
       if(props.project_id===undefined) {
-        
-        setProjectValue({accesses:accessgroup,submitActionFORM1:"Save and New"}); console.log('No project ID')
+
+        setProjectValue({...ini_projectvalue,project_id:project_id}); console.log('No project ID')
       }
 
       // if(project_id!==undefined) setProjectInfo(getProjectInfo(project_id))
@@ -228,6 +230,24 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       }
     }
 
+    const handlerprojectsubmit_pounch = () => {
+      //save into local pounch
+      
+      if(project_id===undefined){
+        getnewdb();
+      }
+      if(project_id!==''&&project_id!==null&&Object.keys(formuiSpec['fields']).length!==0){
+        saveformuiSpec()
+      }
+      //updateproject(projectvalue); //TODO check the function if it's correct
+
+    }
+
+    const handlerprojectsubmit_counch = () => {
+      //if project online save it
+      //else if project local, submit request in Beta
+    }
+
   return ( 
     <div className={classes.root}> 
      <AppBar position="static" color='primary'>
@@ -239,8 +259,11 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
         {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
       </TabPanel>
-      <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
+      <TabPanel value={projecttabvalue} index={3} tabname='primarytab' >
         {projecttabvalue===2?'Project Preview':''}
+      </TabPanel>
+      <TabPanel value={projecttabvalue} index={6} tabname='primarytab' >
+        <ProjectSubmitTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleSubmit={handlerprojectsubmit_pounch} handlepublish={handlerprojectsubmit_counch} />
       </TabPanel>
   </div>
 

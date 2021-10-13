@@ -30,6 +30,34 @@ import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
 type ButtonProps=any
 
+export function ProjectSubmit(props:ButtonProps){
+  return ( 
+    <Button
+    id={props.id}
+    type="submit"
+    color='primary'
+    variant="contained"
+    onClick={() => props.onButtonClick(props.id)}
+    disableElevation
+    disabled={props.isSubmitting} >
+    {props.isSubmitting?
+    props.issubmittext??'Working...'
+    : props.text}
+    {/*{props.isSubmitting && (
+                              <CircularProgress
+                                size={24}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  marginTop: -12,
+                                  marginLeft: -12,
+                                }}
+                              />
+                            )}*/}
+   </Button>)
+}
+
 
 export function CusButton(props:ButtonProps) {
   return (
