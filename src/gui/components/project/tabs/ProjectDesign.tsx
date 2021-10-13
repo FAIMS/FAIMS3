@@ -272,11 +272,19 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       const {newviews,components}=updateuiSpec('formvariants'+type,{tabs:tabs,formuiSpec:formuiSpec,formcomponents:formcomponents})
       setFormuiSpec({fields:formuiSpec.fields,views:newviews.views,viewsets:newviews.viewsets,visible_types:newviews.visible_types})
       if(type==='add'){// To fix the misread of tab names
-        ChangeVariants(tabs[tabs.length-1])
+        const tabname=tabs[tabs.length-1]
+        ChangeVariants(tabname)
         setformlabel(formtabs[tabs.length-1])
+        //set default value as preselect value for formaction
+        const newprojectvalue=props.projectvalue
+        newprojectvalue['submitAction'+tabname]="Save and New"
+        props.setProjectValue({...newprojectvalue});
+      }else{
+        //after tabname changes direct user to form1 section1
+        const tabname=formuiSpec['visible_types'][0]
+        ChangeVariants(tabname)
+        setformlabel(formtabs[0])
       }
-
-      
     }
 
     const handelonChangeLabelSection = (tabs:Array<string>,type:string) =>{
@@ -414,7 +422,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
 
   const FieldPanel = () =>{
     /****section tab: 
-     * InfotTab
+     * SectionInfotTab
      * component Tab
     ***/
     return fieldvalue!==3?(

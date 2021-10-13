@@ -34,6 +34,7 @@ const VISIBLE_TYPE='visible_types'
 const NEWFIELDS='newfield'
 const DEFAULT_accessgroup=['admin','moderator']
 const DEFAULT_accessgroup_d=['admin','moderator','team']
+const CONNECTION_RELATIONS=['To be added']
 export type handlertype=any
 export type uiSpecType={fields:any,views:any,viewsets:any,visible_types:any}
 export type projectvalueType=any
@@ -41,13 +42,17 @@ type signlefieldType=any
 type fieldlistType=any
 type viewlistType=any
 type optionType={value:string;label:string}
+type tabLinkType={tab:string,link:string}
 export const getid = ()=>{
 	return uuidv4().split('-')[0];
 }
 
-export const getconnections = (comparetab:string, uiSpec:uiSpecType,origintab:string) =>{
-  const conection='To be added';
-  return conection;
+export const getconnections = (comparetab:string, uiSpec:uiSpecType,tabs:Array<string>) =>{
+  const connecions=CONNECTION_RELATIONS
+  const conectiontabs:Array<tabLinkType>=[];
+  //TODO get relation of tabs and return
+  tabs.map((tab:string)=>conectiontabs.push({tab:tab,link:connecions[0]}))
+  return conectiontabs;
 }
 
 export const getfieldname = (name:string,label:string) =>{

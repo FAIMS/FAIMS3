@@ -67,7 +67,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     const ini={_id:'new_notbook'}
     const classes = useStyles();
     const [project_id,setProjectID]=useState(props.project_id);
-    const [projectvalue,setProjectValue]=useState<projectvalueType>({accesses:accessgroup,project_id:project_id})
+    const [projectvalue,setProjectValue]=useState<projectvalueType>({accesses:accessgroup,project_id:project_id,submitActionFORM1:"Save and New"})
     const [initialValues,setinitialValues]=useState(ini)
     const [projectuiSpec,setProjectuiSpec] = useState<Array<any>>()
     const [projecttabvalue,setProjecttabvalue]=useState(-1)
@@ -149,7 +149,10 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         setFormuiSpec({fields:formview.fields,views:formview.views,viewsets:formview.viewsets,visible_types:variant_default})
       }
 
-      if(props.project_id===undefined) {setProjectValue({accesses:accessgroup}); console.log('No project ID')}
+      if(props.project_id===undefined) {
+        
+        setProjectValue({accesses:accessgroup,submitActionFORM1:"Save and New"}); console.log('No project ID')
+      }
 
       // if(project_id!==undefined) setProjectInfo(getProjectInfo(project_id))
 

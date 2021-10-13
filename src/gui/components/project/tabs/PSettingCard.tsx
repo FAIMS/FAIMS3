@@ -79,18 +79,19 @@ export function SettingCard(props:SettingCard){
 export function FormConnectionCard(props:any){
   const classes = useStyles();
   const tabs=props.tabs.filter((tab:string)=>tab!==props.tabname)
+  const linkedtabs=getconnections(props.tabname,props.formuiSpec,tabs)
   return (
     <List component="nav" aria-label="settings bar" className={classes.formconnection}>
-      {props.tabname}
-      {tabs.map((tab:string)=>
+      {props.tabname} Linked to
+      {linkedtabs.map((tab:{tab:string,link:string})=>
         
-        <ListItem key={props.tabname+'relationlist'}  >
+        <ListItem key={props.tabname+tab.tab+'relationlist'}  >
         <ListItemIcon>
           <AccountTree />
         </ListItemIcon>
         <ListItemText
-          primary={tab}
-          secondary={getconnections(tab,props.formuiSpec,props.tabname)}
+          primary={tab.tab}
+          secondary={tab.link}
         />
         </ListItem>
         
