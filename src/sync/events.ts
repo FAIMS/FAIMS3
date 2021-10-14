@@ -105,7 +105,7 @@ export interface DirectoryEmitter extends EventEmitter {
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
       projects_db: LocalDB<ProjectObject>,
-      default_connection: ConnectionInfo
+      default_connection: ConnectionInfo | null
     ) => unknown
   ): this;
   on(
@@ -114,7 +114,7 @@ export interface DirectoryEmitter extends EventEmitter {
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
       projects_db: LocalDB<ProjectObject>,
-      default_connection: ConnectionInfo,
+      default_connection: ConnectionInfo | null,
       changes: PouchDB.Core.ExistingDocument<ProjectObject>[]
     ) => unknown
   ): this;
@@ -124,7 +124,7 @@ export interface DirectoryEmitter extends EventEmitter {
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
       projects_db: LocalDB<ProjectObject>,
-      default_connection: ConnectionInfo
+      default_connection: ConnectionInfo | null
     ) => unknown
   ): this;
   on(
@@ -221,7 +221,7 @@ export interface DirectoryEmitter extends EventEmitter {
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
     projects_db: LocalDB<ProjectObject>,
-    default_connection: ConnectionInfo,
+    default_connection: ConnectionInfo | null,
     changes: PouchDB.Core.ExistingDocument<ProjectObject>[]
   ): boolean;
   emit(
@@ -229,7 +229,7 @@ export interface DirectoryEmitter extends EventEmitter {
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
     projects_db: LocalDB<ProjectObject>,
-    default_connection: ConnectionInfo
+    default_connection: ConnectionInfo | null
   ): boolean;
   emit(event: 'listing_error', listing_id: string, err: unknown): boolean;
   emit(event: 'directory_local', listings: Set<string>): boolean;

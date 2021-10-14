@@ -36,6 +36,7 @@ export enum ActionType {
 
   ADD_ALERT,
   DELETE_ALERT,
+  ADD_CUSTOM_ALERT,
 }
 
 export interface IS_SYNCING {
@@ -92,4 +93,12 @@ export interface DELETE_ALERT {
   payload: {key: string};
 }
 
-export type AlertActions = ADD_ALERT | DELETE_ALERT;
+export interface ADD_CUSTOM_ALERT {
+  type: ActionType.ADD_CUSTOM_ALERT;
+  payload: {
+    element: JSX.Element[];
+    severity: Color;
+  };
+}
+
+export type AlertActions = ADD_ALERT | DELETE_ALERT | ADD_CUSTOM_ALERT;

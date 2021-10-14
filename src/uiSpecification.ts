@@ -46,7 +46,7 @@ export async function getUiSpecForProject(
     };
   } catch (err) {
     console.warn(err);
-    throw Error('failed to find ui specification');
+    throw Error(`failed to find ui specification for ${project_id}`);
   }
 }
 
@@ -75,4 +75,25 @@ export async function setUiSpecForProject(
     console.warn(err);
     throw Error('failed to set ui specification');
   }
+}
+
+export function getFieldsForViewSet(
+  ui_specification: ProjectUIModel,
+  viewset_name: string
+): {[key: string]: {[key: string]: any}} {
+  const views = ui_specification.viewsets[viewset_name].views;
+  const fields: {[key: string]: {[key: string]: any}} = {};
+  for (const view of views) {
+    const field_names = ui_specification.views[view].fields;
+    for (const field_name of field_names) {
+      fields[field_name] = ui_specification.fields[field_name];
+    }
+  }
+  return fields;
+}
+
+export function getFieldNamesFromFields(fields: {
+  [key: string]: {[key: string]: any};
+}): string[] {
+  return Object.keys(fields);
 }

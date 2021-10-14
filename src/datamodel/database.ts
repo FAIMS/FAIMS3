@@ -93,6 +93,7 @@ export interface ListingsObject {
   description: string;
   projects_db?: PossibleConnectionInfo;
   auth_mechanisms: {[key: string]: AuthInfo};
+  local_only?: boolean;
 }
 
 export interface NonNullListingsObject extends ListingsObject {

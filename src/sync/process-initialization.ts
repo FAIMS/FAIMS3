@@ -56,9 +56,9 @@ import {SyncHandler} from './sync-handler';
 import {NonUniqueProjectID, resolve_project_id} from '../datamodel/core';
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
-const DIRECTORY_TIMEOUT = 2000;
-const LISTINGS_TIMEOUT = 2000;
-const PROJECT_TIMEOUT = 2000;
+const DIRECTORY_TIMEOUT = 6000;
+const LISTINGS_TIMEOUT = 6000;
+const PROJECT_TIMEOUT = 6000;
 
 export async function process_directory(
   directory_connection_info: ConnectionInfo
@@ -81,8 +81,13 @@ export async function process_directory(
       })
     ).docs;
 
+    if (AUTOACTIVATE_PROJECTS) {
+      return new Set(all_listing_ids_in_this_directory);
+    }
+
     console.debug(
-      `The active listing ids are ${active_listings_in_this_directory}`
+      'The active listing ids are:',
+      active_listings_in_this_directory
     );
 
     return new Set(
@@ -94,7 +99,8 @@ export async function process_directory(
   events.emit('directory_local', unupdated_listings_in_this_directory);
 
   if (directory_db.remote !== null) {
-    return; //Already hooked up
+    console.debug('Directory already hooked up.');
+    return;
   }
 
   if (USE_REAL_DATA) {
@@ -135,6 +141,7 @@ export async function process_directory(
       options: {},
     };
 
+    console.debug('Setting up directory local connection');
     setLocalConnection(
       (directory_db as unknown) as Parameters<typeof setLocalConnection>[0]
     );
@@ -195,21 +202,32 @@ export function process_listings(
   });
 }
 
-async function process_listing(listing_object: ListingsObject) {
+export async function process_listing(listing_object: ListingsObject) {
   const listing_id = listing_object._id;
+  const local_only = listing_object.local_only ?? false;
   console.debug(`Processing listing id ${listing_id}`);
 
-  const projects_connection = materializeConnectionInfo(
-    await get_base_connection_info(listing_object),
-    listing_object['projects_db']
-  );
+  const projects_db_id =
+    listing_object['projects_db'] || local_only
+      ? listing_id
+      : DEFAULT_LISTING_ID;
 
-  const [, local_projects_db] = ensure_local_db(
+  const projects_connection = local_only
+    ? null
+    : materializeConnectionInfo(
+        (await get_default_instance())['projects_db'],
+        listing_object['projects_db']
+      );
+
+  const [projects_created, local_projects_db] = ensure_local_db(
     'projects',
-    listing_id,
+    projects_db_id,
     true,
     projects_dbs
   );
+  if (projects_created) {
+    console.debug(`Created projects db ${projects_db_id}`);
+  }
 
   // Only sync active projects:
   const get_active_projects_in_this_listing = async () => {
@@ -299,9 +317,12 @@ async function process_listing(listing_object: ListingsObject) {
       listing_id,
       projects_connection,
       projects_dbs,
-      project_sync_handler,
-      // Filters to only projects that are active
-      unupdated_projects_in_this_listing.map(v => v._id)
+      project_sync_handler
+      // We no longer use this filter, as it cannot be changed
+      // and the first call to unupdated_projects_in_this_listing may go
+      // stale so new projects won't come in (and in fact existing ones
+      // don't come in either.)
+      // {doc_ids: unupdated_projects_in_this_listing.map(v => v._id)}
     );
   } else {
     // Dummy data
@@ -389,7 +410,7 @@ export function process_projects(
   listing: ListingsObject,
   active_projects: ExistingActiveDoc[],
   projects_db: LocalDB<ProjectObject>,
-  default_connection: ConnectionInfo,
+  default_connection: ConnectionInfo | null,
   allow_nonexistant: boolean
 ) {
   active_projects.forEach(ap => {
@@ -414,7 +435,7 @@ export function process_projects(
 async function process_project(
   listing: ListingsObject,
   active_project: ExistingActiveDoc,
-  projects_db_connection: ConnectionInfo,
+  projects_db_connection: ConnectionInfo | null,
   project_object: ProjectObject
 ): Promise<void> {
   /**
@@ -424,18 +445,29 @@ async function process_project(
   const active_id = active_project._id;
   console.debug(`Processing project ${active_id}`);
 
-  const [, meta_db_local] = ensure_local_db(
+  // The project is local only if either the listing specifies that, or the
+  // base connection info was set as null
+  const local_only =
+    (listing.local_only ?? false) || projects_db_connection === null;
+
+  const [meta_created, meta_db_local] = ensure_local_db(
     'metadata',
     active_id,
     active_project.is_sync,
     metadata_dbs
   );
-  const [, data_db_local] = ensure_local_db(
+  if (meta_created) {
+    console.debug(`Created meta db ${active_id}`);
+  }
+  const [data_created, data_db_local] = ensure_local_db(
     'data',
     active_id,
     active_project.is_sync,
     data_dbs
   );
+  if (data_created) {
+    console.debug(`Created data db ${active_id}`);
+  }
 
   createdProjects[active_id] = {
     project: project_object,
@@ -454,21 +486,25 @@ async function process_project(
   );
 
   // Defaults to the same couch as the projects db, but different database name:
-  const meta_connection_info = materializeConnectionInfo(
-    {
-      ...projects_db_connection,
-      db_name: METADATA_DBNAME_PREFIX + project_object._id,
-    },
-    project_object.metadata_db
-  );
+  const meta_connection_info = local_only
+    ? null
+    : materializeConnectionInfo(
+        {
+          ...projects_db_connection,
+          db_name: METADATA_DBNAME_PREFIX + project_object._id,
+        },
+        project_object.metadata_db
+      );
 
-  const data_connection_info = materializeConnectionInfo(
-    {
-      ...projects_db_connection,
-      db_name: DATA_DBNAME_PREFIX + project_object._id,
-    },
-    project_object.data_db
-  );
+  const data_connection_info = local_only
+    ? null
+    : materializeConnectionInfo(
+        {
+          ...projects_db_connection,
+          db_name: DATA_DBNAME_PREFIX + project_object._id,
+        },
+        project_object.data_db
+      );
 
   if (USE_REAL_DATA) {
     const meta_sync_handler = (meta_db: LocalDB<ProjectMetaObject>) =>

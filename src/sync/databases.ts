@@ -38,7 +38,7 @@ import {
   local_pouch_options,
   materializeConnectionInfo,
 } from './connection';
-import {staging_db} from './staging';
+import {draft_db} from './draft-storage';
 import {SyncHandler} from './sync-handler';
 
 export const DEFAULT_LISTING_ID = 'default';
@@ -230,18 +230,16 @@ export function ensure_local_db<Content extends {}>(
  */
 export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
-  connection_info: ConnectionInfo,
+  connection_info: ConnectionInfo | null,
   global_dbs: LocalDBList<Content>,
-  handler: (
-    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler<Content>,
+  handler: (remote: LocalDB<Content>) => SyncHandler<Content>,
   options: DBReplicateOptions = {}
-): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
+): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
-  // Already connected/connecting
+  // Already connected/connecting, or local-only database
   if (
     global_dbs[local_db_id].remote !== null &&
     JSON.stringify(global_dbs[local_db_id].remote!.info) ===
@@ -257,6 +255,19 @@ export function ensure_synced_db<Content extends {}>(
       },
     ];
   }
+
+  // Special case for local-only projects
+  // Synchandler is created to manage it, but since local only PouchDB's aren't
+  // reused, we're not worried about recovering/deleting the Synchandlers
+  // So they don't have to go into a global variable
+  if (connection_info === null) {
+    const sync_handler = handler(global_dbs[local_db_id]);
+    sync_handler.listen_local(
+      global_dbs[local_db_id].local.changes({since: 'now', include_docs: true})
+    );
+    return [false, global_dbs[local_db_id]];
+  }
+
   const db_info = (global_dbs[local_db_id] = {
     ...global_dbs[local_db_id],
     remote: {
@@ -288,6 +299,7 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
+  console.debug('Setting local connection:', db_info);
 
   if (db_info.is_sync && db_info.remote.connection === null) {
     // Start a new connection
@@ -312,15 +324,19 @@ export function setLocalConnection<Content extends {}>(
 
     db_info.remote.connection = connection;
     db_info.remote.handler = db_info.remote.create_handler(db_info);
-    db_info.remote.handler.listen(
+    db_info.remote.handler.listen_remote(
       connection,
       db_info.local.changes({since: 'now', include_docs: true})
     );
+    console.debug('Connected up sync for', db_info);
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
     db_info.remote.handler!.detach(db_info.remote.connection);
     db_info.remote.connection.cancel();
     db_info.remote.connection = null;
+    console.debug('Removed sync for', db_info);
+  } else {
+    console.error('This is an odd state', db_info);
   }
 }
 
@@ -349,7 +365,7 @@ async function delete_synced_dbs(db_list: LocalDBList<any>) {
 }
 
 export async function wipe_all_pouch_databases() {
-  const local_only_dbs_to_wipe = [active_db, local_state_db, staging_db];
+  const local_only_dbs_to_wipe = [active_db, local_state_db, draft_db];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
   await delete_synced_dbs(projects_dbs);

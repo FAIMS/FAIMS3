@@ -19,15 +19,25 @@
  */
 
 import React, {useContext} from 'react';
-import packageJson from '../../../package.json';
+import {useLocation} from 'react-router-dom';
 import {Box, Grid, Typography} from '@material-ui/core';
-import {store} from '../../store';
 import grey from '@material-ui/core/colors/grey';
+
+import packageJson from '../../../package.json';
+import {COMMIT_VERSION} from '../../buildconfig';
+import {store} from '../../store';
 import InProgress from './ui/inProgress';
 import BoxTab from './ui/boxTab';
-import {COMMIT_VERSION} from '../../buildconfig';
+
 export default function Footer() {
   const globalState = useContext(store);
+  // This is a MASSIVE hack because react-router is dumb and can't seem to work
+  // out that shadowing a web API and doing it wrong is a bad idea...
+  // What this does is cause the component to rerender when the location
+  // changes, which means when we lookup window.location we get the latest
+  // version and can do things with it
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  const location = useLocation();
 
   return (
     <Box bgcolor={grey[200]} mt={4} p={4}>
@@ -47,7 +57,24 @@ export default function Footer() {
             bgcolor={grey[100]}
           />
           <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}}>
-            <pre>{JSON.stringify(globalState.state, null, 2)}</pre>
+            <pre>
+              {JSON.stringify(
+                {
+                  ...globalState.state,
+                  alerts: globalState.state.alerts.map(alert => {
+                    if ('element' in alert) {
+                      // Alerts made with custom elements aren't JSON-stringifiable
+                      return alert.toString();
+                    } else {
+                      return alert; //Regular alert
+                    }
+                  }),
+                },
+                null,
+                2
+              )}
+            </pre>
+            Current URL: <pre>{window.location.href}</pre>
           </Box>
         </Grid>
       </Grid>

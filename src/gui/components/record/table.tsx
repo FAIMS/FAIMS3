@@ -102,6 +102,7 @@ export default function RecordsTable(props: RecordsTableProps) {
     return destroyListener; // destroyListener called when this component unmounts.
   }, [project_id, rows]);
 
+  console.debug('New records:', rows);
   return (
     <div>
       <Typography variant="overline">Recent Records</Typography>
