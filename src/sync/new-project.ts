@@ -103,6 +103,7 @@ async function ensure_locally_created_project_listing(): Promise<ListingsObject>
         description:
           'Projects created on this device (have not been submitted).',
         local_only: true,
+        auth_mechanisms: {}, // No auth needed, nor allowed
       };
       await directory_db.local.put(listing_object);
       // setup the rest of the listing once

@@ -207,26 +207,21 @@ export async function process_listing(listing_object: ListingsObject) {
   const local_only = listing_object.local_only ?? false;
   console.debug(`Processing listing id ${listing_id}`);
 
-  const projects_db_id =
-    listing_object['projects_db'] || local_only
-      ? listing_id
-      : DEFAULT_LISTING_ID;
-
   const projects_connection = local_only
     ? null
     : materializeConnectionInfo(
-        (await get_default_instance())['projects_db'],
+        await get_base_connection_info(listing_object),
         listing_object['projects_db']
       );
 
   const [projects_created, local_projects_db] = ensure_local_db(
     'projects',
-    projects_db_id,
+    listing_id,
     true,
     projects_dbs
   );
   if (projects_created) {
-    console.debug(`Created projects db ${projects_db_id}`);
+    console.debug(`Created projects db ${listing_id}`);
   }
 
   // Only sync active projects:

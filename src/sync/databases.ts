@@ -41,7 +41,7 @@ import {
 import {draft_db} from './draft-storage';
 import {SyncHandler} from './sync-handler';
 
-export const DEFAULT_LISTING_ID = 'default';
+const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
 export const directory_connection_info: ConnectionInfo = {
   proto: DIRECTORY_PROTOCOL,

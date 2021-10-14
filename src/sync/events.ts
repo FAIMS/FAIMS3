@@ -214,7 +214,7 @@ export interface DirectoryEmitter extends EventEmitter {
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
     projects_db: LocalDB<ProjectObject>,
-    default_connection: ConnectionInfo
+    default_connection: ConnectionInfo | null
   ): boolean;
   emit(
     event: 'listing_paused',
