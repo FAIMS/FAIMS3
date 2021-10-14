@@ -8,18 +8,6 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <distributionManagement>
-        <repository>
-            <id>deployment</id>
-            <name>cgmaven release</name>
-            <url>https://cgmaven.it.csiro.au/nexus/repository/PortalRelease/</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>cgmaven snapshots</name>
-            <url>https://cgmaven.it.csiro.au/nexus/repository/PortalSnapshot/</url>
-        </snapshotRepository>
-    </distributionManagement>
     <build>
         <plugins>
             <plugin>
