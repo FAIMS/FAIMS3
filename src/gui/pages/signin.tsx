@@ -18,22 +18,44 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useContext} from 'react';
+import {makeStyles} from '@material-ui/core/styles';
+import {Container, Grid} from '@material-ui/core';
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import * as ROUTES from '../../constants/routes';
+import ClusterCard from '../components/authentication/cluster_card';
+import {store} from '../../store';
+const useStyles = makeStyles(() => ({
+  gridRoot: {
+    flexGrow: 1,
+  },
+}));
 
-type SignInProps = {
-  // project: string;
-};
+/* type SignInProps = {}; */
 
-type SignInState = {};
+export function SignIn(/* props: SignInProps */) {
+  const classes = useStyles();
+  const globalState = useContext(store);
 
-export class SignIn extends React.Component<SignInProps, SignInState> {
-  constructor(props: SignInProps) {
-    super(props);
+  const breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Index'},
+    {title: 'Sign In'},
+  ];
 
-    this.state = {};
-  }
-
-  render() {
-    return <div>SignIn</div>;
-  }
+  return (
+    <Container maxWidth="lg">
+      <Breadcrumbs data={breadcrumbs} />
+      <div className={classes.gridRoot}>
+        <Grid container spacing={1}>
+          {Array.from(globalState.state.known_listings.values()).map(
+            listing_id => (
+              <Grid item xs={6}>
+                <ClusterCard key={listing_id} listing_id={listing_id} />
+              </Grid>
+            )
+          )}
+        </Grid>
+      </div>
+    </Container>
+  );
 }

@@ -56,7 +56,22 @@ export interface ConnectionInfo {
   port: number;
   lan?: boolean;
   db_name: string;
+  auth?: {
+    username: string;
+    password: string;
+  };
 }
+
+/**
+ * User-facing description of an Authentication mechanism.
+ * The actual auth mechanisms are stored in authconfig.ts in the FAIMS3-conductor
+ * in the auth proxy of the listing that this auth is for.
+ */
+export type AuthInfo = {
+  portal: string; // Url to give AuthInfo to get token(s)
+  type: 'oauth';
+  name: string;
+};
 
 export type PossibleConnectionInfo =
   | undefined
@@ -66,6 +81,10 @@ export type PossibleConnectionInfo =
       port?: number | undefined;
       lan?: boolean | undefined;
       db_name?: string | undefined;
+      auth?: {
+        username: string;
+        password: string;
+      };
     };
 
 export interface ListingsObject {
@@ -73,13 +92,12 @@ export interface ListingsObject {
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  people_db?: PossibleConnectionInfo;
+  auth_mechanisms: {[key: string]: AuthInfo};
   local_only?: boolean;
 }
 
 export interface NonNullListingsObject extends ListingsObject {
   projects_db: ConnectionInfo;
-  people_db: ConnectionInfo;
 }
 
 export interface ActiveDoc {
@@ -92,14 +110,9 @@ export interface ActiveDoc {
   is_sync: boolean;
 }
 
-/*
- * Objects that may be contained in a Project's metadata DB
- */
-
-export interface ProjectPeople {
-  _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
+export interface LocalAuthDoc {
+  _id: string; //Corresponds to a listings ID
+  dc_token: string;
 }
 
 /**
@@ -242,8 +255,8 @@ export interface AutoIncrementReferenceDoc {
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | AutoIncrementReferenceDoc
-  | ProjectPeople;
+  | EncodedProjectMetadata
+  | AutoIncrementReferenceDoc;
 
 /*
  * Elements of a Project's dataDB can be any one of these,
@@ -253,16 +266,4 @@ export type ProjectDataObject = AttributeValuePair | Revision | EncodedRecord;
 
 export function isRecord(doc: ProjectDataObject): doc is EncodedRecord {
   return (<EncodedRecord>doc).record_format_version !== undefined;
-}
-
-/**
- * Document from a people DB
- */
-export interface PeopleDoc {
-  roles: Array<string>;
-  devices: Array<string>;
-  salt: string;
-  ierations: 10;
-  derived_key: string;
-  passsword_scheme: string;
 }

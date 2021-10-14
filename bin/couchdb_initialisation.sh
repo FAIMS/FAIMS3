@@ -9,28 +9,27 @@ initialise_couchdb() {
 
     # setup directory
     $curl_cmd "$base_url/directory"
-    $curl_cmd "$base_url/directory/default" -d "{
+    $curl_cmd "$base_url/directory/default" -d "
+      {
         \"_id\": \"default\",
         \"name\": \"Default instance\",
         \"description\": \"Default FAIMS instance\",
-        \"people_db\": {
-            \"proto\": \"$1\",
-            \"host\": \"$2\",
-            \"port\": $3,
-            \"lan\": true,
-            \"db_name\": \"people\"
-        }, \"projects_db\": {
-            \"proto\": \"$1\",
-            \"host\": \"$2\",
-            \"port\": $3,
-            \"lan\": true,
-            \"db_name\":
-            \"projects\"
+        \"auth_mechanisms\": {
+          \"default\": {
+            \"portal\": \"http://127.0.0.1:8080\",
+            \"type\": \"oauth\",
+            \"name\": \"Data Central\"
+          }
+        },
+        \"projects_db\": {
+          \"proto\": \"$1\",
+          \"host\": \"$2\",
+          \"port\": $3,
+          \"lan\": true,
+          \"db_name\": \"projects\"
         }
-    }"
-
-    # setup people with default
-    $curl_cmd "$base_url/people"
+      }
+    "
 
     # setup test_proj with default
     $curl_cmd "$base_url/projects"
@@ -509,7 +508,6 @@ initialise_couchdb() {
 
     $curl_cmd -H 'Content-Type: application/json' "$base_url/directory/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
     $curl_cmd -H 'Content-Type: application/json' "$base_url/projects/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
-    $curl_cmd -H 'Content-Type: application/json' "$base_url/people/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
     $curl_cmd -H 'Content-Type: application/json' "$base_url/metadata-test_proj/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
     $curl_cmd -H 'Content-Type: application/json' "$base_url/data-test_proj/_security" -d '{"admins": { "names": [], "roles": [] }, "members": { "names": [], "roles": [] } }'
 }

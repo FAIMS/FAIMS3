@@ -22,7 +22,8 @@ import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
 
 export const INDEX = '/';
 export const SIGN_UP = '/signup';
-export const SIGN_IN = '/signin';
+export const SIGN_IN = '/signin/';
+export const SIGN_IN_RETURN = '/signin-return';
 export const FORGOT_PASSWORD = '/forgot-password';
 export const NOT_FOUND = '/not-found';
 export const HOME = '/home';

@@ -59,15 +59,11 @@ export class Index extends React.Component<IndexProps, IndexState> {
           <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
-                <MenuItem
-                  component={NavLink}
-                  to={ROUTES.SIGN_IN}
-                  disabled={true}
-                >
+                <MenuItem component={NavLink} to={ROUTES.SIGN_IN}>
                   <ListItemIcon>
                     <AccountBoxIcon fontSize="small" />
                   </ListItemIcon>
-                  Sign In <TimelapseIcon color={'secondary'} />
+                  Sign In
                 </MenuItem>
                 <MenuItem
                   component={NavLink}

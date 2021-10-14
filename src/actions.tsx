@@ -32,6 +32,8 @@ export enum ActionType {
   GET_ACTIVE_RECORD,
   DROP_ACTIVE_RECORD,
 
+  SET_LISTINGS_KNOWN,
+
   ADD_ALERT,
   DELETE_ALERT,
   ADD_CUSTOM_ALERT,
@@ -70,6 +72,13 @@ export interface DROP_ACTIVE_RECORD {
 }
 
 export type RecordActions = GET_ACTIVE_RECORD | DROP_ACTIVE_RECORD;
+
+export interface SET_LISTINGS_KNOWN {
+  type: ActionType.SET_LISTINGS_KNOWN;
+  payload: Set<string>;
+}
+
+export type SyncActions = SET_LISTINGS_KNOWN;
 
 export interface ADD_ALERT {
   type: ActionType.ADD_ALERT;
