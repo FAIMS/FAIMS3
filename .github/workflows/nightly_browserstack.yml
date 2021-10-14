@@ -160,9 +160,11 @@ jobs:
       # https://www.marcobehler.com/guides/mvn-clean-install-a-short-guide-to-maven
       - name: Build with Maven
         run: |
-          cd e2e          
-          mvn validate
+          cd e2e                    
           mvn compile
+      - name: Test with Maven
+        run: |
+          cd e2e
           mvn test
           mvn package
           mvn verify
