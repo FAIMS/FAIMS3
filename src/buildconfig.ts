@@ -67,11 +67,11 @@ const PROD_BUILD = prod_build();
 
 function use_real_data(): boolean {
   const userealdata = process.env.REACT_APP_USE_REAL_DATA;
-  if (
-    userealdata === '' ||
-    userealdata === undefined ||
-    FALSEY_STRINGS.includes(userealdata.toLowerCase())
-  ) {
+  if (userealdata === '' || userealdata === undefined) {
+    // By default we don't include dummy data now
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(userealdata.toLowerCase())) {
     return false;
   } else if (TRUTHY_STRINGS.includes(userealdata.toLowerCase())) {
     return true;
