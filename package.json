@@ -65,6 +65,7 @@
     "clsx": "^1.1.1",
     "formik": "^2.2.6",
     "formik-material-ui": "^3.0.1",
+    "json-stable-stringify": "^1.0.1",
     "jsonpointer": "^4.1.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
@@ -83,6 +84,7 @@
     "yup": "^0.32.9"
   },
   "devDependencies": {
+    "@types/json-stable-stringify": "^1.0.33",
     "@types/node": "^14.11.2",
     "@types/yup": "^0.29.11",
     "fast-check": "^2.14.0",

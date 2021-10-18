@@ -31,6 +31,7 @@ import {useEffect} from 'react';
 import {useState} from 'react';
 import {LocalAuthDoc} from '../../../datamodel';
 import {local_auth_db} from '../../../sync/databases';
+import {ChangesTrackPoint, DBTracker, useDBTracker} from '../../pouchHook';
 import {LoginForm} from './login_form';
 
 type ClusterCardProps = {
@@ -43,54 +44,37 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-function mapFullState<T, S>(
-  fullState: null | T | {error: {}},
-  ok: (val: T) => S,
-  err: (err: {}) => S,
-  loading: () => S
-) {
-  if (fullState === null) {
-    return loading();
-  } else if ('error' in fullState) {
-    return err(fullState.error);
-  } else {
-    return ok(fullState);
-  }
-}
+const auth_doc_tracker = new DBTracker<[string /*listing_id*/], LocalAuthDoc>(
+  async (listing_id: string) => local_auth_db.get(listing_id),
+  [
+    local_auth_db.changes({include_docs: true, since: 'now'}),
+    (
+      listing_id: string,
+      change: PouchDB.Core.ChangesResponseChange<LocalAuthDoc>
+    ) => {
+      if (change.id !== listing_id) {
+        throw Error(
+          `Param ${listing_id} doesn't match what the event emitted: ${change.id}`
+        );
+      }
+      return change.doc!;
+    },
+    (change: PouchDB.Core.ChangesResponseChange<LocalAuthDoc>) =>
+      [[change.id]] as [string][],
+  ]
+);
 
 export default function ClusterCard(props: ClusterCardProps) {
   const classes = useStyles();
-  const [authDBDoc, setAuthDBDoc] = useState(
-    null as null | LocalAuthDoc | {error: {}}
-  );
-  useEffect(() => {
-    local_auth_db.get(props.listing_id).then(setAuthDBDoc, (err: any) => {
-      setAuthDBDoc({error: err});
-    });
-
-    const changes = local_auth_db.changes({include_docs: true, since: 'now'});
-    const change_listener = (
-      change: PouchDB.Core.ChangesResponseChange<LocalAuthDoc>
-    ) => {
-      setAuthDBDoc(change.doc!);
-    };
-    const error_listener = (err: any) => {
-      setAuthDBDoc({error: err});
-    };
-    changes.on('change', change_listener);
-    changes.on('error', error_listener);
-    return () => {
-      changes.removeListener('change', change_listener);
-      changes.removeListener('error', error_listener);
-    };
-  });
+  const authDBDoc = useDBTracker(auth_doc_tracker, [props.listing_id] as [
+    string
+  ]);
 
   return (
     <MuiCard>
       <CardHeader className={classes.cardHeader} title={props.listing_id} />
       <CardContent style={{paddingTop: 0}}>
-        {mapFullState(
-          authDBDoc,
+        {authDBDoc.match(
           authDBDoc => (
             <span>Logged in with: {JSON.stringify(authDBDoc)}</span>
           ),
