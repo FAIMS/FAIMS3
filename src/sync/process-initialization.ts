@@ -169,14 +169,11 @@ export async function update_directory(
  * @param listing_id_or_listing Listing to delete/undelete
  */
 function process_listing(
-  ...args:
-    | [boolean, PouchDB.Core.ExistingDocument<ListingsObject>]
-    | [true, string]
+  ...args: [boolean, PouchDB.Core.ExistingDocument<ListingsObject>]
 ) {
   if (args[0]) {
     // Delete listing from memory
-    const listing = args[1] as PouchDB.Core.ExistingDocument<ListingsObject>;
-    const listing_id = listing._id;
+    const listing_id = typeof args[1] === 'string' ? args[1] : args[1]._id;
 
     if (people_dbs[listing_id].remote?.connection !== null) {
       people_dbs[listing_id].local.removeAllListeners();
@@ -287,8 +284,9 @@ export async function update_listing(
       .on('change', info => {
         if (info.deleted) {
           // Some listing deactivated: delete its local dbs and such
+          const old_object = to_sync[info.doc!.listing_id];
           delete to_sync[info.doc!.listing_id];
-          process_listing(true, info.doc!.listing_id);
+          process_project(true, listing_object, old_object);
         } else {
           // Some listing activated
           to_sync[info.doc!.listing_id] = info.doc!;
@@ -440,29 +438,34 @@ export async function activate_project(
  * @param project_object Project to delete/undelete
  */
 function process_project(
-  delete_proj: boolean,
-  listing: ListingsObject,
-  active_project: ExistingActiveDoc,
-  projects_db_connection: ConnectionInfo,
-  project_object: ProjectObject
+  ...args:
+    | [
+        boolean,
+        ListingsObject,
+        ExistingActiveDoc,
+        ConnectionInfo | null,
+        ProjectObject
+      ]
+    | [true, ListingsObject, ExistingActiveDoc]
 ) {
-  if (delete_proj) {
+  if (args[0]) {
     // Delete project from memory
-    const project_id = active_project.project_id;
+    const [, listing, active] = args;
+    const active_id = active._id;
 
-    if (metadata_dbs[project_id].remote?.connection !== null) {
-      metadata_dbs[project_id].local.removeAllListeners();
-      metadata_dbs[project_id].remote!.connection!.cancel();
+    if (metadata_dbs[active_id].remote?.connection !== null) {
+      metadata_dbs[active_id].local.removeAllListeners();
+      metadata_dbs[active_id].remote!.connection!.cancel();
     }
 
-    if (data_dbs[project_id].remote?.connection !== null) {
-      data_dbs[project_id].local.removeAllListeners();
-      data_dbs[project_id].remote!.connection!.cancel();
+    if (data_dbs[active_id].remote?.connection !== null) {
+      data_dbs[active_id].local.removeAllListeners();
+      data_dbs[active_id].remote!.connection!.cancel();
     }
 
-    delete metadata_dbs[active_project._id];
-    delete data_dbs[active_project._id];
-    delete createdProjects[active_project._id];
+    delete metadata_dbs[active_id];
+    delete data_dbs[active_id];
+    delete createdProjects[active_id];
 
     // DON'T MOVE THIS PAST AN AWAIT POINT
     events.emit(
@@ -471,17 +474,18 @@ function process_project(
       false,
       false,
       listing,
-      active_project,
+      active,
       project_object
     );
   } else {
+    const [, listing, active, projects_db_connection, project_object] = args;
     // DON'T MOVE THIS PAST AN AWAIT POINT
     update_project(
       listing,
-      active_project,
+      active,
       projects_db_connection,
       project_object
-    ).catch(err => events.emit('project_error', listing, active_project, err));
+    ).catch(err => events.emit('project_error', listing, active, err));
   }
 }
 

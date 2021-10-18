@@ -19,25 +19,9 @@
  */
 
 import {ProjectID} from '../datamodel/core';
-import {ActiveDoc} from '../datamodel/database';
 import {RecordMetadataList} from '../datamodel/ui';
-import {ExistingActiveDoc} from '../sync/databases';
-import {events} from '../sync/events';
-import {add_initial_listener} from '../sync/event-handler-registration';
+import {listenDataDB} from '../sync';
 import {listRecordMetadata} from './internals';
-
-// note the string below is a ProjectID, but typescript is kinda silly and
-// doesn't let us do that
-const recordsUpdated: {[project_id: string]: boolean} = {};
-
-add_initial_listener(initializeEvents => {
-  initializeEvents.on(
-    'project_data_paused',
-    (listing, active: ExistingActiveDoc) => {
-      recordsUpdated[active._id] = true;
-    }
-  );
-});
 
 /**
  * Registers a callback to be run whenever recordList is updated.
@@ -51,18 +35,15 @@ export function listenRecordsList(
   project_id: ProjectID,
   callback: (recordList: RecordMetadataList) => unknown
 ): () => void {
-  const runCallback = () =>
-    listRecordMetadata(project_id)
-      .then(callback)
-      .catch(err => console.error('Uncaught record list error', err));
-
-  const listener_func = (listing: unknown, active: ActiveDoc) => {
-    if (active._id === project_id) runCallback();
-  };
-
-  events.on('project_data_paused', listener_func);
-
-  if (recordsUpdated[project_id]) runCallback();
-
-  return () => events.removeListener('project_data_paused', listener_func);
+  return listenDataDB(
+    project_id,
+    {since: 'now', live: true},
+    () =>
+      listRecordMetadata(project_id)
+        .then(callback)
+        .catch(err => console.error('Uncaught record list error', err)),
+    err => {
+      console.error('Uncaught record list error', err);
+    }
+  );
 }

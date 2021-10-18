@@ -32,9 +32,9 @@
 import {ProjectID} from './datamodel/core';
 import {ProjectInformation} from './datamodel/ui';
 import {
+  all_projects_updated,
   createdProjects,
   createdProjectsInterface,
-  projects_known,
 } from './sync/state';
 import {events} from './sync/events';
 
@@ -65,19 +65,15 @@ export function listenProjectList(
   listener: (project_list: ProjectInformation[]) => void
 ): () => void {
   const callback = () => {
-    listener(getProjectList());
+    if (all_projects_updated) listener(getProjectList());
   };
 
-  events.on('projects_known', callback);
-
-  if (projects_known !== null) {
-    // Projects already known by the time this function is called
-    callback();
-  }
+  events.on('project_update', callback);
+  callback();
 
   return () => {
     // Event remover
-    events.removeListener('projects_known', callback);
+    events.removeListener('project_update', callback);
   };
 }
 
