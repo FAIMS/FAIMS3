@@ -18,9 +18,9 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useRef} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Container, Grid} from '@material-ui/core';
+import {Button, Container, Grid, TextField} from '@material-ui/core';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
@@ -30,6 +30,8 @@ import {ProjectInformation} from '../../datamodel/ui';
 import {useState} from 'react';
 import {useEffect} from 'react';
 import {CircularProgress} from '@material-ui/core';
+import {create_new_project_dbs} from '../../sync/new-project';
+import {ProjectID} from '../../datamodel/core';
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -76,11 +78,44 @@ export default function ProjectList() {
     return listenProjectList(setProjectList);
   }, []);
 
+  const inputRef = useRef<string>('');
+
+  const [promiseState, setPromiseState] = useState<
+    undefined | {} | ProjectID | null
+  >(null);
+
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
+          <TextField
+            onChange={event => {
+              inputRef.current = event.target.value;
+            }}
+          />
+          <Button
+            onClick={() => {
+              setPromiseState(undefined);
+              create_new_project_dbs(inputRef.current).then(
+                result => setPromiseState(result),
+                err => setPromiseState(err)
+              );
+            }}
+            variant="contained"
+            color="primary"
+          >
+            Create
+          </Button>
+          {promiseState === null ? (
+            <React.Fragment />
+          ) : promiseState === undefined ? (
+            <CircularProgress />
+          ) : typeof promiseState === 'string' ? (
+            promiseState
+          ) : (
+            promiseState.toString()
+          )}
           {projectList === null ? (
             <CircularProgress size={24} thickness={6} />
           ) : (
