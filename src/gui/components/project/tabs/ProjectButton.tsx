@@ -27,6 +27,8 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import DeleteIcon from '@material-ui/icons/Delete';
+import { process_projects } from '../../../../sync/process-initialization';
 
 type ButtonProps=any
 
@@ -107,6 +109,15 @@ export function TickButton(props:ButtonProps){
         </IconButton>
 		)
 }
+
+export function AddUserButton(props:ButtonProps){
+	return (
+		<IconButton edge="end" type={props.type} id={props.id}>
+            <AddCircleIcon  fontSize='small'/>
+        </IconButton>
+		)
+}
+
 export function AddButton(props:ButtonProps) {
   return ( 	
 
@@ -120,5 +131,13 @@ export function AddButton(props:ButtonProps) {
   {props.text}
   </Button>
   );
+}
+
+export function DeleteuserButton(props:ButtonProps){
+  return (
+  <IconButton id={props.id} edge="end" aria-label="delete" onClick={() => props.onButtonClick(props.value)} value={props.value}>
+  <DeleteIcon />
+  </IconButton> 
+  )
 }
 

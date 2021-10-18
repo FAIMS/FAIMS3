@@ -112,8 +112,8 @@ export function TabEditable(props: TabProps) {
   	const handleAdd =  (event:any) => {
 	  	const newtabs=tablists;
       const length=tablists.length+1
-      let name='Section' 
-      if(tab_id==='formtab') name='Form'
+      let name='SECTION' 
+      if(tab_id==='formtab') name='FORM'
   		newtabs[tablists.length]=name+length
   		setTablist(newtabs)
   		props.handelonChangeLabel(newtabs,'add')

@@ -43,7 +43,7 @@ export const getfields = () => {
 
     return {fields,fieldtabs};
 }
-const accessgroup=['admin','moderator','team']
+const accessgroup=['admin']
 
 export const getcomponent=(props:any)=>{
     if(props.namespace===undefined) {
@@ -72,8 +72,8 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
     props={...others,...{
     'componentName':fielduiSpec['component-name'],
     'namespace':fielduiSpec['component-namespace'],
-    'name':fielduiSpec['component-parameters']['name'],
     'type_return':fielduiSpec['type-returned'],
+    'name':fielduiSpec['component-parameters']['name'],
     'required':fielduiSpec['component-parameters']['required'],
     'initialValue':fielduiSpec['initialValue'],
     'validationSchema':getdefaultvalidschema(fielduiSpec,fielduiSpec['validationSchema']??[]),  //TODO: ADD function to pass and update validationschema
@@ -81,6 +81,12 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
     'meta_type':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['include']:false,
     'meta_type_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['label']:'',
     'access':fielduiSpec['access'],  //TODO: ADD function to pass and update access
+
+    // ...fielduiSpec['component-parameters']['InputProps'],
+    // ...fielduiSpec['component-parameters']['SelectProps'],
+    // ...fielduiSpec['component-parameters']['InputLabelProps'],
+    // ...fielduiSpec['component-parameters']['FormHelperTextProps'],
+
     'select':fielduiSpec['component-parameters']['select']===true?true:false,
     'label':fielduiSpec['component-parameters']['InputLabelProps']!==undefined?fielduiSpec['component-parameters']['InputLabelProps']['label']:fielduiSpec['component-parameters']['FormControlLabelProps']!==undefined?fielduiSpec['component-parameters']['FormControlLabelProps']['label']:'',//fielduiSpec['component-parameters']['FormControlLabelProps']['label']
     'helperText':fielduiSpec['component-parameters']['helperText']!==undefined?fielduiSpec['component-parameters']['helperText']:fielduiSpec['component-parameters']['FormHelperTextProps']!==undefined?fielduiSpec['component-parameters']['FormHelperTextProps']['children']:'',   // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children'] 
@@ -91,6 +97,25 @@ export const convertuiSpecToProps =(fielduiSpec:any) =>{
     }}
     if(fielduiSpec['component-parameters']['select']===true)
     props['options']=fielduiSpec['component-parameters']['ElementProps']['options']
+    console.log('+++++++++compare')
+    console.log(props)
+    console.log('+++++++++compare++++++=')
+    console.log({'componentName':fielduiSpec['component-name'],
+    'namespace':fielduiSpec['component-namespace'],
+    'name':fielduiSpec['component-parameters']['name'],
+    'type_return':fielduiSpec['type-returned'],
+    'required':fielduiSpec['component-parameters']['required'],
+    'initialValue':fielduiSpec['initialValue'],
+    'validationSchema':getdefaultvalidschema(fielduiSpec,fielduiSpec['validationSchema']??[]),  //TODO: ADD function to pass and update validationschema
+    'annotation_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['annotation_label']:'annotation',
+    'meta_type':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['include']:false,
+    'meta_type_label':fielduiSpec['meta']!==undefined?fielduiSpec['meta']['uncertainty']['label']:'',
+    'access':fielduiSpec['access'],  //TODO: ADD function to pass and update access
+    ...fielduiSpec['component-parameters']['InputProps'],
+    ...fielduiSpec['component-parameters']['SelectProps'],
+    ...fielduiSpec['component-parameters']['InputLabelProps'],
+    ...fielduiSpec['component-parameters']['FormHelperTextProps'],
+    ...fielduiSpec['component-parameters']['ElementProps']})
     
     return props;
 }

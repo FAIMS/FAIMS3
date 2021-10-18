@@ -32,6 +32,9 @@ import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
 import ProjectSubmitTab from './tabs/ProjectSubmit';
+import ProjectUserTab from './tabs/ProjectUser';
+import ProjectPreviewTab from './tabs/ProjectPreview';
+import {ProjectSubmit} from './tabs/ProjectButton';
 import {setProjectInitialValues,handlertype,uiSpecType,projectvalueType,getprojectform} from './data/ComponentSetting'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
@@ -254,6 +257,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     const handlerprojectsubmit_counch = () => {
       //if project online save it
       //else if project local, submit request in Beta
+      alert('Request Send!')
     }
 
   return ( 
@@ -271,7 +275,13 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={3} tabname='primarytab' >
-        {projecttabvalue===2?'Project Preview':''}
+        {projecttabvalue===3?
+        (<><ProjectPreviewTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />
+          <ProjectSubmit id='sendbacktodesign' type='submit' isSubmitting={false} text='GO Previous to Design Form' onButtonClick={()=>setProjecttabvalue(1)} /></>)
+        :'No'}
+      </TabPanel>
+      <TabPanel value={projecttabvalue} index={4} tabname='primarytab' >
+        <ProjectUserTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} />
       </TabPanel>
       <TabPanel value={projecttabvalue} index={6} tabname='primarytab' >
         <ProjectSubmitTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleSubmit={handlerprojectsubmit_pounch} handlepublish={handlerprojectsubmit_counch} />

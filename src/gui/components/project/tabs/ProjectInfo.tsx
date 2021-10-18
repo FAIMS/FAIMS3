@@ -30,11 +30,12 @@ import {getComponentFromField,FormForm} from '../FormElement';
 import {TabTab,TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
 import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType,projectvalueType} from '../data/ComponentSetting'
-import {TickButton} from './ProjectButton'
+import {TickButton,AddUserButton} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import {getProjectInfo} from '../../../../databaseAccess';
 import {ProjectUIModel,ProjectInformation} from '../../../../datamodel/ui'
+import {UserRoleList} from './PSettingCard';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -128,14 +129,24 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
 
   const handleSubmitAccess = (values:any) =>{
     // props.handleSubmit(values)
+    if(values['accessadded']==='') return false;
     const newproject=projectvalue
     newproject['accesses']=[...newproject['accesses'],values['accessadded']] //need to reset the add user role value
     setProjectValue(newproject)
     setaccessgroup(newproject['accesses'])
+    return true;
   }
 
   const handleformchangeAccess = (event:any) =>{
 
+  }
+
+  const deleteuserrole = (userrole:string) =>{
+    console.log(userrole);
+    const newproject=projectvalue
+    newproject['accesses']=newproject['accesses'].filter((access:string)=>access!==userrole)
+    setProjectValue(newproject)
+    setaccessgroup(newproject['accesses'])
   }
 
   return (
@@ -165,6 +176,8 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
         </TabPanel>
         <TabPanel value={infotabvalue} index={1} tabname='primarytab' >
         {infotabvalue===1?
+        <Grid container>
+          <Grid item sm={6} xs={12}>
           <Formik
           initialValues={initialValues}
           validateOnMount={true}
@@ -180,11 +193,18 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
                 <Form >
                 {uiSpec_access['views']['start-view']!==undefined?uiSpec_access['views']['start-view']['fields'].map((fieldName:string)=>
                   getComponentFromField(uiSpec_access,fieldName,formProps,handleformchangeAccess)):''}
-                <TickButton id='submit' type="submit" />
+                <AddUserButton id='submit' type="submit" />
                 </Form>
               );
             }}
           </Formik>
+          </Grid>
+          <Grid item sm={1} xs={12}>
+          </Grid>
+          <Grid item sm={5} xs={12}>
+          <UserRoleList users={projectvalue.accesses} deleteuserrole={deleteuserrole}/>
+          </Grid>
+          </Grid>
           :''}
         </TabPanel>
       </Grid>

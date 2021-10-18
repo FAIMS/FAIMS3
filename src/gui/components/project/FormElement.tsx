@@ -22,11 +22,13 @@
 import React from 'react';
 import { useState, useEffect } from 'react'
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
-import {Button, Grid, Box, ButtonGroup, Typography} from '@material-ui/core';
+import {Button, Grid, Box, ButtonGroup, Typography,Chip} from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import {getComponentByName} from '../../component_registry';
 import {setProjectInitialValues} from './data/ComponentSetting';
 import {TickButton} from './tabs/ProjectButton';
+import Autocomplete from '@material-ui/lab/Autocomplete';
+import {TextField} from '@material-ui/core';
 type FormElement = {
   uiSpec:any;
   handleChangeForm:any;
@@ -100,7 +102,7 @@ export function FormForm (props:FormElement) {
               {uiSpec['views'][currentView]['fields'].map((field:any,index:any)=>(
                   getComponentFromField(uiSpec,field, formProps,handleChangeForm)
                 ))}
-              {uiSpec['views'][currentView]['uidesign']==='section'?<TickButton id='submit' type="submit" />:''}
+              {uiSpec['views'][currentView]['uidesign']==='sectiont'?<TickButton id='submit' type="submit" />:''}
               </Grid>
               
               :
@@ -122,4 +124,70 @@ export function FormForm (props:FormElement) {
         </Formik>)
 }
 
+export function AutocompleteForm (props:any) {
+  const {options,handleAutocomplete,...others} =props
+  const id='access'+props.id
+  // const [options,setoptions] =useState(props.options)
+  const [value, setValue] = React.useState(
+    options.length > 0 ? options[0] : null
+  );
+  const [inputValue, setInputValue] = React.useState('');
+  const [labels,setlabels]=useState<Array<string>>(props.labels??[])
+  useEffect(() => {
+    if(props.labels!==undefined)
+    setlabels(props.labels)
+    console.log('accessdefined')
+
+   }, [props.labels]);
+  const handleDelete = (index:string) =>{
+    const newlabels=labels.filter((label:string)=>label!==index)
+    setlabels(newlabels)
+
+    props.handleAutocomplete(newlabels,props.id,props.type)
+
+  }
+  return  (
+          <Grid container={true}>
+            <Grid>
+              <Autocomplete
+                id={id}
+                value={value}
+                onChange={(event, newValue) => {
+                  if (newValue !== null) {
+                    setValue(newValue);
+                    if(labels.includes(newValue.value)===false){
+                      const newlabels=[...labels,newValue.value]
+                      setlabels(newlabels)
+        
+                      props.handleAutocomplete(newlabels,props.id,props.type)
+                    }
+                    
+                  }
+                  
+                }}
+                size={'small'}
+                inputValue={inputValue}
+                onInputChange={(event, newInputValue) => {
+                  setInputValue(newInputValue);
+                }}
+                options={options}
+                getOptionLabel={option => option.label}
+                style={{width: 300}}
+                openOnFocus={true}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label="Access"
+                    variant="outlined"
+                  />
+                )}
+              />
+              {labels.map((label:string)=>
+              label!=='admin'?<Chip label={label} onDelete={()=>handleDelete(label)} />:<Chip label={label} />)}
+
+            </Grid>
+          </Grid>
+        
+      );
+}
 

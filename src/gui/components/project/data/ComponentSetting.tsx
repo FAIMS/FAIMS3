@@ -43,6 +43,7 @@ type fieldlistType=any
 type viewlistType=any
 type optionType={value:string;label:string}
 type tabLinkType={tab:string,link:string}
+type projectuilistType=any
 export const getid = ()=>{
 	return uuidv4().split('-')[0];
 }
@@ -77,21 +78,26 @@ const getsettingform = (component:any) =>{
     
     return []
 }
-//Add new field form or convert uiSpec to setting form convertuiSpectoSetting
-export const FieldSettings=(component:signlefieldType,label:string,props:any,access:Array<string>=DEFAULT_accessgroup_d)=>{
+
+export const getacessoption = (access:Array<string>) =>{
   const options:Array<optionType>=[];
-  const limitaccess=access.filter((access:string)=>!(access==='admin'||access==='moderator'))
-  limitaccess.map((option:string,index:number)=>options[index]={
+  const limitaccess=access.filter((access:string)=>!(access==='admin'))
+  access.map((option:string,index:number)=>options[index]={
                 value: option,
                 label: option
               })
+  return options;
+}
+//Add new field form or convert uiSpec to setting form convertuiSpectoSetting
+export const FieldSettings=(component:signlefieldType,label:string,props:any,access:Array<string>=DEFAULT_accessgroup_d)=>{
+  const options:Array<optionType>=getacessoption(access)
 	const fields=[
         {name:'',lable:'',type:'TextField',view:'general'},
         {name:'label',lable:'Label',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
         {name:'helperText',lable:'Hit Text for Complete Form',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
         {name:'required',lable:'Check if is compusory',namespace:'faims-custom',componentName:'Checkbox',view:'valid'},
         {name:'validationSchema',lable:'validationSchema',namespace:'formik-material-ui',componentName:'TextField',view:'valid',multiline:true,multirows:4,disabled:true,helperText:'Now disbaled, Will be enabled after validation been added.'},
-        {name:'access',lable:'access',namespace:'faims-custom',componentName:'Select',select: true,type:'select',view:'access',options:options,helperText:'It will be replace to the new field, original access:'+props.access.toString()},//TODO: working on newfield
+        {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',view:'access',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from NoteBook'},//TODO: working on newfield
         {name:'annotation_label',lable:'annotation Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
         {name:'meta_type',lable:'Include Uncertainty',namespace:'faims-custom',componentName:'Checkbox',view:'notes',initialValue:true},
         {name:'meta_type_label',lable:'Uncertainty Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
@@ -148,15 +154,16 @@ export const gettabform = (tabs:Array<string>) =>{
 	}
 }
 
-type projectuilistType=any
+
 export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any=null) =>{ //this function is just template to get information about the project
   const fields_list:any={}
   const fieldsarray:Array<string>=[]
   const section_info=[
   {name:'sectionname',label:'Section Name',namespace:'formik-material-ui',componentName:'TextField',view:'section',required:true},
   {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4},
-  {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,initialValue:projectvalue.accesses,disabled:true,helperText:'Now disbaled, Will be enabled after access field been defined.'},
-  ]
+  // {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,helperText:'Now disbaled, Will be enabled after access field been defined.'},
+  {name:'sectiondeaccessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from Form'},
+]
   const form_info_options:Array<optionType>=[{
                 value:'Save and New',
                 label:'Save and New'
@@ -164,10 +171,23 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
                 value:'Jump to Upper Level',
                 label:'Jump to Upper Level'
               }];
+  const options=getacessoption(projectvalue.accesses)
   const form_info = [
   // {name:'Formdescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'form',multiline:true,multirows:4},
   {name:'submitAction',label:'Form Submit Action',namespace:'faims-custom',componentName:'Select',select: true,type:'select',options:form_info_options,view:'form',required:true,helperText:'Action is after User Submit Record, Save button will direct user to create new record or back to parent record'},
+  //{name:'access',lable:'access',namespace:'faims-custom',componentName:'Select',select: true,type:'select',view:'access',options:options,helperText:'It will be replace to the new field'},//TODO: working on newfield
+  {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from NoteBook'},
+  // {name:'accesses',label:'Accesses',namespace:'faims-custom',componentName:'AutoComplete',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',select:true,options:getacessoption(projectvalue.accesses)}
+]
+
+  const users = [
+    {name:'users',label:'Users',namespace:'formik-material-ui',componentName:'TextField',view:'users',multiline:true,multirows:4,disable:projectvalue.ispublish??false,initialValue:projectvalue.users,helperText:'It will be actived after Notebook is online'},
+    {name:'usersassinged',label:'Users',namespace:'formik-material-ui',componentName:'TextField',view:'users',multiline:true,multirows:4,disable:projectvalue.ispublish??false,helperText:'It will be actived after Notebook is online'},
   ]
+
+  const preview =
+    {name:'preview',label:'Select User Role to Preview',namespace:'faims-custom',componentName:'Select',select: true,view:'preview',helperText:'Select to get form for roles'}
+  
 
   const fields:projectuilistType={info_general:[
   {name:'name',label:'Project Name',namespace:'formik-material-ui',componentName:'TextField',view:'info_general',required:true},
@@ -178,11 +198,15 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   {name:'accessadded',label:'Add User Roles',namespace:'formik-material-ui',componentName:'TextField',view:'info_group',required:false,value:projectvalue['accessadded']}],
   section:[],
   form:[],
-  users:[ //users info will be defined by access groups
+  users:[
+    {name:'users',label:'Add User',namespace:'formik-material-ui',componentName:'TextField',view:'users',required:false,multiline:true,multirows:4}
+  ],
+  usersassign:[ //users info will be defined by access groups
   ],
   behaviours:[
   {name:'Sync',label:'Sync or not',namespace:'formik-material-ui',componentName:'Checkbox',view:'behaviours',required:true,initialValue:true},
   ],
+  preview:[]
   }  
 
   // This part will be updated in the future TODO
@@ -193,6 +217,13 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   if(tab==='section'){
     //create new section form for each section 
     section_info.map((field:any,index:number)=>{
+      if(field.name==='sectiondeaccess') {
+        //setup initialvalue for the access
+        const formvirant=props.sectionname.split('SECTION')[0];
+        const iniaccess=projectvalue['access'+formvirant]
+        field['initialValue']=iniaccess??projectvalue.accesses
+        console.log(iniaccess)
+      }
       const fieldname=field.name+props.sectionname
       const newfield={...field,name:fieldname}
       if(projectvalue['sections']!==undefined&&newfield['initialValue']===undefined)
@@ -219,6 +250,24 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
     fields['project']=[...fields['info_general'],...fields['behaviours']];
   }
 
+  if(tab==='preview'){
+    props.forms.map(
+      (formtab:string,index:number)=>{
+        const newfield={...preview,name:preview.name+formtab}
+        const options=getacessoption(projectvalue['access'+formtab]??projectvalue.accesses)
+        fields[tab][index]={...newfield,options:options}
+      }
+    )
+    
+  }
+
+  if(tab==='usersassign'){
+    fields[tab]=[];
+    projectvalue.accesses.map(
+      (access:string)=>users.map((user:any)=>fields[tab]=[...fields[tab],{...user,name:user.name+access}])
+    )
+  }
+
   if(fields[tab].length>0){
     fields[tab].map((field:any,index:number)=> {
      const {name,view,initialValue,...others}=field
@@ -226,7 +275,7 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
     fieldsarray[index]=field.name
     });
   }
-  
+  console.log(fields_list)
   return {
     fields:fields_list,
     'views':{'start-view':{fields:fieldsarray,'uidesign':tab}} ,
@@ -372,6 +421,10 @@ const updatefield = (props:any) =>{
     const newfieldname=updatedfield.name
     const fieldtype=updatedfield.type
     if(fieldtype==='validationSchema') return {newviews,components}
+    if(fieldtype==='accessinherit'){
+      //TODO
+      return {newviews,components}
+    }
     const fieldprops=convertuiSpecToProps(formuiSpec['fields'][newfieldname])
     if(fieldtype==='required'||fieldtype==='meta_type') fieldprops[fieldtype]=!fieldprops[fieldtype];
     else fieldprops[fieldtype]=fieldvalue
@@ -384,9 +437,25 @@ const updatefield = (props:any) =>{
               });
     }
     if(fieldtype==='access') {
-      if(typeof fieldprops[fieldtype]==='string') fieldprops[fieldtype]=[fieldprops[fieldtype]]
-      DEFAULT_accessgroup.map((accessrole:string)=>fieldprops[fieldtype].includes(accessrole)?accessrole:fieldprops[fieldtype]=[...fieldprops[fieldtype],accessrole])
+      try{
+        let access=fieldvalue.split(',');
+        //remove the empty one
+        access=access.filter((value:string)=>value!=='');
+        fieldprops[fieldtype]=access
+        if(!fieldprops[fieldtype].includes('admin')){
+          fieldprops[fieldtype]=[...fieldprops[fieldtype],'admin']
+        }
+        console.log(access)
+        
+      }catch(error){
+        console.error('Failed to pass access group');
+        console.error(error);
+      }
+      
+      // if(typeof fieldprops[fieldtype]==='string') fieldprops[fieldtype]=[fieldprops[fieldtype]]
+      // DEFAULT_accessgroup.map((accessrole:string)=>fieldprops[fieldtype].includes(accessrole)?accessrole:fieldprops[fieldtype]=[...fieldprops[fieldtype],accessrole])
     }
+    
     if(fieldtype==='validationSchema') {
       fieldprops[fieldtype]=[];
       const validationSchemas=fieldvalue.split(',');
