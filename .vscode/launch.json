@@ -1,0 +1,53 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Firefox",
+            "type": "firefox",
+            "request": "attach",
+            "pathMappings": [
+                {
+                    "url": "https://github.githubassets.com/assets/app/assets/modules/github/slash-command-expander-element/index.ts",
+                    "path": "${workspaceFolder}/src/sync/index.ts"
+                },
+                {
+                    "url": "http://localhost:3000/home/afarrell/Documents/Faims/FAIMS3",
+                    "path": "${workspaceFolder}"
+                },
+                {
+                    "url": "http://localhost:3000/home/afarrell/Documents/Faims/src",
+                    "path": "${env:HOME}/Documents/Faims/formik/packages/formik/src"
+                }
+            ]
+        },
+        {
+            "name": "Chromium",
+            "type": "pwa-chrome",
+            "request": "attach",
+            "webRoot": "${workspaceFolder}",
+            "port": 9222
+        },
+        {
+            "type": "node-terminal",
+            "name": "Run Script: test DUMMY LOCALHOST DEV",
+            "request": "launch",
+            "command": "node node_modules/.bin/react-scripts test --testPathIgnorePatterns=integration_tests",
+            "env": {
+                "DIRECTORY_HOST": "localhost",
+                "COUCHDB_USER": "admin",
+                "COUCHDB_PASSWORD": "GlacialTrickleUnmovingTributeAwrySquishy"
+            }
+        },
+        {
+            "type": "node-terminal",
+            "name": "Run Script: integration DUMMY LOCALHOST",
+            "request": "launch",
+            "command": "node node_modules/.bin/react-scripts test src/integration_tests",
+            "env": {
+                "REACT_APP_DIRECTORY_HOST": "127.0.0.1",
+                "COUCHDB_USER": "admin",
+                "COUCHDB_PASSWORD": "GlacialTrickleUnmovingTributeAwrySquishy"
+            }
+        }
+    ]
+}

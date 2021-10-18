@@ -1,0 +1,87 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "npm: start DUMMY",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"react-scripts",
+				"start"
+			],
+			"problemMatcher": [
+				"$tsc"
+			],
+			"options": {
+				"env": {
+					"REACT_APP_DIRECTORY_PORT": "443",
+					"REACT_APP_COMMIT_VERSION": "AidnLpt"
+				}
+			}
+		},
+		{
+			"label": "npm: start REAL INTERNAL",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"react-scripts",
+				"start"
+			],
+			"problemMatcher": [
+				"$tsc"
+			],
+			"options": {
+				"env": {
+					"REACT_APP_USE_REAL_DATA": "true",
+					"REACT_APP_DIRECTORY_HOST": "10.80.11.44",
+					"REACT_APP_DIRECTORY_PORT": "5984",
+					"REACT_APP_USE_HTTPS": "false",
+					"REACT_APP_COMMIT_VERSION": "AidnLpt"
+				}
+			}
+		},
+		{
+			"label": "npm: start REAL DEV",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"react-scripts",
+				"start"
+			],
+			"problemMatcher": [
+				"$tsc"
+			],
+			"options": {
+				"env": {
+					"REACT_APP_USE_REAL_DATA": "true",
+					"REACT_APP_DIRECTORY_HOST": "dev.db.faims.edu.au",
+					"REACT_APP_DIRECTORY_PORT": "443",
+					"REACT_APP_USE_HTTPS": "true",
+					"REACT_APP_COMMIT_VERSION": "AidnLpt"
+				}
+			}
+		},
+		{
+			"label": "npm: start REAL ALPHA",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"react-scripts",
+				"start"
+			],
+			"problemMatcher": [
+				"$tsc"
+			],
+			"options": {
+				"env": {
+					"REACT_APP_USE_REAL_DATA": "true",
+					"REACT_APP_DIRECTORY_HOST": "alpha.db.faims.edu.au",
+					"REACT_APP_DIRECTORY_PORT": "443",
+					"REACT_APP_USE_HTTPS": "true",
+					"REACT_APP_COMMIT_VERSION": "AidnLpt"
+				}
+			}
+		}}
+		}
+	]
+}
