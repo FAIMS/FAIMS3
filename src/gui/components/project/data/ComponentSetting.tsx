@@ -97,7 +97,7 @@ export const FieldSettings=(component:signlefieldType,label:string,props:any,acc
         {name:'helperText',lable:'Enter Help Text here',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
         {name:'required',lable:'Select if component completion is compulsory',namespace:'faims-custom',componentName:'Checkbox',view:'valid'},
         {name:'validationSchema',lable:'validationSchema',namespace:'formik-material-ui',componentName:'TextField',view:'valid',multiline:true,multirows:4,disabled:true,helperText:'Now disbaled, Will be enabled after validation been added.'},
-        {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',view:'access',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from Section'},//TODO: working on newfield
+        {name:'accessinherit',label:'Inherit Access From Section',namespace:'faims-custom',componentName:'Checkbox',view:'access',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from Section'},//TODO: working on newfield
         {name:'annotation_label',lable:'Annotation Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes',initialValue:'Annotation'},
         {name:'meta_type',lable:'Include Uncertainty',namespace:'faims-custom',componentName:'Checkbox',view:'notes',initialValue:true},
         {name:'meta_type_label',lable:'Uncertainty Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes',initialValue:'Uncertainty'},
@@ -162,7 +162,7 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   {name:'sectionname',label:'Section Name',namespace:'formik-material-ui',componentName:'TextField',view:'section',required:true},
   {name:'sectiondescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4},
   // {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,helperText:'Now disbaled, Will be enabled after access field been defined.'},
-  {name:'sectiondeaccessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from Form'},
+  {name:'sectiondeaccessinherit',label:'Inherit Access From Form',namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from Form'},
 ]
   const form_info_options:Array<optionType>=[{
                 value:'Save and New',

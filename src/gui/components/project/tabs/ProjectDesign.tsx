@@ -519,7 +519,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       </TabPanel>
       <TabPanel value={fieldvalue} index={0} tabname='fieldtab' >
        <FormForm currentView='start-view' handleChangeForm={handleChangeFormSection} handleSubmit={handleSubmitFormSection} uiSpec={getprojectform(props.projectvalue,'section',{sectionname:formuiview})} />
-       <AutocompleteForm id={formuiview} options={getacessoption(props.projectvalue['access'+formvariants]??['admin'])} labels={props.projectvalue['access'+formuiview]} handleAutocomplete={handleAutocomplete} type={'form'}/>
+       <br/><AutocompleteForm id={formuiview} options={getacessoption(props.projectvalue['access'+formvariants]??['admin'])} labels={props.projectvalue['access'+formuiview]} handleAutocomplete={handleAutocomplete} type={'form'}/>
       </TabPanel>
       <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
       <Alert severity="info">Select each new component, they will be automatically layout in the interface, then config each of them</Alert>

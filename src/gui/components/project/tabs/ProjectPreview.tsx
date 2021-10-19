@@ -154,8 +154,8 @@ export default function ProjectPreviewTab(props:ProjectPreviewProps) {
         {formtabs.length>0?formtabs.map((tab:string,index:number)=>
             <TabPanel value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} index={index} tabname='primarytab' >
                 <Grid container>
-                <Grid item sm={8} xs={12}>
-                    {/* <FormForm currentView={formvariants+'SECTION1'} handleChangeForm={handleChangeForm} handleSubmit={handleSubmitForm} uiSpec={formuiSpec} /> */}
+                <Grid item sm={6} xs={12}>
+                    {fieldNames.length>0?
                     <Formik
                         key={index}
                         initialValues={initialValues}
@@ -175,7 +175,7 @@ export default function ProjectPreviewTab(props:ProjectPreviewProps) {
                                 </Form>
                             );
                         }}
-                        </Formik>
+                        </Formik>:'Please Design Form and add component before Preview'}
                 </Grid>
                 <Grid item sm={4} xs={12}>
                     
@@ -183,7 +183,7 @@ export default function ProjectPreviewTab(props:ProjectPreviewProps) {
                 </Grid>
                 </Grid>
             </TabPanel>
-            
+
         ):'Please design forms'}
         
     </>

@@ -287,13 +287,14 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         (<>
         <Alert severity="info" >Select the user role to preview the notebook as a user with that role</Alert>
         <ProjectPreviewTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />
-          <ProjectSubmit id='sendbacktodesign' type='submit' isSubmitting={false} text='GO Previous to Design Form' onButtonClick={()=>setProjecttabvalue(1)} />
+          <ProjectSubmit id='sendbacktodesign' type='submit' isSubmitting={false} text='GO to Design Form' onButtonClick={()=>setProjecttabvalue(1)} />
              
           <ProjectSubmit id='gotonextperview' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setProjecttabvalue(4)} /></>)
         :'No'}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={4} tabname='primarytab' >
         <><Alert severity="info" >Add authorised users for this notebook. Assign roles to users in the User Role tab.</Alert>
+        {projectvalue.ispublish!==true&&<Alert severity="warning" >User will not be invited untile Notebook is be approved.Check more information in the Submit tab</Alert>}
         <ProjectUserTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} />
         </>
       </TabPanel>
@@ -305,7 +306,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         <ProjectSubmitTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleSubmit={handlerprojectsubmit_pounch} handlepublish={handlerprojectsubmit_counch} />
       </TabPanel>
       </Grid>
-      <Grid item sm={4} xs={12}>
+      {/* <Grid item sm={4} xs={12}>
         <Box
               bgcolor={grey[200]}
               pl={2}
@@ -316,7 +317,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
         </Box>
       
-       </Grid>
+       </Grid> */}
        </Grid>
   </div>
 

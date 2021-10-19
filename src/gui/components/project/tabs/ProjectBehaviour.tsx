@@ -22,7 +22,7 @@ import { useState, useEffect } from 'react'
 import { makeStyles } from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden,Paper,Slider} from '@material-ui/core';
+import {Button, Grid, Box, ButtonGroup, Typography,AppBar,Hidden,Paper,Switch} from '@material-ui/core';
 import {Formik, Form, Field, FormikProps,FormikValues} from 'formik';
 import FieldsListCard from './FieldsListCard';
 import {SettingCard,FormConnectionCard} from './PSettingCard';
@@ -40,7 +40,7 @@ import {useTheme} from '@material-ui/core/styles';
 
 
 type ProjectBehaviourProps=any
-
+type behaviourType={label:string,helpText:string}
 export default function ProjectBehaviourTab(props:ProjectBehaviourProps) {
 
     const {project_id,setProjectValue,projectvalue,...others}=props
@@ -54,30 +54,42 @@ export default function ProjectBehaviourTab(props:ProjectBehaviourProps) {
 
     }
 
-
+    const behaviours=[
+        {label:'Automatic Updates',helpText:'Automatically save changes the user makes as they occur.Automatically retrive changes made by other users every 30s (if online)'},
+        {label:'Offline Use',helpText:'Allow users to add observations even when there is no internet connection. Changes will not be synced until the user is online again)'},
+        {label:'Store Contenet Offline',helpText:'Make all images and fiels avaliable offline'}
+    ]
     
-
-  return (
+    const belement = (behaviour:behaviourType,handleChange:handlertype) =>{
+        return (
         <Grid container>
             <Grid item sm={4} xs={1}>
             <Typography variant={'h6'} component={'h6'}>
-            Automatic Updates
+            {behaviour.label}
             </Typography>
             <Typography >
-            Automatically save changes the user makes as they occur. 
-            Automatically retrive changes made by other users every 30s (if online)
+            {behaviour.helpText}
             </Typography >
             </Grid>
-           <Grid item sm={1} xs={1} >
-            <Slider disabled
-            value={100}
-            onChange={handleChange}
-            aria-labelledby="Automatic Updates"
-            color="primary"   
-            />
+           <Grid item sm={4} xs={1} >
+           <Switch
+                disabled
+                edge="end"
+                onChange={handleChange}
+                checked={true}
+                inputProps={{
+                    'aria-labelledby': 'switch-',
+                }}
+                />
             </Grid>
-        </Grid>
+            <br/><br/><br/><br/><br/>
+        </Grid>)
+    }
 
+  return (
+      <>{behaviours.map((behaviour:behaviourType)=>
+        belement(behaviour,handleChange)
+        )}</>
   );
 }
 
