@@ -35,6 +35,7 @@ type ProjectUserProps={
 	project_id:string;
 	projectvalue:projectvalueType;
   setProjectValue:handlertype;
+  setProjecttabvalue:handlertype;
 //   handleSubmit:handlertype;
 //   handlepublish:handlertype;
 }
@@ -184,7 +185,14 @@ export default function ProjectUserTab(props:ProjectUserProps) {
                     uiSpec['views']['start-view']!==undefined?uiSpec['views']['start-view']['fields'].map((fieldName:string)=>
                     getComponentFromField(uiSpec,fieldName,formProps,handleChange)):''
                 }
-                   <AddUserButton id='submit' type="submit" /> 
+                <Box
+                pl={2}
+                pr={2}
+                ><AddUserButton id='submit' type="submit" /></Box> 
+                <Box
+                pl={2}
+                pr={2}
+                >{projectvalue.users!==undefined?<ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>settatbValue(1)} />:''}</Box> 
                 </Grid>
                 
                 <Grid item sm={6} xs={12}>
@@ -228,6 +236,7 @@ export default function ProjectUserTab(props:ProjectUserProps) {
                      }}
                  </Formik>
                     :'Please add users to activate this feature'}
+                    <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>props.setProjecttabvalue(5)} />
                 </TabPanel>
                 
             

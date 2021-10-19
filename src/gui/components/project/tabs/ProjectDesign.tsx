@@ -522,6 +522,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       <TabPanel value={fieldvalue} index={0} tabname='fieldtab' >
        <FormForm currentView='start-view' handleChangeForm={handleChangeFormSection} handleSubmit={handleSubmitFormSection} uiSpec={getprojectform(props.projectvalue,'section',{sectionname:formuiview})} />
        <br/><AutocompleteForm id={formuiview} options={getacessoption(props.projectvalue['access'+formvariants]??['admin'])} labels={props.projectvalue['access'+formuiview]} handleAutocomplete={handleAutocomplete} type={'form'}/>
+       <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setfieldValue(1)} />
       </TabPanel>
       <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
       <Alert severity="info">Select each new component, they will be automatically layout in the interface, then config each of them</Alert>
@@ -539,6 +540,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         </Grid>
         </Paper>
         :''}
+        
         </TabPanel></Grid></Grid>
       );
   }
@@ -567,7 +569,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
           {FieldPanel()}
         </TabPanel>
       )}
-      <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setformvalue(2)} />
+      {formsectionvalue===sectiontabs.length-1&&fieldvalue===1&&formuiSpec['views'][formuiview]['fields'].length>0&&<ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setformvalue(2)} />}
       </TabPanel>
       <TabPanel value={formvalue} index={2} tabname='formtab' >
       {props.projectvalue!==undefined&&<FormForm currentView='start-view' handleChangeForm={handleChangeFormAction} handleSubmit={handleSubmitFormAction} uiSpec={getprojectform(props.projectvalue,'form',{formname:formvariants})} />}

@@ -64,7 +64,7 @@ type CreateProjectCardProps={
   project_info:ProjectInformation | null
 }
 
-const accessgroup=['admin','moderator','team']
+const accessgroup=['moderator','admin','team']
 
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
@@ -295,7 +295,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       <TabPanel value={projecttabvalue} index={4} tabname='primarytab' >
         <><Alert severity="info" >Add authorised users for this notebook. Assign roles to users in the User Role tab.</Alert>
         {projectvalue.ispublish!==true&&<Alert severity="warning" >User will not be invited untile Notebook is be approved.Check more information in the Submit tab</Alert>}
-        <ProjectUserTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} />
+        <ProjectUserTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} setProjecttabvalue={setProjecttabvalue}/>
         </>
       </TabPanel>
       <TabPanel value={projecttabvalue} index={5} tabname='primarytab' >

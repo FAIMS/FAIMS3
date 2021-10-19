@@ -206,7 +206,12 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
                 <Form >
                 {uiSpec_access['views']['start-view']!==undefined?uiSpec_access['views']['start-view']['fields'].map((fieldName:string)=>
                   getComponentFromField(uiSpec_access,fieldName,formProps,handleformchangeAccess)):''}
-                <AddUserButton id='submit' type="submit" />
+                 <Box
+              
+                pl={2}
+                pr={2}
+              
+                ><AddUserButton id='submit' type="submit" /></Box>
                 </Form>
               );
             }}
