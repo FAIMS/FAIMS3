@@ -554,7 +554,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
           <AutocompleteForm handleAutocomplete={handleAutocomplete} id={formvariants} options={getacessoption(props.projectvalue.accesses)} labels={props.projectvalue['access'+formvariants]} type={'form'}/>
           </Grid>
           <Grid item sm={6} xs={1} >
-          <Alert severity="info">Choose the user roles that have access to this form</Alert>
+          <Alert severity="info">Add the user roles that have access to this form</Alert>
           </Grid>
           </Grid>
       <br/>
@@ -609,7 +609,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
 
   return (
     <>
-      <Alert severity="info">In this Tab, you design the look of your notebook, A notebook can contain one or more forms. Each form can contain one or more sections, each containing multiple components. For each tab, you can also define User access and form submission behaviour. Add further forms by choosing plus icon</Alert>
+      <Alert severity="info">In this Tab, you design the look of your notebook, A notebook can contain one or more forms. Each form can contain one or more sections, each containing multiple components. For each tab, you can also define User access and form submission behaviour. Add further forms by choosing plus icon, edit form name by choosing edit icon.</Alert>
       {project_id!==''&&project_id!==null&&project_id!==undefined?
       (<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />):('')}
       {FormPanel()}
