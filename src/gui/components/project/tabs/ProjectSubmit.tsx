@@ -39,6 +39,7 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
   const {projectvalue,setProjectValue,project_id,...others}=props
   const [isSubmitting,setisSubmitting]=useState(false)
   const [state,seState]=useState(false)
+  const [issubmit,setissubmit]=useState(projectvalue.ispublic??false)
 
 
   const onButtonClick = () => {
@@ -46,6 +47,12 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
     console.log('submit')
     props.handleSubmit()
     seState(true)
+  }
+
+  const onSubmit = () => {
+    //save project value into DB
+    setissubmit(true)
+    props.handlepublish();
   }
 
   return (
@@ -58,12 +65,15 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
                             before re-submitting.
       </Alert>
       :''}
-        {projectvalue.ispublic!==true && <ProjectSubmit id='submit_save' type='submit' isSubmitting={isSubmitting} text='Save' onButtonClick={onButtonClick} />}
-        <Typography>{state===true&&projectvalue.ispublic!==true?'When you’ve finished the design, click the REQUEST RESOURCES button to send the project definition to FAIMS for moderation. Once submitted, the project cannot be edited again until it has been approved. ':state===false&&projectvalue.ispublic!==true?'Click to save notebook to local device':''}
+        {projectvalue.ispublic!==true &&issubmit!==true&& <ProjectSubmit id='submit_save' type='submit' isSubmitting={isSubmitting} text='Save' onButtonClick={onButtonClick} />}
+        <Typography>{state===true&&projectvalue.ispublic!==true&&issubmit!==true&&'When you’ve finished the design, click the REQUEST RESOURCES button to send the project definition to FAIMS for moderation. Once submitted, the project cannot be edited again until it has been approved. '}
+        {state===false&&projectvalue.ispublic!==true&&issubmit!==true&&'Click to save notebook to local device'}
         </Typography>
-        <ProjectSubmit id='submit_publish' type='submit' isSubmitting={state===false&&projectvalue.ispublic!==true?true:isSubmitting} issubmittext='Request resources' text={projectvalue.ispublic!==true ?'Submit request':'Update'} onButtonClick={props.handlepublish} />
+        {issubmit!==true&&projectvalue.ispublic!==true && <ProjectSubmit id='submit_publish' type='submit' isSubmitting={state===false||issubmit===true?true:isSubmitting} issubmittext='Request resources' text={issubmit!==true ?'Request resources':'Request Sent'} onButtonClick={onSubmit} />}
+        {issubmit===true&&projectvalue.ispublic!==true && <ProjectSubmit id='submit_publish' type='submit' isSubmitting={true} issubmittext='Request Sent' text={'Request Sent'} onButtonClick={onSubmit} />}
         <Typography>{projectvalue.ispublic===true?'Notebook is Online Save your new design by Click Update Button': ''}
         {projectvalue.ispublic!==true&&state===false?'Save Notebook Firstly then click Publish Button to send request': ''}
+        {projectvalue.ispublic!==true&&issubmit===true&&'Request is sent, please wait for approve'}
         </Typography>
       </Grid>
       <Grid item sm={6} xs={12}>
@@ -77,7 +87,7 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
             What happens next after SAVE ?
             </Typography>
             <Typography >
-            Once your notebook has been saved to your local device, you can get it form Notesbooks in menu bar.You can edit it and save it to device later. 
+            Once your notebook has been saved to your local device, you can get it form Notesbooks in menu bar.You can edit it and save it to device again later.
             </Typography>
             <Typography variant={'h6'} component={'h6'}>
             What happens next after REQUEST RESOURCES ?
