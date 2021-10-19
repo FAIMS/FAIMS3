@@ -15,7 +15,7 @@
  *
  * Filename: ProjectUser.tsx
  * Description:This is the file about Project User Invite
- *
+ * TODO: add select to user list area
  */
 import React from 'react';
 import { useState, useEffect } from 'react'
@@ -30,7 +30,7 @@ import Alert from '@material-ui/lab/Alert';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {UserRoleList} from './PSettingCard';
-import {AddUserButton} from './ProjectButton'
+import {AddUserButton,Addusersassign} from './ProjectButton'
 type ProjectUserProps={ 
 	project_id:string;
 	projectvalue:projectvalueType;
@@ -49,16 +49,22 @@ export default function ProjectUserTab(props:ProjectUserProps) {
   const [initialValuesassign,setinitialValuesassign]=useState(setProjectInitialValues(uiSpecassign,'start-view',{_id:''}))
   const [tabvalue,settatbValue]=useState(0)
   const [users,setusesers]=useState(projectvalue.users)
+  const [selectusers,setselectusers]=useState<any>({})
 
 
-  useEffect(() => {
-    const newui=getprojectform(projectvalue,'usersassign')
+//   useEffect(() => {
+//     const newui=getprojectform(projectvalue,'usersassign')
     
-    setinitialValuesassign(setProjectInitialValues(newui,'start-view',{_id:''}));  
-    setuiSpecassign(newui); 
-    console.log(initialValuesassign)
-    console.log('changes')
-}, [users]);
+//     setinitialValuesassign(setProjectInitialValues(newui,'start-view',{_id:''}));  
+//     setuiSpecassign(newui); 
+//     console.log(initialValuesassign)
+    
+// }, [users]);
+
+// useEffect(() => {
+    
+//     console.log('changes')
+// }, [selectusers]);
 
   const handleChange = (event:any) => {
     //save project value into DB
@@ -71,6 +77,16 @@ export default function ProjectUserTab(props:ProjectUserProps) {
     setinitialValues(setProjectInitialValues(uiSpec,'start-view',{_id:''}));
     setinitialValuesassign(setProjectInitialValues(uiSpecassign,'start-view',{_id:''}));
     settatbValue(index)
+  }
+
+  const handlerassignuser = (role:string) =>{
+    const newproject=projectvalue
+    newproject[role]=users   //selectusers[role]
+    setProjectValue({...newproject})
+      const news=selectusers
+      news[role]=users
+      setselectusers({...news})
+      console.log(projectvalue)
   }
 
   const handleSubmit = (values:any) =>{
@@ -97,19 +113,28 @@ export default function ProjectUserTab(props:ProjectUserProps) {
       console.log(index)
   }
 
+  const deleteusersassign = (user:string)=>{
+    console.log(user)
+  }
+
   const getfield = (usergroup:string,formProps:any,handleChange:any,uiSpec:any) =>{
       return (
      
-                <Grid container>
-                <Grid item sm={6} xs={12}>
-                {usergroup}
-                    {getComponentFromField(uiSpec,'users'+usergroup,formProps,handleChange)}
+                <Grid container >
+                    
+                <Grid item sm={4} xs={12} >
+                <br/>
+                <Typography variant="subtitle2">All users</Typography>
+                    <UserRoleList users={projectvalue.users??[]} delete={false} />
                     
                 </Grid>
-                <Grid item sm={6} xs={12}>
-                    <UserRoleList users={projectvalue.usergroup??[]} deleteuserrole={deleteusers}/>
+                <Grid item sm={1} xs={12}><br/><Addusersassign onButtonClick={handlerassignuser} value={usergroup}/></Grid>
+                <Grid item sm={7} xs={12}><br/>
+                <Typography variant="subtitle2">Role: {usergroup} </Typography>
+                    <UserRoleList users={projectvalue[usergroup]??[]} deleteuserrole={deleteusersassign}/>
                 </Grid>
                 </Grid>
+                
         
       )
   }
@@ -161,6 +186,7 @@ export default function ProjectUserTab(props:ProjectUserProps) {
                 }
                    <AddUserButton id='submit' type="submit" /> 
                 </Grid>
+                
                 <Grid item sm={6} xs={12}>
                     <UserRoleList users={projectvalue.users??[]} deleteuserrole={deleteusers}/>
                 </Grid>

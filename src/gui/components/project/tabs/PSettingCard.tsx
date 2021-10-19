@@ -122,7 +122,7 @@ export function UserRoleList(props:any){
         <ListItemText
           secondary={user}
         />
-        { defaultuser.includes(user)?'': 
+        { defaultuser.includes(user)||props.delete===false?'': 
 	            <ListItemSecondaryAction>
 	            
 	              <DeleteuserButton id={`list-delete-${user}`}  onButtonClick={deleteuserrole} value={user} />

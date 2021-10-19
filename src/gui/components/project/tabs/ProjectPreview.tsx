@@ -142,7 +142,13 @@ export default function ProjectPreviewTab(props:ProjectPreviewProps) {
     const handelonChangeVariants = (event:any,index:number)=>{
         const id=formuiSpec['visible_types'][index]
         setFormVariants(id)
-        setfieldNames(formuiSpec['views'][id+'SECTION1']['fields'])
+        let newfields=[]
+        try{
+            newfields=formuiSpec['views'][id+'SECTION1']['fields']
+        }catch(error){
+            console.debug('No fields')
+        }
+        setfieldNames(newfields)
         setformlabel(formtabs[index])
         console.log(fieldNames)
     }

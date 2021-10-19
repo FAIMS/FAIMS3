@@ -29,7 +29,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { process_projects } from '../../../../sync/process-initialization';
-
+import ArrowForwardIosOutlinedIcon from '@material-ui/icons/ArrowForwardIosOutlined';
 type ButtonProps=any
 
 export function ProjectSubmit(props:ButtonProps){
@@ -140,4 +140,15 @@ export function DeleteuserButton(props:ButtonProps){
   </IconButton> 
   )
 }
+
+export function Addusersassign(props:ButtonProps){
+  return (
+  <IconButton color='secondary' edge='start' aria-label="add" onClick={() => props.onButtonClick(props.value)} value={props.value}>
+  <ArrowForwardIosOutlinedIcon  fontSize='large'/>
+</IconButton>
+);
+}
+
+
+
 

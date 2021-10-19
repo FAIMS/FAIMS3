@@ -476,12 +476,14 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
                 <Grid item sm={10} xs={12}>
                   <Grid container spacing={1} >
                     <Grid item sm={4} xs={12} >
+                      <Typography variant="subtitle2">Preview of Component</Typography>
                       {getfieldsFromCom(formcomponent,'general',formProps)}
                     </Grid>
                     <Grid item sm={1} xs={3} className={classes.settingtab}>          
                       <SettingCard handelonClick={handelonClickSetting} key_id={formcomponent.id}/>  
                     </Grid>
                     <Grid item sm={7} xs={9}>
+                    <Typography variant="subtitle2" >Configuration</Typography>
                       {getfieldsFromCom(formcomponent,formcomponent.designvalue,formProps)}
                       {formcomponent['designvalue']==='access'?
                       <AutocompleteForm id={formcomponent['id']} options={getacessoption(props.projectvalue['access'+formuiview]??['admin'])} labels={formuiSpec['fields']['newfield'+formcomponent['id']]['access']} handleAutocomplete={handleAutocomplete} type={'uiS'}/>
@@ -495,7 +497,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
                   <CloseButton  onButtonClick={handleRemoveField} value={formcomponent.id} id={formcomponent.id} text='X' />
                 </Grid>
                 </Grid>
-                
+                <br/>
                 </Form>
               );
         }}
