@@ -34,12 +34,12 @@ import {getComponentFromField,FormForm,AutocompleteForm} from '../FormElement';
 import {TabTab,TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
 import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType,projectvalueType,getacessoption} from '../data/ComponentSetting'
-import {CusButton,CloseButton,UpButton,DownButton,AddButton} from './ProjectButton'
+import {CusButton,CloseButton,UpButton,DownButton,AddButton,ProjectSubmit} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
-
+import Alert from '@material-ui/lab/Alert';
 
 const useStyles = makeStyles((theme) => ({
   newfield:{
@@ -56,6 +56,10 @@ const useStyles = makeStyles((theme) => ({
   },
   settingtab:{
     backgroundColor:'#e1e4e8',
+  },
+  formtabcard:{
+    minHeight:200,
+    backgroundColor:grey[200],
   }
 }));
 
@@ -66,7 +70,7 @@ const sections_default=['SECTION1']
 const variant_default=['FORM1']
 const form_defult={'FORM1SECTION1':[]}
 const VISIBLE_TYPE='visible_types'
-const variant_label='main'
+const variant_label='Form1'
 
 type ProjectDesignProps={ 
   project_id:string;
@@ -76,6 +80,7 @@ type ProjectDesignProps={
   accessgroup:Array<string>;
   projectvalue:projectvalueType;
   setProjectValue:handlertype; 
+  setProjecttabvalue:handlertype;
 }
 type formcomponents=any
 
@@ -102,7 +107,8 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
     
     const [projecttabvalue,setProjecttabvalue]=useState(0)
     const [error, setError] = useState(null as null | {});
-    const [fieldvalue,setfieldValue] = useState(2); //field tab 
+    const [fieldvalue,setfieldValue] = useState(0); //field tab 
+    const [formvalue,setformvalue]=useState(0); //formtabs for each form
     const [formsectionvalue,setformsectionvalue]=useState(0)
 
 
@@ -256,12 +262,14 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
           setsectiontabs(tabs)
           setformuiview(formuiSpec['viewsets'][id]['views'][0])
           setCurrentView(formuiSpec['viewsets'][id]['views'][0]) // this part seems not working, check it to fix the issue
+          setformvalue(0);
           setfieldValue(0) //TODO: remove it
         }
         else{
           setsectiontabs([]);
           setformuiview('')
           setCurrentView('')
+          setformvalue(0);
           setfieldValue(2) //TODO: remove it
           
         }
@@ -303,6 +311,10 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
     const handleChangetabfield = (event:any,index:number) =>{
       setfieldValue(index)
       
+    }
+
+    const handleChangeformvalueTab = (event:any,index:number) =>{
+      setformvalue(index)
     }
     const getfieldsFromCom = (formcomponent:formcomponents,view:string,formProps:any) =>{
       const fields=formcomponent.uiSpec['views'][view]['fields'];
@@ -396,7 +408,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
       }
       
 
-      setfieldValue(2) //TODO: remove it
+      setfieldValue(0) //TODO: remove it
       
 
 
@@ -423,6 +435,23 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
           newui['fields']['newfield'+id]['access']=newvalue
           console.log(newui)
           setFormuiSpec({...formuiSpec,fields:newui.fields})
+      }
+    }
+
+    const gotonext = ()=>{
+      console.log(formtabs.indexOf(formlabel))
+      let indextab=formtabs.indexOf(formlabel)
+      if(indextab<0) indextab=0
+      if(indextab===(formtabs.length-1)) {
+        //formtabs.indexOf(formlabel)==(formtabs.length-1) last form
+        //go to next tab: overview
+        props.setProjecttabvalue(2);
+      }else{
+        const index=formtabs.indexOf(formlabel)+1
+        const id=formuiSpec[VISIBLE_TYPE][index]
+        ChangeVariants(id)
+        setformlabel(formtabs[index])
+        
       }
     }
 
@@ -493,6 +522,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
        <AutocompleteForm id={formuiview} options={getacessoption(props.projectvalue['access'+formvariants]??['admin'])} labels={props.projectvalue['access'+formuiview]} handleAutocomplete={handleAutocomplete} type={'form'}/>
       </TabPanel>
       <TabPanel value={fieldvalue} index={1} tabname='fieldtab' >
+      <Alert severity="info">Select each new component, they will be automatically layout in the interface, then config each of them</Alert>
       {fieldvalue===1&&formuiview!==''&&formcomponents[formuiview].length>0?compnentPanel():''}
         <AddButton id='AddField'  onButtonClick={handleAddFieldButton}  text='ADD' />
         {isAddField?
@@ -513,14 +543,34 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
   const SectionPanel = () =>{
     return (
       <>
-      {props.projectvalue!==undefined&&<FormForm currentView='start-view' handleChangeForm={handleChangeFormAction} handleSubmit={handleSubmitFormAction} uiSpec={getprojectform(props.projectvalue,'form',{formname:formvariants})} />}
-      <br/><AutocompleteForm handleAutocomplete={handleAutocomplete} id={formvariants} options={getacessoption(props.projectvalue.accesses)} lables={props.projectvalue['access'+formvariants]} type={'form'}/>
+      <TabTab tabs={['Access',' Section Definition','Advanced']} value={formvalue} handleChange={handleChangeformvalueTab}  tab_id='formtab'/>
+      <TabPanel value={formvalue} index={0} tabname='formtab' >
+        <Grid container  >
+          <Grid item sm={6} xs={11}>
+          <AutocompleteForm handleAutocomplete={handleAutocomplete} id={formvariants} options={getacessoption(props.projectvalue.accesses)} labels={props.projectvalue['access'+formvariants]} type={'form'}/>
+          </Grid>
+          <Grid item sm={6} xs={1} >
+          <Alert severity="info">Choose the user roles that have access to this form</Alert>
+          </Grid>
+          </Grid>
+      <br/>
+      <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setformvalue(1)} />
+      </TabPanel>
+      
+      <TabPanel value={formvalue} index={1} tabname='formtab' >
+      <Alert severity="info">Add further sections by choosing plus icon. Within each section define the components you need. </Alert>
       <TabEditable tabs={sectiontabs} value={formsectionvalue} handleChange={handelonChangeSection}  tab_id='sectiontab' handelonChangeLabel={handelonChangeLabelSection} />
       {sectiontabs.map((sectiontab:string,index:number)=>
         <TabPanel value={formsectionvalue} index={index} tabname='sectiontab' key={'sectiontab'+index}> 
           {FieldPanel()}
         </TabPanel>
       )}
+      <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setformvalue(2)} />
+      </TabPanel>
+      <TabPanel value={formvalue} index={2} tabname='formtab' >
+      {props.projectvalue!==undefined&&<FormForm currentView='start-view' handleChangeForm={handleChangeFormAction} handleSubmit={handleSubmitFormAction} uiSpec={getprojectform(props.projectvalue,'form',{formname:formvariants})} />}
+      <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={gotonext} />
+      </TabPanel>
       </>
       );
   }
@@ -534,7 +584,7 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         <Grid item sm={12} xs={12}>
         <TabEditable tabs={formtabs} value={formtabs.indexOf(formlabel)>0?formtabs.indexOf(formlabel):0} handleChange={handelonChangeVariants}  tab_id='formtab' handelonChangeLabel={handelonChangeLabel} />
         </Grid>
-        <Grid item sm={not_xs&&formtabs.length>1?8:12} xs={12}>
+        <Grid item sm={not_xs&&formtabs.length>1?10:12} xs={12}>
         
       {formtabs.map((formtab:string,index:number)=>
         
@@ -544,22 +594,18 @@ export default function ProjectDesignTab(props:ProjectDesignProps) {
         )}
         </Grid>
         {not_xs&&formtabs.length>1?
-        (<Grid item sm={4} xs={12}>
+        (<Grid item sm={2} xs={12} className={classes.formtabcard}>
         
-        <Box
-              bgcolor={grey[200]}
-              pl={2}
-              pr={2}
-              style={{overflowX: 'scroll'}}
-            >
+        
             {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel??'form'}/>}
-        </Box>
+        
         </Grid>):('')}
       </Grid>)
   }
 
   return (
     <>
+      <Alert severity="info">In this Tab, you design the look of your notebook, A notebook can contain one or more forms. Each form can contain one or more sections, each containing multiple components. For each tab, you can also define User access and form submission behaviour. Add further forms by choosing plus icon</Alert>
       {project_id!==''&&project_id!==null&&project_id!==undefined?
       (<AddButton id='SaveUiSpec'  onButtonClick={props.handleSaveUiSpec}  text='Click to Save Form Design' />):('')}
       {FormPanel()}

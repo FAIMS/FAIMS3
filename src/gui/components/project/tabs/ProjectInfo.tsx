@@ -30,13 +30,13 @@ import {getComponentFromField,FormForm} from '../FormElement';
 import {TabTab,TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
 import {setProjectInitialValues,getid,updateuiSpec,gettabform,getprojectform,handlertype,uiSpecType,projectvalueType} from '../data/ComponentSetting'
-import {TickButton,AddUserButton} from './ProjectButton'
+import {TickButton,AddUserButton,ProjectSubmit} from './ProjectButton'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import {getProjectInfo} from '../../../../databaseAccess';
 import {ProjectUIModel,ProjectInformation} from '../../../../datamodel/ui'
 import {UserRoleList} from './PSettingCard';
-
+import Alert from '@material-ui/lab/Alert';
 const useStyles = makeStyles((theme) => ({
   root: {
     flexGrow: 1,
@@ -67,6 +67,7 @@ type ProjectInfoProps={
   setProjectValue:handlertype;
   handleSubmit:handlertype;
   handleChangeFormProject:handlertype;
+  setProjecttabvalue:handlertype;
 }
 
 export default function ProjectInfoTab(props:ProjectInfoProps) {
@@ -152,8 +153,10 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
   return (
     <Grid container>
       <Grid item sm={12} xs={12}>
-        <TabTab tabs={['general','group']} value={infotabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
+        <TabTab tabs={['general','User Role']} value={infotabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
         <TabPanel value={infotabvalue} index={0} tabname='primarytab' >
+        <Grid container>
+        <Grid item sm={8} xs={12}>
           {(project_id!==undefined&&projectvalue.name!==''&&projectvalue.name!==undefined&&initialValues.name!=='')||project_id===undefined?<Formik
           initialValues={initialValues}
           validateOnMount={true}
@@ -168,13 +171,23 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
                 <Form >
                 {uiSpec_general['views']['start-view']!==undefined?uiSpec_general['views']['start-view']['fields'].map((fieldName:string)=>
                   getComponentFromField(uiSpec_general,fieldName,formProps,handleChangeFormProject)):''}
-                <TickButton id='submit' type="submit" />
+                {/* <TickButton id='submit' type="submit" /> */}
+                <br/>
+                <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setinfotabvalue(1)} />
                 </Form>
               );
             }}
-          </Formik>:''}
+          </Formik>:''}<br/>
+          </Grid>
+          <Grid item sm={4} xs={12}>
+                <Alert severity="info">Give project a name and an description</Alert>
+            
+          </Grid>
+          </Grid>
         </TabPanel>
         <TabPanel value={infotabvalue} index={1} tabname='primarytab' >
+        <Grid container>
+        <Grid item sm={8} xs={12}>
         {infotabvalue===1?
         <Grid container>
           <Grid item sm={6} xs={12}>
@@ -206,8 +219,14 @@ export default function ProjectInfoTab(props:ProjectInfoProps) {
           </Grid>
           </Grid>
           :''}
+          </Grid>
+          <Grid item sm={4} xs={12}>
+            <Alert severity="info">All projects have an admin, moderator, and team roles by default. define any  new roles required here. You will be able to assign users to these roles later in the User tab.</Alert>
+          </Grid>
+          <ProjectSubmit id='gotonext_info' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>props.setProjecttabvalue(1)} />
+          </Grid>
         </TabPanel>
-      </Grid>
+        </Grid>
     </Grid>
   )}
 

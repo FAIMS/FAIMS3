@@ -81,7 +81,7 @@ registerComponent(
   'formik-material-ui',
   'TextField',
   setupComponentProperties(
-    'HTML input field', 
+    'Input', 
     'text plus sepcial characters',
     'Text', 
     FormikTextField,
@@ -190,8 +190,8 @@ registerComponent(
   'formik-material-ui',
   'MultipleTextField',
   setupComponentProperties(
-    'Multiple HTML input Box', 
-    'Murltupile line text plus sepcial characters',
+    'Input Box', 
+    'Multiple line Input Box',
     'Text', 
     FormikTextField,
     {namespace:'formik-material-ui',componentName:'MultipleTextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',multiline:true,multirows:4},

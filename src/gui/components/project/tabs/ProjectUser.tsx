@@ -175,7 +175,7 @@ export default function ProjectUserTab(props:ProjectUserProps) {
 
   return (
     <>
-                <TabTab tabs={['add','groups']} value={tabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
+                <TabTab tabs={['add','User Role']} value={tabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
                 <TabPanel value={tabvalue} index={0} tabname='primarytab' >
                     {addtab(uiSpec,addusers,handleChange)}
                 </TabPanel>
@@ -201,7 +201,7 @@ export default function ProjectUserTab(props:ProjectUserProps) {
                          );
                      }}
                  </Formik>
-                    :'Please add users to active this feature'}
+                    :'Please add users to activate this feature'}
                 </TabPanel>
                 
             

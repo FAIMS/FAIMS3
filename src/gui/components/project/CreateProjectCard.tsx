@@ -34,6 +34,7 @@ import ProjectInfoTab from './tabs/ProjectInfo';
 import ProjectSubmitTab from './tabs/ProjectSubmit';
 import ProjectUserTab from './tabs/ProjectUser';
 import ProjectPreviewTab from './tabs/ProjectPreview';
+import ProjectBehaviourTab from './tabs/ProjectBehaviour';
 import {ProjectSubmit} from './tabs/ProjectButton';
 import {setProjectInitialValues,handlertype,uiSpecType,projectvalueType,getprojectform} from './data/ComponentSetting'
 import {setUiSpecForProject,getUiSpecForProject} from '../../../uiSpecification';
@@ -45,6 +46,7 @@ import {setProjectMetadata} from '../../../projectMetadata';
 import grey from '@material-ui/core/colors/grey';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
+import Alert from '@material-ui/lab/Alert';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -67,7 +69,7 @@ const accessgroup=['admin','moderator','team']
 const sections_default=['SECTION1']
 const variant_default=['FORM1']
 const projecttabs=['Info','Design','Overview','Preview','User','Behaviour','Submit']
-const variant_label='main'
+const variant_label='Form1'
 const ini_projectvalue={accesses:accessgroup,submitActionFORM1:"Save and New",ispublic:false,errors:[]}
 
 export default function CreateProjectCard(props:CreateProjectCardProps) {
@@ -266,22 +268,38 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
         <TabTab not_xs={not_xs} tabs={projecttabs} value={projecttabvalue} handleChange={handleChangetab}  tab_id='primarytab'/>
        </AppBar>
      <Grid container>
-      <Grid item sm={8} xs={12}>
+      <Grid item sm={12} xs={12}>
       
       <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
-        {projecttabvalue===0?  <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject}/>:''}
+        {projecttabvalue===0?  <ProjectInfoTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleChangeFormProject={handleChangeFormProject} handleSubmit={submithandlerProject} setProjecttabvalue={setProjecttabvalue}/>:''}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={1} tabname='primarytab' >
-        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />:''}
+        {projecttabvalue===1?<ProjectDesignTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} setProjecttabvalue={setProjecttabvalue}/>:''}
+      </TabPanel>
+      <TabPanel value={projecttabvalue} index={2} tabname='primarytab' >
+        <>
+        <Alert severity="info" >High level view of Notebook showing relationships between forms. To modify a relationship, go to the Design Tab</Alert>
+        <ProjectSubmit id='gotonextoverview' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setProjecttabvalue(3)} />
+        </>
       </TabPanel>
       <TabPanel value={projecttabvalue} index={3} tabname='primarytab' >
         {projecttabvalue===3?
-        (<><ProjectPreviewTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />
-          <ProjectSubmit id='sendbacktodesign' type='submit' isSubmitting={false} text='GO Previous to Design Form' onButtonClick={()=>setProjecttabvalue(1)} /></>)
+        (<>
+        <Alert severity="info" >Select the user role to preview the notebook as a user with that role</Alert>
+        <ProjectPreviewTab project_id={project_id} accessgroup={projectvalue.accesses} projectvalue={projectvalue} setProjectValue={setProjectValue} formuiSpec={formuiSpec} setFormuiSpec={setFormuiSpec} handleSaveUiSpec={handleSaveUiSpec} />
+          <ProjectSubmit id='sendbacktodesign' type='submit' isSubmitting={false} text='GO Previous to Design Form' onButtonClick={()=>setProjecttabvalue(1)} />
+             
+          <ProjectSubmit id='gotonextperview' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setProjecttabvalue(4)} /></>)
         :'No'}
       </TabPanel>
       <TabPanel value={projecttabvalue} index={4} tabname='primarytab' >
+        <><Alert severity="info" >Add authorised users for this notebook. Assign roles to users in the User Role tab.</Alert>
         <ProjectUserTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} />
+        </>
+      </TabPanel>
+      <TabPanel value={projecttabvalue} index={5} tabname='primarytab' >
+        <ProjectBehaviourTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} />
+        <ProjectSubmit id='gotonextbehaviour' type='submit' isSubmitting={false} text='Go To Next' onButtonClick={()=>setProjecttabvalue(6)} />
       </TabPanel>
       <TabPanel value={projecttabvalue} index={6} tabname='primarytab' >
         <ProjectSubmitTab project_id={project_id} projectvalue={projectvalue} setProjectValue={setProjectValue} handleSubmit={handlerprojectsubmit_pounch} handlepublish={handlerprojectsubmit_counch} />

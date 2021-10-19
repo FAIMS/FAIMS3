@@ -93,14 +93,14 @@ export const FieldSettings=(component:signlefieldType,label:string,props:any,acc
   const options:Array<optionType>=getacessoption(access)
 	const fields=[
         {name:'',lable:'',type:'TextField',view:'general'},
-        {name:'label',lable:'Label',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
-        {name:'helperText',lable:'Hit Text for Complete Form',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
-        {name:'required',lable:'Check if is compusory',namespace:'faims-custom',componentName:'Checkbox',view:'valid'},
+        {name:'label',lable:'Text Field Label',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
+        {name:'helperText',lable:'Enter Help Text here',namespace:'formik-material-ui',componentName:'TextField',view:'settings'},
+        {name:'required',lable:'Select if component completion is compulsory',namespace:'faims-custom',componentName:'Checkbox',view:'valid'},
         {name:'validationSchema',lable:'validationSchema',namespace:'formik-material-ui',componentName:'TextField',view:'valid',multiline:true,multirows:4,disabled:true,helperText:'Now disbaled, Will be enabled after validation been added.'},
-        {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',view:'access',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from NoteBook'},//TODO: working on newfield
-        {name:'annotation_label',lable:'annotation Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
+        {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',view:'access',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from Section'},//TODO: working on newfield
+        {name:'annotation_label',lable:'Annotation Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes',initialValue:'Annotation'},
         {name:'meta_type',lable:'Include Uncertainty',namespace:'faims-custom',componentName:'Checkbox',view:'notes',initialValue:true},
-        {name:'meta_type_label',lable:'Uncertainty Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes'},
+        {name:'meta_type_label',lable:'Uncertainty Label',namespace:'formik-material-ui',componentName:'TextField',view:'notes',initialValue:'Uncertainty'},
         ]
   const settingsform=getsettingform(component)
   const length=fields.length;
@@ -174,9 +174,9 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   const options=getacessoption(projectvalue.accesses)
   const form_info = [
   // {name:'Formdescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'form',multiline:true,multirows:4},
-  {name:'submitAction',label:'Form Submit Action',namespace:'faims-custom',componentName:'Select',select: true,type:'select',options:form_info_options,view:'form',required:true,helperText:'Action is after User Submit Record, Save button will direct user to create new record or back to parent record'},
+  {name:'submitAction',label:'Form Submit Action',namespace:'faims-custom',componentName:'Select',select: true,type:'select',options:form_info_options,view:'form',required:true,helperText:'Select action to take when user submits the record'},
   //{name:'access',lable:'access',namespace:'faims-custom',componentName:'Select',select: true,type:'select',view:'access',options:options,helperText:'It will be replace to the new field'},//TODO: working on newfield
-  {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from NoteBook'},
+  // {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from NoteBook'},
   // {name:'accesses',label:'Accesses',namespace:'faims-custom',componentName:'AutoComplete',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',select:true,options:getacessoption(projectvalue.accesses)}
 ]
 
@@ -204,7 +204,7 @@ export const getprojectform= (projectvalue:projectvalueType,tab:string,props:any
   usersassign:[ //users info will be defined by access groups
   ],
   behaviours:[
-  {name:'Sync',label:'Sync or not',namespace:'formik-material-ui',componentName:'Checkbox',view:'behaviours',required:true,initialValue:true},
+  {name:'Sync',label:'Automatic Updates',namespace:'faims-custom',componentName:'Checkbox',view:'behaviours',required:true,disabled:true,value:true,initialValue:true,helperText:'Automatically save changes the user makes as they occur. Automatically retrive changes made by other users every 30s (if online)'},
   ],
   preview:[]
   }  

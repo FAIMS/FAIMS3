@@ -59,10 +59,10 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
       </Alert>
       :''}
         {projectvalue.ispublic!==true && <ProjectSubmit id='submit_save' type='submit' isSubmitting={isSubmitting} text='Save' onButtonClick={onButtonClick} />}
-        <Typography>{state===true&&projectvalue.ispublic!==true?'NoteBook is Saved but not Published yet, Click Submit button to Send Request':state===false&&projectvalue.ispublic!==true?'Click Button to Save Notebook':''}
+        <Typography>{state===true&&projectvalue.ispublic!==true?'When you’ve finished the design, click the REQUEST RESOURCES button to send the project definition to FAIMS for moderation. Once submitted, the project cannot be edited again until it has been approved. ':state===false&&projectvalue.ispublic!==true?'Click to save notebook to local device':''}
         </Typography>
-        <ProjectSubmit id='submit_publish' type='submit' isSubmitting={state===false&&projectvalue.ispublic!==true?true:isSubmitting} issubmittext='Publish' text={projectvalue.ispublic!==true ?'Publish':'Update'} onButtonClick={props.handlepublish} />
-        <Typography>{projectvalue.ispublic===true?'Project is Online Save your new design by Click Update Button': ''}
+        <ProjectSubmit id='submit_publish' type='submit' isSubmitting={state===false&&projectvalue.ispublic!==true?true:isSubmitting} issubmittext='Request resources' text={projectvalue.ispublic!==true ?'Submit request':'Update'} onButtonClick={props.handlepublish} />
+        <Typography>{projectvalue.ispublic===true?'Notebook is Online Save your new design by Click Update Button': ''}
         {projectvalue.ispublic!==true&&state===false?'Save Notebook Firstly then click Publish Button to send request': ''}
         </Typography>
       </Grid>
@@ -74,10 +74,16 @@ export default function ProjectSubmitTab(props:ProjectSubmitProps) {
               style={{overflowX: 'scroll'}}
             >
             <Typography variant={'h6'} component={'h6'}>
-            What happens next after Send Request for publishing?
+            What happens next after SAVE ?
             </Typography>
             <Typography >
-            Once your project has been approved, user will received and email inviting them to join this project. Approval timescales are wiaround 72 hours, depending on staff avaliablity and the current number of request
+            Once your notebook has been saved to your local device, you can get it form Notesbooks in menu bar.You can edit it and save it to device later. 
+            </Typography>
+            <Typography variant={'h6'} component={'h6'}>
+            What happens next after REQUEST RESOURCES ?
+            </Typography>
+            <Typography >
+            Once your notebook has been approved, users authorised in the User tab will receive an email inviting them to join this notebook. Approval timescales are around 72 hours, depending on staff avaliablity and the current number of requests
             </Typography>
         </Box>
       </Grid>
