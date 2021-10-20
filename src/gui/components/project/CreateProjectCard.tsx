@@ -125,14 +125,7 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     },[props.project_info])
 
 
-    //  useEffect(() => {
-    //   if(project_id!==''&&project_id!==null&&Object.keys(formuiSpec['fields']).length!==0){
-    //     saveformuiSpec()
-    //     console.log('save to DB')
-    //   }
-      
-      
-    // }, [formuiSpec]);
+
 
 
      const saveformuiSpec = async  (res:any=undefined) =>{
