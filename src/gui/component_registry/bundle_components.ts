@@ -78,71 +78,58 @@ registerComponent(
     TextField
   )
 );
+//this is for testing
+
 registerComponent(
   'formik-material-ui',
   'TextField',
   setupComponentProperties(
     'HTML input field',
     'text plus sepcial characters',
-    'Simple',
-    FormikTextField,
     'Text',
+    FormikTextField,
     {
       namespace: 'formik-material-ui',
       componentName: 'TextField',
       type_return: 'faims-core::String',
       validationSchema: [['yup.string']],
       type: 'text',
-    },
-    null
+    }
   )
 );
+
 registerComponent(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', 'Simple', FormikSelect)
+  setupComponentProperties('', '', 'Select', FormikSelect)
 );
 registerComponent(
   'formik-material-ui',
   'RadioGroup',
-  setupComponentProperties('', '', 'Simple', FormikRadioGroup)
+  setupComponentProperties('', '', 'Select', FormikRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties(
-    'Select',
-    'Select',
-    'Simple',
-    FAIMSSelect,
-    'Select',
-    {
-      namespace: 'faims-custom',
-      componentName: 'Select',
-      select: true,
-      type_return: 'faims-core::String',
-      validationSchema: [['yup.string']],
-      type: 'select',
-    }
-  )
+  setupComponentProperties('Select', 'Select', 'Select', FAIMSSelect, {
+    namespace: 'faims-custom',
+    componentName: 'Select',
+    select: true,
+    type_return: 'faims-core::String',
+    validationSchema: [['yup.string']],
+    type: 'select',
+  })
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties(
-    'Checkbox',
-    'Checkbox',
-    'Simple',
-    FAIMSCheckbox,
-    'Select',
-    {
-      namespace: 'faims-custom',
-      componentName: 'Checkbox',
-      type_return: 'faims-core::Bool',
-      validationSchema: [['yup.bool']],
-      type: 'checkbox',
-    }
-  )
+  setupComponentProperties('Checkbox', 'Checkbox', 'Select', FAIMSCheckbox, {
+    namespace: 'faims-custom',
+    componentName: 'Checkbox',
+    type_return: 'faims-core::Bool',
+    validationSchema: [['yup.bool']],
+    type: 'checkbox',
+  })
 );
 registerComponent(
   'faims-custom',
@@ -152,18 +139,24 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'ActionButton',
-  setupComponentProperties('Take Action', '', 'Test', ActionButton, 'Special', {
-    namespace: 'faims-custom',
-    componentName: 'ActionButton',
-    type_return: 'faims-core::String',
-    validationSchema: [['yup.string']],
-    type: 'string',
-  })
+  setupComponentProperties(
+    'Action Button',
+    'Do an action',
+    'Special',
+    ActionButton,
+    {
+      namespace: 'faims-custom',
+      componentName: 'ActionButton',
+      type_return: 'faims-core::String',
+      validationSchema: [['yup.string']],
+      type: 'string',
+    }
+  )
 );
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties('Take Point', '', 'Position', TakePoint, 'Special', {
+  setupComponentProperties('Take Point', '', 'Special', TakePoint, {
     namespace: 'faims-custom',
     componentName: 'TakePoint',
     type_return: 'faims-pos::Location',
@@ -185,11 +178,10 @@ registerComponent(
   'faims-custom',
   'TemplatedStringField',
   setupComponentProperties(
-    'Templated String',
+    'Unique ID',
     'Build a value up from other fields',
-    'Advanced',
-    TemplatedStringField,
     'Special',
+    TemplatedStringField,
     {
       namespace: 'faims-custom',
       componentName: 'TemplatedStringField',
@@ -230,5 +222,36 @@ registerComponent(
     'Input Geo Data via a map',
     'Maps',
     MapFormField
+  )
+);
+
+registerComponent(
+  'formik-material-ui',
+  'MultipleTextField',
+  setupComponentProperties(
+    'Input Box',
+    'Multiple line Input Box',
+    'Text',
+    FormikTextField,
+    {
+      namespace: 'formik-material-ui',
+      componentName: 'MultipleTextField',
+      type_return: 'faims-core::String',
+      validationSchema: [['yup.string']],
+      type: 'text',
+      multiline: true,
+      multirows: 4,
+    },
+    [
+      {
+        namespace: 'formik-material-ui',
+        componentName: 'TextField',
+        type_return: 'faims-core::Integer',
+        validationSchema: [['yup.number'], ['yup.positive']],
+        type: 'number',
+        name: 'multirows',
+        label: 'Number of Line',
+      },
+    ]
   )
 );

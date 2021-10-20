@@ -21,43 +21,34 @@
  *   TODO: initial value for options, validationschema
  */
 
-import {getComponentPropertiesByName} from '../../../component_registry';
-
-/* TODO: fix eslint @KateSHENG */
-/* eslint-disable */
-
-
-type componentlist = {namespace: string; componentName: string; props?: any};
-
-const componentarray: Array<componentlist> = [
-  {namespace: 'formik-material-ui', componentName: 'TextField'},
-  {namespace: 'faims-custom', componentName: 'Select'},
-  {namespace: 'faims-custom', componentName: 'ActionButton'},
-  {namespace: 'faims-custom', componentName: 'TakePoint'},
-  {namespace: 'faims-custom', componentName: 'TemplatedStringField'},
-];
+import {
+  getComponentByName,
+  getComponentPropertiesByName,
+  getAvailableComponents,
+} from '../../../component_registry';
+import {FormComponent} from '../../../../datamodel/ui';
 
 export const getfields = () => {
   const fields: any = {};
   let fieldtabs: Array<string> = [];
-  componentarray.map((component: componentlist) => {
-    const props = getComponentPropertiesByName(
-      component.namespace,
-      component.componentName
-    );
-    if (!fieldtabs.includes(props.componentname)) {
-      fields[props.componentname] = [{...props}];
-      fieldtabs = [...fieldtabs, props.componentname];
-    } else
-      fields[props.componentname] = [
-        ...fields[props.componentname],
-        {...props},
-      ];
+  getAvailableComponents().map((component: FormComponent) => {
+    const category = component.component_properties.category;
+    const props = component.component_properties;
+    if (
+      props.human_readable_name !== '' &&
+      ['Text', 'Select', 'Special'].includes(props.category)
+    ) {
+      //TODO: required to update in the future
+      if (!fieldtabs.includes(category)) {
+        fields[category] = [{...props}];
+        fieldtabs = [...fieldtabs, category];
+      } else fields[category] = [...fields[category], {...props}];
+    }
   });
 
   return {fields, fieldtabs};
 };
-const accessgroup = ['admin', 'moderator', 'team'];
+const accessgroup = ['admin'];
 
 export const getcomponent = (props: any) => {
   if (props.namespace === undefined) {
@@ -69,36 +60,13 @@ export const getcomponent = (props: any) => {
   }
   if (props.componentName === 'Checkbox') return Checkbox(props);
   if (props.componentName === 'TakePoint') return SpecialField(props);
-  if (props.componentName === 'TextField' || props.componentName === 'Select')
+  if (
+    props.componentName === 'TextField' ||
+    props.componentName === 'Select' ||
+    props.componentName === 'MultipleTextField'
+  )
     return TextField(props);
   return SpecialField(props);
-};
-
-export const getsettingform = (component: any) => {
-  if (component['component-name'] === 'Select')
-    return [
-      {
-        name: 'options',
-        lable: 'options',
-        type: 'TextField',
-        view: 'settings',
-        multiline: true,
-        multirows: 4,
-        initialValue: 'Default',
-        helperText: 'Type options here, speprate by Space(will edit)',
-      },
-    ];
-  if (component['component-parameters']['multiline'] !== undefined)
-    if (component['component-parameters']['multiline'] === true)
-      return [
-        {
-          name: 'multirows',
-          lable: 'Number of rows',
-          type: 'IntegerField',
-          view: 'settings',
-        },
-      ];
-  return [];
 };
 
 const convertvalidation = (validationSchema: Array<any>) => {
@@ -133,11 +101,14 @@ export const convertuiSpecToProps = (fielduiSpec: any) => {
     ...{
       componentName: fielduiSpec['component-name'],
       namespace: fielduiSpec['component-namespace'],
-      name: fielduiSpec['component-parameters']['name'],
       type_return: fielduiSpec['type-returned'],
+      name: fielduiSpec['component-parameters']['name'],
       required: fielduiSpec['component-parameters']['required'],
       initialValue: fielduiSpec['initialValue'],
-      validationSchema: fielduiSpec['validationSchema'], //TODO: ADD function to pass and update validationschema
+      validationSchema: getdefaultvalidschema(
+        fielduiSpec,
+        fielduiSpec['validationSchema'] ?? []
+      ), //TODO: ADD function to pass and update validationschema
       annotation_label:
         fielduiSpec['meta'] !== undefined
           ? fielduiSpec['meta']['annotation_label']
@@ -151,6 +122,12 @@ export const convertuiSpecToProps = (fielduiSpec: any) => {
           ? fielduiSpec['meta']['uncertainty']['label']
           : '',
       access: fielduiSpec['access'], //TODO: ADD function to pass and update access
+
+      // ...fielduiSpec['component-parameters']['InputProps'],
+      // ...fielduiSpec['component-parameters']['SelectProps'],
+      // ...fielduiSpec['component-parameters']['InputLabelProps'],
+      // ...fielduiSpec['component-parameters']['FormHelperTextProps'],
+
       select:
         fielduiSpec['component-parameters']['select'] === true ? true : false,
       label:
@@ -165,9 +142,12 @@ export const convertuiSpecToProps = (fielduiSpec: any) => {
       helperText:
         fielduiSpec['component-parameters']['helperText'] !== undefined
           ? fielduiSpec['component-parameters']['helperText']
-          : fielduiSpec['component-parameters']['FormHelperTextProps'][
+          : fielduiSpec['component-parameters']['FormHelperTextProps'] !==
+            undefined
+          ? fielduiSpec['component-parameters']['FormHelperTextProps'][
               'children'
-            ], // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children']
+            ]
+          : '', // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children']
       type:
         fielduiSpec['component-parameters']['InputProps'] !== undefined
           ? fielduiSpec['component-parameters']['InputProps']['type']
@@ -190,10 +170,48 @@ export const convertuiSpecToProps = (fielduiSpec: any) => {
   if (fielduiSpec['component-parameters']['select'] === true)
     props['options'] =
       fielduiSpec['component-parameters']['ElementProps']['options'];
+  console.log('+++++++++compare');
+  console.log(props);
+  console.log('+++++++++compare++++++=');
+  console.log({
+    componentName: fielduiSpec['component-name'],
+    namespace: fielduiSpec['component-namespace'],
+    name: fielduiSpec['component-parameters']['name'],
+    type_return: fielduiSpec['type-returned'],
+    required: fielduiSpec['component-parameters']['required'],
+    initialValue: fielduiSpec['initialValue'],
+    validationSchema: getdefaultvalidschema(
+      fielduiSpec,
+      fielduiSpec['validationSchema'] ?? []
+    ), //TODO: ADD function to pass and update validationschema
+    annotation_label:
+      fielduiSpec['meta'] !== undefined
+        ? fielduiSpec['meta']['annotation_label']
+        : 'annotation',
+    meta_type:
+      fielduiSpec['meta'] !== undefined
+        ? fielduiSpec['meta']['uncertainty']['include']
+        : false,
+    meta_type_label:
+      fielduiSpec['meta'] !== undefined
+        ? fielduiSpec['meta']['uncertainty']['label']
+        : '',
+    access: fielduiSpec['access'], //TODO: ADD function to pass and update access
+    ...fielduiSpec['component-parameters']['InputProps'],
+    ...fielduiSpec['component-parameters']['SelectProps'],
+    ...fielduiSpec['component-parameters']['InputLabelProps'],
+    ...fielduiSpec['component-parameters']['FormHelperTextProps'],
+    ...fielduiSpec['component-parameters']['ElementProps'],
+  });
 
   return props;
 };
 
+const getdefaultvalidschema = (component: any, validation: Array<any>) => {
+  const validationSchema = validation;
+
+  return validationSchema;
+};
 const FieldModel = (props: any) => {
   const {
     name,
@@ -255,7 +273,11 @@ const FieldModel = (props: any) => {
     if (props.multselect === true) uiSpec.initialValue = initialValue ?? [''];
   }
   if (multiline === true) uiSpec['component-parameters']['multiline'] = true;
-  if (componentName === 'TakePoint') uiSpec.initialValue = initialValue ?? null;
+  if (componentName === 'TakePoint') {
+    if (initialValue !== '' && initialValue !== undefined)
+      uiSpec.initialValue = initialValue;
+    else uiSpec.initialValue = null;
+  }
   return uiSpec;
 };
 

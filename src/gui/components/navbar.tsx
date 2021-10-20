@@ -36,6 +36,7 @@ import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import BuildIcon from '@material-ui/icons/Build';
+import AddIcon from '@material-ui/icons/Add';
 import HomeIcon from '@material-ui/icons/Home';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import DescriptionIcon from '@material-ui/icons/Description';
@@ -148,7 +149,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     });
   });
   return {
-    title: 'Projects',
+    title: 'Notebooks',
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.PROJECT_LIST,
@@ -179,7 +180,7 @@ export default function Navbar() {
     getNestedProjects(pouchProjectList),
     {
       title: 'New Notebook',
-      icon: <BuildIcon />,
+      icon: <AddIcon />,
       to: ROUTES.PROJECT_CREATE,
       disabled: false,
     },

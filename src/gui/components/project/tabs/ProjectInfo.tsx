@@ -17,21 +17,46 @@
  * Description:This is the file about Project Info
  *
  */
-import {useState} from 'react';
-
+import React from 'react';
+import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
+import grey from '@material-ui/core/colors/grey';
 
-import {FormForm} from '../FormElement';
 import {
+  Button,
+  Grid,
+  Box,
+  ButtonGroup,
+  Typography,
+  AppBar,
+  Hidden,
+} from '@material-ui/core';
+import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
+import FieldsListCard from './FieldsListCard';
+import {SettingCard} from './PSettingCard';
+import {getComponentFromField, FormForm} from '../FormElement';
+import {TabTab, TabEditable} from './TabTab';
+import TabPanel from './TabPanel';
+import {
+  setProjectInitialValues,
+  getid,
+  updateuiSpec,
+  gettabform,
   getprojectform,
   handlertype,
+  uiSpecType,
   projectvalueType,
 } from '../data/ComponentSetting';
+import {TickButton, AddUserButton, ProjectSubmit} from './ProjectButton';
+import {
+  setUiSpecForProject,
+  getUiSpecForProject,
+} from '../../../../uiSpecification';
+import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import {getProjectInfo} from '../../../../databaseAccess';
-
-/* TODO: fix eslint @KateSHENG */
-/* eslint-disable */
-
+import {ProjectUIModel, ProjectInformation} from '../../../../datamodel/ui';
+import {UserRoleList} from './PSettingCard';
+import Alert from '@material-ui/lab/Alert';
 const useStyles = makeStyles(theme => ({
   root: {
     flexGrow: 1,
@@ -60,28 +85,245 @@ type ProjectInfoProps = {
   projectvalue: projectvalueType;
   setProjectValue: handlertype;
   handleSubmit: handlertype;
+  handleChangeFormProject: handlertype;
+  setProjecttabvalue: handlertype;
 };
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
   const {projectvalue, setProjectValue, project_id, ...others} = props;
-  const [projectInfo, setProjectInfo] = useState<any>(
-    getProjectInfo(project_id)
-  );
+  // const [projectInfo,setProjectInfo]=useState<ProjectInformation|null>(getProjectInfo(project_id))
+  const [infotabvalue, setinfotabvalue] = useState(0);
+  const [uiSpec_general, setUISpecG] = useState<ProjectUIModel>({
+    fields: {},
+    views: {},
+    viewsets: {},
+    visible_types: []})
+
+  const [accessgroup, setaccessgroup] = useState([]);
+
+  const [uiSpec_access, setUISpecA] = useState<ProjectUIModel>({
+    fields: {},
+    views: {},
+    viewsets: {},
+    visible_types: [],
+  });
+  const [initialValues, setinitialValues] = useState<any>({});
+
+  useEffect(() => {
+    setini();
+  }, []);
+
+  useEffect(() => {
+    setUISpecA(getprojectform(projectvalue, 'info_group'));
+  }, [accessgroup]);
+
+  useEffect(() => {
+    if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {
+      const newuiSpecg = getprojectform(projectvalue, 'info_general');
+      const newini = setProjectInitialValues(newuiSpecg, 'start-view', {
+        _id: project_id,
+      });
+      setinitialValues(
+        setProjectInitialValues(newuiSpecg, 'start-view', {_id: project_id})
+      );
+      console.debug(initialValues);
+      setUISpecG(newuiSpecg);
+      console.debug('update');
+      console.log(newuiSpecg);
+    }
+  }, [projectvalue]);
+
+  const setini = () => {
+    setUISpecA(getprojectform(projectvalue, 'info_group'));
+
+    const iniuiSpecg = getprojectform(projectvalue, 'info_general');
+    const ini = setProjectInitialValues(iniuiSpecg, 'start-view', {
+      _id: project_id,
+    });
+    setinitialValues(
+      setProjectInitialValues(iniuiSpecg, 'start-view', {_id: project_id})
+    );
+    console.debug(initialValues);
+    setUISpecG({...iniuiSpecg});
+    console.debug('ini');
+    setinfotabvalue(0);
+  };
+
   const handleChangeFormProject = (event: any) => {
     const newproject = projectvalue;
     newproject[event.target.name] = event.target.value;
+    setProjectValue({...newproject});
+  };
+  const handleChangetab = (event: any, index: number) => {
+    if (index === 0)
+      setinitialValues(
+        setProjectInitialValues(uiSpec_general, 'start-view', {_id: project_id})
+      );
+    if (index === 1)
+      setinitialValues(
+        setProjectInitialValues(uiSpec_access, 'start-view', {_id: project_id})
+      );
+    console.log(initialValues);
+    setinfotabvalue(index);
+  };
+
+  const handleSubmitAccess = (values: any) => {
+    // props.handleSubmit(values)
+    if (values['accessadded'] === '') return false;
+    const newproject = projectvalue;
+    newproject['accesses'] = [...newproject['accesses'], values['accessadded']]; //need to reset the add user role value
     setProjectValue(newproject);
+    setaccessgroup(newproject['accesses']);
+    return true;
+  };
+
+  const handleformchangeAccess = (event: any) => {};
+
+  const deleteuserrole = (userrole: string) => {
+    console.log(userrole);
+    const newproject = projectvalue;
+    newproject['accesses'] = newproject['accesses'].filter(
+      (access: string) => access !== userrole
+    );
+    setProjectValue(newproject);
+    setaccessgroup(newproject['accesses']);
   };
 
   return (
-    <>
-      <FormForm
-        uiSpec={getprojectform(['projectname'])}
-        currentView="start-view"
-        handleChangeForm={handleChangeFormProject}
-        handleSubmit={props.handleSubmit}
-      />
-      <pre>{JSON.stringify(projectInfo, null, 2)}</pre>
-    </>
+    <Grid container>
+      <Grid item sm={12} xs={12}>
+        <TabTab
+          tabs={['general', 'User Role']}
+          value={infotabvalue}
+          handleChange={handleChangetab}
+          tab_id="primarytab"
+        />
+        <TabPanel value={infotabvalue} index={0} tabname="primarytab">
+          <Grid container>
+            <Grid item sm={8} xs={12}>
+              {(project_id !== undefined &&
+                projectvalue.name !== '' &&
+                projectvalue.name !== undefined &&
+                initialValues.name !== '') ||
+              project_id === undefined ? (
+                <Formik
+                  initialValues={initialValues}
+                  validateOnMount={true}
+                  onSubmit={(values, {setSubmitting}) => {
+                    setTimeout(() => {
+                      setSubmitting(false);
+                      props.handleSubmit(values);
+                    }, 500);
+                  }}
+                >
+                  {formProps => {
+                    return (
+                      <Form>
+                        {uiSpec_general['views']['start-view'] !== undefined
+                          ? uiSpec_general['views']['start-view'][
+                              'fields'
+                            ].map((fieldName: string) =>
+                              getComponentFromField(
+                                uiSpec_general,
+                                fieldName,
+                                formProps,
+                                handleChangeFormProject
+                              )
+                            )
+                          : ''}
+                        {/* <TickButton id='submit' type="submit" /> */}
+                        <br />
+                        <ProjectSubmit
+                          id="gotonext_info"
+                          type="submit"
+                          isSubmitting={false}
+                          text="Go To Next"
+                          onButtonClick={() => setinfotabvalue(1)}
+                        />
+                      </Form>
+                    );
+                  }}
+                </Formik>
+              ) : (
+                ''
+              )}
+              <br />
+            </Grid>
+            <Grid item sm={4} xs={12}>
+              <Alert severity="info">
+                Give project a name and an description
+              </Alert>
+            </Grid>
+          </Grid>
+        </TabPanel>
+        <TabPanel value={infotabvalue} index={1} tabname="primarytab">
+          <Grid container>
+            <Grid item sm={8} xs={12}>
+              {infotabvalue === 1 ? (
+                <Grid container>
+                  <Grid item sm={6} xs={12}>
+                    <Formik
+                      initialValues={initialValues}
+                      validateOnMount={true}
+                      onSubmit={(values, {setSubmitting}) => {
+                        setTimeout(() => {
+                          setSubmitting(false);
+                          handleSubmitAccess(values);
+                        }, 500);
+                      }}
+                    >
+                      {formProps => {
+                        return (
+                          <Form>
+                            {uiSpec_access['views']['start-view'] !== undefined
+                              ? uiSpec_access['views']['start-view'][
+                                  'fields'
+                                ].map((fieldName: string) =>
+                                  getComponentFromField(
+                                    uiSpec_access,
+                                    fieldName,
+                                    formProps,
+                                    handleformchangeAccess
+                                  )
+                                )
+                              : ''}
+                            <Box pl={2} pr={2}>
+
+                <AddUserButton id='submit' type="submit" /></Box>
+                          </Form>
+                        );
+                      }}
+                    </Formik>
+                  </Grid>
+                  <Grid item sm={1} xs={12}></Grid>
+                  <Grid item sm={5} xs={12}>
+                    <UserRoleList
+                      users={projectvalue.accesses}
+                      deleteuserrole={deleteuserrole}
+                    />
+                  </Grid>
+                </Grid>
+              ) : (
+                ''
+              )}
+            </Grid>
+            <Grid item sm={4} xs={12}>
+              <Alert severity="info">
+                All projects have an admin, moderator, and team roles by
+                default. define any new roles required here. You will be able to
+                assign users to these roles later in the User tab.
+              </Alert>
+            </Grid>
+            <ProjectSubmit
+              id="gotonext_info"
+              type="submit"
+              isSubmitting={false}
+              text="Go To Next"
+              onButtonClick={() => props.setProjecttabvalue(1)}
+            />
+          </Grid>
+        </TabPanel>
+      </Grid>
+    </Grid>
   );
 }

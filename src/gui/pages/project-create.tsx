@@ -47,7 +47,8 @@ export default function ProjectCreate() {
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
             Design and preview your new notebook before inviting team members
-            and publising
+            and publising. You can follow the GO TO NEXT button in each tab or
+            select tabs to design your notebook.
           </Typography>
         </Box>
         <Paper square>
@@ -92,7 +93,7 @@ export default function ProjectCreate() {
           <Typography variant={'subtitle1'} gutterBottom>
             {project_info !== null
               ? 'Design and preview your notebook'
-              : 'Design and preview your new notebook before inviting team members and publising'}
+              : 'Design and preview your new notebook before inviting team members and publising.You can follow the GO TO NEXT button in each tab or select tabs to design your notebook.'}
           </Typography>
         </Box>
         <Paper square>

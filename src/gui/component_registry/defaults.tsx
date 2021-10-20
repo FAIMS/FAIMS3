@@ -27,10 +27,10 @@ export function getDefaultBuilderIcon() {
   return <BrokenImageIcon />;
 }
 
-export function getDefaultUiSpec() {
-  return '';
+export function getDefaultuiSpecProps(){
+  return {namespace:'formik-material-ui',componentName:'TextField',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text'};
 }
 
-export function getDefaultuiSpecProps() {
-  return '';
+export function getDefaultuisettings(){
+  return [{settings:false}];
 }

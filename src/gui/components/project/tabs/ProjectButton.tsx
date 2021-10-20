@@ -26,8 +26,38 @@ import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
-
+import DeleteIcon from '@material-ui/icons/Delete';
+import {process_projects} from '../../../../sync/process-initialization';
+import ArrowForwardIosOutlinedIcon from '@material-ui/icons/ArrowForwardIosOutlined';
 type ButtonProps = any;
+
+export function ProjectSubmit(props: ButtonProps) {
+  return (
+    <Button
+      id={props.id}
+      type="submit"
+      color="primary"
+      variant="contained"
+      onClick={() => props.onButtonClick(props.id)}
+      disableElevation
+      disabled={props.isSubmitting}
+    >
+      {props.isSubmitting ? props.issubmittext ?? 'Working...' : props.text}
+      {/*{props.isSubmitting && (
+                              <CircularProgress
+                                size={24}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  marginTop: -12,
+                                  marginLeft: -12,
+                                }}
+                              />
+                            )}*/}
+    </Button>
+  );
+}
 
 export function CusButton(props: ButtonProps) {
   return (
@@ -114,6 +144,24 @@ export function TickButton(props: ButtonProps) {
     </IconButton>
   );
 }
+
+export function AddUserButton(props: ButtonProps) {
+  return (
+    // <IconButton edge="end" type={props.type} id={props.id}>
+    //         <AddCircleIcon  fontSize='small'/>
+    //     </IconButton>
+    <Button
+      color="secondary"
+      startIcon={<AddCircleIcon />}
+      variant="outlined"
+      type={props.type}
+      id={props.id}
+    >
+      ADD{' '}
+    </Button>
+  );
+}
+
 export function AddButton(props: ButtonProps) {
   return (
     <Button
@@ -128,5 +176,33 @@ export function AddButton(props: ButtonProps) {
     >
       {props.text}
     </Button>
+  );
+}
+
+export function DeleteuserButton(props: ButtonProps) {
+  return (
+    <IconButton
+      id={props.id}
+      edge="end"
+      aria-label="delete"
+      onClick={() => props.onButtonClick(props.value)}
+      value={props.value}
+    >
+      <DeleteIcon />
+    </IconButton>
+  );
+}
+
+export function Addusersassign(props: ButtonProps) {
+  return (
+    <IconButton
+      color="secondary"
+      edge="start"
+      aria-label="add"
+      onClick={() => props.onButtonClick(props.value)}
+      value={props.value}
+    >
+      <ArrowForwardIosOutlinedIcon fontSize="large" />
+    </IconButton>
   );
 }

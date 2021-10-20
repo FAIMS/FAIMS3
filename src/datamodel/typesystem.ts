@@ -50,6 +50,7 @@ export interface ProjectUIViews {
   [key: string]: {
     label?: string;
     fields: string[];
+    uidesign?: string;
     next_label?: string;
   };
 }

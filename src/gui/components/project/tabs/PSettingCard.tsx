@@ -20,15 +20,25 @@
  *   TODO: any type
  */
 
-import {List, ListItem} from '@material-ui/core';
+import React from 'react';
+import {
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  ListItemSecondaryAction,
+  Paper,
+  Divider,
+} from '@material-ui/core';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PlaylistAddCheckIcon from '@material-ui/icons/PlaylistAddCheck';
 import GroupIcon from '@material-ui/icons/Group';
 import NoteIcon from '@material-ui/icons/Note';
+import AccountTree from '@material-ui/icons/AccountTree';
 import {makeStyles} from '@material-ui/core/styles';
-
-/* TODO: fix eslint @KateSHENG */
-/* eslint-disable */
+import {getconnections} from '../data/ComponentSetting';
+// import NoteIcon from '@material-ui/icons/NoteIcon';
+import {DeleteuserButton} from './ProjectButton';
 
 const useStyles = makeStyles(theme => ({
   settiglist: {
@@ -41,6 +51,11 @@ const useStyles = makeStyles(theme => ({
       },
     },
     selected: {},
+  },
+  formconnection: {},
+  userrole: {
+    maxWidth: 300,
+    minHeight: 150,
   },
 }));
 
@@ -88,5 +103,68 @@ export function SettingCard(props: SettingCard) {
         <NoteIcon />
       </ListItem>
     </List>
+  );
+}
+
+export function FormConnectionCard(props: any) {
+  const classes = useStyles();
+  const tabs = props.tabs.filter((tab: string) => tab !== props.tabname);
+  const linkedtabs = getconnections(props.tabname, props.formuiSpec, tabs);
+  return (
+    <List
+      component="nav"
+      aria-label="settings bar"
+      className={classes.formconnection}
+    >
+      {props.tabname} Linked to
+      {linkedtabs.map((tab: {tab: string; link: string}) => (
+        <ListItem key={props.tabname + tab.tab + 'relationlist'}>
+          <ListItemIcon>
+            <AccountTree />
+          </ListItemIcon>
+          <ListItemText primary={tab.tab} secondary={tab.link} />
+        </ListItem>
+
+
+      ))}
+
+
+    </List>
+  );
+}
+
+export function UserRoleList(props: any) {
+  const classes = useStyles();
+  const {users, deleteuserrole, ...others} = props;
+  const defaultuser = ['admin', 'moderator', 'team', 'admin@gmail.com'];
+  return (
+    <Paper className={classes.userrole}>
+      <List
+        component="nav"
+        aria-label="settings bar"
+        className={classes.userrole}
+      >
+        {users.map((user: string, index: number) => (
+          <>
+            <ListItem key={user + index} id={`list-delete-${user + index}`}>
+              <ListItemText secondary={user} />
+              {defaultuser.includes(user) || props.delete === false ? (
+                ''
+              ) : (
+                <ListItemSecondaryAction>
+
+	              <DeleteuserButton id={`list-delete-${user}`}  onButtonClick={deleteuserrole} value={user} />
+
+                </ListItemSecondaryAction>
+              )}
+            </ListItem>
+            <Divider />
+          </>
+
+        ))}
+
+
+    </List>
+    </Paper>
   );
 }

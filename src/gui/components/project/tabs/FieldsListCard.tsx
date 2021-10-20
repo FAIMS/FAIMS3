@@ -20,30 +20,30 @@
  *   TODO: Field icon not working
  */
 
+import React from 'react';
+import {useState} from 'react';
 import {
   Grid,
   CardActionArea,
+  CardActions,
   CardContent,
   Typography,
   Card,
+  Button,
 } from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
 import {getfields} from '../data/uiFieldsRegistry';
 
-/* TODO: fix eslint @KateSHENG */
-/* eslint-disable */
-
 const useStyles = makeStyles(theme => ({
   content: {
     minHeight: 100,
-    minWidth: 280,
+    minWidth: 200,
     [theme.breakpoints.down('sm')]: {
       width: '100%',
     },
   },
   inputfieldscard: {
     backgroundColor: '#353b40',
-    color: '#fff',
     textAlign: 'right',
     [theme.breakpoints.down('sm')]: {
       marginBottom: 15,
@@ -72,7 +72,7 @@ function FieldCard(props: any) {
                 <Grid
                   container
                   spacing={2}
-                  key={`${field.uiSpecProps.componentname}-card-${index}`}
+                  key={`${field.uiSpecProps.category}-card-${index}`}
                 >
                   <Grid item sm={2} xs={12}>
                     {field.icon}
