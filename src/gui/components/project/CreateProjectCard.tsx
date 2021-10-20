@@ -135,9 +135,9 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
     // }, [formuiSpec]);
 
 
-     const saveformuiSpec = async  () =>{
+     const saveformuiSpec = async  (res:any=undefined) =>{
       try{
-          console.log(await setUiSpecForProject(metadata_dbs[project_id].local, formuiSpec));
+          console.log(await setUiSpecForProject(metadata_dbs[res??project_id].local, formuiSpec));
       }catch (err) {
         console.error('databases needs cleaning...');
         console.debug(err);
@@ -243,11 +243,18 @@ export default function CreateProjectCard(props:CreateProjectCardProps) {
       }
     }
 
-    const handlerprojectsubmit_pounch = () => {
+    const handlerprojectsubmit_pounch = async () => {
       //save into local pounch
       
       if(project_id===undefined){
-        getnewdb();
+        await create_new_project_dbs(projectvalue.name).then(res => {
+          console.log('projectid'+res)
+          setProjectID(res); 
+          setProjectValue({...projectvalue,project_id:res})
+          if(res!==''&&res!==null&&Object.keys(formuiSpec['fields']).length!==0)
+          saveformuiSpec(res)
+        }  )
+          
       }
       if(project_id!==''&&project_id!==null&&Object.keys(formuiSpec['fields']).length!==0){
         saveformuiSpec()
