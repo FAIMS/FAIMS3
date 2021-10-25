@@ -226,13 +226,13 @@ public class AndroidTest implements E2ETest {
 	    AndroidElement textField = TestUtils.scrollToResourceId(driver, "multi-str-field");
 	    textField.sendKeys(AstroSky.UNICODE);
 
+	    // Integer field
 	    AndroidElement intField = driver.findElement(By.xpath("//*[@resource-id='int-field']"));
-	    intField.click();
-	    driver.pressKey(new KeyEvent(AndroidKey.DEL));
-	    driver.pressKey(new KeyEvent(AndroidKey.DIGIT_1));
-	    driver.pressKey(new KeyEvent(AndroidKey.DIGIT_6));
-	    // Hide the number keyboard so we can see the rest of the screen
-	    driver.hideKeyboard();
+		intField.click();
+		driver.pressKey(new KeyEvent(AndroidKey.DEL));
+		driver.pressKey(new KeyEvent(AndroidKey.DIGIT_1));
+		// Hide the number keyboard so we can see the rest of the screen
+		driver.hideKeyboard();
 
 	    // Multiple currency field
 	    AndroidElement multiCurrField = (AndroidElement) wait.until(
@@ -256,11 +256,35 @@ public class AndroidTest implements E2ETest {
 	    		ExpectedConditions.visibilityOfElementLocated(MobileBy.xpath("//*[@resource-id='checkbox-field']")));
 	    checkbox.click();
 
-	    // radio button
+	    // radio button - click on he fourth one
 	    AndroidElement radioButton = (AndroidElement) wait.until(ExpectedConditions.visibilityOfElementLocated(
-	    		MobileBy.xpath("//*[@resource-id='radio-group-field']/android.widget.RadioButton[@text='4']")));
-	    // click the fourth one
+	    		MobileBy.xpath("//*[@resource-id='radio-group-field-4']")));
 	    radioButton.click();
+
+	    // scroll up to the very top, and click "next-view"
+	    TestUtils.scrollToText(driver, "next-view").click();
+
+	    // Integer field on page 2
+	    intField = driver.findElement(By.xpath("//*[@resource-id='int-field']"));
+		intField.click();
+		driver.pressKey(new KeyEvent(AndroidKey.DEL));
+		driver.pressKey(new KeyEvent(AndroidKey.DIGIT_1));
+		driver.pressKey(new KeyEvent(AndroidKey.DIGIT_6));
+		// Hide the number keyboard so we can see the rest of the screen
+		driver.hideKeyboard();
+
+	    // Currency field on page 2
+	    AndroidElement currField = (AndroidElement) wait.until(
+	            ExpectedConditions.elementToBeClickable(
+	            		MobileBy.xpath("//*[@resource-id='select-field']")));
+	    currField.click();
+	    // wait for the spinner overlay to disappear so we can see everything on the list
+	    wait.until(ExpectedConditions.invisibilityOf(currField));
+	    // choose second: Euro
+	    currencies = wait.until(ExpectedConditions.visibilityOfNestedElementsLocatedBy(
+	    		MobileBy.xpath("//android.view.View/android.widget.ListView"),
+	    		MobileBy.xpath("//android.view.View")));
+	    currencies.get(1).click();
 	}
 
 	/**
@@ -324,6 +348,7 @@ public class AndroidTest implements E2ETest {
         assertEquals(AstroSky.UNICODE, values.get("multi-str-field").toString());
         assertEquals(AstroSky.INTEGER, values.get("int-field").toString());
         assertEquals("[\"USD\",\"EUR\"]", values.get("multi-select-field").toString());
+        assertEquals("EUR", values.get("select-field").toString());
         // FIXME: seems like an appium bug. The values below aren't updating despite us waiting and reretrieving them
         // Our attempt as below:
 		// wait for JSON to be updated by checking that touched has been updated for the last field

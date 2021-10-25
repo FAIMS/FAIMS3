@@ -25,8 +25,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import io.appium.java_client.MobileBy;
@@ -94,12 +97,26 @@ public class TestUtils {
 
 	/**
 	 * Scroll to an element by text
-	 * @param driver
+	 * @param driver AndroidDriver
 	 * @param elementText The text on the element to be found
 	 */
 	public static AndroidElement scrollToText(AndroidDriver<AndroidElement> driver, String elementText) {
 	    return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
             + "new UiSelector().text(\"" + elementText + "\"));"));
+	}
+
+	/**
+	 * Scroll to an element by text
+	 * @param driver WebDriver
+	 * @param elementText The text on the element to be found
+	 */
+	public static WebElement scrollToText(WebDriver driver, String text) {
+		WebElement element = driver.findElement(By.xpath("//*[text()='" + text + "']"));
+		Actions actions = new Actions(driver);
+		actions.moveToElement(element);
+		actions.perform();
+
+		return element;
 	}
 
 	/**

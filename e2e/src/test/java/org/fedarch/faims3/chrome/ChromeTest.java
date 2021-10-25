@@ -231,7 +231,7 @@ public class ChromeTest implements E2ETest {
 
 	    WebElement intField = driver.findElement(By.id("int-field"));
 	    intField.sendKeys(Keys.chord(Keys.CONTROL,"a", Keys.DELETE));
-	    intField.sendKeys(AstroSky.INTEGER);
+	    intField.sendKeys("15");
 
 	    // Multiple currency field
 	    WebElement multiCurrField = wait.until(
@@ -251,11 +251,25 @@ public class ChromeTest implements E2ETest {
 	    driver.findElement(By.id("checkbox-field")).click();
 
 	    // radio button
-	    List<WebElement> radioButtons = wait.until(ExpectedConditions.visibilityOfNestedElementsLocatedBy(
-	    		By.id("radio-group-field"),
-	    		By.tagName("label")));
-	    // click the fourth one
-	    radioButtons.get(3).click();
+	    wait.until(ExpectedConditions.visibilityOfElementLocated(
+	    		By.id("radio-group-field-4"))).click();
+
+	    // Scroll up until you hit "next-view"
+	    TestUtils.scrollToText(driver, "next-view").click();
+
+	    // Integer on page 2
+	    intField = driver.findElement(By.id("int-field"));
+	    intField.sendKeys(Keys.chord(Keys.CONTROL,"a", Keys.DELETE));
+	    intField.sendKeys(AstroSky.INTEGER);
+
+	    // Currency field on page 2
+	    WebElement currField = wait.until(
+	            ExpectedConditions.elementToBeClickable(
+	            		By.id("select-field")));
+	    currField.click();
+	    // choose Euro
+	    wait.until(ExpectedConditions.presenceOfElementLocated(
+	    		By.xpath("//*[@data-value='EUR']"))).click();
 	}
 
 
@@ -374,6 +388,7 @@ public class ChromeTest implements E2ETest {
         assertEquals(AstroSky.UNICODE, values.get("multi-str-field").toString());
         assertEquals(AstroSky.INTEGER, values.get("int-field").toString());
         assertEquals("[\"USD\",\"EUR\"]", values.get("multi-select-field").toString());
+        assertEquals("EUR", values.get("select-field").toString());
         assertEquals("true", values.get("checkbox-field").toString());
         assertEquals("4", values.get("radio-group-field").toString());
         // no errors
