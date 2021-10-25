@@ -31,22 +31,33 @@ import {
   SyncingActions,
   AlertActions,
   ActionType,
+  SyncActions,
 } from './actions';
 import LoadingApp from './gui/components/loadingApp';
 import {initialize} from './sync/initialize';
+import {add_initial_listener} from './sync/event-handler-registration';
 
 interface InitialStateProps {
   initialized: boolean;
   isSyncing: boolean;
 
+  known_listings: Set<string>; //direct from listings_known event
+
   active_project: ProjectObject | null;
   active_record: Record | null;
-  alerts: Array<{message: string; severity: Color; key: string}>;
+  alerts: Array<
+    {
+      severity: Color;
+      key: string;
+    } & ({message: string} | {element: JSX.Element[]})
+  >;
 }
 
 const InitialState = {
   initialized: false,
   isSyncing: false,
+
+  known_listings: new Set<string>(),
 
   active_project: null,
   active_record: null,
@@ -71,9 +82,20 @@ const StateProvider = (props: any) => {
   const [state, dispatch] = useReducer(
     (
       state: InitialStateProps,
-      action: ProjectActions | RecordActions | SyncingActions | AlertActions
+      action:
+        | ProjectActions
+        | RecordActions
+        | SyncingActions
+        | AlertActions
+        | SyncActions
     ) => {
       switch (action.type) {
+        case ActionType.SET_LISTINGS_KNOWN: {
+          return {
+            ...state,
+            known_listings: action.payload,
+          };
+        }
         case ActionType.INITIALIZED: {
           return {
             ...state,
@@ -115,6 +137,19 @@ const StateProvider = (props: any) => {
             ),
           };
         }
+        case ActionType.ADD_CUSTOM_ALERT: {
+          console.log('ADD CUSTOM ALERT', action.payload);
+          const alert = {
+            ...action.payload,
+            key: uuidv4(),
+            element: action.payload.element,
+            severity: action.payload.severity,
+          };
+          return {
+            ...state,
+            alerts: [...state.alerts, alert],
+          };
+        }
 
         // case ActionType.APPEND_RECORD_LIST: {
         //   return {
@@ -149,6 +184,14 @@ const StateProvider = (props: any) => {
   );
 
   useEffect(() => {
+    add_initial_listener(emitter => {
+      emitter.on('listings_known', known_listings =>
+        dispatch({
+          type: ActionType.SET_LISTINGS_KNOWN,
+          payload: known_listings,
+        })
+      );
+    });
     initialize()
       .then(() =>
         dispatch({

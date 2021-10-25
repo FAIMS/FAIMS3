@@ -67,11 +67,11 @@ const PROD_BUILD = prod_build();
 
 function use_real_data(): boolean {
   const userealdata = process.env.REACT_APP_USE_REAL_DATA;
-  if (
-    userealdata === '' ||
-    userealdata === undefined ||
-    FALSEY_STRINGS.includes(userealdata.toLowerCase())
-  ) {
+  if (userealdata === '' || userealdata === undefined) {
+    // By default we don't include dummy data now
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(userealdata.toLowerCase())) {
     return false;
   } else if (TRUTHY_STRINGS.includes(userealdata.toLowerCase())) {
     return true;
@@ -124,6 +124,23 @@ function directory_port(): number {
   }
 }
 
+function directory_auth(): undefined | {username: string; password: string} {
+  // Used in the server, as opposed to COUCHDB_USER and PASSWORD for testing.
+  const username = process.env.REACT_APP_DIRECTORY_USERNAME;
+  const password = process.env.REACT_APP_DIRECTORY_PASSWORD;
+
+  if (
+    username === '' ||
+    username === undefined ||
+    password === '' ||
+    password === undefined
+  ) {
+    return undefined;
+  } else {
+    return {username: username, password: password};
+  }
+}
+
 function is_testing() {
   const jest_worker_is_running = process.env.JEST_WORKER_ID !== undefined;
   const jest_imported = typeof jest !== 'undefined';
@@ -135,6 +152,7 @@ export const USE_REAL_DATA = PROD_BUILD || use_real_data();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
+export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
 export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this

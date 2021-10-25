@@ -82,7 +82,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           ROUTES.PROJECT +
           project_id +
           ROUTES.RECORD_CREATE +
-          ROUTES.RECORD_TYPE +
           props.related_type
         }
       >

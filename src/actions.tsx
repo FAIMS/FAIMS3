@@ -32,8 +32,11 @@ export enum ActionType {
   GET_ACTIVE_RECORD,
   DROP_ACTIVE_RECORD,
 
+  SET_LISTINGS_KNOWN,
+
   ADD_ALERT,
   DELETE_ALERT,
+  ADD_CUSTOM_ALERT,
 }
 
 export interface IS_SYNCING {
@@ -70,6 +73,13 @@ export interface DROP_ACTIVE_RECORD {
 
 export type RecordActions = GET_ACTIVE_RECORD | DROP_ACTIVE_RECORD;
 
+export interface SET_LISTINGS_KNOWN {
+  type: ActionType.SET_LISTINGS_KNOWN;
+  payload: Set<string>;
+}
+
+export type SyncActions = SET_LISTINGS_KNOWN;
+
 export interface ADD_ALERT {
   type: ActionType.ADD_ALERT;
   payload: {
@@ -83,4 +93,12 @@ export interface DELETE_ALERT {
   payload: {key: string};
 }
 
-export type AlertActions = ADD_ALERT | DELETE_ALERT;
+export interface ADD_CUSTOM_ALERT {
+  type: ActionType.ADD_CUSTOM_ALERT;
+  payload: {
+    element: JSX.Element[];
+    severity: Color;
+  };
+}
+
+export type AlertActions = ADD_ALERT | DELETE_ALERT | ADD_CUSTOM_ALERT;

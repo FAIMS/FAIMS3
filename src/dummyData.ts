@@ -50,6 +50,8 @@ const example_records: {
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
+        'basic-autoincrementer-field': 1,
+        'hrid-field': 'αβγ blurple-1',
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
         'action-field': 'hello',
@@ -73,6 +75,8 @@ const example_records: {
       updated: randomDate(new Date(2021, 0, 1), new Date()),
       updated_by: 'Yoda',
       data: {
+        'basic-autoincrementer-field': 2,
+        'hrid-field': 'αβγ blurple-2',
         'take-point-field': {latitude: -33.7964844, longitude: 151.1456739},
         'bad-field': '',
         'action-field': 'hello',
@@ -536,6 +540,29 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
       },
+      'map-field': {
+        'component-namespace': 'mapping-plugin', // this says what web component to use to render/acquire value from
+        'component-name': 'MapFormField',
+        'type-returned': 'faims-core::JSON', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'map-field',
+          id: 'map-field',
+          helperText: 'This will one day be a map',
+          variant: 'outlined',
+          required: true,
+          InputProps: {
+            featureType: 'Polygon',
+          },
+          SelectProps: {},
+          InputLabelProps: {
+            label: 'Mapping',
+          },
+          FormHelperTextProps: {},
+        },
+        validationSchema: [['yup.string'], ['yup.required']],
+        initialValue: {},
+      },
     },
     viewsets: {
       'astro_sky::main': {
@@ -553,6 +580,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'hrid-field',
           'basic-autoincrementer-field',
           'take-point-field',
+          'map-field',
           'bad-field',
           'action-field',
           'email-field',
@@ -655,12 +683,12 @@ const example_directory: ListingsObject[] = [
     name: 'AAO Internal FAIMS instance',
     description:
       'This FAIMS server is the instance used internally by the AAO for testing.',
-    people_db: {
-      proto: 'http',
-      host: '10.80.11.44',
-      port: 5984,
-      lan: true,
-      db_name: 'people',
+    auth_mechanisms: {
+      default: {
+        portal: 'http://127.0.0.1:8080',
+        type: 'oauth',
+        name: 'Data Central',
+      },
     },
     projects_db: {
       proto: 'http',
@@ -676,19 +704,19 @@ const example_directory: ListingsObject[] = [
       'Test of an independently hosted CouchDB Instance (People DB not implemented yet)',
     description:
       'This FAIMS server is the instance used internally by the AAO for testing.',
-    people_db: {
-      proto: 'http',
-      host: '10.80.11.44',
-      port: 5984,
-      lan: true,
-      db_name: 'people',
-    },
     projects_db: {
       proto: 'http',
       host: '10.80.11.44',
       port: 5984,
       lan: true,
       db_name: 'csiro_hosted_projects',
+    },
+    auth_mechanisms: {
+      default: {
+        portal: 'http://127.0.0.1:8080',
+        type: 'oauth',
+        name: 'Data Central',
+      },
     },
   },
 ];

@@ -25,19 +25,11 @@ import {
 } from '../datamodel/database';
 import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
 
-import {
-  active_db,
-  data_dbs,
-  directory_db,
-  ensure_local_db,
-  metadata_dbs,
-  projects_dbs,
-} from './databases';
-import {events} from './events';
-import {activate_project} from './process-initialization';
-import {createdProjects} from './state';
+import {directory_db, ensure_local_db, projects_dbs} from './databases';
+import {activate_project, process_listing} from './process-initialization';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
+  console.debug(`Requesting allocation for ${project_id}`);
   throw Error('not implemented yet');
 }
 
@@ -55,9 +47,20 @@ export async function request_allocation_for_project(project_id: ProjectID) {
  * 6. Return new project id (for further usage)
  */
 export async function create_new_project_dbs(name: string): Promise<ProjectID> {
+  // Get the local-only listing
   const listing = await ensure_locally_created_project_listing();
   const projects_db = ensure_locally_created_projects_db(listing._id);
+
+  // create the new project
   const new_project_id = generate_non_unique_project_id();
+  const project_object = {
+    _id: new_project_id,
+    name: name,
+    status: 'new', // TODO: work out proper status
+  };
+  await projects_db.local.put(project_object);
+  console.debug(`Created new project ${new_project_id}`);
+
   const active_id = await activate_project(
     listing._id,
     new_project_id,
@@ -65,43 +68,22 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
     null,
     false
   );
-  const active_project = await active_db.get(active_id);
+  console.debug(`Activated new project ${new_project_id}`);
 
-  const project_object = {
-    _id: active_id,
-    name: name,
-    status: 'new', // TODO: work out proper status
-  };
-  await projects_db.local.put(project_object);
-
-  const [, meta_db_local] = ensure_local_db(
-    'metadata',
-    active_id,
-    active_project.is_sync,
-    metadata_dbs
-  );
-  const [, data_db_local] = ensure_local_db(
-    'data',
-    active_id,
-    active_project.is_sync,
-    data_dbs
+  const all_project_ids_in_this_listing = (
+    await projects_db.local.allDocs()
+  ).rows
+    .map(row => row.id)
+    .filter(id => !id.startsWith('_design/'));
+  console.debug(
+    'All projects in local listing are',
+    all_project_ids_in_this_listing
   );
 
-  createdProjects[active_id] = {
-    project: project_object,
-    active: active_project,
-    meta: meta_db_local,
-    data: data_db_local,
-  };
+  // create the rest of the dbs
+  await process_listing(listing);
+  console.debug(`Reprocessing local listing for new project ${new_project_id}`);
 
-  events.emit(
-    'project_local',
-    listing,
-    active_project,
-    project_object,
-    meta_db_local,
-    data_db_local
-  );
   return active_id;
 }
 
@@ -114,13 +96,18 @@ async function ensure_locally_created_project_listing(): Promise<ListingsObject>
     return await directory_db.local.get(LOCALLY_CREATED_PROJECT_PREFIX);
   } catch (err: any) {
     if (err.status === 404) {
+      console.debug('Creating local-only listing');
       const listing_object = {
         _id: LOCALLY_CREATED_PROJECT_PREFIX,
         name: 'Locally Created Projects',
         description:
           'Projects created on this device (have not been submitted).',
+        local_only: true,
+        auth_mechanisms: {}, // No auth needed, nor allowed
       };
       await directory_db.local.put(listing_object);
+      // setup the rest of the listing once
+      await process_listing(listing_object);
       return listing_object;
     } else {
       throw err;

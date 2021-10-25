@@ -54,16 +54,15 @@ export function materializeConnectionInfo(
  * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
  */
 export function ConnectionInfo_create_pouch<Content extends {}>(
-  connection_info: ConnectionInfo,
-  username: string | null = null,
-  password: string | null = null,
-  skip_setup = false
+  connection_info: ConnectionInfo
 ): PouchDB.Database<Content> {
-  const pouch_options: any = {skip_setup: skip_setup};
-  if (username !== null && password !== null) {
+  const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
+
+  // Username & password auth is optional
+  if ('auth' in connection_info && connection_info.auth !== undefined) {
     pouch_options.auth = {
-      username: username,
-      password: password,
+      username: connection_info.auth.username,
+      password: connection_info.auth.password,
     };
   }
   return new PouchDB(

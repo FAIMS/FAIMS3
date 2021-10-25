@@ -25,7 +25,6 @@ import {
   ProjectObject,
   ProjectMetaObject,
   ProjectDataObject,
-  PeopleDoc,
   ConnectionInfo,
 } from '../datamodel/database';
 import {ExistingActiveDoc, LocalDB} from './databases';
@@ -105,9 +104,8 @@ export interface DirectoryEmitter extends EventEmitter {
     listener: (
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
-      people_db: LocalDB<PeopleDoc>,
       projects_db: LocalDB<ProjectObject>,
-      default_connection: ConnectionInfo
+      default_connection: ConnectionInfo | null
     ) => unknown
   ): this;
   on(
@@ -115,9 +113,8 @@ export interface DirectoryEmitter extends EventEmitter {
     listener: (
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
-      people_db: LocalDB<PeopleDoc>,
       projects_db: LocalDB<ProjectObject>,
-      default_connection: ConnectionInfo,
+      default_connection: ConnectionInfo | null,
       changes: PouchDB.Core.ExistingDocument<ProjectObject>[]
     ) => unknown
   ): this;
@@ -126,9 +123,8 @@ export interface DirectoryEmitter extends EventEmitter {
     listener: (
       listing: ListingsObject,
       projects: ExistingActiveDoc[],
-      people_db: LocalDB<PeopleDoc>,
       projects_db: LocalDB<ProjectObject>,
-      default_connection: ConnectionInfo
+      default_connection: ConnectionInfo | null
     ) => unknown
   ): this;
   on(
@@ -217,25 +213,23 @@ export interface DirectoryEmitter extends EventEmitter {
     event: 'listing_local',
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
-    people_db: LocalDB<PeopleDoc>,
-    projects_db: LocalDB<ProjectObject>
+    projects_db: LocalDB<ProjectObject>,
+    default_connection: ConnectionInfo | null
   ): boolean;
   emit(
     event: 'listing_paused',
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
-    people_db: LocalDB<PeopleDoc>,
     projects_db: LocalDB<ProjectObject>,
-    default_connection: ConnectionInfo,
+    default_connection: ConnectionInfo | null,
     changes: PouchDB.Core.ExistingDocument<ProjectObject>[]
   ): boolean;
   emit(
     event: 'listing_active',
     listing: ListingsObject,
     projects: ExistingActiveDoc[],
-    people_db: LocalDB<PeopleDoc>,
     projects_db: LocalDB<ProjectObject>,
-    default_connection: ConnectionInfo
+    default_connection: ConnectionInfo | null
   ): boolean;
   emit(event: 'listing_error', listing_id: string, err: unknown): boolean;
   emit(event: 'directory_local', listings: Set<string>): boolean;
