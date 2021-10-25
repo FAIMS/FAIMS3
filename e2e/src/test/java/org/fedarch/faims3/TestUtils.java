@@ -38,6 +38,8 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
 import io.appium.java_client.touch.offset.PointOption;
 
+import io.appium.java_client.ios.IOSDriver;
+
 /**
  * Utility class for reusable methods across tests.
  * @author Rini Angreani, CSIRO
@@ -46,7 +48,7 @@ import io.appium.java_client.touch.offset.PointOption;
 public class TestUtils {
 	/**
 	 * Scroll down a little bit at a time.
-	 * @param driver AndroidDriver
+	 * @param driver WebDriver
 	 */
 	public static void scrollDown(WebDriver driver) {
 		//if pressX was zero it didn't work for me
@@ -61,9 +63,9 @@ public class TestUtils {
 
 	/**
 	 * Scroll up a little bit at a time.
-	 * @param driver AndroidDriver
+	 * @param driver WebDriver
 	 */
-	public static void scrollUp(AndroidDriver<AndroidElement> driver) {
+	public static void scrollUp(WebDriver driver) {
 		//if pressX was zero it didn't work for me
 	    int pressX = driver.manage().window().getSize().width / 2;
 	    // 4/5 of the screen as the bottom finger-press point
@@ -84,15 +86,18 @@ public class TestUtils {
      */
 	public static void scroll(WebDriver driver, int fromX, int fromY, int toX, int toY) {
 		if (driver instanceof AndroidDriver) {
+			// Android
 	        TouchAction touchAction = new TouchAction((AndroidDriver)driver);
 	        touchAction.longPress(PointOption.point(fromX, fromY)).moveTo(PointOption.point(toX, toY)).release().perform();
+		} else if (driver instanceof IOSDriver) {
+			// iOS
+			TouchAction touchAction = new TouchAction((IOSDriver)driver);
+	        touchAction.longPress(PointOption.point(fromX, fromY)).moveTo(PointOption.point(toX, toY)).release().perform();
 		} else if (driver instanceof RemoteWebDriver) {
+			// Chrome
 			JavascriptExecutor js = (JavascriptExecutor) driver;
 			js.executeScript("window.scrollBy(0," + (fromY - toY) + ")", "");
-		} else {
-			// TODO: implement ios support if needed
-			throw new UnsupportedOperationException("IOS scroll() isn't supported yet!");
-		}
+		} 
 	}
 
 	/**
