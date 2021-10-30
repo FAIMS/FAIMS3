@@ -23,19 +23,19 @@ import Checkbox from '@material-ui/core/Checkbox';
 import TextField from '@material-ui/core/TextField';
 import {TextField as FormikTextField} from 'formik-material-ui';
 import {Select as FormikSelect} from 'formik-material-ui';
-import {RadioGroup as FormikRadioGroup} from 'formik-material-ui';
+import {RadioGroup as FormikRadioGroup,} from 'formik-material-ui';
 // import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-material-ui';
 
-import {Select as FAIMSSelect} from '../fields/select';
-import {ActionButton} from '../fields/ActionButton';
-import {TakePoint} from '../fields/TakePoint';
-import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
-import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
+import {Select as FAIMSSelect,SelectSetting,Selectcomponentsetting,getSelectBuilderIcon} from '../fields/select';
+import {ActionButton,ActionSetting} from '../fields/ActionButton';
+import {TakePoint,TakePointSetting} from '../fields/TakePoint';
+import {Checkbox as FAIMSCheckbox,CheckboxSetting,getCheckBoxBuilderIcon} from '../fields/checkbox';
+import {RadioGroup as FAIMSRadioGroup,RadioSetting,Radiocomponentsetting,getRadioBuilderIcon} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
 import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
 import {registerComponent, setupComponentProperties} from './internals';
-
+import {TextuiSpec,TextuiSetting,Defaultcomponentsetting,MultiTextuiSetting,MultiTextuiSpec} from '../fields/BasicFieldSettings';
 // Mapping plugin imports
 import {MapFormField} from '@faims-project/faims3-map-input';
 
@@ -94,7 +94,9 @@ registerComponent(
       type_return: 'faims-core::String',
       validationSchema: [['yup.string']],
       type: 'text',
-    }
+    },
+    [TextuiSetting,TextuiSpec],
+    Defaultcomponentsetting
   )
 );
 
@@ -106,7 +108,12 @@ registerComponent(
 registerComponent(
   'formik-material-ui',
   'RadioGroup',
-  setupComponentProperties('', '', 'Select', FormikRadioGroup)
+  setupComponentProperties(
+    'Radio',
+    'Radio',
+    'Simple', 
+    FormikRadioGroup
+    ) 
 );
 registerComponent(
   'faims-custom',
@@ -118,7 +125,11 @@ registerComponent(
     type_return: 'faims-core::String',
     validationSchema: [['yup.string']],
     type: 'select',
-  })
+  },
+  SelectSetting,
+  Selectcomponentsetting,
+  getSelectBuilderIcon()
+  )
 );
 registerComponent(
   'faims-custom',
@@ -129,12 +140,28 @@ registerComponent(
     type_return: 'faims-core::Bool',
     validationSchema: [['yup.bool']],
     type: 'checkbox',
-  })
+  },
+  CheckboxSetting,
+  Defaultcomponentsetting,
+  getCheckBoxBuilderIcon()
+  )
 );
 registerComponent(
   'faims-custom',
   'RadioGroup',
-  setupComponentProperties('', '', 'Simple', FAIMSRadioGroup)
+  setupComponentProperties(
+  'Radio',
+  'Radio',
+  'Select', 
+  FAIMSRadioGroup,
+  {...RadioSetting[1],
+    namespace: 'faims-custom',
+    componentName: 'RadioGroup',
+    ElementProps:RadioSetting[1]['component-parameters']['ElementProps']
+  },
+  RadioSetting,
+  Radiocomponentsetting,
+  getRadioBuilderIcon())
 );
 registerComponent(
   'faims-custom',
@@ -150,7 +177,9 @@ registerComponent(
       type_return: 'faims-core::String',
       validationSchema: [['yup.string']],
       type: 'string',
-    }
+    },
+    ActionSetting,
+    Defaultcomponentsetting
   )
 );
 registerComponent(
@@ -162,17 +191,20 @@ registerComponent(
     type_return: 'faims-pos::Location',
     initialValue: null,
     validationSchema: [
-      ['yup.object'],
-      ['yup.nullable'],
-      [
-        'yup.shape',
-        {
-          latitude: [['yup.number'], ['yup.required']],
-          longitude: [['yup.number'], ['yup.required']],
-        },
+        ['yup.object'],
+        ['yup.nullable'],
+        [
+          'yup.shape',
+          {
+            latitude: [['yup.number'], ['yup.required']],
+            longitude: [['yup.number'], ['yup.required']],
+          },
+        ],
       ],
-    ],
-  })
+    },
+    TakePointSetting,
+    Defaultcomponentsetting
+  )
 );
 registerComponent(
   'faims-custom',
@@ -243,15 +275,8 @@ registerComponent(
       multirows: 4,
     },
     [
-      {
-        namespace: 'formik-material-ui',
-        componentName: 'TextField',
-        type_return: 'faims-core::Integer',
-        validationSchema: [['yup.number'], ['yup.positive']],
-        type: 'number',
-        name: 'multirows',
-        label: 'Number of Line',
-      },
-    ]
+      MultiTextuiSetting,MultiTextuiSpec
+    ],
+      Defaultcomponentsetting
   )
 );

@@ -37,11 +37,13 @@ import ProjectBehaviourTab from './tabs/ProjectBehaviour';
 import {ProjectSubmit} from './tabs/ProjectButton';
 import {
   setProjectInitialValues,
-  handlertype,
   uiSpecType,
-  projectvalueType,
   getprojectform,
 } from './data/ComponentSetting';
+import {
+  ProjevtValueList,
+  FAIMShandlerType} from '../../../datamodel/ui'
+import {ProjectUIFields} from '../../../datamodel/typesystem'
 import {
   setUiSpecForProject,
   getUiSpecForProject,
@@ -54,7 +56,7 @@ import grey from '@material-ui/core/colors/grey';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
-
+import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 const useStyles = makeStyles(theme => ({
   root: {
     flexGrow: 1,
@@ -97,11 +99,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [project_id, setProjectID] = useState(props.project_id);
-  const [projectvalue, setProjectValue] = useState<projectvalueType>({
+  const [projectvalue, setProjectValue] = useState<ProjevtValueList>({
     ...ini_projectvalue,
     project_id: project_id,
   });
-  const [initialValues, setinitialValues] = useState(ini);
+  const [initialValues, setinitialValues] = useState<ProjectUIFields>(ini);
   const [projectuiSpec, setProjectuiSpec] = useState<Array<any>>();
   const [projecttabvalue, setProjecttabvalue] = useState(0);
   const [formuiSpec, setFormuiSpec] = useState<ProjectUIModel>({
@@ -133,7 +135,15 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
       setProjectValue({...projectvalue, ...props.project_info});
-    } else setProjectValue({accesses: accessgroup});
+      console.log(projectvalue)
+      setinitialValues({
+        ...setProjectInitialValues(
+          getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id}),...projectvalue}
+      );
+      console.log(initialValues)
+    } else setProjectValue({
+      ...ini_projectvalue,
+      project_id: project_id,});
   }, [props.project_info]);
 
   const saveformuiSpec = async (res: any = undefined) => {
@@ -168,12 +178,18 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         label: sections_default[0],
       };
       formview['viewsets'] = {FORM1: {views: [view], label: variant_label}};
+      const ini=setProjectInitialValues(
+        getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id})
+      console.log(ini)
+      
+      console.log(initialValues)
       setFormuiSpec({
         fields: formview.fields,
         views: formview.views,
         viewsets: formview.viewsets,
         visible_types: variant_default,
       });
+      
     }
 
     if (props.project_id === undefined) {
@@ -186,7 +202,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       // console.log(newprojectvalue);
       // console.log(projectvalue);
     }
-
+    setinitialValues(
+      setProjectInitialValues(
+        getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id})
+    );
+    console.log(initialValues)
     setProjecttabvalue(0);
   };
 
@@ -256,7 +276,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           setProjectID(res);
           setProjectValue({...projectvalue, project_id: res});
         }
-        
+
         if (
           res !== '' &&
           res !== null &&
@@ -285,6 +305,15 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     alert('Request Send!');
   }
 
+  const handleSubmit = (values:any) =>{
+
+  }
+
+  const isready = () =>{
+    // return !(initialValues['name']===''&&project_id!==null)
+    return true;
+  }
+
   return (
     <div className={classes.root}>
       <AppBar position="static" color="primary">
@@ -297,9 +326,23 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         />
       </AppBar>
       <Grid container>
+      {isready()?
         <Grid item sm={12} xs={12}>
-
-      <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
+        
+        <Formik
+                  initialValues={initialValues}
+                  validateOnMount={true}
+                  onSubmit={(values, {setSubmitting}) => {
+                    setTimeout(() => {
+                      setSubmitting(false);
+                      handleSubmit(values);
+                    }, 500);
+                  }}
+                >
+                  {formProps => {
+                    return (
+                      <Form>
+          <TabPanel value={projecttabvalue} index={0} tabname='primarytab' >
             {projecttabvalue === 0 ? (
               <ProjectInfoTab
                 project_id={project_id}
@@ -308,11 +351,65 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                 handleChangeFormProject={handleChangeFormProject}
                 handleSubmit={submithandlerProject}
                 setProjecttabvalue={setProjecttabvalue}
+                formProps={formProps}
               />
             ) : (
               ''
             )}
           </TabPanel>
+          <TabPanel value={projecttabvalue} index={4} tabname="primarytab">
+            <>
+              <Alert severity="info">
+                Add authorised users for this notebook. Assign roles to users in
+                the User Role tab.
+              </Alert>
+              {projectvalue.ispublish !== true && (
+                <Alert severity="warning">
+                  User will not be invited untile Notebook is be approved.Check
+                  more information in the Submit tab
+                </Alert>
+              )}
+              <ProjectUserTab
+                project_id={project_id}
+                projectvalue={projectvalue}
+                setProjectValue={setProjectValue}
+                setProjecttabvalue={setProjecttabvalue}
+                formProps={formProps}
+              />
+            </>
+          </TabPanel>
+          <TabPanel value={projecttabvalue} index={5} tabname="primarytab">
+            <ProjectBehaviourTab
+              project_id={project_id}
+              projectvalue={projectvalue}
+              setProjectValue={setProjectValue}
+              formProps={formProps}
+            />
+            <ProjectSubmit
+              id="gotonextbehaviour"
+              type="submit"
+              isSubmitting={false}
+              text="Go To Next"
+              onButtonClick={() => setProjecttabvalue(6)}
+            />
+          </TabPanel>
+          <TabPanel value={projecttabvalue} index={6} tabname="primarytab">
+            <ProjectSubmitTab
+              project_id={project_id}
+              projectvalue={projectvalue}
+              setProjectValue={setProjectValue}
+              handleSubmit={handlerprojectsubmit_pounch}
+              handlepublish={handlerprojectsubmit_counch}
+              formProps={formProps}
+            />
+          </TabPanel>
+          </Form>
+                    );
+                  }}
+                </Formik>
+
+
+
           <TabPanel value={projecttabvalue} index={1} tabname="primarytab">
             {projecttabvalue === 1 ? (
               <ProjectDesignTab
@@ -380,50 +477,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               ''
             )}
           </TabPanel>
-          <TabPanel value={projecttabvalue} index={4} tabname="primarytab">
-            <>
-              <Alert severity="info">
-                Add authorised users for this notebook. Assign roles to users in
-                the User Role tab.
-              </Alert>
-              {projectvalue.ispublish !== true && (
-                <Alert severity="warning">
-                  User will not be invited untile Notebook is be approved.Check
-                  more information in the Submit tab
-                </Alert>
-              )}
-              <ProjectUserTab
-                project_id={project_id}
-                projectvalue={projectvalue}
-                setProjectValue={setProjectValue}
-                setProjecttabvalue={setProjecttabvalue}
-              />
-            </>
-          </TabPanel>
-          <TabPanel value={projecttabvalue} index={5} tabname="primarytab">
-            <ProjectBehaviourTab
-              project_id={project_id}
-              projectvalue={projectvalue}
-              setProjectValue={setProjectValue}
-            />
-            <ProjectSubmit
-              id="gotonextbehaviour"
-              type="submit"
-              isSubmitting={false}
-              text="Go To Next"
-              onButtonClick={() => setProjecttabvalue(6)}
-            />
-          </TabPanel>
-          <TabPanel value={projecttabvalue} index={6} tabname="primarytab">
-            <ProjectSubmitTab
-              project_id={project_id}
-              projectvalue={projectvalue}
-              setProjectValue={setProjectValue}
-              handleSubmit={handlerprojectsubmit_pounch}
-              handlepublish={handlerprojectsubmit_counch}
-            />
-          </TabPanel>
+          
         </Grid>
+        :''}
          <Grid item sm={4} xs={12}>
         <Box
               bgcolor={grey[200]}

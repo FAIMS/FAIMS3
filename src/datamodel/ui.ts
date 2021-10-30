@@ -118,3 +118,52 @@ export interface FormComponent {
   component_properties: ComponentRegistryProperties;
 }
 export type FormComponentList = FormComponent[];
+
+export type FAIMShandlerType=any
+export type FAIMSEVENTTYPE=any
+export interface ProjevtValueList  {
+  [key: string]: any;
+}
+
+export interface BehaviourProperties{
+  label: string; 
+  helpText: string
+}
+
+export type componenentSettingprops={
+  uiSetting:ProjectUIModel;
+  formProps:any;
+  component:FAIMSBuilderFormField;
+  uiSpec:ProjectUIModel;
+  setuiSpec:FAIMShandlerType;
+  fieldName:string;
+  fieldui:ProjectUIFields;
+  handlerchanges?:any;
+  handlerchangewithview:FAIMShandlerType,
+  designvalue:string
+}
+
+export type resetprops={
+  namespace: string;
+  componentName: string;
+  uiSpec:ProjectUIModel;
+  setuiSpec:FAIMShandlerType;
+  fieldName:string;
+  formProps:any;
+  designvalue:string;
+}
+
+
+export type ProjectTabProps = {
+  project_id: string;
+  projectvalue: ProjevtValueList;
+  setProjectValue: FAIMShandlerType;
+
+  setProjecttabvalue: FAIMShandlerType;
+
+
+
+  handleSubmit?: FAIMShandlerType;
+  handleChangeFormProject?: FAIMShandlerType;
+  formProps?:any;
+};

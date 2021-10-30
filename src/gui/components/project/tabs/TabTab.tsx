@@ -63,7 +63,6 @@ export function TabTab(props: TabProps) {
   const classes = useStyles();
   const {tabs, tab_id, value, handleChange, ...other} = props;
   const not_xs = props.not_xs ?? true;
-  console.log(not_xs);
   return not_xs ? (
     <Tabs
       value={value}

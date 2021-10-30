@@ -22,7 +22,8 @@ import React from 'react';
 import MuiTextField from '@material-ui/core/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-material-ui';
 import {MenuItem} from '@material-ui/core';
-
+import BookmarksIcon from '@material-ui/icons/Bookmarks';
+import { Defaultcomponentsetting,DefaultuiSetting } from './BasicFieldSettings';
 interface option {
   key: string;
   value: string;
@@ -55,3 +56,107 @@ export class Select extends React.Component<TextFieldProps & Props> {
     );
   }
 }
+
+
+
+
+
+export function Selectcomponentsetting(props:any)  {
+  const {handlerchangewithview,...others}=props
+
+
+  const handlerchanges = (event:any) =>{
+
+  }
+
+
+  const handlerchangewithviewSpec = (event:any,view:string) => {
+    //any actions that could in this form
+    props.handlerchangewithview(event,view);
+    console.log(view+event.target.name+props.fieldName)
+    if(view==='ElementProps'&&event.target.name.replace(props.fieldName,'')==='options'){
+      const newvalues=props.uiSpec
+      const options:any=[]
+      event.target.value.split(',').map(
+        (o:string,index:number)=>options[index]={
+          value: o,
+          label: o,
+        }
+      )
+      newvalues['fields'][props.fieldName]['component-parameters']['ElementProps']['options']=options
+      props.setuiSpec({...newvalues});
+    }
+    
+  }
+
+
+  return (
+    <Defaultcomponentsetting
+      handlerchangewithview={handlerchangewithviewSpec}
+      handlerchanges={handlerchanges}
+      {...others}
+      fieldui={props.fieldui}
+    />
+   );
+}
+
+const uiSpec = {
+  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+  'component-name': 'Select',
+  'type-returned': 'faims-core::String', // matches a type in the Project Model
+  "meta": {
+    "annotation_label": "annotation",
+    "uncertainty": {
+      "include": false,
+      "label": "uncertainty"
+    }
+  },
+  'component-parameters': {
+    fullWidth: true,
+    helperText: 'Choose a field from the dropdown',
+    variant: 'outlined',
+    required: false,
+    select: true,
+    InputProps: {},
+    SelectProps: {},
+    ElementProps: {
+      options: [
+        {
+          value: 'Default',
+          label: 'Default',
+        }
+      ],
+    },
+    InputLabelProps: {
+      label: 'Select Field',
+    },
+  },
+  validationSchema: [
+    ['yup.string'],
+  ],
+  initialValue: '',
+}
+
+
+const uiSetting = () =>{
+  const newuiSetting:any=JSON.parse(JSON.stringify(DefaultuiSetting));
+  newuiSetting["viewsets"]= {
+    "settings": {
+      "views": [
+        "InputLabelProps",
+        "FormParamater",
+        "ElementProps",
+      ],
+      "label": "settings"
+    },
+  }
+
+  return newuiSetting
+}
+  
+export function getSelectBuilderIcon() {
+  return <BookmarksIcon />;
+}
+
+export const SelectSetting =[uiSetting(),uiSpec]
+

@@ -52,11 +52,13 @@ import {
   updateuiSpec,
   gettabform,
   getprojectform,
-  handlertype,
   uiSpecType,
-  projectvalueType,
   getacessoption,
 } from '../data/ComponentSetting';
+import {
+  ProjevtValueList,
+  FAIMShandlerType,
+  } from '../../../../datamodel/ui'
 import {
   CusButton,
   CloseButton,
@@ -73,6 +75,7 @@ import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
+import {ResetComponentProperties} from '../data/componenentSetting';
 
 const useStyles = makeStyles(theme => ({
   newfield: {
@@ -106,12 +109,12 @@ const variant_label = 'Form1';
 type ProjectDesignProps = {
   project_id: string;
   formuiSpec: uiSpecType;
-  setFormuiSpec: handlertype;
-  handleSaveUiSpec: handlertype;
+  setFormuiSpec: FAIMShandlerType;
+  handleSaveUiSpec: FAIMShandlerType;
   accessgroup: Array<string>;
-  projectvalue: projectvalueType;
-  setProjectValue: handlertype;
-  setProjecttabvalue: handlertype;
+  projectvalue: ProjevtValueList;
+  setProjectValue: FAIMShandlerType;
+  setProjecttabvalue: FAIMShandlerType;
 };
 type formcomponents = any;
 
@@ -166,15 +169,16 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
 
 
-     const generateunifromformui = (formui:uiSpecType) =>{
+const generateunifromformui = (formui:uiSpecType) =>{
     const tabs: Array<string> = [];
     formui[VISIBLE_TYPE].map((tab: string) =>
       tabs.push(formuiSpec['viewsets'][tab]['label'] ?? tab)
     );
-    const newformcom = updateuiSpec('newfromui', {
+    const {newformcom,initialfieldvalue} = updateuiSpec('newfromui', {
       formuiSpec: formui,
       formcomponents: formcomponents,
       access: accessgroup,
+      initialfieldvalue:initialValues
     });
 
     const newformvariants = formui[VISIBLE_TYPE][0];
@@ -185,17 +189,17 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         (tab: string) => (tab = formuiSpec['viewsets'][tab]['label'] ?? tab)
       )
     );
-    let newini = initialValues;
-    for (const [key, value] of Object.entries(newformcom)) {
-      newformcom[key].map(
-        (fieldlist: any) =>
-          (newini = {
-            ...ini,
-            ...setProjectInitialValues(fieldlist['uiSpec'], formView, {}),
-          })
-      );
-    }
-    setinitialValues({...initialValues, ...newini});
+    // let newini = initialValues;
+    // for (const [key, value] of Object.entries(newformcom)) {
+    //   newformcom[key].map(
+    //     (fieldlist: any) =>
+    //       (newini = {
+    //         ...ini,
+    //         ...setProjectInitialValues(fieldlist['uiSpec'], formView, {}),
+    //       })
+    //   );
+    // }
+    setinitialValues({...initialValues, ...initialfieldvalue});
     // const stabs:Array<string>=[]
     // formui['viewsets'][newformvariants]['views'].map((tab:string)=>tabs.push(formuiSpec['views'][tab]['label']))
     setsectiontabs(
@@ -232,13 +236,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
     }
 
-  const handleAddField = (id: string) => {
+  const handleAddField = (id: any) => {
     const uuid = getid();
     const {
       newviews,
       components,
       newuiSpeclist,
       newuiSpec,
+      initialfieldvalue
     } = updateuiSpec('addfield', {
       uuid: uuid,
       id: id,
@@ -249,7 +254,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     });
     setinitialValues({
       ...initialValues,
-      ...setProjectInitialValues(newuiSpeclist, formView, {_id: project_id}),
+      ...initialfieldvalue,
     });
     setFormComponents(components);
     setFormuiSpec({
@@ -411,30 +416,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const handleChangeformvalueTab = (event: any, index: number) => {
     setformvalue(index);
   };
-  const getfieldsFromCom = (
-    formcomponent: formcomponents,
-    view: string,
-    formProps: any
-  ) => {
-    const fields = formcomponent.uiSpec['views'][view]['fields'];
-    if (fields.length > 0)
-      return fields.map((field: any) => {
-        return getComponentFromField(
-          formcomponent.uiSpec,
-          field,
-          formProps,
-          handleChangeForm
-        );
-      });
-    return '';
-  };
+  
 
   const submithandler = (values: any) => {};
 
   const getinitaccess = () => {
     try {
       return ['admin'];
-      // return projectvalue['access'+formuiview]??projectvalue['access'+formvariants]??['admin']
+
     } catch (error) {
       console.error("can't get access");
       return ['admin'];
@@ -518,8 +507,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
   const handleSubmitFormAction = () => {};
 
-  const updateprojecvalue = (newvalue: Array<string>, id: string) => {};
-
   const handleAutocomplete = (
     newvalue: Array<string>,
     id: string,
@@ -582,7 +569,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                       <Typography variant="subtitle2">
                         Preview of Component
                       </Typography>
-                      {getfieldsFromCom(formcomponent, 'general', formProps)}
+                      {getComponentFromField(
+                        formuiSpec,
+                        'newfield'+formcomponent['id'],
+                        formProps,
+                        ()=>{} //this is preview field only, so no need to handler changes
+                      )}
                     </Grid>
                     <Grid item sm={1} xs={3} className={classes.settingtab}>
                       <SettingCard
@@ -592,11 +584,17 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                     </Grid>
                     <Grid item sm={7} xs={9}>
                       <Typography variant="subtitle2">Configuration</Typography>
-                      {getfieldsFromCom(
-                        formcomponent,
-                        formcomponent.designvalue,
-                        formProps
-                      )}
+                      
+                      <ResetComponentProperties 
+                      namespace={formcomponent['namespace']}
+                      componentName={formcomponent['componentName']}
+                      uiSpec={formuiSpec}
+                      setuiSpec={setFormuiSpec}
+                      fieldName={'newfield'+formcomponent['id']}
+                      formProps={formProps}
+                      designvalue={formcomponent['designvalue']}
+                      />
+                      
                       {formcomponent['designvalue'] === 'access' ? (
                         <AutocompleteForm
                           id={formcomponent['id']}
@@ -880,6 +878,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         User access and form submission behaviour. Add further forms by choosing
         plus icon, edit form name by choosing edit icon.
       </Alert>
+      
       {project_id !== '' && project_id !== null && project_id !== undefined ? (
         <AddButton
           id="SaveUiSpec"

@@ -31,22 +31,22 @@ import {
   updateuiSpec,
   gettabform,
   getprojectform,
-  handlertype,
-  uiSpecType,
-  projectvalueType,
 } from '../data/ComponentSetting';
+import {
+  ProjevtValueList,
+  FAIMShandlerType,
+  } from '../../../../datamodel/ui'
 import Alert from '@material-ui/lab/Alert';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
-import {UserRoleList} from './PSettingCard';
+import {UserRoleList,UserLists} from './PSettingCard';
 import {AddUserButton, Addusersassign} from './ProjectButton';
 type ProjectUserProps = {
   project_id: string;
-  projectvalue: projectvalueType;
-  setProjectValue: handlertype;
-  setProjecttabvalue: handlertype;
-  //   handleSubmit:handlertype;
-  //   handlepublish:handlertype;
+  projectvalue: ProjevtValueList;
+  setProjectValue: FAIMShandlerType;
+  setProjecttabvalue: FAIMShandlerType;
+  formProps:any;
 };
 type UsergroupTYpe = any;
 
@@ -68,12 +68,13 @@ export default function ProjectUserTab(props: ProjectUserProps) {
   const [tabvalue, settatbValue] = useState(0);
   const [users, setusesers] = useState(projectvalue.users);
   const [selectusers, setselectusers] = useState<any>({});
+  const [usersadded,setusersadded]=useState('')
 
 
   const handleChange = (event: any) => {
     //save project value into DB
     console.log(event.target.name);
-
+    setusersadded(event.target.value)
     // props.handleSubmit()
   };
 
@@ -100,7 +101,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
   };
 
   const addusers = (values: any) => {
-    const users = values['users'].split(/\r?\n/);
+    const users = values.split(/\r?\n/);
     const newproject = projectvalue;
     if (newproject['users'] === undefined) {
       newproject['users'] = users;
@@ -120,6 +121,10 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     console.log(user);
   };
 
+  const selectusersgroup = (user:string) => {
+    console.log(user)
+  }
+
   const getfield = (
     usergroup: string,
     formProps: any,
@@ -133,7 +138,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
                 <Grid item sm={4} xs={12} >
           <br />
           <Typography variant="subtitle2">All users</Typography>
-          <UserRoleList users={projectvalue.users ?? []} delete={false} />
+          <UserLists users={projectvalue.users ?? []} delete={false} handelonClick={selectusersgroup} />
 
                 </Grid>
         <Grid item sm={1} xs={12}>
@@ -143,9 +148,9 @@ export default function ProjectUserTab(props: ProjectUserProps) {
         <Grid item sm={7} xs={12}>
           <br />
           <Typography variant="subtitle2">Role: {usergroup} </Typography>
-          <UserRoleList
+          <UserLists
             users={projectvalue[usergroup] ?? []}
-            deleteuserrole={deleteusersassign}
+            handelonClick={selectusersgroup} 
           />
         </Grid>
       </Grid>
@@ -154,53 +159,12 @@ export default function ProjectUserTab(props: ProjectUserProps) {
       )
   };
 
-  const assigntab = (
-    usergroups: Array<string>,
-    handleSubmit: any,
-    handleChange: any,
-    uiSpec: any,
-    initialValuesassign: any
-  ) => {
-    return (
-      <Formik
-        initialValues={initialValuesassign}
-        validateOnMount={true}
-        onSubmit={(values, {setSubmitting}) => {
-          setTimeout(() => {
-            setSubmitting(false);
-            handleSubmit(values);
-          }, 500);
-        }}
-      >
-        {formProps => {
-          return (
-            <Form>
-              {usergroups.map((usergroup: string) =>
-                getfield(usergroup, formProps, handleChange, uiSpec)
-              )}
-            </Form>
-          );
-        }}
-      </Formik>
-    );
-  };
+
 
   const addtab = (uiSpec: any, handleSubmit: any, handleChange: any) => {
     return (
-      <Formik
-        initialValues={initialValues}
-        validateOnMount={true}
-        onSubmit={(values, {setSubmitting}) => {
-          setTimeout(() => {
-            setSubmitting(false);
-            handleSubmit(values);
-          }, 500);
-        }}
-      >
-        {formProps => {
-          return (
-            <Form>
-              <Grid container>
+     
+            <Grid container>
                 <Grid item sm={6} xs={12}>
                   {uiSpec['views']['start-view'] !== undefined
                     ? uiSpec['views']['start-view'][
@@ -209,13 +173,13 @@ export default function ProjectUserTab(props: ProjectUserProps) {
                         getComponentFromField(
                           uiSpec,
                           fieldName,
-                          formProps,
+                          props.formProps,
                           handleChange
                         )
                       )
                     : ''}
                   <Box pl={2} pr={2}>
-                    <AddUserButton id="submit" type="submit" />
+                    <AddUserButton id='submit' type="submit" onButtonClick={addusers} value={usersadded} />
                   </Box>
                   <Box pl={2} pr={2}>
                     {projectvalue.users !== undefined ? (
@@ -238,10 +202,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
                   />
                 </Grid>
             </Grid>
-            </Form>
-          );
-        }}
-      </Formik>
+        
     );
   };
 

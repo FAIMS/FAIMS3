@@ -949,3 +949,34 @@ export const dummy_projects: ProjectsList = {
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
   },
 };
+
+export const ExampleuiSpec = {
+  'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
+  'component-name': 'TextField',
+  'type-returned': 'faims-core::String', // matches a type in the Project Model
+  "meta": {
+    "annotation_label": "annotation",
+    "uncertainty": {
+      "include": false,
+      "label": "uncertainty"
+    }
+  },
+  'component-parameters': {
+    fullWidth: true,
+    helperText: 'Helper Text',
+    variant: 'outlined',
+    required: true,
+    InputProps: {
+      type: 'text', // must be a valid html type
+    },
+    SelectProps: {},
+    InputLabelProps: {
+      label: 'Text Field',
+    },
+    FormHelperTextProps: {},
+  },
+  validationSchema: [
+    ['yup.string'],
+  ],
+  initialValue: '',
+}

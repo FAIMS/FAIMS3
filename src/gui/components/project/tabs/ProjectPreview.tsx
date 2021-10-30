@@ -48,11 +48,13 @@ import {
   updateuiSpec,
   gettabform,
   getprojectform,
-  handlertype,
   uiSpecType,
-  projectvalueType,
   getacessoption,
 } from '../data/ComponentSetting';
+import {
+  ProjevtValueList,
+  FAIMShandlerType,
+  } from '../../../../datamodel/ui'
 import {
   CusButton,
   CloseButton,
@@ -89,11 +91,11 @@ const useStyles = makeStyles(theme => ({
 type ProjectPreviewProps = {
   project_id: string;
   formuiSpec: uiSpecType;
-  setFormuiSpec: handlertype;
-  handleSaveUiSpec: handlertype;
+  setFormuiSpec: FAIMShandlerType;
+  handleSaveUiSpec: FAIMShandlerType;
   accessgroup: Array<string>;
-  projectvalue: projectvalueType;
-  setProjectValue: handlertype;
+  projectvalue: ProjevtValueList;
+  setProjectValue: FAIMShandlerType;
 };
 type formcomponents = any;
 

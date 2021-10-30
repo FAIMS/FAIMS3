@@ -141,20 +141,18 @@ export function UserRoleList(props: any) {
     <Paper className={classes.userrole}>
       <List
         component="nav"
-        aria-label="settings bar"
+        aria-label="user bar"
         className={classes.userrole}
       >
         {users.map((user: string, index: number) => (
           <>
-            <ListItem key={user + index} id={`list-delete-${user + index}`}>
+            <ListItem key={user + index} id={`list-user-${user + index}`}>
               <ListItemText secondary={user} />
               {defaultuser.includes(user) || props.delete === false ? (
                 ''
               ) : (
                 <ListItemSecondaryAction>
-
-	              <DeleteuserButton id={`list-delete-${user}`}  onButtonClick={deleteuserrole} value={user} />
-
+	                <DeleteuserButton id={`list-delete-${user}`}  onButtonClick={deleteuserrole} value={user} />
                 </ListItemSecondaryAction>
               )}
             </ListItem>
@@ -162,9 +160,35 @@ export function UserRoleList(props: any) {
           </>
 
         ))}
+      </List>
+    </Paper>
+  );
+}
 
+export function UserLists(props:any){
+  const classes = useStyles();
+  const {users, handelonClick,usergroup,select, ...others} = props;
+  return (
+    <Paper className={classes.userrole}>
+      <List
+        component="nav"
+        aria-label="user bar"
+        className={classes.userrole}
+      >
+        {users.map((user: string, index: number) => (
+          <>
+            <ListItem 
+              key={`user-${user + index}`} id={`user-${user + index}`} 
+              button
+              onClick={() => handelonClick(user)}
+              >
+              <ListItemText secondary={user} />
+            </ListItem>
+            <Divider />
+          </>
 
-    </List>
+        ))}
+      </List>
     </Paper>
   );
 }

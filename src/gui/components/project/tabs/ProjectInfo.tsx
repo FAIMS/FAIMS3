@@ -43,10 +43,12 @@ import {
   updateuiSpec,
   gettabform,
   getprojectform,
-  handlertype,
-  uiSpecType,
-  projectvalueType,
 } from '../data/ComponentSetting';
+import {
+  ProjevtValueList,
+  FAIMShandlerType,
+  BehaviourProperties,
+  } from '../../../../datamodel/ui'
 import {TickButton, AddUserButton, ProjectSubmit} from './ProjectButton';
 import {
   setUiSpecForProject,
@@ -54,7 +56,7 @@ import {
 } from '../../../../uiSpecification';
 import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import {getProjectInfo} from '../../../../databaseAccess';
-import {ProjectUIModel, ProjectInformation} from '../../../../datamodel/ui';
+import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@material-ui/lab/Alert';
 const useStyles = makeStyles(theme => ({
@@ -82,11 +84,12 @@ const useStyles = makeStyles(theme => ({
 
 type ProjectInfoProps = {
   project_id: string;
-  projectvalue: projectvalueType;
-  setProjectValue: handlertype;
-  handleSubmit: handlertype;
-  handleChangeFormProject: handlertype;
-  setProjecttabvalue: handlertype;
+  projectvalue: ProjevtValueList;
+  setProjectValue: FAIMShandlerType;
+  handleSubmit: FAIMShandlerType;
+  handleChangeFormProject: FAIMShandlerType;
+  setProjecttabvalue: FAIMShandlerType;
+  formProps:any;
 };
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
@@ -107,7 +110,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     viewsets: {},
     visible_types: [],
   });
-  const [initialValues, setinitialValues] = useState<any>({});
+  const [accessAdded,setAccessAdded]= useState('')
 
   useEffect(() => {
     setini();
@@ -123,10 +126,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
       const newini = setProjectInitialValues(newuiSpecg, 'start-view', {
         _id: project_id,
       });
-      setinitialValues(
-        setProjectInitialValues(newuiSpecg, 'start-view', {_id: project_id})
-      );
-      console.debug(initialValues);
+
       setUISpecG(newuiSpecg);
       console.debug('update');
       console.log(newuiSpecg);
@@ -140,10 +140,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     const ini = setProjectInitialValues(iniuiSpecg, 'start-view', {
       _id: project_id,
     });
-    setinitialValues(
-      setProjectInitialValues(iniuiSpecg, 'start-view', {_id: project_id})
-    );
-    console.debug(initialValues);
+
     setUISpecG({...iniuiSpecg});
     console.debug('ini');
     setinfotabvalue(0);
@@ -155,29 +152,20 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     setProjectValue({...newproject});
   };
   const handleChangetab = (event: any, index: number) => {
-    if (index === 0)
-      setinitialValues(
-        setProjectInitialValues(uiSpec_general, 'start-view', {_id: project_id})
-      );
-    if (index === 1)
-      setinitialValues(
-        setProjectInitialValues(uiSpec_access, 'start-view', {_id: project_id})
-      );
-    console.log(initialValues);
     setinfotabvalue(index);
   };
 
-  const handleSubmitAccess = (values: any) => {
+  const handleAddAccess = (accessadded:string) => {
     // props.handleSubmit(values)
-    if (values['accessadded'] === '') return false;
+    if (accessadded === '') return false;
     const newproject = projectvalue;
-    newproject['accesses'] = [...newproject['accesses'], values['accessadded']]; //need to reset the add user role value
+    newproject['accesses'] = [...newproject['accesses'], accessadded]; //need to reset the add user role value
     setProjectValue(newproject);
     setaccessgroup(newproject['accesses']);
     return true;
   };
 
-  const handleformchangeAccess = (event: any) => {};
+  const handleformchangeAccess = (event: any) => {setAccessAdded(event.target.value)};
 
   const deleteuserrole = (userrole: string) => {
     console.log(userrole);
@@ -203,35 +191,21 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             <Grid item sm={8} xs={12}>
               {(project_id !== undefined &&
                 projectvalue.name !== '' &&
-                projectvalue.name !== undefined &&
-                initialValues.name !== '') ||
-              project_id === undefined ? (
-                <Formik
-                  initialValues={initialValues}
-                  validateOnMount={true}
-                  onSubmit={(values, {setSubmitting}) => {
-                    setTimeout(() => {
-                      setSubmitting(false);
-                      props.handleSubmit(values);
-                    }, 500);
-                  }}
-                >
-                  {formProps => {
-                    return (
-                      <Form>
+                projectvalue.name !== undefined ) ||
+                project_id === undefined ? (
+                  <>
                         {uiSpec_general['views']['start-view'] !== undefined
-                          ? uiSpec_general['views']['start-view'][
+                          ? (uiSpec_general['views']['start-view'][
                               'fields'
                             ].map((fieldName: string) =>
                               getComponentFromField(
                                 uiSpec_general,
                                 fieldName,
-                                formProps,
+                                props.formProps,
                                 handleChangeFormProject
                               )
-                            )
-                          : ''}
-                        {/* <TickButton id='submit' type="submit" /> */}
+                            ))
+                            :('')}
                         <br />
                         <ProjectSubmit
                           id="gotonext_info"
@@ -240,10 +214,8 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
                           text="Go To Next"
                           onButtonClick={() => setinfotabvalue(1)}
                         />
-                      </Form>
-                    );
-                  }}
-                </Formik>
+                        </>
+                      
               ) : (
                 ''
               )}
@@ -262,19 +234,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
               {infotabvalue === 1 ? (
                 <Grid container>
                   <Grid item sm={6} xs={12}>
-                    <Formik
-                      initialValues={initialValues}
-                      validateOnMount={true}
-                      onSubmit={(values, {setSubmitting}) => {
-                        setTimeout(() => {
-                          setSubmitting(false);
-                          handleSubmitAccess(values);
-                        }, 500);
-                      }}
-                    >
-                      {formProps => {
-                        return (
-                          <Form>
+                   
                             {uiSpec_access['views']['start-view'] !== undefined
                               ? uiSpec_access['views']['start-view'][
                                   'fields'
@@ -282,18 +242,15 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
                                   getComponentFromField(
                                     uiSpec_access,
                                     fieldName,
-                                    formProps,
+                                    props.formProps,
                                     handleformchangeAccess
                                   )
                                 )
                               : ''}
                             <Box pl={2} pr={2}>
 
-                <AddUserButton id='submit' type="submit" /></Box>
-                          </Form>
-                        );
-                      }}
-                    </Formik>
+                <AddUserButton id='submit' type="submit" onButtonClick={handleAddAccess} value={accessAdded} /></Box>
+                         
                   </Grid>
                   <Grid item sm={1} xs={12}></Grid>
                   <Grid item sm={5} xs={12}>

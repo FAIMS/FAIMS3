@@ -25,18 +25,18 @@ import grey from '@material-ui/core/colors/grey';
 import {Grid, Typography, Box} from '@material-ui/core';
 import {ProjectSubmit} from './ProjectButton';
 import {
-  handlertype,
-  uiSpecType,
-  projectvalueType,
-} from '../data/ComponentSetting';
+  ProjevtValueList,
+  FAIMShandlerType,
+  } from '../../../../datamodel/ui'
 import Alert from '@material-ui/lab/Alert';
 
 type ProjectSubmitProps = {
   project_id: string;
-  projectvalue: projectvalueType;
-  setProjectValue: handlertype;
-  handleSubmit: handlertype;
-  handlepublish: handlertype;
+  projectvalue: ProjevtValueList;
+  setProjectValue: FAIMShandlerType;
+  handleSubmit: FAIMShandlerType;
+  handlepublish: FAIMShandlerType;
+  formProps:any;
 };
 
 export default function ProjectSubmitTab(props: ProjectSubmitProps) {

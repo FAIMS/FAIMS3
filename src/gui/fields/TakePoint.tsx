@@ -22,7 +22,8 @@ import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins} from '@capacitor/core';
-
+import BookmarksIcon from '@material-ui/icons/Bookmarks';
+import { Defaultcomponentsetting,DefaultuiSetting } from './BasicFieldSettings';
 const {Geolocation} = Plugins;
 
 export class TakePoint extends React.Component<
@@ -51,7 +52,7 @@ export class TakePoint extends React.Component<
     const pos = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
     let postext = <span>No point taken.</span>;
-    if (pos !== null) {
+    if (pos !== null&&pos!== undefined) {
       postext = (
         <span {...this.props['ValueTextProps']}>
           Lat: {pos.latitude}; Long: {pos.longitude}
@@ -83,3 +84,67 @@ export class TakePoint extends React.Component<
     );
   }
 }
+
+
+export function TakePointcomponentsetting(props:any)  {
+  const {handlerchangewithview,...others}=props
+  const handlerchanges = (event:any) =>{
+
+  }
+  const handlerchangewithviewSpec = (event:any,view:string) => {
+  }
+  return (
+    <Defaultcomponentsetting
+      handlerchangewithview={handlerchangewithviewSpec}
+      handlerchanges={handlerchanges}
+      {...others}
+      fieldui={props.fieldui}
+    />
+   );
+}
+
+const uiSpec = {
+  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+  'component-name': 'TakePoint',
+  'type-returned': 'faims-pos::Location', // matches a type in the Project Model
+  'component-parameters': {
+    fullWidth: true,
+    name: 'take-point-field',
+    id: 'take-point-field',
+    helperText: 'Get position',
+    variant: 'outlined',
+  },
+  validationSchema: [
+    ['yup.object'],
+    ['yup.nullable'],
+    [
+      'yup.shape',
+      {
+        latitude: [['yup.number'], ['yup.required']],
+        longitude: [['yup.number'], ['yup.required']],
+      },
+    ],
+  ],
+  initialValue: null,
+}
+
+
+const uiSetting = () =>{
+  const newuiSetting:any=JSON.parse(JSON.stringify(DefaultuiSetting));
+  newuiSetting["viewsets"]= {
+    "settings": {
+      "views": [
+      ],
+      "label": "settings"
+    },
+  }
+
+  return newuiSetting
+}
+  
+export function getTakePointBuilderIcon() {
+  return <BookmarksIcon />;
+}
+
+export const TakePointSetting =[uiSetting(),uiSpec]
+

@@ -18,6 +18,7 @@
  *   TODO
  */
 import BrokenImageIcon from '@material-ui/icons/BrokenImage';
+import { DefaultuiSetting } from '../fields/BasicFieldSettings';
 
 export function getDefaultBuilderComponent() {
   return <p>This field has no configuration options.</p>;
@@ -32,5 +33,7 @@ export function getDefaultuiSpecProps(){
 }
 
 export function getDefaultuisettings(){
-  return [{settings:false}];
+  return [DefaultuiSetting];
 }
+
+

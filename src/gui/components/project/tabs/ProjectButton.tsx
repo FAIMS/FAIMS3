@@ -147,15 +147,14 @@ export function TickButton(props: ButtonProps) {
 
 export function AddUserButton(props: ButtonProps) {
   return (
-    // <IconButton edge="end" type={props.type} id={props.id}>
-    //         <AddCircleIcon  fontSize='small'/>
-    //     </IconButton>
     <Button
       color="secondary"
       startIcon={<AddCircleIcon />}
       variant="outlined"
       type={props.type}
       id={props.id}
+      onClick={() => props.onButtonClick(props.value)}
+      value={props.value}
     >
       ADD{' '}
     </Button>

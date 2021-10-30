@@ -25,23 +25,29 @@
  */
 
 import {v4 as uuidv4} from 'uuid';
-import {getcomponent, convertuiSpecToProps} from './uiFieldsRegistry';
+import {getcomponent} from './uiFieldsRegistry';
 import {getComponentPropertiesByName} from '../../../component_registry';
-import {FAIMSUiSpec} from '../../../../datamodel/ui';
+import {setSetingInitialValues} from './componenentSetting'
+import {
+  ProjevtValueList,
+  FAIMShandlerType,
+  ProjectUIModel,
+  FAIMSUiSpec} from '../../../../datamodel/ui'
 
 const VISIBLE_TYPE = 'visible_types';
 const NEWFIELDS = 'newfield';
 const DEFAULT_accessgroup = ['admin', 'moderator'];
 const DEFAULT_accessgroup_d = ['admin', 'moderator', 'team'];
 const CONNECTION_RELATIONS = ['To be added'];
-export type handlertype = any;
+
+
 export type uiSpecType = {
   fields: any;
   views: any;
   viewsets: any;
   visible_types: any;
 };
-export type projectvalueType = any;
+
 type signlefieldType = any;
 type fieldlistType = any;
 type viewlistType = any;
@@ -274,7 +280,7 @@ export const gettabform = (tabs: Array<string>) => {
 };
 
 export const getprojectform = (
-  projectvalue: projectvalueType,
+  projectvalue: ProjevtValueList,
   tab: string,
   props: any = null
 ) => {
@@ -471,7 +477,6 @@ export const getprojectform = (
         const formvirant = props.sectionname.split('SECTION')[0];
         const iniaccess = projectvalue['access' + formvirant];
         field['initialValue'] = iniaccess ?? projectvalue.accesses;
-        console.log(iniaccess);
       }
       const fieldname = field.name + props.sectionname;
       const newfield = {...field, name: fieldname};
@@ -536,7 +541,6 @@ export const getprojectform = (
       fieldsarray[index] = field.name;
     });
   }
-  console.log(fields_list);
   return {
     fields: fields_list,
     views: {'start-view': {fields: fieldsarray, uidesign: tab}},
@@ -580,7 +584,7 @@ export const updateuiSpec = (type: string, props: any) => {
     case 'formvsectionadd':
       return formvsectionadd(props);
     case 'newfromui':
-      return newfromui(props.formuiSpec, props.formcomponents, props.access);
+      return newfromui(props.formuiSpec, props.formcomponents, props.access,props.initialfieldvalue);
     case 'switch':
       return swithField(
         props.index,
@@ -590,7 +594,6 @@ export const updateuiSpec = (type: string, props: any) => {
         props.formuiview
       );
     case 'removefield':
-      console.log('run here');
       return removefield(
         props.index,
         props.formuiSpec,
@@ -599,8 +602,8 @@ export const updateuiSpec = (type: string, props: any) => {
       );
     case 'addfield':
       return addfield(props);
-    case 'updatefield':
-      return updatefield(props);
+    // case 'updatefield':
+    //   return updatefield(props);
     default:
       return newuiSpec;
   }
@@ -626,32 +629,45 @@ const updatelabel = (type: boolean, props: any) => {
 const newfromui = (
   newuiSpec: uiSpecType,
   newformcom: any,
-  access: Array<string>
+  access: Array<string>,
+  initialfieldvalue:any
 ) => {
   newuiSpec[VISIBLE_TYPE].map((variant: any, index: any) => {
     newuiSpec['viewsets'][variant]['views'].map((view: string) => {
       newformcom[view] = [];
       newuiSpec['views'][view]['fields'].map((fieldname: string) => {
         const field = newuiSpec['fields'][fieldname];
-        const fieldprops = convertuiSpecToProps(field);
+        if(field['meta']===undefined) 
+        field['meta']={
+          "annotation_label": "annotation",
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+        const fieldprops = {};
         const newuiSpeclist = FieldSettings(
           field,
           fieldname,
           fieldprops,
           access
         );
+        initialfieldvalue={...initialfieldvalue,
+          ...setSetingInitialValues(getComponentPropertiesByName(field['component-namespace'],field['component-name']).settingsProps[0],field,fieldname)}
         newformcom[view] = [
           ...newformcom[view],
           {
             id: fieldname.replace(NEWFIELDS, ''),
             uiSpec: newuiSpeclist,
             designvalue: 'settings',
+            componentName:field['component-name'],
+            namespace:field['component-namespace']
           },
         ];
       });
     });
   });
-  return newformcom;
+  return {newformcom,initialfieldvalue};
 };
 
 const swithField = (
@@ -695,107 +711,118 @@ const removefield = (
   return {newviews, components};
 };
 
+
 const addfield = (props: any) => {
   const {uuid, id, formuiSpec, formcomponents, formuiview, accessgroup} = props;
+  const settings=id
   const name = NEWFIELDS + uuid;
-  const newfield = getcomponent({
+  const newfield = settings.settingsProps!==undefined&&settings.settingsProps.length>1?{...Object.assign({},  settings.settingsProps[1]),access:accessgroup}:getcomponent({
     name: name,
-    label: id.componentName,
+    label: id.uiSpecProps.componentName,
     access: accessgroup,
-    ...id,
+    ...id.uiSpecProps,
   });
+  if(newfield['meta']===undefined) 
+  newfield['meta']={
+            "annotation_label": "annotation",
+            "uncertainty": {
+              "include": false,
+              "label": "uncertainty"
+            }
+          }
   const newuiSpec = formuiSpec.fields;
   newuiSpec[name] = newfield;
   const newviews = formuiSpec.views;
-  const fieldprops = convertuiSpecToProps(newfield);
+  const fieldprops = {};
   const newuiSpeclist = FieldSettings(newfield, name, fieldprops, accessgroup);
   const components = formcomponents;
   newviews[formuiview]['fields'] = [...newviews[formuiview]['fields'], name];
   components[formuiview] = [
     ...components[formuiview],
-    {id: uuid, uiSpec: newuiSpeclist, designvalue: 'settings'},
+    {id: uuid, uiSpec: newuiSpeclist, designvalue: 'settings',componentName:newfield['component-name'],namespace:newfield['component-namespace']},
   ];
-  return {newviews, components, newuiSpeclist, newuiSpec};
+  const initialfieldvalue=setSetingInitialValues(settings.settingsProps[0],newfield,name)
+  return {newviews, components, newuiSpeclist, newuiSpec,initialfieldvalue};
 };
 
-const updatefield = (props: any) => {
-  //TODO: check this part
-  const {event, formuiSpec, formcomponents, formuiview, access} = props;
-  const fieldname = event.target.name;
-  const fieldvalue = event.target.value;
-  const updatedfield = getfieldname(fieldname, NEWFIELDS);
-  const components = formcomponents;
-  const newviews = formuiSpec;
-  if (
-    formuiSpec !== undefined &&
-    updatedfield.name !== '' &&
-    updatedfield.type !== ''
-  ) {
-    const newfieldname = updatedfield.name;
-    const fieldtype = updatedfield.type;
-    if (fieldtype === 'validationSchema') return {newviews, components};
-    if (fieldtype === 'accessinherit') {
-      //TODO
-      return {newviews, components};
-    }
-    const fieldprops = convertuiSpecToProps(formuiSpec['fields'][newfieldname]);
-    if (fieldtype === 'required' || fieldtype === 'meta_type')
-      fieldprops[fieldtype] = !fieldprops[fieldtype];
-    else fieldprops[fieldtype] = fieldvalue;
-    if (fieldtype === 'options') {
-      fieldprops[fieldtype] = [];
-      const options = fieldvalue.split(' ');
-      options.map(
-        (option: string, index: number) =>
-          (fieldprops[fieldtype][index] = {
-            value: option,
-            label: option,
-          })
-      );
-    }
-    if (fieldtype === 'access') {
-      try {
-        let access = fieldvalue.split(',');
-        //remove the empty one
-        access = access.filter((value: string) => value !== '');
-        fieldprops[fieldtype] = access;
-        if (!fieldprops[fieldtype].includes('admin')) {
-          fieldprops[fieldtype] = [...fieldprops[fieldtype], 'admin'];
-        }
-        console.log(access);
+// const updatefield = (props: any) => {
+//   //TODO: check this part
+//   const {event, formuiSpec, formcomponents, formuiview, access} = props;
+//   const fieldname = event.target.name;
+//   const fieldvalue = event.target.value;
+//   const updatedfield = getfieldname(fieldname, NEWFIELDS);
+//   const components = formcomponents;
+//   const newviews = formuiSpec;
+//   if (
+//     formuiSpec !== undefined &&
+//     updatedfield.name !== '' &&
+//     updatedfield.type !== ''
+//   ) {
+//     const newfieldname = updatedfield.name;
+//     const fieldtype = updatedfield.type;
+//     if (fieldtype === 'validationSchema') return {newviews, components};
+//     if (fieldtype === 'accessinherit') {
+//       //TODO
+//       return {newviews, components};
+//     }
+//     const fieldprops = convertuiSpecToProps(formuiSpec['fields'][newfieldname]);
+//     if (fieldtype === 'required' || fieldtype === 'meta_type')
+//       fieldprops[fieldtype] = !fieldprops[fieldtype];
+//     else fieldprops[fieldtype] = fieldvalue;
+//     if (fieldtype === 'options') {
+//       fieldprops[fieldtype] = [];
+//       const options = fieldvalue.split(' ');
+//       options.map(
+//         (option: string, index: number) =>
+//           (fieldprops[fieldtype][index] = {
+//             value: option,
+//             label: option,
+//           })
+//       );
+//     }
+//     if (fieldtype === 'access') {
+//       try {
+//         let access = fieldvalue.split(',');
+//         //remove the empty one
+//         access = access.filter((value: string) => value !== '');
+//         fieldprops[fieldtype] = access;
+//         if (!fieldprops[fieldtype].includes('admin')) {
+//           fieldprops[fieldtype] = [...fieldprops[fieldtype], 'admin'];
+//         }
+//         console.log(access);
 
-      }catch(error){
-        console.error('Failed to pass access group');
-        console.error(error);
-      }
+//       }catch(error){
+//         console.error('Failed to pass access group');
+//         console.error(error);
+//       }
 
-      // if(typeof fieldprops[fieldtype]==='string') fieldprops[fieldtype]=[fieldprops[fieldtype]]
-      // DEFAULT_accessgroup.map((accessrole:string)=>fieldprops[fieldtype].includes(accessrole)?accessrole:fieldprops[fieldtype]=[...fieldprops[fieldtype],accessrole])
-    }
+//       // if(typeof fieldprops[fieldtype]==='string') fieldprops[fieldtype]=[fieldprops[fieldtype]]
+//       // DEFAULT_accessgroup.map((accessrole:string)=>fieldprops[fieldtype].includes(accessrole)?accessrole:fieldprops[fieldtype]=[...fieldprops[fieldtype],accessrole])
+//     }
 
-    if (fieldtype === 'validationSchema') {
-      fieldprops[fieldtype] = [];
-      const validationSchemas = fieldvalue.split(',');
-      validationSchemas.map(
-        (validationSchema: string, index: number) =>
-          (fieldprops[fieldtype][index] = [validationSchema])
-      ); // this function need to be updated
-    }
-    const newfield = getcomponent(fieldprops); //fieldprops['type']??fieldprops['component-name'],
-    const fields = changeuifield(newfieldname, newfield, formuiSpec['fields']);
+//     if (fieldtype === 'validationSchema') {
+//       fieldprops[fieldtype] = [];
+//       const validationSchemas = fieldvalue.split(',');
+//       validationSchemas.map(
+//         (validationSchema: string, index: number) =>
+//           (fieldprops[fieldtype][index] = [validationSchema])
+//       ); // this function need to be updated
+//     }
+//     const newfield = getcomponent(fieldprops); //fieldprops['type']??fieldprops['component-name'],
+//     const fields = changeuifield(newfieldname, newfield, formuiSpec['fields']);
 
-    components[formuiview].map((item: any) => {
-      item.id === updatedfield.index
-        ? (item['uiSpec']['fields'] = changeuifield(
-            newfieldname,
-            newfield,
-            item['uiSpec']['fields']
-          ))
-        : item;
-    });
-  }
-  return {newviews, components};
-};
+//     components[formuiview].map((item: any) => {
+//       item.id === updatedfield.index
+//         ? (item['uiSpec']['fields'] = changeuifield(
+//             newfieldname,
+//             newfield,
+//             item['uiSpec']['fields']
+//           ))
+//         : item;
+//     });
+//   }
+//   return {newviews, components};
+// };
 
 const changeuifield = (newfieldname: string, newfield: any, uiSpec: any) => {
   //update the formuiSpec

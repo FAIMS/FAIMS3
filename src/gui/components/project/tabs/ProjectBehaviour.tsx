@@ -17,56 +17,21 @@
  * Description:This is the file about Notebook Behavoiur
  *   TODO:
  */
-import React from 'react';
-import {useState, useEffect} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
 
 import {
-  Button,
   Grid,
-  Box,
-  ButtonGroup,
   Typography,
-  AppBar,
-  Hidden,
-  Paper,
   Switch,
 } from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard, FormConnectionCard} from './PSettingCard';
-import {getComponentFromField, FormForm} from '../FormElement';
-import {TabTab, TabEditable} from './TabTab';
-import TabPanel from './TabPanel';
 import {
-  setProjectInitialValues,
-  getid,
-  updateuiSpec,
-  gettabform,
-  getprojectform,
-  handlertype,
-  uiSpecType,
-  projectvalueType,
-  getacessoption,
-} from '../data/ComponentSetting';
-import {
-  CusButton,
-  CloseButton,
-  UpButton,
-  DownButton,
-  AddButton,
-} from './ProjectButton';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../../sync/databases';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {useTheme} from '@material-ui/core/styles';
+  ProjevtValueList,
+  FAIMShandlerType,
+  BehaviourProperties,
+  } from '../../../../datamodel/ui'
+
 
 type ProjectBehaviourProps = any;
-type behaviourType = {label: string; helpText: string};
+
 export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
   const {project_id, setProjectValue, projectvalue, ...others} = props;
 
@@ -91,7 +56,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
     }];
 
 
-  const belement = (behaviour: behaviourType, handleChange: handlertype) => {
+  const belement = (behaviour: BehaviourProperties , handleChange: FAIMShandlerType) => {
     return (
       <Grid container>
         <Grid item sm={4} xs={1}>
@@ -122,7 +87,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
 
   return (
     <>
-      {behaviours.map((behaviour: behaviourType) =>
+      {behaviours.map((behaviour: BehaviourProperties) =>
         belement(behaviour, handleChange)
       )}
     </>

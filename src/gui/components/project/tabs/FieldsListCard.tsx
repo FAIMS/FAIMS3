@@ -67,7 +67,7 @@ function FieldCard(props: any) {
           className={className}
         >
           <Card>
-            <CardActionArea onClick={() => handelonClick(field.uiSpecProps)}>
+            <CardActionArea onClick={() => handelonClick(field)}>
               <CardContent>
                 <Grid
                   container
