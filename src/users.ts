@@ -47,12 +47,12 @@ export async function setTokenForCluster(token: string, cluster_id: string) {
 
 export async function getTokenForCluster(
   cluster_id: string
-): Promise<string | null> {
+): Promise<string | undefined> {
   try {
     return await local_auth_db.get(cluster_id);
   } catch (err) {
     console.debug(err);
     console.warn('Token not found for:', cluster_id);
-    return null;
+    return undefined;
   }
 }

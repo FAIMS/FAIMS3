@@ -54,6 +54,8 @@ import {createdProjects} from './state';
 import {setLocalConnection} from './databases';
 import {SyncHandler} from './sync-handler';
 import {NonUniqueProjectID, resolve_project_id} from '../datamodel/core';
+import {getTokenForCluster} from '../users';
+
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
 const DIRECTORY_TIMEOUT = 6000;
@@ -207,11 +209,17 @@ export async function process_listing(listing_object: ListingsObject) {
   const local_only = listing_object.local_only ?? false;
   console.debug(`Processing listing id ${listing_id}`);
 
+  const jwt_token = await getTokenForCluster(listing_id);
+  if (jwt_token === undefined) {
+    console.debug('No JWT token for:', listing_id);
+  }
+
   const projects_connection = local_only
     ? null
     : materializeConnectionInfo(
         await get_base_connection_info(listing_object),
-        listing_object['projects_db']
+        listing_object['projects_db'],
+        {jwt_token: jwt_token}
       );
 
   const [projects_created, local_projects_db] = ensure_local_db(
