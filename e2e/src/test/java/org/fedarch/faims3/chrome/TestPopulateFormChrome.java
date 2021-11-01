@@ -67,6 +67,8 @@ public class TestPopulateFormChrome extends ChromeTest implements TestPopulateFo
 			// The form should load up
 			fillOutFormWithValidFields();
 			TestUtils.scrollDown(driver);
+			// remember record id for next tests
+			setRecordId();
 			// validate JSON
 			validateJSON();
 			// Submit button
@@ -83,7 +85,7 @@ public class TestPopulateFormChrome extends ChromeTest implements TestPopulateFo
 
 			//Load the just-created observation
 			wait.until(ExpectedConditions.visibilityOfElementLocated(
-					By.xpath("//a[@href='/projects/default_test_proj/observations/" + this.recordUuid + "']")))
+					By.xpath("//a[@href='/projects/default_test_proj/observations/" + this.recordId + "']")))
 			           .click();
 
 			//Ensure that location and change are still present in the data

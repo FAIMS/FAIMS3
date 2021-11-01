@@ -96,7 +96,7 @@ public class TestUpdateObservationsAndDraftDatabase {
 
 			// Load a observation of your choice.
 			// Note the first 6 characters of the UUID here (for ease of future reference)
-			String uuid = androidDevice.getRecordUuid();
+			String uuid = androidDevice.getRecordId();
 			androidDevice.loadObservationForm(uuid);
 			// Manually increment number of revisions every time we save to compare later
 			int revisionCount = androidDevice.getRevisions().length;

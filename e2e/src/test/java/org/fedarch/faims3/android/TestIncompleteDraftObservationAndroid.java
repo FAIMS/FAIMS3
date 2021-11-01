@@ -97,7 +97,7 @@ public class TestIncompleteDraftObservationAndroid extends AndroidTest implement
 		    projects.click();
 
 			//Load a different observation and then return to the projects page
-			loadObservationForm(recordUuid);
+			loadObservationForm(recordId);
 
 			leaveObservationForm();
 			//Click + New Observation

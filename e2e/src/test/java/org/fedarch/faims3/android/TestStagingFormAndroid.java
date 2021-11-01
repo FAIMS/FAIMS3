@@ -74,12 +74,14 @@ public class TestStagingFormAndroid extends AndroidTest implements TestStagingFo
 			loadNewAstroSkyForm();
 			// Fill out all fields
 			fillOutFormWithValidFields();
+			// remember record id for next tests
+			setRecordId();
 			// validate JSON values
 			validateJSON();
 			// scroll up and click on index again
 			TestUtils.scrollToText(driver, "Index").click();
-			// reopen AsTRoSkY
-			loadNewAstroSkyForm();
+			// reopen the same draft
+			loadObservationForm(this.recordId);
 			// Check all fields are still the same
 			validateLatLong();
 			assertEquals(AstroSky.EMAIL_ANDROID, driver.findElement(MobileBy.xpath("//*[@resource-id='email-field']")).getText());

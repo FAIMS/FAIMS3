@@ -57,7 +57,7 @@ public class AndroidTest implements E2ETest {
 	protected String longitude;
 
 	// Newly created observation form's id
-	protected String recordUuid;
+	protected String recordId;
 
 	public AndroidTest() {
 		setDatabase();
@@ -113,7 +113,7 @@ public class AndroidTest implements E2ETest {
 	    caps.setCapability("name", testDescription.concat(" : ").concat(TestUtils.getCommitMessage()));
 
 	    // Specify device and os_version for testing
-	    caps.setCapability("device", "Google Pixel 3");
+	    caps.setCapability("device", "Google Pixel 4");
 	    caps.setCapability("os_version", "10.0");
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
@@ -256,6 +256,8 @@ public class AndroidTest implements E2ETest {
 	    		ExpectedConditions.visibilityOfElementLocated(MobileBy.xpath("//*[@resource-id='checkbox-field']")));
 	    checkbox.click();
 
+	    TestUtils.scrollToResourceId(driver, "radio-group-field-4");
+
 	    // radio button - click on he fourth one
 	    AndroidElement radioButton = (AndroidElement) wait.until(ExpectedConditions.visibilityOfElementLocated(
 	    		MobileBy.xpath("//*[@resource-id='radio-group-field-4']")));
@@ -320,6 +322,16 @@ public class AndroidTest implements E2ETest {
 
 	}
 
+	public void setRecordId() {
+		// Take note of the UUID for other tests
+	    TestUtils.scrollToText(driver, "Current URL:");
+	    AndroidElement currentURL = driver.findElement(MobileBy.xpath(
+	    		"//*[@text='Current URL:']/following-sibling::android.view.View"));
+	    String URL = currentURL.getAttribute("text");
+	    String[] urlPaths = URL.split("/");
+	    this.recordId = urlPaths[urlPaths.length - 1];
+    }
+
 	/**
 	 * Validate JSON at the end of the form with input values.
 	 * @return True if JSON is valid, false otherwise.
@@ -335,9 +347,6 @@ public class AndroidTest implements E2ETest {
 				driver.findElement(MobileBy.xpath("//*[@text='DEVELOPER TOOL: FORM STATE']/following-sibling::android.view.View/android.view.View"))));
 		JSONObject jsonObject = new JSONObject(json.getText());
 		JSONObject values = jsonObject.getJSONObject("values");
-
-		// Take note of the UUID for other tests
-		this.recordUuid = values.getString("_id");
 
 		JSONObject gps = values.getJSONObject("take-point-field");
 		assertEquals(this.latitude, gps.get("latitude").toString());
@@ -396,8 +405,8 @@ public class AndroidTest implements E2ETest {
 
 	// This is needed by TestUpdateObservationsAndDraftDatabase because it needs to retrieve
 	// a created record.
-	public String getRecordUuid() {
-		return this.recordUuid;
+	public String getRecordId() {
+		return this.recordId;
 	}
 
 

@@ -74,6 +74,8 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
 			// Fill out all fields
 			fillOutFormWithValidFields();
 			TestUtils.scrollDown(driver);
+			// remember record id for next tests
+			setRecordId();
 			// validate JSON values
 			validateJSON();
 
@@ -85,7 +87,7 @@ public class TestStagingFormChrome extends ChromeTest implements TestStagingForm
 //							By.xpath("//*[@href='/projects/default_generated_oral_history']"))).click();
 
 			// return to "Projects" and then reopen the form
-			loadNewAstroSkyForm();
+			loadObservationForm(this.recordId);
 			// Check all fields are still the same
 			validateLatLong();
 			assertEquals(AstroSky.EMAIL_CHROME, driver.findElement(By.id("email-field")).getAttribute("value"));

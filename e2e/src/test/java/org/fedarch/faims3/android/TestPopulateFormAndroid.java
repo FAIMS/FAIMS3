@@ -70,6 +70,8 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 			loadNewAstroSkyForm();
 			// The form should load up
 			fillOutFormWithValidFields();
+			// remember record id for next tests
+			setRecordId();
 			// validate JSON
 			validateJSON();
 			// Click save and new
@@ -90,7 +92,7 @@ public class TestPopulateFormAndroid extends AndroidTest implements TestPopulate
 
 			//Load the just-created observation
 			wait.until(ExpectedConditions.visibilityOfElementLocated(
-					By.xpath("//*[contains(@text, '" + this.recordUuid + "')]"))).click();
+					By.xpath("//*[contains(@text, '" + this.recordId + "')]"))).click();
 
 			//Ensure that location and change are still present in the data
 			validateLatLong();

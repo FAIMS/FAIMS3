@@ -91,7 +91,7 @@ public class TestIncompleteDraftObservationChrome extends ChromeTest implements 
 			projects.click();
 
 			//Load a different observation and then return to the projects page
-			loadObservationForm(recordUuid);
+			loadObservationForm(recordId);
 
 			// Click + New Observation
 			loadNewAstroSkyForm();

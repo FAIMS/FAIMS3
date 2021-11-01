@@ -87,7 +87,7 @@ public class TestStagingFormIOS extends IOSTest implements TestStagingForm {
 //							By.xpath("//*[@href='/projects/default_generated_oral_history']"))).click();
 
 			// return to "Projects" and then reopen the form
-			loadNewAstroSkyForm();
+			loadObservationForm(this.recordUuid);
 			// Check all fields are still the same
 			validateLatLong();
 			assertEquals(AstroSky.EMAIL_IOS, driver.findElement(By.id("email-field")).getAttribute("value"));
