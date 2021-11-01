@@ -112,7 +112,7 @@ export interface ActiveDoc {
 
 export interface LocalAuthDoc {
   _id: string; //Corresponds to a listings ID
-  dc_token: string;
+  token: string;
 }
 
 /**

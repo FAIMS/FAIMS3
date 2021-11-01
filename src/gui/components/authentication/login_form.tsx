@@ -1,13 +1,15 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
 import React, {useState} from 'react';
+import {useEffect} from 'react';
 import {Box, Button, CircularProgress} from '@material-ui/core';
+
 import {
   AuthInfo,
   ListingsObject,
   LocalAuthDoc,
 } from '../../../datamodel/database';
 import {directory_db} from '../../../sync/databases';
-import {useEffect} from 'react';
+import {setTokenForCluster} from '../../../users';
 
 export type LoginFormProps = {
   listing_id: string;
@@ -20,12 +22,8 @@ export type LoginButtonProps = {
   auth_info: AuthInfo; // User-visible name
 };
 
-function redirect_url(
-  listing_id: string,
-  portal_url: string,
-  auth_id: string
-): string {
-  return portal_url + '/auth/' + auth_id + '?state=' + listing_id;
+function redirect_url(portal_url: string, auth_id: string): string {
+  return portal_url + '/auth/' + auth_id;
 }
 
 function LoginButton(props: LoginButtonProps) {
@@ -33,11 +31,27 @@ function LoginButton(props: LoginButtonProps) {
     <Button
       variant="contained"
       color="primary"
-      href={redirect_url(
-        props.listing_id,
-        props.auth_info.portal,
-        props.auth_id
-      )}
+      onClick={() => {
+        //const conductor_url = redirect_url(
+        //  props.auth_info.portal,
+        //  props.auth_id
+        //);
+        let oauth_window: Window | null = null;
+        window.addEventListener(
+          'message',
+          async event => {
+            if (event.source !== oauth_window) {
+              console.error('Bad message:', event);
+            }
+            await setTokenForCluster(event.data.token, props.listing_id);
+          },
+          false
+        );
+        oauth_window = window.open('http://localhost:8080/');
+        if (oauth_window === null) {
+          console.error('Failed to open oauth window');
+        }
+      }}
     >
       Sign-in with {props.auth_info.name}
     </Button>

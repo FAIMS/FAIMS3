@@ -111,7 +111,10 @@ export const local_state_db = new PouchDB('local_state', local_pouch_options);
 /**
  * Login tokens for each FAIMS Cluster that needs it
  */
-export const local_auth_db = new PouchDB<LocalAuthDoc>('local_auth');
+export const local_auth_db = new PouchDB<LocalAuthDoc>(
+  'local_auth',
+  local_pouch_options
+);
 
 /**
  * Each listing has a Projects database and Users DBs

@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {active_db} from './sync/databases';
+import {active_db, local_auth_db} from './sync/databases';
 import {ProjectID} from './datamodel/core';
 
 export async function getFriendlyUserName(
@@ -34,4 +34,25 @@ export async function getFriendlyUserName(
 export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
   const doc = await active_db.get(project_id);
   return doc.username || 'Dummy User';
+}
+
+export async function setTokenForCluster(token: string, cluster_id: string) {
+  try {
+    await local_auth_db.put({_id: cluster_id, token: token});
+  } catch (err) {
+    console.warn(err);
+    throw Error(`Failed to set token for: ${cluster_id}`);
+  }
+}
+
+export async function getTokenForCluster(
+  cluster_id: string
+): Promise<string | null> {
+  try {
+    return await local_auth_db.get(cluster_id);
+  } catch (err) {
+    console.debug(err);
+    console.warn('Token not found for:', cluster_id);
+    return null;
+  }
 }
