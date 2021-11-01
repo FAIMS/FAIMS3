@@ -22,9 +22,9 @@ export type LoginButtonProps = {
   auth_info: AuthInfo; // User-visible name
 };
 
-function redirect_url(portal_url: string, auth_id: string): string {
-  return portal_url + '/auth/' + auth_id;
-}
+//function redirect_url(portal_url: string, auth_id: string): string {
+//  return portal_url + '/auth/' + auth_id;
+//}
 
 function LoginButton(props: LoginButtonProps) {
   return (

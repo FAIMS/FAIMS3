@@ -212,6 +212,8 @@ export async function process_listing(listing_object: ListingsObject) {
   const jwt_token = await getTokenForCluster(listing_id);
   if (jwt_token === undefined) {
     console.debug('No JWT token for:', listing_id);
+  } else {
+    console.debug('Using JWT token for:', listing_id);
   }
 
   const projects_connection = local_only
