@@ -86,7 +86,7 @@ export type PossibleConnectionInfo =
         username: string;
         password: string;
       };
-  jwt_token?: string;
+      jwt_token?: string;
     };
 
 export interface ListingsObject {

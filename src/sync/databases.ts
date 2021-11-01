@@ -368,7 +368,12 @@ async function delete_synced_dbs(db_list: LocalDBList<any>) {
 }
 
 export async function wipe_all_pouch_databases() {
-  const local_only_dbs_to_wipe = [active_db, local_state_db, draft_db];
+  const local_only_dbs_to_wipe = [
+    active_db,
+    local_state_db,
+    draft_db,
+    local_auth_db,
+  ];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
   await delete_synced_dbs(projects_dbs);
