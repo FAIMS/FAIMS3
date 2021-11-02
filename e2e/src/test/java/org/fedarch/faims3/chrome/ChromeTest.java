@@ -136,7 +136,11 @@ public class ChromeTest implements E2ETest {
 		caps.setCapability("browser_version", "latest");
 		caps.setCapability("project", "FAIMS3 - Chrome Windows Tests");
 	    caps.setCapability("build", "Alpha");
-	    caps.setCapability("name", testDesc.concat(" : ").concat(TestUtils.getCommitMessage()));
+	    String desc = testDesc.concat(" : ").concat(TestUtils.getCommitMessage());
+	    caps.setCapability("name",
+	    		// only 255 characters allowed
+	    		desc.substring(0, Math.min(desc.length(), 255))
+	    );
 
 	    turnOnBrowserstackLogs(caps);
 

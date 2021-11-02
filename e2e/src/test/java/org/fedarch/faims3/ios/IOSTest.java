@@ -110,7 +110,11 @@ public class IOSTest implements E2ETest {
 	public void browserstackSetup(DesiredCapabilities caps, String testDescription) throws MalformedURLException {
 	    caps.setCapability("project", "FAIMS3 - iOS Tests");
 	    caps.setCapability("build", "Alpha");
-	    caps.setCapability("name", testDescription.concat(" : ").concat(TestUtils.getCommitMessage()));
+	    String desc = testDescription.concat(" : ").concat(TestUtils.getCommitMessage());
+	    caps.setCapability("name",
+	    		// only 255 characters allowed
+	    		desc.substring(0, Math.min(desc.length(), 255))
+	    );
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "iPhone 12");
