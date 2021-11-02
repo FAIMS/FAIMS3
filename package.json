@@ -57,7 +57,6 @@
     "@testing-library/react": "11.2.5",
     "@testing-library/user-event": "12.8.3",
     "@types/mustache": "4.1.2",
-    "@types/node": "14.14.37",
     "@types/pouchdb": "6.4.0",
     "@types/react": "17.0.3",
     "@types/react-dom": "17.0.3",
@@ -89,7 +88,7 @@
   "devDependencies": {
     "@types/jest": "26.0.21",
     "@types/json-stable-stringify": "1.0.33",
-    "@types/node": "14.11.2",
+    "@types/node": "14.14.37",
     "@types/yup": "0.29.11",
     "fast-check": "2.14.0",
     "gts": "3.1.0",
