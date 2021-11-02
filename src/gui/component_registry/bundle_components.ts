@@ -29,6 +29,7 @@ import {RadioGroup as FormikRadioGroup} from 'formik-material-ui';
 import {Select as FAIMSSelect} from '../fields/select';
 import {ActionButton} from '../fields/ActionButton';
 import {TakePoint} from '../fields/TakePoint';
+import {TakePhoto} from '../fields/TakePhoto';
 import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
 import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
@@ -179,6 +180,17 @@ registerComponent(
         },
       ],
     ],
+  })
+);
+registerComponent(
+  'faims-custom',
+  'TakePhoto',
+  setupComponentProperties('Take Point', '', 'Images', TakePhoto, 'Special', {
+    namespace: 'faims-custom',
+    componentName: 'TakePhoto',
+    type_return: 'faims-blob::Photo',
+    initialValue: null,
+    validationSchema: [['yup.object'], ['yup.nullable']],
   })
 );
 registerComponent(

@@ -312,6 +312,20 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         ],
         initialValue: null,
       },
+      'take-photo-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'TakePhoto',
+        'type-returned': 'faims-blob::Photo', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'take-photo-field',
+          id: 'take-photo-field',
+          helperText: 'Take a photo',
+          variant: 'outlined',
+        },
+        validationSchema: [['yup.object'], ['yup.nullable']],
+        initialValue: null,
+      },
       'select-field': {
         'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
         'component-name': 'Select',
@@ -584,6 +598,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'bad-field',
           'action-field',
           'email-field',
+          'take-photo-field',
           'related-field',
           'str-field',
           'multi-str-field',
