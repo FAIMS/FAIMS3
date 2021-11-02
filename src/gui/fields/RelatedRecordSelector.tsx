@@ -23,8 +23,12 @@ import {Link as RouterLink} from 'react-router-dom';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 import TextField from '@material-ui/core/TextField';
-import Autocomplete from '@material-ui/lab/Autocomplete';
-import {FieldProps} from 'formik';
+
+import {Field, FieldProps} from 'formik';
+import {
+  Autocomplete,
+  AutocompleteRenderInputParams,
+} from 'formik-material-ui-lab';
 
 import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName} from '../../datamodel/core';
@@ -38,6 +42,7 @@ interface Props {
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
+  const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
 
   React.useEffect(() => {
@@ -52,25 +57,19 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   // TODO: Have the relation_type set the multiplicity of the system
   return (
     <div>
-      <Autocomplete
-        multiple
+      <Field
         id="asynchronous-demo"
-        style={{width: 300}}
-        getOptionSelected={(option, value) =>
+        name={field_name}
+        component={Autocomplete}
+        getOptionSelected={(option: RecordReference, value: RecordReference) =>
           option.project_id === value.project_id &&
           option.record_id === value.record_id
         }
-        getOptionLabel={option => option.record_label}
+        getOptionLabel={(option: RecordReference) => option.record_label}
         options={options}
-        renderInput={params => (
-          <TextField
-            {...params}
-            label="Asynchronous"
-            variant="outlined"
-            InputProps={{
-              ...params.InputProps,
-            }}
-          />
+        style={{width: 300}}
+        renderInput={(params: AutocompleteRenderInputParams) => (
+          <TextField {...params} label="Asynchronous" variant="outlined" />
         )}
       />
       <Button
