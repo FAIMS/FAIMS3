@@ -25,6 +25,7 @@ import {
   AttributeValuePairID,
   ProjectID,
   FAIMSTypeName,
+  Annotations,
 } from './core';
 import {
   FAIMSConstantCollection,
@@ -216,7 +217,7 @@ export interface AttributeValuePair {
   data: any;
   revision_id: RevisionID;
   record_id: RecordID;
-  annotations: any;
+  annotations: Annotations;
 }
 
 /*

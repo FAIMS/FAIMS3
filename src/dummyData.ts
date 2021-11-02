@@ -65,6 +65,20 @@ const example_records: {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
+      annotations: {},
+      field_types: {
+        'take-point-field': 'faims-pos::Location',
+        'bad-field': 'faims-core::String',
+        'action-field': 'faims-core::String',
+        'email-field': 'faims-core::Email',
+        'str-field': 'faims-core::String',
+        'multi-str-field': 'faims-core::String',
+        'int-field': 'faims-core::Integer',
+        'select-field': 'faims-core::String',
+        'multi-select-field': 'faims-core::String',
+        'checkbox-field': 'faims-core::Bool',
+        'radio-group-field': 'faims-core::String',
+      },
     },
     {
       record_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
@@ -90,6 +104,20 @@ const example_records: {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
+      annotations: {},
+      field_types: {
+        'take-point-field': 'faims-pos::Location',
+        'bad-field': 'faims-core::String',
+        'action-field': 'faims-core::String',
+        'email-field': 'faims-core::Email',
+        'str-field': 'faims-core::String',
+        'multi-str-field': 'faims-core::String',
+        'int-field': 'faims-core::Integer',
+        'select-field': 'faims-core::String',
+        'multi-select-field': 'faims-core::String',
+        'checkbox-field': 'faims-core::Bool',
+        'radio-group-field': 'faims-core::String',
+      },
     },
     {
       record_id: '9a0782ba-937b-4f24-8489-58cd653eca88',
@@ -103,6 +131,12 @@ const example_records: {
         'int-field': 20,
         'select-field': ['EUR'],
         'checkbox-field': true,
+      },
+      annotations: {},
+      field_types: {
+        'int-field': 'faims-core::Integer',
+        'select-field': 'faims-core::String',
+        'checkbox-field': 'faims-core::Bool',
       },
     },
   ],
@@ -132,7 +166,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
         'component-name': 'NotAComponent',
-        'type-returned': 'faims-core::Email', // matches a type in the Project Model
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
         'component-parameters': {
           fullWidth: true,
           name: 'email-field',
