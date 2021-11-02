@@ -56,7 +56,6 @@
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "11.2.5",
     "@testing-library/user-event": "^12.8.3",
-    "@types/jest": "^26.0.21",
     "@types/mustache": "^4.1.2",
     "@types/node": "^14.11.2",
     "@types/pouchdb": "6.4.0",
@@ -88,6 +87,7 @@
     "yup": "0.32.9"
   },
   "devDependencies": {
+    "@types/jest": "26.0.21",
     "@types/json-stable-stringify": "1.0.33",
     "@types/node": "14.11.2",
     "@types/yup": "0.29.11",
