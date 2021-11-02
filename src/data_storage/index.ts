@@ -261,6 +261,7 @@ export async function getRecordMetadata(
       updated: new Date(revision.created),
       updated_by: revision.created_by,
       conflicts: record.heads.length > 1,
+      deleted: revision.deleted ? true : false,
     };
   } catch (err) {
     console.error(err);
