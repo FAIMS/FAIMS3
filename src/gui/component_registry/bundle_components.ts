@@ -35,11 +35,20 @@ import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
 import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
+import {FileUploader} from '../fields/FileUploader';
 import {registerComponent, setupComponentProperties} from './internals';
 
 // Mapping plugin imports
 import {MapFormField} from '@faims-project/faims3-map-input';
 
+import {
+  setAttachmentLoaderForType,
+  setAttachmentDumperForType,
+} from '../../datamodel/typesystem';
+import {
+  file_data_to_attachment,
+  file_attachment_to_data,
+} from '../../data_storage/attachments';
 /*
  * This should be enough to make typescript/the build system happy
  */
@@ -244,3 +253,16 @@ registerComponent(
     MapFormField
   )
 );
+
+registerComponent(
+  'faims-custom',
+  'FileUploader',
+  setupComponentProperties('', '', 'Files', FileUploader)
+);
+
+/*
+ * For saving and loading attachment with type faims-core::File
+ */
+
+setAttachmentLoaderForType('faims-core::File', file_attachment_to_data);
+setAttachmentDumperForType('faims-core::File', file_data_to_attachment);
