@@ -113,3 +113,4 @@ directory
 staging
 local_state
 draft-storage
+local_auth
