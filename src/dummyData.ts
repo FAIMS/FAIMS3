@@ -534,6 +534,17 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
       },
+      'file-upload-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'FileUploader',
+        'type-returned': 'faims-core::File', // matches a type in the Project Model
+        'component-parameters': {
+          name: 'file-upload-field',
+          id: 'file-upload-field',
+        },
+        validationSchema: [['yup.mixed']],
+        initialValue: null,
+      },
       'basic-autoincrementer-field': {
         'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
         'component-name': 'BasicAutoIncrementer',
@@ -619,6 +630,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'action-field',
           'email-field',
           'related-field',
+          'file-upload-field',
           'str-field',
           'multi-str-field',
           'int-field',
