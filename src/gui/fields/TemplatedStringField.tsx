@@ -86,7 +86,6 @@ export class TemplatedStringField extends React.Component<
 
 
 export function TemplatedStringcomponentsetting(props:componenentSettingprops)  {
-  const {handlerchangewithview,...others}=props
   
   const [uiSetting,setuiSetting]=React.useState(props.uiSetting)
   
@@ -147,9 +146,6 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       const num=farray.length>0?farray.length:1
       console.log(num)
       newvalues=changeui(fields,newvalues,num)
-      // const newini=props.initialValues
-      // newini['numberfield'+props.fieldName]=1
-      // props.setinitialValues({...newini})
       setuiSetting({...newvalues})
     }
     console.log(props.initialValues)
@@ -175,13 +171,6 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
         setuiSetting({...newuis})
       }
     }
-    console.log(props.initialValues)
-  }
-
-
-  const handlerchangewithviewSpec = (event:FAIMSEVENTTYPE,view:string) => {
-    props.handlerchangewithview(event,view)
-    const name=event.target.name.replace(props.fieldName,'')
     if(name.includes('fieldselect1')){
       
       const newvalues=props.uiSpec
@@ -204,18 +193,15 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       console.log(newuis['fields'])
       setuiSetting({...newuis})
     }
-
-    
-    
   }
+
 
 
   return (
     <>
     <Defaultcomponentsetting
-      handlerchangewithview={handlerchangewithviewSpec}
       handlerchanges={handlerchanges}
-      {...others}
+      {...props}
       fieldui={props.fieldui}
       uiSetting={uiSetting}
     />

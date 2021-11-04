@@ -428,16 +428,6 @@ const getuivalue = (namespace:string,componentName:string,uiSpec:ProjectUIModel,
 export function ResetComponentProperties(props:resetprops) {
   const {namespace,componentName,uiSpec,setuiSpec,fieldName,formProps,designvalue,currentview,currentform,initialValues,setinitialValues,projectvalue}=props
   const {newui,fieldui,Component}=getuivalue(namespace,componentName,uiSpec,fieldName,designvalue)
-  
-  // useEffect(() => {
-  //   setinit();
-  // }, []);
-
-  // const setinit = () =>{
-  //   const newvalues=uiSpec
-  //   if(newvalues['fields'][fieldName]===undefined) newvalues['fields'][fieldName]=generatenewname(fieldui,fieldName)
-  //   setuiSpec({...newvalues});
-  // }
 
   const handlerchangefunction = (event:FAIMSEVENTTYPE,elementprop:string) =>{
     if(['meta','access','validationSchema'].includes(elementprop)) return true;
