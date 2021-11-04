@@ -54,3 +54,11 @@ export interface ProjectUIViews {
     next_label?: string;
   };
 }
+
+export interface option {
+  value:string;
+  label:string;
+  key?:string;
+}
+
+

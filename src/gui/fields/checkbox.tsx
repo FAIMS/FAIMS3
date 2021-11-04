@@ -29,7 +29,8 @@ import {
 } from '@material-ui/core';
 import {fieldToCheckbox, CheckboxProps} from 'formik-material-ui';
 import BookmarksIcon from '@material-ui/icons/Bookmarks';
-import { Defaultcomponentsetting,DefaultuiSetting } from './BasicFieldSettings';
+import { getDefaultuiSetting } from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui'
 interface Props {
   FormControlLabelProps: FormControlLabelProps;
   FormHelperTextProps: FormHelperTextProps;
@@ -105,7 +106,7 @@ const uiSpec ={
 }
 
 const uiSetting = () =>{
-  const newuiSetting:any=JSON.parse(JSON.stringify(DefaultuiSetting));
+  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
   newuiSetting["viewsets"]= {
     "settings": {
       "views": [

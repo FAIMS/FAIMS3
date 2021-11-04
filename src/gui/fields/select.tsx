@@ -23,12 +23,14 @@ import MuiTextField from '@material-ui/core/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-material-ui';
 import {MenuItem} from '@material-ui/core';
 import BookmarksIcon from '@material-ui/icons/Bookmarks';
-import { Defaultcomponentsetting,DefaultuiSetting } from './BasicFieldSettings';
-interface option {
-  key: string;
-  value: string;
-  label: string;
-}
+import { Defaultcomponentsetting,getDefaultuiSetting } from './BasicFieldSettings';
+import {option} from '../../datamodel/typesystem'
+import {ProjectUIModel,componenentSettingprops,FAIMSEVENTTYPE} from '../../datamodel/ui'
+// interface option {
+//   key: string;
+//   value: string;
+//   label: string;
+// }
 
 interface ElementProps {
   options: Array<option>;
@@ -61,22 +63,22 @@ export class Select extends React.Component<TextFieldProps & Props> {
 
 
 
-export function Selectcomponentsetting(props:any)  {
+export function Selectcomponentsetting(props:componenentSettingprops)  {
   const {handlerchangewithview,...others}=props
 
 
-  const handlerchanges = (event:any) =>{
+  const handlerchanges = (event:FAIMSEVENTTYPE) =>{
 
   }
 
 
-  const handlerchangewithviewSpec = (event:any,view:string) => {
+  const handlerchangewithviewSpec = (event:FAIMSEVENTTYPE,view:string) => {
     //any actions that could in this form
     props.handlerchangewithview(event,view);
-    console.log(view+event.target.name+props.fieldName)
+
     if(view==='ElementProps'&&event.target.name.replace(props.fieldName,'')==='options'){
       const newvalues=props.uiSpec
-      const options:any=[]
+      const options:Array<option>=[]
       event.target.value.split(',').map(
         (o:string,index:number)=>options[index]={
           value: o,
@@ -121,10 +123,6 @@ const uiSpec = {
     SelectProps: {},
     ElementProps: {
       options: [
-        {
-          value: 'Default',
-          label: 'Default',
-        }
       ],
     },
     InputLabelProps: {
@@ -139,7 +137,7 @@ const uiSpec = {
 
 
 const uiSetting = () =>{
-  const newuiSetting:any=JSON.parse(JSON.stringify(DefaultuiSetting));
+  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
   newuiSetting["viewsets"]= {
     "settings": {
       "views": [

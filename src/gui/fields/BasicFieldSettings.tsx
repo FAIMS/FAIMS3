@@ -5,8 +5,18 @@ import { getComponentFromField} from '../components/project/FormElement';
 import {useState} from 'react';
 import {ProjectUIModel,componenentSettingprops,FAIMSEVENTTYPE} from '../../datamodel/ui'
 import {ProjectUIFields} from '../../datamodel/typesystem'
+import {getdvalue} from '../components/project/data/componenentSetting'
 
-export const DefaultuiSpec = {
+export const getDefaultuiSetting = () => {
+    return getdvalue(DefaultuiSetting)
+  }
+
+export const getDefaultuiSpec = () => {
+    return getdvalue(DefaultuiSpec)
+  }
+
+
+const DefaultuiSpec = {
     'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
     'component-name': 'TextField',
     'type-returned': 'faims-core::String', // matches a type in the Project Model
@@ -36,9 +46,10 @@ export const DefaultuiSpec = {
     ],
     initialValue: '',
   }
+  
+  
 
-
-export const DefaultuiSetting:ProjectUIModel={
+ const DefaultuiSetting:ProjectUIModel={
     "fields": {
       "options":{
         "component-namespace": "formik-material-ui",
@@ -207,8 +218,8 @@ export const DefaultuiSetting:ProjectUIModel={
   }
 
 
-  export const TextuiSpec =Object.assign({},  DefaultuiSpec)
-  export const TextuiSetting=Object.assign({}, DefaultuiSetting)
+  export const TextuiSpec =getDefaultuiSpec()
+  export const TextuiSetting=getDefaultuiSetting()
 
   export const MultiTextuiSpec={
     'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
@@ -342,7 +353,7 @@ export const DefaultuiSetting:ProjectUIModel={
             uiSetting,
             fieldName,
             props.formProps,
-            (event:any)=>{handlerchangewithview(event,view)}
+            (event:FAIMSEVENTTYPE)=>{handlerchangewithview(event,view)}
           )
           )
       )}

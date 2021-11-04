@@ -33,11 +33,13 @@ import {
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-material-ui';
 import { UI_SPECIFICATION_NAME } from '../../datamodel/database';
 import BookmarksIcon from '@material-ui/icons/Bookmarks';
+import {ProjectUIModel,componenentSettingprops,FAIMSEVENTTYPE} from '../../datamodel/ui'
+import { Defaultcomponentsetting,getDefaultuiSetting } from './BasicFieldSettings';
 interface option {
-  key: string;
+  key?: string;
   value: string;
   label: string;
-  FormControlProps: Omit<
+  FormControlProps?: Omit<
     FormControlLabelProps,
     'control' | 'value' | 'key' | 'label'
   >;
@@ -99,42 +101,22 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
 }
 
 
-import { Defaultcomponentsetting,DefaultuiSetting } from './BasicFieldSettings';
 
-
-export function Radiocomponentsetting(props:any)  {
+export function Radiocomponentsetting(props:componenentSettingprops)  {
   const {handlerchangewithview,...others}=props
-  
-  const [uiSetting,setuiSetting]=useState(props.uiSetting)
-  // React.useEffect(() => {
-  //   setini();
-  // }, [props.uiSpec['visible_types']]);
 
-  // const setini = () =>{
-  //   const options:any=[]
-  //   props.uiSpec['visible_types'].map((o:string,index:number)=>options[index]={
-  //     value: o,
-  //     label: o,
-  //   })
-  //   const newvalues=uiSetting
-  //   newvalues['fields']['settingchoose'+props.fieldName]['component-parameters']['ElementProps']['options']=options
-  //   setuiSetting({...uiSetting,fields:newvalues['fields']})
-  // }
+  const handlerchanges = (event:FAIMSEVENTTYPE) =>{
 
-  const handlerchanges = (event:any) =>{
-    // if(event.target.name.replace(props.fieldName)==='settingchoose') {
-    //   setuiSetting({...uiSetting,viewsets:{'new':'newstarg'}})
-    // }
   }
 
 
-  const handlerchangewithviewSpec = (event:any,view:string) => {
+  const handlerchangewithviewSpec = (event:FAIMSEVENTTYPE,view:string) => {
     //any actions that could in this form
     props.handlerchangewithview(event,view);
-    console.log(view+event.target.name+props.fieldName)
+
     if(view==='ElementProps'&&event.target.name.replace(props.fieldName,'')==='options'){
       const newvalues=props.uiSpec
-      const options:any=[]
+      const options:Array<option>=[]
       event.target.value.split(',').map(
         (o:string,index:number)=>options[index]={
           value: o,
@@ -199,7 +181,7 @@ initialValue: '1'}
 
 
 const uiSetting = () =>{
-  const newuiSetting:any=JSON.parse(JSON.stringify(DefaultuiSetting));
+  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
   newuiSetting['fields']['settingchoose']={
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Select',

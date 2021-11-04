@@ -107,7 +107,7 @@ const VISIBLE_TYPE = 'visible_types';
 const variant_label = 'Form1';
 
 type ProjectDesignProps = {
-  project_id: string;
+  project_id: string |null;
   formuiSpec: uiSpecType;
   setFormuiSpec: FAIMShandlerType;
   handleSaveUiSpec: FAIMShandlerType;
@@ -315,7 +315,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
 
   const handelonChangeSection = (event: any, index: number) => {
     console.log(index);
-    const id = formuiSpec['viewsets'][formvariants]['views'][index - 1];
+    const id = formuiSpec['viewsets'][formvariants]['views'][index];
     console.log(id);
     setCurrentView(sectiontabs[index - 1]);
     setformuiview(id);
@@ -593,6 +593,10 @@ const generateunifromformui = (formui:uiSpecType) =>{
                       fieldName={'newfield'+formcomponent['id']}
                       formProps={formProps}
                       designvalue={formcomponent['designvalue']}
+                      currentview={formuiview}
+                      currentform={formvariants}
+                      initialValues={initialValues}
+                      setinitialValues={setinitialValues}
                       />
                       
                       {formcomponent['designvalue'] === 'access' ? (
@@ -663,7 +667,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
       <Grid container>
         <Grid item sm={2} xs={12} className={classes.settingtab}>
           <TabTab
-            tabs={['Info', 'Component', '']}
+            tabs={['Info', 'Component']}
             value={fieldvalue}
             handleChange={handleChangetabfield}
             tab_id="fieldtab"
@@ -754,6 +758,14 @@ const generateunifromformui = (formui:uiSpecType) =>{
                 labels={props.projectvalue['access' + formvariants]}
                 type={'form'}
               />
+              <FormForm
+              currentView="start-view"
+              handleChangeForm={handleChangeFormAction}
+              handleSubmit={handleSubmitFormAction}
+              uiSpec={getprojectform(props.projectvalue, 'form_setting', {
+                formname: formvariants,
+              })}
+            />
             </Grid>
             <Grid item sm={6} xs={1}>
               <Alert severity="info">
@@ -859,7 +871,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
           <Grid item sm={2} xs={12} className={classes.formtabcard}>
 
 
-            {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel??'form'}/>}
+            {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel??'form'} form={formvariants}/>}
 
           </Grid>
         ) : (

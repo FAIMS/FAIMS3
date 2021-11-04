@@ -31,9 +31,9 @@ import {ActionButton,ActionSetting} from '../fields/ActionButton';
 import {TakePoint,TakePointSetting} from '../fields/TakePoint';
 import {Checkbox as FAIMSCheckbox,CheckboxSetting,getCheckBoxBuilderIcon} from '../fields/checkbox';
 import {RadioGroup as FAIMSRadioGroup,RadioSetting,Radiocomponentsetting,getRadioBuilderIcon} from '../fields/radio';
-import {TemplatedStringField} from '../fields/TemplatedStringField';
-import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
-import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
+import {TemplatedStringField,TemplatedStringSetting,TemplatedStringcomponentsetting,getTemplatedStringBuilderIcon} from '../fields/TemplatedStringField';
+import {BasicAutoIncrementer,AutoSetting,getAutoBuilderIcon} from '../fields/BasicAutoIncrementer';
+import {RelatedRecordSelector,LinkedSetting,getLinkedBuilderIcon,Linkedcomponentsetting} from '../fields/RelatedRecordSelector';
 import {registerComponent, setupComponentProperties} from './internals';
 import {TextuiSpec,TextuiSetting,Defaultcomponentsetting,MultiTextuiSetting,MultiTextuiSpec} from '../fields/BasicFieldSettings';
 // Mapping plugin imports
@@ -156,8 +156,7 @@ registerComponent(
   FAIMSRadioGroup,
   {...RadioSetting[1],
     namespace: 'faims-custom',
-    componentName: 'RadioGroup',
-    ElementProps:RadioSetting[1]['component-parameters']['ElementProps']
+    componentName: 'RadioGroup'
   },
   RadioSetting,
   Radiocomponentsetting,
@@ -222,7 +221,10 @@ registerComponent(
       validationSchema: [['yup.string'], ['yup.required']],
       type: 'text',
       template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
-    }
+    },
+    TemplatedStringSetting,
+    TemplatedStringcomponentsetting,
+    getTemplatedStringBuilderIcon(),
   )
 );
 registerComponent(
@@ -231,8 +233,13 @@ registerComponent(
   setupComponentProperties(
     'Basic AutoIncrementer',
     'A basic autoincrementer to help create identifiers',
-    'Identifiers',
-    BasicAutoIncrementer
+    'Special',
+    BasicAutoIncrementer,
+    AutoSetting[1],
+    AutoSetting,
+    Defaultcomponentsetting,
+    getAutoBuilderIcon()
+
   )
 );
 registerComponent(
@@ -241,8 +248,12 @@ registerComponent(
   setupComponentProperties(
     'Related field',
     'Add relations between records',
-    'Relations',
-    RelatedRecordSelector
+    'Special',
+    RelatedRecordSelector,
+    LinkedSetting[1],
+    LinkedSetting,
+    Linkedcomponentsetting,
+    getLinkedBuilderIcon()
   )
 );
 // Mapping Plugin registration

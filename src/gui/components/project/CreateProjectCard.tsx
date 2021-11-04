@@ -44,6 +44,7 @@ import {
   ProjevtValueList,
   FAIMShandlerType} from '../../../datamodel/ui'
 import {ProjectUIFields} from '../../../datamodel/typesystem'
+import {add_autoincrement_reference_for_project,get_autoincrement_references_for_project} from '../../../datamodel/autoincrement'
 import {
   setUiSpecForProject,
   getUiSpecForProject,
@@ -57,6 +58,7 @@ import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
+import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 const useStyles = makeStyles(theme => ({
   root: {
     flexGrow: 1,
@@ -66,7 +68,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 type CreateProjectCardProps = {
-  project_id: string;
+  project_id: string | null;
   uiSpec: uiSpecType | null;
   project_info: ProjectInformation | null;
 };
@@ -89,19 +91,21 @@ const ini_projectvalue = {
   accesses: accessgroup,
   submitActionFORM1: 'Save and New',
   ispublic: false,
-  errors: [],
+  isrequest:false,
+  errors: {is_valid:true},
 };
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
-  const ini = {_id: 'new_notbook'};
+  
   const theme = useTheme();
   const classes = useStyles(theme);
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [project_id, setProjectID] = useState(props.project_id);
+  const ini = {_id: props.project_id};
   const [projectvalue, setProjectValue] = useState<ProjevtValueList>({
     ...ini_projectvalue,
-    project_id: project_id,
+    project_id: props.project_id,
   });
   const [initialValues, setinitialValues] = useState<ProjectUIFields>(ini);
   const [projectuiSpec, setProjectuiSpec] = useState<Array<any>>();
@@ -114,11 +118,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   });
   const [formtabs, setformTabs] = useState<Array<string>>([]);
   const [error, setError] = useState(null as null | {});
+  const [validationSchema,setvalidationSchema] = useState(getValidationSchemaForViewset(getprojectform(projectvalue, 'project'),'project'));
 
   useEffect(() => {
     setinit();
     setProjectID(props.project_id);
-    console.debug('change project_id');
+    console.debug('change project_id'+props.project_id);
   }, [props.project_id]);
 
   useEffect(() => {
@@ -134,17 +139,106 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
-      setProjectValue({...projectvalue, ...props.project_info});
-      console.log(projectvalue)
-      setinitialValues({
+      console.log('get project value')
+      
+      const projectui=getprojectform(projectvalue, 'project')
+      const ini={
         ...setProjectInitialValues(
-          getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id}),...projectvalue}
-      );
+          projectui, 'start-view', {_id: project_id}),...{...projectvalue, ...props.project_info}}
+      setinitialValues({...ini});
+      setProjectValue({...projectvalue, ...props.project_info});
+      setProjecttabvalue(0);
+      setinitialValues({...ini});
+      setvalidationSchema(getValidationSchemaForViewset(projectui,'project'))
+      console.log(projectvalue)
+      console.log(ini)
       console.log(initialValues)
     } else setProjectValue({
       ...ini_projectvalue,
-      project_id: project_id,});
+      project_id: props.project_id,});
   }, [props.project_info]);
+
+  const setinifornewproject = () =>{
+    //if create new notebook then set an empty formUI
+    setProjectID(props.project_id)
+    const view = variant_default[0] + sections_default[0];
+    const formview = formuiSpec;
+    formview['fields'] = {};
+    formview['views'] = {};
+    formview['viewsets'] = {};
+    const fields: string[] = [];
+    formview['views'][view] = {
+      fields: fields,
+      uidesign: 'form',
+      label: sections_default[0],
+    };
+    formview['viewsets'] = {FORM1: {views: [view], label: variant_label}};
+
+    setProjectValue({...ini_projectvalue,project_id:null})
+    const projectui=getprojectform({...ini_projectvalue,
+      project_id: props.project_id}, 'project')
+    console.log(projectui)
+    const inivalue=setProjectInitialValues(
+      projectui, 'start-view', {_id: props.project_id})
+    setinitialValues({...inivalue});
+    setFormuiSpec({
+      fields: formview.fields,
+      views: formview.views,
+      viewsets: formview.viewsets,
+      visible_types: variant_default,
+    });
+    setinitialValues({...inivalue});
+    setvalidationSchema(getValidationSchemaForViewset(projectui,'project'))
+  }
+
+
+  const setinit = () => {
+    if (props.project_id === null||props.project_id===undefined) {
+      //if create new notebook then set an empty formUI
+      console.debug('setup'+props.project_id+'---START');
+      setinifornewproject();
+      console.log(project_id)
+      console.log(initialValues)
+      console.log(projectvalue)
+    }
+
+    if(props.project_id!==null&&projectvalue.name!==''){
+      //for edit project 
+      const projectui=getprojectform(projectvalue, 'project')
+      setinitialValues(
+        setProjectInitialValues(
+          projectui, 'start-view', {_id: project_id})
+      );
+      setvalidationSchema(getValidationSchemaForViewset(projectui,'project'))
+      console.log(setProjectInitialValues(
+        getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id}))
+      console.log(initialValues)
+    }
+      
+    
+    setProjecttabvalue(0);
+  };
+
+  const get_autoincrement =  () => {
+    const autoincrement_array:Array<any>=[]
+    for (const [key, value] of Object.entries(formuiSpec['fields'])) {
+      if(value['component-name']==='BasicAutoIncrementer'){
+        autoincrement_array.push({project_id:project_id,form_id:value['component-parameters']['form_id'],field_id:key})
+      }
+    }
+    return autoincrement_array[autoincrement_array.length-1];
+  }
+
+  const add_autoince_refereence = async (autoince:any) =>{
+    if(project_id!==null){
+      console.log(await add_autoincrement_reference_for_project(
+        project_id,
+        autoince.form_id,
+        autoince.field_id
+      ));
+    }
+    
+  }
 
   const saveformuiSpec = async (res: any = undefined) => {
     try {
@@ -155,6 +249,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           formuiSpec
         )
       );
+
+      // const autoincrecs=get_autoincrement();
+      // autoincrecs.map((autoince:any)=>
+      //   add_autoince_refereence(autoince)
+      // )
+
       console.log('databases updated...'+res+ project_id);
     } catch (err) {
       console.error('databases needs cleaning value not saved...'+res+ project_id);
@@ -162,53 +262,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   };
 
-  const setinit = () => {
-    if (props.uiSpec === null) {
-      console.log('setup');
-      //if create new notebook then set an empty formUI
-      const view = variant_default[0] + sections_default[0];
-      const formview = formuiSpec;
-      formview['fields'] = {};
-      formview['views'] = {};
-      formview['viewsets'] = {};
-      const fields: string[] = [];
-      formview['views'][view] = {
-        fields: fields,
-        uidesign: 'form',
-        label: sections_default[0],
-      };
-      formview['viewsets'] = {FORM1: {views: [view], label: variant_label}};
-      const ini=setProjectInitialValues(
-        getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id})
-      console.log(ini)
-      
-      console.log(initialValues)
-      setFormuiSpec({
-        fields: formview.fields,
-        views: formview.views,
-        viewsets: formview.viewsets,
-        visible_types: variant_default,
-      });
-      
-    }
-
-    if (props.project_id === undefined) {
-      // const newprojectvalue = setProjectInitialValues(
-      //   getprojectform(projectvalue, 'project'),
-      //   'start-view',
-      //   ini_projectvalue
-      // );
-      // setProjectValue({...newprojectvalue});
-      // console.log(newprojectvalue);
-      // console.log(projectvalue);
-    }
-    setinitialValues(
-      setProjectInitialValues(
-        getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id})
-    );
-    console.log(initialValues)
-    setProjecttabvalue(0);
-  };
+ 
 
 
   const updateproject = async (values: any) => {
@@ -217,7 +271,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         if (key !== 'name') {
           //TODO: check if name can editable or not
           try {
-            console.log(await setProjectMetadata(project_id, key, values[key]));
+            if(project_id!==null)
+              console.log(await setProjectMetadata(project_id, key, values[key]));
             console.log('update' + key);
           } catch (err) {
             console.error('databases needs cleaning for update error...');
@@ -266,7 +321,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const handlerprojectsubmit_pounch = async () => {
     //save into local pounch
 
-    if (project_id === undefined) {
+    if (project_id === null) {
       await create_new_project_dbs(projectvalue.name).then(res => {
         console.log('projectid' + res);
         if (
@@ -306,12 +361,14 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   }
 
   const handleSubmit = (values:any) =>{
-
+    
   }
 
   const isready = () =>{
     // return !(initialValues['name']===''&&project_id!==null)
-    return true;
+    if(initialValues['name']!=='' && props.project_id !== null) return true; //for edit project
+    if(props.project_id===null&&initialValues['name']==='') return true; //for new project, create new project
+    return false;
   }
 
   return (
@@ -332,6 +389,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         <Formik
                   initialValues={initialValues}
                   validateOnMount={true}
+                  validationSchema={validationSchema}
                   onSubmit={(values, {setSubmitting}) => {
                     setTimeout(() => {
                       setSubmitting(false);
@@ -349,7 +407,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                 projectvalue={projectvalue}
                 setProjectValue={setProjectValue}
                 handleChangeFormProject={handleChangeFormProject}
-                handleSubmit={submithandlerProject}
                 setProjecttabvalue={setProjecttabvalue}
                 formProps={formProps}
               />
@@ -401,15 +458,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               handleSubmit={handlerprojectsubmit_pounch}
               handlepublish={handlerprojectsubmit_counch}
               formProps={formProps}
+              formuiSpec={formuiSpec}
             />
           </TabPanel>
           </Form>
-                    );
-                  }}
-                </Formik>
-
-
-
+              );
+              }}
+            </Formik>
           <TabPanel value={projecttabvalue} index={1} tabname="primarytab">
             {projecttabvalue === 1 ? (
               <ProjectDesignTab

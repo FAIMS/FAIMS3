@@ -83,10 +83,9 @@ const useStyles = makeStyles(theme => ({
 }));
 
 type ProjectInfoProps = {
-  project_id: string;
+  project_id: string |null;
   projectvalue: ProjevtValueList;
   setProjectValue: FAIMShandlerType;
-  handleSubmit: FAIMShandlerType;
   handleChangeFormProject: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
   formProps:any;
@@ -94,7 +93,6 @@ type ProjectInfoProps = {
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
   const {projectvalue, setProjectValue, project_id, ...others} = props;
-  // const [projectInfo,setProjectInfo]=useState<ProjectInformation|null>(getProjectInfo(project_id))
   const [infotabvalue, setinfotabvalue] = useState(0);
   const [uiSpec_general, setUISpecG] = useState<ProjectUIModel>({
     fields: {},
@@ -122,27 +120,16 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
 
   useEffect(() => {
     if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {
-      const newuiSpecg = getprojectform(projectvalue, 'info_general');
-      const newini = setProjectInitialValues(newuiSpecg, 'start-view', {
-        _id: project_id,
-      });
 
-      setUISpecG(newuiSpecg);
+      setUISpecG(getprojectform(projectvalue, 'info_general'));
       console.debug('update');
-      console.log(newuiSpecg);
     }
   }, [projectvalue]);
 
   const setini = () => {
     setUISpecA(getprojectform(projectvalue, 'info_group'));
+    setUISpecG({...getprojectform(projectvalue, 'info_general')});
 
-    const iniuiSpecg = getprojectform(projectvalue, 'info_general');
-    const ini = setProjectInitialValues(iniuiSpecg, 'start-view', {
-      _id: project_id,
-    });
-
-    setUISpecG({...iniuiSpecg});
-    console.debug('ini');
     setinfotabvalue(0);
   };
 
@@ -156,7 +143,6 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   };
 
   const handleAddAccess = (accessadded:string) => {
-    // props.handleSubmit(values)
     if (accessadded === '') return false;
     const newproject = projectvalue;
     newproject['accesses'] = [...newproject['accesses'], accessadded]; //need to reset the add user role value
@@ -177,22 +163,11 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     setaccessgroup(newproject['accesses']);
   };
 
-  return (
-    <Grid container>
-      <Grid item sm={12} xs={12}>
-        <TabTab
-          tabs={['general', 'User Role']}
-          value={infotabvalue}
-          handleChange={handleChangetab}
-          tab_id="primarytab"
-        />
-        <TabPanel value={infotabvalue} index={0} tabname="primarytab">
-          <Grid container>
+  const infoTab = () =>{
+    return (
+      <Grid container>
             <Grid item sm={8} xs={12}>
-              {(project_id !== undefined &&
-                projectvalue.name !== '' &&
-                projectvalue.name !== undefined ) ||
-                project_id === undefined ? (
+              
                   <>
                         {uiSpec_general['views']['start-view'] !== undefined
                           ? (uiSpec_general['views']['start-view'][
@@ -215,10 +190,6 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
                           onButtonClick={() => setinfotabvalue(1)}
                         />
                         </>
-                      
-              ) : (
-                ''
-              )}
               <br />
             </Grid>
             <Grid item sm={4} xs={12}>
@@ -227,58 +198,74 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
               </Alert>
             </Grid>
           </Grid>
+    )
+  }
+
+  const accessTab = () =>{
+    return(
+    <Grid container>
+      <Grid item sm={8} xs={12}>
+          <Grid container>
+            <Grid item sm={6} xs={12}>
+             
+                      {uiSpec_access['views']['start-view'] !== undefined
+                        ? uiSpec_access['views']['start-view'][
+                            'fields'
+                          ].map((fieldName: string) =>
+                            getComponentFromField(
+                              uiSpec_access,
+                              fieldName,
+                              props.formProps,
+                              handleformchangeAccess
+                            )
+                          )
+                        : ''}
+                      <Box pl={2} pr={2}>
+
+          <AddUserButton id='submit' type="submit" onButtonClick={handleAddAccess} value={accessAdded} /></Box>
+            </Grid>
+            <Grid item sm={1} xs={12}></Grid>
+            <Grid item sm={5} xs={12}>
+              <UserRoleList
+                users={projectvalue.accesses}
+                deleteuserrole={deleteuserrole}
+              />
+            </Grid>
+          </Grid>
+      </Grid>
+      <Grid item sm={4} xs={12}>
+        <Alert severity="info">
+          All projects have an admin, moderator, and team roles by
+          default. define any new roles required here. You will be able to
+          assign users to these roles later in the User tab.
+        </Alert>
+      </Grid>
+      <ProjectSubmit
+        id="gotonext_info"
+        type="submit"
+        isSubmitting={false}
+        text="Go To Next"
+        onButtonClick={() => props.setProjecttabvalue(1)}
+      />
+    </Grid>
+  
+  )
+  }
+
+  return (
+    <Grid container>
+      <Grid item sm={12} xs={12}>
+        <TabTab
+          tabs={['general', 'User Role']}
+          value={infotabvalue}
+          handleChange={handleChangetab}
+          tab_id="primarytab"
+        />
+        <TabPanel value={infotabvalue} index={0} tabname="primarytab">
+          {infoTab()}
         </TabPanel>
         <TabPanel value={infotabvalue} index={1} tabname="primarytab">
-          <Grid container>
-            <Grid item sm={8} xs={12}>
-              {infotabvalue === 1 ? (
-                <Grid container>
-                  <Grid item sm={6} xs={12}>
-                   
-                            {uiSpec_access['views']['start-view'] !== undefined
-                              ? uiSpec_access['views']['start-view'][
-                                  'fields'
-                                ].map((fieldName: string) =>
-                                  getComponentFromField(
-                                    uiSpec_access,
-                                    fieldName,
-                                    props.formProps,
-                                    handleformchangeAccess
-                                  )
-                                )
-                              : ''}
-                            <Box pl={2} pr={2}>
-
-                <AddUserButton id='submit' type="submit" onButtonClick={handleAddAccess} value={accessAdded} /></Box>
-                         
-                  </Grid>
-                  <Grid item sm={1} xs={12}></Grid>
-                  <Grid item sm={5} xs={12}>
-                    <UserRoleList
-                      users={projectvalue.accesses}
-                      deleteuserrole={deleteuserrole}
-                    />
-                  </Grid>
-                </Grid>
-              ) : (
-                ''
-              )}
-            </Grid>
-            <Grid item sm={4} xs={12}>
-              <Alert severity="info">
-                All projects have an admin, moderator, and team roles by
-                default. define any new roles required here. You will be able to
-                assign users to these roles later in the User tab.
-              </Alert>
-            </Grid>
-            <ProjectSubmit
-              id="gotonext_info"
-              type="submit"
-              isSubmitting={false}
-              text="Go To Next"
-              onButtonClick={() => props.setProjecttabvalue(1)}
-            />
-          </Grid>
+        {accessTab()}
         </TabPanel>
       </Grid>
     </Grid>

@@ -39,7 +39,9 @@ import {makeStyles} from '@material-ui/core/styles';
 import {getconnections} from '../data/ComponentSetting';
 // import NoteIcon from '@material-ui/icons/NoteIcon';
 import {DeleteuserButton} from './ProjectButton';
-
+import NextWeekIcon from '@material-ui/icons/NextWeek';
+import AddIcon from '@material-ui/icons/Add';
+import DeleteIcon from '@material-ui/icons/Delete';
 const useStyles = makeStyles(theme => ({
   settiglist: {
     // backgroundColor:'#e1e4e8',
@@ -109,7 +111,7 @@ export function SettingCard(props: SettingCard) {
 export function FormConnectionCard(props: any) {
   const classes = useStyles();
   const tabs = props.tabs.filter((tab: string) => tab !== props.tabname);
-  const linkedtabs = getconnections(props.tabname, props.formuiSpec, tabs);
+  const linkedtabs = getconnections(props.form, props.formuiSpec, tabs);
   return (
     <List
       component="nav"
@@ -120,7 +122,7 @@ export function FormConnectionCard(props: any) {
       {linkedtabs.map((tab: {tab: string; link: string}) => (
         <ListItem key={props.tabname + tab.tab + 'relationlist'}>
           <ListItemIcon>
-            <AccountTree />
+            {tab.link==='Child'?<AccountTree />:<NextWeekIcon />}
           </ListItemIcon>
           <ListItemText primary={tab.tab} secondary={tab.link} />
         </ListItem>
@@ -180,9 +182,11 @@ export function UserLists(props:any){
             <ListItem 
               key={`user-${user + index}`} id={`user-${user + index}`} 
               button
-              onClick={() => handelonClick(user)}
+              onClick={() => handelonClick(user,usergroup,select)}
               >
+               
               <ListItemText secondary={user} />
+              {select?<AddIcon />:<DeleteIcon/>}
             </ListItem>
             <Divider />
           </>

@@ -25,7 +25,7 @@ import {
 import {useState} from 'react';
 import {ProjectUIModel,resetprops,FAIMSEVENTTYPE,componenentSettingprops} from '../../../../datamodel/ui'
 import {ProjectUIFields} from '../../../../datamodel/typesystem'
-import { Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
+import { Defaultcomponentsetting, getDefaultuiSetting} from '../../../fields/BasicFieldSettings';
 
 
 const uiSettingOthers:ProjectUIModel={
@@ -268,14 +268,34 @@ const regeneratesettinguiSpec = (uiSpec:ProjectUIModel,fieldName:string,designva
   return newui
 }
 
-const generatenewname = (fieldui:ProjectUIFields,newname:string) =>{
-    const newfield=fieldui;
+export const generatenewname = (fieldui:ProjectUIFields,newname:string) =>{
+    const newfield=JSON.parse(JSON.stringify(fieldui));
     newfield['component-parameters']['id']=newname;
     newfield['component-parameters']['name']=newname;
     return newfield;
 }
 
+export const generatenewfield = (namespace:string,componentName:string,fieldui:ProjectUIFields|null,fieldName:string|null,props:any|null) => {
+  let uifield:ProjectUIFields=fieldui===null?getComponentPropertiesByName(namespace,componentName).settingsProps[1]:fieldui;
+  if(fieldName!==null) uifield=generatenewname(uifield,fieldName)
+  if(uifield['component-name']==='BasicAutoIncrementer') {
+    uifield['component-parameters']['form_id']=props.currentform
+    return uifield
+  }
+  // if(props!==null){
+  //   for (const [key, value] of props) {
+  //     uifield[key]=value
+  //   }
+  // }
+  
+  return uifield
+}
 
+
+
+export const getdvalue= (value:any) =>{
+  return JSON.parse(JSON.stringify(value))
+}
 
 const getvalue = (fieldui:ProjectUIFields,field:string,view:string,fieldName:string) =>{
   const name=field.replace(fieldName,'')
@@ -321,7 +341,6 @@ export const setSetingInitialValues = (uiSetting:ProjectUIModel,fieldui:ProjectU
 
     )
   )
-  console.log(initialValues)
   return initialValues;
 }
 
@@ -404,8 +423,10 @@ const getuivalue = (namespace:string,componentName:string,uiSpec:ProjectUIModel,
     return {newui,fieldui,Component}
   }
 }
+
+
 export function ResetComponentProperties(props:resetprops) {
-  const {namespace,componentName,uiSpec,setuiSpec,fieldName,formProps,designvalue}=props
+  const {namespace,componentName,uiSpec,setuiSpec,fieldName,formProps,designvalue,currentview,currentform,initialValues,setinitialValues}=props
   const {newui,fieldui,Component}=getuivalue(namespace,componentName,uiSpec,fieldName,designvalue)
   
   // useEffect(() => {
@@ -450,6 +471,10 @@ export function ResetComponentProperties(props:resetprops) {
                 fieldui={fieldui}
                 designvalue={designvalue}
                 handlerchangewithview={handlerchangewithview}
+                currentview={currentview}
+                currentform={currentform}
+                initialValues={initialValues}
+                setinitialValues={setinitialValues}
                 />
             }
         </>

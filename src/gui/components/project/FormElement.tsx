@@ -94,7 +94,6 @@ export function FormForm(props: FormElement) {
   const {currentView, handleChangeForm, ...others} = props;
   const [uiSpec, setUISpec] = useState(props.uiSpec);
   const initialValues = setProjectInitialValues(uiSpec, currentView, {});
-  console.log(initialValues)
   const getfields = (uiSpec:any,formProps:any,handleChangeForm:any,currentView:string) =>{
     return (<Grid>
       {uiSpec['views'][currentView][

@@ -21,7 +21,8 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
-import { Defaultcomponentsetting,DefaultuiSetting } from './BasicFieldSettings';
+import { getDefaultuiSetting } from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui'
 export class ActionButton extends React.Component<FieldProps & ButtonProps> {
   clickThis() {
     this.props.form.setFieldValue(this.props.field.name, 'Change!');
@@ -62,7 +63,7 @@ const uiSpec = {
 
 
 const uiSetting = () =>{
-  const newuiSetting:any=JSON.parse(JSON.stringify(DefaultuiSetting));
+  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
   newuiSetting["viewsets"]= {
     "settings": {
       "views": [

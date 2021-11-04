@@ -22,8 +22,9 @@ import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins} from '@capacitor/core';
-import BookmarksIcon from '@material-ui/icons/Bookmarks';
-import { Defaultcomponentsetting,DefaultuiSetting } from './BasicFieldSettings';
+import {getDefaultuiSetting } from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui'
+
 const {Geolocation} = Plugins;
 
 export class TakePoint extends React.Component<
@@ -86,23 +87,6 @@ export class TakePoint extends React.Component<
 }
 
 
-export function TakePointcomponentsetting(props:any)  {
-  const {handlerchangewithview,...others}=props
-  const handlerchanges = (event:any) =>{
-
-  }
-  const handlerchangewithviewSpec = (event:any,view:string) => {
-  }
-  return (
-    <Defaultcomponentsetting
-      handlerchangewithview={handlerchangewithviewSpec}
-      handlerchanges={handlerchanges}
-      {...others}
-      fieldui={props.fieldui}
-    />
-   );
-}
-
 const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'TakePoint',
@@ -130,7 +114,7 @@ const uiSpec = {
 
 
 const uiSetting = () =>{
-  const newuiSetting:any=JSON.parse(JSON.stringify(DefaultuiSetting));
+  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
   newuiSetting["viewsets"]= {
     "settings": {
       "views": [
@@ -142,9 +126,6 @@ const uiSetting = () =>{
   return newuiSetting
 }
   
-export function getTakePointBuilderIcon() {
-  return <BookmarksIcon />;
-}
 
 export const TakePointSetting =[uiSetting(),uiSpec]
 

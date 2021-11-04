@@ -139,8 +139,12 @@ export type componenentSettingprops={
   fieldName:string;
   fieldui:ProjectUIFields;
   handlerchanges?:any;
-  handlerchangewithview:FAIMShandlerType,
-  designvalue:string
+  handlerchangewithview:FAIMShandlerType;
+  designvalue:string;
+  initialValues:ProjectUIFields;
+  setinitialValues:FAIMShandlerType;
+  currentview:string;
+  currentform:string;
 }
 
 export type resetprops={
@@ -151,19 +155,8 @@ export type resetprops={
   fieldName:string;
   formProps:any;
   designvalue:string;
+  currentview:string;
+  currentform:string;
+  initialValues:ProjectUIFields
+  setinitialValues:FAIMShandlerType;
 }
-
-
-export type ProjectTabProps = {
-  project_id: string;
-  projectvalue: ProjevtValueList;
-  setProjectValue: FAIMShandlerType;
-
-  setProjecttabvalue: FAIMShandlerType;
-
-
-
-  handleSubmit?: FAIMShandlerType;
-  handleChangeFormProject?: FAIMShandlerType;
-  formProps?:any;
-};

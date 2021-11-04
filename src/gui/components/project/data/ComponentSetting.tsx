@@ -27,12 +27,13 @@
 import {v4 as uuidv4} from 'uuid';
 import {getcomponent} from './uiFieldsRegistry';
 import {getComponentPropertiesByName} from '../../../component_registry';
-import {setSetingInitialValues} from './componenentSetting'
+import {setSetingInitialValues,generatenewname,generatenewfield} from './componenentSetting'
 import {
   ProjevtValueList,
   FAIMShandlerType,
   ProjectUIModel,
   FAIMSUiSpec} from '../../../../datamodel/ui'
+import {ProjectUIFields} from '../../../../datamodel/typesystem'
 
 const VISIBLE_TYPE = 'visible_types';
 const NEWFIELDS = 'newfield';
@@ -65,52 +66,35 @@ export const getconnections = (
 ) => {
   const connecions = CONNECTION_RELATIONS;
   const conectiontabs: Array<tabLinkType> = [];
+  uiSpec['viewsets'][comparetab]['views'].map((view:string)=>
+    uiSpec['views'][view]['fields'].map((field:string)=>
+      uiSpec['fields'][field]['component-name']==='RelatedRecordSelector'?uiSpec['fields'][field]['component-parameters']['related_type']!==''&&
+      conectiontabs.push({tab:uiSpec['viewsets'][uiSpec['fields'][field]['component-parameters']['related_type']]['label'],link:uiSpec['fields'][field]['component-parameters']['relation_type'].replace('faims-core::','')}):
+      field
+    )
+  )
   //TODO get relation of tabs and return
-  tabs.map((tab: string) =>
-    conectiontabs.push({tab: tab, link: connecions[0]})
-  );
+  // tabs.map((tab: string) =>
+  //   conectiontabs.push({tab: tab, link: connecions[0]})
+  // );
   return conectiontabs;
 };
 
-export const getfieldname = (name: string, label: string) => {
-  const names = name.split(label);
-  if (names.length > 1)
-    return {type: names[0], name: label + names[1], index: names[1]};
-  return {type: '', name: '', index: 0};
-};
+export const checkvalid = (values:Array<string>) =>{
+  values=values.filter((value:string)=>value!=='')
+  values=values.filter((item,pos)=> {
+    return values.indexOf(item) === pos;
+  })
+  return values;
 
-const getsettingform = (component: any) => {
-  if (component['component-name'] === 'Select')
-    return [
-      {
-        name: 'options',
-        lable: 'options',
-        type: 'TextField',
-        view: 'settings',
-        multiline: true,
-        multirows: 4,
-        initialValue: 'Default',
-        helperText: 'Type options here, speprate by Space(will edit)',
-      },
-    ];
-  try {
-    const props = getComponentPropertiesByName(
-      component['component-namespace'],
-      component['component-name']
-    );
-    const settingsarray: Array<FAIMSUiSpec> = [];
-    props['settingsProps'].map((setting: FAIMSUiSpec) =>
-      setting['settings'] === undefined
-        ? settingsarray.push({...setting, view: 'settings'})
-        : setting
-    );
-    return settingsarray;
-  } catch (err: any) {
-    console.error('setUISpec/setLastRev error', err);
-  }
+}
 
-  return [];
-};
+// export const getfieldname = (name: string, label: string) => {
+//   const names = name.split(label);
+//   if (names.length > 1)
+//     return {type: names[0], name: label + names[1], index: names[1]};
+//   return {type: '', name: '', index: 0};
+// };
 
 export const getacessoption = (access: Array<string>) => {
   const options: Array<optionType> = [];
@@ -140,77 +124,8 @@ export const FieldSettings = (
       namespace: 'formik-material-ui',
       componentName: 'TextField',
       view: 'settings',
-    },
-    {
-      name: 'helperText',
-      lable: 'Enter Help Text here',
-      namespace: 'formik-material-ui',
-      componentName: 'TextField',
-      view: 'settings',
-    },
-    {
-      name: 'required',
-      lable: 'Select if component completion is compulsory',
-      namespace: 'faims-custom',
-      componentName: 'Checkbox',
-      view: 'valid',
-    },
-    {
-      name: 'validationSchema',
-      lable: 'validationSchema',
-      namespace: 'formik-material-ui',
-      componentName: 'TextField',
-      view: 'valid',
-      multiline: true,
-      multirows: 4,
-      disabled: true,
-      helperText: 'Now disbaled, Will be enabled after validation been added.',
-    },
-    {
-      name: 'accessinherit',
-      label: 'Inherit Access From Section',
-      namespace: 'faims-custom',
-      componentName: 'Checkbox',
-      view: 'access',
-      type_return: 'faims-core::Bool',
-      validationSchema: [['yup.bool']],
-      type: 'checkbox',
-      initialValue: false,
-      helperText: 'Check to inherit from Section',
-    }, //TODO: working on newfield
-    {
-      name: 'annotation_label',
-      lable: 'Annotation Label',
-      namespace: 'formik-material-ui',
-      componentName: 'TextField',
-      view: 'notes',
-      initialValue: 'Annotation',
-    },
-    {
-      name: 'meta_type',
-      lable: 'Include Uncertainty',
-      namespace: 'faims-custom',
-      componentName: 'Checkbox',
-      view: 'notes',
-      initialValue: true,
-    },
-    {
-      name: 'meta_type_label',
-      lable: 'Uncertainty Label',
-      namespace: 'formik-material-ui',
-      componentName: 'TextField',
-      view: 'notes',
-      initialValue: 'Uncertainty',
-    },
+    }
   ];
-  const settingsform = getsettingform(component);
-  const length = fields.length;
-  if (settingsform.length > 0) {
-    settingsform.map(
-      (field: signlefieldType, index: number) =>
-        (fields[length + index] = field)
-    );
-  }
 
 
 	const fields_label:Array<string>=[]
@@ -348,6 +263,31 @@ export const getprojectform = (
     // {name:'accesses',label:'Accesses',namespace:'faims-custom',componentName:'AutoComplete',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',select:true,options:getacessoption(projectvalue.accesses)}
   ];
 
+  const form_setting= [
+    {
+      name: 'annotation',
+      label: 'Annotation',
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+      initialValue: false,
+      helperText: 'Tick for enable Annotation for Form components',
+    },
+    {
+      name: 'uncertainty',
+      label: 'Uncertainty',
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+      initialValue: false,
+      helperText: 'Tick for enable Uncertainty for Form components',
+    }
+  ]
+
   const users = [
     {
       name: 'users',
@@ -393,6 +333,14 @@ export const getprojectform = (
         componentName: 'TextField',
         view: 'info_general',
         required: true,
+        initialValue:projectvalue.name,
+        helperText:'Enter a string between 2 and 100 characters long',
+        validationSchema: [
+          ['yup.string'],
+          ['yup.min', 1, 'Too Short!'],
+          ['yup.max', 100, 'Too Long!'],
+          ['yup.required'],
+        ],
       },
       {
         name: 'description',
@@ -402,6 +350,7 @@ export const getprojectform = (
         view: 'info_general',
         multiline: true,
         multirows: 4,
+        initialValue:projectvalue.description,
       },
       {
         name: 'project_lead',
@@ -462,11 +411,13 @@ export const getprojectform = (
       },
     ],
     preview: [],
+    form_setting:[]
   };
 
   // This part will be updated in the future TODO
-  if (projectvalue.project_id !== undefined) {
+  if (projectvalue.project_id !== undefined&&projectvalue.project_id!==null) {
     fields['info_general'][0].disabled = true;
+    // fields['info_general'][0].value=projectvalue.name
     fields['info_general'][1].disabled = true;
   }
   if (tab === 'section') {
@@ -495,6 +446,18 @@ export const getprojectform = (
   if (tab === 'form') {
     //create new section form for each section
     form_info.map((field: any, index: number) => {
+      const fieldname = field.name + props.formname;
+      const newfield = {...field, name: fieldname};
+      //TODO Maybe set pre-select value for user
+      // if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
+      //   if(projectvalue['forms'][props.props.formname]!==undefined) newfield['initialValue']=['forms'][props.props.formname][fieldname]
+      // else if(newfield['initialValue']===undefined)
+      //   newfield['initialValue']='Save and New'
+      fields[tab][index] = {...newfield};
+    });
+  }
+  if(tab ==='form_setting'){
+    form_setting.map((field: any, index: number) => {
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
       //TODO Maybe set pre-select value for user
@@ -541,13 +504,20 @@ export const getprojectform = (
       fieldsarray[index] = field.name;
     });
   }
-  return {
+  const returnui:any={
     fields: fields_list,
     views: {'start-view': {fields: fieldsarray, uidesign: tab}},
     start_view: 'start-view',
     viewsets: {},
-    visible_types: [],
-  };
+    visible_types: [tab],
+  }
+  returnui['viewsets'][tab]={
+    "views": [
+      "start-view"
+    ],
+    "label": tab
+  }
+  return returnui;
 };
 
 export const setProjectInitialValues = (
@@ -713,10 +683,10 @@ const removefield = (
 
 
 const addfield = (props: any) => {
-  const {uuid, id, formuiSpec, formcomponents, formuiview, accessgroup} = props;
+  const {uuid, id, formuiSpec, formcomponents, formuiview, accessgroup,project_id} = props;
   const settings=id
   const name = NEWFIELDS + uuid;
-  const newfield = settings.settingsProps!==undefined&&settings.settingsProps.length>1?{...Object.assign({},  settings.settingsProps[1]),access:accessgroup}:getcomponent({
+  const newfield: ProjectUIFields= settings.settingsProps!==undefined&&settings.settingsProps.length>1? {...generatenewfield('','',settings.settingsProps[1],name,{project_id:project_id,currentform:formuiview}),access:accessgroup}:getcomponent({
     name: name,
     label: id.uiSpecProps.componentName,
     access: accessgroup,

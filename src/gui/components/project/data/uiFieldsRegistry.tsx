@@ -45,13 +45,13 @@ export const getfields = () => {
       } else fields[category] = [...fields[category], {...props}];
     }
   });
-
   return {fields, fieldtabs};
 };
+
 const accessgroup = ['admin'];
 
 export const getcomponent = (props: any) => {
-  if (props.namespace === undefined) {
+  if (props.componentName === undefined) {
     const newprops = getComponentPropertiesByName(
       'formik-material-ui',
       'TextField'
@@ -69,149 +69,6 @@ export const getcomponent = (props: any) => {
   return SpecialField(props);
 };
 
-const convertvalidation = (validationSchema: Array<any>) => {
-  if (validationSchema === undefined) return '';
-  let validationSchemaString = '[';
-  if (typeof validationSchema !== 'string' && validationSchema.length > 0) {
-    validationSchema.map(
-      (validate: any) =>
-        (validationSchemaString =
-          validationSchemaString + '[' + validate.toString() + ']')
-    );
-  }
-  validationSchemaString = validationSchemaString + ']';
-  return validationSchemaString;
-};
-export const convertuiSpecToProps = (fielduiSpec: any) => {
-  const {
-    name,
-    select,
-    helperText,
-    InputLabelProps,
-    InputProps,
-    FormHelperTextProps,
-    ElementProps,
-    SelectProps,
-    required,
-    ...others
-  } = fielduiSpec['component-parameters'];
-  let props: any = {}; //TODO: add extend filed here from component Specfic
-  props = {
-    ...others,
-    ...{
-      componentName: fielduiSpec['component-name'],
-      namespace: fielduiSpec['component-namespace'],
-      type_return: fielduiSpec['type-returned'],
-      name: fielduiSpec['component-parameters']['name'],
-      required: fielduiSpec['component-parameters']['required'],
-      initialValue: fielduiSpec['initialValue'],
-      validationSchema: getdefaultvalidschema(
-        fielduiSpec,
-        fielduiSpec['validationSchema'] ?? []
-      ), //TODO: ADD function to pass and update validationschema
-      annotation_label:
-        fielduiSpec['meta'] !== undefined
-          ? fielduiSpec['meta']['annotation_label']
-          : 'annotation',
-      meta_type:
-        fielduiSpec['meta'] !== undefined
-          ? fielduiSpec['meta']['uncertainty']['include']
-          : false,
-      meta_type_label:
-        fielduiSpec['meta'] !== undefined
-          ? fielduiSpec['meta']['uncertainty']['label']
-          : '',
-      access: fielduiSpec['access'], //TODO: ADD function to pass and update access
-
-      // ...fielduiSpec['component-parameters']['InputProps'],
-      // ...fielduiSpec['component-parameters']['SelectProps'],
-      // ...fielduiSpec['component-parameters']['InputLabelProps'],
-      // ...fielduiSpec['component-parameters']['FormHelperTextProps'],
-
-      select:
-        fielduiSpec['component-parameters']['select'] === true ? true : false,
-      label:
-        fielduiSpec['component-parameters']['InputLabelProps'] !== undefined
-          ? fielduiSpec['component-parameters']['InputLabelProps']['label']
-          : fielduiSpec['component-parameters']['FormControlLabelProps'] !==
-            undefined
-          ? fielduiSpec['component-parameters']['FormControlLabelProps'][
-              'label'
-            ]
-          : '', //fielduiSpec['component-parameters']['FormControlLabelProps']['label']
-      helperText:
-        fielduiSpec['component-parameters']['helperText'] !== undefined
-          ? fielduiSpec['component-parameters']['helperText']
-          : fielduiSpec['component-parameters']['FormHelperTextProps'] !==
-            undefined
-          ? fielduiSpec['component-parameters']['FormHelperTextProps'][
-              'children'
-            ]
-          : '', // 'validationSchema':fielduiSpec['validationSchema'],fielduiSpec['component-parameters']['FormHelperTextProps']['children']
-      type:
-        fielduiSpec['component-parameters']['InputProps'] !== undefined
-          ? fielduiSpec['component-parameters']['InputProps']['type']
-          : fielduiSpec['component-parameters']['type'],
-      multiline:
-        fielduiSpec['component-parameters']['multiline'] === true
-          ? true
-          : false,
-      multselect:
-        fielduiSpec['component-name'] === 'Select'
-          ? fielduiSpec['component-parameters']['SelectProps']['multiple']
-          : false,
-      multirows:
-        fielduiSpec['component-parameters']['multiline'] !== undefined &&
-        fielduiSpec['component-parameters']['multiline'] !== false
-          ? fielduiSpec['component-parameters']['InputProps']['rows']
-          : 1,
-    },
-  };
-  if (fielduiSpec['component-parameters']['select'] === true)
-    props['options'] =
-      fielduiSpec['component-parameters']['ElementProps']['options'];
-  console.log('+++++++++compare');
-  console.log(props);
-  console.log('+++++++++compare++++++=');
-  console.log({
-    componentName: fielduiSpec['component-name'],
-    namespace: fielduiSpec['component-namespace'],
-    name: fielduiSpec['component-parameters']['name'],
-    type_return: fielduiSpec['type-returned'],
-    required: fielduiSpec['component-parameters']['required'],
-    initialValue: fielduiSpec['initialValue'],
-    validationSchema: getdefaultvalidschema(
-      fielduiSpec,
-      fielduiSpec['validationSchema'] ?? []
-    ), //TODO: ADD function to pass and update validationschema
-    annotation_label:
-      fielduiSpec['meta'] !== undefined
-        ? fielduiSpec['meta']['annotation_label']
-        : 'annotation',
-    meta_type:
-      fielduiSpec['meta'] !== undefined
-        ? fielduiSpec['meta']['uncertainty']['include']
-        : false,
-    meta_type_label:
-      fielduiSpec['meta'] !== undefined
-        ? fielduiSpec['meta']['uncertainty']['label']
-        : '',
-    access: fielduiSpec['access'], //TODO: ADD function to pass and update access
-    ...fielduiSpec['component-parameters']['InputProps'],
-    ...fielduiSpec['component-parameters']['SelectProps'],
-    ...fielduiSpec['component-parameters']['InputLabelProps'],
-    ...fielduiSpec['component-parameters']['FormHelperTextProps'],
-    ...fielduiSpec['component-parameters']['ElementProps'],
-  });
-
-  return props;
-};
-
-const getdefaultvalidschema = (component: any, validation: Array<any>) => {
-  const validationSchema = validation;
-
-  return validationSchema;
-};
 const FieldModel = (props: any) => {
   const {
     name,
@@ -322,21 +179,6 @@ const SpecialField = (props: any) => {
   });
 };
 
-// const EmailField=(props:any)=> {
-//   return TextFieldslist('EmailField',props)
-//   }
-
-// const MultiTextField=(props:any)=> {
-//     const newprops=props
-//     newprops.multiline=true;
-//     newprops.multirows=4;
-//     return TextFieldslist('MultiTextField',newprops)
-//   }
-
-// const IntegerField=(props:any)=> {
-//   return TextFieldslist('IntegerField',props)
-//   }
-
 const Checkbox = (props: any) => {
   const {label, helperText, validationSchema, initialValue, ...others} = props;
   return FieldModel({
@@ -348,20 +190,8 @@ const Checkbox = (props: any) => {
     FormControlLabelProps: {
       label: label,
     },
-    initialValue: false,
+    initialValue: initialValue??false,
     FormHelperTextProps: {children: helperText ?? ''},
     ...others,
   });
-};
-
-// const MutiSelectBox=(props:any) =>{
-//     const newprops=props;
-//     newprops.multselect=true;
-//     newprops.initialValue=['Default'];
-//     return SelectBox(newprops);
-// }
-
-const compoents = {
-  TextField: TextField,
-  CheckBox: Checkbox,
 };

@@ -89,7 +89,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 type ProjectPreviewProps = {
-  project_id: string;
+  project_id: string |null;
   formuiSpec: uiSpecType;
   setFormuiSpec: FAIMShandlerType;
   handleSaveUiSpec: FAIMShandlerType;
@@ -139,9 +139,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   };
 
   const setinit = () => {
-
-
-        setformTabs(formuiSpec['visible_types'].map((tab:string)=>tab=formuiSpec['viewsets'][tab]['label']??tab)
+    setformTabs(formuiSpec['visible_types'].map((tab:string)=>tab=formuiSpec['viewsets'][tab]['label']??tab)
     );
     setformlabel(formtabs[0]);
     setformlabel(formuiSpec['visible_types'][0]);
@@ -191,8 +189,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
         handleChange={handelonChangeVariants}
         tab_id="primarytab"
       />
-      {formtabs.length > 0
-        ? formtabs.map((tab: string, index: number) => (
+        {formtabs.map((tab: string, index: number) => (
             <TabPanel
               value={
                 formtabs.indexOf(formlabel) > 0
@@ -232,7 +229,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                       }}
                     </Formik>
                   ) : (
-                    'Please Design Form and add component before Preview'
+                    'No Form component yet,click the GO TO DESIGN FORM button to design Form and add component before Preview'
                   )}
                 </Grid>
                 <Grid item sm={4} xs={12}>
@@ -247,8 +244,8 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                 </Grid>
               </Grid>
             </TabPanel>
-          ))
-        : 'Please design forms'}
+          )
+          )}
 
     </>
 

@@ -31,6 +31,7 @@ import {
   updateuiSpec,
   gettabform,
   getprojectform,
+  checkvalid
 } from '../data/ComponentSetting';
 import {
   ProjevtValueList,
@@ -42,7 +43,7 @@ import TabPanel from './TabPanel';
 import {UserRoleList,UserLists} from './PSettingCard';
 import {AddUserButton, Addusersassign} from './ProjectButton';
 type ProjectUserProps = {
-  project_id: string;
+  project_id: string |null;
   projectvalue: ProjevtValueList;
   setProjectValue: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
@@ -67,7 +68,6 @@ export default function ProjectUserTab(props: ProjectUserProps) {
   );
   const [tabvalue, settatbValue] = useState(0);
   const [users, setusesers] = useState(projectvalue.users);
-  const [selectusers, setselectusers] = useState<any>({});
   const [usersadded,setusersadded]=useState('')
 
 
@@ -90,9 +90,6 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     const newproject = projectvalue;
     newproject[role] = users; //selectusers[role]
     setProjectValue({...newproject});
-    const news = selectusers;
-    news[role] = users;
-    setselectusers({...news});
     console.log(projectvalue);
   };
 
@@ -105,24 +102,43 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     const newproject = projectvalue;
     if (newproject['users'] === undefined) {
       newproject['users'] = users;
+      newproject['unassigndusers']=users;
       usergroups.map((user: string) => (newproject[user] = []));
     } else {
       newproject['users'] = [...newproject['users'], ...users];
+      newproject['unassigndusers']=[...newproject['unassigndusers'],...users];
     }
+    newproject['users']=checkvalid(newproject['users']);
+    newproject['unassigndusers']=checkvalid(newproject['unassigndusers'])
     setProjectValue({...projectvalue, users: newproject['users']}); //TODO: add to check if duplicated user
     setusesers(newproject['users']);
   };
 
-  const deleteusers = (index: string) => {
-    console.log(index);
+  const deleteusers = (user: string) => {
+    const newproject = projectvalue;
+    newproject['users']=newproject['users'].filter((u:string)=>u!==user)
+    setProjectValue({...projectvalue, users: newproject['users']});
   };
 
   const deleteusersassign = (user: string) => {
-    console.log(user);
+    
   };
 
-  const selectusersgroup = (user:string) => {
-    console.log(user)
+  const selectusersgroup = (newuser:string,usergroup:string,select:boolean) => {
+    const newproject = projectvalue;
+    let newusers=newproject[usergroup]??[]
+    if(select){
+      newusers=[...newusers,newuser]
+      newproject['unassigndusers']=newproject['unassigndusers'].filter((u:string)=>u!==newuser)
+    }
+    else{
+      newusers=newusers.filter((user:string)=>user!==newuser)
+      newproject['unassigndusers']=[...newproject['unassigndusers'],newuser];
+    }
+    newusers=checkvalid(newusers);
+    newproject['unassigndusers']=checkvalid(newproject['unassigndusers'])
+    newproject[usergroup]=newusers
+    setProjectValue({...newproject})
   }
 
   const getfield = (
@@ -138,7 +154,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
                 <Grid item sm={4} xs={12} >
           <br />
           <Typography variant="subtitle2">All users</Typography>
-          <UserLists users={projectvalue.users ?? []} delete={false} handelonClick={selectusersgroup} />
+          <UserLists users={projectvalue.unassigndusers ?? []} delete={false} handelonClick={selectusersgroup} usergroup={usergroup} select={true}/>
 
                 </Grid>
         <Grid item sm={1} xs={12}>
@@ -151,6 +167,8 @@ export default function ProjectUserTab(props: ProjectUserProps) {
           <UserLists
             users={projectvalue[usergroup] ?? []}
             handelonClick={selectusersgroup} 
+            usergroup={usergroup}
+            select={false}
           />
         </Grid>
       </Grid>
