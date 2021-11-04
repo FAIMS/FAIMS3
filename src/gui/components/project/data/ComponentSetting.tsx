@@ -323,7 +323,6 @@ export const getprojectform = (
     view: 'preview',
     helperText: 'Select to get form for roles'}
 
-
   const fields: projectuilistType = {
     info_general: [
       {
@@ -358,6 +357,7 @@ export const getprojectform = (
         namespace: 'formik-material-ui',
         componentName: 'TextField',
         view: 'info_general',
+        initialValue:projectvalue.project_lead,
       },
       {
         name: 'lead_institution',
@@ -365,6 +365,7 @@ export const getprojectform = (
         namespace: 'formik-material-ui',
         componentName: 'TextField',
         view: 'info_general',
+        initialValue:projectvalue.lead_institution,
       },
     ],
     info_group: [
@@ -411,7 +412,19 @@ export const getprojectform = (
       },
     ],
     preview: [],
-    form_setting:[]
+    form_setting:[],
+    project_meta:[],
+    projectmetaadd:[
+      {
+        name: 'metaadd',
+        label: 'Add new meta data Label',
+        namespace: 'formik-material-ui',
+        componentName: 'TextField',
+        view: 'projectmetaadd',
+        helperText: '',
+        initialValue:''
+      }
+    ]
   };
 
   // This part will be updated in the future TODO
@@ -468,9 +481,28 @@ export const getprojectform = (
       fields[tab][index] = {...newfield};
     });
   }
-  if (tab === 'project') {
-    fields['project'] = [...fields['info_general'], ...fields['behaviours']];
+  if( tab==='project_meta' &&projectvalue.meta!==undefined&&projectvalue.meta!==null){
+    fields[tab]=[]
+    if(projectvalue.meta!==undefined&&projectvalue.meta!==null){
+      for (const [key, value] of Object.entries(projectvalue.meta)) {
+        fields[tab].push(
+        {
+          name: key,
+          label: key,
+          namespace: 'formik-material-ui',
+          componentName: 'TextField',
+          view: tab,
+          initialValue:value
+        })
+      }
+    }
+    
   }
+
+  if (tab === 'project') {
+    fields['project'] = [...fields['info_general'],...fields['project_meta'], ...fields['behaviours']];
+  }
+
 
   if (tab === 'preview') {
     props.forms.map((formtab: string, index: number) => {

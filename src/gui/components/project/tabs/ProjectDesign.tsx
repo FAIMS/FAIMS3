@@ -476,7 +476,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
 
   const handleChangeFormAction = (event: any) => {
     const newproject = props.projectvalue;
-
+    if(newproject['forms'][formvariants]===undefined) newproject['forms'][formvariants]={}
     if (event.target.name.includes('accessinherit')) {
       //   //update the access for project
       //   const value=(event.target.value=== 'true'||event.target.value===true) //TODO
@@ -486,9 +486,9 @@ const generateunifromformui = (formui:uiSpecType) =>{
       //   }else newproject['access'+formvariants]=['admin']
       //   console.log(event.target.name+value)
       if (projectvalue[event.target.name] === undefined)
-        newproject[event.target.name] = true;
-      else newproject[event.target.name] = !newproject[event.target.name];
-    } else newproject[event.target.name] = event.target.value;
+        newproject['forms'][formvariants][event.target.name] = true;
+      else newproject['forms'][formvariants][event.target.name] = !newproject[event.target.name];
+    } else newproject['forms'][formvariants][event.target.name] = event.target.value;
 
     props.setProjectValue({...newproject});
 
@@ -515,7 +515,8 @@ const generateunifromformui = (formui:uiSpecType) =>{
     if (!newvalue.includes('admin')) newvalue = [...newvalue, 'admin'];
     if (type === 'form') {
       const newproj = props.projectvalue;
-      newproj['access' + id] = newvalue;
+      if(newproj['access']===undefined) newproj['access']={}
+      newproj['access']['access' + id] = newvalue;
       props.setProjectValue({...newproj});
     } else if (type === 'uiS') {
       const newui = formuiSpec;
@@ -604,7 +605,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
                         <AutocompleteForm
                           id={formcomponent['id']}
                           options={getacessoption(
-                            props.projectvalue['access' + formuiview] ?? [
+                            props.projectvalue['access']['access' + formuiview] ?? [
                               'admin',
                             ]
                           )}
@@ -688,9 +689,9 @@ const generateunifromformui = (formui:uiSpecType) =>{
             <AutocompleteForm
               id={formuiview}
               options={getacessoption(
-                props.projectvalue['access' + formvariants] ?? ['admin']
+                props.projectvalue['access']['access' + formvariants] ?? ['admin']
               )}
-              labels={props.projectvalue['access' + formuiview]}
+              labels={props.projectvalue['access']['access' + formuiview]}
               handleAutocomplete={handleAutocomplete}
               type={'form'}
             />
@@ -756,7 +757,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
                 handleAutocomplete={handleAutocomplete}
                 id={formvariants}
                 options={getacessoption(props.projectvalue.accesses)}
-                labels={props.projectvalue['access' + formvariants]}
+                labels={props.projectvalue['access']['access' + formvariants]}
                 type={'form'}
               />
               

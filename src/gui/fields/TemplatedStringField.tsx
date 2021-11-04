@@ -105,10 +105,10 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       const newfield=generatenewfield('faims-custom','Select',null,name,null)
       const options:Array<option>=[]
       
-      fields.map((field:string,index:number)=>props.uiSpec['fields'][field]['component-name']!=='TemplatedStringField'?options[index]={
+      fields.map((field:string,index:number)=>options[index]={
         value: field,
         label: field,
-      }:field)
+      })
       newfield['component-parameters']['ElementProps']['options']=options
       newfield['initialValue']=''
       newvalues['fields'][name]=newfield
@@ -125,15 +125,37 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
     return newvalues;
 
   }
+
+
+  // const getfields = (fieldType:string) =>{
+  //   let fields:Array<string>=[]
+  //   props.uiSpec['viewsets'][props.currentform]['views'].map((view:string)=>fields=[...fields,...props.uiSpec['views'][view]['fields']])
+  //   fields=fields.filter((field:string)=>props.uiSpec['fields'][field]['component-name']!=='TemplatedStringField')
+
+  //   if(props.projectvalue.meta!==undefined&&props.projectvalue.meta!==null){
+  //     for (const [key, value] of Object.entries(props.projectvalue.meta)) {
+  //       fields.push(key)
+  //     }
+  //   }
+  //   return fields;
+  // }
   const setini = () =>{
     const options:Array<option>=[]
     //TODO pass the value of all field in this form
+    
     let fields:Array<string>=[]
     props.uiSpec['viewsets'][props.currentform]['views'].map((view:string)=>fields=[...fields,...props.uiSpec['views'][view]['fields']])
+    fields=fields.filter((field:string)=>props.uiSpec['fields'][field]['component-name']!=='TemplatedStringField')
+
+    if(props.projectvalue.meta!==undefined&&props.projectvalue.meta!==null){
+      for (const [key, value] of Object.entries(props.projectvalue.meta)) {
+        fields.push(props.projectvalue.meta[key])
+      }
+    }
     
     if(fields.length>0){
       //get numbers of fields that not IDs
-      fields.filter((field:string)=>props.uiSpec['fields'][field]['component-name']!=='TemplatedStringField')
+      
       const numoptions:any=[]
       fields.map((field:string,index:number)=>numoptions[index]={
         value: index+1,
@@ -157,9 +179,15 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
     if(name==='numberfield') {
       let fields:Array<string>=[]
       props.uiSpec['viewsets'][props.currentform]['views'].map((view:string)=>fields=[...fields,...props.uiSpec['views'][view]['fields']])
+      fields=fields.filter((field:string)=>props.uiSpec['fields'][field]['component-name']!=='TemplatedStringField')
+
+      if(props.projectvalue.meta!==undefined&&props.projectvalue.meta!==null){
+        for (const [key, value] of Object.entries(props.projectvalue.meta)) {
+          fields.push(props.projectvalue.meta[key])
+        }
+      }
       if(fields.length>0){
         //get numbers of fields that not IDs
-        fields.filter((field:string)=>props.uiSpec['fields'][field]['component-name']!=='TemplatedStringField')
         let newuis:ProjectUIModel=uiSetting
         newuis=changeui(fields,newuis,event.target.value)
 
@@ -171,6 +199,7 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
         setuiSetting({...newuis})
       }
     }
+
     if(name.includes('fieldselect1')){
       
       const newvalues=props.uiSpec
@@ -193,6 +222,7 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       console.log(newuis['fields'])
       setuiSetting({...newuis})
     }
+    
   }
 
 
@@ -233,10 +263,6 @@ const uiSpec = {
   initialValue: '',
 }
 
-function setnewvalue () {
-  const field=generatenewfield('faims-custom','Select',null,'name',null)
-  return field
-}
 function getuiSetting  () {
   const newuiSetting:ProjectUIModel=getDefaultuiSetting();
   newuiSetting['fields']['numberfield']={

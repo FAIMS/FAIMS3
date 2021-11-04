@@ -52,7 +52,7 @@ import {
 import {data_dbs, metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
-import {setProjectMetadata} from '../../../projectMetadata';
+import {setProjectMetadata,getProjectMetadata} from '../../../projectMetadata';
 import grey from '@material-ui/core/colors/grey';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
@@ -89,11 +89,30 @@ const projecttabs = [
 const variant_label = 'Form1';
 const ini_projectvalue = {
   accesses: accessgroup,
-  submitActionFORM1: 'Save and New',
+  forms:{
+    FORM1:{
+      submitActionFORM1: 'Save and New'
+    }
+  },
+  sections:{
+
+  },
+  access:{
+
+  },
   ispublic: false,
   isrequest:false,
   errors: {is_valid:true},
+  meta:{
+  },
+  project_lead:'',
+  lead_institution:'',
+  behavious:{
+
+  }
 };
+
+const PROJECT_META=['accesses','forms','sections','meta','access','ispublic','isrequest','behavious','project_lead','lead_institution']
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
   
@@ -213,6 +232,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       console.log(setProjectInitialValues(
         getprojectform(projectvalue, 'project'), 'start-view', {_id: project_id}))
       console.log(initialValues)
+      getprojectmeta()
     }
       
     
@@ -261,26 +281,54 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       console.debug(err);
     }
   };
-
  
-
+ 
+  const getprojectmeta = async () =>{
+    try {
+        try{
+          if(project_id!==null){
+            getProjectMetadata(project_id, 'projectvalue').then(res=>{
+              setProjectValue({...projectvalue,...res})
+              const projectui=getprojectform(projectvalue, 'project')
+              setinitialValues(
+                setProjectInitialValues(
+                  projectui, 'start-view', {_id: project_id})
+              );
+              console.log(initialValues)
+            });
+          
+          }
+          
+        }catch(error){
+          console.error('DO not get the meta data...');
+          console.debug(error);
+        }
+    }catch (err) {
+      console.error('databases not created...');
+      console.log(err);
+    }
+  }
 
   const updateproject = async (values: any) => {
     try {
+      const pvlues:any={projectvalue:{}}
       for (const key in values) {
-        if (key !== 'name') {
+        if (PROJECT_META.includes(key)) {
           //TODO: check if name can editable or not
-          try {
-            if(project_id!==null)
-              console.log(await setProjectMetadata(project_id, key, values[key]));
-            console.log('update' + key);
-          } catch (err) {
-            console.error('databases needs cleaning for update error...');
-            console.debug(err);
-          }
+          pvlues.projectvalue[key]=values[key]
         }
-
+        //save attachement data??
+        //else if()
       }
+      //save meta data
+      try {
+        if(project_id!==null)
+          console.log(await setProjectMetadata(project_id, 'projectvalue',pvlues.projectvalue ));
+      } catch (err) {
+        console.error('databases needs cleaning for update error...');
+        console.debug(err);
+      }
+
 
       }catch (err) {
       console.error('databases not created...');
@@ -351,7 +399,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     ) {
       saveformuiSpec();
     }
-    //updateproject(projectvalue); //TODO check the function if it's correct
+    try{
+      updateproject(projectvalue); //TODO check the function if it's correct
+    }catch{
+      console.error('not saved meta data')
+    }
+    
   };
 
   const handlerprojectsubmit_counch = () => {
