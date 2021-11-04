@@ -597,6 +597,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
                       currentform={formvariants}
                       initialValues={initialValues}
                       setinitialValues={setinitialValues}
+                      projectvalue={projectvalue}
                       />
                       
                       {formcomponent['designvalue'] === 'access' ? (
@@ -758,14 +759,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
                 labels={props.projectvalue['access' + formvariants]}
                 type={'form'}
               />
-              <FormForm
-              currentView="start-view"
-              handleChangeForm={handleChangeFormAction}
-              handleSubmit={handleSubmitFormAction}
-              uiSpec={getprojectform(props.projectvalue, 'form_setting', {
-                formname: formvariants,
-              })}
-            />
+              
             </Grid>
             <Grid item sm={6} xs={1}>
               <Alert severity="info">
@@ -819,6 +813,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
         </TabPanel>
         <TabPanel value={formvalue} index={2} tabname="formtab">
           {props.projectvalue !== undefined && (
+            <>
             <FormForm
               currentView="start-view"
               handleChangeForm={handleChangeFormAction}
@@ -827,6 +822,15 @@ const generateunifromformui = (formui:uiSpecType) =>{
                 formname: formvariants,
               })}
             />
+            <FormForm
+              currentView="start-view"
+              handleChangeForm={handleChangeFormAction}
+              handleSubmit={handleSubmitFormAction}
+              uiSpec={getprojectform(props.projectvalue, 'form_setting', {
+                formname: formvariants,
+              })}
+            />
+            </>
           )}
           <ProjectSubmit
             id="gotonext_info"

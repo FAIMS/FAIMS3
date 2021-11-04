@@ -426,7 +426,7 @@ const getuivalue = (namespace:string,componentName:string,uiSpec:ProjectUIModel,
 
 
 export function ResetComponentProperties(props:resetprops) {
-  const {namespace,componentName,uiSpec,setuiSpec,fieldName,formProps,designvalue,currentview,currentform,initialValues,setinitialValues}=props
+  const {namespace,componentName,uiSpec,setuiSpec,fieldName,formProps,designvalue,currentview,currentform,initialValues,setinitialValues,projectvalue}=props
   const {newui,fieldui,Component}=getuivalue(namespace,componentName,uiSpec,fieldName,designvalue)
   
   // useEffect(() => {
@@ -475,6 +475,7 @@ export function ResetComponentProperties(props:resetprops) {
                 currentform={currentform}
                 initialValues={initialValues}
                 setinitialValues={setinitialValues}
+                projectvalue={projectvalue}
                 />
             }
         </>
