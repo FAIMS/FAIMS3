@@ -145,6 +145,7 @@ export type componenentSettingprops={
   setinitialValues:FAIMShandlerType;
   currentview:string;
   currentform:string;
+  projectvalue:any;
 }
 
 export type resetprops={
@@ -159,4 +160,5 @@ export type resetprops={
   currentform:string;
   initialValues:ProjectUIFields
   setinitialValues:FAIMShandlerType;
+  projectvalue:any;
 }
