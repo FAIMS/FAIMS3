@@ -568,6 +568,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
                       <SettingCard
                         handelonClick={handelonClickSetting}
                         key_id={formcomponent.id}
+                        selected={formcomponent['designvalue']}
                       />
                     </Grid>
                     <Grid item sm={7} xs={9}>

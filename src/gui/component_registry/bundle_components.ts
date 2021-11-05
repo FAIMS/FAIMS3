@@ -264,7 +264,7 @@ registerComponent(
     'Map Input Field',
     'Input Geo Data via a map',
     'Maps',
-    MapFormField
+    MapFormField,
   )
 );
 

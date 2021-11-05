@@ -53,6 +53,8 @@ export function getComponentFromFieldConfig(
         {...fieldConfig['component-parameters']['InputLabelProps']}
         {...fieldConfig['component-parameters']['FormHelperTextProps']}
       />
+      {fieldConfig['component-name']!=='BasicAutoIncrementer'&&fieldConfig['meta']!==undefined?fieldConfig['meta']['annotation_label']:''}
+      {fieldConfig['meta']!==undefined?fieldConfig['meta']['uncertainty']['include']===true?fieldConfig['meta']['uncertainty']['label']:'NN':''}
     </Box>
   );
 }

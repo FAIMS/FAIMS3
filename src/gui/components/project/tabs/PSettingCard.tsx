@@ -29,6 +29,7 @@ import {
   ListItemSecondaryAction,
   Paper,
   Divider,
+  MenuItem,
 } from '@material-ui/core';
 import SettingsIcon from '@material-ui/icons/Settings';
 import PlaylistAddCheckIcon from '@material-ui/icons/PlaylistAddCheck';
@@ -64,10 +65,11 @@ const useStyles = makeStyles(theme => ({
 type SettingCard = {
   handelonClick: any;
   key_id: string;
+  selected:string;
 };
 
 export function SettingCard(props: SettingCard) {
-  const {handelonClick, key_id, ...other} = props;
+  const {handelonClick, key_id, selected,...other} = props;
   const classes = useStyles();
 
   return (
@@ -76,34 +78,38 @@ export function SettingCard(props: SettingCard) {
       aria-label="settings bar"
       className={classes.settiglist}
     >
-      <ListItem
+      <MenuItem
         button
         onClick={() => handelonClick('settings', key_id)}
         key="list1"
+        selected={selected === 'settings'}
       >
         <SettingsIcon />
-      </ListItem>
-      <ListItem
+      </MenuItem>
+      <MenuItem
         button
         onClick={() => handelonClick('valid', key_id)}
         key="list2"
+        selected={selected === 'valid'}
       >
         <PlaylistAddCheckIcon />
-      </ListItem>
-      <ListItem
+      </MenuItem>
+      <MenuItem
         button
         onClick={() => handelonClick('access', key_id)}
         key="list3"
+        selected={selected === 'access'}
       >
         <GroupIcon />
-      </ListItem>
-      <ListItem
+      </MenuItem>
+      <MenuItem
         button
         onClick={() => handelonClick('notes', key_id)}
         key="list4"
+        selected={selected === 'notes'}
       >
         <NoteIcon />
-      </ListItem>
+      </MenuItem>
     </List>
   );
 }
