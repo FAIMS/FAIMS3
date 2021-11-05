@@ -246,16 +246,21 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         autoincrement_array.push({project_id:project_id,form_id:value['component-parameters']['form_id'],field_id:key})
       }
     }
-    return autoincrement_array[autoincrement_array.length-1];
+    return autoincrement_array;
   }
 
   const add_autoince_refereence = async (autoince:any) =>{
     if(project_id!==null){
-      console.log(await add_autoincrement_reference_for_project(
-        project_id,
-        autoince.form_id,
-        autoince.field_id
-      ));
+      try{
+        await add_autoincrement_reference_for_project(
+          project_id,
+          autoince.form_id,
+          autoince.field_id
+        );
+      }catch(error){
+        console.error(error)
+      }
+      
     }
     
   }
@@ -270,10 +275,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         )
       );
 
-      // const autoincrecs=get_autoincrement();
-      // autoincrecs.map((autoince:any)=>
-      //   add_autoince_refereence(autoince)
-      // )
+      const autoincrecs=get_autoincrement();
+      autoincrecs.map((autoince:any)=>
+        add_autoince_refereence(autoince)
+      )
 
       console.log('databases updated...'+res+ project_id);
     } catch (err) {
@@ -295,7 +300,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                   projectui, 'start-view', {_id: project_id})
               );
               console.log(initialValues)
-            });
+            }).catch((error) => {
+              console.error("Not get meta data", error);
+            })
           
           }
           
@@ -309,17 +316,40 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   }
 
-  const updateproject = async (values: any) => {
+  const updateproject = async (values: any,fieldlist:Array<string>) => {
     try {
       const pvlues:any={projectvalue:{}}
-      for (const key in values) {
-        if (PROJECT_META.includes(key)) {
-          //TODO: check if name can editable or not
-          pvlues.projectvalue[key]=values[key]
+
+      PROJECT_META.map((field:string)=>pvlues.projectvalue[field]=projectvalue[field])
+
+      for(const key in fieldlist){
+      //save for meta data for project
+        try {
+          if(project_id!==null)
+            await setProjectMetadata(project_id, key,values[key] );
+        } catch (err) {
+          console.error('databases needs cleaning for update error...');
+          console.debug(err);
         }
-        //save attachement data??
-        //else if()
       }
+
+      
+
+      // for (const key in values) {
+      //   if (PROJECT_META.includes(key)) {
+      //     //TODO: check if name can editable or not
+      //     pvlues.projectvalue[key]=values[key]
+      //     try {
+      //       if(project_id!==null)
+      //         console.log(await setProjectMetadata(project_id, key,values[key] ));
+      //     } catch (err) {
+      //       console.error('databases needs cleaning for update error...');
+      //       console.debug(err);
+      //     }
+      //   }
+      //   //save attachement data??
+      //   //else if()
+      // }
       //save meta data
       try {
         if(project_id!==null)
@@ -400,7 +430,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       saveformuiSpec();
     }
     try{
-      updateproject(projectvalue); //TODO check the function if it's correct
+      updateproject(projectvalue,PROJECT_META); 
     }catch{
       console.error('not saved meta data')
     }
@@ -410,6 +440,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const handlerprojectsubmit_counch = () => {
     //if project online save it
     //else if project local, submit request in Beta
+    
+    try{
+      updateproject(projectvalue,['isrequest']);
+    }catch{
+      console.error('not saved meta data')
+    }
     alert('Request Send!');
   }
 

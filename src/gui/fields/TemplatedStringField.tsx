@@ -94,11 +94,11 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
     setini();
   }, [props.uiSpec['views']]);
 
-  const changeui = (fields:Array<string>,newvalues:ProjectUIModel,fieldnum:number) => {
+  const changeui = (fields:Array<string>,newvalues:ProjectUIModel,fieldnum:number,isinit:boolean) => {
     const newfieldlist:Array<string>=[]
     let value:any='αβγ '
     const newini=props.initialValues
-        
+    const templatevalue=props.uiSpec['fields'][props.fieldName]['component-parameters']['template']
     for(let i=0;i<fieldnum;i++){
       //get all list field for the uiSpeting
       const name='fieldselect'+1+i+props.fieldName;
@@ -110,35 +110,23 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
         label: field,
       })
       newfield['component-parameters']['ElementProps']['options']=options
-      newfield['initialValue']=''
+      let inivalue=templatevalue.split('-')
+      inivalue=inivalue.length>0&&inivalue[i]!==undefined?inivalue[i].replace(/{{|}}|-|αβγ /gi,''):''
+      newfield['initialValue']=inivalue
       newvalues['fields'][name]=newfield
-      newini[name]=''
+      newini[name]=inivalue
       newfieldlist[i]=name
       value=value+'{{'+name+'}}-'
-      console.log(value)
     }
     newvalues['views']['FormParamater']['fields']=['numberfield'+props.fieldName,...newfieldlist,'template'+props.fieldName];
-    newvalues['fields']['template'+props.fieldName]['value']=value
+    newvalues['fields']['template'+props.fieldName]['value']=isinit?templatevalue:value
     newini['numberfield'+props.fieldName]=fieldnum
-    // newini['template'+props.fieldName]=value
+    // newini['template'+props.fieldName]=isinit?templatevalue:value
     props.setinitialValues({...newini})
     return newvalues;
 
   }
 
-
-  // const getfields = (fieldType:string) =>{
-  //   let fields:Array<string>=[]
-  //   props.uiSpec['viewsets'][props.currentform]['views'].map((view:string)=>fields=[...fields,...props.uiSpec['views'][view]['fields']])
-  //   fields=fields.filter((field:string)=>props.uiSpec['fields'][field]['component-name']!=='TemplatedStringField')
-
-  //   if(props.projectvalue.meta!==undefined&&props.projectvalue.meta!==null){
-  //     for (const [key, value] of Object.entries(props.projectvalue.meta)) {
-  //       fields.push(key)
-  //     }
-  //   }
-  //   return fields;
-  // }
   const setini = () =>{
     const options:Array<option>=[]
     //TODO pass the value of all field in this form
@@ -165,9 +153,9 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       if(newvalues['fields']['numberfield'+props.fieldName]!==undefined) newvalues['fields']['numberfield'+props.fieldName]['component-parameters']['ElementProps']['options']=numoptions
       let farray:Array<string>=props.uiSpec['fields'][props.fieldName]['component-parameters']['template'].split('-')
       farray=farray.filter((f:string)=>f!=='')
-      const num=farray.length>0?farray.length:1
+      const num=farray.length>1?farray.length:1
       console.log(num)
-      newvalues=changeui(fields,newvalues,num)
+      newvalues=changeui(fields,newvalues,num,true)
       setuiSetting({...newvalues})
     }
     console.log(props.initialValues)
@@ -189,7 +177,7 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       if(fields.length>0){
         //get numbers of fields that not IDs
         let newuis:ProjectUIModel=uiSetting
-        newuis=changeui(fields,newuis,event.target.value)
+        newuis=changeui(fields,newuis,event.target.value,false)
 
         const newuiSpec=props.uiSpec
         newuiSpec['fields'][props.fieldName]['component-parameters']['template']=newuis['fields']['template'+props.fieldName]['value']
@@ -206,16 +194,18 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       const value=props.uiSpec['fields'][props.fieldName]['component-parameters']['template'].split('-')
       console.log(value)
       const num=name.replace('fieldselect1','')
-      value[num]='{{'+event.target.value+'}}'
+      if(event.target.value.indexOf('newfield')!==-1)
+        value[num]='{{'+event.target.value+'}}'
+      else value[num]=event.target.value
       let subvalue=value.join('-')
       if(!subvalue.includes('αβγ ')) subvalue='αβγ '+subvalue
       newvalues['fields'][props.fieldName]['component-parameters']['template']=subvalue
       console.log(newvalues['fields'][props.fieldName]['component-parameters']['template'])
       props.setuiSpec({...newvalues});
 
-      const newini=props.initialValues
-      newini['template'+props.fieldName]=subvalue
-      props.setinitialValues({...newini})
+      // const newini=props.initialValues
+      // newini['template'+props.fieldName]=subvalue
+      // props.setinitialValues({...newini})
       const newuis=uiSetting
       newuis['fields']['template'+props.fieldName]['value']=subvalue
       console.log('value false')
@@ -235,7 +225,7 @@ export function TemplatedStringcomponentsetting(props:componenentSettingprops)  
       fieldui={props.fieldui}
       uiSetting={uiSetting}
     />
-    {props.uiSpec['fields'][props.fieldName]['component-parameters']['template']}
+    Template:{props.uiSpec['fields'][props.fieldName]['component-parameters']['template']}
     </>
    );
 }
@@ -263,7 +253,7 @@ const uiSpec = {
   initialValue: '',
 }
 
-function getuiSetting  () {
+function UISetting  () {
   const newuiSetting:ProjectUIModel=getDefaultuiSetting();
   newuiSetting['fields']['numberfield']={
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
@@ -300,17 +290,16 @@ function getuiSetting  () {
     'type-returned': 'faims-core::String', // matches a type in the Project Model
     'component-parameters': {
       fullWidth: true,
-      helperText: 'Edit Template Here',
-      variant: 'outlined',
+      helperText: '',
+      
       required: false,
-      disabled:true,
       InputProps: {
-        type: 'text', // must be a valid html type
+        type: 'hidden', // must be a valid html type
       },
       SelectProps: {},
-      InputLabelProps: {
-        label: 'Template',
-      },
+      // InputLabelProps: {
+      //   label: '',
+      // },
       FormHelperTextProps: {},
     },
     validationSchema: [
@@ -336,4 +325,4 @@ export function getTemplatedStringBuilderIcon() {
 }
 
 
-export const TemplatedStringSetting =[getuiSetting(),uiSpec]
+export const TemplatedStringSetting =[UISetting(),uiSpec]

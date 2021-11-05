@@ -542,23 +542,9 @@ const generateunifromformui = (formui:uiSpecType) =>{
       setformlabel(formtabs[index]);
     }
   };
-
-  const compnentPanel = () => {
+  
+  const fieldform = (formProps:any) => {
     return formcomponents[formuiview].map((formcomponent: any, index: any) => (
-      <Formik
-        key={index}
-        initialValues={initialValues}
-        validateOnMount={true}
-        onSubmit={(values, {setSubmitting}) => {
-          setTimeout(() => {
-            setSubmitting(false);
-            submithandler(values);
-          }, 500);
-        }}
-      >
-        {formProps => {
-          return (
-            <Form>
               <Grid
                 container
                 className={classes.newfield}
@@ -569,6 +555,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
                     <Grid item sm={4} xs={12}>
                       <Typography variant="subtitle2">
                         Preview of Component
+                        {formcomponent['id']}
                       </Typography>
                       {getComponentFromField(
                         formuiSpec,
@@ -652,13 +639,59 @@ const generateunifromformui = (formui:uiSpecType) =>{
                   />
                 </Grid>
               </Grid>
-              <br />
-            </Form>
-          );
-        }}
-      </Formik>
-    ));
-  };
+              
+          ))
+          
+  }
+
+  const compnentPanel = () =>{
+    return (
+      <Formik
+      enableReinitialize
+      initialValues={initialValues}
+      validateOnMount={true}
+      onSubmit={(values, {setSubmitting}) => {
+        setTimeout(() => {
+          setSubmitting(false);
+          submithandler(values);
+        }, 500);
+      }}
+    >
+      {formProps => {
+        return (
+          <Form>
+            {fieldform(formProps)}
+            <Grid container>
+            <Grid item sm={6} xs={12}>
+            <Box
+                  bgcolor={grey[200]}
+                  pl={2}
+                  pr={2}
+                  style={{overflowX: 'scroll'}}
+                >
+                <pre>{JSON.stringify(formProps, null, 2)}</pre>
+            </Box>
+
+          </Grid> 
+          <Grid item sm={6} xs={12}>
+            <Box
+                  bgcolor={grey[200]}
+                  pl={2}
+                  pr={2}
+                  style={{overflowX: 'scroll'}}
+                >
+                <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
+            </Box>
+
+          </Grid> 
+          </Grid> 
+            
+          </Form>
+        )}
+      }
+    </Formik>
+    )
+  }
 
   const FieldPanel = () => {
     /****section tab:
