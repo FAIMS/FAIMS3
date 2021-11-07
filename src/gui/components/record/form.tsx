@@ -59,6 +59,7 @@ import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldsForViewSet,
   getFieldNamesFromFields,
+  getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
@@ -382,6 +383,8 @@ class RecordForm extends React.Component<
   }
 
   save(values: any) {
+    const ui_specification = this.props.ui_specification;
+    const viewsetName = this.requireViewsetName();
     getCurrentUserId(this.props.project_id)
       .then(userid => {
         const now = new Date();
@@ -392,6 +395,11 @@ class RecordForm extends React.Component<
           data: values,
           updated_by: userid,
           updated: now,
+          annotations: {},
+          field_types: getReturnedTypesForViewSet(
+            ui_specification,
+            viewsetName
+          ),
         };
         console.log(doc);
         return doc;

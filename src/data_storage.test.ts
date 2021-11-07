@@ -132,6 +132,8 @@ describe('roundtrip reading and writing to db', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -189,6 +191,8 @@ describe('CRUD for data', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       const new_doc: Record = {
@@ -201,6 +205,8 @@ describe('CRUD for data', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -285,6 +291,8 @@ describe('listing revisions', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)

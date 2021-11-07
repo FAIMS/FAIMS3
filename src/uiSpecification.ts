@@ -20,7 +20,7 @@
 
 import {getProjectDB} from './sync';
 import PouchDB from 'pouchdb';
-import {ProjectID} from './datamodel/core';
+import {ProjectID, FAIMSTypeName} from './datamodel/core';
 import {
   ProjectMetaObject,
   UI_SPECIFICATION_NAME,
@@ -96,4 +96,16 @@ export function getFieldNamesFromFields(fields: {
   [key: string]: {[key: string]: any};
 }): string[] {
   return Object.keys(fields);
+}
+
+export function getReturnedTypesForViewSet(
+  ui_specification: ProjectUIModel,
+  viewset_name: string
+): {[field_name: string]: FAIMSTypeName} {
+  const fields = getFieldsForViewSet(ui_specification, viewset_name);
+  const types: {[field_name: string]: FAIMSTypeName} = {};
+  for (const field_name in fields) {
+    types[field_name] = fields[field_name]['type-returned'];
+  }
+  return types;
 }

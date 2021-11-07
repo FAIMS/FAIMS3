@@ -65,6 +65,20 @@ const example_records: {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
+      annotations: {},
+      field_types: {
+        'take-point-field': 'faims-pos::Location',
+        'bad-field': 'faims-core::String',
+        'action-field': 'faims-core::String',
+        'email-field': 'faims-core::Email',
+        'str-field': 'faims-core::String',
+        'multi-str-field': 'faims-core::String',
+        'int-field': 'faims-core::Integer',
+        'select-field': 'faims-core::String',
+        'multi-select-field': 'faims-core::String',
+        'checkbox-field': 'faims-core::Bool',
+        'radio-group-field': 'faims-core::String',
+      },
     },
     {
       record_id: '020948f4-79b8-435f-9db6-9clksjdf900a',
@@ -90,6 +104,20 @@ const example_records: {
         'checkbox-field': true,
         'radio-group-field': '1',
       },
+      annotations: {},
+      field_types: {
+        'take-point-field': 'faims-pos::Location',
+        'bad-field': 'faims-core::String',
+        'action-field': 'faims-core::String',
+        'email-field': 'faims-core::Email',
+        'str-field': 'faims-core::String',
+        'multi-str-field': 'faims-core::String',
+        'int-field': 'faims-core::Integer',
+        'select-field': 'faims-core::String',
+        'multi-select-field': 'faims-core::String',
+        'checkbox-field': 'faims-core::Bool',
+        'radio-group-field': 'faims-core::String',
+      },
     },
     {
       record_id: '9a0782ba-937b-4f24-8489-58cd653eca88',
@@ -103,6 +131,12 @@ const example_records: {
         'int-field': 20,
         'select-field': ['EUR'],
         'checkbox-field': true,
+      },
+      annotations: {},
+      field_types: {
+        'int-field': 'faims-core::Integer',
+        'select-field': 'faims-core::String',
+        'checkbox-field': 'faims-core::Bool',
       },
     },
   ],
@@ -132,7 +166,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
         'component-name': 'NotAComponent',
-        'type-returned': 'faims-core::Email', // matches a type in the Project Model
+        'type-returned': 'faims-core::String', // matches a type in the Project Model
         'component-parameters': {
           fullWidth: true,
           name: 'email-field',
@@ -310,6 +344,20 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
             },
           ],
         ],
+        initialValue: null,
+      },
+      'take-photo-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'TakePhoto',
+        'type-returned': 'faims-blob::Photo', // matches a type in the Project Model
+        'component-parameters': {
+          fullWidth: true,
+          name: 'take-photo-field',
+          id: 'take-photo-field',
+          helperText: 'Take a photo',
+          variant: 'outlined',
+        },
+        validationSchema: [['yup.object'], ['yup.nullable']],
         initialValue: null,
       },
       'select-field': {
@@ -500,6 +548,17 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
       },
+      'file-upload-field': {
+        'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+        'component-name': 'FileUploader',
+        'type-returned': 'faims-core::File', // matches a type in the Project Model
+        'component-parameters': {
+          name: 'file-upload-field',
+          id: 'file-upload-field',
+        },
+        validationSchema: [['yup.mixed']],
+        initialValue: null,
+      },
       'basic-autoincrementer-field': {
         'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
         'component-name': 'BasicAutoIncrementer',
@@ -584,7 +643,9 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'bad-field',
           'action-field',
           'email-field',
+          'take-photo-field',
           'related-field',
+          'file-upload-field',
           'str-field',
           'multi-str-field',
           'int-field',

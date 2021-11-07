@@ -26,6 +26,7 @@ import {Select as FormikSelect} from 'formik-material-ui';
 import {RadioGroup as FormikRadioGroup,} from 'formik-material-ui';
 // import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-material-ui';
 
+
 import {Select as FAIMSSelect,SelectSetting,Selectcomponentsetting,getSelectBuilderIcon} from '../fields/select';
 import {ActionButton,ActionSetting} from '../fields/ActionButton';
 import {TakePoint,TakePointSetting} from '../fields/TakePoint';
@@ -34,11 +35,22 @@ import {RadioGroup as FAIMSRadioGroup,RadioSetting,Radiocomponentsetting,getRadi
 import {TemplatedStringField,TemplatedStringSetting,TemplatedStringcomponentsetting,getTemplatedStringBuilderIcon} from '../fields/TemplatedStringField';
 import {BasicAutoIncrementer,AutoSetting,getAutoBuilderIcon} from '../fields/BasicAutoIncrementer';
 import {RelatedRecordSelector,LinkedSetting,getLinkedBuilderIcon,Linkedcomponentsetting} from '../fields/RelatedRecordSelector';
+import {FileUploader,FileuploadSetting,getFileuploadBuilderIcon} from '../fields/FileUploader';
+import {TakePhoto} from '../fields/TakePhoto';
+
 import {registerComponent, setupComponentProperties} from './internals';
 import {TextuiSpec,TextuiSetting,Defaultcomponentsetting,MultiTextuiSetting,MultiTextuiSpec} from '../fields/BasicFieldSettings';
 // Mapping plugin imports
 import {MapFormField} from '@faims-project/faims3-map-input';
 
+import {
+  setAttachmentLoaderForType,
+  setAttachmentDumperForType,
+} from '../../datamodel/typesystem';
+import {
+  file_data_to_attachment,
+  file_attachment_to_data,
+} from '../../data_storage/attachments';
 /*
  * This should be enough to make typescript/the build system happy
  */
@@ -207,6 +219,17 @@ registerComponent(
 );
 registerComponent(
   'faims-custom',
+  'TakePhoto',
+  setupComponentProperties('Take Point', '', 'Images', TakePhoto,  {
+    namespace: 'faims-custom',
+    componentName: 'TakePhoto',
+    type_return: 'faims-blob::Photo',
+    initialValue: null,
+    validationSchema: [['yup.object'], ['yup.nullable']],
+  })
+);
+registerComponent(
+  'faims-custom',
   'TemplatedStringField',
   setupComponentProperties(
     'Unique ID',
@@ -291,3 +314,21 @@ registerComponent(
       Defaultcomponentsetting
   )
 );
+
+registerComponent(
+  'faims-custom',
+  'FileUploader',
+  setupComponentProperties('', '', 'Special', FileUploader,
+  FileuploadSetting[1],
+  FileuploadSetting,
+  Defaultcomponentsetting,
+  getFileuploadBuilderIcon)
+
+);
+
+/*
+ * For saving and loading attachment with type faims-core::File
+ */
+
+setAttachmentLoaderForType('faims-core::File', file_attachment_to_data);
+setAttachmentDumperForType('faims-core::File', file_data_to_attachment);

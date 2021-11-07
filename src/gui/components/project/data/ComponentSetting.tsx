@@ -379,6 +379,16 @@ export const getprojectform = (
         value: projectvalue['accessadded'],
       },
     ],
+    attachments: [
+      {
+        name: 'attachments',
+        label: 'Upload Attachements',
+        namespace: 'faims-custom',
+        componentName: 'FileUploader',
+        view: 'attachments',
+        required: false,
+      },
+    ],
     section: [],
     form: [],
     users: [

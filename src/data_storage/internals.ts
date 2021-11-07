@@ -26,6 +26,8 @@ import {
   RecordID,
   ProjectID,
   RevisionID,
+  FAIMSTypeName,
+  Annotations,
 } from '../datamodel/core';
 import {
   AttributeValuePair,
@@ -37,8 +39,18 @@ import {
   RevisionMap,
 } from '../datamodel/database';
 import {Record, RecordMetadataList} from '../datamodel/ui';
+import {
+  getAttachmentLoaderForType,
+  getAttachmentDumperForType,
+} from '../datamodel/typesystem';
 
 type EncodedRecordMap = Map<RecordID, EncodedRecord>;
+
+interface FormData {
+  data: {[field_name: string]: any};
+  annotations: {[field_name: string]: Annotations};
+  types: {[field_name: string]: FAIMSTypeName};
+}
 
 export function generateFAIMSRevisionID(): RevisionID {
   return uuidv4();
@@ -158,6 +170,7 @@ export async function listRecordMetadata(
         updated: new Date(revision.created),
         updated_by: revision.created_by,
         conflicts: record.heads.length > 1,
+        deleted: revision.deleted ? true : false,
       };
     });
     return out;
@@ -182,7 +195,7 @@ export async function getAttributeValuePairs(
   rows.forEach(e => {
     if (e.doc !== undefined) {
       const doc = e.doc as AttributeValuePair;
-      mapping[doc._id] = doc;
+      mapping[doc._id] = loadAttributeValuePair(doc);
     }
   });
   return mapping;
@@ -248,14 +261,20 @@ export async function getAllRecords(
 export async function getFormDataFromRevision(
   project_id: ProjectID,
   revision: Revision
-): Promise<{[field_name: string]: any}> {
-  const data: {[field_name: string]: any} = {};
+): Promise<FormData> {
+  const form_data: FormData = {
+    data: {},
+    annotations: {},
+    types: {},
+  };
   const avp_ids = Object.values(revision.avps);
   const avps = await getAttributeValuePairs(project_id, avp_ids);
   for (const [name, avp_id] of Object.entries(revision.avps)) {
-    data[name] = avps[avp_id].data;
+    form_data.data[name] = avps[avp_id].data;
+    form_data.annotations[name] = avps[avp_id].annotations;
+    form_data.types[name] = avps[avp_id].type;
   }
-  return data;
+  return form_data;
 }
 
 export async function addNewRevisionFromForm(
@@ -297,22 +316,26 @@ async function addNewAttributeValuePairs(
     data = await getFormDataFromRevision(project_id, revision);
   } else {
     revision = {};
-    data = {};
+    data = {
+      data: {},
+      annotations: {},
+      types: {},
+    };
   }
   for (const [field_name, field_value] of Object.entries(record.data)) {
-    const stored_data = data[field_name];
+    const stored_data = data.data[field_name];
     if (stored_data === undefined || stored_data !== field_value) {
       const new_avp_id = generateFAIMSAttributeValuePairID();
       const new_avp = {
         _id: new_avp_id,
         avp_format_version: 1,
-        type: '??:??', // TODO: Add type handling
+        type: record.field_types[field_name] ?? '??:??',
         data: field_value,
         revision_id: new_revision_id,
         record_id: record.record_id,
-        annotations: [], // TODO: Add annotation handling
+        annotations: record.annotations[field_name],
       };
-      await datadb.put(new_avp);
+      await datadb.put(dumpAttributeValuePair(new_avp));
       avp_map[field_name] = new_avp_id;
     } else {
       if (revision.avps !== undefined) {
@@ -352,11 +375,29 @@ export async function createNewRecord(
   }
 }
 
-//function pouchAllDocsToMap(pouch_res: PouchDBAllDocsResult): FAIMSPouchDBMap {
-//    const rows = pouch_res.rows;
-//    let mapping: FAIMSPouchDBMap = {};
-//    rows.forEach(e => {
-//        mapping[e.doc._id] = e.doc;
-//    });
-//    return mapping;
-//}
+/*
+ * This handles converting attachments to data
+ */
+function loadAttributeValuePair(avp: AttributeValuePair): AttributeValuePair {
+  const attachments = avp._attachments;
+  if (attachments === null || attachments === undefined) {
+    // No attachments
+    return avp;
+  }
+  const loader = getAttachmentLoaderForType(avp.type);
+  if (loader === null) {
+    return avp;
+  }
+  return loader(avp);
+}
+
+/*
+ * This handles converting data to attachments
+ */
+function dumpAttributeValuePair(avp: AttributeValuePair): AttributeValuePair {
+  const dumper = getAttachmentDumperForType(avp.type);
+  if (dumper === null) {
+    return avp;
+  }
+  return dumper(avp);
+}

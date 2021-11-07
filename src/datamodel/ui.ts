@@ -22,7 +22,13 @@
  * User readable information about a project
  * Do not use with sync code; UI code only
  */
-import {ProjectID, RecordID, RevisionID, FAIMSTypeName} from './core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  FAIMSTypeName,
+  Annotations,
+} from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
 export interface ProjectInformation {
@@ -52,6 +58,7 @@ export interface RecordMetadata {
   updated: Date;
   updated_by: string;
   conflicts: boolean;
+  deleted: boolean;
 }
 
 export type RecordMetadataList = {
@@ -67,6 +74,8 @@ export interface Record {
   data: {[field_name: string]: any};
   updated: Date;
   updated_by: string;
+  field_types: {[field_name: string]: FAIMSTypeName};
+  annotations: {[field_name: string]: Annotations};
   /*
   created{_by} are optional as we don't need to track them with the actual data.
   If you need creation information, then use record metadata

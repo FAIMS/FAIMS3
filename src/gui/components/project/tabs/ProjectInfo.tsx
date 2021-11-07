@@ -326,6 +326,23 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   )
   }
 
+
+  const attachment = () =>{
+    return (
+      <Grid>
+        {getfields(getprojectform(projectvalue,'attachments')).map((fieldName: string) =>
+            getComponentFromField(
+              getprojectform(projectvalue,'attachments'),
+              fieldName,
+              formProps,
+              (event:any)=>setMetaAdded(event.target.value)
+            )
+          )
+        }
+      </Grid>
+    )
+  }
+
   return (
     <Grid container>
       <Grid item sm={12} xs={12}>
@@ -346,6 +363,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         </TabPanel>
         <TabPanel value={infotabvalue} index={3} tabname="primarytab">
           Add Attachment Here
+          {attachment()}
         </TabPanel>
       </Grid>
     </Grid>
