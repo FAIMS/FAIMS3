@@ -147,10 +147,14 @@ export async function getLatestRevision(
  * @returns key: record id, value: record (NOT NULL)
  */
 export async function listRecordMetadata(
-  project_id: ProjectID
+  project_id: ProjectID,
+  record_ids: RecordID[] | null = null
 ): Promise<RecordMetadataList> {
   try {
-    const records = await getAllRecords(project_id);
+    const records =
+      record_ids === null
+        ? await getAllRecords(project_id)
+        : recordToRecordMap(await getRecords(project_id, record_ids));
     const revision_ids: RevisionID[] = [];
     records.forEach(o => {
       revision_ids.push(o.heads[0]);
@@ -240,6 +244,14 @@ export async function getRecords(
     }
   });
   return mapping;
+}
+
+function recordToRecordMap(old_recs: RecordMap): EncodedRecordMap {
+  const records: EncodedRecordMap = new Map();
+  for (const r in old_recs) {
+    records.set(r, old_recs[r]);
+  }
+  return records;
 }
 
 export async function getAllRecords(

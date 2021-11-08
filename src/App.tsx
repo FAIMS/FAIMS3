@@ -34,6 +34,7 @@ import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
 import ProjectSettings from './gui/pages/project-settings';
+import ProjectSearch from './gui/pages/project-search';
 import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
@@ -111,6 +112,11 @@ export class App extends React.Component<AppProps, AppState> {
                 exact
                 path={ROUTES.PROJECT + ':project_id'}
                 component={Project}
+              />
+              <Route
+                exact
+                path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SEARCH}
+                component={ProjectSearch}
               />
               <Route
                 exact
