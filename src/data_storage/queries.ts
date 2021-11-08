@@ -20,7 +20,8 @@
 import {getDataDB} from '../sync';
 import {ProjectID, FAIMSTypeName, RecordID} from '../datamodel/core';
 import {AttributeValuePair} from '../datamodel/database';
-import {RecordReference} from '../datamodel/ui';
+import {RecordReference, RecordMetadataList} from '../datamodel/ui';
+import {listRecordMetadata} from './internals';
 
 export async function getAllRecordsOfType(
   project_id: ProjectID,
@@ -45,7 +46,7 @@ export async function getAllRecordsOfType(
 export async function getAllRecordsWithRegex(
   project_id: ProjectID,
   regex: string
-): Promise<RecordID[]> {
+): Promise<RecordMetadataList> {
   const datadb = getDataDB(project_id);
   const res = await datadb.find({
     selector: {
@@ -58,5 +59,6 @@ export async function getAllRecordsWithRegex(
     return avp.record_id;
   });
   // Remove duplicates, no order is implied
-  return Array.from(new Set<RecordID>(record_ids));
+  const deduped_record_ids = Array.from(new Set<RecordID>(record_ids));
+  return await listRecordMetadata(project_id, deduped_record_ids);
 }

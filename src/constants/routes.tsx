@@ -29,6 +29,7 @@ export const NOT_FOUND = '/not-found';
 export const HOME = '/home';
 export const PROJECT_LIST = '/projects';
 export const PROJECT = '/projects/';
+export const PROJECT_SEARCH = '/search';
 export const PROJECT_SETTINGS = '/settings';
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';
