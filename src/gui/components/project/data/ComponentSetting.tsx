@@ -27,20 +27,24 @@
 import {v4 as uuidv4} from 'uuid';
 import {getcomponent} from './uiFieldsRegistry';
 import {getComponentPropertiesByName} from '../../../component_registry';
-import {setSetingInitialValues,generatenewname,generatenewfield} from './componenentSetting'
+import {
+  setSetingInitialValues,
+  generatenewname,
+  generatenewfield,
+} from './componenentSetting';
 import {
   ProjevtValueList,
   FAIMShandlerType,
   ProjectUIModel,
-  FAIMSUiSpec} from '../../../../datamodel/ui'
-import {ProjectUIFields} from '../../../../datamodel/typesystem'
+  FAIMSUiSpec,
+} from '../../../../datamodel/ui';
+import {ProjectUIFields} from '../../../../datamodel/typesystem';
 
 const VISIBLE_TYPE = 'visible_types';
 const NEWFIELDS = 'newfield';
 const DEFAULT_accessgroup = ['admin', 'moderator'];
 const DEFAULT_accessgroup_d = ['admin', 'moderator', 'team'];
 const CONNECTION_RELATIONS = ['To be added'];
-
 
 export type uiSpecType = {
   fields: any;
@@ -66,13 +70,23 @@ export const getconnections = (
 ) => {
   const connecions = CONNECTION_RELATIONS;
   const conectiontabs: Array<tabLinkType> = [];
-  uiSpec['viewsets'][comparetab]['views'].map((view:string)=>
-    uiSpec['views'][view]['fields'].map((field:string)=>
-      uiSpec['fields'][field]['component-name']==='RelatedRecordSelector'?uiSpec['fields'][field]['component-parameters']['related_type']!==''&&
-      conectiontabs.push({tab:uiSpec['viewsets'][uiSpec['fields'][field]['component-parameters']['related_type']]['label'],link:uiSpec['fields'][field]['component-parameters']['relation_type'].replace('faims-core::','')}):
-      field
+  uiSpec['viewsets'][comparetab]['views'].map((view: string) =>
+    uiSpec['views'][view]['fields'].map((field: string) =>
+      uiSpec['fields'][field]['component-name'] === 'RelatedRecordSelector'
+        ? uiSpec['fields'][field]['component-parameters']['related_type'] !==
+            '' &&
+          conectiontabs.push({
+            tab:
+              uiSpec['viewsets'][
+                uiSpec['fields'][field]['component-parameters']['related_type']
+              ]['label'],
+            link: uiSpec['fields'][field]['component-parameters'][
+              'relation_type'
+            ].replace('faims-core::', ''),
+          })
+        : field
     )
-  )
+  );
   //TODO get relation of tabs and return
   // tabs.map((tab: string) =>
   //   conectiontabs.push({tab: tab, link: connecions[0]})
@@ -80,14 +94,13 @@ export const getconnections = (
   return conectiontabs;
 };
 
-export const checkvalid = (values:Array<string>) =>{
-  values=values.filter((value:string)=>value!=='')
-  values=values.filter((item,pos)=> {
+export const checkvalid = (values: Array<string>) => {
+  values = values.filter((value: string) => value !== '');
+  values = values.filter((item, pos) => {
     return values.indexOf(item) === pos;
-  })
+  });
   return values;
-
-}
+};
 
 // export const getfieldname = (name: string, label: string) => {
 //   const names = name.split(label);
@@ -124,11 +137,10 @@ export const FieldSettings = (
       namespace: 'formik-material-ui',
       componentName: 'TextField',
       view: 'settings',
-    }
+    },
   ];
 
-
-	const fields_label:Array<string>=[]
+  const fields_label: Array<string> = [];
   const fields_list: fieldlistType = {};
   const view_list = ['settings', 'valid', 'access', 'notes', 'general'];
   const views: viewlistType = {
@@ -263,7 +275,7 @@ export const getprojectform = (
     // {name:'accesses',label:'Accesses',namespace:'faims-custom',componentName:'AutoComplete',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',select:true,options:getacessoption(projectvalue.accesses)}
   ];
 
-  const form_setting= [
+  const form_setting = [
     {
       name: 'annotation',
       label: 'Annotation',
@@ -285,8 +297,8 @@ export const getprojectform = (
       type: 'checkbox',
       initialValue: false,
       helperText: 'Tick for enable Uncertainty for Form components',
-    }
-  ]
+    },
+  ];
 
   const users = [
     {
@@ -321,7 +333,8 @@ export const getprojectform = (
     componentName: 'Select',
     select: true,
     view: 'preview',
-    helperText: 'Select to get form for roles'}
+    helperText: 'Select to get form for roles',
+  };
 
   const fields: projectuilistType = {
     info_general: [
@@ -332,8 +345,8 @@ export const getprojectform = (
         componentName: 'TextField',
         view: 'info_general',
         required: true,
-        initialValue:projectvalue.name,
-        helperText:'Enter a string between 2 and 100 characters long',
+        initialValue: projectvalue.name,
+        helperText: 'Enter a string between 2 and 100 characters long',
         validationSchema: [
           ['yup.string'],
           ['yup.min', 1, 'Too Short!'],
@@ -349,7 +362,7 @@ export const getprojectform = (
         view: 'info_general',
         multiline: true,
         multirows: 4,
-        initialValue:projectvalue.description,
+        initialValue: projectvalue.description,
       },
       {
         name: 'project_lead',
@@ -357,7 +370,7 @@ export const getprojectform = (
         namespace: 'formik-material-ui',
         componentName: 'TextField',
         view: 'info_general',
-        initialValue:projectvalue.project_lead,
+        initialValue: projectvalue.project_lead,
       },
       {
         name: 'lead_institution',
@@ -365,7 +378,7 @@ export const getprojectform = (
         namespace: 'formik-material-ui',
         componentName: 'TextField',
         view: 'info_general',
-        initialValue:projectvalue.lead_institution,
+        initialValue: projectvalue.lead_institution,
       },
     ],
     info_group: [
@@ -422,9 +435,9 @@ export const getprojectform = (
       },
     ],
     preview: [],
-    form_setting:[],
-    project_meta:[],
-    projectmetaadd:[
+    form_setting: [],
+    project_meta: [],
+    projectmetaadd: [
       {
         name: 'metaadd',
         label: 'Add new meta data Label',
@@ -432,13 +445,16 @@ export const getprojectform = (
         componentName: 'TextField',
         view: 'projectmetaadd',
         helperText: '',
-        initialValue:''
-      }
-    ]
+        initialValue: '',
+      },
+    ],
   };
 
   // This part will be updated in the future TODO
-  if (projectvalue.project_id !== undefined&&projectvalue.project_id!==null) {
+  if (
+    projectvalue.project_id !== undefined &&
+    projectvalue.project_id !== null
+  ) {
     fields['info_general'][0].disabled = true;
     // fields['info_general'][0].value=projectvalue.name
     fields['info_general'][1].disabled = true;
@@ -479,7 +495,7 @@ export const getprojectform = (
       fields[tab][index] = {...newfield};
     });
   }
-  if(tab ==='form_setting'){
+  if (tab === 'form_setting') {
     form_setting.map((field: any, index: number) => {
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
@@ -491,28 +507,33 @@ export const getprojectform = (
       fields[tab][index] = {...newfield};
     });
   }
-  if( tab==='project_meta' &&projectvalue.meta!==undefined&&projectvalue.meta!==null){
-    fields[tab]=[]
-    if(projectvalue.meta!==undefined&&projectvalue.meta!==null){
+  if (
+    tab === 'project_meta' &&
+    projectvalue.meta !== undefined &&
+    projectvalue.meta !== null
+  ) {
+    fields[tab] = [];
+    if (projectvalue.meta !== undefined && projectvalue.meta !== null) {
       for (const [key, value] of Object.entries(projectvalue.meta)) {
-        fields[tab].push(
-        {
+        fields[tab].push({
           name: key,
           label: key,
           namespace: 'formik-material-ui',
           componentName: 'TextField',
           view: tab,
-          initialValue:value
-        })
+          initialValue: value,
+        });
       }
     }
-    
   }
 
   if (tab === 'project') {
-    fields['project'] = [...fields['info_general'],...fields['project_meta'], ...fields['behaviours']];
+    fields['project'] = [
+      ...fields['info_general'],
+      ...fields['project_meta'],
+      ...fields['behaviours'],
+    ];
   }
-
 
   if (tab === 'preview') {
     props.forms.map((formtab: string, index: number) => {
@@ -546,19 +567,17 @@ export const getprojectform = (
       fieldsarray[index] = field.name;
     });
   }
-  const returnui:any={
+  const returnui: any = {
     fields: fields_list,
     views: {'start-view': {fields: fieldsarray, uidesign: tab}},
     start_view: 'start-view',
     viewsets: {},
     visible_types: [tab],
-  }
-  returnui['viewsets'][tab]={
-    "views": [
-      "start-view"
-    ],
-    "label": tab
-  }
+  };
+  returnui['viewsets'][tab] = {
+    views: ['start-view'],
+    label: tab,
+  };
   return returnui;
 };
 
@@ -596,7 +615,12 @@ export const updateuiSpec = (type: string, props: any) => {
     case 'formvsectionadd':
       return formvsectionadd(props);
     case 'newfromui':
-      return newfromui(props.formuiSpec, props.formcomponents, props.access,props.initialfieldvalue);
+      return newfromui(
+        props.formuiSpec,
+        props.formcomponents,
+        props.access,
+        props.initialfieldvalue
+      );
     case 'switch':
       return swithField(
         props.index,
@@ -633,8 +657,7 @@ const updatelabel = (type: boolean, props: any) => {
       const tabid = newviews['viewsets'][props.formvariants]['views'][index];
       newviews['views'][tabid]['label'] = tab;
     }
-
-  })
+  });
   return {newviews, components};
 };
 
@@ -642,21 +665,21 @@ const newfromui = (
   newuiSpec: uiSpecType,
   newformcom: any,
   access: Array<string>,
-  initialfieldvalue:any
+  initialfieldvalue: any
 ) => {
   newuiSpec[VISIBLE_TYPE].map((variant: any, index: any) => {
     newuiSpec['viewsets'][variant]['views'].map((view: string) => {
       newformcom[view] = [];
       newuiSpec['views'][view]['fields'].map((fieldname: string) => {
         const field = newuiSpec['fields'][fieldname];
-        if(field['meta']===undefined) 
-        field['meta']={
-          "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        }
+        if (field['meta'] === undefined)
+          field['meta'] = {
+            annotation_label: 'annotation',
+            uncertainty: {
+              include: false,
+              label: 'uncertainty',
+            },
+          };
         const fieldprops = {};
         const newuiSpeclist = FieldSettings(
           field,
@@ -664,22 +687,31 @@ const newfromui = (
           fieldprops,
           access
         );
-        initialfieldvalue={...initialfieldvalue,
-          ...setSetingInitialValues(getComponentPropertiesByName(field['component-namespace'],field['component-name']).settingsProps[0],field,fieldname)}
+        initialfieldvalue = {
+          ...initialfieldvalue,
+          ...setSetingInitialValues(
+            getComponentPropertiesByName(
+              field['component-namespace'],
+              field['component-name']
+            ).settingsProps[0],
+            field,
+            fieldname
+          ),
+        };
         newformcom[view] = [
           ...newformcom[view],
           {
             id: fieldname.replace(NEWFIELDS, ''),
             uiSpec: newuiSpeclist,
             designvalue: 'settings',
-            componentName:field['component-name'],
-            namespace:field['component-namespace']
+            componentName: field['component-name'],
+            namespace: field['component-namespace'],
           },
         ];
       });
     });
   });
-  return {newformcom,initialfieldvalue};
+  return {newformcom, initialfieldvalue};
 };
 
 const swithField = (
@@ -703,8 +735,7 @@ const swithField = (
   components[formuiview].splice(index, 0, component);
   newviews['views'][formuiview]['fields'] = fields;
   return {newviews, components};
-
-    }
+};
 const removefield = (
   id: string,
   formuiSpec: uiSpecType,
@@ -723,25 +754,41 @@ const removefield = (
   return {newviews, components};
 };
 
-
 const addfield = (props: any) => {
-  const {uuid, id, formuiSpec, formcomponents, formuiview, accessgroup,project_id} = props;
-  const settings=id
+  const {
+    uuid,
+    id,
+    formuiSpec,
+    formcomponents,
+    formuiview,
+    accessgroup,
+    project_id,
+  } = props;
+  const settings = id;
   const name = NEWFIELDS + uuid;
-  const newfield: ProjectUIFields= settings.settingsProps!==undefined&&settings.settingsProps.length>1? {...generatenewfield('','',settings.settingsProps[1],name,{project_id:project_id,currentform:formuiview}),access:accessgroup}:getcomponent({
-    name: name,
-    label: id.uiSpecProps.componentName,
-    access: accessgroup,
-    ...id.uiSpecProps,
-  });
-  if(newfield['meta']===undefined) 
-  newfield['meta']={
-            "annotation_label": "annotation",
-            "uncertainty": {
-              "include": false,
-              "label": "uncertainty"
-            }
-          }
+  const newfield: ProjectUIFields =
+    settings.settingsProps !== undefined && settings.settingsProps.length > 1
+      ? {
+          ...generatenewfield('', '', settings.settingsProps[1], name, {
+            project_id: project_id,
+            currentform: formuiview,
+          }),
+          access: accessgroup,
+        }
+      : getcomponent({
+          name: name,
+          label: id.uiSpecProps.componentName,
+          access: accessgroup,
+          ...id.uiSpecProps,
+        });
+  if (newfield['meta'] === undefined)
+    newfield['meta'] = {
+      annotation_label: 'annotation',
+      uncertainty: {
+        include: false,
+        label: 'uncertainty',
+      },
+    };
   const newuiSpec = formuiSpec.fields;
   newuiSpec[name] = newfield;
   const newviews = formuiSpec.views;
@@ -751,10 +798,20 @@ const addfield = (props: any) => {
   newviews[formuiview]['fields'] = [...newviews[formuiview]['fields'], name];
   components[formuiview] = [
     ...components[formuiview],
-    {id: uuid, uiSpec: newuiSpeclist, designvalue: 'settings',componentName:newfield['component-name'],namespace:newfield['component-namespace']},
+    {
+      id: uuid,
+      uiSpec: newuiSpeclist,
+      designvalue: 'settings',
+      componentName: newfield['component-name'],
+      namespace: newfield['component-namespace'],
+    },
   ];
-  const initialfieldvalue=setSetingInitialValues(settings.settingsProps[0],newfield,name)
-  return {newviews, components, newuiSpeclist, newuiSpec,initialfieldvalue};
+  const initialfieldvalue = setSetingInitialValues(
+    settings.settingsProps[0],
+    newfield,
+    name
+  );
+  return {newviews, components, newuiSpeclist, newuiSpec, initialfieldvalue};
 };
 
 // const updatefield = (props: any) => {

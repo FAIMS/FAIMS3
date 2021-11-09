@@ -24,60 +24,69 @@ import * as ROUTES from '../../../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {Grid, Typography, Box,Button} from '@material-ui/core';
+import {Grid, Typography, Box, Button} from '@material-ui/core';
 import {ProjectSubmit} from './ProjectButton';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  } from '../../../../datamodel/ui'
+import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import Alert from '@material-ui/lab/Alert';
 
 type ProjectSubmitProps = {
-  project_id: string |null;
+  project_id: string | null;
   projectvalue: ProjevtValueList;
   setProjectValue: FAIMShandlerType;
   handleSubmit: FAIMShandlerType;
   handlepublish: FAIMShandlerType;
-  formProps:any;
-  formuiSpec:any;
+  formProps: any;
+  formuiSpec: any;
 };
 
 export default function ProjectSubmitTab(props: ProjectSubmitProps) {
-  const {projectvalue, setProjectValue, project_id,formuiSpec, ...others} = props;
+  const {
+    projectvalue,
+    setProjectValue,
+    project_id,
+    formuiSpec,
+    ...others
+  } = props;
   const [isSubmitting, setisSubmitting] = useState(false);
   const [state, seState] = useState(false);
   const [issubmit, setissubmit] = useState(projectvalue.ispublic ?? false);
 
   useEffect(() => {
     checkvalidate();
-       }, []);
+  }, []);
 
-  const checkvalidate = () =>{
-    const errors:any=projectvalue.errors
-    errors['formdesign']=[]
+  const checkvalidate = () => {
+    const errors: any = projectvalue.errors;
+    errors['formdesign'] = [];
     //check form setting
-    formuiSpec['visible_types'].map((viewset:string)=>
-      formuiSpec['viewsets'][viewset]['views'].length>0?
-        formuiSpec['viewsets'][viewset]['views'].map((view:string)=>
-          formuiSpec['views'][view]['fields'].length===0&&errors['formdesign'].push(view+'Section has no component yet,please add it')
-        ):
-        errors['formdesign'].push(viewset+'Form was defined, but setcion not added')
-    )
-    if(errors['formdesign'].length>0) {
-      errors['is_valid']=false;
-    }else {
-      errors['is_valid']=true;
+    formuiSpec['visible_types'].map((viewset: string) =>
+      formuiSpec['viewsets'][viewset]['views'].length > 0
+        ? formuiSpec['viewsets'][viewset]['views'].map(
+            (view: string) =>
+              formuiSpec['views'][view]['fields'].length === 0 &&
+              errors['formdesign'].push(
+                view + 'Section has no component yet,please add it'
+              )
+          )
+        : errors['formdesign'].push(
+            viewset + 'Form was defined, but setcion not added'
+          )
+    );
+    if (errors['formdesign'].length > 0) {
+      errors['is_valid'] = false;
+    } else {
+      errors['is_valid'] = true;
     }
-    if(props.formProps.isValid&&errors['is_valid']===true) setisSubmitting(false)
-    else setisSubmitting(true)
-    setProjectValue({...projectvalue,errors:{...errors}})
+    if (props.formProps.isValid && errors['is_valid'] === true)
+      setisSubmitting(false);
+    else setisSubmitting(true);
+    setProjectValue({...projectvalue, errors: {...errors}});
     //check project setting
-
-  }
+  };
 
   const onButtonClick = () => {
     //save project value into DB
-    if(projectvalue.errors.is_valid ===true&&props.formProps.isValid){
+    if (projectvalue.errors.is_valid === true && props.formProps.isValid) {
       console.log('submit');
       props.handleSubmit();
       seState(true);
@@ -87,48 +96,49 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
   const onSubmit = () => {
     //save project value into DB
     setissubmit(true);
-    setProjectValue({...projectvalue,isrequest:true})
+    setProjectValue({...projectvalue, isrequest: true});
     props.handlepublish();
   };
-
 
   return (
     <Grid container>
       <Grid item sm={6} xs={12}>
-        {projectvalue.errors.is_valid ===true&&props.formProps.isValid?
-        (''):(
+        {projectvalue.errors.is_valid === true && props.formProps.isValid ? (
+          ''
+        ) : (
           <Alert severity="error">
             Form has errors, please Check previous Design and make changes
             before re-submitting.
           </Alert>
         )}
-        {projectvalue.errors.is_valid===false&&(
-          projectvalue.errors.formdesign.map((error:string)=>
-          <Alert severity="error">
-          {error}
-          </Alert>
-          )
-        )}
-        {projectvalue.ispublic !== true && projectvalue.isrequest!==true&& issubmit !== true && (
-          <ProjectSubmit
-            id="submit_save"
-            type="submit"
-            isSubmitting={isSubmitting}
-            issubmittext="Save Notebook "
-            text="Save Notebook"
-            onButtonClick={onButtonClick}
-          />
-        )}
-        {projectvalue.project_id!==null&&projectvalue.project_id!==undefined&&isSubmitting===false&&
-        <Button
-        variant="outlined"
-        color="primary"
-        component={RouterLink}
-        to={
-          ROUTES.PROJECT +
-          project_id 
-        }
-        >Check Notebook</Button>}
+        {projectvalue.errors.is_valid === false &&
+          projectvalue.errors.formdesign.map((error: string) => (
+            <Alert severity="error">{error}</Alert>
+          ))}
+        {projectvalue.ispublic !== true &&
+          projectvalue.isrequest !== true &&
+          issubmit !== true && (
+            <ProjectSubmit
+              id="submit_save"
+              type="submit"
+              isSubmitting={isSubmitting}
+              issubmittext="Save Notebook "
+              text="Save Notebook"
+              onButtonClick={onButtonClick}
+            />
+          )}
+        {projectvalue.project_id !== null &&
+          projectvalue.project_id !== undefined &&
+          isSubmitting === false && (
+            <Button
+              variant="outlined"
+              color="primary"
+              component={RouterLink}
+              to={ROUTES.PROJECT + project_id}
+            >
+              Check Notebook
+            </Button>
+          )}
         <Typography>
           {state === true &&
             projectvalue.ispublic !== true &&

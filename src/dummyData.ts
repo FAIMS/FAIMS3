@@ -1015,12 +1015,12 @@ export const ExampleuiSpec = {
   'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
   'component-name': 'TextField',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  "meta": {
-    "annotation_label": "annotation",
-    "uncertainty": {
-      "include": false,
-      "label": "uncertainty"
-    }
+  meta: {
+    annotation_label: 'annotation',
+    uncertainty: {
+      include: false,
+      label: 'uncertainty',
+    },
   },
   'component-parameters': {
     fullWidth: true,
@@ -1036,8 +1036,6 @@ export const ExampleuiSpec = {
     },
     FormHelperTextProps: {},
   },
-  validationSchema: [
-    ['yup.string'],
-  ],
+  validationSchema: [['yup.string']],
   initialValue: '',
-}
+};

@@ -94,19 +94,20 @@ export function FormForm(props: FormElement) {
   const {currentView, handleChangeForm, ...others} = props;
   const [uiSpec, setUISpec] = useState(props.uiSpec);
   const initialValues = setProjectInitialValues(uiSpec, currentView, {});
-  const getfields = (uiSpec:any,formProps:any,handleChangeForm:any,currentView:string) =>{
-    return (<Grid>
-      {uiSpec['views'][currentView][
-        'fields'
-      ].map((field: any, index: any) =>
-        getComponentFromField(
-          uiSpec,
-          field,
-          formProps,
-          handleChangeForm
-        )
-      )}</Grid>)
-  }
+  const getfields = (
+    uiSpec: any,
+    formProps: any,
+    handleChangeForm: any,
+    currentView: string
+  ) => {
+    return (
+      <Grid>
+        {uiSpec['views'][currentView]['fields'].map((field: any, index: any) =>
+          getComponentFromField(uiSpec, field, formProps, handleChangeForm)
+        )}
+      </Grid>
+    );
+  };
   return (
     <Formik
       initialValues={initialValues}
@@ -122,7 +123,7 @@ export function FormForm(props: FormElement) {
         return (
           <Form id="form">
             {uiSpec['views'][currentView]['uidesign'] !== 'tab' ? (
-              getfields(uiSpec,formProps,handleChangeForm,currentView)
+              getfields(uiSpec, formProps, handleChangeForm, currentView)
             ) : (
               <Grid container>
                 <Grid item sm={11} xs={12}>
@@ -186,10 +187,8 @@ export function AutocompleteForm(props: any) {
 
                 props.handleAutocomplete(newlabels, props.id, props.type);
               }
-
-                  }
-
-                }}
+            }
+          }}
           size={'small'}
           inputValue={inputValue}
           onInputChange={(event, newInputValue) => {
@@ -211,6 +210,6 @@ export function AutocompleteForm(props: any) {
           )
         )}
       </Grid>
-      </Grid>
+    </Grid>
   );
 }

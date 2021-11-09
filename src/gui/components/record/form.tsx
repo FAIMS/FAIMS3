@@ -46,7 +46,12 @@ import BoxTab from '../ui/boxTab';
 
 import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';
-import {ProjectID, RecordID, RevisionID,Annotations} from '../../../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  Annotations,
+} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import {
   upsertFAIMSData,
@@ -109,14 +114,13 @@ type RecordFormState = {
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
   last_saved: Date;
-  annotation?:{[field_name: string]: Annotations} ;
+  annotation?: {[field_name: string]: Annotations};
   /**
    * Set only by newDraftListener, but this is only non-null
    * for a single render. In that render, a notification will pop up to the user
    * letting them redirect to the draft's URL
    */
   draft_created: string | null;
-  
 };
 
 class RecordForm extends React.Component<
@@ -141,7 +145,7 @@ class RecordForm extends React.Component<
         type_cached: null,
         view_cached: null,
         revision_cached: null,
-        annotation:{id:this.props.project_id},
+        annotation: {id: this.props.project_id},
       });
       // Re-initialize basically everything.
       this.formChanged(true);
@@ -160,7 +164,7 @@ class RecordForm extends React.Component<
       is_saving: false,
       last_saved: new Date(),
       draft_created: null,
-      annotation:{id:this.props.project_id}
+      annotation: {id: this.props.project_id},
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -315,18 +319,16 @@ class RecordForm extends React.Component<
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
-    const fromdb:any=
-    this.props.revision_id === undefined
-      ? {}
-      : (
-          await getFullRecordData(
+    const fromdb: any =
+      this.props.revision_id === undefined
+        ? {}
+        : (await getFullRecordData(
             this.props.project_id,
             this.props.record_id,
             this.props.revision_id
-          )
-        ) || {};
-    
-    const database_data=fromdb.data??{}
+          )) || {};
+
+    const database_data = fromdb.data ?? {};
 
     const staged_data = await this.draftState.getInitialValues();
 
@@ -340,19 +342,22 @@ class RecordForm extends React.Component<
       _id: this.props.record_id!,
       _project_id: this.props.project_id,
     };
-    const annotation:any=fromdb.annotations??{}
+    const annotation: any = fromdb.annotations ?? {};
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] = firstDefinedFromList([
         staged_data[fieldName],
         database_data[fieldName],
         fields[fieldName]['initialValue'],
       ]);
-      annotation[fieldName]=annotation[fieldName]??{'annotation':'','uncertainty':false}
+      annotation[fieldName] = annotation[fieldName] ?? {
+        annotation: '',
+        uncertainty: false,
+      };
       // initialValues['uncertainty'][fieldName]=''
     });
-    console.log('++++++++++++')
-    console.log(annotation)
-    this.setState({initialValues: initialValues,annotation:annotation});
+    console.log('++++++++++++');
+    console.log(annotation);
+    this.setState({initialValues: initialValues, annotation: annotation});
   }
 
   /**
@@ -407,7 +412,7 @@ class RecordForm extends React.Component<
           data: values,
           updated_by: userid,
           updated: now,
-          annotations: this.state.annotation??{id:this.props.project_id},
+          annotations: this.state.annotation ?? {id: this.props.project_id},
           field_types: getReturnedTypesForViewSet(
             ui_specification,
             viewsetName
@@ -489,20 +494,16 @@ class RecordForm extends React.Component<
     );
   }
 
-  updateannotation(name:string,value:any,type:string){
-    const annotation=this.state.annotation??{}
-    if(annotation!==undefined){
-      if(annotation[name]!==undefined)
-        annotation[name][type]=value
-      else{
-        annotation[name]={'annotation':'','uncertainty':false}
-        annotation[name][type]=value
+  updateannotation(name: string, value: any, type: string) {
+    const annotation = this.state.annotation ?? {};
+    if (annotation !== undefined) {
+      if (annotation[name] !== undefined) annotation[name][type] = value;
+      else {
+        annotation[name] = {annotation: '', uncertainty: false};
+        annotation[name][type] = value;
       }
-
-    }
-    else
-      console.log(name+value)
-    this.setState({...this.state,annotation:annotation})
+    } else console.log(name + value);
+    this.setState({...this.state, annotation: annotation});
   }
 
   render() {

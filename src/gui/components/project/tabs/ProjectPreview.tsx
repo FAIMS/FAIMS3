@@ -51,10 +51,7 @@ import {
   uiSpecType,
   getacessoption,
 } from '../data/ComponentSetting';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  } from '../../../../datamodel/ui'
+import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import {
   CusButton,
   CloseButton,
@@ -89,7 +86,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 type ProjectPreviewProps = {
-  project_id: string |null;
+  project_id: string | null;
   formuiSpec: uiSpecType;
   setFormuiSpec: FAIMShandlerType;
   handleSaveUiSpec: FAIMShandlerType;
@@ -126,8 +123,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
 
   useEffect(() => {
     setinit();
-
-       }, []);
+  }, []);
 
   const getfieldNames = (fieldNames: Array<string>, rolename: string) => {
     const newfields = fieldNames.filter(
@@ -139,7 +135,10 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   };
 
   const setinit = () => {
-    setformTabs(formuiSpec['visible_types'].map((tab:string)=>tab=formuiSpec['viewsets'][tab]['label']??tab)
+    setformTabs(
+      formuiSpec['visible_types'].map(
+        (tab: string) => (tab = formuiSpec['viewsets'][tab]['label'] ?? tab)
+      )
     );
     setformlabel(formtabs[0]);
     setformlabel(formuiSpec['visible_types'][0]);
@@ -160,10 +159,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
     return true;
   };
 
-
-    const handleSubmitForm = (values:any) =>{
-
-    }
+  const handleSubmitForm = (values: any) => {};
 
   const handelonChangeVariants = (event: any, index: number) => {
     const id = formuiSpec['visible_types'][index];
@@ -189,65 +185,60 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
         handleChange={handelonChangeVariants}
         tab_id="primarytab"
       />
-        {formtabs.map((tab: string, index: number) => (
-            <TabPanel
-              value={
-                formtabs.indexOf(formlabel) > 0
-                  ? formtabs.indexOf(formlabel)
-                  : 0
-              }
-              index={index}
-              tabname="primarytab"
-            >
-              <Grid container>
-                <Grid item sm={6} xs={12}>
-                  {fieldNames.length > 0 ? (
-                    <Formik
-                      key={index}
-                      initialValues={initialValues}
-                      validateOnMount={true}
-                      onSubmit={(values, {setSubmitting}) => {
-                        setTimeout(() => {
-                          setSubmitting(false);
-                          handleSubmitForm(values);
-                        }, 500);
-                      }}
-                    >
-                      {formProps => {
-                        return (
-                          <Form>
-                            {fieldNames.map((fieldName: string) =>
-                              getComponentFromField(
-                                formuiSpec,
-                                fieldName,
-                                formProps,
-                                handleChangeForm
-                              )
-                            )}
-                          </Form>
-                        );
-                      }}
-                    </Formik>
-                  ) : (
-                    'No Form component yet,click the GO TO DESIGN FORM button to design Form and add component before Preview'
-                  )}
-                </Grid>
-                <Grid item sm={4} xs={12}>
-                <FormForm
-                    currentView={'start-view'}
-                    handleChangeForm={handleChangeFormRole}
-                    handleSubmit={handleSubmitForm}
-                    uiSpec={getprojectform(projectvalue, 'preview', {
-                      forms: [formvariants],
-                    })}
-                  />
-                </Grid>
-              </Grid>
-            </TabPanel>
-          )
-          )}
-
+      {formtabs.map((tab: string, index: number) => (
+        <TabPanel
+          value={
+            formtabs.indexOf(formlabel) > 0 ? formtabs.indexOf(formlabel) : 0
+          }
+          index={index}
+          tabname="primarytab"
+        >
+          <Grid container>
+            <Grid item sm={6} xs={12}>
+              {fieldNames.length > 0 ? (
+                <Formik
+                  key={index}
+                  initialValues={initialValues}
+                  validateOnMount={true}
+                  onSubmit={(values, {setSubmitting}) => {
+                    setTimeout(() => {
+                      setSubmitting(false);
+                      handleSubmitForm(values);
+                    }, 500);
+                  }}
+                >
+                  {formProps => {
+                    return (
+                      <Form>
+                        {fieldNames.map((fieldName: string) =>
+                          getComponentFromField(
+                            formuiSpec,
+                            fieldName,
+                            formProps,
+                            handleChangeForm
+                          )
+                        )}
+                      </Form>
+                    );
+                  }}
+                </Formik>
+              ) : (
+                'No Form component yet,click the GO TO DESIGN FORM button to design Form and add component before Preview'
+              )}
+            </Grid>
+            <Grid item sm={4} xs={12}>
+              <FormForm
+                currentView={'start-view'}
+                handleChangeForm={handleChangeFormRole}
+                handleSubmit={handleSubmitForm}
+                uiSpec={getprojectform(projectvalue, 'preview', {
+                  forms: [formvariants],
+                })}
+              />
+            </Grid>
+          </Grid>
+        </TabPanel>
+      ))}
     </>
-
   );
 }

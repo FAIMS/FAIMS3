@@ -28,9 +28,9 @@ import {
   get_local_autoincrement_state_for_field,
   set_local_autoincrement_state_for_field,
 } from '../../datamodel/autoincrement';
-import { getDefaultuiSetting } from './BasicFieldSettings';
+import {getDefaultuiSetting} from './BasicFieldSettings';
 import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
-import {ProjectUIModel} from '../../datamodel/ui'
+import {ProjectUIModel} from '../../datamodel/ui';
 interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
@@ -174,7 +174,6 @@ export class BasicAutoIncrementer extends React.Component<
 }
 BasicAutoIncrementer.contextType = store;
 
-
 const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'BasicAutoIncrementer',
@@ -189,26 +188,22 @@ const uiSpec = {
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: null,
-}
+};
 
-
-const uiSetting = () =>{
-  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
-  newuiSetting["viewsets"]= {
-    "settings": {
-      "views": [
-        
-      ],
-      "label": "settings"
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: [],
+      label: 'settings',
     },
-  }
+  };
 
-  return newuiSetting
-}
-  
+  return newuiSetting;
+};
+
 export function getAutoBuilderIcon() {
   return <LibraryBooksIcon />;
 }
 
-
-export const AutoSetting =[uiSetting(),uiSpec]
+export const AutoSetting = [uiSetting(), uiSpec];

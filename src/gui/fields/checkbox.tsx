@@ -29,8 +29,8 @@ import {
 } from '@material-ui/core';
 import {fieldToCheckbox, CheckboxProps} from 'formik-material-ui';
 import BookmarksIcon from '@material-ui/icons/Bookmarks';
-import { getDefaultuiSetting } from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui'
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui';
 interface Props {
   FormControlLabelProps: FormControlLabelProps;
   FormHelperTextProps: FormHelperTextProps;
@@ -79,8 +79,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
   }
 }
 
-
-const uiSpec ={
+const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'Checkbox',
   'type-returned': 'faims-core::Bool', // matches a type in the Project Model
@@ -103,25 +102,21 @@ const uiSpec ={
     ['yup.required'],
   ],
   initialValue: false,
-}
+};
 
-const uiSetting = () =>{
-  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
-  newuiSetting["viewsets"]= {
-    "settings": {
-      "views": [
-        "FormControlLabelProps",
-        "FormParamater",
-      ],
-      "label": "settings"
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: ['FormControlLabelProps', 'FormParamater'],
+      label: 'settings',
     },
-  }
+  };
 
-  return newuiSetting
-}
-  
+  return newuiSetting;
+};
+
 export function getCheckBoxBuilderIcon() {
   return <BookmarksIcon />;
 }
-export const CheckboxSetting =[uiSetting(),uiSpec]
-
+export const CheckboxSetting = [uiSetting(), uiSpec];

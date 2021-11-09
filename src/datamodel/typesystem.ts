@@ -58,9 +58,9 @@ export interface ProjectUIViews {
 }
 
 export interface option {
-  value:string;
-  label:string;
-  key?:string;
+  value: string;
+  label: string;
+  key?: string;
 }
 
 type AttributeValuePairConverter = (
@@ -107,4 +107,3 @@ export function setAttachmentDumperForType(
 ) {
   attachment_dumpers[type] = dumper;
 }
-

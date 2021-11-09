@@ -34,10 +34,17 @@ import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName} from '../../datamodel/core';
 import {RecordReference} from '../../datamodel/ui';
 import {getAllRecordsOfType} from '../../data_storage/queries';
-import { getDefaultuiSetting,Defaultcomponentsetting } from './BasicFieldSettings';
+import {
+  getDefaultuiSetting,
+  Defaultcomponentsetting,
+} from './BasicFieldSettings';
 import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
-import {option} from '../../datamodel/typesystem'
-import {ProjectUIModel,componenentSettingprops,FAIMSEVENTTYPE} from '../../datamodel/ui'
+import {option} from '../../datamodel/typesystem';
+import {
+  ProjectUIModel,
+  componenentSettingprops,
+  FAIMSEVENTTYPE,
+} from '../../datamodel/ui';
 interface Props {
   related_type: FAIMSTypeName;
   relation_type: FAIMSTypeName;
@@ -70,10 +77,10 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         }
         getOptionLabel={(option: RecordReference) => option.record_label}
         options={options}
-        renderInput={(params:any) => (
+        renderInput={(params: any) => (
           <TextField
             {...params}
-            label='Select Record '
+            label="Select Record "
             variant="outlined"
             InputProps={{
               ...params.InputProps,
@@ -81,25 +88,25 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           />
         )}
       />
-      {project_id!==undefined&&<Button
-        variant="outlined"
-        color="primary"
-        startIcon={<AddIcon />}
-        component={RouterLink}
-        to={
-          ROUTES.PROJECT +
-          project_id +
-          ROUTES.RECORD_CREATE +
-          props.related_type
-        }
-      >
-        New Record
-      </Button>}
+      {project_id !== undefined && (
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<AddIcon />}
+          component={RouterLink}
+          to={
+            ROUTES.PROJECT +
+            project_id +
+            ROUTES.RECORD_CREATE +
+            props.related_type
+          }
+        >
+          New Record
+        </Button>
+      )}
     </div>
   );
 }
-
-
 
 const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
@@ -123,11 +130,10 @@ const uiSpec = {
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: '',
-}
+};
 
-
-const uiSetting = () =>{
-  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
   // console.log(generatenewfield('faims-custom','Select',null,null,null))
   // newuiSetting['fields']['related_type']=
   // newuiSetting['fields']['relation_type']=generatenewfield('faims-custom','Select',null,'related_type',null)
@@ -135,7 +141,29 @@ const uiSetting = () =>{
   //   value: 'faims-core::Child',
   //   label: 'Contained',
   // }]
-  newuiSetting['fields']['related_type']={
+  newuiSetting['fields']['related_type'] = {
+    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+    'component-name': 'Select',
+    'type-returned': 'faims-core::String', // matches a type in the Project Model
+    'component-parameters': {
+      fullWidth: true,
+      helperText: 'stringield',
+      variant: 'outlined',
+      required: true,
+      select: true,
+      InputProps: {},
+      SelectProps: {},
+      ElementProps: {
+        options: [],
+      },
+      InputLabelProps: {
+        label: 'Select Form or Field',
+      },
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  };
+  newuiSetting['fields']['relation_type'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Select',
     'type-returned': 'faims-core::String', // matches a type in the Project Model
@@ -149,34 +177,11 @@ const uiSetting = () =>{
       SelectProps: {},
       ElementProps: {
         options: [
-        ],
-      },
-      InputLabelProps: {
-        label: 'Select Form or Field',
-      },
-    },
-    validationSchema: [
-      ['yup.string'],
-    ],
-    initialValue: '',
-  }
-  newuiSetting['fields']['relation_type']={
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Select',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: 'stringield',
-      variant: 'outlined',
-      required: true,
-      select: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {
-        options: [{
+          {
             value: 'faims-core::Child',
             label: 'Contained',
-          },{
+          },
+          {
             value: 'faims-core::Linked',
             label: 'Linked',
           },
@@ -186,69 +191,66 @@ const uiSetting = () =>{
         label: 'Select Relation Type',
       },
     },
-    validationSchema: [
-      ['yup.string'],
-    ],
+    validationSchema: [['yup.string']],
     initialValue: 'faims-core::Child',
-  }
-  newuiSetting['views']['FormParamater']['fields']=['relation_type','related_type'];
-  newuiSetting["viewsets"]= {
-    "settings": {
-      "views": [
-        "InputLabelProps",
-        "FormParamater",
-      ],
-      "label": "settings"
+  };
+  newuiSetting['views']['FormParamater']['fields'] = [
+    'relation_type',
+    'related_type',
+  ];
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: ['InputLabelProps', 'FormParamater'],
+      label: 'settings',
     },
-  }
+  };
 
-  return newuiSetting
-}
-  
+  return newuiSetting;
+};
+
 export function getLinkedBuilderIcon() {
   return <LibraryBooksIcon />;
 }
 
+export const LinkedSetting = [uiSetting(), uiSpec];
 
-export const LinkedSetting =[uiSetting(),uiSpec]
-
-
-export function Linkedcomponentsetting(props:componenentSettingprops)  {
-  
-  const [uiSetting,setuiSetting]=React.useState(props.uiSetting)
+export function Linkedcomponentsetting(props: componenentSettingprops) {
+  const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
 
   React.useEffect(() => {
     setini();
   }, [props.uiSpec['visible_types']]);
 
-
-  const setrelatedtype = (fields:Array<string>) =>{
-    if(fields.length>0){
+  const setrelatedtype = (fields: Array<string>) => {
+    if (fields.length > 0) {
       //get numbers of fields that not IDs
-      const newvalues=uiSetting
-      const options:Array<option>=[]
-      fields.map((field:string,index:number)=>options[index]={
-        value: field,
-        label: field,
-      })
-      if(newvalues['fields']['related_type'+props.fieldName]!==undefined) 
-        newvalues['fields']['related_type'+props.fieldName]['component-parameters']['ElementProps']['options']=options
+      const newvalues = uiSetting;
+      const options: Array<option> = [];
+      fields.map(
+        (field: string, index: number) =>
+          (options[index] = {
+            value: field,
+            label: field,
+          })
+      );
+      if (newvalues['fields']['related_type' + props.fieldName] !== undefined)
+        newvalues['fields']['related_type' + props.fieldName][
+          'component-parameters'
+        ]['ElementProps']['options'] = options;
 
-      setuiSetting({...newvalues})
+      setuiSetting({...newvalues});
     }
-  }
+  };
 
-
-  const setini = () =>{
-    const options:Array<option>=[]
+  const setini = () => {
+    const options: Array<option> = [];
     //TODO pass the value of all field in this form
-    const fields:Array<string>=props.uiSpec['visible_types']
+    const fields: Array<string> = props.uiSpec['visible_types'];
     //fields=fields.filter((type:string)=>type!==props.currentform)
-    setrelatedtype(fields)
-    
-  }
+    setrelatedtype(fields);
+  };
 
-  const handlerchanges = (event:FAIMSEVENTTYPE) =>{
+  const handlerchanges = (event: FAIMSEVENTTYPE) => {
     // if(event.target.name.replace(props.fieldName,'')==='relation_type'){
     //   if(event.target.value==='faims-core::Field'){
     //     //get fields for select
@@ -258,8 +260,7 @@ export function Linkedcomponentsetting(props:componenentSettingprops)  {
     //     setrelatedtype(fields)
     //   }
     // }
-  }
-
+  };
 
   return (
     <Defaultcomponentsetting
@@ -268,5 +269,5 @@ export function Linkedcomponentsetting(props:componenentSettingprops)  {
       fieldui={props.fieldui}
       uiSetting={uiSetting}
     />
-   );
+  );
 }

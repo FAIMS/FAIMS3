@@ -21,8 +21,8 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
-import { getDefaultuiSetting } from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui'
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui';
 export class ActionButton extends React.Component<FieldProps & ButtonProps> {
   clickThis() {
     this.props.form.setFieldValue(this.props.field.name, 'Change!');
@@ -45,7 +45,6 @@ export class ActionButton extends React.Component<FieldProps & ButtonProps> {
   }
 }
 
-
 const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'ActionButton',
@@ -59,21 +58,18 @@ const uiSpec = {
   },
   validationSchema: [['yup.string']],
   initialValue: 'hello',
-}
+};
 
-
-const uiSetting = () =>{
-  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
-  newuiSetting["viewsets"]= {
-    "settings": {
-      "views": [
-      ],
-      "label": "settings"
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: [],
+      label: 'settings',
     },
-  }
+  };
 
-  return newuiSetting
-}
+  return newuiSetting;
+};
 
-export const ActionSetting =[uiSetting(),uiSpec]
-
+export const ActionSetting = [uiSetting(), uiSpec];

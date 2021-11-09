@@ -70,7 +70,6 @@ export async function newStagedData(
   ).id;
 }
 
-
 /**
  * @param draft_id This is from the routed URL parameter, which is redirected
  *                 to from the list of drafts or the newStagedData. The ID

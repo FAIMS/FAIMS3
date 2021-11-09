@@ -55,10 +55,7 @@ import {
   uiSpecType,
   getacessoption,
 } from '../data/ComponentSetting';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  } from '../../../../datamodel/ui'
+import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import {
   CusButton,
   CloseButton,
@@ -107,7 +104,7 @@ const VISIBLE_TYPE = 'visible_types';
 const variant_label = 'Form1';
 
 type ProjectDesignProps = {
-  project_id: string |null;
+  project_id: string | null;
   formuiSpec: uiSpecType;
   setFormuiSpec: FAIMShandlerType;
   handleSaveUiSpec: FAIMShandlerType;
@@ -167,18 +164,16 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setinit();
   }, [project_id]);
 
-
-
-const generateunifromformui = (formui:uiSpecType) =>{
+  const generateunifromformui = (formui: uiSpecType) => {
     const tabs: Array<string> = [];
     formui[VISIBLE_TYPE].map((tab: string) =>
       tabs.push(formuiSpec['viewsets'][tab]['label'] ?? tab)
     );
-    const {newformcom,initialfieldvalue} = updateuiSpec('newfromui', {
+    const {newformcom, initialfieldvalue} = updateuiSpec('newfromui', {
       formuiSpec: formui,
       formcomponents: formcomponents,
       access: accessgroup,
-      initialfieldvalue:initialValues
+      initialfieldvalue: initialValues,
     });
 
     const newformvariants = formui[VISIBLE_TYPE][0];
@@ -232,9 +227,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
     if (formuiSpec !== null) {
       generateunifromformui(formuiSpec);
     }
-
-
-    }
+  };
 
   const handleAddField = (id: any) => {
     const uuid = getid();
@@ -243,7 +236,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
       components,
       newuiSpeclist,
       newuiSpec,
-      initialfieldvalue
+      initialfieldvalue,
     } = updateuiSpec('addfield', {
       uuid: uuid,
       id: id,
@@ -296,12 +289,16 @@ const generateunifromformui = (formui:uiSpecType) =>{
     setFormComponents(components);
   };
   const handleDownFieldButton = (index: number) => {
-
-      const {newviews,components}=updateuiSpec('switch',{index:index,type:true,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview})
+    const {newviews, components} = updateuiSpec('switch', {
+      index: index,
+      type: true,
+      formuiSpec: formuiSpec,
+      formcomponents: formcomponents,
+      formuiview: formuiview,
+    });
     setFormuiSpec({...formuiSpec, views: newviews.views});
     setFormComponents(components);
-
-    }
+  };
 
   const handelonClickSetting = (index: string, key: string) => {
     const formcomponent = formcomponents;
@@ -352,8 +349,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
       setCurrentView('');
       setformvalue(0);
       setfieldValue(2); //TODO: remove it
-
-        }
+    }
   };
 
   const handelonChangeLabel = (tabs: Array<string>, type: string) => {
@@ -416,24 +412,26 @@ const generateunifromformui = (formui:uiSpecType) =>{
   const handleChangeformvalueTab = (event: any, index: number) => {
     setformvalue(index);
   };
-  
 
   const submithandler = (values: any) => {};
 
   const getinitaccess = () => {
     try {
       return ['admin'];
-
     } catch (error) {
       console.error("can't get access");
       return ['admin'];
     }
-
-    }
+  };
 
   const handleChangeForm = (event: any, type = 'change', value = '') => {
-
-      const {newviews,components}=updateuiSpec('updatefield',{event:event,formuiSpec:formuiSpec,formcomponents:formcomponents,formuiview:formuiview,access:getinitaccess()})
+    const {newviews, components} = updateuiSpec('updatefield', {
+      event: event,
+      formuiSpec: formuiSpec,
+      formcomponents: formcomponents,
+      formuiview: formuiview,
+      access: getinitaccess(),
+    });
     setFormuiSpec({...formuiSpec, fields: newviews.fields});
     setFormComponents(components);
     console.log(event.target.name);
@@ -476,7 +474,8 @@ const generateunifromformui = (formui:uiSpecType) =>{
 
   const handleChangeFormAction = (event: any) => {
     const newproject = props.projectvalue;
-    if(newproject['forms'][formvariants]===undefined) newproject['forms'][formvariants]={}
+    if (newproject['forms'][formvariants] === undefined)
+      newproject['forms'][formvariants] = {};
     if (event.target.name.includes('accessinherit')) {
       //   //update the access for project
       //   const value=(event.target.value=== 'true'||event.target.value===true) //TODO
@@ -487,8 +486,12 @@ const generateunifromformui = (formui:uiSpecType) =>{
       //   console.log(event.target.name+value)
       if (projectvalue[event.target.name] === undefined)
         newproject['forms'][formvariants][event.target.name] = true;
-      else newproject['forms'][formvariants][event.target.name] = !newproject[event.target.name];
-    } else newproject['forms'][formvariants][event.target.name] = event.target.value;
+      else
+        newproject['forms'][formvariants][event.target.name] = !newproject[
+          event.target.name
+        ];
+    } else
+      newproject['forms'][formvariants][event.target.name] = event.target.value;
 
     props.setProjectValue({...newproject});
 
@@ -500,10 +503,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
     }
 
     setfieldValue(0); //TODO: remove it
-
-
-
-    }
+  };
 
   const handleSubmitFormAction = () => {};
 
@@ -515,7 +515,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
     if (!newvalue.includes('admin')) newvalue = [...newvalue, 'admin'];
     if (type === 'form') {
       const newproj = props.projectvalue;
-      if(newproj['access']===undefined) newproj['access']={}
+      if (newproj['access'] === undefined) newproj['access'] = {};
       newproj['access']['access' + id] = newvalue;
       props.setProjectValue({...newproj});
     } else if (type === 'uiS') {
@@ -542,157 +542,152 @@ const generateunifromformui = (formui:uiSpecType) =>{
       setformlabel(formtabs[index]);
     }
   };
-  
-  const fieldform = (formProps:any) => {
-    return formcomponents[formuiview].map((formcomponent: any, index: any) => (
-              <Grid
-                container
-                className={classes.newfield}
-                key={`formcompoenet-form-${index}`}
-              >
-                <Grid item sm={10} xs={12}>
-                  <Grid container spacing={1}>
-                    <Grid item sm={4} xs={12}>
-                      <Typography variant="subtitle2">
-                        Preview of Component
-                        {formcomponent['id']}
-                      </Typography>
-                      {getComponentFromField(
-                        formuiSpec,
-                        'newfield'+formcomponent['id'],
-                        formProps,
-                        ()=>{} //this is preview field only, so no need to handler changes
-                      )}
-                    </Grid>
-                    <Grid item sm={1} xs={3} className={classes.settingtab}>
-                      <SettingCard
-                        handelonClick={handelonClickSetting}
-                        key_id={formcomponent.id}
-                        selected={formcomponent['designvalue']}
-                      />
-                    </Grid>
-                    <Grid item sm={7} xs={9}>
-                      <Typography variant="subtitle2">Configuration</Typography>
-                      
-                      <ResetComponentProperties 
-                      namespace={formcomponent['namespace']}
-                      componentName={formcomponent['componentName']}
-                      uiSpec={formuiSpec}
-                      setuiSpec={setFormuiSpec}
-                      fieldName={'newfield'+formcomponent['id']}
-                      formProps={formProps}
-                      designvalue={formcomponent['designvalue']}
-                      currentview={formuiview}
-                      currentform={formvariants}
-                      initialValues={initialValues}
-                      setinitialValues={setinitialValues}
-                      projectvalue={projectvalue}
-                      />
-                      
-                      {formcomponent['designvalue'] === 'access' ? (
-                        <AutocompleteForm
-                          id={formcomponent['id']}
-                          options={getacessoption(
-                            props.projectvalue['access']['access' + formuiview] ?? [
-                              'admin',
-                            ]
-                          )}
-                          labels={
-                            formuiSpec['fields'][
-                              'newfield' + formcomponent['id']
-                            ]['access']
-                          }
-                          handleAutocomplete={handleAutocomplete}
-                          type={'uiS'}
-                        />
-                      ) : (
-                        ''
-                      )}
-                    </Grid>
-                  </Grid>
-                </Grid>
-                <Grid item sm={2} xs={12} className={classes.newfield_button}>
-                  {index > 0 ? (
-                    <UpButton
-                      onButtonClick={handleUpFieldButton}
-                      value={index}
-                      id={index}
-                      text="X"
-                    />
-                  ) : (
-                    ''
-                  )}
-                  {index < formcomponents[formuiview].length - 1 ? (
-                    <DownButton
-                      onButtonClick={handleDownFieldButton}
-                      value={index}
-                      id={index}
-                      text="X"
-                    />
-                  ) : (
-                    ''
-                  )}
-                  <CloseButton
-                    onButtonClick={handleRemoveField}
-                    value={formcomponent.id}
-                    id={formcomponent.id}
-                    text="X"
-                  />
-                </Grid>
-              </Grid>
-              
-          ))
-          
-  }
 
-  const compnentPanel = () =>{
+  const fieldform = (formProps: any) => {
+    return formcomponents[formuiview].map((formcomponent: any, index: any) => (
+      <Grid
+        container
+        className={classes.newfield}
+        key={`formcompoenet-form-${index}`}
+      >
+        <Grid item sm={10} xs={12}>
+          <Grid container spacing={1}>
+            <Grid item sm={4} xs={12}>
+              <Typography variant="subtitle2">
+                Preview of Component
+                {formcomponent['id']}
+              </Typography>
+              {getComponentFromField(
+                formuiSpec,
+                'newfield' + formcomponent['id'],
+                formProps,
+                () => {} //this is preview field only, so no need to handler changes
+              )}
+            </Grid>
+            <Grid item sm={1} xs={3} className={classes.settingtab}>
+              <SettingCard
+                handelonClick={handelonClickSetting}
+                key_id={formcomponent.id}
+                selected={formcomponent['designvalue']}
+              />
+            </Grid>
+            <Grid item sm={7} xs={9}>
+              <Typography variant="subtitle2">Configuration</Typography>
+
+              <ResetComponentProperties
+                namespace={formcomponent['namespace']}
+                componentName={formcomponent['componentName']}
+                uiSpec={formuiSpec}
+                setuiSpec={setFormuiSpec}
+                fieldName={'newfield' + formcomponent['id']}
+                formProps={formProps}
+                designvalue={formcomponent['designvalue']}
+                currentview={formuiview}
+                currentform={formvariants}
+                initialValues={initialValues}
+                setinitialValues={setinitialValues}
+                projectvalue={projectvalue}
+              />
+
+              {formcomponent['designvalue'] === 'access' ? (
+                <AutocompleteForm
+                  id={formcomponent['id']}
+                  options={getacessoption(
+                    props.projectvalue['access']['access' + formuiview] ?? [
+                      'admin',
+                    ]
+                  )}
+                  labels={
+                    formuiSpec['fields']['newfield' + formcomponent['id']][
+                      'access'
+                    ]
+                  }
+                  handleAutocomplete={handleAutocomplete}
+                  type={'uiS'}
+                />
+              ) : (
+                ''
+              )}
+            </Grid>
+          </Grid>
+        </Grid>
+        <Grid item sm={2} xs={12} className={classes.newfield_button}>
+          {index > 0 ? (
+            <UpButton
+              onButtonClick={handleUpFieldButton}
+              value={index}
+              id={index}
+              text="X"
+            />
+          ) : (
+            ''
+          )}
+          {index < formcomponents[formuiview].length - 1 ? (
+            <DownButton
+              onButtonClick={handleDownFieldButton}
+              value={index}
+              id={index}
+              text="X"
+            />
+          ) : (
+            ''
+          )}
+          <CloseButton
+            onButtonClick={handleRemoveField}
+            value={formcomponent.id}
+            id={formcomponent.id}
+            text="X"
+          />
+        </Grid>
+      </Grid>
+    ));
+  };
+
+  const compnentPanel = () => {
     return (
       <Formik
-      enableReinitialize
-      initialValues={initialValues}
-      validateOnMount={true}
-      onSubmit={(values, {setSubmitting}) => {
-        setTimeout(() => {
-          setSubmitting(false);
-          submithandler(values);
-        }, 500);
-      }}
-    >
-      {formProps => {
-        return (
-          <Form>
-            {fieldform(formProps)}
-            <Grid container>
-            <Grid item sm={6} xs={12}>
-            <Box
-                  bgcolor={grey[200]}
-                  pl={2}
-                  pr={2}
-                  style={{overflowX: 'scroll'}}
-                >
-                <pre>{JSON.stringify(formProps, null, 2)}</pre>
-            </Box>
-
-          </Grid> 
-          <Grid item sm={6} xs={12}>
-            <Box
-                  bgcolor={grey[200]}
-                  pl={2}
-                  pr={2}
-                  style={{overflowX: 'scroll'}}
-                >
-                <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
-            </Box>
-
-          </Grid> 
-          </Grid> 
-            
-          </Form>
-        )}
-      }
-    </Formik>
-    )
-  }
+        enableReinitialize
+        initialValues={initialValues}
+        validateOnMount={true}
+        onSubmit={(values, {setSubmitting}) => {
+          setTimeout(() => {
+            setSubmitting(false);
+            submithandler(values);
+          }, 500);
+        }}
+      >
+        {formProps => {
+          return (
+            <Form>
+              {fieldform(formProps)}
+              <Grid container>
+                <Grid item sm={6} xs={12}>
+                  <Box
+                    bgcolor={grey[200]}
+                    pl={2}
+                    pr={2}
+                    style={{overflowX: 'scroll'}}
+                  >
+                    <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                  </Box>
+                </Grid>
+                <Grid item sm={6} xs={12}>
+                  <Box
+                    bgcolor={grey[200]}
+                    pl={2}
+                    pr={2}
+                    style={{overflowX: 'scroll'}}
+                  >
+                    <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Form>
+          );
+        }}
+      </Formik>
+    );
+  };
 
   const FieldPanel = () => {
     /****section tab:
@@ -723,7 +718,9 @@ const generateunifromformui = (formui:uiSpecType) =>{
             <AutocompleteForm
               id={formuiview}
               options={getacessoption(
-                props.projectvalue['access']['access' + formvariants] ?? ['admin']
+                props.projectvalue['access']['access' + formvariants] ?? [
+                  'admin',
+                ]
               )}
               labels={props.projectvalue['access']['access' + formuiview]}
               handleAutocomplete={handleAutocomplete}
@@ -794,7 +791,6 @@ const generateunifromformui = (formui:uiSpecType) =>{
                 labels={props.projectvalue['access']['access' + formvariants]}
                 type={'form'}
               />
-              
             </Grid>
             <Grid item sm={6} xs={1}>
               <Alert severity="info">
@@ -812,7 +808,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
           />
         </TabPanel>
 
-      <TabPanel value={formvalue} index={1} tabname='formtab' >
+        <TabPanel value={formvalue} index={1} tabname="formtab">
           <Alert severity="info">
             Add further sections by choosing plus icon. Within each section
             define the components you need.{' '}
@@ -849,22 +845,22 @@ const generateunifromformui = (formui:uiSpecType) =>{
         <TabPanel value={formvalue} index={2} tabname="formtab">
           {props.projectvalue !== undefined && (
             <>
-            <FormForm
-              currentView="start-view"
-              handleChangeForm={handleChangeFormAction}
-              handleSubmit={handleSubmitFormAction}
-              uiSpec={getprojectform(props.projectvalue, 'form', {
-                formname: formvariants,
-              })}
-            />
-            <FormForm
-              currentView="start-view"
-              handleChangeForm={handleChangeFormAction}
-              handleSubmit={handleSubmitFormAction}
-              uiSpec={getprojectform(props.projectvalue, 'form_setting', {
-                formname: formvariants,
-              })}
-            />
+              <FormForm
+                currentView="start-view"
+                handleChangeForm={handleChangeFormAction}
+                handleSubmit={handleSubmitFormAction}
+                uiSpec={getprojectform(props.projectvalue, 'form', {
+                  formname: formvariants,
+                })}
+              />
+              <FormForm
+                currentView="start-view"
+                handleChangeForm={handleChangeFormAction}
+                handleSubmit={handleSubmitFormAction}
+                uiSpec={getprojectform(props.projectvalue, 'form_setting', {
+                  formname: formvariants,
+                })}
+              />
             </>
           )}
           <ProjectSubmit
@@ -898,20 +894,27 @@ const generateunifromformui = (formui:uiSpecType) =>{
           />
         </Grid>
         <Grid item sm={not_xs && formtabs.length > 1 ? 10 : 12} xs={12}>
-
-      {formtabs.map((formtab:string,index:number)=>
-
-        <TabPanel value={value} index={index} tabname='formtab' key={'formtab'+index}>
+          {formtabs.map((formtab: string, index: number) => (
+            <TabPanel
+              value={value}
+              index={index}
+              tabname="formtab"
+              key={'formtab' + index}
+            >
               {SectionPanel()}
             </TabPanel>
-          )}
+          ))}
         </Grid>
         {not_xs && formtabs.length > 1 ? (
           <Grid item sm={2} xs={12} className={classes.formtabcard}>
-
-
-            {formtabs.length>1&&<FormConnectionCard tabs={formtabs} formuiSpec={formuiSpec} tabname={formlabel??'form'} form={formvariants}/>}
-
+            {formtabs.length > 1 && (
+              <FormConnectionCard
+                tabs={formtabs}
+                formuiSpec={formuiSpec}
+                tabname={formlabel ?? 'form'}
+                form={formvariants}
+              />
+            )}
           </Grid>
         ) : (
           ''
@@ -929,7 +932,7 @@ const generateunifromformui = (formui:uiSpecType) =>{
         User access and form submission behaviour. Add further forms by choosing
         plus icon, edit form name by choosing edit icon.
       </Alert>
-      
+
       {project_id !== '' && project_id !== null && project_id !== undefined ? (
         <AddButton
           id="SaveUiSpec"
@@ -940,8 +943,6 @@ const generateunifromformui = (formui:uiSpecType) =>{
         ''
       )}
       {FormPanel()}
-
     </>
-
   );
 }

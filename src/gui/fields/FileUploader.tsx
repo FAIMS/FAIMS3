@@ -21,8 +21,12 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Dropzone from 'react-dropzone';
-import { getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel,componenentSettingprops,FAIMSEVENTTYPE} from '../../datamodel/ui'
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import {
+  ProjectUIModel,
+  componenentSettingprops,
+  FAIMSEVENTTYPE,
+} from '../../datamodel/ui';
 import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
 interface Props {
   accepted_filetypes?: string | string[];
@@ -72,9 +76,7 @@ export function FileUploader(props: FieldProps & Props) {
   );
 }
 
-
-
-const uiSpec={
+const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'FileUploader',
   'type-returned': 'faims-core::File', // matches a type in the Project Model
@@ -84,25 +86,22 @@ const uiSpec={
   },
   validationSchema: [['yup.mixed']],
   initialValue: null,
-}
+};
 
-const uiSetting = () =>{
-  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
-  newuiSetting["viewsets"]= {
-    "settings": {
-      "views": [
-        
-      ],
-      "label": "settings"
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: [],
+      label: 'settings',
     },
-  }
+  };
 
-  return newuiSetting
-}
+  return newuiSetting;
+};
 
-export const FileuploadSetting =[uiSetting(),uiSpec]
+export const FileuploadSetting = [uiSetting(), uiSpec];
 
 export function getFileuploadBuilderIcon() {
   return <LibraryBooksIcon />;
 }
-

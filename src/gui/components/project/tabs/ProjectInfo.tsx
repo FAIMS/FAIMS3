@@ -30,7 +30,7 @@ import {
   Typography,
   AppBar,
   Hidden,
-  Paper
+  Paper,
 } from '@material-ui/core';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import FieldsListCard from './FieldsListCard';
@@ -49,7 +49,7 @@ import {
   ProjevtValueList,
   FAIMShandlerType,
   BehaviourProperties,
-  } from '../../../../datamodel/ui'
+} from '../../../../datamodel/ui';
 import {TickButton, AddUserButton, ProjectSubmit} from './ProjectButton';
 import {
   setUiSpecForProject,
@@ -60,27 +60,32 @@ import {getProjectInfo} from '../../../../databaseAccess';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@material-ui/lab/Alert';
-const useStyles = makeStyles(theme => ({
-  
-}));
+const useStyles = makeStyles(theme => ({}));
 
 type ProjectInfoProps = {
-  project_id: string |null;
+  project_id: string | null;
   projectvalue: ProjevtValueList;
   setProjectValue: FAIMShandlerType;
   handleChangeFormProject: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
-  formProps:any;
+  formProps: any;
 };
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
-  const {projectvalue, setProjectValue, project_id, formProps,...others} = props;
+  const {
+    projectvalue,
+    setProjectValue,
+    project_id,
+    formProps,
+    ...others
+  } = props;
   const [infotabvalue, setinfotabvalue] = useState(0);
   const [uiSpec_general, setUISpecG] = useState<ProjectUIModel>({
     fields: {},
     views: {},
     viewsets: {},
-    visible_types: []})
+    visible_types: [],
+  });
 
   const [accessgroup, setaccessgroup] = useState([]);
   const [uiSpec_access, setUISpecA] = useState<ProjectUIModel>({
@@ -89,13 +94,14 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     viewsets: {},
     visible_types: [],
   });
-  const [accessAdded,setAccessAdded]= useState('')
-  const [metaAdded,setMetaAdded]= useState('')
+  const [accessAdded, setAccessAdded] = useState('');
+  const [metaAdded, setMetaAdded] = useState('');
   const [uiSpec_meta, setUISpecM] = useState<ProjectUIModel>({
     fields: {},
     views: {},
     viewsets: {},
-    visible_types: []})
+    visible_types: [],
+  });
 
   useEffect(() => {
     setini();
@@ -107,7 +113,6 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
 
   useEffect(() => {
     if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {
-
       setUISpecG(getprojectform(projectvalue, 'info_general'));
       console.debug('update');
     }
@@ -124,7 +129,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   const setini = () => {
     setUISpecA(getprojectform(projectvalue, 'info_group'));
     setUISpecG({...getprojectform(projectvalue, 'info_general')});
-    setUISpecM({...getprojectform(projectvalue, 'project_meta')})
+    setUISpecM({...getprojectform(projectvalue, 'project_meta')});
     setinfotabvalue(0);
   };
 
@@ -137,7 +142,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     setinfotabvalue(index);
   };
 
-  const handleAddAccess = (accessadded:string) => {
+  const handleAddAccess = (accessadded: string) => {
     if (accessadded === '') return false;
     const newproject = projectvalue;
     newproject['accesses'] = [...newproject['accesses'], accessadded]; //need to reset the add user role value
@@ -146,18 +151,19 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     return true;
   };
 
-  const handleaddmeta = (metaAdded:string) =>{
-    console.log(metaAdded)
+  const handleaddmeta = (metaAdded: string) => {
+    console.log(metaAdded);
     if (metaAdded === '') return false;
     const newproject = projectvalue;
     newproject['meta'][metaAdded] = ''; //need to reset the add user role value
     setProjectValue(newproject);
-    setUISpecM({...getprojectform(newproject, 'project_meta')})
+    setUISpecM({...getprojectform(newproject, 'project_meta')});
     return true;
-  }
+  };
 
-  const handleformchangeAccess = (event: any) => {setAccessAdded(event.target.value)};
-
+  const handleformchangeAccess = (event: any) => {
+    setAccessAdded(event.target.value);
+  };
 
   const deleteuserrole = (userrole: string) => {
     console.log(userrole);
@@ -169,116 +175,132 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     setaccessgroup(newproject['accesses']);
   };
 
-  const handleChangeFormProjectMeta=(event: any) => {
+  const handleChangeFormProjectMeta = (event: any) => {
     const newproject = projectvalue;
     newproject['meta'][event.target.name] = event.target.value;
     setProjectValue({...newproject});
   };
 
-  const getfields = (uiSp:any) =>{
-    return uiSp['views']['start-view']['fields']
-  }
+  const getfields = (uiSp: any) => {
+    return uiSp['views']['start-view']['fields'];
+  };
 
-  const isready=(uiSp:any)=>{
-    if(uiSp['views']['start-view'] !== undefined) return true;
-    return false
-  }
+  const isready = (uiSp: any) => {
+    if (uiSp['views']['start-view'] !== undefined) return true;
+    return false;
+  };
 
-  const metaTab = () =>{
+  const metaTab = () => {
     return (
       <Grid container>
         <Grid item sm={8} xs={12}>
           Meta List:
-        {isready(uiSpec_meta)&& 
-          uiSpec_meta['views']['start-view']['fields'].map((fieldName: string) =>
-            getComponentFromField(
-              uiSpec_meta,
-              fieldName,
-              formProps,
-              handleChangeFormProjectMeta
-            )
-          )
-        }
+          {isready(uiSpec_meta) &&
+            uiSpec_meta['views']['start-view'][
+              'fields'
+            ].map((fieldName: string) =>
+              getComponentFromField(
+                uiSpec_meta,
+                fieldName,
+                formProps,
+                handleChangeFormProjectMeta
+              )
+            )}
         </Grid>
-        <Grid item sm={12} xs={12}><br/><hr/> Add New Meta Component<br/></Grid>
+        <Grid item sm={12} xs={12}>
+          <br />
+          <hr /> Add New Meta Component
+          <br />
+        </Grid>
         <Grid item sm={4} xs={12}>
-        {getfields(getprojectform(projectvalue,'projectmetaadd')).map((fieldName: string) =>
+          {getfields(
+            getprojectform(projectvalue, 'projectmetaadd')
+          ).map((fieldName: string) =>
             getComponentFromField(
-              getprojectform(projectvalue,'projectmetaadd'),
+              getprojectform(projectvalue, 'projectmetaadd'),
               fieldName,
               formProps,
-              (event:any)=>setMetaAdded(event.target.value)
+              (event: any) => setMetaAdded(event.target.value)
             )
-          )
-        }
+          )}
         </Grid>
-        <Grid item sm={2} xs={12}><br/><AddUserButton id='submit' type="button" onButtonClick={handleaddmeta} value={metaAdded} /></Grid>
+        <Grid item sm={2} xs={12}>
+          <br />
+          <AddUserButton
+            id="submit"
+            type="button"
+            onButtonClick={handleaddmeta}
+            value={metaAdded}
+          />
+        </Grid>
         <Grid item sm={6} xs={12}>
           <Alert severity="info">
             Add Meta component by filling Label and clicking the Add button
           </Alert>
         </Grid>
-        
-        
 
-        
+
+
+
       </Grid>
-    )
-  }
+    );
+  };
 
-  const infoTab = () =>{
+  const infoTab = () => {
     return (
       <Grid container>
-            <Grid item sm={8} xs={12}>
-              
-                  
-                        {isready(uiSpec_general)&& (getfields(uiSpec_general).map((fieldName: string) =>
-                              getComponentFromField(
-                                uiSpec_general,
-                                fieldName,
-                                formProps,
-                                handleChangeFormProject
-                              )
-                            ))
-                            }
-                        <br />
-                        <ProjectSubmit
-                          id="gotonext_info"
-                          type="submit"
-                          isSubmitting={false}
-                          text="Go To Next"
-                          onButtonClick={() => setinfotabvalue(1)}
-                        />
-                        
-              <br />
-            </Grid>
-            <Grid item sm={4} xs={12}>
-              <Alert severity="info">
-                Give project a name and an description
-              </Alert>
-            </Grid>
-          </Grid>
-    )
-  }
+        <Grid item sm={8} xs={12}>
 
-  const accessTab = () =>{
-    return(
-    <Grid container>
-      <Grid item sm={8} xs={12}>
+
+          {isready(uiSpec_general)&& (getfields(uiSpec_general).map((fieldName: string) =>
+              getComponentFromField(
+                uiSpec_general,
+                fieldName,
+                formProps,
+                handleChangeFormProject
+              )
+            ))}
+          <br />
+          <ProjectSubmit
+            id="gotonext_info"
+            type="submit"
+            isSubmitting={false}
+            text="Go To Next"
+            onButtonClick={() => setinfotabvalue(1)}
+          />
+
+          <br />
+        </Grid>
+        <Grid item sm={4} xs={12}>
+          <Alert severity="info">Give project a name and an description</Alert>
+        </Grid>
+      </Grid>
+    );
+  };
+
+  const accessTab = () => {
+    return (
+      <Grid container>
+        <Grid item sm={8} xs={12}>
           <Grid container>
             <Grid item sm={6} xs={12}>
-                      {isready(uiSpec_access)&&getfields(uiSpec_access).map((fieldName: string) =>
-                            getComponentFromField(
-                              uiSpec_access,
-                              fieldName,
-                              formProps,
-                              handleformchangeAccess
-                            )
-                          )
-                        }
-                      <Box pl={2} pr={2}>
-
-          <AddUserButton id='submit' type="button" onButtonClick={handleAddAccess} value={accessAdded} /></Box>
+              {isready(uiSpec_access) &&
+                getfields(uiSpec_access).map((fieldName: string) =>
+                  getComponentFromField(
+                    uiSpec_access,
+                    fieldName,
+                    formProps,
+                    handleformchangeAccess
+                  )
+                )}
+              <Box pl={2} pr={2}>
+                <AddUserButton
+                  id="submit"
+                  type="button"
+                  onButtonClick={handleAddAccess}
+                  value={accessAdded}
+                />
+              </Box>
             </Grid>
             <Grid item sm={1} xs={12}></Grid>
             <Grid item sm={5} xs={12}>
@@ -288,48 +310,48 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
               />
             </Grid>
           </Grid>
+        </Grid>
+        <Grid item sm={4} xs={12}>
+          <Alert severity="info">
+            All projects have an admin, moderator, and team roles by default.
+            define any new roles required here. You will be able to assign users
+            to these roles later in the User tab.
+          </Alert>
+        </Grid>
+        <ProjectSubmit
+          id="gotonext_info"
+          type="submit"
+          isSubmitting={false}
+          text="Go To Next"
+          onButtonClick={() => props.setProjecttabvalue(1)}
+        />
       </Grid>
-      <Grid item sm={4} xs={12}>
-        <Alert severity="info">
-          All projects have an admin, moderator, and team roles by
-          default. define any new roles required here. You will be able to
-          assign users to these roles later in the User tab.
-        </Alert>
-      </Grid>
-      <ProjectSubmit
-        id="gotonext_info"
-        type="submit"
-        isSubmitting={false}
-        text="Go To Next"
-        onButtonClick={() => props.setProjecttabvalue(1)}
-      />
-    </Grid>
-  
+
   )
-  }
+  };
 
-
-  const AttachmentTab = () =>{
+  const AttachmentTab = () => {
     return (
       <Grid>
-        {getfields(getprojectform(projectvalue,'attachments')).map((fieldName: string) =>
-            getComponentFromField(
-              getprojectform(projectvalue,'attachments'),
-              fieldName,
-              formProps,
-              (event:any)=>setMetaAdded(event.target.value)
-            )
+        {getfields(
+          getprojectform(projectvalue, 'attachments')
+        ).map((fieldName: string) =>
+          getComponentFromField(
+            getprojectform(projectvalue, 'attachments'),
+            fieldName,
+            formProps,
+            (event: any) => setMetaAdded(event.target.value)
           )
-        }
+        )}
       </Grid>
-    )
-  }
+    );
+  };
 
   return (
     <Grid container>
       <Grid item sm={12} xs={12}>
         <TabTab
-          tabs={['general','Meta','User Role','Attachment']}
+          tabs={['general', 'Meta', 'User Role', 'Attachment']}
           value={infotabvalue}
           handleChange={handleChangetab}
           tab_id="primarytab"
@@ -338,16 +360,14 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
           {infoTab()}
         </TabPanel>
         <TabPanel value={infotabvalue} index={2} tabname="primarytab">
-        {accessTab()}
+          {accessTab()}
         </TabPanel>
         <TabPanel value={infotabvalue} index={1} tabname="primarytab">
-        {metaTab()}
+          {metaTab()}
         </TabPanel>
         <TabPanel value={infotabvalue} index={3} tabname="primarytab">
-          Add Attachment 
-          <Paper>
-          {AttachmentTab()}
-          </Paper>
+          Add Attachment
+          <Paper>{AttachmentTab()}</Paper>
         </TabPanel>
       </Grid>
     </Grid>

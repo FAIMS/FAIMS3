@@ -22,8 +22,8 @@ import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins} from '@capacitor/core';
-import {getDefaultuiSetting } from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui'
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui';
 
 const {Geolocation} = Plugins;
 
@@ -53,7 +53,7 @@ export class TakePoint extends React.Component<
     const pos = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
     let postext = <span>No point taken.</span>;
-    if (pos !== null&&pos!== undefined) {
+    if (pos !== null && pos !== undefined) {
       postext = (
         <span {...this.props['ValueTextProps']}>
           Lat: {pos.latitude}; Long: {pos.longitude}
@@ -86,7 +86,6 @@ export class TakePoint extends React.Component<
   }
 }
 
-
 const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'TakePoint',
@@ -110,22 +109,18 @@ const uiSpec = {
     ],
   ],
   initialValue: null,
-}
+};
 
-
-const uiSetting = () =>{
-  const newuiSetting:ProjectUIModel=getDefaultuiSetting();
-  newuiSetting["viewsets"]= {
-    "settings": {
-      "views": [
-      ],
-      "label": "settings"
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: [],
+      label: 'settings',
     },
-  }
+  };
 
-  return newuiSetting
-}
-  
+  return newuiSetting;
+};
 
-export const TakePointSetting =[uiSetting(),uiSpec]
-
+export const TakePointSetting = [uiSetting(), uiSpec];

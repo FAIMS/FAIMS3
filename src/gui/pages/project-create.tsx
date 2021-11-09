@@ -33,9 +33,9 @@ import {ProjectUIModel} from '../../datamodel/ui';
 
 export default function ProjectCreate() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  console.log(project_id)
+  console.log(project_id);
   if (project_id === undefined) {
-    console.log(project_id)
+    console.log(project_id);
     const breadcrumbs = [
       {link: ROUTES.INDEX, title: 'Index'},
       {title: 'New Notebook'},

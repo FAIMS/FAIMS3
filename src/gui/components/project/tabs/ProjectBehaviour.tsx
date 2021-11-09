@@ -18,17 +18,12 @@
  *   TODO:
  */
 
-import {
-  Grid,
-  Typography,
-  Switch,
-} from '@material-ui/core';
+import {Grid, Typography, Switch} from '@material-ui/core';
 import {
   ProjevtValueList,
   FAIMShandlerType,
   BehaviourProperties,
-  } from '../../../../datamodel/ui'
-
+} from '../../../../datamodel/ui';
 
 type ProjectBehaviourProps = any;
 
@@ -53,10 +48,13 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
     {
       label: 'Store Contenet Offline',
       helpText: 'Make all images and fiels avaliable offline',
-    }];
+    },
+  ];
 
-
-  const belement = (behaviour: BehaviourProperties , handleChange: FAIMShandlerType) => {
+  const belement = (
+    behaviour: BehaviourProperties,
+    handleChange: FAIMShandlerType
+  ) => {
     return (
       <Grid container>
         <Grid item sm={4} xs={1}>

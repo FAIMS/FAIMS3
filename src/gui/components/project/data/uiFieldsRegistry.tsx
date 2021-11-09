@@ -190,7 +190,7 @@ const Checkbox = (props: any) => {
     FormControlLabelProps: {
       label: label,
     },
-    initialValue: initialValue??false,
+    initialValue: initialValue ?? false,
     FormHelperTextProps: {children: helperText ?? ''},
     ...others,
   });

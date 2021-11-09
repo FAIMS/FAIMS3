@@ -130,8 +130,7 @@ export function TabEditable(props: TabProps) {
   };
 
   const handleSubmitForm = (values: any) => {
-
-  		const newtabs=tablists
+    const newtabs = tablists;
     const pretabs = tablists;
     Object.entries(values).map((value, index) => (newtabs[index] = value[1]));
     props.handelonChangeLabel(newtabs, 'update');
