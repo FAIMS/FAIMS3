@@ -102,6 +102,13 @@ const variant_default = ['FORM1'];
 const form_defult = {FORM1SECTION1: []};
 const VISIBLE_TYPE = 'visible_types';
 const variant_label = 'Form1';
+const DefaultAnnotation={
+  annotation_label: 'annotation',
+  uncertainty: {
+    include: false,
+    label: 'uncertainty',
+  },
+}
 
 type ProjectDesignProps = {
   project_id: string | null;
@@ -174,6 +181,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       formcomponents: formcomponents,
       access: accessgroup,
       initialfieldvalue: initialValues,
+      projectvalue:projectvalue
     });
 
     const newformvariants = formui[VISIBLE_TYPE][0];
@@ -244,6 +252,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       formcomponents: formcomponents,
       formuiview: formuiview,
       accessgroup: getinitaccess(),
+      meta:{isannotation:projectvalue['forms'][formvariants]['annotation'+formvariants],isuncertainty:projectvalue['forms'][formvariants]['uncertainty'+formvariants]}
     });
     setinitialValues({
       ...initialValues,
@@ -371,7 +380,10 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setformlabel(formtabs[tabs.length - 1]);
       //set default value as preselect value for formaction
       const newprojectvalue = props.projectvalue;
-      newprojectvalue['submitAction' + tabname] = 'Save and New';
+      newprojectvalue['forms'][tabname]={}
+      newprojectvalue['forms'][tabname]['submitAction' + tabname] = 'Save and New';
+      newprojectvalue['forms'][tabname]['annotation'+ tabname] = true;
+      newprojectvalue['forms'][tabname]['uncertainty'+ tabname] = false;
       props.setProjectValue({...newprojectvalue});
     } else {
       //after tabname changes direct user to form1 section1
@@ -462,34 +474,33 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const handleSubmitFormSection = (values: any) => {
-    const newprojectvalue = props.projectvalue;
-    if (newprojectvalue['sections'] === undefined)
-      newprojectvalue['sections'] = {};
-    newprojectvalue['sections'][formuiview] = values;
-    props.setProjectValue({
-      ...props.projectvalue,
-      sections: newprojectvalue.sections,
-    });
+    // const newprojectvalue = props.projectvalue;
+    // if (newprojectvalue['sections'] === undefined)
+    //   newprojectvalue['sections'] = {};
+    // newprojectvalue['sections'][formuiview] = values;
+    // props.setProjectValue({
+    //   ...props.projectvalue,
+    //   sections: newprojectvalue.sections,
+    // });
   };
 
   const handleChangeFormAction = (event: any) => {
     const newproject = props.projectvalue;
     if (newproject['forms'][formvariants] === undefined)
       newproject['forms'][formvariants] = {};
-    if (event.target.name.includes('accessinherit')) {
-      //   //update the access for project
-      //   const value=(event.target.value=== 'true'||event.target.value===true) //TODO
-      //   newproject[event.target.name]=value
-      //   if(value===true){
-      //     newproject['access'+formvariants]=props.projectvalue.accesses
-      //   }else newproject['access'+formvariants]=['admin']
-      //   console.log(event.target.name+value)
-      if (projectvalue[event.target.name] === undefined)
-        newproject['forms'][formvariants][event.target.name] = true;
-      else
-        newproject['forms'][formvariants][event.target.name] = !newproject[
-          event.target.name
-        ];
+      console.log(event.target.checked)
+    if (event.target.name.includes('accessinherit')||event.target.name.includes('annotation')||event.target.name.includes('uncertainty')) {
+    //   //   //update the access for project
+    //   //   const value=(event.target.value=== 'true'||event.target.value===true) //TODO
+    //   //   newproject[event.target.name]=value
+    //   //   if(value===true){
+    //   //     newproject['access'+formvariants]=props.projectvalue.accesses
+    //   //   }else newproject['access'+formvariants]=['admin']
+    //   //   console.log(event.target.name+value)
+    //   if (projectvalue['forms'][formvariants][event.target.name] === undefined)
+    //     newproject['forms'][formvariants][event.target.name] = true;
+    //   else
+        newproject['forms'][formvariants][event.target.name] = event.target.checked;
     } else
       newproject['forms'][formvariants][event.target.name] = event.target.value;
 
@@ -499,6 +510,44 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       const newviews = formuiSpec;
       //update uiSpecf
       newviews['viewsets'][formvariants]['action'] = event.target.value;
+      setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
+    }
+
+    if(event.target.name==='annotation'+ formvariants||event.target.name==='uncertainty'+ formvariants) {
+      //update uiSpec
+      const newviews = formuiSpec;
+      //update uiSpecf
+      let fields:Array<string>=[];
+      newviews['viewsets'][formvariants]['views'].map(
+        (view:string)=>fields=[...fields,...newviews['views'][view]['fields']]
+      )
+      //set undefined meta
+      if(event.target.checked&&event.target.name==='annotation'+ formvariants){
+        fields.map((field:string)=>{
+          if(newviews['fields'][field]['meta']===undefined)
+            newviews['fields'][field]['meta']=DefaultAnnotation
+        }
+        
+        )
+      } 
+      if(!event.target.checked&&event.target.name==='annotation'+ formvariants){
+        //remove all annotation??
+      }
+
+      if(event.target.checked&&event.target.name==='uncertainty'+ formvariants){
+        fields.map((field:string)=>{
+          if(newviews['fields'][field]['meta']===undefined){
+            newviews['fields'][field]['meta']=DefaultAnnotation
+            newviews['fields'][field]['meta']['uncertainty']['include']=true
+          }else{
+            newviews['fields'][field]['meta']['uncertainty']['include']=true
+          }
+            
+        }
+        
+        )
+      } 
+      
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
     }
 
@@ -660,28 +709,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           return (
             <Form>
               {fieldform(formProps)}
-              <Grid container>
-                <Grid item sm={6} xs={12}>
-                  <Box
-                    bgcolor={grey[200]}
-                    pl={2}
-                    pr={2}
-                    style={{overflowX: 'scroll'}}
-                  >
-                    <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                  </Box>
-                </Grid>
-                <Grid item sm={6} xs={12}>
-                  <Box
-                    bgcolor={grey[200]}
-                    pl={2}
-                    pr={2}
-                    style={{overflowX: 'scroll'}}
-                  >
-                    <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
-                  </Box>
-                </Grid>
-              </Grid>
+              
             </Form>
           );
         }}
@@ -808,6 +836,37 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           />
         </TabPanel>
 
+        <TabPanel value={formvalue} index={2} tabname="formtab">
+          {props.projectvalue !== undefined && (
+            <>
+              <FormForm
+                currentView="start-view"
+                handleChangeForm={handleChangeFormAction}
+                handleSubmit={handleSubmitFormAction}
+                uiSpec={getprojectform(props.projectvalue, 'form', {
+                  formname: formvariants,
+                })}
+              />
+              {/* <FormForm
+                currentView="start-view"
+                handleChangeForm={handleChangeFormAction}
+                handleSubmit={handleSubmitFormAction}
+                uiSpec={getprojectform(props.projectvalue, 'form_setting', {
+                  formname: formvariants,
+                })}
+              /> */}
+            </>
+          )}
+          <ProjectSubmit
+            id="gotonext_info"
+            type="submit"
+            isSubmitting={false}
+            text="Go To Next"
+            onButtonClick={gotonext}
+          />
+        </TabPanel>
+
+
         <TabPanel value={formvalue} index={1} tabname="formtab">
           <Alert severity="info">
             Add further sections by choosing plus icon. Within each section
@@ -842,35 +901,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               />
             )}
         </TabPanel>
-        <TabPanel value={formvalue} index={2} tabname="formtab">
-          {props.projectvalue !== undefined && (
-            <>
-              <FormForm
-                currentView="start-view"
-                handleChangeForm={handleChangeFormAction}
-                handleSubmit={handleSubmitFormAction}
-                uiSpec={getprojectform(props.projectvalue, 'form', {
-                  formname: formvariants,
-                })}
-              />
-              <FormForm
-                currentView="start-view"
-                handleChangeForm={handleChangeFormAction}
-                handleSubmit={handleSubmitFormAction}
-                uiSpec={getprojectform(props.projectvalue, 'form_setting', {
-                  formname: formvariants,
-                })}
-              />
-            </>
-          )}
-          <ProjectSubmit
-            id="gotonext_info"
-            type="submit"
-            isSubmitting={false}
-            text="Go To Next"
-            onButtonClick={gotonext}
-          />
-        </TabPanel>
+        
       </>
     );
   };
@@ -932,16 +963,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         User access and form submission behaviour. Add further forms by choosing
         plus icon, edit form name by choosing edit icon.
       </Alert>
-
-      {project_id !== '' && project_id !== null && project_id !== undefined ? (
-        <AddButton
-          id="SaveUiSpec"
-          onButtonClick={props.handleSaveUiSpec}
-          text="Click to Save Form Design"
-        />
-      ) : (
-        ''
-      )}
+      
       {FormPanel()}
     </>
   );

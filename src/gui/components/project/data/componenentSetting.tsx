@@ -363,13 +363,13 @@ const Componentsetting = (props: componenentSettingprops) => {
     //any actions that could in this form
     props.handlerchangewithview(event, view);
     console.log(view + event.target.name + props.fieldName);
-    if (view === 'meta') {
+    if (view === 'meta'&&props.uiSpec['fields'][props.fieldName]['meta']!==undefined) {
       const newvalues = props.uiSpec;
       const name = event.target.name.replace(props.fieldName, '');
       if (name === 'uncertainty_include')
         newvalues['fields'][props.fieldName]['meta']['uncertainty'][
           name.replace('uncertainty_', '')
-        ] = event.target.value === 'true' || event.target.value === true;
+        ] = event.target.checked;
       if (name === 'uncertainty_label')
         newvalues['fields'][props.fieldName]['meta']['uncertainty'][
           name.replace('uncertainty_', '')
@@ -379,8 +379,7 @@ const Componentsetting = (props: componenentSettingprops) => {
       props.setuiSpec({...newvalues});
 
       if (name === 'uncertainty_include') {
-        const value =
-          event.target.value === 'true' || event.target.value === true;
+        const value =event.target.checked;
         if (value === true) {
           const newuis: ProjectUIModel = uiSetting;
           newuis['views']['meta']['fields'] = [
@@ -479,7 +478,7 @@ export function ResetComponentProperties(props: resetprops) {
       if (name === 'required')
         newvalues['fields'][fieldName]['component-parameters'][
           name
-        ] = !newvalues['fields'][fieldName]['component-parameters'][name];
+        ] = event.target.checked;
       else
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.value;

@@ -94,6 +94,7 @@ export function FormForm(props: FormElement) {
   const {currentView, handleChangeForm, ...others} = props;
   const [uiSpec, setUISpec] = useState(props.uiSpec);
   const initialValues = setProjectInitialValues(uiSpec, currentView, {});
+  console.log(initialValues)
   const getfields = (
     uiSpec: any,
     formProps: any,
@@ -110,6 +111,7 @@ export function FormForm(props: FormElement) {
   };
   return (
     <Formik
+      enableReinitialize
       initialValues={initialValues}
       validateOnMount={true}
       onSubmit={(values, {setSubmitting}) => {
@@ -123,7 +125,9 @@ export function FormForm(props: FormElement) {
         return (
           <Form id="form">
             {uiSpec['views'][currentView]['uidesign'] !== 'tab' ? (
+
               getfields(uiSpec, formProps, handleChangeForm, currentView)
+              
             ) : (
               <Grid container>
                 <Grid item sm={11} xs={12}>

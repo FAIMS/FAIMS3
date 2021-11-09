@@ -93,6 +93,8 @@ const ini_projectvalue = {
   forms: {
     FORM1: {
       submitActionFORM1: 'Save and New',
+      annotationFORM1:true,
+      uncertaintyFORM1:false,
     },
   },
   sections: {},
