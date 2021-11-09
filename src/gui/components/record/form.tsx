@@ -382,7 +382,20 @@ class RecordForm extends React.Component<
     return this.state.initialValues;
   }
 
-  save(values: any) {
+  filterValues(values: object) {
+    const new_values: any = {};
+    for (const [k, v] of Object.entries(values)) {
+      if (k !== '_id' && k !== '_project_id') {
+        new_values[k] = v;
+        if (k[0] === '_') {
+          console.error(`Including possibly bad key ${k} in record`);
+        }
+      }
+    }
+    return new_values;
+  }
+
+  save(values: object) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
     getCurrentUserId(this.props.project_id)
@@ -392,7 +405,7 @@ class RecordForm extends React.Component<
           record_id: this.props.record_id ?? generateFAIMSDataID(),
           revision_id: this.props.revision_id ?? null,
           type: this.state.type_cached!,
-          data: values,
+          data: this.filterValues(values),
           updated_by: userid,
           updated: now,
           annotations: {},
