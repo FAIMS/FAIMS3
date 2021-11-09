@@ -63,6 +63,8 @@ export async function newStagedData(
       created: date.toString(),
       updated: date.toString(),
       fields: {},
+      annotations: {},
+      attachments: {},
       project_id: active_id,
       existing: existing,
       type: type,
@@ -79,13 +81,17 @@ export async function newStagedData(
 export async function setStagedData(
   // Matches the PouchDB.Core.Response type, but with optional rev
   draft_id: PouchDB.Core.DocumentId,
-  new_data: {[key: string]: unknown}
+  new_data: {[key: string]: unknown},
+  new_annotations: {[key: string]: unknown}
 ): Promise<PouchDB.Core.Response> {
   const existing = await draft_db.get(draft_id);
+  console.error('Saving draft values:', new_data, new_annotations);
 
   return await draft_db.put({
     ...existing,
     fields: new_data,
+    annotations: new_annotations,
+    attachments: {},
     updated: new Date().toString(),
   });
 }

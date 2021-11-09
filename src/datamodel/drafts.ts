@@ -24,6 +24,9 @@ export interface EncodedDraft {
   _id: string;
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
+  annotations: {[key: string]: unknown};
+  attachments: {[key: string]: unknown};
+  _attachments?: PouchDB.Core.Attachments;
   project_id: ProjectID;
   // If this draft is for the user updating an existing record, the following
   // is non-null, the record it's editing.

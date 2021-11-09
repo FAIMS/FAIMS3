@@ -30,7 +30,7 @@ import {
   newStagedData,
   setStagedData,
 } from './draft-storage';
-import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
+import {ProjectID, RecordID, RevisionID, Annotations} from '../datamodel/core';
 import stable_stringify from 'fast-json-stable-stringify';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
@@ -112,6 +112,7 @@ class RecordDraftState {
         // in a certain execution, would be to pass down initialValues from
         // the form component, but that's more complicated.)
         fields: StagedData | null;
+        annotations: StagedData | null;
       }
     | {
         state: 'edited';
@@ -122,6 +123,7 @@ class RecordDraftState {
         // and this is only up to date with fields in the current view
         // (view_fields)
         fields: StagedData;
+        annotations: StagedData;
         type: string;
         // Same as props.draft_id, EXCEPT this can also be set to non-null
         // when changes are made to a revision that hasn't been edited yet
@@ -138,7 +140,7 @@ class RecordDraftState {
   // on if _fetchData has been run
 
   data_listeners: [
-    (data: StagedData) => unknown,
+    (data: [StagedData, StagedData]) => unknown,
     (err: unknown) => unknown
   ][] = [];
 
@@ -228,7 +230,11 @@ class RecordDraftState {
    * @param values FormikProps.values object, retrieved from the First argument
    *               of the callback to the Formik element's children:
    */
-  renderHook(values: FormikValues) {
+  renderHook(
+    values: FormikValues,
+    annotations: {[field_name: string]: Annotations}
+  ) {
+    console.debug('Render hook', values, annotations);
     if (this.fetch_error === null && this.data.state !== 'uninitialized') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being
@@ -278,6 +284,7 @@ class RecordDraftState {
           ...this.data,
           state: 'edited',
           fields: values,
+          annotations: annotations,
           draft_id: newStagedData(
             this.props.project_id,
             // Since this.data is in an 'unedited' state, we know FOR SURE
@@ -299,7 +306,11 @@ class RecordDraftState {
             // they probably expect the draft to be saved, so save it
             // then call that listener:
 
-            setStagedData(new_draft_id, this.data.fields).then(() => {
+            setStagedData(
+              new_draft_id,
+              this.data.fields,
+              this.data.annotations
+            ).then(() => {
               if (this.newDraftListener !== null) {
                 this.newDraftListener(new_draft_id);
               }
@@ -314,6 +325,7 @@ class RecordDraftState {
         this.data = {
           ...this.data,
           fields: {...this.data.fields, ...values},
+          annotations: {...this.data.annotations, ...annotations},
         };
       }
     } else if (this.data === null) {
@@ -359,6 +371,7 @@ class RecordDraftState {
       // Editing an existing draft
       try {
         const result = await getStagedData(this.props.draft_id);
+        // TODO: need to transform this to handle attachments
 
         if (this.fetch_sequence !== uninterrupted_fetch_sequence) {
           return; // Assume another fetch has taken control, don't run data_listener errors
@@ -369,13 +382,16 @@ class RecordDraftState {
         this.data = {
           state: 'edited',
           fields: result.fields,
+          annotations: result.annotations,
           type: result.type,
           draft_id: Promise.resolve(this.props.draft_id),
         };
         // Resolve any promises waiting for data
         const data_listeners = this.data_listeners;
         this.data_listeners = [];
-        data_listeners.forEach(f => f[0].call(this, result.fields));
+        data_listeners.forEach(f =>
+          f[0].call(this, [result.fields, result.annotations])
+        );
       } catch (err: any) {
         this.fetch_error = err;
         // Reject any promises waiting for data
@@ -386,7 +402,12 @@ class RecordDraftState {
     } else {
       // No draft exists yet
       // Drafts are created (And types needed) when
-      this.data = {state: 'unedited', type: loadedprops.type, fields: null};
+      this.data = {
+        state: 'unedited',
+        type: loadedprops.type,
+        fields: null,
+        annotations: null,
+      };
       // this.draft_id hasn't needed to be created yet, keep as null
     }
   }
@@ -396,21 +417,26 @@ class RecordDraftState {
    * fetchData() is running or data is immediately available) then returns
    * the staged data, ONLY fields that are touched
    */
-  async _touchedData(): Promise<StagedData> {
+  async _touchedData(): Promise<[StagedData, StagedData]> {
     // Function to filter the data
-    const with_data = (data: StagedData): StagedData => {
+    const with_data = (
+      data: StagedData,
+      annotations: StagedData
+    ): [StagedData, StagedData] => {
       const filtered_data: StagedData = {};
-      this.touched_fields.forEach(
-        fieldName => (filtered_data[fieldName] = data[fieldName])
-      );
-      return filtered_data;
+      const filtered_annotations: StagedData = {};
+      this.touched_fields.forEach(fieldName => {
+        filtered_data[fieldName] = data[fieldName];
+        filtered_annotations[fieldName] = annotations[fieldName];
+      });
+      return [filtered_data, filtered_annotations];
     };
 
     // Wait for data to exist before returning:
     if (this.data.state === 'edited') {
-      return with_data(this.data.fields);
+      return with_data(this.data.fields, this.data.annotations);
     } else if (this.data.state === 'unedited') {
-      return with_data({});
+      return with_data({}, {});
     } else if (this.fetch_error !== null) {
       throw this.fetch_error;
     } else {
@@ -436,13 +462,17 @@ class RecordDraftState {
     this.is_saving = true;
     let result;
     try {
-      const to_save = await this._touchedData();
+      const [data_to_save, annotations_to_save] = await this._touchedData();
       if (this.data.state !== 'edited') {
         // Nothing to save yet, probably the user hasn't touched an
         // existing record
         return;
       }
-      result = await setStagedData(await this.data.draft_id, to_save);
+      result = await setStagedData(
+        await this.data.draft_id,
+        data_to_save,
+        annotations_to_save
+      );
 
       if (result.ok) {
         this.last_revision = result.rev;
@@ -469,7 +499,7 @@ class RecordDraftState {
    * Called by setInitialValues, this function retrieves any existing
    * data from the draft storage for this current record/revision
    */
-  async getInitialValues(): Promise<StagedData> {
+  async getInitialValues(): Promise<[StagedData, StagedData]> {
     return this._touchedData();
   }
 
