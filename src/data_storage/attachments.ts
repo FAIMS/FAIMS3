@@ -27,6 +27,10 @@ interface FullAttachments {
 export function file_data_to_attachment(
   avp: AttributeValuePair
 ): AttributeValuePair {
+  if (avp.data === null) {
+    return avp;
+  }
+  console.error(avp.data);
   const file = avp.data as File;
   avp._attachments = {};
   avp._attachments[file.name] = {
