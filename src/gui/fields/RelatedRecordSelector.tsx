@@ -175,15 +175,11 @@ const uiSetting = () =>{
       ElementProps: {
         options: [{
             value: 'faims-core::Child',
-            label: 'Form Contained',
+            label: 'Contained',
           },{
-            value: 'faims-core::Next',
-            label: 'Form Next to',
+            value: 'faims-core::Linked',
+            label: 'Linked',
           },
-          // {
-          //   value: 'faims-core::Field',
-          //   label: 'Field contain',
-          // }
         ],
       },
       InputLabelProps: {

@@ -22,14 +22,17 @@ import React from 'react';
 import {FormikProps} from 'formik';
 
 import {getComponentFromFieldConfig} from './fields';
+import {Annotations} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import RecordDraftState from '../../../sync/draft-state';
-
+import {Annotation} from './Annotation'
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
   formProps: FormikProps<{[key: string]: unknown}>;
   draftState: RecordDraftState;
+  annotation:any;
+  handerannoattion:any
 };
 
 export class ViewComponent extends React.Component<ViewProps> {
@@ -40,13 +43,22 @@ export class ViewComponent extends React.Component<ViewProps> {
     const fields = ui_specification.fields;
     return (
       <React.Fragment>
-        {fieldNames.map(fieldName => {
-          return getComponentFromFieldConfig(
+        {fieldNames.map(fieldName =>  <>{
+           getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
             this.props.formProps
-          );
-        })}
+          ) 
+        }
+        {this.props.annotation!==undefined&&fields[fieldName]['meta']!==undefined&&
+        <Annotation
+        key={'annotation'+fieldName+'box'}
+        fieldName={fieldName} 
+        formProps={this.props.formProps} 
+        field={fields[fieldName]}
+        annotation={this.props.annotation} 
+        handerannoattion={this.props.handerannoattion}/>}
+        </>)}
       </React.Fragment>
     );
   }

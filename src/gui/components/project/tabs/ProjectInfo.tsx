@@ -30,6 +30,7 @@ import {
   Typography,
   AppBar,
   Hidden,
+  Paper
 } from '@material-ui/core';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import FieldsListCard from './FieldsListCard';
@@ -60,26 +61,7 @@ import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@material-ui/lab/Alert';
 const useStyles = makeStyles(theme => ({
-  root: {
-    flexGrow: 1,
-    backgroundColor: theme.palette.background.paper,
-    padding: theme.spacing(2),
-  },
-  newfield: {
-    // backgroundColor:'#e1e4e8',
-    // borderTop:'1px solid #e1e4e8',
-  },
-  newfield_button: {
-    textAlign: 'right',
-  },
-  addfield: {
-    // border:'1px solid #e1e4e8',
-    flexGrow: 1,
-    padding: theme.spacing(2),
-  },
-  settingtab: {
-    backgroundColor: '#e1e4e8',
-  },
+  
 }));
 
 type ProjectInfoProps = {
@@ -327,7 +309,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   }
 
 
-  const attachment = () =>{
+  const AttachmentTab = () =>{
     return (
       <Grid>
         {getfields(getprojectform(projectvalue,'attachments')).map((fieldName: string) =>
@@ -362,8 +344,10 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         {metaTab()}
         </TabPanel>
         <TabPanel value={infotabvalue} index={3} tabname="primarytab">
-          Add Attachment Here
-          {attachment()}
+          Add Attachment 
+          <Paper>
+          {AttachmentTab()}
+          </Paper>
         </TabPanel>
       </Grid>
     </Grid>

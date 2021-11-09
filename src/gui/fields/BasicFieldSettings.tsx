@@ -5,7 +5,10 @@ import { getComponentFromField} from '../components/project/FormElement';
 import {useState} from 'react';
 import {ProjectUIModel,componenentSettingprops,FAIMSEVENTTYPE} from '../../datamodel/ui'
 import {ProjectUIFields} from '../../datamodel/typesystem'
-import {getdvalue} from '../components/project/data/componenentSetting'
+
+const getdvalue= (value:any) =>{
+    return JSON.parse(JSON.stringify(value))
+  }
 
 export const getDefaultuiSetting = () => {
     return getdvalue(DefaultuiSetting)

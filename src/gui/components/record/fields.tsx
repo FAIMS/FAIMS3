@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {Field, FormikProps} from 'formik';
 
 import {Box} from '@material-ui/core';
@@ -34,6 +34,9 @@ export function getComponentFromFieldConfig(
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
   let Component: React.Component;
+  const handler=(event:any) =>{
+    console.log(event)
+  }
   try {
     Component = getComponentByName(namespace, name);
   } catch (err) {
@@ -53,8 +56,7 @@ export function getComponentFromFieldConfig(
         {...fieldConfig['component-parameters']['InputLabelProps']}
         {...fieldConfig['component-parameters']['FormHelperTextProps']}
       />
-      {fieldConfig['component-name']!=='BasicAutoIncrementer'&&fieldConfig['meta']!==undefined?fieldConfig['meta']['annotation_label']:''}
-      {fieldConfig['meta']!==undefined?fieldConfig['meta']['uncertainty']['include']===true?fieldConfig['meta']['uncertainty']['label']:'NN':''}
     </Box>
+    
   );
 }
