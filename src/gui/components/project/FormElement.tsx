@@ -50,7 +50,7 @@ export const getComponentFromField = (
   fieldName: string,
   formProps: any,
   handleChangeC: any,
-  uidesign = 'alert'
+
 ) => {
   // console.log('getComponentFromField');
 
@@ -65,6 +65,7 @@ export const getComponentFromField = (
     return <>Error</>;
   }
   const value = formProps.values[fieldName];
+
 
   return (
     <Box key={fieldName}>
