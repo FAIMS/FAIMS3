@@ -18,25 +18,34 @@
  *   TODO
  */
 import PouchDB from 'pouchdb';
+import {v4 as uuidv4} from 'uuid';
+
 import {AttributeValuePair} from '../datamodel/database';
 
 interface FullAttachments {
   [attachmentId: string]: PouchDB.Core.FullAttachment;
 }
 
-export function file_data_to_attachment(
+function generate_file_name(): string {
+  return uuidv4();
+}
+
+export function file_data_to_attachments(
   avp: AttributeValuePair
 ): AttributeValuePair {
   if (avp.data === null) {
     return avp;
   }
   console.error(avp.data);
-  const file = avp.data as File;
   avp._attachments = {};
-  avp._attachments[file.name] = {
-    content_type: file.type,
-    data: file,
-  };
+  for (const tmp_file of avp.data) {
+    const file = tmp_file as File;
+    const file_name = file.name ?? generate_file_name();
+    avp._attachments[file_name] = {
+      content_type: file.type,
+      data: file,
+    };
+  }
   avp.data = null;
   return avp;
 }
@@ -45,12 +54,14 @@ function attachment_to_file(
   name: string,
   attachment: PouchDB.Core.Attachment
 ): File {
+  console.error('attachment?', attachment);
   const content_type = attachment.content_type;
   const data = (attachment as PouchDB.Core.FullAttachment).data;
+  console.error('blob?', data);
   return new File([data], name, {type: content_type});
 }
 
-export function file_attachment_to_data(
+export function file_attachments_to_data(
   avp: AttributeValuePair
 ): AttributeValuePair {
   const attachments = avp._attachments as FullAttachments;
@@ -58,9 +69,7 @@ export function file_attachment_to_data(
   for (const [pname, attach] of Object.entries(attachments)) {
     attach_list.push(attachment_to_file(pname, attach));
   }
-  if (attach_list.length !== 1) {
-    throw Error('This is not a correctly encoded file');
-  }
-  avp.data = attach_list[0];
+  console.error('files?', attach_list);
+  avp.data = attach_list;
   return avp;
 }

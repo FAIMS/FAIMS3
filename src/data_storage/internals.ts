@@ -191,6 +191,7 @@ export async function getAttributeValuePairs(
   const datadb = getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
+    attachments: true,
     binary: true, // TODO: work out which format is best for attachments
     keys: avp_ids,
   });

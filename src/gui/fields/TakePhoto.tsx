@@ -58,19 +58,24 @@ export class TakePhoto extends React.Component<
         })
       );
       console.log(image);
-      this.props.form.setFieldValue(this.props.field.name, image);
+      this.props.form.setFieldValue(this.props.field.name, [image]);
     } catch (err: any) {
       console.error(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
   render() {
-    const image = this.props.field.value;
+    const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    let image_tag = <span>No photo taken.</span>;
-    if (image !== null) {
-      const image_ref = URL.createObjectURL(image);
-      image_tag = <img className="faims-take-photo-img" src={image_ref} />;
+    const image_tag_list = [];
+    if (images !== null) {
+      for (const image of images) {
+        const image_ref = URL.createObjectURL(image);
+        const image_tag = (
+          <img className="faims-take-photo-img" src={image_ref} />
+        );
+        image_tag_list.push(image_tag);
+      }
     }
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
@@ -91,7 +96,15 @@ export class TakePhoto extends React.Component<
         >
           Take Photo
         </Button>
-        {image_tag}
+        {image_tag_list ? (
+          <ul>
+            {image_tag_list.map((image_tag, index) => (
+              <li key={index}>{image_tag}</li>
+            ))}
+          </ul>
+        ) : (
+          <span>No photo taken.</span>
+        )}
         {error_text}
       </div>
     );
