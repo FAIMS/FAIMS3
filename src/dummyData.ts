@@ -24,7 +24,6 @@ import {
   ListingsObject,
   ProjectMetaObject,
   ProjectObject,
-  ProjectsList,
   AutoIncrementReference,
 } from './datamodel/database';
 import {
@@ -40,7 +39,7 @@ import {upsertFAIMSData} from './data_storage';
 const example_records: {
   [key: string]: Record[];
 } = {
-  default_astro_sky: [
+  'default||astro_sky': [
     {
       record_id: '020948f4-79b8-435f-9db6-9c8ec7deab0a',
       revision_id: null,
@@ -151,9 +150,9 @@ function randomDate(start: Date, end: Date) {
 const example_autoincrement_references: {
   [key: string]: AutoIncrementReference[];
 } = {
-  default_astro_sky: [
+  'default||astro_sky': [
     {
-      project_id: 'default_astro_sky',
+      project_id: 'default||astro_sky',
       form_id: 'default', // TODO: This needs sorting
       field_id: 'basic-autoincrementer-field',
     },
@@ -161,7 +160,7 @@ const example_autoincrement_references: {
 };
 
 const example_ui_specs: {[key: string]: ProjectUIModel} = {
-  default_astro_sky: {
+  'default||astro_sky': {
     fields: {
       'bad-field': {
         'component-namespace': 'fakefakefake', // this says what web component to use to render/acquire value from
@@ -665,48 +664,6 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
       },
     },
   },
-  default_projectB: {
-    fields: {},
-    viewsets: {
-      'projectB::default': {
-        views: ['start-view'],
-      },
-    },
-    visible_types: ['projectB::default'],
-    views: {
-      'start-view': {
-        fields: [
-          // 'email-field',
-          // 'str-field',
-          // 'int-field',
-          // 'bool-field',
-          // 'date-field',
-          // 'time-field',
-        ], // ordering sets appearance order
-      },
-    },
-  },
-  default_projectC: {
-    fields: {},
-    viewsets: {
-      'projectC::default': {
-        views: ['start-view'],
-      },
-    },
-    visible_types: ['projectC::default'],
-    views: {
-      'start-view': {
-        fields: [
-          // 'email-field',
-          // 'str-field',
-          // 'int-field',
-          // 'bool-field',
-          // 'date-field',
-          // 'time-field',
-        ], // ordering sets appearance order
-      },
-    },
-  },
 };
 
 const example_listings: {[listing_id: string]: ProjectObject[]} = {
@@ -714,26 +671,13 @@ const example_listings: {[listing_id: string]: ProjectObject[]} = {
     {
       name: 'AsTRoSkY - (Test Project)',
       data_db: {
-        proto: 'http',
-        host: '10.80.11.44',
-        port: 5984,
-        lan: true,
-        db_name: 'astro_sky',
+        db_name: 'data-astro_sky',
+      },
+      metadata_db: {
+        db_name: 'metadata-astro_sky',
       },
       description: 'AsTRoSkY Test Project',
       _id: 'astro_sky',
-    },
-    {
-      name: "Example Project 'A'",
-      metadata_db: {
-        proto: 'http',
-        host: '10.80.11.44',
-        port: 5984,
-        lan: true,
-        db_name: 'metadata-projectb',
-      },
-      description: "Example Project 'A'",
-      _id: 'projectB',
     },
   ],
 };
@@ -752,75 +696,18 @@ const example_directory: ListingsObject[] = [
       },
     },
     projects_db: {
-      proto: 'http',
-      host: '10.80.11.44',
-      port: 5984,
-      lan: true,
       db_name: 'projects',
-    },
-  },
-  {
-    _id: 'csiro',
-    name:
-      'Test of an independently hosted CouchDB Instance (People DB not implemented yet)',
-    description:
-      'This FAIMS server is the instance used internally by the AAO for testing.',
-    projects_db: {
-      proto: 'http',
-      host: '10.80.11.44',
-      port: 5984,
-      lan: true,
-      db_name: 'csiro_hosted_projects',
-    },
-    auth_mechanisms: {
-      default: {
-        portal: 'http://127.0.0.1:8080',
-        type: 'oauth',
-        name: 'Data Central',
-      },
     },
   },
 ];
 
 const example_active_db: ActiveDoc[] = [
   {
-    _id: 'default_astro_sky',
+    _id: 'default||astro_sky',
     listing_id: 'default',
     project_id: 'astro_sky',
-    username: 'test1',
-    password: 'apple',
-    is_sync: true,
-  },
-  {
-    _id: 'csiro_notparkes',
-    listing_id: 'csiro',
-    project_id: 'notparkes',
-    username: 'test1',
-    password: 'apple',
-    is_sync: true,
-  },
-  {
-    _id: 'default_projectA',
-    listing_id: 'default',
-    project_id: 'projectA',
-    username: 'test1',
-    password: 'apple',
-    is_sync: true,
-  },
-  {
-    _id: 'default_projectB',
-    listing_id: 'default',
-    project_id: 'projectB',
-    username: 'test1',
-    password: 'apple',
-    is_sync: true,
-  },
-  {
-    _id: 'default_projectC',
-    listing_id: 'default',
-    project_id: 'projectC',
-    username: 'test1',
-    password: 'apple',
+    username: 'admin',
+    password: 'password',
     is_sync: true,
   },
 ];
@@ -980,33 +867,3 @@ export async function setupExampleProjectMetadata(
     }
   }
 }
-
-export const dummy_projects: ProjectsList = {
-  '1': {
-    _id: '1',
-    name: 'Project One',
-    last_updated: 'September 14, 2019',
-    created: '1/02/2021',
-    status: 'active',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
-  },
-  '2': {
-    _id: '2',
-    name: 'Terrific Project Two',
-    last_updated: 'September 10, 2020',
-    created: '1/01/2019',
-    status: 'closed',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
-  },
-  '3': {
-    _id: '3',
-    name: 'Longer Title Field Trip Project Title',
-    last_updated: 'Jan 14, 2021',
-    created: '1/01/2019',
-    status: 'closed',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
-  },
-};
