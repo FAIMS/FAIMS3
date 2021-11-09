@@ -65,6 +65,17 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
       password: connection_info.auth.password,
     };
   }
+  // TODO: Use a new enough pouchdb such that we don't need the fetch hook, see
+  // https://github.com/pouchdb/pouchdb/issues/8387
+  if (
+    'jwt_token' in connection_info &&
+    connection_info.jwt_token !== undefined
+  ) {
+    pouch_options.fetch = function (url: any, opts: any) {
+      opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
+      return PouchDB.fetch(url, opts);
+    };
+  }
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +

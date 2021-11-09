@@ -54,6 +54,7 @@ export interface ConnectionInfo {
     username: string;
     password: string;
   };
+  jwt_token?: string;
 }
 
 /**
@@ -79,6 +80,7 @@ export type PossibleConnectionInfo =
         username: string;
         password: string;
       };
+      jwt_token?: string;
     };
 
 export interface ListingsObject {
@@ -106,7 +108,7 @@ export interface ActiveDoc {
 
 export interface LocalAuthDoc {
   _id: string; //Corresponds to a listings ID
-  dc_token: string;
+  token: string;
 }
 
 /**
