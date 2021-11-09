@@ -10,6 +10,7 @@ import {
 } from '@material-ui/core';
 import ShareIcon from '@material-ui/icons/Share';
 import AddIcon from '@material-ui/icons/Add';
+import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import {Link as RouterLink, NavLink} from 'react-router-dom';
@@ -127,6 +128,12 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               to={ROUTES.PROJECT_DESIGN + project.project_id}
             >
               <TimelapseIcon />
+            </IconButton>
+            <IconButton
+              component={RouterLink}
+              to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SEARCH}
+            >
+              <SearchIcon />
             </IconButton>
             <IconButton
               component={RouterLink}
