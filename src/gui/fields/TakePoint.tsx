@@ -44,7 +44,7 @@ function capacitor_coordindates_to_faims_pos(
     },
     geometry: {
       type: 'Point',
-      coordinates: [position.latitude, position.longitude],
+      coordinates: [position.longitude, position.latitude],
     },
   };
 }
