@@ -34,6 +34,7 @@ import ProjectSubmitTab from './tabs/ProjectSubmit';
 import ProjectUserTab from './tabs/ProjectUser';
 import ProjectPreviewTab from './tabs/ProjectPreview';
 import ProjectBehaviourTab from './tabs/ProjectBehaviour';
+import ProjectOverviewTab from './tabs/ProjctOverview'
 import {ProjectSubmit} from './tabs/ProjectButton';
 import {
   setProjectInitialValues,
@@ -613,6 +614,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                     High level view of Notebook showing relationships between
                     forms. To modify a relationship, go to the Design Tab
                   </Alert>
+                  <ProjectOverviewTab 
+                  project_id={project_id}
+                  projectvalue={projectvalue}
+                  setProjectValue={setProjectValue}
+                  formuiSpec={formuiSpec}
+                  />
                   <ProjectSubmit
                     id="gotonextoverview"
                     type="submit"

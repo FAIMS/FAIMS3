@@ -57,7 +57,7 @@ type signlefieldType = any;
 type fieldlistType = any;
 type viewlistType = any;
 type optionType = {value: string; label: string};
-type tabLinkType = {tab: string; link: string};
+type tabLinkType = {tab: string; link: string,otab:string};
 type projectuilistType = any;
 export const getid = () => {
   return uuidv4().split('-')[0];
@@ -83,6 +83,7 @@ export const getconnections = (
             link: uiSpec['fields'][field]['component-parameters'][
               'relation_type'
             ].replace('faims-core::', ''),
+            otab:uiSpec['viewsets'][comparetab]['label'] ?? comparetab
           })
         : field
     )

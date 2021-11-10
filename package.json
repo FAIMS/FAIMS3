@@ -71,6 +71,8 @@
     "formik": "2.2.9",
     "formik-material-ui": "3.0.1",
     "formik-material-ui-lab": "1.0.0-alpha.1",
+    "graphviz": "0.0.9",
+    "graphviz-react": "^1.2.0",
     "json-stable-stringify": "1.0.1",
     "jsonpointer": "4.1.0",
     "lodash": "4.17.21",
