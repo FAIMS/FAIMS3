@@ -23,6 +23,8 @@ import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins, GeolocationPosition} from '@capacitor/core';
 
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui';
 import {FAIMSPosition} from '../../datamodel/geo';
 
 const {Geolocation} = Plugins;
@@ -93,7 +95,7 @@ export class TakePoint extends React.Component<
     const pos = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
     let postext = <span>No point taken.</span>;
-    if (pos !== null) {
+    if (pos !== null && pos !== undefined) {
       postext = (
         <span {...this.props['ValueTextProps']}>
           Lat: {pos.geometry.coordinates[0]}; Long:{' '}
@@ -128,3 +130,42 @@ export class TakePoint extends React.Component<
     );
   }
 }
+
+const uiSpec = {
+  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+  'component-name': 'TakePoint',
+  'type-returned': 'faims-pos::Location', // matches a type in the Project Model
+  'component-parameters': {
+    fullWidth: true,
+    name: 'take-point-field',
+    id: 'take-point-field',
+    helperText: 'Get position',
+    variant: 'outlined',
+  },
+  validationSchema: [
+    ['yup.object'],
+    ['yup.nullable'],
+    [
+      'yup.shape',
+      {
+        latitude: [['yup.number'], ['yup.required']],
+        longitude: [['yup.number'], ['yup.required']],
+      },
+    ],
+  ],
+  initialValue: null,
+};
+
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: [],
+      label: 'settings',
+    },
+  };
+
+  return newuiSetting;
+};
+
+export const TakePointSetting = [uiSetting(), uiSpec];

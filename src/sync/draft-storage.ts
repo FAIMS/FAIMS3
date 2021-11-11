@@ -20,6 +20,7 @@
 
 import PouchDB from 'pouchdb';
 import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
+
 import {EncodedDraft} from '../datamodel/drafts';
 import {v4 as uuidv4} from 'uuid';
 import {DraftMetadataList} from '../datamodel/drafts';
@@ -121,6 +122,7 @@ export async function deleteStagedData(
  *               Otherwise, it will show when listing by 'all' or 'created'.
  * @returns List of drafts filtered.
  */
+
 export async function listDraftsEncoded(
   project_id: string,
   filter: 'updates' | 'created' | 'all'

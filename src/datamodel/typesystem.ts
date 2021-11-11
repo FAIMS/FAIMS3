@@ -52,8 +52,15 @@ export interface ProjectUIViews {
   [key: string]: {
     label?: string;
     fields: string[];
+    uidesign?: string;
     next_label?: string;
   };
+}
+
+export interface option {
+  value: string;
+  label: string;
+  key?: string;
 }
 
 type AttributeValuePairConverter = (

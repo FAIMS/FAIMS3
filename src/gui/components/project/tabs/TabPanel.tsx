@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import React from 'react';
 import {Box, Typography} from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
 
@@ -31,6 +32,8 @@ const useStyles = makeStyles(theme => ({
     },
     '& .MuiBox-root': {
       paddingTop: 10,
+      paddingLeft: 5,
+      paddingRight: 0,
       [theme.breakpoints.down('sm')]: {
         paddingLeft: 5,
         paddingRight: 5,

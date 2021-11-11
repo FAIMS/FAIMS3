@@ -33,7 +33,9 @@ import {ProjectUIModel} from '../../datamodel/ui';
 
 export default function ProjectCreate() {
   const {project_id} = useParams<{project_id: ProjectID}>();
+  console.log(project_id);
   if (project_id === undefined) {
+    console.log(project_id);
     const breadcrumbs = [
       {link: ROUTES.INDEX, title: 'Index'},
       {title: 'New Notebook'},
@@ -47,12 +49,13 @@ export default function ProjectCreate() {
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
             Design and preview your new notebook before inviting team members
-            and publising
+            and publising. You can follow the GO TO NEXT button in each tab or
+            select tabs to design your notebook.
           </Typography>
         </Box>
         <Paper square>
           <CreateProjectCard
-            project_id={project_id}
+            project_id={null}
             uiSpec={null}
             project_info={null}
           />
@@ -92,7 +95,7 @@ export default function ProjectCreate() {
           <Typography variant={'subtitle1'} gutterBottom>
             {project_info !== null
               ? 'Design and preview your notebook'
-              : 'Design and preview your new notebook before inviting team members and publising'}
+              : 'Design and preview your new notebook before inviting team members and publising.You can follow the GO TO NEXT button in each tab or select tabs to design your notebook.'}
           </Typography>
         </Box>
         <Paper square>
