@@ -45,7 +45,7 @@
     "prepare": "npm run compile"
   },
   "dependencies": {
-    "@capacitor/android": "2.4.7",
+    "@capacitor/android": "2.4.9",
     "@capacitor/cli": "2.5.0",
     "@capacitor/core": "2.4.9",
     "@capacitor/ios": "2.4.9",
