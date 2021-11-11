@@ -566,7 +566,7 @@ class RecordForm extends React.Component<
                       this.setState({view_cached: view_name});
                     }}
                   >
-                    {view_name}
+                    {ui_specification.views[view_name].label}
                   </StepButton>
                 </Step>
               )
