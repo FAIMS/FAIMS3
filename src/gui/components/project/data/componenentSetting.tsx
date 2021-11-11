@@ -55,7 +55,7 @@ const uiSettingOthers: ProjectUIModel = {
         fullWidth: true,
         helperText: '',
         InputLabelProps: {
-          label: 'Options',
+          label: 'Annotation Label',
         },
         type: 'text',
       },
