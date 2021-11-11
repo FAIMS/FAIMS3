@@ -168,6 +168,10 @@ export function AutocompleteForm(props: any) {
   );
   const [inputValue, setInputValue] = React.useState('');
   const [labels, setlabels] = useState<Array<string>>(props.labels ?? []);
+  const [uiSpec, setUISpec] = useState(props.uiSpec);
+  const initialValues = uiSpec!==undefined?setProjectInitialValues(uiSpec, props.currentView, {}):{};
+  const [ischecked, setIschecked]=useState(false)
+
   useEffect(() => {
     if (props.labels !== undefined) setlabels(props.labels);
   }, [props.labels]);
@@ -177,10 +181,42 @@ export function AutocompleteForm(props: any) {
 
     props.handleAutocomplete(newlabels, props.id, props.type);
   };
+  const handleChangeForm = (event:any) =>{
+    console.log(event.target.name)
+    if(event.target.checked===true){
+      setlabels(props.access);
+      props.handleAutocomplete(props.access, props.id, props.type);
+    }
+    if(event.target.name.includes('formaccessinherit')) {
+      const newvalue=props.projectvalue;
+      newvalue['forms'][event.target.name.replace('formaccessinherit','')][event.target.name]=event.target.checked
+      props.setProjectValue({...newvalue})
+    }else{
+      const newvalue=props.projectvalue;
+      newvalue['sections'][event.target.name.replace('sectionaccessinherit','')][event.target.name]=event.target.checked
+      props.setProjectValue({...newvalue})
+    }
+    setIschecked(event.target.checked)
+  }
   return (
     <Grid container={true}>
       <Grid>
-        <Autocomplete
+      <Formik
+      enableReinitialize
+      initialValues={initialValues}
+      validateOnMount={true}
+      onSubmit={(values, {setSubmitting}) => {
+        setTimeout(() => {
+          setSubmitting(false);
+          props.handleSubmit(values);
+        }, 500);
+      }}
+    >
+      {formProps => {
+        return (
+          <Form id="form">
+        {uiSpec!==undefined&&getComponentFromField(uiSpec, uiSpec['views'][props.currentView]['fields'][0], formProps, handleChangeForm)}
+        {!ischecked&&<Autocomplete
           id={id}
           value={value}
           onChange={(event, newValue) => {
@@ -206,7 +242,7 @@ export function AutocompleteForm(props: any) {
           renderInput={params => (
             <TextField {...params} label="Access" variant="outlined" />
           )}
-        />
+        />}
         {labels.map((label: string) =>
           label !== 'admin' ? (
             <Chip label={label} onDelete={() => handleDelete(label)} />
@@ -214,6 +250,10 @@ export function AutocompleteForm(props: any) {
             <Chip label={label} />
           )
         )}
+        </Form>
+        );
+      }}
+    </Formik>
       </Grid>
     </Grid>
   );

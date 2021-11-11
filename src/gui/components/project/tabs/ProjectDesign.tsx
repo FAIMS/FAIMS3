@@ -513,6 +513,13 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
     }
 
+    if(event.target.name==='visible' + formvariants){
+      // const newviews = formuiSpec;
+      // //update uiSpecf
+      // newviews['visible_types']=newviews['visible_types'].filter((type:string)=>type!==formvariants);
+      // setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
+    }
+
     if(event.target.name==='annotation'+ formvariants||event.target.name==='uncertainty'+ formvariants) {
       //update uiSpec
       const newviews = formuiSpec;
@@ -753,6 +760,13 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               labels={props.projectvalue['access']['access' + formuiview]}
               handleAutocomplete={handleAutocomplete}
               type={'form'}
+              uiSpec={getprojectform(props.projectvalue, 'sectionaccess', {
+                sectionname: formuiview,
+              })}
+              currentView="start-view"
+              access={props.projectvalue['access']['access' + formvariants]}
+              projectvalue={projectvalue}
+              setProjectValue={props.setProjectValue}
             />
             <ProjectSubmit
               id="gotonext_info"
@@ -818,6 +832,13 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                 options={getacessoption(props.projectvalue.accesses)}
                 labels={props.projectvalue['access']['access' + formvariants]}
                 type={'form'}
+                uiSpec={getprojectform(props.projectvalue, 'formaccess', {
+                  formname: formvariants,
+                })}
+                currentView="start-view"
+                access={props.projectvalue['accesses']}
+                projectvalue={projectvalue}
+                setProjectValue={props.setProjectValue}
               />
             </Grid>
             <Grid item sm={6} xs={1}>
@@ -838,7 +859,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
         <TabPanel value={formvalue} index={2} tabname="formtab">
           {props.projectvalue !== undefined && (
-            <>
               <FormForm
                 currentView="start-view"
                 handleChangeForm={handleChangeFormAction}
@@ -847,15 +867,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                   formname: formvariants,
                 })}
               />
-              {/* <FormForm
-                currentView="start-view"
-                handleChangeForm={handleChangeFormAction}
-                handleSubmit={handleSubmitFormAction}
-                uiSpec={getprojectform(props.projectvalue, 'form_setting', {
-                  formname: formvariants,
-                })}
-              /> */}
-            </>
           )}
           <ProjectSubmit
             id="gotonext_info"

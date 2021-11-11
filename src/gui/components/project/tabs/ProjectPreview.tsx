@@ -35,6 +35,9 @@ import {
   AppBar,
   Hidden,
   Paper,
+  Step,
+  Stepper,
+  StepButton,
 } from '@material-ui/core';
 import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
 import FieldsListCard from './FieldsListCard';
@@ -120,10 +123,15 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   const [fieldNames, setfieldNames] = useState<Array<string>>([]);
   const [initialValues, setinitialValues] = useState({});
   const [role, setrole] = useState('admin');
+  const [view_name,setView] = useState('SECTION1')
 
   useEffect(() => {
     setinit();
   }, []);
+
+  useEffect(() => {
+    setinit();
+  }, [view_name]);
 
   const getfieldNames = (fieldNames: Array<string>, rolename: string) => {
     const newfields = fieldNames.filter(
@@ -142,7 +150,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
     );
     setformlabel(formtabs[0]);
     setformlabel(formuiSpec['visible_types'][0]);
-    setfieldNames(formuiSpec['views'][formvariants + 'SECTION1']['fields']);
+    setfieldNames(formuiSpec['views'][formvariants + view_name]['fields']);
   };
 
   const handleChangeForm = (event: any) => {};
@@ -152,7 +160,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
     setrole(event.target.value);
     console.log(event.target.value);
     const newfields = getfieldNames(
-      formuiSpec['views'][formvariants + 'SECTION1']['fields'],
+      formuiSpec['views'][formvariants + view_name]['fields'],
       event.target.value
     );
     setfieldNames(newfields);
@@ -195,6 +203,21 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
         >
           <Grid container>
             <Grid item sm={6} xs={12}>
+            <Stepper nonLinear activeStep={formuiSpec.viewsets[formvariants].views.indexOf(formvariants+view_name)} alternativeLabel>
+            {formuiSpec.viewsets[formvariants].views.map(
+              (view_name: string) => (
+                <Step key={view_name}>
+                  <StepButton
+                    onClick={() => {
+                      setView(view_name.replace(formvariants,''));
+                    }}
+                  >
+                    {formuiSpec.views[view_name].label}
+                  </StepButton>
+                </Step>
+              )
+            )}
+          </Stepper>
               {fieldNames.length > 0 ? (
                 <Formik
                   key={index}

@@ -216,14 +216,14 @@ export const getprojectform = (
   const fields_list: any = {};
   const fieldsarray: Array<string> = [];
   const section_info = [
-    {
-      name: 'sectionname',
-      label: 'Section Name',
-      namespace: 'formik-material-ui',
-      componentName: 'TextField',
-      view: 'section',
-      required: true,
-    },
+    // {
+    //   name: 'sectionname',
+    //   label: 'Section Name',
+    //   namespace: 'formik-material-ui',
+    //   componentName: 'TextField',
+    //   view: 'section',
+    //   required: true,
+    // },
     {
       name: 'sectiondescription',
       label: 'Description',
@@ -234,18 +234,40 @@ export const getprojectform = (
       multirows: 4,
     },
     // {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,helperText:'Now disbaled, Will be enabled after access field been defined.'},
-    {
-      name: 'sectiondeaccessinherit',
-      label: 'Inherit Access From Form',
-      namespace: 'faims-custom',
-      componentName: 'Checkbox',
-      type_return: 'faims-core::Bool',
-      validationSchema: [['yup.bool']],
-      type: 'checkbox',
-      initialValue: false,
-      helperText: 'Check to inherit from Form',
-    },
+    // {
+    //   name: 'sectiondeaccessinherit',
+    //   label: 'Inherit Access from Form',
+    //   namespace: 'faims-custom',
+    //   componentName: 'Checkbox',
+    //   type_return: 'faims-core::Bool',
+    //   validationSchema: [['yup.bool']],
+    //   type: 'checkbox',
+    //   initialValue: false,
+    //   helperText: 'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
+    // },
   ];
+  const sectionaccess=[{
+    name: 'sectionaccessinherit',
+    label: 'Inherit Access from Form',
+    namespace: 'faims-custom',
+    componentName: 'Checkbox',
+    type_return: 'faims-core::Bool',
+    validationSchema: [['yup.bool']],
+    type: 'checkbox',
+    initialValue: false,
+    helperText: 'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
+  }]
+  const formaccess=[{
+    name: 'formaccessinherit',
+    label: 'Inherit Access from Notebook',
+    namespace: 'faims-custom',
+    componentName: 'Checkbox',
+    type_return: 'faims-core::Bool',
+    validationSchema: [['yup.bool']],
+    type: 'checkbox',
+    initialValue: false,
+    helperText: 'Check to inherit access for user roles from Notebook, You can change acess for each form component in Section Definition > Info tab',
+  }]
   const form_info_options: Array<optionType> = [
     {
       value: 'Save and New',
@@ -258,10 +280,6 @@ export const getprojectform = (
   ];
   const options = getacessoption(projectvalue.accesses);
   const form_info = [
-    // {name:'Formdescription',label:'Description',namespace:'formik-material-ui',componentName:'TextField',view:'form',multiline:true,multirows:4},
-    //{name:'access',lable:'access',namespace:'faims-custom',componentName:'Select',select: true,type:'select',view:'access',options:options,helperText:'It will be replace to the new field'},//TODO: working on newfield
-    // {name:'accessinherit',label:'Inherit Access From Notebook',namespace:'faims-custom',componentName:'Checkbox',type_return:'faims-core::Bool',validationSchema:[['yup.bool'],],type: 'checkbox',initialValue:false,helperText:'Check to inherit from NoteBook'},
-    // {name:'accesses',label:'Accesses',namespace:'faims-custom',componentName:'AutoComplete',type_return:'faims-core::String',validationSchema:[['yup.string'],],type:'text',select:true,options:getacessoption(projectvalue.accesses)}
     {
       name: 'submitAction',
       label: 'Form Submit Action',
@@ -296,6 +314,17 @@ export const getprojectform = (
       initialValue: false,
       helperText: 'Tick for enable Uncertainty for Form components',
     },
+    // {
+    //   name: 'visible',
+    //   label: 'Visible in Main menu',
+    //   namespace: 'faims-custom',
+    //   componentName: 'Checkbox',
+    //   type_return: 'faims-core::Bool',
+    //   validationSchema: [['yup.bool']],
+    //   type: 'checkbox',
+    //   initialValue: true,
+    //   helperText: 'Tick if user can see from Add New options',
+    // },
   ];
 
   const users = [
@@ -401,6 +430,8 @@ export const getprojectform = (
       },
     ],
     section: [],
+    sectionaccess:[],
+    formaccess:[],
     form: [],
     users: [
       {
@@ -456,6 +487,32 @@ export const getprojectform = (
     fields['info_general'][0].disabled = true;
     // fields['info_general'][0].value=projectvalue.name
     fields['info_general'][1].disabled = true;
+  }
+
+  if(tab==='sectionaccess'){
+    sectionaccess.map(
+      (field: any, index: number)=>{
+      const fieldname = field.name + props.sectionname;
+      const newfield = {...field, name: fieldname};
+      if (projectvalue['sections'][props.sectionname] !== undefined)
+          newfield['initialValue'] =
+            projectvalue['sections'][props.sectionname][fieldname]??false;
+      
+      fields[tab][index] = {...newfield};
+      }
+    )
+  }
+  if(tab==='formaccess'){
+    formaccess.map(
+      (field: any, index: number)=>{
+      const fieldname = field.name + props.formname;
+      const newfield = {...field, name: fieldname};
+      if (projectvalue['forms'][props.formname] !== undefined)
+          newfield['initialValue'] =
+            projectvalue['forms'][props.formname][fieldname]??false;
+      fields[tab][index] = {...newfield};
+      }
+    )
   }
   if (tab === 'section') {
     //create new section form for each section
