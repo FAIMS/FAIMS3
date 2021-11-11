@@ -93,6 +93,8 @@ const ini_projectvalue = {
   forms: {
     FORM1: {
       submitActionFORM1: 'Save and New',
+      annotationFORM1: true,
+      uncertaintyFORM1: false,
     },
   },
   sections: {},
@@ -252,7 +254,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       getprojectmeta();
     }
 
-
     setProjecttabvalue(0);
   };
 
@@ -282,8 +283,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         console.error(error);
       }
     }
-
-  }
+  };
 
   const saveformuiSpec = async (res: any = undefined) => {
     try {
@@ -306,7 +306,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   };
 
-
   const getprojectmeta = async () => {
     try {
       try {
@@ -325,9 +324,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             .catch(error => {
               console.error('Not get meta data', error);
             });
-
-      } 
-    }catch (error) {
+        }
+      } catch (error) {
         console.error('DO not get the meta data...');
         console.debug(error);
       }
@@ -439,9 +437,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         ) {
           saveformuiSpec(res);
         }
-
-
-      })
+      });
     }
 
     if (
@@ -493,169 +489,167 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       <Grid container>
         {isready() && (
           <Grid item sm={12} xs={12}>
-
-          <Formik
-                initialValues={initialValues}
-                validateOnMount={true}
-                validationSchema={validationSchema}
-                onSubmit={(values, {setSubmitting}) => {
-                  setTimeout(() => {
-                    setSubmitting(false);
-                    handleSubmit(values);
-                  }, 500);
-                }}
-              >
-                {formProps => {
-                  return (
-                    <Form>
-                      <TabPanel
-                        value={projecttabvalue}
-                        index={0}
-                        tabname="primarytab"
-                      >
-                        {projecttabvalue === 0 ? (
-                          <ProjectInfoTab
-                            project_id={project_id}
-                            projectvalue={projectvalue}
-                            setProjectValue={setProjectValue}
-                            handleChangeFormProject={handleChangeFormProject}
-                            setProjecttabvalue={setProjecttabvalue}
-                            formProps={formProps}
-                          />
-                        ) : (
-                          ''
-                        )}
-                      </TabPanel>
-                      <TabPanel
-                        value={projecttabvalue}
-                        index={4}
-                        tabname="primarytab"
-                      >
-                        <>
-                          <Alert severity="info">
-                            Add authorised users for this notebook. Assign roles
-                            to users in the User Role tab.
+            <Formik
+              initialValues={initialValues}
+              validateOnMount={true}
+              validationSchema={validationSchema}
+              onSubmit={(values, {setSubmitting}) => {
+                setTimeout(() => {
+                  setSubmitting(false);
+                  handleSubmit(values);
+                }, 500);
+              }}
+            >
+              {formProps => {
+                return (
+                  <Form>
+                    <TabPanel
+                      value={projecttabvalue}
+                      index={0}
+                      tabname="primarytab"
+                    >
+                      {projecttabvalue === 0 ? (
+                        <ProjectInfoTab
+                          project_id={project_id}
+                          projectvalue={projectvalue}
+                          setProjectValue={setProjectValue}
+                          handleChangeFormProject={handleChangeFormProject}
+                          setProjecttabvalue={setProjecttabvalue}
+                          formProps={formProps}
+                        />
+                      ) : (
+                        ''
+                      )}
+                    </TabPanel>
+                    <TabPanel
+                      value={projecttabvalue}
+                      index={4}
+                      tabname="primarytab"
+                    >
+                      <>
+                        <Alert severity="info">
+                          Add authorised users for this notebook. Assign roles
+                          to users in the User Role tab.
+                        </Alert>
+                        {projectvalue.ispublish !== true && (
+                          <Alert severity="warning">
+                            User will not be invited untile Notebook is be
+                            approved.Check more information in the Submit tab
                           </Alert>
-                          {projectvalue.ispublish !== true && (
-                            <Alert severity="warning">
-                              User will not be invited untile Notebook is be
-                              approved.Check more information in the Submit tab
-                            </Alert>
-                          )}
-                          <ProjectUserTab
-                            project_id={project_id}
-                            projectvalue={projectvalue}
-                            setProjectValue={setProjectValue}
-                            setProjecttabvalue={setProjecttabvalue}
-                            formProps={formProps}
-                          />
-                        </>
-                      </TabPanel>
-                      <TabPanel
-                        value={projecttabvalue}
-                        index={5}
-                        tabname="primarytab"
-                      >
-                        <ProjectBehaviourTab
+                        )}
+                        <ProjectUserTab
                           project_id={project_id}
                           projectvalue={projectvalue}
                           setProjectValue={setProjectValue}
+                          setProjecttabvalue={setProjecttabvalue}
                           formProps={formProps}
                         />
-                        <ProjectSubmit
-                          id="gotonextbehaviour"
-                          type="submit"
-                          isSubmitting={false}
-                          text="Go To Next"
-                          onButtonClick={() => setProjecttabvalue(6)}
-                        />
-                      </TabPanel>
-                      <TabPanel
-                        value={projecttabvalue}
-                        index={6}
-                        tabname="primarytab"
-                      >
-                        <ProjectSubmitTab
-                          project_id={project_id}
-                          projectvalue={projectvalue}
-                          setProjectValue={setProjectValue}
-                          handleSubmit={handlerprojectsubmit_pounch}
-                          handlepublish={handlerprojectsubmit_counch}
-                          formProps={formProps}
-                          formuiSpec={formuiSpec}
-                        />
-                      </TabPanel>
-                    </Form>
-                  );
-                }}
-              </Formik>
-              <TabPanel value={projecttabvalue} index={1} tabname="primarytab">
-                {projecttabvalue === 1 ? (
-                  <ProjectDesignTab
-                    project_id={project_id}
-                    accessgroup={projectvalue.accesses}
-                    projectvalue={projectvalue}
-                    setProjectValue={setProjectValue}
-                    formuiSpec={formuiSpec}
-                    setFormuiSpec={setFormuiSpec}
-                    handleSaveUiSpec={handleSaveUiSpec}
-                    setProjecttabvalue={setProjecttabvalue}
-                  />
-                ) : (
-                  ''
-                )}
-              </TabPanel>
-              <TabPanel value={projecttabvalue} index={2} tabname="primarytab">
-                <>
-                  <Alert severity="info">
-                    High level view of Notebook showing relationships between
-                    forms. To modify a relationship, go to the Design Tab
-                  </Alert>
-                  <ProjectSubmit
-                    id="gotonextoverview"
-                    type="submit"
-                    isSubmitting={false}
-                    text="Go To Next"
-                    onButtonClick={() => setProjecttabvalue(3)}
-                  />
-                </>
-              </TabPanel>
-              <TabPanel value={projecttabvalue} index={3} tabname="primarytab">
-                  <>
-                    <Alert severity="info">
-                      Select the user role to preview the notebook as a user with
-                      that role
-                    </Alert>
-                    <ProjectPreviewTab
-                      project_id={project_id}
-                      accessgroup={projectvalue.accesses}
-                      projectvalue={projectvalue}
-                      setProjectValue={setProjectValue}
-                      formuiSpec={formuiSpec}
-                      setFormuiSpec={setFormuiSpec}
-                      handleSaveUiSpec={handleSaveUiSpec}
-                    />
-                    <ProjectSubmit
-                      id="sendbacktodesign"
-                      type="submit"
-                      isSubmitting={false}
-                      text="GO to Design Form"
-                      onButtonClick={() => setProjecttabvalue(1)}
-                    />
-  
-                    <ProjectSubmit
-                      id="gotonextperview"
-                      type="submit"
-                      isSubmitting={false}
-                      text="Go To Next"
-                      onButtonClick={() => setProjecttabvalue(4)}
-                    />
-                  </>
-               
-              </TabPanel>
+                      </>
+                    </TabPanel>
+                    <TabPanel
+                      value={projecttabvalue}
+                      index={5}
+                      tabname="primarytab"
+                    >
+                      <ProjectBehaviourTab
+                        project_id={project_id}
+                        projectvalue={projectvalue}
+                        setProjectValue={setProjectValue}
+                        formProps={formProps}
+                      />
+                      <ProjectSubmit
+                        id="gotonextbehaviour"
+                        type="submit"
+                        isSubmitting={false}
+                        text="Go To Next"
+                        onButtonClick={() => setProjecttabvalue(6)}
+                      />
+                    </TabPanel>
+                    <TabPanel
+                      value={projecttabvalue}
+                      index={6}
+                      tabname="primarytab"
+                    >
+                      <ProjectSubmitTab
+                        project_id={project_id}
+                        projectvalue={projectvalue}
+                        setProjectValue={setProjectValue}
+                        handleSubmit={handlerprojectsubmit_pounch}
+                        handlepublish={handlerprojectsubmit_counch}
+                        formProps={formProps}
+                        formuiSpec={formuiSpec}
+                      />
+                    </TabPanel>
+                  </Form>
+                );
+              }}
+            </Formik>
+            <TabPanel value={projecttabvalue} index={1} tabname="primarytab">
+              {projecttabvalue === 1 ? (
+                <ProjectDesignTab
+                  project_id={project_id}
+                  accessgroup={projectvalue.accesses}
+                  projectvalue={projectvalue}
+                  setProjectValue={setProjectValue}
+                  formuiSpec={formuiSpec}
+                  setFormuiSpec={setFormuiSpec}
+                  handleSaveUiSpec={handleSaveUiSpec}
+                  setProjecttabvalue={setProjecttabvalue}
+                />
+              ) : (
+                ''
+              )}
+            </TabPanel>
+            <TabPanel value={projecttabvalue} index={2} tabname="primarytab">
+              <>
+                <Alert severity="info">
+                  High level view of Notebook showing relationships between
+                  forms. To modify a relationship, go to the Design Tab
+                </Alert>
+                <ProjectSubmit
+                  id="gotonextoverview"
+                  type="submit"
+                  isSubmitting={false}
+                  text="Go To Next"
+                  onButtonClick={() => setProjecttabvalue(3)}
+                />
+              </>
+            </TabPanel>
+            <TabPanel value={projecttabvalue} index={3} tabname="primarytab">
+              <>
+                <Alert severity="info">
+                  Select the user role to preview the notebook as a user with
+                  that role
+                </Alert>
+                <ProjectPreviewTab
+                  project_id={project_id}
+                  accessgroup={projectvalue.accesses}
+                  projectvalue={projectvalue}
+                  setProjectValue={setProjectValue}
+                  formuiSpec={formuiSpec}
+                  setFormuiSpec={setFormuiSpec}
+                  handleSaveUiSpec={handleSaveUiSpec}
+                />
+                <ProjectSubmit
+                  id="sendbacktodesign"
+                  type="submit"
+                  isSubmitting={false}
+                  text="GO to Design Form"
+                  onButtonClick={() => setProjecttabvalue(1)}
+                />
+
+                <ProjectSubmit
+                  id="gotonextperview"
+                  type="submit"
+                  isSubmitting={false}
+                  text="Go To Next"
+                  onButtonClick={() => setProjecttabvalue(4)}
+                />
+              </>
+            </TabPanel>
           </Grid>
         )}
-        
+
         <Grid item sm={4} xs={12}>
           <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
             <pre>{JSON.stringify(projectvalue, null, 2)}</pre>

@@ -49,8 +49,7 @@ export const getComponentFromField = (
   uiSpec: any,
   fieldName: string,
   formProps: any,
-  handleChangeC: any,
-  uidesign = 'alert'
+  handleChangeC: any
 ) => {
   // console.log('getComponentFromField');
 
@@ -94,6 +93,7 @@ export function FormForm(props: FormElement) {
   const {currentView, handleChangeForm, ...others} = props;
   const [uiSpec, setUISpec] = useState(props.uiSpec);
   const initialValues = setProjectInitialValues(uiSpec, currentView, {});
+  console.log(initialValues);
   const getfields = (
     uiSpec: any,
     formProps: any,
@@ -110,6 +110,7 @@ export function FormForm(props: FormElement) {
   };
   return (
     <Formik
+      enableReinitialize
       initialValues={initialValues}
       validateOnMount={true}
       onSubmit={(values, {setSubmitting}) => {
