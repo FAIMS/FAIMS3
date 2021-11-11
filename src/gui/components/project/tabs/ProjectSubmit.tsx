@@ -21,13 +21,13 @@ import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {useState, useEffect} from 'react';
 import * as ROUTES from '../../../../constants/routes';
-import {makeStyles} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
 import {Grid, Typography, Box, Button} from '@material-ui/core';
 import {ProjectSubmit} from './ProjectButton';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import Alert from '@material-ui/lab/Alert';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 type ProjectSubmitProps = {
   project_id: string | null;

@@ -22,21 +22,14 @@
 import React from 'react';
 
 import {useState, useEffect} from 'react';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  Chip,
-} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
+import {Formik, Form, Field} from 'formik';
+import {Grid, Box, Chip, TextField} from '@material-ui/core';
+import Autocomplete from '@material-ui/lab/Autocomplete';
 import {getComponentByName} from '../../component_registry';
 import {setProjectInitialValues} from './data/ComponentSetting';
 import {TickButton} from './tabs/ProjectButton';
-import Autocomplete from '@material-ui/lab/Autocomplete';
-import {TextField} from '@material-ui/core';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 type FormElement = {
   uiSpec: any;

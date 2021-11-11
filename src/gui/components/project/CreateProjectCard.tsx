@@ -40,17 +40,11 @@ import {
   uiSpecType,
   getprojectform,
 } from './data/ComponentSetting';
-import {ProjevtValueList, FAIMShandlerType} from '../../../datamodel/ui';
+import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
-import {
-  add_autoincrement_reference_for_project,
-  get_autoincrement_references_for_project,
-} from '../../../datamodel/autoincrement';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../sync/databases';
+import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
+import {setUiSpecForProject} from '../../../uiSpecification';
+import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {setProjectMetadata, getProjectMetadata} from '../../../projectMetadata';
@@ -58,8 +52,11 @@ import grey from '@material-ui/core/colors/grey';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
+import {Formik, Form} from 'formik';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 const useStyles = makeStyles(theme => ({
   root: {
     flexGrow: 1,

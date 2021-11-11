@@ -28,10 +28,9 @@ import {
   componenentSettingprops,
 } from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
-import {
-  Defaultcomponentsetting,
-  getDefaultuiSetting,
-} from '../../../fields/BasicFieldSettings';
+import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 const uiSettingOthers: ProjectUIModel = {
   fields: {

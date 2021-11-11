@@ -22,12 +22,9 @@ import React from 'react';
 import {FieldProps} from 'formik';
 import Dropzone from 'react-dropzone';
 import {getDefaultuiSetting} from './BasicFieldSettings';
-import {
-  ProjectUIModel,
-  componenentSettingprops,
-  FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
+import {ProjectUIModel} from '../../datamodel/ui';
 import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   accepted_filetypes?: string | string[];
   disabled?: boolean;

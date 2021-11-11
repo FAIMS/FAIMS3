@@ -24,48 +24,17 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
 
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  AppBar,
-  Hidden,
-  Paper,
-} from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard, FormConnectionCard} from './PSettingCard';
+import {Grid} from '@material-ui/core';
+import {Formik, Form} from 'formik';
 import {getComponentFromField, FormForm} from '../FormElement';
-import {TabTab, TabEditable} from './TabTab';
+import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
-import {
-  setProjectInitialValues,
-  getid,
-  updateuiSpec,
-  gettabform,
-  getprojectform,
-  uiSpecType,
-  getacessoption,
-} from '../data/ComponentSetting';
+import {getprojectform, uiSpecType} from '../data/ComponentSetting';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-import {
-  CusButton,
-  CloseButton,
-  UpButton,
-  DownButton,
-  AddButton,
-} from './ProjectButton';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../../sync/databases';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
   newfield: {

@@ -20,46 +20,18 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
 
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  AppBar,
-  Hidden,
-  Paper,
-} from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard} from './PSettingCard';
-import {getComponentFromField, FormForm} from '../FormElement';
-import {TabTab, TabEditable} from './TabTab';
+import {Grid, Box, Paper} from '@material-ui/core';
+import {getComponentFromField} from '../FormElement';
+import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
-import {
-  setProjectInitialValues,
-  getid,
-  updateuiSpec,
-  gettabform,
-  getprojectform,
-} from '../data/ComponentSetting';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  BehaviourProperties,
-} from '../../../../datamodel/ui';
-import {TickButton, AddUserButton, ProjectSubmit} from './ProjectButton';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../../sync/databases';
-import {getProjectInfo} from '../../../../databaseAccess';
+import {getprojectform} from '../data/ComponentSetting';
+import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {AddUserButton, ProjectSubmit} from './ProjectButton';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@material-ui/lab/Alert';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({}));
 
 type ProjectInfoProps = {

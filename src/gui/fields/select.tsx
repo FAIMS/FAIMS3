@@ -33,6 +33,7 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // interface option {
 //   key: string;
 //   value: string;

@@ -27,18 +27,11 @@
 import {v4 as uuidv4} from 'uuid';
 import {getcomponent} from './uiFieldsRegistry';
 import {getComponentPropertiesByName} from '../../../component_registry';
-import {
-  setSetingInitialValues,
-  generatenewname,
-  generatenewfield,
-} from './componenentSetting';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  ProjectUIModel,
-  FAIMSUiSpec,
-} from '../../../../datamodel/ui';
+import {setSetingInitialValues, generatenewfield} from './componenentSetting';
+import {ProjevtValueList} from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 const VISIBLE_TYPE = 'visible_types';
 const NEWFIELDS = 'newfield';

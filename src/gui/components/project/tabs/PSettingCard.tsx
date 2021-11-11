@@ -43,6 +43,7 @@ import {DeleteuserButton} from './ProjectButton';
 import NextWeekIcon from '@material-ui/icons/NextWeek';
 import AddIcon from '@material-ui/icons/Add';
 import DeleteIcon from '@material-ui/icons/Delete';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({
   settiglist: {
     // backgroundColor:'#e1e4e8',
