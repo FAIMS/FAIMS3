@@ -599,15 +599,16 @@ export function generateaddfieldui() {
   return true;
 }
 
-function setmeta (meta:any) {
-  if(meta.isannotation===false) return undefined;
-  if(meta.isannotation) return {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: meta.isuncertainty,
-      label: 'uncertainty',
-    },
-  }
+function setmeta(meta: any) {
+  if (meta.isannotation === false) return undefined;
+  if (meta.isannotation)
+    return {
+      annotation_label: 'annotation',
+      uncertainty: {
+        include: meta.isuncertainty,
+        label: 'uncertainty',
+      },
+    };
   return false;
 }
 
@@ -671,14 +672,12 @@ const updatelabel = (type: boolean, props: any) => {
   return {newviews, components};
 };
 
-
-
 const newfromui = (
   newuiSpec: uiSpecType,
   newformcom: any,
   access: Array<string>,
   initialfieldvalue: any,
-  projectvalue:any
+  projectvalue: any
 ) => {
   newuiSpec[VISIBLE_TYPE].map((variant: any, index: any) => {
     newuiSpec['viewsets'][variant]['views'].map((view: string) => {
@@ -687,7 +686,12 @@ const newfromui = (
         const field = newuiSpec['fields'][fieldname];
         if (field['meta'] === undefined)
           // if(setmeta({isannotation:true,isuncertainty:false})!==undefined)
-            field['meta'] = setmeta({isannotation:projectvalue['forms'][variant]['annotation'+variant],isuncertainty:projectvalue['forms'][variant]['uncertainty'+variant]});
+          field['meta'] = setmeta({
+            isannotation:
+              projectvalue['forms'][variant]['annotation' + variant],
+            isuncertainty:
+              projectvalue['forms'][variant]['uncertainty' + variant],
+          });
         const fieldprops = {};
         const newuiSpeclist = FieldSettings(
           field,
@@ -771,7 +775,7 @@ const addfield = (props: any) => {
     formuiview,
     accessgroup,
     project_id,
-    meta
+    meta,
   } = props;
   const settings = id;
   const name = NEWFIELDS + uuid;
@@ -790,7 +794,7 @@ const addfield = (props: any) => {
           access: accessgroup,
           ...id.uiSpecProps,
         });
-    newfield['meta'] = setmeta(meta);
+  newfield['meta'] = setmeta(meta);
   // if (newfield['meta'] === undefined)
   //   newfield['meta'] = {
   //     annotation_label: 'annotation',

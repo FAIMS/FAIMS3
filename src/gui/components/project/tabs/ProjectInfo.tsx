@@ -238,10 +238,6 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             Add Meta component by filling Label and clicking the Add button
           </Alert>
         </Grid>
-
-
-
-
       </Grid>
     );
   };
@@ -250,16 +246,15 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     return (
       <Grid container>
         <Grid item sm={8} xs={12}>
-
-
-          {isready(uiSpec_general)&& (getfields(uiSpec_general).map((fieldName: string) =>
+          {isready(uiSpec_general) &&
+            getfields(uiSpec_general).map((fieldName: string) =>
               getComponentFromField(
                 uiSpec_general,
                 fieldName,
                 formProps,
                 handleChangeFormProject
               )
-            ))}
+            )}
           <br />
           <ProjectSubmit
             id="gotonext_info"
@@ -326,8 +321,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
           onButtonClick={() => props.setProjecttabvalue(1)}
         />
       </Grid>
-
-  )
+    );
   };
 
   const AttachmentTab = () => {

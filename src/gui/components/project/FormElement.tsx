@@ -49,8 +49,7 @@ export const getComponentFromField = (
   uiSpec: any,
   fieldName: string,
   formProps: any,
-  handleChangeC: any,
-
+  handleChangeC: any
 ) => {
   // console.log('getComponentFromField');
 
@@ -65,7 +64,6 @@ export const getComponentFromField = (
     return <>Error</>;
   }
   const value = formProps.values[fieldName];
-
 
   return (
     <Box key={fieldName}>
@@ -95,7 +93,7 @@ export function FormForm(props: FormElement) {
   const {currentView, handleChangeForm, ...others} = props;
   const [uiSpec, setUISpec] = useState(props.uiSpec);
   const initialValues = setProjectInitialValues(uiSpec, currentView, {});
-  console.log(initialValues)
+  console.log(initialValues);
   const getfields = (
     uiSpec: any,
     formProps: any,
@@ -126,9 +124,7 @@ export function FormForm(props: FormElement) {
         return (
           <Form id="form">
             {uiSpec['views'][currentView]['uidesign'] !== 'tab' ? (
-
               getfields(uiSpec, formProps, handleChangeForm, currentView)
-              
             ) : (
               <Grid container>
                 <Grid item sm={11} xs={12}>
