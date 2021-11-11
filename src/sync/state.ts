@@ -254,7 +254,10 @@ function start_listening_for_changes(
         const pdoc = doc.doc;
 
         if (pdoc !== undefined && isRecord(pdoc)) {
-          mergeHeads(proj_id, doc.id);
+          mergeHeads(proj_id, doc.id).catch(err => {
+            console.warn(err);
+            console.error('Merging failed');
+          });
         }
       }
     });

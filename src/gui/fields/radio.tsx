@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useState} from 'react';
+import React from 'react';
 import MuiRadioGroup from '@material-ui/core/RadioGroup';
 import MuiRadio, {RadioProps} from '@material-ui/core/Radio';
 import FormControl from '@material-ui/core/FormControl';
@@ -31,7 +31,6 @@ import {
   FormControlLabelProps,
 } from '@material-ui/core';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-material-ui';
-import {UI_SPECIFICATION_NAME} from '../../datamodel/database';
 import BookmarksIcon from '@material-ui/icons/Bookmarks';
 import {
   ProjectUIModel,
@@ -42,6 +41,7 @@ import {
   Defaultcomponentsetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 interface option {
   key?: string;
   value: string;

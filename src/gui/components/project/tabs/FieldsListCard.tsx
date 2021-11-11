@@ -21,18 +21,16 @@
  */
 
 import React from 'react';
-import {useState} from 'react';
 import {
   Grid,
   CardActionArea,
-  CardActions,
   CardContent,
   Typography,
   Card,
-  Button,
 } from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
 import {getfields} from '../data/uiFieldsRegistry';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
   content: {

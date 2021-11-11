@@ -34,6 +34,8 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 interface FieldValues {
   [field_name: string]: any;
 }

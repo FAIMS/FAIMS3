@@ -349,7 +349,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
       'take-photo-field': {
         'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
         'component-name': 'TakePhoto',
-        'type-returned': 'faims-blob::Photo', // matches a type in the Project Model
+        'type-returned': 'faims-attachment::Files', // matches a type in the Project Model
         'component-parameters': {
           fullWidth: true,
           name: 'take-photo-field',
@@ -551,7 +551,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
       'file-upload-field': {
         'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
         'component-name': 'FileUploader',
-        'type-returned': 'faims-core::File', // matches a type in the Project Model
+        'type-returned': 'faims-attachment::Files', // matches a type in the Project Model
         'component-parameters': {
           name: 'file-upload-field',
           id: 'file-upload-field',

@@ -18,12 +18,13 @@
  *   TODO
  */
 
-import React, {useState} from 'react';
+import React from 'react';
 import {Field, FormikProps} from 'formik';
 
 import {Box} from '@material-ui/core';
 
 import {getComponentByName} from '../../component_registry';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export function getComponentFromFieldConfig(
   fieldConfig: any,

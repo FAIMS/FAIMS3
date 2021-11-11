@@ -19,11 +19,8 @@
  */
 
 import {Grid, Typography, Switch} from '@material-ui/core';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  BehaviourProperties,
-} from '../../../../datamodel/ui';
+import {FAIMShandlerType, BehaviourProperties} from '../../../../datamodel/ui';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 type ProjectBehaviourProps = any;
 

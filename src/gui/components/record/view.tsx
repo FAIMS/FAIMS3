@@ -21,11 +21,11 @@
 import React from 'react';
 import {FormikProps} from 'formik';
 
-import {getComponentFromFieldConfig} from './fields';
-import {Annotations} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import RecordDraftState from '../../../sync/draft-state';
+import {getComponentFromFieldConfig} from './fields';
 import {Annotation} from './Annotation';
+
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
@@ -51,7 +51,7 @@ export class ViewComponent extends React.Component<ViewProps> {
               this.props.formProps
             )}
             {this.props.annotation !== undefined &&
-              fields[fieldName]['meta'] !== undefined && (
+              fields[fieldName].meta !== undefined && (
                 <Annotation
                   key={'annotation' + fieldName + 'box'}
                   fieldName={fieldName}

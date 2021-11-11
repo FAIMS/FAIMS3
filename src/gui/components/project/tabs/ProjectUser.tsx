@@ -18,27 +18,23 @@
  * TODO: add select to user list area
  */
 import React from 'react';
-import {useState, useEffect} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
+import {useState} from 'react';
 
 import {Grid, Typography, Box} from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import {getComponentFromField, FormForm} from '../FormElement';
+import {Formik, Form} from 'formik';
+import {getComponentFromField} from '../FormElement';
 import {ProjectSubmit} from './ProjectButton';
 import {
   setProjectInitialValues,
-  getid,
-  updateuiSpec,
-  gettabform,
   getprojectform,
   checkvalid,
 } from '../data/ComponentSetting';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-import Alert from '@material-ui/lab/Alert';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {UserRoleList, UserLists} from './PSettingCard';
 import {AddUserButton, Addusersassign} from './ProjectButton';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 type ProjectUserProps = {
   project_id: string | null;
   projectvalue: ProjevtValueList;

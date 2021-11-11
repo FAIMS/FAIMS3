@@ -22,21 +22,14 @@
 import React from 'react';
 
 import {useState, useEffect} from 'react';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  Chip,
-} from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
+import {Formik, Form, Field} from 'formik';
+import {Grid, Box, Chip, TextField} from '@material-ui/core';
+import Autocomplete from '@material-ui/lab/Autocomplete';
 import {getComponentByName} from '../../component_registry';
 import {setProjectInitialValues} from './data/ComponentSetting';
 import {TickButton} from './tabs/ProjectButton';
-import Autocomplete from '@material-ui/lab/Autocomplete';
-import {TextField} from '@material-ui/core';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 type FormElement = {
   uiSpec: any;
@@ -49,8 +42,7 @@ export const getComponentFromField = (
   uiSpec: any,
   fieldName: string,
   formProps: any,
-  handleChangeC: any,
-
+  handleChangeC: any
 ) => {
   // console.log('getComponentFromField');
 
@@ -65,7 +57,6 @@ export const getComponentFromField = (
     return <>Error</>;
   }
   const value = formProps.values[fieldName];
-
 
   return (
     <Box key={fieldName}>
@@ -95,7 +86,7 @@ export function FormForm(props: FormElement) {
   const {currentView, handleChangeForm, ...others} = props;
   const [uiSpec, setUISpec] = useState(props.uiSpec);
   const initialValues = setProjectInitialValues(uiSpec, currentView, {});
-  console.log(initialValues)
+  console.log(initialValues);
   const getfields = (
     uiSpec: any,
     formProps: any,
@@ -126,9 +117,7 @@ export function FormForm(props: FormElement) {
         return (
           <Form id="form">
             {uiSpec['views'][currentView]['uidesign'] !== 'tab' ? (
-
               getfields(uiSpec, formProps, handleChangeForm, currentView)
-              
             ) : (
               <Grid container>
                 <Grid item sm={11} xs={12}>

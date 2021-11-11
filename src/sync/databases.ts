@@ -111,7 +111,10 @@ export const local_state_db = new PouchDB('local_state', local_pouch_options);
 /**
  * Login tokens for each FAIMS Cluster that needs it
  */
-export const local_auth_db = new PouchDB<LocalAuthDoc>('local_auth');
+export const local_auth_db = new PouchDB<LocalAuthDoc>(
+  'local_auth',
+  local_pouch_options
+);
 
 /**
  * Each listing has a Projects database and Users DBs
@@ -365,7 +368,12 @@ async function delete_synced_dbs(db_list: LocalDBList<any>) {
 }
 
 export async function wipe_all_pouch_databases() {
-  const local_only_dbs_to_wipe = [active_db, local_state_db, draft_db];
+  const local_only_dbs_to_wipe = [
+    active_db,
+    local_state_db,
+    draft_db,
+    local_auth_db,
+  ];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
   await delete_synced_dbs(projects_dbs);

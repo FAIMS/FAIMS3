@@ -18,21 +18,31 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {useParams, Redirect} from 'react-router-dom';
 import {Link as RouterLink} from 'react-router-dom';
 
-import {Box, Button, Container, Typography, Paper} from '@material-ui/core';
+import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  Paper,
+  TextareaAutosize,
+} from '@material-ui/core';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';
+import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
 
 export default function ProjectSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const project_info = getProjectInfo(project_id);
+  const [loading, setLoading] = useState(true);
+  const [metadbContents, setMetadbContents] = useState<object[]>([]);
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {link: ROUTES.PROJECT_LIST, title: 'Projects'},
@@ -42,6 +52,18 @@ export default function ProjectSettings() {
     },
     {title: 'Settings'},
   ];
+
+  useEffect(() => {
+    if (project_id === null) return;
+    const getDB = async () => {
+      setMetadbContents(await dumpMetadataDBContents(project_id));
+      setLoading(false);
+    };
+    getDB();
+  }, []);
+
+  console.error('MetaDB contents', metadbContents);
+
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
@@ -64,6 +86,17 @@ export default function ProjectSettings() {
           Edit AutoIncrement Allocations
         </Button>
       </Paper>
+      <Box mb={1}>
+        <Typography variant={'subtitle1'}>
+          The metadata database contents of
+          {project_info !== null ? project_info.name : project_id}.
+        </Typography>
+        {loading ? (
+          'Loading...'
+        ) : (
+          <TextareaAutosize defaultValue={JSON.stringify(metadbContents)} />
+        )}
+      </Box>
     </Container>
   ) : (
     <Redirect to="/404" />

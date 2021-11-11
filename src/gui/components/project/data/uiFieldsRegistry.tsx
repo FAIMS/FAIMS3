@@ -22,11 +22,11 @@
  */
 
 import {
-  getComponentByName,
   getComponentPropertiesByName,
   getAvailableComponents,
 } from '../../../component_registry';
 import {FormComponent} from '../../../../datamodel/ui';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export const getfields = () => {
   const fields: any = {};

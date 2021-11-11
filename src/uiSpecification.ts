@@ -109,3 +109,23 @@ export function getReturnedTypesForViewSet(
   }
   return types;
 }
+
+export async function dumpMetadataDBContents(
+  project_id: ProjectID
+): Promise<object[]> {
+  const projdb = getProjectDB(project_id);
+  try {
+    const db_contents = await projdb.allDocs({
+      include_docs: true,
+      attachments: true,
+    });
+    const docs = [];
+    for (const o of db_contents.rows) {
+      docs.push(o.doc as object);
+    }
+    return docs;
+  } catch (err) {
+    console.warn(err);
+    throw Error(`failed to dump meta db for ${project_id}`);
+  }
+}

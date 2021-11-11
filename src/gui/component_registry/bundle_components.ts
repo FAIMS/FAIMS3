@@ -85,8 +85,8 @@ import {
   setAttachmentDumperForType,
 } from '../../datamodel/typesystem';
 import {
-  file_data_to_attachment,
-  file_attachment_to_data,
+  file_data_to_attachments,
+  file_attachments_to_data,
 } from '../../data_storage/attachments';
 /*
  * This should be enough to make typescript/the build system happy
@@ -272,7 +272,7 @@ registerComponent(
   setupComponentProperties('Take Point', '', 'Images', TakePhoto, {
     namespace: 'faims-custom',
     componentName: 'TakePhoto',
-    type_return: 'faims-blob::Photo',
+    type_return: 'faims-attachment::Files',
     initialValue: null,
     validationSchema: [['yup.object'], ['yup.nullable']],
   })
@@ -380,5 +380,5 @@ registerComponent(
  * For saving and loading attachment with type faims-core::File
  */
 
-setAttachmentLoaderForType('faims-core::File', file_attachment_to_data);
-setAttachmentDumperForType('faims-core::File', file_data_to_attachment);
+setAttachmentLoaderForType('faims-attachment::Files', file_attachments_to_data);
+setAttachmentDumperForType('faims-attachment::Files', file_data_to_attachments);
