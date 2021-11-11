@@ -35,6 +35,7 @@ import {
   ListItemAvatar,
   ListItemText,
   Grid,
+  TextField,
 } from '@material-ui/core';
 
 // import {EmailShareButton} from 'react-share';
@@ -47,11 +48,16 @@ import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation} from '../../../datamodel/ui';
 import DraftsTable from '../record/draft_table';
 import RecordsTable from '../record/table';
+import {RecordsSearchTable} from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
 import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
+
+type ProjectSearchCardProps = {
+  project: ProjectInformation;
+};
 
 type ProjectCardProps = {
   project: ProjectInformation;
@@ -381,3 +387,127 @@ Card.defaultProps = {
   listView: false,
   dashboard: false,
 };
+
+export function ProjectSearchCard(props: ProjectSearchCardProps) {
+  const {project} = props;
+  const classes = useStyles();
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
+      setLoading(false);
+    }
+  }, [project]);
+
+  return (
+    <React.Fragment>
+      {loading ? (
+        <CircularProgress size={12} thickness={4} />
+      ) : (
+        <MuiCard>
+          <CardHeader
+            className={classes.cardHeader}
+            avatar={
+              <Avatar aria-label={project.name} className={classes.avatar}>
+                {project.name.charAt(0)}
+              </Avatar>
+            }
+            action={<ProjectCardHeaderAction project={project} />}
+            title={
+              <React.Fragment>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <b>{project.name}</b>&nbsp;
+                </div>
+              </React.Fragment>
+            }
+            subheader={
+              'Created' +
+              project.created +
+              ', last record updated ' +
+              project.last_updated
+            }
+          />
+          <CardContent style={{paddingTop: 0}}>
+            <Box mb={2}>
+              <Chip
+                size={'small'}
+                label={
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>Active team members: 10</span>&nbsp;{' '}
+                    <TimelapseIcon
+                      color={'secondary'}
+                      style={{fontSize: '13px'}}
+                    />
+                  </div>
+                }
+                style={{marginRight: '5px', marginBottom: '5px'}}
+              />
+              <Chip
+                size={'small'}
+                label={
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span>Status: active</span>&nbsp;{' '}
+                    <TimelapseIcon
+                      color={'secondary'}
+                      style={{fontSize: '13px'}}
+                    />
+                  </div>
+                }
+                style={{marginRight: '5px', marginBottom: '5px'}}
+              />
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'project_lead'}
+                metadata_label={'Project Lead'}
+              />{' '}
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'lead_institution'}
+                metadata_label={'Lead Institution'}
+              />
+            </Box>
+
+            <Typography variant="body2" color="textPrimary" component="div">
+              {project.description}&nbsp;
+              <br />
+            </Typography>
+
+            <TextField
+              id="query"
+              type="search"
+              onChange={event => {
+                setQuery(event.target.value);
+              }}
+            />
+            <Box mt={1}>
+              <RecordsSearchTable
+                project_id={project.project_id}
+                maxRows={25}
+                query={query}
+              />
+            </Box>
+          </CardContent>
+        </MuiCard>
+      )}
+    </React.Fragment>
+  );
+}

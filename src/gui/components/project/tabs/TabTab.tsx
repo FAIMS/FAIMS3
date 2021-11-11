@@ -19,14 +19,13 @@
  */
 
 import React from 'react';
-import {Tab, Tabs, Hidden, Grid} from '@material-ui/core';
-import Icon from '@material-ui/core/Icon';
+import {Tab, Tabs, Grid} from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
 import {useState, useEffect} from 'react';
-import TextField from '@material-ui/core/TextField';
-import {AddSectionButton, EditButton, TickButton} from './ProjectButton';
+import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
 import {gettabform} from '../data/ComponentSetting';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 function a11yProps(tabname: any, index: any) {
   return {

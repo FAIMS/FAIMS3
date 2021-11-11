@@ -19,14 +19,13 @@
  */
 
 import React, {useState} from 'react';
-import {FieldProps} from 'formik';
-import {Button, IconButton} from '@material-ui/core';
+import {IconButton} from '@material-ui/core';
 import NoteIcon from '@material-ui/icons/Note';
-import LiveHelpIcon from '@material-ui/icons/LiveHelp';
 import {generatenewfield} from '../project/data/componenentSetting';
 import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
-import {Field, FormikProps} from 'formik';
+import {Field} from 'formik';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 export function Annotation(props: any) {
   const {field, fieldName, handerannoattion} = props;
   const [isclicked, setIsClick] = useState(false);

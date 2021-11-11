@@ -20,46 +20,18 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
 
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  AppBar,
-  Hidden,
-  Paper,
-} from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard} from './PSettingCard';
-import {getComponentFromField, FormForm} from '../FormElement';
-import {TabTab, TabEditable} from './TabTab';
+import {Grid, Box, Paper} from '@material-ui/core';
+import {getComponentFromField} from '../FormElement';
+import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
-import {
-  setProjectInitialValues,
-  getid,
-  updateuiSpec,
-  gettabform,
-  getprojectform,
-} from '../data/ComponentSetting';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  BehaviourProperties,
-} from '../../../../datamodel/ui';
-import {TickButton, AddUserButton, ProjectSubmit} from './ProjectButton';
-import {
-  setUiSpecForProject,
-  getUiSpecForProject,
-} from '../../../../uiSpecification';
-import {data_dbs, metadata_dbs} from '../../../../sync/databases';
-import {getProjectInfo} from '../../../../databaseAccess';
+import {getprojectform} from '../data/ComponentSetting';
+import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {AddUserButton, ProjectSubmit} from './ProjectButton';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@material-ui/lab/Alert';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({}));
 
 type ProjectInfoProps = {
@@ -238,10 +210,6 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             Add Meta component by filling Label and clicking the Add button
           </Alert>
         </Grid>
-
-
-
-
       </Grid>
     );
   };
@@ -250,16 +218,15 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     return (
       <Grid container>
         <Grid item sm={8} xs={12}>
-
-
-          {isready(uiSpec_general)&& (getfields(uiSpec_general).map((fieldName: string) =>
+          {isready(uiSpec_general) &&
+            getfields(uiSpec_general).map((fieldName: string) =>
               getComponentFromField(
                 uiSpec_general,
                 fieldName,
                 formProps,
                 handleChangeFormProject
               )
-            ))}
+            )}
           <br />
           <ProjectSubmit
             id="gotonext_info"
@@ -326,8 +293,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
           onButtonClick={() => props.setProjecttabvalue(1)}
         />
       </Grid>
-
-  )
+    );
   };
 
   const AttachmentTab = () => {

@@ -25,10 +25,7 @@ import AddIcon from '@material-ui/icons/Add';
 import TextField from '@material-ui/core/TextField';
 
 import {Field, FieldProps} from 'formik';
-import {
-  Autocomplete,
-  AutocompleteRenderInputParams,
-} from 'formik-material-ui-lab';
+import {Autocomplete} from 'formik-material-ui-lab';
 
 import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName} from '../../datamodel/core';
@@ -45,6 +42,8 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
   relation_type: FAIMSTypeName;

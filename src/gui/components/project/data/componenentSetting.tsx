@@ -28,10 +28,9 @@ import {
   componenentSettingprops,
 } from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
-import {
-  Defaultcomponentsetting,
-  getDefaultuiSetting,
-} from '../../../fields/BasicFieldSettings';
+import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 const uiSettingOthers: ProjectUIModel = {
   fields: {
@@ -231,8 +230,9 @@ const regeneratesettinguiSpec = (
       (view: string) =>
         (newui['views'][view] = {
           fields: fields[view],
-      'uidesign': 'form',
-      'label': view})
+          uidesign: 'form',
+          label: view,
+        })
     )
   );
   newui['visible_types'] = uiSpec['visible_types'];
@@ -307,8 +307,7 @@ const getvalue = (
     console.error('error to get value:' + view + name);
     return 'not get value' + view + name;
   }
-
-}
+};
 
 export const setSetingInitialValues = (
   uiSetting: ProjectUIModel,
@@ -355,15 +354,16 @@ const Componentsetting = (props: componenentSettingprops) => {
 
   const handlerchanges = (event: any) => {
     const name = event.target.name.replace(props.fieldName, '');
+  };
 
-    }
-
-
-    const handlerchangewithviewSpec = (event:any,view:string) => {
+  const handlerchangewithviewSpec = (event: any, view: string) => {
     //any actions that could in this form
     props.handlerchangewithview(event, view);
     console.log(view + event.target.name + props.fieldName);
-    if (view === 'meta'&&props.uiSpec['fields'][props.fieldName]['meta']!==undefined) {
+    if (
+      view === 'meta' &&
+      props.uiSpec['fields'][props.fieldName]['meta'] !== undefined
+    ) {
       const newvalues = props.uiSpec;
       const name = event.target.name.replace(props.fieldName, '');
       if (name === 'uncertainty_include')
@@ -379,7 +379,7 @@ const Componentsetting = (props: componenentSettingprops) => {
       props.setuiSpec({...newvalues});
 
       if (name === 'uncertainty_include') {
-        const value =event.target.checked;
+        const value = event.target.checked;
         if (value === true) {
           const newuis: ProjectUIModel = uiSetting;
           newuis['views']['meta']['fields'] = [
@@ -405,8 +405,7 @@ const Componentsetting = (props: componenentSettingprops) => {
         console.log(uiSetting);
       }
     }
-
-    }
+  };
   return (
     <Defaultcomponentsetting
       handlerchangewithview={handlerchangewithviewSpec}
@@ -476,9 +475,8 @@ export function ResetComponentProperties(props: resetprops) {
     const name = event.target.name.replace(fieldName, '');
     if (elementprop === 'FormParamater')
       if (name === 'required')
-        newvalues['fields'][fieldName]['component-parameters'][
-          name
-        ] = event.target.checked;
+        newvalues['fields'][fieldName]['component-parameters'][name] =
+          event.target.checked;
       else
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.value;

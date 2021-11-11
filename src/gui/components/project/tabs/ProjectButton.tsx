@@ -27,8 +27,8 @@ import AddIcon from '@material-ui/icons/Add';
 import EditIcon from '@material-ui/icons/Edit';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import DeleteIcon from '@material-ui/icons/Delete';
-import {process_projects} from '../../../../sync/process-initialization';
 import ArrowForwardIosOutlinedIcon from '@material-ui/icons/ArrowForwardIosOutlined';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 type ButtonProps = any;
 
 export function ProjectSubmit(props: ButtonProps) {

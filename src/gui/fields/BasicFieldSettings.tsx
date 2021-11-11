@@ -1,11 +1,11 @@
 import {getComponentFromField} from '../components/project/FormElement';
-import {useState} from 'react';
 import {
   ProjectUIModel,
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {ProjectUIFields} from '../../datamodel/typesystem';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 const getdvalue = (value: any) => {
   return JSON.parse(JSON.stringify(value));
