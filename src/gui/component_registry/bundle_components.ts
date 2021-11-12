@@ -152,7 +152,7 @@ registerComponent(
 registerComponent(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', 'Select', FormikSelect)
+  setupComponentProperties('', '', 'Simple', FormikSelect)
 );
 registerComponent(
   'formik-material-ui',
@@ -269,7 +269,7 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'TakePhoto',
-  setupComponentProperties('Take Point', '', 'Images', TakePhoto, {
+  setupComponentProperties('Take Photo', 'Take photo', 'Images', TakePhoto, {
     namespace: 'faims-custom',
     componentName: 'TakePhoto',
     type_return: 'faims-attachment::Files',
@@ -365,14 +365,14 @@ registerComponent(
   'faims-custom',
   'FileUploader',
   setupComponentProperties(
-    '',
-    '',
+    'File Upload',
+    'Upload File',
     'Special',
     FileUploader,
     FileuploadSetting[1],
     FileuploadSetting,
     Defaultcomponentsetting,
-    getFileuploadBuilderIcon
+    getFileuploadBuilderIcon()
   )
 );
 

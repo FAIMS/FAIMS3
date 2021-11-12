@@ -536,8 +536,8 @@ export const getprojectform = (
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
       //TODO Maybe set pre-select value for user
-      // if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
-      //   if(projectvalue['forms'][props.props.formname]!==undefined) newfield['initialValue']=['forms'][props.props.formname][fieldname]
+      if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
+        if(projectvalue['forms'][props.formname]!==undefined) newfield['initialValue']=projectvalue['forms'][props.formname][fieldname]
       // else if(newfield['initialValue']===undefined)
       //   newfield['initialValue']='Save and New'
       fields[tab][index] = {...newfield};

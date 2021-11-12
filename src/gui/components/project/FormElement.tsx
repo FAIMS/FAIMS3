@@ -207,8 +207,9 @@ export function AutocompleteForm(props: any) {
         {uiSpec!==undefined&&getComponentFromField(uiSpec, uiSpec['views'][props.currentView]['fields'][0], formProps, handleChangeForm)}
         {!ischecked&&
         <Autocomplete
+          // open
           id={id}
-          value={value}
+          // value={value}
           onChange={(event, newValue) => {
             if (newValue !== null) {
               setValue(newValue);
@@ -227,8 +228,9 @@ export function AutocompleteForm(props: any) {
           }}
           options={options}
           getOptionLabel={option => option.label}
+          defaultValue={options[0].label} 
           style={{width: 300}}
-          openOnFocus={true}
+          // openOnFocus={true}
           renderInput={params => (
             <TextField {...params} label="Access" variant="outlined" />
           )}
