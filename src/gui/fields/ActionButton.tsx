@@ -51,8 +51,6 @@ const uiSpec = {
   'type-returned': 'faims-core::String', // matches a type in the Project Model
   'component-parameters': {
     fullWidth: true,
-    name: 'take-action-field',
-    id: 'take-action-field',
     helperText: 'Take Action!',
     variant: 'outlined',
   },

@@ -29,6 +29,7 @@ import {
   Typography,
   Paper,
   TextareaAutosize,
+  IconButton
 } from '@material-ui/core';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
@@ -37,7 +38,8 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectInfo} from '../../databaseAccess';
 import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
-
+import EditIcon from '@material-ui/icons/Edit';
+import { } from '@material-ui/core';
 export default function ProjectSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const project_info = getProjectInfo(project_id);
@@ -67,7 +69,7 @@ export default function ProjectSettings() {
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
-
+      
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
           {project_info !== null ? project_info.name : project_id} Settings
@@ -80,7 +82,18 @@ export default function ProjectSettings() {
       <Paper square>
         <Button
           color="primary"
+          size="large"
+          startIcon={<EditIcon />}
           component={RouterLink}
+          to={ROUTES.PROJECT_DESIGN + project_id}
+          >
+          Edit Notebook Design
+        </Button><br/>
+        <Button
+          color="primary"
+          size="large"
+          component={RouterLink}
+          startIcon={<EditIcon />}
           to={ROUTES.PROJECT + project_id + ROUTES.AUTOINCREMENT_LIST}
         >
           Edit AutoIncrement Allocations

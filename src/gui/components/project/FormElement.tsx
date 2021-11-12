@@ -205,7 +205,8 @@ export function AutocompleteForm(props: any) {
         return (
           <Form id="form">
         {uiSpec!==undefined&&getComponentFromField(uiSpec, uiSpec['views'][props.currentView]['fields'][0], formProps, handleChangeForm)}
-        {!ischecked&&<Autocomplete
+        {!ischecked&&
+        <Autocomplete
           id={id}
           value={value}
           onChange={(event, newValue) => {

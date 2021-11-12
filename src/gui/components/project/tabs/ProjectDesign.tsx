@@ -505,7 +505,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     if (event.target.name === 'submitAction' + formvariants) {
       const newviews = formuiSpec;
       //update uiSpecf
-      newviews['viewsets'][formvariants]['action'] = event.target.value;
+      newviews['viewsets'][formvariants]['submit_label'] = event.target.value;
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
     }
 

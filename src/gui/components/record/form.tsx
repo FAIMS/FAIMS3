@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
+import {RouteComponentProps, useLocation} from 'react-router';
 
 import {Formik, Form} from 'formik';
 
@@ -69,6 +69,7 @@ import {
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
+import { identity } from 'lodash';
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -341,6 +342,7 @@ class RecordForm extends React.Component<
     const initialValues: {[key: string]: any} = {
       _id: this.props.record_id!,
       _project_id: this.props.project_id,
+      _current_revision_id:this.props.revision_id,
     };
     const annotation: any = fromdb.annotations ?? {};
     fieldNames.forEach(fieldName => {
@@ -355,9 +357,9 @@ class RecordForm extends React.Component<
       };
       // initialValues['uncertainty'][fieldName]=''
     });
-    console.log('++++++++++++');
-    console.log(annotation);
+    
     this.setState({initialValues: initialValues, annotation: annotation});
+    console.log(this.props.ui_specification.viewsets[this.requireViewsetName()].submit_label)
   }
 
   /**
@@ -472,13 +474,32 @@ class RecordForm extends React.Component<
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
         if (this.props.revision_id === undefined) {
-          this.props.history.push(
-            ROUTES.PROJECT +
-              this.props.project_id +
-              ROUTES.RECORD_CREATE +
-              this.state.type_cached
-          );
-          window.scrollTo(0, 0);
+          if(this.props.ui_specification.viewsets[this.requireViewsetName()].submit_label==='Jump to Upper Level'){
+            let linkurl=window.location.search
+            
+            if(linkurl.includes('?link=')){
+              
+              linkurl=linkurl.replace('?link=/projects/','')
+              console.log(ROUTES.PROJECT +linkurl)
+              this.props.history.push(
+                ROUTES.PROJECT +linkurl
+              )
+              window.scrollTo(0, 0);
+            }
+            else{
+              this.props.history.push(ROUTES.PROJECT + this.props.project_id);
+            }
+          }else{
+            console.log(this.props.ui_specification.viewsets[this.requireViewsetName()].submit_label)
+            this.props.history.push(
+              ROUTES.PROJECT +
+                this.props.project_id +
+                ROUTES.RECORD_CREATE +
+                this.state.type_cached
+            );
+            window.scrollTo(0, 0);
+          }
+          
           // scroll to top of page, seems to be needed on mobile devices
         } else {
           // otherwise, redirect to the project page listing all records

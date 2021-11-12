@@ -86,6 +86,7 @@ const projecttabs = [
 ];
 const variant_label = 'Form1';
 const ini_projectvalue = {
+  project_status:'draft',
   accesses: accessgroup,
   forms: {
     FORM1: {
@@ -106,6 +107,7 @@ const ini_projectvalue = {
 };
 
 const PROJECT_META = [
+  'project_status',
   'accesses',
   'forms',
   'sections',
@@ -116,6 +118,7 @@ const PROJECT_META = [
   'behavious',
   'project_lead',
   'lead_institution',
+  'pre_description'
 ];
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
@@ -457,7 +460,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     //else if project local, submit request in Beta
 
     try {
-      updateproject({...projectvalue,isrequest:true}, ['isrequest']);
+      const newvalue=projectvalue
+      newvalue['isrequest']=true
+      newvalue['project_status']='pending'
+      setProjectValue({...newvalue})
+      updateproject(newvalue, ['isrequest','project_status']);
     } catch {
       console.error('not saved meta data');
     }

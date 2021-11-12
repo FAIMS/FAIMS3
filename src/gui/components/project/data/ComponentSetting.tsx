@@ -375,14 +375,14 @@ export const getprojectform = (
         ],
       },
       {
-        name: 'description',
+        name: 'pre_description',
         label: 'Description',
         namespace: 'formik-material-ui',
         componentName: 'TextField',
         view: 'info_general',
         multiline: true,
         multirows: 4,
-        initialValue: projectvalue.description,
+        initialValue: projectvalue.pre_description,
       },
       {
         name: 'project_lead',
@@ -479,7 +479,7 @@ export const getprojectform = (
   ) {
     fields['info_general'][0].disabled = true;
     // fields['info_general'][0].value=projectvalue.name
-    fields['info_general'][1].disabled = true;
+    // fields['info_general'][1].disabled = true;
   }
 
   if(tab==='sectionaccess'){

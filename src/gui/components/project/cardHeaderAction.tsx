@@ -123,12 +123,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               ))}
             </Menu>
 
-            <IconButton
-              component={RouterLink}
-              to={ROUTES.PROJECT_DESIGN + project.project_id}
-            >
-              <TimelapseIcon />
-            </IconButton>
+            
             <IconButton
               component={RouterLink}
               to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SEARCH}
