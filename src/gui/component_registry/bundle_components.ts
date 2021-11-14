@@ -67,7 +67,7 @@ import {
   FileuploadSetting,
   getFileuploadBuilderIcon,
 } from '../fields/FileUploader';
-import {TakePhoto} from '../fields/TakePhoto';
+import {TakePhoto,TakePhotoSetting} from '../fields/TakePhoto';
 
 import {registerComponent, setupComponentProperties} from './internals';
 import {
@@ -275,7 +275,7 @@ registerComponent(
     type_return: 'faims-attachment::Files',
     initialValue: null,
     validationSchema: [['yup.object'], ['yup.nullable']],
-  })
+  },TakePhotoSetting,Defaultcomponentsetting)
 );
 registerComponent(
   'faims-custom',

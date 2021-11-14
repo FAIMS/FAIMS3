@@ -190,6 +190,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       });
   }, [props.project_info]);
 
+  useEffect(()=>{
+    if(project_id!==null&&project_id!==null&&project_id!==undefined){
+      console.log(project_id);
+      handlerprojectsubmit_pounch()
+    }
+  },[project_id])
+
   const setinifornewproject = () => {
     //if create new notebook then set an empty formUI
     setProjectID(props.project_id);
@@ -252,6 +259,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       );
       console.log(initialValues);
       getprojectmeta();
+
     }
 
     setProjecttabvalue(0);
@@ -302,7 +310,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       console.error(
         'databases needs cleaning value not saved...' + res + project_id
       );
-      console.debug(err);
+      console.error(err);
     }
   };
 
@@ -348,7 +356,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         try {
           if (project_id !== null)
             await setProjectMetadata(project_id, key, values[key]);
-          console.log(key+values[key])
+
         } catch (err) {
           console.error('databases needs cleaning for update error...');
           console.debug(err);
@@ -430,7 +438,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           setProjectID(res);
           setProjectValue({...projectvalue, project_id: res});
         }
-
+        
         if (
           res !== '' &&
           res !== null &&
@@ -440,6 +448,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         }
       });
     }
+    await new Promise(resolve => setTimeout(resolve, 5000))
+    console.log(project_id)
 
     if (
       project_id !== '' &&

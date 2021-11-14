@@ -22,7 +22,12 @@ import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins, CameraResultType, CameraPhoto} from '@capacitor/core';
-
+import {
+  getDefaultuiSetting,
+} from './BasicFieldSettings';
+import {
+  ProjectUIModel,
+} from '../../datamodel/ui';
 const {Camera} = Plugins;
 
 function base64image_to_blob(image: CameraPhoto): Blob {
@@ -68,7 +73,7 @@ export class TakePhoto extends React.Component<
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
     const image_tag_list = [];
-    if (images !== null) {
+    if (images !== null&&images!== undefined) {
       for (const image of images) {
         const image_ref = URL.createObjectURL(image);
         const image_tag = (
@@ -110,3 +115,32 @@ export class TakePhoto extends React.Component<
     );
   }
 }
+
+const uiSpec = {
+  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+  'component-name': 'TakePhoto',
+  'type-returned': 'faims-attachment::Files', // matches a type in the Project Model
+  'component-parameters': {
+    fullWidth: true,
+    name: 'take-photo-field',
+    id: 'take-photo-field',
+    helperText: 'Take a photo',
+    variant: 'outlined',
+  },
+  validationSchema: [['yup.object'], ['yup.nullable']],
+  initialValue: null,
+};
+
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: [],
+      label: 'settings',
+    },
+  };
+
+  return newuiSetting;
+};
+
+export const TakePhotoSetting = [uiSetting(), uiSpec];
