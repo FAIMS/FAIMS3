@@ -42,7 +42,7 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
-import { useLocation, Link } from 'react-router-dom';
+import {useLocation, Link} from 'react-router-dom';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
@@ -54,7 +54,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
- console.log( useLocation())
+  console.log(useLocation());
   React.useEffect(() => {
     (async () => {
       const records = await getAllRecordsOfType(project_id, props.related_type);
@@ -99,7 +99,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             ROUTES.PROJECT +
             project_id +
             ROUTES.RECORD_CREATE +
-            props.related_type+'?link='+useLocation().pathname
+            props.related_type +
+            '?link=' +
+            useLocation().pathname
           }
         >
           New Record
@@ -123,7 +125,7 @@ const uiSpec = {
     InputProps: {
       type: 'text', // must be a valid html type
     },
-    Multiple:false,
+    Multiple: false,
     SelectProps: {},
     InputLabelProps: {
       label: 'Related Field',
@@ -143,7 +145,7 @@ const uiSetting = () => {
   //   value: 'faims-core::Child',
   //   label: 'Contained',
   // }]
-  newuiSetting['fields']['Multiple']={
+  newuiSetting['fields']['Multiple'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Checkbox',
     'type-returned': 'faims-core::Bool', // matches a type in the Project Model
@@ -166,7 +168,7 @@ const uiSetting = () => {
       ['yup.required'],
     ],
     initialValue: false,
-  }
+  };
   newuiSetting['fields']['related_type'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Select',
@@ -223,7 +225,7 @@ const uiSetting = () => {
   newuiSetting['views']['FormParamater']['fields'] = [
     'relation_type',
     'related_type',
-    'Multiple'
+    'Multiple',
   ];
   newuiSetting['viewsets'] = {
     settings: {
@@ -287,14 +289,12 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
     //     setrelatedtype(fields)
     //   }
     // }
-    if(event.target.name.replace(props.fieldName,'')==='Multiple'){
-      const newvalues=props.uiSpec
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'Multiple'
-      ] = event.target.checked;
+    if (event.target.name.replace(props.fieldName, '') === 'Multiple') {
+      const newvalues = props.uiSpec;
+      newvalues['fields'][props.fieldName]['component-parameters']['Multiple'] =
+        event.target.checked;
       props.setuiSpec({...newvalues});
     }
-    
   };
 
   return (

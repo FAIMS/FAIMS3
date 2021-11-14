@@ -50,7 +50,7 @@ type signlefieldType = any;
 type fieldlistType = any;
 type viewlistType = any;
 type optionType = {value: string; label: string};
-type tabLinkType = {tab: string; link: string,otab:string};
+type tabLinkType = {tab: string; link: string; otab: string};
 type projectuilistType = any;
 export const getid = () => {
   return uuidv4().split('-')[0];
@@ -76,7 +76,7 @@ export const getconnections = (
             link: uiSpec['fields'][field]['component-parameters'][
               'relation_type'
             ].replace('faims-core::', ''),
-            otab:uiSpec['viewsets'][comparetab]['label'] ?? comparetab
+            otab: uiSpec['viewsets'][comparetab]['label'] ?? comparetab,
           })
         : field
     )
@@ -239,28 +239,34 @@ export const getprojectform = (
     //   helperText: 'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
     // },
   ];
-  const sectionaccess=[{
-    name: 'sectionaccessinherit',
-    label: 'Inherit Access from Form',
-    namespace: 'faims-custom',
-    componentName: 'Checkbox',
-    type_return: 'faims-core::Bool',
-    validationSchema: [['yup.bool']],
-    type: 'checkbox',
-    initialValue: false,
-    helperText: 'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
-  }]
-  const formaccess=[{
-    name: 'formaccessinherit',
-    label: 'Inherit Access from Notebook',
-    namespace: 'faims-custom',
-    componentName: 'Checkbox',
-    type_return: 'faims-core::Bool',
-    validationSchema: [['yup.bool']],
-    type: 'checkbox',
-    initialValue: false,
-    helperText: 'Check to inherit access for user roles from Notebook, You can change acess for each form component in Section Definition > Info tab',
-  }]
+  const sectionaccess = [
+    {
+      name: 'sectionaccessinherit',
+      label: 'Inherit Access from Form',
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+      initialValue: false,
+      helperText:
+        'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
+    },
+  ];
+  const formaccess = [
+    {
+      name: 'formaccessinherit',
+      label: 'Inherit Access from Notebook',
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+      initialValue: false,
+      helperText:
+        'Check to inherit access for user roles from Notebook, You can change acess for each form component in Section Definition > Info tab',
+    },
+  ];
   const form_info_options: Array<optionType> = [
     {
       value: 'Save and New',
@@ -423,8 +429,8 @@ export const getprojectform = (
       },
     ],
     section: [],
-    sectionaccess:[],
-    formaccess:[],
+    sectionaccess: [],
+    formaccess: [],
     form: [],
     users: [
       {
@@ -482,30 +488,26 @@ export const getprojectform = (
     // fields['info_general'][1].disabled = true;
   }
 
-  if(tab==='sectionaccess'){
-    sectionaccess.map(
-      (field: any, index: number)=>{
+  if (tab === 'sectionaccess') {
+    sectionaccess.map((field: any, index: number) => {
       const fieldname = field.name + props.sectionname;
       const newfield = {...field, name: fieldname};
       if (projectvalue['sections'][props.sectionname] !== undefined)
-          newfield['initialValue'] =
-            projectvalue['sections'][props.sectionname][fieldname]??false;
-      
+        newfield['initialValue'] =
+          projectvalue['sections'][props.sectionname][fieldname] ?? false;
+
       fields[tab][index] = {...newfield};
-      }
-    )
+    });
   }
-  if(tab==='formaccess'){
-    formaccess.map(
-      (field: any, index: number)=>{
+  if (tab === 'formaccess') {
+    formaccess.map((field: any, index: number) => {
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
       if (projectvalue['forms'][props.formname] !== undefined)
-          newfield['initialValue'] =
-            projectvalue['forms'][props.formname][fieldname]??false;
+        newfield['initialValue'] =
+          projectvalue['forms'][props.formname][fieldname] ?? false;
       fields[tab][index] = {...newfield};
-      }
-    )
+    });
   }
   if (tab === 'section') {
     //create new section form for each section
@@ -536,8 +538,13 @@ export const getprojectform = (
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
       //TODO Maybe set pre-select value for user
-      if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
-        if(projectvalue['forms'][props.formname]!==undefined) newfield['initialValue']=projectvalue['forms'][props.formname][fieldname]
+      if (
+        projectvalue['forms'] !== undefined &&
+        newfield['initialValue'] === undefined
+      )
+        if (projectvalue['forms'][props.formname] !== undefined)
+          newfield['initialValue'] =
+            projectvalue['forms'][props.formname][fieldname];
       // else if(newfield['initialValue']===undefined)
       //   newfield['initialValue']='Save and New'
       fields[tab][index] = {...newfield};

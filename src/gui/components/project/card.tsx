@@ -193,7 +193,6 @@ export default function Card(props: ProjectCardProps) {
                   }}
                 >
                   <b>{project.name}</b>&nbsp;
-                  
                 </div>
               </React.Fragment>
             }
@@ -230,7 +229,6 @@ export default function Card(props: ProjectCardProps) {
                 chips={false}
               />
               <br />
-              
             </Typography>
 
             {showDrafts ? (

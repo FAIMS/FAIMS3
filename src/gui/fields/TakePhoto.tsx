@@ -22,12 +22,8 @@ import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins, CameraResultType, CameraPhoto} from '@capacitor/core';
-import {
-  getDefaultuiSetting,
-} from './BasicFieldSettings';
-import {
-  ProjectUIModel,
-} from '../../datamodel/ui';
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import {ProjectUIModel} from '../../datamodel/ui';
 const {Camera} = Plugins;
 
 function base64image_to_blob(image: CameraPhoto): Blob {
@@ -73,7 +69,7 @@ export class TakePhoto extends React.Component<
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
     const image_tag_list = [];
-    if (images !== null&&images!== undefined) {
+    if (images !== null && images !== undefined) {
       for (const image of images) {
         const image_ref = URL.createObjectURL(image);
         const image_tag = (

@@ -123,7 +123,6 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               ))}
             </Menu>
 
-            
             <IconButton
               component={RouterLink}
               to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SEARCH}

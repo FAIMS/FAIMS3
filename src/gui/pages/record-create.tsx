@@ -38,7 +38,7 @@ import {getUiSpecForProject} from '../../uiSpecification';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
 import {newStagedData} from '../../sync/draft-storage';
-import { useLocation, Link } from 'react-router-dom';
+import {useLocation, Link} from 'react-router-dom';
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -71,7 +71,6 @@ function DraftCreate(props: DraftCreateProps) {
     // Creating new draft loading
     return <CircularProgress size={12} thickness={4} />;
   } else {
-    
     return (
       <Redirect
         to={
@@ -80,7 +79,8 @@ function DraftCreate(props: DraftCreateProps) {
           ROUTES.RECORD_CREATE +
           type_name +
           ROUTES.RECORD_DRAFT +
-          draft_id+useLocation().search
+          draft_id +
+          useLocation().search
         }
       />
     );

@@ -36,7 +36,7 @@ export const getfields = () => {
     const props = component.component_properties;
     if (
       props.human_readable_name !== '' &&
-      !['Simple','Advanced'].includes(props.category)
+      !['Simple', 'Advanced'].includes(props.category)
     ) {
       //TODO: required to update in the future
       if (!fieldtabs.includes(category)) {

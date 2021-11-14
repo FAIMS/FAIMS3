@@ -102,7 +102,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   const [fieldNames, setfieldNames] = useState<Array<string>>([]);
   const [initialValues, setinitialValues] = useState({});
   const [role, setrole] = useState('admin');
-  const [view_name,setView] = useState('SECTION1')
+  const [view_name, setView] = useState('SECTION1');
 
   useEffect(() => {
     setinit();
@@ -182,21 +182,27 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
         >
           <Grid container>
             <Grid item sm={6} xs={12}>
-            <Stepper nonLinear activeStep={formuiSpec.viewsets[formvariants].views.indexOf(formvariants+view_name)} alternativeLabel>
-            {formuiSpec.viewsets[formvariants].views.map(
-              (view_name: string) => (
-                <Step key={view_name}>
-                  <StepButton
-                    onClick={() => {
-                      setView(view_name.replace(formvariants,''));
-                    }}
-                  >
-                    {formuiSpec.views[view_name].label}
-                  </StepButton>
-                </Step>
-              )
-            )}
-          </Stepper>
+              <Stepper
+                nonLinear
+                activeStep={formuiSpec.viewsets[formvariants].views.indexOf(
+                  formvariants + view_name
+                )}
+                alternativeLabel
+              >
+                {formuiSpec.viewsets[formvariants].views.map(
+                  (view_name: string) => (
+                    <Step key={view_name}>
+                      <StepButton
+                        onClick={() => {
+                          setView(view_name.replace(formvariants, ''));
+                        }}
+                      >
+                        {formuiSpec.views[view_name].label}
+                      </StepButton>
+                    </Step>
+                  )
+                )}
+              </Stepper>
               {fieldNames.length > 0 ? (
                 <Formik
                   key={index}

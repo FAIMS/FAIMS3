@@ -851,14 +851,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
         <TabPanel value={formvalue} index={2} tabname="formtab">
           {props.projectvalue !== undefined && (
-              <FormForm
-                currentView="start-view"
-                handleChangeForm={handleChangeFormAction}
-                handleSubmit={handleSubmitFormAction}
-                uiSpec={getprojectform(props.projectvalue, 'form', {
-                  formname: formvariants,
-                })}
-              />
+            <FormForm
+              currentView="start-view"
+              handleChangeForm={handleChangeFormAction}
+              handleSubmit={handleSubmitFormAction}
+              uiSpec={getprojectform(props.projectvalue, 'form', {
+                formname: formvariants,
+              })}
+            />
           )}
           <ProjectSubmit
             id="gotonext_info"
