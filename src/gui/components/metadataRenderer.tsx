@@ -22,17 +22,20 @@ import React, {useEffect, useState} from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
 import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel/core';
+import {TrainRounded} from '@material-ui/icons';
 
 type MetadataProps = {
   project_id: ProjectID;
   metadata_key: string;
   metadata_label?: string;
+  chips?: boolean;
 };
 
 export default function MetadataRenderer(props: MetadataProps) {
   const project_id = props.project_id;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
+  const chips = props.chips ?? true;
   const [metadata_value, setMetadata] = useState(null as string | null);
 
   useEffect(() => {
@@ -47,7 +50,7 @@ export default function MetadataRenderer(props: MetadataProps) {
     getMeta();
   }, []);
 
-  return (
+  return chips ? (
     <Chip
       size={'small'}
       style={{marginRight: '5px', marginBottom: '5px'}}
@@ -66,5 +69,7 @@ export default function MetadataRenderer(props: MetadataProps) {
         </React.Fragment>
       }
     />
+  ) : (
+    <>{metadata_value}</>
   );
 }

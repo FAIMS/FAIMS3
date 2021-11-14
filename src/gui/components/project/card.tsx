@@ -193,23 +193,6 @@ export default function Card(props: ProjectCardProps) {
                   }}
                 >
                   <b>{project.name}</b>&nbsp;
-                  {!listView ? (
-                    <React.Fragment>
-                      <Typography
-                        variant={'caption'}
-                        style={{cursor: 'not-allowed'}}
-                        color={'textSecondary'}
-                      >
-                        <i>edit title&nbsp;&nbsp;</i>
-                      </Typography>
-                      <TimelapseIcon
-                        color={'secondary'}
-                        style={{fontSize: '13px'}}
-                      />
-                    </React.Fragment>
-                  ) : (
-                    ''
-                  )}
                 </div>
               </React.Fragment>
             }
@@ -222,43 +205,10 @@ export default function Card(props: ProjectCardProps) {
           />
           <CardContent style={{paddingTop: 0}}>
             <Box mb={2}>
-              <Chip
-                size={'small'}
-                label={
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>Active team members: 10</span>&nbsp;{' '}
-                    <TimelapseIcon
-                      color={'secondary'}
-                      style={{fontSize: '13px'}}
-                    />
-                  </div>
-                }
-                style={{marginRight: '5px', marginBottom: '5px'}}
-              />
-              <Chip
-                size={'small'}
-                label={
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>Status: active</span>&nbsp;{' '}
-                    <TimelapseIcon
-                      color={'secondary'}
-                      style={{fontSize: '13px'}}
-                    />
-                  </div>
-                }
-                style={{marginRight: '5px', marginBottom: '5px'}}
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'project_status'}
+                metadata_label={'Status'}
               />
               <MetadataRenderer
                 project_id={project.project_id}
@@ -273,31 +223,12 @@ export default function Card(props: ProjectCardProps) {
             </Box>
 
             <Typography variant="body2" color="textPrimary" component="div">
-              {project.description}&nbsp;
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'pre_description'}
+                chips={false}
+              />
               <br />
-              {listView ? (
-                ''
-              ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Typography
-                    variant={'caption'}
-                    style={{cursor: 'not-allowed'}}
-                    color={'textSecondary'}
-                  >
-                    <i>edit description&nbsp;&nbsp;</i>
-                  </Typography>
-                  <TimelapseIcon
-                    color={'secondary'}
-                    style={{fontSize: '14px'}}
-                  />
-                </div>
-              )}
             </Typography>
 
             {showDrafts ? (

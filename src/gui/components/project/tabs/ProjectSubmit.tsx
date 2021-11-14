@@ -116,7 +116,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
             <Alert severity="error">{error}</Alert>
           ))}
         {projectvalue.ispublic !== true &&
-          projectvalue.isrequest !== true &&
+          //projectvalue.isrequest !== true &&
           issubmit !== true && (
             <ProjectSubmit
               id="submit_save"

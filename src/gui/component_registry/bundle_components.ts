@@ -67,7 +67,7 @@ import {
   FileuploadSetting,
   getFileuploadBuilderIcon,
 } from '../fields/FileUploader';
-import {TakePhoto} from '../fields/TakePhoto';
+import {TakePhoto, TakePhotoSetting} from '../fields/TakePhoto';
 
 import {registerComponent, setupComponentProperties} from './internals';
 import {
@@ -152,7 +152,7 @@ registerComponent(
 registerComponent(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', 'Select', FormikSelect)
+  setupComponentProperties('', '', 'Simple', FormikSelect)
 );
 registerComponent(
   'formik-material-ui',
@@ -269,13 +269,21 @@ registerComponent(
 registerComponent(
   'faims-custom',
   'TakePhoto',
-  setupComponentProperties('Take Point', '', 'Images', TakePhoto, {
-    namespace: 'faims-custom',
-    componentName: 'TakePhoto',
-    type_return: 'faims-attachment::Files',
-    initialValue: null,
-    validationSchema: [['yup.object'], ['yup.nullable']],
-  })
+  setupComponentProperties(
+    'Take Photo',
+    'Take photo',
+    'Images',
+    TakePhoto,
+    {
+      namespace: 'faims-custom',
+      componentName: 'TakePhoto',
+      type_return: 'faims-attachment::Files',
+      initialValue: null,
+      validationSchema: [['yup.object'], ['yup.nullable']],
+    },
+    TakePhotoSetting,
+    Defaultcomponentsetting
+  )
 );
 registerComponent(
   'faims-custom',
@@ -365,14 +373,14 @@ registerComponent(
   'faims-custom',
   'FileUploader',
   setupComponentProperties(
-    '',
-    '',
+    'File Upload',
+    'Upload File',
     'Special',
     FileUploader,
     FileuploadSetting[1],
     FileuploadSetting,
     Defaultcomponentsetting,
-    getFileuploadBuilderIcon
+    getFileuploadBuilderIcon()
   )
 );
 

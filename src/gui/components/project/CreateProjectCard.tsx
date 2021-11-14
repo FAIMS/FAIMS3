@@ -34,6 +34,7 @@ import ProjectSubmitTab from './tabs/ProjectSubmit';
 import ProjectUserTab from './tabs/ProjectUser';
 import ProjectPreviewTab from './tabs/ProjectPreview';
 import ProjectBehaviourTab from './tabs/ProjectBehaviour';
+import ProjectOverviewTab from './tabs/ProjctOverview';
 import {ProjectSubmit} from './tabs/ProjectButton';
 import {
   setProjectInitialValues,
@@ -80,12 +81,12 @@ const projecttabs = [
   'Design',
   'Overview',
   'Preview',
-  'User',
   'Behaviour',
   'Submit',
 ];
 const variant_label = 'Form1';
 const ini_projectvalue = {
+  project_status: 'draft',
   accesses: accessgroup,
   forms: {
     FORM1: {
@@ -106,6 +107,7 @@ const ini_projectvalue = {
 };
 
 const PROJECT_META = [
+  'project_status',
   'accesses',
   'forms',
   'sections',
@@ -116,6 +118,7 @@ const PROJECT_META = [
   'behavious',
   'project_lead',
   'lead_institution',
+  'pre_description',
 ];
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
@@ -186,6 +189,17 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         project_id: props.project_id,
       });
   }, [props.project_info]);
+
+  useEffect(() => {
+    if (
+      project_id !== null &&
+      project_id !== null &&
+      project_id !== undefined
+    ) {
+      console.log(project_id);
+      handlerprojectsubmit_pounch();
+    }
+  }, [project_id]);
 
   const setinifornewproject = () => {
     //if create new notebook then set an empty formUI
@@ -299,7 +313,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       console.error(
         'databases needs cleaning value not saved...' + res + project_id
       );
-      console.debug(err);
+      console.error(err);
     }
   };
 
@@ -340,7 +354,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         (field: string) => (pvlues.projectvalue[field] = projectvalue[field])
       );
 
-      for (const key in fieldlist) {
+      for (const key of fieldlist) {
         //save for meta data for project
         try {
           if (project_id !== null)
@@ -436,6 +450,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         }
       });
     }
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log(project_id);
 
     if (
       project_id !== '' &&
@@ -456,7 +472,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     //else if project local, submit request in Beta
 
     try {
-      updateproject(projectvalue, ['isrequest']);
+      const newvalue = projectvalue;
+      newvalue['isrequest'] = true;
+      newvalue['project_status'] = 'pending';
+      setProjectValue({...newvalue});
+      updateproject(newvalue, ['isrequest', 'project_status']);
     } catch {
       console.error('not saved meta data');
     }
@@ -523,31 +543,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                       index={4}
                       tabname="primarytab"
                     >
-                      <>
-                        <Alert severity="info">
-                          Add authorised users for this notebook. Assign roles
-                          to users in the User Role tab.
-                        </Alert>
-                        {projectvalue.ispublish !== true && (
-                          <Alert severity="warning">
-                            User will not be invited untile Notebook is be
-                            approved.Check more information in the Submit tab
-                          </Alert>
-                        )}
-                        <ProjectUserTab
-                          project_id={project_id}
-                          projectvalue={projectvalue}
-                          setProjectValue={setProjectValue}
-                          setProjecttabvalue={setProjecttabvalue}
-                          formProps={formProps}
-                        />
-                      </>
-                    </TabPanel>
-                    <TabPanel
-                      value={projecttabvalue}
-                      index={5}
-                      tabname="primarytab"
-                    >
                       <ProjectBehaviourTab
                         project_id={project_id}
                         projectvalue={projectvalue}
@@ -564,7 +559,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                     </TabPanel>
                     <TabPanel
                       value={projecttabvalue}
-                      index={6}
+                      index={5}
                       tabname="primarytab"
                     >
                       <ProjectSubmitTab
@@ -603,6 +598,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                   High level view of Notebook showing relationships between
                   forms. To modify a relationship, go to the Design Tab
                 </Alert>
+                <ProjectOverviewTab
+                  project_id={project_id}
+                  projectvalue={projectvalue}
+                  setProjectValue={setProjectValue}
+                  formuiSpec={formuiSpec}
+                />
                 <ProjectSubmit
                   id="gotonextoverview"
                   type="submit"

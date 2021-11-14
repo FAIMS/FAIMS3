@@ -24,7 +24,7 @@
     ]
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "NODE_OPTIONS=--max_old_space_size=4096 react-scripts start",
     "build": "react-scripts build",
     "pretest": "npm run compile",
     "test": "NODE_ENV=test react-scripts test --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
@@ -71,6 +71,8 @@
     "formik": "2.2.9",
     "formik-material-ui": "3.0.1",
     "formik-material-ui-lab": "1.0.0-alpha.1",
+    "graphviz": "0.0.9",
+    "graphviz-react": "^1.2.0",
     "json-stable-stringify": "1.0.1",
     "jsonpointer": "5.0.0",
     "lodash": "4.17.21",

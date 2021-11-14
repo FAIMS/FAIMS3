@@ -505,7 +505,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     if (event.target.name === 'submitAction' + formvariants) {
       const newviews = formuiSpec;
       //update uiSpecf
-      newviews['viewsets'][formvariants]['action'] = event.target.value;
+      newviews['viewsets'][formvariants]['submit_label'] = event.target.value;
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
     }
 
@@ -752,6 +752,13 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               labels={props.projectvalue['access']['access' + formuiview]}
               handleAutocomplete={handleAutocomplete}
               type={'form'}
+              uiSpec={getprojectform(props.projectvalue, 'sectionaccess', {
+                sectionname: formuiview,
+              })}
+              currentView="start-view"
+              access={props.projectvalue['access']['access' + formvariants]}
+              projectvalue={projectvalue}
+              setProjectValue={props.setProjectValue}
             />
             <ProjectSubmit
               id="gotonext_info"
@@ -817,6 +824,13 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                 options={getacessoption(props.projectvalue.accesses)}
                 labels={props.projectvalue['access']['access' + formvariants]}
                 type={'form'}
+                uiSpec={getprojectform(props.projectvalue, 'formaccess', {
+                  formname: formvariants,
+                })}
+                currentView="start-view"
+                access={props.projectvalue['accesses']}
+                projectvalue={projectvalue}
+                setProjectValue={props.setProjectValue}
               />
             </Grid>
             <Grid item sm={6} xs={1}>
@@ -837,24 +851,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
         <TabPanel value={formvalue} index={2} tabname="formtab">
           {props.projectvalue !== undefined && (
-            <>
-              <FormForm
-                currentView="start-view"
-                handleChangeForm={handleChangeFormAction}
-                handleSubmit={handleSubmitFormAction}
-                uiSpec={getprojectform(props.projectvalue, 'form', {
-                  formname: formvariants,
-                })}
-              />
-              {/* <FormForm
-                currentView="start-view"
-                handleChangeForm={handleChangeFormAction}
-                handleSubmit={handleSubmitFormAction}
-                uiSpec={getprojectform(props.projectvalue, 'form_setting', {
-                  formname: formvariants,
-                })}
-              /> */}
-            </>
+            <FormForm
+              currentView="start-view"
+              handleChangeForm={handleChangeFormAction}
+              handleSubmit={handleSubmitFormAction}
+              uiSpec={getprojectform(props.projectvalue, 'form', {
+                formname: formvariants,
+              })}
+            />
           )}
           <ProjectSubmit
             id="gotonext_info"

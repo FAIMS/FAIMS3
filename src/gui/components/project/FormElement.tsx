@@ -157,6 +157,13 @@ export function AutocompleteForm(props: any) {
   );
   const [inputValue, setInputValue] = React.useState('');
   const [labels, setlabels] = useState<Array<string>>(props.labels ?? []);
+  const [uiSpec, setUISpec] = useState(props.uiSpec);
+  const initialValues =
+    uiSpec !== undefined
+      ? setProjectInitialValues(uiSpec, props.currentView, {})
+      : {};
+  const [ischecked, setIschecked] = useState(false);
+
   useEffect(() => {
     if (props.labels !== undefined) setlabels(props.labels);
   }, [props.labels]);
@@ -166,43 +173,101 @@ export function AutocompleteForm(props: any) {
 
     props.handleAutocomplete(newlabels, props.id, props.type);
   };
+  const handleChangeForm = (event: any) => {
+    console.log(event.target.name);
+    if (event.target.checked === true) {
+      setlabels(props.access);
+      props.handleAutocomplete(props.access, props.id, props.type);
+    }
+    if (event.target.name.includes('formaccessinherit')) {
+      const newvalue = props.projectvalue;
+      newvalue['forms'][event.target.name.replace('formaccessinherit', '')][
+        event.target.name
+      ] = event.target.checked;
+      props.setProjectValue({...newvalue});
+    } else {
+      const newvalue = props.projectvalue;
+      newvalue['sections'][
+        event.target.name.replace('sectionaccessinherit', '')
+      ][event.target.name] = event.target.checked;
+      props.setProjectValue({...newvalue});
+    }
+    setIschecked(event.target.checked);
+  };
   return (
     <Grid container={true}>
       <Grid>
-        <Autocomplete
-          id={id}
-          value={value}
-          onChange={(event, newValue) => {
-            if (newValue !== null) {
-              setValue(newValue);
-              if (labels.includes(newValue.value) === false) {
-                const newlabels = [...labels, newValue.value];
-                setlabels(newlabels);
+        <Formik
+          enableReinitialize
+          initialValues={initialValues}
+          validateOnMount={true}
+          onSubmit={(values, {setSubmitting}) => {
+            setTimeout(() => {
+              setSubmitting(false);
+              props.handleSubmit(values);
+            }, 500);
+          }}
+        >
+          {formProps => {
+            return (
+              <Form id="form">
+                {uiSpec !== undefined &&
+                  getComponentFromField(
+                    uiSpec,
+                    uiSpec['views'][props.currentView]['fields'][0],
+                    formProps,
+                    handleChangeForm
+                  )}
+                {!ischecked && (
+                  <Autocomplete
+                    // open
+                    id={id}
+                    // value={value}
+                    onChange={(event, newValue) => {
+                      if (newValue !== null) {
+                        setValue(newValue);
+                        if (labels.includes(newValue.value) === false) {
+                          const newlabels = [...labels, newValue.value];
+                          setlabels(newlabels);
 
-                props.handleAutocomplete(newlabels, props.id, props.type);
-              }
-            }
+                          props.handleAutocomplete(
+                            newlabels,
+                            props.id,
+                            props.type
+                          );
+                        }
+                      }
+                    }}
+                    size={'small'}
+                    inputValue={inputValue}
+                    onInputChange={(event, newInputValue) => {
+                      setInputValue(newInputValue);
+                    }}
+                    options={options}
+                    getOptionLabel={option => option.label}
+                    defaultValue={options[0].label}
+                    style={{width: 300}}
+                    // openOnFocus={true}
+                    renderInput={params => (
+                      <TextField
+                        {...params}
+                        label="Access"
+                        variant="outlined"
+                      />
+                    )}
+                  />
+                )}
+                {labels.map((label: string) =>
+                  label !== 'admin' ? (
+                    <Chip label={label} onDelete={() => handleDelete(label)} />
+                  ) : (
+                    <Chip label={label} />
+                  )
+                )}
+              </Form>
+            );
           }}
-          size={'small'}
-          inputValue={inputValue}
-          onInputChange={(event, newInputValue) => {
-            setInputValue(newInputValue);
-          }}
-          options={options}
-          getOptionLabel={option => option.label}
-          style={{width: 300}}
-          openOnFocus={true}
-          renderInput={params => (
-            <TextField {...params} label="Access" variant="outlined" />
-          )}
-        />
-        {labels.map((label: string) =>
-          label !== 'admin' ? (
-            <Chip label={label} onDelete={() => handleDelete(label)} />
-          ) : (
-            <Chip label={label} />
-          )
-        )}
+        </Formik>
       </Grid>
     </Grid>
   );
