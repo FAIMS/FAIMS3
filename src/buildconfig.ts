@@ -84,7 +84,6 @@ function use_real_data(): boolean {
 function include_pouchdb_debugging(): boolean {
   const debug_pouch = process.env.REACT_APP_DEBUG_POUCHDB;
   if (debug_pouch === '' || debug_pouch === undefined) {
-    // By default we don't include dummy data now
     return true;
   }
   if (FALSEY_STRINGS.includes(debug_pouch.toLowerCase())) {
@@ -165,7 +164,7 @@ function is_testing() {
 }
 
 export const USE_REAL_DATA = PROD_BUILD || use_real_data();
-export const DEBUG_POUCHDB = !(PROD_BUILD || !include_pouchdb_debugging());
+export const DEBUG_POUCHDB = !PROD_BUILD && include_pouchdb_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();

@@ -276,11 +276,21 @@ class RecordForm extends React.Component<
       if (draft_saving_started_already) {
         this.draftState.recordChangeHook(this.props, {
           type: this.state.type_cached!,
+          field_types: getReturnedTypesForViewSet(
+            this.props.ui_specification,
+            this.requireViewsetName()
+          ),
         });
       } else {
         this.draftState.saveListener = this.saveListener.bind(this);
         this.draftState.newDraftListener = this.newDraftListener.bind(this);
-        await this.draftState.start({type: this.state.type_cached!});
+        await this.draftState.start({
+          type: this.state.type_cached!,
+          field_types: getReturnedTypesForViewSet(
+            this.props.ui_specification,
+            this.requireViewsetName()
+          ),
+        });
       }
     } catch (err) {
       console.error('rare draft error', err);

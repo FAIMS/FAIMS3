@@ -30,7 +30,13 @@ import {
   newStagedData,
   setStagedData,
 } from './draft-storage';
-import {ProjectID, RecordID, RevisionID, Annotations} from '../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  Annotations,
+  FAIMSTypeName,
+} from '../datamodel/core';
 import stable_stringify from 'fast-json-stable-stringify';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
@@ -73,6 +79,7 @@ type RelevantProps = {
  */
 type LoadableProps = {
   type: string;
+  field_types: {[field_name: string]: FAIMSTypeName};
 };
 
 type StagedData = {
@@ -113,6 +120,7 @@ class RecordDraftState {
         // the form component, but that's more complicated.)
         fields: StagedData | null;
         annotations: StagedData | null;
+        field_types: {[field_name: string]: FAIMSTypeName};
       }
     | {
         state: 'edited';
@@ -125,6 +133,7 @@ class RecordDraftState {
         fields: StagedData;
         annotations: StagedData;
         type: string;
+        field_types: {[field_name: string]: FAIMSTypeName};
         // Same as props.draft_id, EXCEPT this can also be set to non-null
         // when changes are made to a revision that hasn't been edited yet
         //
@@ -293,7 +302,8 @@ class RecordDraftState {
               revision_id: this.props.revision_id!,
               record_id: this.props.record_id!,
             },
-            this.data.type
+            this.data.type,
+            this.data.field_types
           ),
         };
         this.data.draft_id.then(new_draft_id => {
@@ -309,7 +319,8 @@ class RecordDraftState {
             setStagedData(
               new_draft_id,
               this.data.fields,
-              this.data.annotations
+              this.data.annotations,
+              this.data.field_types
             ).then(() => {
               if (this.newDraftListener !== null) {
                 this.newDraftListener(new_draft_id);
@@ -384,6 +395,7 @@ class RecordDraftState {
           fields: result.fields,
           annotations: result.annotations,
           type: result.type,
+          field_types: result.field_types,
           draft_id: Promise.resolve(this.props.draft_id),
         };
         // Resolve any promises waiting for data
@@ -405,6 +417,7 @@ class RecordDraftState {
       this.data = {
         state: 'unedited',
         type: loadedprops.type,
+        field_types: loadedprops.field_types,
         fields: null,
         annotations: null,
       };
@@ -471,7 +484,8 @@ class RecordDraftState {
       result = await setStagedData(
         await this.data.draft_id,
         data_to_save,
-        annotations_to_save
+        annotations_to_save,
+        this.data.field_types
       );
 
       if (result.ok) {

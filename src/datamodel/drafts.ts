@@ -18,14 +18,14 @@
  *   TODO
  */
 
-import {ProjectID, RecordID, RevisionID} from './core';
+import {ProjectID, RecordID, RevisionID, FAIMSTypeName} from './core';
 
 export interface EncodedDraft {
   _id: string;
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
   annotations: {[key: string]: unknown};
-  attachments: {[key: string]: unknown};
+  attachments: {[key: string]: string[]};
   _attachments?: PouchDB.Core.Attachments;
   project_id: ProjectID;
   // If this draft is for the user updating an existing record, the following
@@ -37,6 +37,7 @@ export interface EncodedDraft {
   created: string;
   updated: string;
   type: string;
+  field_types: {[field_name: string]: FAIMSTypeName};
 }
 
 //to get the metadata for the draft, for draft_table

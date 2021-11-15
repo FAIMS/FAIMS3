@@ -19,11 +19,19 @@
  */
 
 import PouchDB from 'pouchdb';
-import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
-
-import {EncodedDraft} from '../datamodel/drafts';
 import {v4 as uuidv4} from 'uuid';
-import {DraftMetadataList} from '../datamodel/drafts';
+
+import {
+  RecordID,
+  ProjectID,
+  RevisionID,
+  FAIMSTypeName,
+} from '../datamodel/core';
+import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
+import {
+  generate_file_name,
+  attachment_to_file,
+} from '../data_storage/attachments';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 
@@ -32,7 +40,29 @@ export const draft_db: DraftDB = new PouchDB('draft-storage');
 export async function getStagedData(
   draft_id: string
 ): Promise<EncodedDraft & PouchDB.Core.GetMeta> {
-  return await draft_db.get(draft_id);
+  const draft = await draft_db.get(draft_id, {
+    attachments: true,
+    binary: true,
+  });
+  for (const [field_name, attachment_list] of Object.entries(
+    draft.attachments
+  )) {
+    const files = [];
+    for (const file_name of attachment_list) {
+      if (draft._attachments !== undefined) {
+        console.debug('Loading draft file:', file_name);
+        files.push(
+          attachment_to_file(file_name, draft._attachments[file_name])
+        );
+      } else {
+        console.error(
+          "Attachments weren't loaded from pouch, but there should be some"
+        );
+      }
+    }
+    draft.fields[field_name] = files;
+  }
+  return draft;
 }
 
 /**
@@ -52,7 +82,8 @@ export async function newStagedData(
     record_id: RecordID;
     revision_id: RevisionID;
   },
-  type: string
+  type: string,
+  field_types: {[field_name: string]: FAIMSTypeName}
 ): Promise<PouchDB.Core.DocumentId> {
   const _id = uuidv4();
   const date = new Date();
@@ -68,6 +99,7 @@ export async function newStagedData(
       project_id: active_id,
       existing: existing,
       type: type,
+      field_types: field_types,
     })
   ).id;
 }
@@ -82,18 +114,64 @@ export async function setStagedData(
   // Matches the PouchDB.Core.Response type, but with optional rev
   draft_id: PouchDB.Core.DocumentId,
   new_data: {[key: string]: unknown},
-  new_annotations: {[key: string]: unknown}
+  new_annotations: {[key: string]: unknown},
+  field_types: {[field_name: string]: FAIMSTypeName}
 ): Promise<PouchDB.Core.Response> {
   const existing = await draft_db.get(draft_id);
-  console.error('Saving draft values:', new_data, new_annotations);
+  console.debug('Saving draft values:', new_data, new_annotations);
+
+  const encoded_info = encodeStagedData(new_data, new_annotations, field_types);
 
   return await draft_db.put({
     ...existing,
-    fields: new_data,
-    annotations: new_annotations,
-    attachments: {},
+    ...encoded_info,
     updated: new Date().toString(),
   });
+}
+
+function encodeStagedData(
+  new_data: {[key: string]: unknown},
+  new_annotations: {[key: string]: unknown},
+  field_types: {[field_name: string]: FAIMSTypeName}
+) {
+  // TODO: work out what we need to do specially for annotations, probably
+  // nothing
+  const encoded_annotations = new_annotations;
+  // TODO: integrate this into the rest of the attachment handling system
+  const encoded_data: {[key: string]: unknown} = {};
+  const attachment_metadata: {[key: string]: string[]} = {};
+  const encoded_attachments: any = {};
+
+  for (const field_name in field_types) {
+    const field_data = new_data[field_name];
+    if (field_data !== undefined) {
+      if (
+        field_types[field_name] === 'faims-attachment::Files' &&
+        field_data !== null
+      ) {
+        attachment_metadata[field_name] = [];
+        for (const tmp_file of field_data as File[]) {
+          const file = tmp_file;
+          const file_name = file.name ?? generate_file_name();
+          encoded_attachments[file_name] = {
+            content_type: file.type,
+            data: file,
+          };
+          console.debug('Saving draft file:', file_name);
+          attachment_metadata[field_name].push(file_name);
+        }
+      } else {
+        encoded_data[field_name] = field_data;
+      }
+    }
+  }
+
+  return {
+    fields: encoded_data,
+    annotations: encoded_annotations,
+    attachments: attachment_metadata,
+    _attachments: encoded_attachments,
+  };
 }
 
 /**
