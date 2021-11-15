@@ -29,7 +29,6 @@ import {
   Typography,
   Paper,
   TextareaAutosize,
-  IconButton,
 } from '@material-ui/core';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';

@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: ProjectBehaviour.tsx
- * Description:This is the file about Notebook Behavoiur
+ * Description:This is the file about Notebook Behavoiur, there is nothing in beta yet
  *   TODO:
  */
 
@@ -25,11 +25,9 @@ import {FAIMShandlerType, BehaviourProperties} from '../../../../datamodel/ui';
 type ProjectBehaviourProps = any;
 
 export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
-  const {project_id, setProjectValue, projectvalue, ...others} = props;
+
 
   const handleChange = () => {};
-
-  const handleSubmit = () => {};
 
   const behaviours = [
     {

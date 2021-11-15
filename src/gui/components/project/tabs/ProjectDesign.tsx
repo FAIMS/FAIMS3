@@ -464,14 +464,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const handleSubmitFormSection = (values: any) => {
-    // const newprojectvalue = props.projectvalue;
-    // if (newprojectvalue['sections'] === undefined)
-    //   newprojectvalue['sections'] = {};
-    // newprojectvalue['sections'][formuiview] = values;
-    // props.setProjectValue({
-    //   ...props.projectvalue,
-    //   sections: newprojectvalue.sections,
-    // });
+
   };
 
   const handleChangeFormAction = (event: any) => {
@@ -485,16 +478,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       event.target.name.includes('annotation') ||
       event.target.name.includes('uncertainty')
     ) {
-      //   //   //update the access for project
-      //   //   const value=(event.target.value=== 'true'||event.target.value===true) //TODO
-      //   //   newproject[event.target.name]=value
-      //   //   if(value===true){
-      //   //     newproject['access'+formvariants]=props.projectvalue.accesses
-      //   //   }else newproject['access'+formvariants]=['admin']
-      //   //   console.log(event.target.name+value)
-      //   if (projectvalue['forms'][formvariants][event.target.name] === undefined)
-      //     newproject['forms'][formvariants][event.target.name] = true;
-      //   else
+
       newproject['forms'][formvariants][event.target.name] =
         event.target.checked;
     } else

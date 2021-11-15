@@ -22,7 +22,7 @@ import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {ProjectInformation} from '../../../datamodel/ui';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
+
 type ProjectCardActionProps = {
   project: ProjectInformation;
 };

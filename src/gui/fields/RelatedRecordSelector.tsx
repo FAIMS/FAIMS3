@@ -19,7 +19,6 @@
  */
 
 import React from 'react';
-import {Link as RouterLink} from 'react-router-dom';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 import TextField from '@material-ui/core/TextField';
@@ -54,7 +53,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
-  console.log(useLocation());
   React.useEffect(() => {
     (async () => {
       const records = await getAllRecordsOfType(project_id, props.related_type);

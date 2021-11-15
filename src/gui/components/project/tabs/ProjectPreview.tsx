@@ -25,21 +25,12 @@ import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {
-  Button,
   Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  AppBar,
-  Hidden,
-  Paper,
   Step,
   Stepper,
   StepButton,
 } from '@material-ui/core';
-import {Formik, Form, Field, FormikProps, FormikValues} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard, FormConnectionCard} from './PSettingCard';
+import {Formik, Form} from 'formik';
 import {getComponentFromField, FormForm} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';

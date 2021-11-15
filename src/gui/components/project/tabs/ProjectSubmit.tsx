@@ -50,6 +50,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
   const [isSubmitting, setisSubmitting] = useState(false);
   const [state, seState] = useState(false);
   const [issubmit, setissubmit] = useState(projectvalue.ispublic ?? false);
+  const [ischecked,setischecked]=useState(false)
 
   useEffect(() => {
     checkvalidate();
@@ -82,13 +83,17 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
     else setisSubmitting(true);
     setProjectValue({...projectvalue, errors: {...errors}});
     //check project setting
+    setTimeout(() => {
+      setischecked(true);
+   }, 3000);
   };
 
-  const onButtonClick = () => {
+  const onButtonClick = async () => {
     //save project value into DB
     if (projectvalue.errors.is_valid === true && props.formProps.isValid) {
       console.log('submit');
       props.handleSubmit();
+      
       seState(true);
     }
   };
@@ -129,7 +134,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
           )}
         {projectvalue.project_id !== null &&
           projectvalue.project_id !== undefined &&
-          isSubmitting === false && (
+          isSubmitting === false && ischecked &&(
             <Button
               variant="outlined"
               color="primary"

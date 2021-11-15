@@ -19,23 +19,16 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Grid, Box, Typography} from '@material-ui/core';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  BehaviourProperties,
-} from '../../../../datamodel/ui';
+import {Grid,} from '@material-ui/core';
+
 import {Graphviz} from 'graphviz-react';
 import {getconnections} from '../data/ComponentSetting';
-import grey from '@material-ui/core/colors/grey';
+
 import Alert from '@material-ui/lab/Alert';
-type ProjectOverviewProps = any;
+type ProjectOverviewProps = {formuiSpec:any};
 
 export default function ProjectOverviewTab(props: ProjectOverviewProps) {
   const {
-    project_id,
-    setProjectValue,
-    projectvalue,
     formuiSpec,
     ...others
   } = props;
@@ -45,9 +38,6 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
     setinit();
   }, []);
 
-  const handleChange = () => {};
-
-  const handleSubmit = () => {};
 
   const setinit = () => {
     const newconnections: any = [];
@@ -76,7 +66,6 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
 
     graph = graph + '}';
     setGraph(graph);
-    console.log(graph);
   };
 
   return (

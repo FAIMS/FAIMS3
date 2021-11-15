@@ -31,7 +31,6 @@ import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
 import ProjectSubmitTab from './tabs/ProjectSubmit';
-import ProjectUserTab from './tabs/ProjectUser';
 import ProjectPreviewTab from './tabs/ProjectPreview';
 import ProjectBehaviourTab from './tabs/ProjectBehaviour';
 import ProjectOverviewTab from './tabs/ProjctOverview';
@@ -450,7 +449,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         }
       });
     }
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     console.log(project_id);
 
     if (
@@ -599,9 +598,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                   forms. To modify a relationship, go to the Design Tab
                 </Alert>
                 <ProjectOverviewTab
-                  project_id={project_id}
-                  projectvalue={projectvalue}
-                  setProjectValue={setProjectValue}
                   formuiSpec={formuiSpec}
                 />
                 <ProjectSubmit

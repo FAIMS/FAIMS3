@@ -20,8 +20,8 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
-import {RouteComponentProps, useLocation} from 'react-router';
-
+import {RouteComponentProps} from 'react-router';
+import {Redirect} from 'react-router-dom';
 import {Formik, Form} from 'formik';
 
 import {
@@ -134,6 +134,8 @@ class RecordForm extends React.Component<
   timeouts: typeof setTimeout[] = [];
 
   async componentDidUpdate(prevProps: RecordFormProps) {
+    console.log(prevProps.record_id)
+    console.log(this.props.record_id)
     if (
       prevProps.project_id !== this.props.project_id ||
       prevProps.record_id !== this.props.record_id ||
