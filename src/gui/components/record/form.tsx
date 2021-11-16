@@ -68,7 +68,6 @@ import {
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
-import {identity} from 'lodash';
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -138,7 +137,7 @@ class RecordForm extends React.Component<
       prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
         this.state.revision_cached !== this.props.revision_id)||
-        prevProps.draft_id!==this.props.draft_id
+        prevProps.draft_id!==this.props.draft_id //add this to reload the form when user jump back to previous record
     ) {
       // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({
@@ -675,7 +674,8 @@ class RecordForm extends React.Component<
                                 : 'Working...'
                               : !(this.props.revision_id === undefined)
                               ? 'Update'
-                              : 'Save and new'}
+                              : ui_specification.viewsets[viewsetName]
+                              .submit_label??'Save and new'}
                             {formProps.isSubmitting && (
                               <CircularProgress
                                 size={24}

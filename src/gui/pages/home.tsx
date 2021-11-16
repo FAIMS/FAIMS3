@@ -77,41 +77,9 @@ export default function Home() {
             <DashboardActions pouchProjectList={pouchProjectList} />
           </Paper>
         </Grid>
-        {/* Recent Records */}
-        <Grid item xs={12} md={8} lg={9}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <Typography variant="overline" display={'inline'}>
-              Recent Records&nbsp;&nbsp;
-            </Typography>
-            <TimelapseIcon color={'secondary'} style={{fontSize: '1.1rem'}} />
-          </div>
-
-          <Paper className={classes.paper}>
-            {/*<Records />*/}
-            <Box mt={2}>
-              <Link
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                }}
-                component={RouterLink}
-                to={ROUTES.RECORD_LIST}
-              >
-                See more records
-                {/*<ChevronRightIcon />*/}
-              </Link>
-            </Box>
-          </Paper>
-        </Grid>
+        
         {/* Recent Projects */}
-        <Grid item xs={12} md={4} lg={3}>
+        <Grid item xs={12} md={12} lg={12}>
           <Typography variant="overline">My Projects</Typography>
           <Paper className={classes.paper}>
             <Grid container spacing={1}>

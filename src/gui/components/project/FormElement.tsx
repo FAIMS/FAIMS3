@@ -152,8 +152,8 @@ export function AutocompleteForm(props: any) {
   const {options, handleAutocomplete, ...others} = props;
   const id = 'access' + props.id;
   // const [options,setoptions] =useState(props.options)
-  const [value, setValue] = React.useState(
-    options.length > 0 ? options[0] : null
+  const [value, setValue] = React.useState<{value:string,label:string}|null>(
+    null
   );
   const [inputValue, setInputValue] = React.useState('');
   const [labels, setlabels] = useState<Array<string>>(props.labels ?? []);
@@ -227,9 +227,10 @@ export function AutocompleteForm(props: any) {
                     // value={value}
                     onChange={(event, newValue) => {
                       if (newValue !== null) {
+                        console.log(newValue)
                         setValue(newValue);
-                        if (labels.includes(newValue.value) === false) {
-                          const newlabels = [...labels, newValue.value];
+                        if (labels.includes(newValue.label) === false) {
+                          const newlabels = [...labels, newValue.label];
                           setlabels(newlabels);
 
                           props.handleAutocomplete(
@@ -246,8 +247,8 @@ export function AutocompleteForm(props: any) {
                       setInputValue(newInputValue);
                     }}
                     options={options}
-                    getOptionLabel={option => option.label}
-                    defaultValue={options[0].label}
+                    getOptionLabel={option=> option.label}
+                    value={value}
                     style={{width: 300}}
                     // openOnFocus={true}
                     renderInput={params => (
