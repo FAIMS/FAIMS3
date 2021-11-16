@@ -24,14 +24,21 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
+
+import {Formik, Form} from 'formik';
+
+import grey from '@material-ui/core/colors/grey';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import {useTheme} from '@material-ui/core/styles';
+import Alert from '@material-ui/lab/Alert';
 import {makeStyles} from '@material-ui/core/styles';
 import {Grid, AppBar, Box} from '@material-ui/core';
+
 import {TabTab} from './tabs/TabTab';
 import TabPanel from './tabs/TabPanel';
 import ProjectDesignTab from './tabs/ProjectDesign';
 import ProjectInfoTab from './tabs/ProjectInfo';
 import ProjectSubmitTab from './tabs/ProjectSubmit';
-import ProjectUserTab from './tabs/ProjectUser';
 import ProjectPreviewTab from './tabs/ProjectPreview';
 import ProjectBehaviourTab from './tabs/ProjectBehaviour';
 import ProjectOverviewTab from './tabs/ProjctOverview';
@@ -41,6 +48,7 @@ import {
   uiSpecType,
   getprojectform,
 } from './data/ComponentSetting';
+
 import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
 import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
@@ -49,11 +57,6 @@ import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {setProjectMetadata, getProjectMetadata} from '../../../projectMetadata';
-import grey from '@material-ui/core/colors/grey';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {useTheme} from '@material-ui/core/styles';
-import Alert from '@material-ui/lab/Alert';
-import {Formik, Form} from 'formik';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */

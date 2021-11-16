@@ -29,7 +29,6 @@ import {
   Typography,
   Paper,
   TextareaAutosize,
-  IconButton,
 } from '@material-ui/core';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
@@ -39,7 +38,7 @@ import {getProjectInfo} from '../../databaseAccess';
 import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
 import EditIcon from '@material-ui/icons/Edit';
-import {} from '@material-ui/core';
+
 export default function ProjectSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const project_info = getProjectInfo(project_id);
