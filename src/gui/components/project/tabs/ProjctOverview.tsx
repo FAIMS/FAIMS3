@@ -19,16 +19,12 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {Grid, Box, Typography} from '@material-ui/core';
-import {
-  ProjevtValueList,
-  FAIMShandlerType,
-  BehaviourProperties,
-} from '../../../../datamodel/ui';
+import {Grid} from '@material-ui/core';
 import {Graphviz} from 'graphviz-react';
 import {getconnections} from '../data/ComponentSetting';
-import grey from '@material-ui/core/colors/grey';
 import Alert from '@material-ui/lab/Alert';
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 type ProjectOverviewProps = any;
 
 export default function ProjectOverviewTab(props: ProjectOverviewProps) {

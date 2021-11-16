@@ -38,7 +38,7 @@ import {getUiSpecForProject} from '../../uiSpecification';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
 import {newStagedData} from '../../sync/draft-storage';
-import {useLocation, Link} from 'react-router-dom';
+import {useLocation} from 'react-router-dom';
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;

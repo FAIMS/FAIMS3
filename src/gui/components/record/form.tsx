@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
-import {RouteComponentProps, useLocation} from 'react-router';
+import {RouteComponentProps} from 'react-router';
 
 import {Formik, Form} from 'formik';
 
@@ -69,7 +69,6 @@ import {
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
-import {identity} from 'lodash';
 
 type RecordFormProps = {
   project_id: ProjectID;
