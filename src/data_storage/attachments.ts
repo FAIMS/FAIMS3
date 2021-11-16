@@ -26,7 +26,7 @@ interface FullAttachments {
   [attachmentId: string]: PouchDB.Core.FullAttachment;
 }
 
-function generate_file_name(): string {
+export function generate_file_name(): string {
   return uuidv4();
 }
 
@@ -36,7 +36,6 @@ export function file_data_to_attachments(
   if (avp.data === null) {
     return avp;
   }
-  console.error(avp.data);
   avp._attachments = {};
   for (const tmp_file of avp.data) {
     const file = tmp_file as File;
@@ -50,14 +49,14 @@ export function file_data_to_attachments(
   return avp;
 }
 
-function attachment_to_file(
+export function attachment_to_file(
   name: string,
   attachment: PouchDB.Core.Attachment
 ): File {
-  console.error('attachment?', attachment);
+  console.debug('attachment?', attachment);
   const content_type = attachment.content_type;
   const data = (attachment as PouchDB.Core.FullAttachment).data;
-  console.error('blob?', data);
+  console.debug('blob?', data);
   return new File([data], name, {type: content_type});
 }
 
@@ -69,7 +68,7 @@ export function file_attachments_to_data(
   for (const [pname, attach] of Object.entries(attachments)) {
     attach_list.push(attachment_to_file(pname, attach));
   }
-  console.error('files?', attach_list);
+  console.debug('files?', attach_list);
   avp.data = attach_list;
   return avp;
 }
