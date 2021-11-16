@@ -21,7 +21,6 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
-import {Redirect} from 'react-router-dom';
 import {Formik, Form} from 'formik';
 
 import {
@@ -134,13 +133,12 @@ class RecordForm extends React.Component<
   timeouts: typeof setTimeout[] = [];
 
   async componentDidUpdate(prevProps: RecordFormProps) {
-    console.log(prevProps.record_id)
-    console.log(this.props.record_id)
     if (
       prevProps.project_id !== this.props.project_id ||
       prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
-        this.state.revision_cached !== this.props.revision_id)
+        this.state.revision_cached !== this.props.revision_id)||
+        prevProps.draft_id!==this.props.draft_id
     ) {
       // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({

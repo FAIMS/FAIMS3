@@ -741,8 +741,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               })}
               currentView="start-view"
               access={props.projectvalue['access']['access' + formvariants]}
-              projectvalue={projectvalue}
-              setProjectValue={props.setProjectValue}
+              // projectvalue={projectvalue}
+              // setProjectValue={props.setProjectValue}
+              handlerChanges={handleChangeFormSection}
             />
             <ProjectSubmit
               id="gotonext_info"
@@ -813,8 +814,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                 })}
                 currentView="start-view"
                 access={props.projectvalue['accesses']}
-                projectvalue={projectvalue}
-                setProjectValue={props.setProjectValue}
+                // projectvalue={projectvalue}
+                // setProjectValue={props.setProjectValue}
+                handlerChanges={handleChangeFormAction}
               />
             </Grid>
             <Grid item sm={6} xs={1}>
