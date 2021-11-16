@@ -113,7 +113,7 @@ type RecordFormState = {
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
   last_saved: Date;
-  annotation?: {[field_name: string]: Annotations};
+  annotation: {[field_name: string]: Annotations};
   /**
    * Set only by newDraftListener, but this is only non-null
    * for a single render. In that render, a notification will pop up to the user
@@ -145,7 +145,7 @@ class RecordForm extends React.Component<
         type_cached: null,
         view_cached: null,
         revision_cached: null,
-        annotation: {id: this.props.project_id},
+        annotation: {},
       });
       // Re-initialize basically everything.
       this.formChanged(true);
@@ -164,7 +164,7 @@ class RecordForm extends React.Component<
       is_saving: false,
       last_saved: new Date(),
       draft_created: null,
-      annotation: {id: this.props.project_id},
+      annotation: {},
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -275,11 +275,21 @@ class RecordForm extends React.Component<
       if (draft_saving_started_already) {
         this.draftState.recordChangeHook(this.props, {
           type: this.state.type_cached!,
+          field_types: getReturnedTypesForViewSet(
+            this.props.ui_specification,
+            this.requireViewsetName()
+          ),
         });
       } else {
         this.draftState.saveListener = this.saveListener.bind(this);
         this.draftState.newDraftListener = this.newDraftListener.bind(this);
-        await this.draftState.start({type: this.state.type_cached!});
+        await this.draftState.start({
+          type: this.state.type_cached!,
+          field_types: getReturnedTypesForViewSet(
+            this.props.ui_specification,
+            this.requireViewsetName()
+          ),
+        });
       }
     } catch (err) {
       console.error('rare draft error', err);
@@ -329,8 +339,13 @@ class RecordForm extends React.Component<
           )) || {};
 
     const database_data = fromdb.data ?? {};
+    const database_annotations = fromdb.annotations ?? {};
 
-    const staged_data = await this.draftState.getInitialValues();
+    const [
+      staged_data,
+      staged_annotations,
+    ] = await this.draftState.getInitialValues();
+    console.error('Staged values', staged_data, staged_annotations);
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
@@ -343,21 +358,23 @@ class RecordForm extends React.Component<
       _project_id: this.props.project_id,
       _current_revision_id: this.props.revision_id,
     };
-    const annotation: any = fromdb.annotations ?? {};
+    const annotations: {[key: string]: any} = {};
+
     fieldNames.forEach(fieldName => {
       initialValues[fieldName] = firstDefinedFromList([
         staged_data[fieldName],
         database_data[fieldName],
         fields[fieldName]['initialValue'],
       ]);
-      annotation[fieldName] = annotation[fieldName] ?? {
-        annotation: '',
-        uncertainty: false,
-      };
+      annotations[fieldName] = firstDefinedFromList([
+        staged_annotations[fieldName],
+        database_annotations[fieldName],
+        {annotation: '', uncertainty: false},
+      ]);
       // initialValues['uncertainty'][fieldName]=''
     });
 
-    this.setState({initialValues: initialValues, annotation: annotation});
+    this.setState({initialValues: initialValues, annotation: annotations});
     console.log(
       this.props.ui_specification.viewsets[this.requireViewsetName()]
         .submit_label
@@ -429,7 +446,7 @@ class RecordForm extends React.Component<
           data: this.filterValues(values),
           updated_by: userid,
           updated: now,
-          annotations: this.state.annotation ?? {id: this.props.project_id},
+          annotations: this.state.annotation ?? {},
           field_types: getReturnedTypesForViewSet(
             ui_specification,
             viewsetName
@@ -623,7 +640,10 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              this.draftState.renderHook(formProps.values);
+              this.draftState.renderHook(
+                formProps.values,
+                this.state.annotation
+              );
               return (
                 <Form>
                   <Grid container spacing={2}>
@@ -703,6 +723,7 @@ class RecordForm extends React.Component<
                         style={{overflowX: 'scroll'}}
                       >
                         <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                        <pre>{JSON.stringify(this.state, null, 2)}</pre>
                       </Box>
                       <Box mt={3}>
                         <BoxTab

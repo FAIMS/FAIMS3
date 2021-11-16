@@ -51,7 +51,7 @@ export class ViewComponent extends React.Component<ViewProps> {
               this.props.formProps
             )}
             {this.props.annotation !== undefined &&
-              fields[fieldName].meta !== undefined && (
+              fields[fieldName].meta !== undefined &&fields[fieldName]['component-name']!=='BasicAutoIncrementer'&&fields[fieldName]['component-name']!=='TemplatedStringField'&& (
                 <Annotation
                   key={'annotation' + fieldName + 'box'}
                   fieldName={fieldName}

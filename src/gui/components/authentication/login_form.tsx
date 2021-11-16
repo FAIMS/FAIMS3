@@ -22,20 +22,12 @@ export type LoginButtonProps = {
   auth_info: AuthInfo; // User-visible name
 };
 
-//function redirect_url(portal_url: string, auth_id: string): string {
-//  return portal_url + '/auth/' + auth_id;
-//}
-
 function LoginButton(props: LoginButtonProps) {
   return (
     <Button
       variant="contained"
       color="primary"
       onClick={() => {
-        //const conductor_url = redirect_url(
-        //  props.auth_info.portal,
-        //  props.auth_id
-        //);
         let oauth_window: Window | null = null;
         window.addEventListener(
           'message',
@@ -47,7 +39,7 @@ function LoginButton(props: LoginButtonProps) {
           },
           false
         );
-        oauth_window = window.open('http://localhost:8080/');
+        oauth_window = window.open(props.auth_info.portal);
         if (oauth_window === null) {
           console.error('Failed to open oauth window');
         }

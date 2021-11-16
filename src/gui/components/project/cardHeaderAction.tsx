@@ -1,4 +1,6 @@
 import React, {useEffect} from 'react';
+import {Link as RouterLink, NavLink} from 'react-router-dom';
+
 import {
   Box,
   Button,
@@ -8,17 +10,15 @@ import {
   ListItemIcon,
   CircularProgress,
 } from '@material-ui/core';
+import {useTheme} from '@material-ui/core/styles';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
 import ShareIcon from '@material-ui/icons/Share';
 import AddIcon from '@material-ui/icons/Add';
 import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
+
 import * as ROUTES from '../../../constants/routes';
-
-import {useTheme} from '@material-ui/core/styles';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-
 import {ProjectInformation} from '../../../datamodel/ui';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
