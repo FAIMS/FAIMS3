@@ -25,8 +25,6 @@ import {FAIMShandlerType, BehaviourProperties} from '../../../../datamodel/ui';
 type ProjectBehaviourProps = any;
 
 export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
-
-
   const handleChange = () => {};
 
   const behaviours = [

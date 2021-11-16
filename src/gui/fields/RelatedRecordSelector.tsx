@@ -47,22 +47,23 @@ import {useLocation, Link} from 'react-router-dom';
 interface Props {
   related_type: FAIMSTypeName;
   relation_type: FAIMSTypeName;
-  multiple?:boolean;
-  id:string;
+  multiple?: boolean;
+  id: string;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
-  const multiple=options.length>0&&props.multiple!==undefined?props.multiple:false
+  const multiple =
+    options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   React.useEffect(() => {
     (async () => {
       const records = await getAllRecordsOfType(project_id, props.related_type);
       setOptions(records);
     })();
   }, []);
-  console.log(props)
+  console.log(props);
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
@@ -70,7 +71,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     <div>
       <Field
         multiple={multiple}
-        id={props.id??"asynchronous-demo"}
+        id={props.id ?? 'asynchronous-demo'}
         name={field_name}
         component={Autocomplete}
         getOptionSelected={(option: RecordReference, value: RecordReference) =>

@@ -77,7 +77,7 @@ export default function Home() {
             <DashboardActions pouchProjectList={pouchProjectList} />
           </Paper>
         </Grid>
-        
+
         {/* Recent Projects */}
         <Grid item xs={12} md={12} lg={12}>
           <Typography variant="overline">My Projects</Typography>

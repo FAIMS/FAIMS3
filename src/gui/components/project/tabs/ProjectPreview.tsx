@@ -24,12 +24,7 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {
-  Grid,
-  Step,
-  Stepper,
-  StepButton,
-} from '@material-ui/core';
+import {Grid, Step, Stepper, StepButton} from '@material-ui/core';
 import {Formik, Form} from 'formik';
 import {getComponentFromField, FormForm} from '../FormElement';
 import {TabTab} from './TabTab';

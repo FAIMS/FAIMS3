@@ -151,9 +151,10 @@ export function AutocompleteForm(props: any) {
   const {options, handleAutocomplete, ...others} = props;
   const id = 'access' + props.id;
   // const [options,setoptions] =useState(props.options)
-  const [value, setValue] = React.useState<{value:string,label:string}|null>(
-    null
-  );
+  const [value, setValue] = React.useState<{
+    value: string;
+    label: string;
+  } | null>(null);
   const [inputValue, setInputValue] = React.useState('');
   const [labels, setlabels] = useState<Array<string>>(props.labels ?? []);
   const [uiSpec, setUISpec] = useState(props.uiSpec);
@@ -184,14 +185,14 @@ export function AutocompleteForm(props: any) {
       //   event.target.name
       // ] = event.target.checked;
       // props.setProjectValue({...newvalue});
-      props.handlerChanges(event)
+      props.handlerChanges(event);
     } else {
       // const newvalue = props.projectvalue;
       // newvalue['sections'][
       //   event.target.name.replace('sectionaccessinherit', '')
       // ][event.target.name] = event.target.checked;
       // props.setProjectValue({...newvalue});
-      props.handlerChanges(event)
+      props.handlerChanges(event);
     }
     setIschecked(event.target.checked);
   };
@@ -226,7 +227,7 @@ export function AutocompleteForm(props: any) {
                     // value={value}
                     onChange={(event, newValue) => {
                       if (newValue !== null) {
-                        console.log(newValue)
+                        console.log(newValue);
                         setValue(newValue);
                         if (labels.includes(newValue.label) === false) {
                           const newlabels = [...labels, newValue.label];
@@ -246,7 +247,7 @@ export function AutocompleteForm(props: any) {
                       setInputValue(newInputValue);
                     }}
                     options={options}
-                    getOptionLabel={option=> option.label}
+                    getOptionLabel={option => option.label}
                     value={value}
                     style={{width: 300}}
                     // openOnFocus={true}

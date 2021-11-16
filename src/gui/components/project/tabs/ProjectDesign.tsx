@@ -463,9 +463,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     });
   };
 
-  const handleSubmitFormSection = (values: any) => {
-
-  };
+  const handleSubmitFormSection = (values: any) => {};
 
   const handleChangeFormAction = (event: any) => {
     const newproject = props.projectvalue;
@@ -478,7 +476,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       event.target.name.includes('annotation') ||
       event.target.name.includes('uncertainty')
     ) {
-
       newproject['forms'][formvariants][event.target.name] =
         event.target.checked;
     } else

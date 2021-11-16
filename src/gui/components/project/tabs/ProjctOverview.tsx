@@ -25,21 +25,15 @@ import {Graphviz} from 'graphviz-react';
 import {getconnections} from '../data/ComponentSetting';
 import Alert from '@material-ui/lab/Alert';
 
-
 type ProjectOverviewProps = any;
 
-
 export default function ProjectOverviewTab(props: ProjectOverviewProps) {
-  const {
-    formuiSpec,
-    ...others
-  } = props;
+  const {formuiSpec, ...others} = props;
   const [graphs, setGraph] = useState<string>('');
 
   useEffect(() => {
     setinit();
   }, []);
-
 
   const setinit = () => {
     const newconnections: any = [];

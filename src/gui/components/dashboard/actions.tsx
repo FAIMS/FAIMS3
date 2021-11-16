@@ -47,16 +47,14 @@ export default function DashboardActions(props: DashboardActionProps) {
     url: ROUTES.PROJECT + project_info.project_id,
     value: project_info.project_id,
   }));
-  const [value, setValue] = React.useState<any|null>(
-    null
-  );
+  const [value, setValue] = React.useState<any | null>(null);
   const [inputValue, setInputValue] = React.useState('');
   const handleSubmit = () => {
     if (value !== null) {
       history.push(value.url + ROUTES.RECORD_CREATE);
     }
   };
-  
+
   // viewsets and the list of visible views
   // for each project in the list
   const [viewSets, setViewSets] = React.useState<
@@ -66,17 +64,19 @@ export default function DashboardActions(props: DashboardActionProps) {
   >({});
 
   useEffect(() => {
-    const newviewset=viewSets
+    const newviewset = viewSets;
     pouchProjectList.map(project_info => {
-      
       getUiSpecForProject(project_info.project_id).then(
         uiSpec => {
-          newviewset[project_info.project_id]=[uiSpec.viewsets, uiSpec.visible_types];
+          newviewset[project_info.project_id] = [
+            uiSpec.viewsets,
+            uiSpec.visible_types,
+          ];
         },
         () => {}
       );
     });
-    setViewSets(newviewset)
+    setViewSets(newviewset);
   }, [pouchProjectList]);
 
   return (
@@ -90,7 +90,7 @@ export default function DashboardActions(props: DashboardActionProps) {
                 value={value}
                 onChange={(event, newValue) => {
                   if (newValue !== null) {
-                    console.log(newValue)
+                    console.log(newValue);
                     setValue(newValue);
                   }
                 }}
@@ -122,7 +122,7 @@ export default function DashboardActions(props: DashboardActionProps) {
                     size={'medium'}
                     type={'submit'}
                     style={{marginLeft: '5px'}}
-                    key={viewset_name+'viewset'}
+                    key={viewset_name + 'viewset'}
                   >
                     {viewSets[value.value][1].length === 1
                       ? 'Add'
