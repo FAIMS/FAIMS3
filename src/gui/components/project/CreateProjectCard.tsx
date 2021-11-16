@@ -42,7 +42,7 @@ import {
 } from './data/ComponentSetting';
 import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
-import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
+import {add_autoincrement_reference_for_project,get_autoincrement_references_for_project} from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
 import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
@@ -54,7 +54,7 @@ import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
 import {Formik, Form} from 'formik';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-
+import {AutoIncrementReference} from "../../../datamodel/database"
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -268,18 +268,31 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   const get_autoincrement = () => {
-    const autoincrement_array: Array<any> = [];
+    const form_ids: Array<string> = [];
+    const field_ids: Array<string> = [];
+    // let existauto:AutoIncrementReference[]=[]
+    // if(project_id!==null)
+    // existauto=await get_autoincrement_references_for_project(project_id)
+    // console.log(existauto)
     for (const [key, value] of Object.entries(formuiSpec['fields'])) {
+      // if(project_id!==null&&existauto.includes({
+      //   project_id: project_id,
+      //   form_id: value['component-parameters']['form_id'],
+      //   field_id: key,
+      // })) console.log('contain')
+      // console.log({
+      //   project_id: project_id,
+      //   form_id: value['component-parameters']['form_id'],
+      //   field_id: key,
+      // })
       if (value['component-name'] === 'BasicAutoIncrementer') {
-        autoincrement_array.push({
-          project_id: project_id,
-          form_id: value['component-parameters']['form_id'],
-          field_id: key,
-        });
+        form_ids.push(value['component-parameters']['form_id'])
+        field_ids.push(key)
       }
     }
-    return autoincrement_array;
+    return {form_id:form_ids,field_id:field_ids};
   };
+  console.log( get_autoincrement())
 
   const add_autoince_refereence = async (autoince: any) => {
     if (project_id !== null) {
@@ -305,7 +318,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       );
 
       const autoincrecs = get_autoincrement();
-      autoincrecs.map((autoince: any) => add_autoince_refereence(autoince));
+      add_autoince_refereence(autoincrecs)
+      //autoincrecs.map((autoince: any) => );
 
       console.log('databases updated...' + res + project_id);
     } catch (err) {
@@ -382,13 +396,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       //save meta data
       try {
         if (project_id !== null)
-          console.log(
             await setProjectMetadata(
               project_id,
               'projectvalue',
               pvlues.projectvalue
             )
-          );
+          
       } catch (err) {
         console.error('databases needs cleaning for update error...');
         console.debug(err);
