@@ -18,7 +18,7 @@ jobs:
         with:
           ruby-version: '3.0.2'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
-        run: bundle install
+      - run: bundle install # to get cocoapods... 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
