@@ -1,0 +1,4 @@
+sudo gem install cocoapods
+npx cap sync --deployment ios
+# https://github.com/ionic-team/capacitor/issues/324#issuecomment-731098153
+npx iconic capacitor build ios --no-open

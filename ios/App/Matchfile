@@ -1,0 +1,4 @@
+# ios/Matchfile
+git_url("git@github.com:FAIMS/fastlane-keys.git")
+storage_mode("git")
+type("appstore")
