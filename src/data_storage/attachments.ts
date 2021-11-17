@@ -49,6 +49,18 @@ export function file_data_to_attachments(
   return avp;
 }
 
+export function files_to_attachments(files: File[]): FullAttachments {
+  const attachments: FullAttachments = {};
+  for (const file of files) {
+    const file_name = file.name ?? generate_file_name();
+    attachments[file_name] = {
+      content_type: file.type,
+      data: file,
+    };
+  }
+  return attachments;
+}
+
 export function attachment_to_file(
   name: string,
   attachment: PouchDB.Core.Attachment
@@ -58,6 +70,16 @@ export function attachment_to_file(
   const data = (attachment as PouchDB.Core.FullAttachment).data;
   console.debug('blob?', data);
   return new File([data], name, {type: content_type});
+}
+
+export function attachments_to_files(
+  attachments: PouchDB.Core.Attachments
+): File[] {
+  const attach_list = [];
+  for (const [name, attach] of Object.entries(attachments)) {
+    attach_list.push(attachment_to_file(name, attach));
+  }
+  return attach_list;
 }
 
 export function file_attachments_to_data(
