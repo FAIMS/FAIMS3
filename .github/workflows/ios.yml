@@ -14,9 +14,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
-      - uses: actions/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.0.2'
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+        run: bundle install
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}            
+          cache: 'npm'
+      - name: Building webapp
+        run: |
+          export REACT_APP_PRODUCTION_BUILD=true
+          export REACT_APP_DIRECTORY_HOST=alpha.db.faims.edu.au
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh ios)
+          git clean -xfd
+          npm ci
+          npm run build
+      # https://capacitorjs.com/docs/android
+      - run: npx cap sync --deployment ios
+
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.0.1
         with:
