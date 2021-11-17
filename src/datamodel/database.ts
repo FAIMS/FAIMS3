@@ -157,6 +157,7 @@ export interface EncodedProjectMetadata {
   _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
+  single_attachment?: boolean;
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
