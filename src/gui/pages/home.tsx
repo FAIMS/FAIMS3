@@ -28,7 +28,7 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
+
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -66,7 +66,7 @@ export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = getProjectList();
-  const breadcrumbs = [{link: ROUTES.INDEX, title: 'Index'}, {title: 'Home'}];
+  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'WorkShop'}];
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />

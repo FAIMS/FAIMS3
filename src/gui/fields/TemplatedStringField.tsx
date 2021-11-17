@@ -259,8 +259,8 @@ export function TemplatedStringcomponentsetting(
       if (event.target.value.indexOf('newfield') !== -1)
         value[num] = '{{' + event.target.value + '}}';
       else value[num] = event.target.value;
-      let subvalue = value.join('-');
-      if (!subvalue.includes('αβγ ')) subvalue = 'αβγ ' + subvalue;
+      const subvalue = value.join('-');
+      // if (!subvalue.includes('αβγ ')) subvalue = 'αβγ ' + subvalue;
       newvalues['fields'][props.fieldName]['component-parameters'][
         'template'
       ] = subvalue;
@@ -309,7 +309,7 @@ const uiSpec = {
     helperText: 'Human Readable ID',
     variant: 'outlined',
     required: true,
-    template: 'αβγ {{}}',
+    template: ' {{}}',
     InputProps: {
       type: 'text', // must be a valid html type
     },

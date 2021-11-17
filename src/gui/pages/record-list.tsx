@@ -64,7 +64,7 @@ export default function RecordList() {
   const globalState = useContext(store);
   const {dispatch} = globalState;
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.HOME, title: 'Home'},
     {title: 'Records'},
   ];
   useEffect(() => {

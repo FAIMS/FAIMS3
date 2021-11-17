@@ -31,7 +31,7 @@ import {
 } from '@material-ui/core';
 import AccountTree from '@material-ui/icons/AccountTree';
 import HomeIcon from '@material-ui/icons/Home';
-import DescriptionIcon from '@material-ui/icons/Description';
+
 import LockOpenIcon from '@material-ui/icons/LockOpen';
 import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
@@ -51,7 +51,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
   }
 
   render() {
-    const breadcrumbs = [{title: 'Index'}];
+    const breadcrumbs = [{title: 'HOME'}];
     return (
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
@@ -91,17 +91,17 @@ export class Index extends React.Component<IndexProps, IndexState> {
           <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.HOME}>
+                <MenuItem component={NavLink} to={ROUTES.WORKSHOP}>
                   <ListItemIcon>
                     <HomeIcon fontSize="small" />
                   </ListItemIcon>
-                  Home
+                  Workshop
                 </MenuItem>
                 <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
                   <ListItemIcon>
                     <AccountTree fontSize="small" />
                   </ListItemIcon>
-                  Projects
+                  Notebooks
                 </MenuItem>
               </MenuList>
             </Paper>

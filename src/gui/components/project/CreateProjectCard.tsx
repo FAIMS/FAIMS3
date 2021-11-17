@@ -53,7 +53,7 @@ import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
 import {
   add_autoincrement_reference_for_project,
-  get_autoincrement_references_for_project,
+
 } from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
 import {metadata_dbs} from '../../../sync/databases';
@@ -61,7 +61,7 @@ import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {setProjectMetadata, getProjectMetadata} from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-import {AutoIncrementReference} from '../../../datamodel/database';
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -181,14 +181,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         ...setProjectInitialValues(projectui, 'start-view', {_id: project_id}),
         ...{...projectvalue, ...props.project_info},
       };
-      setinitialValues({...ini});
       setProjectValue({...projectvalue, ...props.project_info});
       setProjecttabvalue(0);
       setinitialValues({...ini});
       setvalidationSchema(getValidationSchemaForViewset(projectui, 'project'));
-      console.log(projectvalue);
-      console.log(ini);
-      console.log(initialValues);
     } else
       setProjectValue({
         ...ini_projectvalue,
@@ -561,18 +557,22 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                       index={4}
                       tabname="primarytab"
                     >
+                      <Alert severity="info">
+                      Below are Behavious that be auto enabled
+                      </Alert>
                       <ProjectBehaviourTab
                         project_id={project_id}
                         projectvalue={projectvalue}
                         setProjectValue={setProjectValue}
                         formProps={formProps}
                       />
+                      
                       <ProjectSubmit
                         id="gotonextbehaviour"
                         type="submit"
                         isSubmitting={false}
                         text="Go To Next"
-                        onButtonClick={() => setProjecttabvalue(6)}
+                        onButtonClick={() => setProjecttabvalue(5)}
                       />
                     </TabPanel>
                     <TabPanel
@@ -614,7 +614,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               <>
                 <Alert severity="info">
                   High level view of Notebook showing relationships between
-                  forms. To modify a relationship, go to the Design Tab
+                  forms. To modify a relationship, go to the Design Tab, add Related field in Each Form each Section
                 </Alert>
                 <ProjectOverviewTab formuiSpec={formuiSpec} />
                 <ProjectSubmit

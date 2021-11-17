@@ -37,7 +37,7 @@ export default function ProjectCreate() {
   if (project_id === undefined) {
     console.log(project_id);
     const breadcrumbs = [
-      {link: ROUTES.INDEX, title: 'Index'},
+      {link: ROUTES.HOME, title: 'Home'},
       {title: 'New Notebook'},
     ];
     return (
@@ -67,7 +67,7 @@ export default function ProjectCreate() {
     const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
     const [error, setError] = useState(null as null | {});
     const breadcrumbs = [
-      {link: ROUTES.INDEX, title: 'Index'},
+      {link: ROUTES.HOME, title: 'Home'},
       {title: project_info !== null ? project_info.name : 'New Notebook'},
     ];
     if (error !== null) {

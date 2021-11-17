@@ -38,7 +38,7 @@ export function SignIn(/* props: SignInProps */) {
   const globalState = useContext(store);
 
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.HOME, title: 'Home'},
     {title: 'Sign In'},
   ];
 

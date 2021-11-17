@@ -119,6 +119,9 @@ export function FormForm(props: FormElement) {
               getfields(uiSpec, formProps, handleChangeForm, currentView)
             ) : (
               <Grid container>
+                <Grid item sm={1} xs={12}>
+                  <TickButton id="submit" type="submit" />
+                </Grid>
                 <Grid item sm={11} xs={12}>
                   <Grid container>
                     {uiSpec['views'][currentView]['fields'].map(
@@ -135,9 +138,7 @@ export function FormForm(props: FormElement) {
                     )}
                   </Grid>
                 </Grid>
-                <Grid item sm={1} xs={12}>
-                  <TickButton id="submit" type="submit" />
-                </Grid>
+                
               </Grid>
             )}
           </Form>

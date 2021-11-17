@@ -26,7 +26,7 @@ import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {Grid, Typography, Paper} from '@material-ui/core';
+import {Grid, Typography, Paper,Card} from '@material-ui/core';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
@@ -78,6 +78,9 @@ const useStyles = makeStyles(theme => ({
     minHeight: 200,
     backgroundColor: grey[200],
   },
+  FieldCard :{
+    width:'100%'
+  }
 }));
 
 const NEWFIELDS = 'newfield';
@@ -238,9 +241,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       accessgroup: getinitaccess(),
       meta: {
         isannotation:
-          projectvalue['forms'][formvariants]['annotation' + formvariants],
+        projectvalue['forms'][formvariants]!==undefined?projectvalue['forms'][formvariants]['annotation' + formvariants]:true,
         isuncertainty:
-          projectvalue['forms'][formvariants]['uncertainty' + formvariants],
+        projectvalue['forms'][formvariants]!==undefined?projectvalue['forms'][formvariants]['uncertainty' + formvariants]:false,
       },
     });
     setinitialValues({
@@ -579,17 +582,19 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
   const fieldform = (formProps: any) => {
     return formcomponents[formuiview].map((formcomponent: any, index: any) => (
+      <>
+      <Card className={classes.FieldCard}>
       <Grid
         container
         className={classes.newfield}
         key={`formcompoenet-form-${index}`}
       >
+       
         <Grid item sm={10} xs={12}>
           <Grid container spacing={1}>
             <Grid item sm={4} xs={12}>
               <Typography variant="subtitle2">
-                Preview of Component
-                {formcomponent['id']}
+                {'newfield' + formcomponent['id']}
               </Typography>
               {getComponentFromField(
                 formuiSpec,
@@ -674,6 +679,10 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           />
         </Grid>
       </Grid>
+     
+      </Card>
+       <Grid item sm={10} xs={12}><br/></Grid>
+       </>
     ));
   };
 
