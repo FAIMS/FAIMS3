@@ -158,9 +158,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     return (
       <Grid container>
         <Grid item sm={12} xs={12}>
-         
-           Add New Meta Component
-
+          Add New Meta Component
         </Grid>
         <Grid item sm={4} xs={12}>
           {getfields(
@@ -185,19 +183,20 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         </Grid>
         <Grid item sm={6} xs={12}>
           <Alert severity="info">
-            Add Meta component by filling Label and clicking the Add button, <br/>
-            {'Meta been added and filled values can be selected in Design > SECTION DEFINITION > COMPONENT tab RElated Field '}
-            Example: 
+            Add Meta component by filling Label and clicking the Add button,{' '}
+            <br />
+            {
+              'Meta been added and filled values can be selected in Design > SECTION DEFINITION > COMPONENT tab RElated Field '
+            }
+            Example:
           </Alert>
         </Grid>
-        <Grid item sm={12} xs={12} >
-        <br />
+        <Grid item sm={12} xs={12}>
+          <br />
           <hr /> Meta List:
           <br />
         </Grid>
         <Grid item sm={6} xs={12}>
-        
-          
           {isready(uiSpec_meta) &&
             uiSpec_meta['views']['start-view'][
               'fields'
@@ -211,8 +210,8 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             )}
         </Grid>
         <Grid item sm={6} xs={12}>
-        <Alert severity="info">
-           Fill the Meta Value After Meta been added
+          <Alert severity="info">
+            Fill the Meta Value After Meta been added
           </Alert>
         </Grid>
         <br />

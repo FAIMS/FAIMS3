@@ -58,13 +58,15 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   React.useEffect(() => {
-    if(project_id!==undefined){
-
-    
-    (async () => {
-      const records = await getAllRecordsOfType(project_id, props.related_type);
-      setOptions(records);
-    })();}
+    if (project_id !== undefined) {
+      (async () => {
+        const records = await getAllRecordsOfType(
+          project_id,
+          props.related_type
+        );
+        setOptions(records);
+      })();
+    }
   }, []);
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
@@ -281,8 +283,13 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
   const setini = () => {
     const options: Array<option> = [];
     //TODO pass the value of all field in this form
-    const fields: Array<option> = []
-    props.uiSpec['visible_types'].map((viewset:string)=>fields.push({label:props.uiSpec['viewsets'][viewset]['label']??viewset,value:viewset}));
+    const fields: Array<option> = [];
+    props.uiSpec['visible_types'].map((viewset: string) =>
+      fields.push({
+        label: props.uiSpec['viewsets'][viewset]['label'] ?? viewset,
+        value: viewset,
+      })
+    );
     //fields=fields.filter((type:string)=>type!==props.currentform)
     setrelatedtype(fields);
   };

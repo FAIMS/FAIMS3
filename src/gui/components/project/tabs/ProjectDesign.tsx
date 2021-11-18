@@ -26,7 +26,7 @@ import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {Grid, Typography, Paper,Card} from '@material-ui/core';
+import {Grid, Typography, Paper, Card} from '@material-ui/core';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
@@ -78,9 +78,9 @@ const useStyles = makeStyles(theme => ({
     minHeight: 200,
     backgroundColor: grey[200],
   },
-  FieldCard :{
-    width:'100%'
-  }
+  FieldCard: {
+    width: '100%',
+  },
 }));
 
 const NEWFIELDS = 'newfield';
@@ -241,9 +241,13 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       accessgroup: getinitaccess(),
       meta: {
         isannotation:
-        projectvalue['forms'][formvariants]!==undefined?projectvalue['forms'][formvariants]['annotation' + formvariants]:true,
+          projectvalue['forms'][formvariants] !== undefined
+            ? projectvalue['forms'][formvariants]['annotation' + formvariants]
+            : true,
         isuncertainty:
-        projectvalue['forms'][formvariants]!==undefined?projectvalue['forms'][formvariants]['uncertainty' + formvariants]:false,
+          projectvalue['forms'][formvariants] !== undefined
+            ? projectvalue['forms'][formvariants]['uncertainty' + formvariants]
+            : false,
       },
     });
     setinitialValues({
@@ -583,106 +587,106 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const fieldform = (formProps: any) => {
     return formcomponents[formuiview].map((formcomponent: any, index: any) => (
       <>
-      <Card className={classes.FieldCard}>
-      <Grid
-        container
-        className={classes.newfield}
-        key={`formcompoenet-form-${index}`}
-      >
-       
-        <Grid item sm={10} xs={12}>
-          <Grid container spacing={1}>
-            <Grid item sm={4} xs={12}>
-              <Typography variant="subtitle2">
-                {'newfield' + formcomponent['id']}
-              </Typography>
-              {getComponentFromField(
-                formuiSpec,
-                'newfield' + formcomponent['id'],
-                formProps,
-                () => {} //this is preview field only, so no need to handler changes
-              )}
-            </Grid>
-            <Grid item sm={1} xs={3} className={classes.settingtab}>
-              <SettingCard
-                handelonClick={handelonClickSetting}
-                key_id={formcomponent.id}
-                selected={formcomponent['designvalue']}
-              />
-            </Grid>
-            <Grid item sm={7} xs={9}>
-              <Typography variant="subtitle2">Configuration</Typography>
-
-              <ResetComponentProperties
-                namespace={formcomponent['namespace']}
-                componentName={formcomponent['componentName']}
-                uiSpec={formuiSpec}
-                setuiSpec={setFormuiSpec}
-                fieldName={'newfield' + formcomponent['id']}
-                formProps={formProps}
-                designvalue={formcomponent['designvalue']}
-                currentview={formuiview}
-                currentform={formvariants}
-                initialValues={initialValues}
-                setinitialValues={setinitialValues}
-                projectvalue={projectvalue}
-              />
-
-              {formcomponent['designvalue'] === 'access' ? (
-                <AutocompleteForm
-                  id={formcomponent['id']}
-                  options={getacessoption(
-                    props.projectvalue['access']['access' + formuiview] ?? [
-                      'admin',
-                    ]
+        <Card className={classes.FieldCard}>
+          <Grid
+            container
+            className={classes.newfield}
+            key={`formcompoenet-form-${index}`}
+          >
+            <Grid item sm={10} xs={12}>
+              <Grid container spacing={1}>
+                <Grid item sm={4} xs={12}>
+                  <Typography variant="subtitle2">
+                    {'newfield' + formcomponent['id']}
+                  </Typography>
+                  {getComponentFromField(
+                    formuiSpec,
+                    'newfield' + formcomponent['id'],
+                    formProps,
+                    () => {} //this is preview field only, so no need to handler changes
                   )}
-                  labels={
-                    formuiSpec['fields']['newfield' + formcomponent['id']][
-                      'access'
-                    ]
-                  }
-                  handleAutocomplete={handleAutocomplete}
-                  type={'uiS'}
+                </Grid>
+                <Grid item sm={1} xs={3} className={classes.settingtab}>
+                  <SettingCard
+                    handelonClick={handelonClickSetting}
+                    key_id={formcomponent.id}
+                    selected={formcomponent['designvalue']}
+                  />
+                </Grid>
+                <Grid item sm={7} xs={9}>
+                  <Typography variant="subtitle2">Configuration</Typography>
+
+                  <ResetComponentProperties
+                    namespace={formcomponent['namespace']}
+                    componentName={formcomponent['componentName']}
+                    uiSpec={formuiSpec}
+                    setuiSpec={setFormuiSpec}
+                    fieldName={'newfield' + formcomponent['id']}
+                    formProps={formProps}
+                    designvalue={formcomponent['designvalue']}
+                    currentview={formuiview}
+                    currentform={formvariants}
+                    initialValues={initialValues}
+                    setinitialValues={setinitialValues}
+                    projectvalue={projectvalue}
+                  />
+
+                  {formcomponent['designvalue'] === 'access' ? (
+                    <AutocompleteForm
+                      id={formcomponent['id']}
+                      options={getacessoption(
+                        props.projectvalue['access']['access' + formuiview] ?? [
+                          'admin',
+                        ]
+                      )}
+                      labels={
+                        formuiSpec['fields']['newfield' + formcomponent['id']][
+                          'access'
+                        ]
+                      }
+                      handleAutocomplete={handleAutocomplete}
+                      type={'uiS'}
+                    />
+                  ) : (
+                    ''
+                  )}
+                </Grid>
+              </Grid>
+            </Grid>
+            <Grid item sm={2} xs={12} className={classes.newfield_button}>
+              {index > 0 ? (
+                <UpButton
+                  onButtonClick={handleUpFieldButton}
+                  value={index}
+                  id={index}
+                  text="X"
                 />
               ) : (
                 ''
               )}
+              {index < formcomponents[formuiview].length - 1 ? (
+                <DownButton
+                  onButtonClick={handleDownFieldButton}
+                  value={index}
+                  id={index}
+                  text="X"
+                />
+              ) : (
+                ''
+              )}
+              <CloseButton
+                onButtonClick={handleRemoveField}
+                value={formcomponent.id}
+                id={formcomponent.id}
+                text="X"
+              />
             </Grid>
           </Grid>
+        </Card>
+        <Grid item sm={10} xs={12}>
+          <br />
         </Grid>
-        <Grid item sm={2} xs={12} className={classes.newfield_button}>
-          {index > 0 ? (
-            <UpButton
-              onButtonClick={handleUpFieldButton}
-              value={index}
-              id={index}
-              text="X"
-            />
-          ) : (
-            ''
-          )}
-          {index < formcomponents[formuiview].length - 1 ? (
-            <DownButton
-              onButtonClick={handleDownFieldButton}
-              value={index}
-              id={index}
-              text="X"
-            />
-          ) : (
-            ''
-          )}
-          <CloseButton
-            onButtonClick={handleRemoveField}
-            value={formcomponent.id}
-            id={formcomponent.id}
-            text="X"
-          />
-        </Grid>
-      </Grid>
-     
-      </Card>
-       <Grid item sm={10} xs={12}><br/></Grid>
-       </>
+      </>
     ));
   };
 

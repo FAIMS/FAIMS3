@@ -190,11 +190,9 @@ export async function add_autoincrement_reference_for_project(
         }
       }
       if (!found) {
-        ref_set.add(r)
-        
+        ref_set.add(r);
       }
-      }
-      );
+    });
     doc.references = Array.from(ref_set.values());
     await projdb.put(doc);
   } catch (err: any) {

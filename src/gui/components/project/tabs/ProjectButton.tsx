@@ -120,7 +120,7 @@ export function AddSectionButton(props: ButtonProps) {
       value={props.value}
       id={props.id}
     >
-      <AddCircleIcon fontSize="large" color="error"/>
+      <AddCircleIcon fontSize="large" color="error" />
     </IconButton>
   );
 }
@@ -133,14 +133,14 @@ export function EditButton(props: ButtonProps) {
       value={props.value}
       id={props.id}
     >
-      <EditIcon fontSize="large" color="error"/>
+      <EditIcon fontSize="large" color="error" />
     </IconButton>
   );
 }
 export function TickButton(props: ButtonProps) {
   return (
     <IconButton edge="end" type={props.type} id={props.id}>
-      <CheckCircleIcon fontSize="large" color='primary'/>
+      <CheckCircleIcon fontSize="large" color="primary" />
     </IconButton>
   );
 }
@@ -167,7 +167,7 @@ export function AddButton(props: ButtonProps) {
       // variant="contained"
       color="primary"
       size="large"
-      startIcon={<AddIcon/>}
+      startIcon={<AddIcon />}
       type={props.type}
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}

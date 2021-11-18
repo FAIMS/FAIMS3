@@ -27,7 +27,6 @@ import {Grid, Typography, Box, Button} from '@material-ui/core';
 import {ProjectSubmit} from './ProjectButton';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import Alert from '@material-ui/lab/Alert';
-import { setStagedData } from '../../../../sync/draft-storage';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 type ProjectSubmitProps = {
@@ -94,8 +93,8 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
     if (projectvalue.errors.is_valid === true && props.formProps.isValid) {
       console.log('submit');
       props.handleSubmit();
-      setischecked(false)
-      seState(true)
+      setischecked(false);
+      seState(true);
       setTimeout(() => {
         setischecked(true);
       }, 3000);
@@ -148,13 +147,9 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
               Check Notebook
             </Button>
           )}
-          {projectvalue.project_id !== null &&
+        {projectvalue.project_id !== null &&
           projectvalue.project_id !== undefined &&
-          !ischecked && (
-            
-          <CircularProgress size={20} thickness={5} />
-          
-          )}
+          !ischecked && <CircularProgress size={20} thickness={5} />}
         <Typography>
           {state === true &&
             projectvalue.ispublic !== true &&
@@ -165,28 +160,31 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
             issubmit !== true &&
             'Click to save notebook to local device'}
         </Typography>
-        {issubmit !== true && projectvalue.ispublic !== true &&projectvalue.isrequest!==true && (
-          <ProjectSubmit
-            id="submit_publish"
-            type="submit"
-            isSubmitting={
-              state === false || issubmit === true ? true : isSubmitting
-            }
-            issubmittext="Request resources"
-            text={issubmit !== true ? 'Request resources' : 'Request Sent'}
-            onButtonClick={onSubmit}
-          />
-        )}
-        {issubmit === true && projectvalue.ispublic !== true || projectvalue.isrequest===true && (
-          <ProjectSubmit
-            id="submit_publish"
-            type="submit"
-            isSubmitting={true}
-            issubmittext="Request Sent"
-            text={'Request Sent'}
-            onButtonClick={onSubmit}
-          />
-        )}
+        {issubmit !== true &&
+          projectvalue.ispublic !== true &&
+          projectvalue.isrequest !== true && (
+            <ProjectSubmit
+              id="submit_publish"
+              type="submit"
+              isSubmitting={
+                state === false || issubmit === true ? true : isSubmitting
+              }
+              issubmittext="Request resources"
+              text={issubmit !== true ? 'Request resources' : 'Request Sent'}
+              onButtonClick={onSubmit}
+            />
+          )}
+        {(issubmit === true && projectvalue.ispublic !== true) ||
+          (projectvalue.isrequest === true && (
+            <ProjectSubmit
+              id="submit_publish"
+              type="submit"
+              isSubmitting={true}
+              issubmittext="Request Sent"
+              text={'Request Sent'}
+              onButtonClick={onSubmit}
+            />
+          ))}
         <Typography>
           {projectvalue.ispublic === true
             ? 'Notebook is Online Save your new design by Click Update Button'

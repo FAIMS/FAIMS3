@@ -164,18 +164,18 @@ export function TemplatedStringcomponentsetting(
     //TODO pass the value of all field in this form
 
     // let fields: Array<string> = [];
-    props.uiSpec['viewsets'][props.currentform]['views'].map(
-      (view: string) =>{
-        props.uiSpec['views'][view]['fields'].map(
-          (field:string)=>props.uiSpec['fields'][field]['component-name'] !==
-          'TemplatedStringField'?options.push({
-            value: field,
-            label: props.uiSpec['fields'][field]['component-name']+' - '+ field,
-          }):field
-        )
-        
-      }
-    );
+    props.uiSpec['viewsets'][props.currentform]['views'].map((view: string) => {
+      props.uiSpec['views'][view]['fields'].map((field: string) =>
+        props.uiSpec['fields'][field]['component-name'] !==
+        'TemplatedStringField'
+          ? options.push({
+              value: field,
+              label:
+                props.uiSpec['fields'][field]['component-name'] + ' - ' + field,
+            })
+          : field
+      );
+    });
 
     if (
       props.projectvalue.meta !== undefined &&
@@ -184,11 +184,11 @@ export function TemplatedStringcomponentsetting(
       for (const [key, value] of Object.entries(props.projectvalue.meta)) {
         options.push({
           value: props.projectvalue.meta[key],
-          label: key+' - '+ props.projectvalue.meta[key],
+          label: key + ' - ' + props.projectvalue.meta[key],
         });
       }
     }
-    console.log(options)
+    console.log(options);
     if (options.length > 0) {
       //get numbers of fields that not IDs
 
@@ -221,37 +221,41 @@ export function TemplatedStringcomponentsetting(
     const name = event.target.name.replace(props.fieldName, '');
     if (name === 'numberfield') {
       const options: Array<option> = [];
-    //TODO pass the value of all field in this form
+      //TODO pass the value of all field in this form
 
-    // let fields: Array<string> = [];
-    props.uiSpec['viewsets'][props.currentform]['views'].map(
-      (view: string) =>{
-        props.uiSpec['views'][view]['fields'].map(
-          (field:string)=>props.uiSpec['fields'][field]['component-name'] !==
-          'TemplatedStringField'?options.push({
-            value: field,
-            label: props.uiSpec['fields'][field]['component-name']+' - '+ field,
-          }):field
-        )
-        
+      // let fields: Array<string> = [];
+      props.uiSpec['viewsets'][props.currentform]['views'].map(
+        (view: string) => {
+          props.uiSpec['views'][view]['fields'].map((field: string) =>
+            props.uiSpec['fields'][field]['component-name'] !==
+            'TemplatedStringField'
+              ? options.push({
+                  value: field,
+                  label:
+                    props.uiSpec['fields'][field]['component-name'] +
+                    ' - ' +
+                    field,
+                })
+              : field
+          );
+        }
+      );
+
+      if (
+        props.projectvalue.meta !== undefined &&
+        props.projectvalue.meta !== null
+      ) {
+        for (const [key, value] of Object.entries(props.projectvalue.meta)) {
+          options.push({
+            value: props.projectvalue.meta[key],
+            label: key + ' - ' + props.projectvalue.meta[key],
+          });
+        }
       }
-    );
 
-    if (
-      props.projectvalue.meta !== undefined &&
-      props.projectvalue.meta !== null
-    ) {
-      for (const [key, value] of Object.entries(props.projectvalue.meta)) {
-        options.push({
-          value: props.projectvalue.meta[key],
-          label: key+' - '+ props.projectvalue.meta[key],
-        });
-      }
-    }
+      console.log(options);
 
-    console.log(options)
-
-    if (options.length > 0) {
+      if (options.length > 0) {
         //get numbers of fields that not IDs
         let newuis: ProjectUIModel = uiSetting;
         newuis = changeui(options, newuis, event.target.value, false);
