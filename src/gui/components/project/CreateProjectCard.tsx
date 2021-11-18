@@ -51,17 +51,13 @@ import {
 
 import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
-import {
-  add_autoincrement_reference_for_project,
-
-} from '../../../datamodel/autoincrement';
+import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
 import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {setProjectMetadata, getProjectMetadata} from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
