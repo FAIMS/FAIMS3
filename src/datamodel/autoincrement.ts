@@ -181,20 +181,16 @@ export async function add_autoincrement_reference_for_project(
     const doc: AutoIncrementReferenceDoc = await projdb.get(
       LOCAL_AUTOINCREMENT_NAME
     );
-    const ref_set = new Set(doc.references);
-    ref.map((r: AutoIncrementReference) => {
-      let found = false;
-      for (const existing_ref of doc.references) {
-        if (r.toString() === existing_ref.toString()) {
-          found = true;
-        }
+    let found = false;
+    for (const existing_ref of doc.references) {
+      if (ref.toString() === existing_ref.toString()) {
+        found = true;
       }
-      if (!found) {
-        ref_set.add(r);
-      }
-    });
-    doc.references = Array.from(ref_set.values());
-    await projdb.put(doc);
+    }
+    if (!found) {
+      doc.references.push(ref);
+      await projdb.put(doc);
+    }
   } catch (err: any) {
     if (err.status === 404) {
       // No autoincrementers currently
