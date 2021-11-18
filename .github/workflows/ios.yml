@@ -37,7 +37,7 @@ jobs:
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
-      - run: chmod --recursive 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
+      - run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.1.0
         with:
