@@ -86,7 +86,6 @@ export function FormForm(props: FormElement) {
   const {currentView, handleChangeForm, ...others} = props;
   const [uiSpec, setUISpec] = useState(props.uiSpec);
   const initialValues = setProjectInitialValues(uiSpec, currentView, {});
-  console.log(initialValues);
   const getfields = (
     uiSpec: any,
     formProps: any,
@@ -152,9 +151,10 @@ export function AutocompleteForm(props: any) {
   const {options, handleAutocomplete, ...others} = props;
   const id = 'access' + props.id;
   // const [options,setoptions] =useState(props.options)
-  const [value, setValue] = React.useState(
-    options.length > 0 ? options[0] : null
-  );
+  const [value, setValue] = React.useState<{
+    value: string;
+    label: string;
+  } | null>(null);
   const [inputValue, setInputValue] = React.useState('');
   const [labels, setlabels] = useState<Array<string>>(props.labels ?? []);
   const [uiSpec, setUISpec] = useState(props.uiSpec);
@@ -180,17 +180,19 @@ export function AutocompleteForm(props: any) {
       props.handleAutocomplete(props.access, props.id, props.type);
     }
     if (event.target.name.includes('formaccessinherit')) {
-      const newvalue = props.projectvalue;
-      newvalue['forms'][event.target.name.replace('formaccessinherit', '')][
-        event.target.name
-      ] = event.target.checked;
-      props.setProjectValue({...newvalue});
+      // const newvalue = props.projectvalue;
+      // newvalue['forms'][event.target.name.replace('formaccessinherit', '')][
+      //   event.target.name
+      // ] = event.target.checked;
+      // props.setProjectValue({...newvalue});
+      props.handlerChanges(event);
     } else {
-      const newvalue = props.projectvalue;
-      newvalue['sections'][
-        event.target.name.replace('sectionaccessinherit', '')
-      ][event.target.name] = event.target.checked;
-      props.setProjectValue({...newvalue});
+      // const newvalue = props.projectvalue;
+      // newvalue['sections'][
+      //   event.target.name.replace('sectionaccessinherit', '')
+      // ][event.target.name] = event.target.checked;
+      // props.setProjectValue({...newvalue});
+      props.handlerChanges(event);
     }
     setIschecked(event.target.checked);
   };
@@ -225,9 +227,10 @@ export function AutocompleteForm(props: any) {
                     // value={value}
                     onChange={(event, newValue) => {
                       if (newValue !== null) {
+                        console.log(newValue);
                         setValue(newValue);
-                        if (labels.includes(newValue.value) === false) {
-                          const newlabels = [...labels, newValue.value];
+                        if (labels.includes(newValue.label) === false) {
+                          const newlabels = [...labels, newValue.label];
                           setlabels(newlabels);
 
                           props.handleAutocomplete(
@@ -245,7 +248,7 @@ export function AutocompleteForm(props: any) {
                     }}
                     options={options}
                     getOptionLabel={option => option.label}
-                    defaultValue={options[0].label}
+                    value={value}
                     style={{width: 300}}
                     // openOnFocus={true}
                     renderInput={params => (

@@ -47,28 +47,31 @@ import {useLocation, Link} from 'react-router-dom';
 interface Props {
   related_type: FAIMSTypeName;
   relation_type: FAIMSTypeName;
+  multiple?: boolean;
+  id: string;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
-  console.log(useLocation());
+  const multiple =
+    options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   React.useEffect(() => {
     (async () => {
       const records = await getAllRecordsOfType(project_id, props.related_type);
       setOptions(records);
     })();
   }, []);
-
+  console.log(props);
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
   return (
     <div>
       <Field
-        Multiple={true}
-        id="asynchronous-demo"
+        multiple={multiple}
+        id={props.id ?? 'asynchronous-demo'}
         name={field_name}
         component={Autocomplete}
         getOptionSelected={(option: RecordReference, value: RecordReference) =>
@@ -77,6 +80,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         }
         getOptionLabel={(option: RecordReference) => option.record_label}
         options={options}
+        defaultValue={null}
+        // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
         renderInput={(params: any) => (
           <TextField
             {...params}
@@ -124,7 +129,7 @@ const uiSpec = {
     InputProps: {
       type: 'text', // must be a valid html type
     },
-    Multiple: false,
+    multiple: false,
     SelectProps: {},
     InputLabelProps: {
       label: 'Related Field',
@@ -132,7 +137,7 @@ const uiSpec = {
     FormHelperTextProps: {},
   },
   validationSchema: [['yup.string'], ['yup.required']],
-  initialValue: '',
+  initialValue: [],
 };
 
 const uiSetting = () => {
@@ -144,7 +149,7 @@ const uiSetting = () => {
   //   value: 'faims-core::Child',
   //   label: 'Contained',
   // }]
-  newuiSetting['fields']['Multiple'] = {
+  newuiSetting['fields']['multiple'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Checkbox',
     'type-returned': 'faims-core::Bool', // matches a type in the Project Model
@@ -224,7 +229,7 @@ const uiSetting = () => {
   newuiSetting['views']['FormParamater']['fields'] = [
     'relation_type',
     'related_type',
-    'Multiple',
+    'multiple',
   ];
   newuiSetting['viewsets'] = {
     settings: {
@@ -279,18 +284,9 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
   };
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
-    // if(event.target.name.replace(props.fieldName,'')==='relation_type'){
-    //   if(event.target.value==='faims-core::Field'){
-    //     //get fields for select
-    //     let fields:Array<string>=[]
-    //     props.uiSpec['viewsets'][props.currentform]['views'].map((view:string)=>fields=[...fields,...props.uiSpec['views'][view]['fields']])
-    //     fields=fields.filter((field:string)=>field!==props.fieldName)
-    //     setrelatedtype(fields)
-    //   }
-    // }
-    if (event.target.name.replace(props.fieldName, '') === 'Multiple') {
+    if (event.target.name.replace(props.fieldName, '') === 'multiple') {
       const newvalues = props.uiSpec;
-      newvalues['fields'][props.fieldName]['component-parameters']['Multiple'] =
+      newvalues['fields'][props.fieldName]['component-parameters']['multiple'] =
         event.target.checked;
       props.setuiSpec({...newvalues});
     }

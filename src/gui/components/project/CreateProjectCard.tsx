@@ -58,7 +58,6 @@ import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {setProjectMetadata, getProjectMetadata} from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -272,18 +271,31 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   const get_autoincrement = () => {
-    const autoincrement_array: Array<any> = [];
+    const form_ids: Array<string> = [];
+    const field_ids: Array<string> = [];
+    // let existauto:AutoIncrementReference[]=[]
+    // if(project_id!==null)
+    // existauto=await get_autoincrement_references_for_project(project_id)
+    // console.log(existauto)
     for (const [key, value] of Object.entries(formuiSpec['fields'])) {
+      // if(project_id!==null&&existauto.includes({
+      //   project_id: project_id,
+      //   form_id: value['component-parameters']['form_id'],
+      //   field_id: key,
+      // })) console.log('contain')
+      // console.log({
+      //   project_id: project_id,
+      //   form_id: value['component-parameters']['form_id'],
+      //   field_id: key,
+      // })
       if (value['component-name'] === 'BasicAutoIncrementer') {
-        autoincrement_array.push({
-          project_id: project_id,
-          form_id: value['component-parameters']['form_id'],
-          field_id: key,
-        });
+        form_ids.push(value['component-parameters']['form_id']);
+        field_ids.push(key);
       }
     }
-    return autoincrement_array;
+    return {form_id: form_ids, field_id: field_ids};
   };
+  console.log(get_autoincrement());
 
   const add_autoince_refereence = async (autoince: any) => {
     if (project_id !== null) {
@@ -309,7 +321,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       );
 
       const autoincrecs = get_autoincrement();
-      autoincrecs.map((autoince: any) => add_autoince_refereence(autoince));
+      add_autoince_refereence(autoincrecs);
+      //autoincrecs.map((autoince: any) => );
 
       console.log('databases updated...' + res + project_id);
     } catch (err) {
@@ -386,12 +399,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       //save meta data
       try {
         if (project_id !== null)
-          console.log(
-            await setProjectMetadata(
-              project_id,
-              'projectvalue',
-              pvlues.projectvalue
-            )
+          await setProjectMetadata(
+            project_id,
+            'projectvalue',
+            pvlues.projectvalue
           );
       } catch (err) {
         console.error('databases needs cleaning for update error...');
@@ -453,7 +464,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         }
       });
     }
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     console.log(project_id);
 
     if (
@@ -601,12 +612,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                   High level view of Notebook showing relationships between
                   forms. To modify a relationship, go to the Design Tab
                 </Alert>
-                <ProjectOverviewTab
-                  project_id={project_id}
-                  projectvalue={projectvalue}
-                  setProjectValue={setProjectValue}
-                  formuiSpec={formuiSpec}
-                />
+                <ProjectOverviewTab formuiSpec={formuiSpec} />
                 <ProjectSubmit
                   id="gotonextoverview"
                   type="submit"

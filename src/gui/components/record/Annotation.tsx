@@ -38,12 +38,16 @@ export function Annotation(props: any) {
   ); //{'annotation':'','uncertainty':false}
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
-      ? props.annotation[fieldName]['annotation']
+      ? props.annotation[fieldName] !== undefined
+        ? props.annotation[fieldName]['annotation']
+        : ''
       : ''
   ); //props.annotation!==undefined?props.annotation[props.fieldName]['annotation']:
   const [uncertainty, setUncertainty] = useState(
     props.annotation !== undefined
-      ? props.annotation[fieldName]['uncertainty']
+      ? props.annotation[fieldName] !== undefined
+        ? props.annotation[fieldName]['uncertainty']
+        : true
       : true
   );
   const handlerchangesAnnotation = (event: any) => {

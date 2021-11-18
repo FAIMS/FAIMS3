@@ -19,31 +19,21 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
+
 import {Grid} from '@material-ui/core';
 import {Graphviz} from 'graphviz-react';
 import {getconnections} from '../data/ComponentSetting';
 import Alert from '@material-ui/lab/Alert';
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 type ProjectOverviewProps = any;
 
 export default function ProjectOverviewTab(props: ProjectOverviewProps) {
-  const {
-    project_id,
-    setProjectValue,
-    projectvalue,
-    formuiSpec,
-    ...others
-  } = props;
+  const formuiSpec = props.formuiSpec;
   const [graphs, setGraph] = useState<string>('');
 
   useEffect(() => {
     setinit();
   }, []);
-
-  const handleChange = () => {};
-
-  const handleSubmit = () => {};
 
   const setinit = () => {
     const newconnections: any = [];
@@ -72,7 +62,6 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
 
     graph = graph + '}';
     setGraph(graph);
-    console.log(graph);
   };
 
   return (

@@ -463,16 +463,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     });
   };
 
-  const handleSubmitFormSection = (values: any) => {
-    // const newprojectvalue = props.projectvalue;
-    // if (newprojectvalue['sections'] === undefined)
-    //   newprojectvalue['sections'] = {};
-    // newprojectvalue['sections'][formuiview] = values;
-    // props.setProjectValue({
-    //   ...props.projectvalue,
-    //   sections: newprojectvalue.sections,
-    // });
-  };
+  const handleSubmitFormSection = (values: any) => {};
 
   const handleChangeFormAction = (event: any) => {
     const newproject = props.projectvalue;
@@ -485,16 +476,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       event.target.name.includes('annotation') ||
       event.target.name.includes('uncertainty')
     ) {
-      //   //   //update the access for project
-      //   //   const value=(event.target.value=== 'true'||event.target.value===true) //TODO
-      //   //   newproject[event.target.name]=value
-      //   //   if(value===true){
-      //   //     newproject['access'+formvariants]=props.projectvalue.accesses
-      //   //   }else newproject['access'+formvariants]=['admin']
-      //   //   console.log(event.target.name+value)
-      //   if (projectvalue['forms'][formvariants][event.target.name] === undefined)
-      //     newproject['forms'][formvariants][event.target.name] = true;
-      //   else
       newproject['forms'][formvariants][event.target.name] =
         event.target.checked;
     } else
@@ -757,8 +738,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               })}
               currentView="start-view"
               access={props.projectvalue['access']['access' + formvariants]}
-              projectvalue={projectvalue}
-              setProjectValue={props.setProjectValue}
+              // projectvalue={projectvalue}
+              // setProjectValue={props.setProjectValue}
+              handlerChanges={handleChangeFormSection}
             />
             <ProjectSubmit
               id="gotonext_info"
@@ -829,8 +811,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                 })}
                 currentView="start-view"
                 access={props.projectvalue['accesses']}
-                projectvalue={projectvalue}
-                setProjectValue={props.setProjectValue}
+                // projectvalue={projectvalue}
+                // setProjectValue={props.setProjectValue}
+                handlerChanges={handleChangeFormAction}
               />
             </Grid>
             <Grid item sm={6} xs={1}>

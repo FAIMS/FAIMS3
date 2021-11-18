@@ -210,6 +210,16 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             Add Meta component by filling Label and clicking the Add button
           </Alert>
         </Grid>
+        <br />
+        <br />
+        <br />
+        <ProjectSubmit
+          id="gotonext_info"
+          type="submit"
+          isSubmitting={false}
+          text="Go To Next"
+          onButtonClick={() => setinfotabvalue(2)}
+        />
       </Grid>
     );
   };
@@ -285,12 +295,13 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             to these roles later in the User tab.
           </Alert>
         </Grid>
+        <br />
         <ProjectSubmit
           id="gotonext_info"
           type="submit"
           isSubmitting={false}
           text="Go To Next"
-          onButtonClick={() => props.setProjecttabvalue(1)}
+          onButtonClick={() => setinfotabvalue(3)}
         />
       </Grid>
     );
@@ -334,6 +345,14 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         <TabPanel value={infotabvalue} index={3} tabname="primarytab">
           Add Attachment
           <Paper>{AttachmentTab()}</Paper>
+          <br />
+          <ProjectSubmit
+            id="gotonext_info"
+            type="submit"
+            isSubmitting={false}
+            text="Go To Next"
+            onButtonClick={() => props.setProjecttabvalue(1)}
+          />
         </TabPanel>
       </Grid>
     </Grid>

@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {NavLink} from 'react-router-dom';
-import * as ROUTES from '../../constants/routes';
+
 import {
   Grid,
   Container,
@@ -31,12 +31,14 @@ import {
 } from '@material-ui/core';
 import AccountTree from '@material-ui/icons/AccountTree';
 import HomeIcon from '@material-ui/icons/Home';
-import DescriptionIcon from '@material-ui/icons/Description';
 import LockOpenIcon from '@material-ui/icons/LockOpen';
 import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
+
+import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+
 type IndexProps = {
   // project: string;
 };
@@ -102,18 +104,6 @@ export class Index extends React.Component<IndexProps, IndexState> {
                     <AccountTree fontSize="small" />
                   </ListItemIcon>
                   Projects
-                </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.RECORD_LIST}>
-                  <ListItemIcon>
-                    <DescriptionIcon fontSize="small" />
-                  </ListItemIcon>
-                  Records <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.ABOUT_BUILD}>
-                  <ListItemIcon>
-                    <DescriptionIcon fontSize="small" />
-                  </ListItemIcon>
-                  About Build <TimelapseIcon color={'secondary'} />
                 </MenuItem>
               </MenuList>
             </Paper>
