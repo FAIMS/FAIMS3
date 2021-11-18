@@ -28,7 +28,7 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
+
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,

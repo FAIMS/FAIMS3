@@ -210,16 +210,16 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             Add Meta component by filling Label and clicking the Add button
           </Alert>
         </Grid>
-        <br/>
-        <br/>
-        <br/>
+        <br />
+        <br />
+        <br />
         <ProjectSubmit
-            id="gotonext_info"
-            type="submit"
-            isSubmitting={false}
-            text="Go To Next"
-            onButtonClick={() => setinfotabvalue(2)}
-          />
+          id="gotonext_info"
+          type="submit"
+          isSubmitting={false}
+          text="Go To Next"
+          onButtonClick={() => setinfotabvalue(2)}
+        />
       </Grid>
     );
   };
@@ -295,22 +295,20 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             to these roles later in the User tab.
           </Alert>
         </Grid>
-        <br/>
+        <br />
         <ProjectSubmit
-            id="gotonext_info"
-            type="submit"
-            isSubmitting={false}
-            text="Go To Next"
-            onButtonClick={() => setinfotabvalue(3)}
-          />
-        
+          id="gotonext_info"
+          type="submit"
+          isSubmitting={false}
+          text="Go To Next"
+          onButtonClick={() => setinfotabvalue(3)}
+        />
       </Grid>
     );
   };
 
   const AttachmentTab = () => {
     return (
-
       <Grid>
         {getfields(
           getprojectform(projectvalue, 'attachments')
@@ -322,10 +320,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             (event: any) => setMetaAdded(event.target.value)
           )
         )}
-        
       </Grid>
-      
-
     );
   };
 
@@ -350,14 +345,14 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         <TabPanel value={infotabvalue} index={3} tabname="primarytab">
           Add Attachment
           <Paper>{AttachmentTab()}</Paper>
-          <br/>
+          <br />
           <ProjectSubmit
-          id="gotonext_info"
-          type="submit"
-          isSubmitting={false}
-          text="Go To Next"
-          onButtonClick={() => props.setProjecttabvalue(1)}
-        />
+            id="gotonext_info"
+            type="submit"
+            isSubmitting={false}
+            text="Go To Next"
+            onButtonClick={() => props.setProjecttabvalue(1)}
+          />
         </TabPanel>
       </Grid>
     </Grid>

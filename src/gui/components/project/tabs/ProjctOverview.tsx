@@ -28,7 +28,7 @@ import Alert from '@material-ui/lab/Alert';
 type ProjectOverviewProps = any;
 
 export default function ProjectOverviewTab(props: ProjectOverviewProps) {
-  const {formuiSpec, ...others} = props;
+  const formuiSpec = props.formuiSpec;
   const [graphs, setGraph] = useState<string>('');
 
   useEffect(() => {
