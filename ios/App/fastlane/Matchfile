@@ -1,4 +1,4 @@
-git_url("git@github.com:FAIMS/fastlane-keys.git")
+git_url("https://github.com/FAIMS/fastlane-keys.git")
 storage_mode("git")
 type("appstore") # The default type, can be: appstore, adhoc, enterprise or development
 # username("brian@faims.edu.au")
