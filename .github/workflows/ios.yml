@@ -33,6 +33,7 @@ jobs:
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
+      - run: npx cap update ios
       - run: npx cap sync --deployment ios
 
       - name: Deploy iOS Beta to TestFlight via Fastlane
