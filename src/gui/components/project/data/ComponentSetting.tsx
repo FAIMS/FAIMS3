@@ -883,6 +883,7 @@ const addfield = (props: any) => {
     newfield,
     name
   );
+  console.log(initialfieldvalue);
   return {newviews, components, newuiSpeclist, newuiSpec, initialfieldvalue};
 };
 

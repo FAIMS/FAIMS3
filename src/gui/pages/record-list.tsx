@@ -63,10 +63,7 @@ export default function RecordList() {
   const classes = useStyles();
   const globalState = useContext(store);
   const {dispatch} = globalState;
-  const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'Records'},
-  ];
+  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Records'}];
   useEffect(() => {
     dispatch({
       type: ActionType.ADD_ALERT,

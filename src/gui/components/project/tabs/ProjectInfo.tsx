@@ -90,14 +90,6 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     }
   }, [projectvalue['name']]);
 
-  // useEffect(() => {
-  //   if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {
-
-  //     setUISpecM({...getprojectform(projectvalue, 'project_meta')})
-  //     console.debug('update');
-  //   }
-  // }, [projectvalue['meta']]);
-
   const setini = () => {
     setUISpecA(getprojectform(projectvalue, 'info_group'));
     setUISpecG({...getprojectform(projectvalue, 'info_general')});
@@ -165,24 +157,8 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   const metaTab = () => {
     return (
       <Grid container>
-        <Grid item sm={8} xs={12}>
-          Meta List:
-          {isready(uiSpec_meta) &&
-            uiSpec_meta['views']['start-view'][
-              'fields'
-            ].map((fieldName: string) =>
-              getComponentFromField(
-                uiSpec_meta,
-                fieldName,
-                formProps,
-                handleChangeFormProjectMeta
-              )
-            )}
-        </Grid>
         <Grid item sm={12} xs={12}>
-          <br />
-          <hr /> Add New Meta Component
-          <br />
+          Add New Meta Component
         </Grid>
         <Grid item sm={4} xs={12}>
           {getfields(
@@ -207,7 +183,35 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         </Grid>
         <Grid item sm={6} xs={12}>
           <Alert severity="info">
-            Add Meta component by filling Label and clicking the Add button
+            Add Meta component by filling Label and clicking the Add button,{' '}
+            <br />
+            {
+              'Meta been added and filled values can be selected in Design > SECTION DEFINITION > COMPONENT tab RElated Field '
+            }
+            Example:
+          </Alert>
+        </Grid>
+        <Grid item sm={12} xs={12}>
+          <br />
+          <hr /> Meta List:
+          <br />
+        </Grid>
+        <Grid item sm={6} xs={12}>
+          {isready(uiSpec_meta) &&
+            uiSpec_meta['views']['start-view'][
+              'fields'
+            ].map((fieldName: string) =>
+              getComponentFromField(
+                uiSpec_meta,
+                fieldName,
+                formProps,
+                handleChangeFormProjectMeta
+              )
+            )}
+        </Grid>
+        <Grid item sm={6} xs={12}>
+          <Alert severity="info">
+            Fill the Meta Value After Meta been added
           </Alert>
         </Grid>
         <br />

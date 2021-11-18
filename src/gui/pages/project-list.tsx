@@ -67,10 +67,7 @@ export default function ProjectList() {
   const [projectList, setProjectList] = useState(
     null as null | ProjectInformation[]
   );
-  const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'Projects'},
-  ];
+  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Projects'}];
 
   useEffect(() => {
     return listenProjectList(setProjectList);

@@ -102,7 +102,7 @@ export function TemplatedStringcomponentsetting(
   }, [props.uiSpec['views']]);
 
   const changeui = (
-    fields: Array<string>,
+    options: Array<option>,
     newvalues: ProjectUIModel,
     fieldnum: number,
     isinit: boolean
@@ -124,15 +124,15 @@ export function TemplatedStringcomponentsetting(
         name,
         null
       );
-      const options: Array<option> = [];
+      // const options: Array<option> = [];
 
-      fields.map(
-        (field: string, index: number) =>
-          (options[index] = {
-            value: field,
-            label: field,
-          })
-      );
+      // fields.map(
+      //   (field: string, index: number) =>
+      //     (options[index] = {
+      //       value: field,
+      //       label: field,
+      //     })
+      // );
       newfield['component-parameters']['ElementProps']['options'] = options;
       let inivalue = templatevalue.split('-');
       inivalue =
@@ -163,32 +163,38 @@ export function TemplatedStringcomponentsetting(
     const options: Array<option> = [];
     //TODO pass the value of all field in this form
 
-    let fields: Array<string> = [];
-    props.uiSpec['viewsets'][props.currentform]['views'].map(
-      (view: string) =>
-        (fields = [...fields, ...props.uiSpec['views'][view]['fields']])
-    );
-    fields = fields.filter(
-      (field: string) =>
+    // let fields: Array<string> = [];
+    props.uiSpec['viewsets'][props.currentform]['views'].map((view: string) => {
+      props.uiSpec['views'][view]['fields'].map((field: string) =>
         props.uiSpec['fields'][field]['component-name'] !==
         'TemplatedStringField'
-    );
+          ? options.push({
+              value: field,
+              label:
+                props.uiSpec['fields'][field]['component-name'] + ' - ' + field,
+            })
+          : field
+      );
+    });
 
     if (
       props.projectvalue.meta !== undefined &&
       props.projectvalue.meta !== null
     ) {
       for (const [key, value] of Object.entries(props.projectvalue.meta)) {
-        fields.push(props.projectvalue.meta[key]);
+        options.push({
+          value: props.projectvalue.meta[key],
+          label: key + ' - ' + props.projectvalue.meta[key],
+        });
       }
     }
-
-    if (fields.length > 0) {
+    console.log(options);
+    if (options.length > 0) {
       //get numbers of fields that not IDs
 
       const numoptions: any = [];
-      fields.map(
-        (field: string, index: number) =>
+      options.map(
+        (option: option, index: number) =>
           (numoptions[index] = {
             value: index + 1,
             label: index + 1,
@@ -205,7 +211,7 @@ export function TemplatedStringcomponentsetting(
       farray = farray.filter((f: string) => f !== '');
       const num = farray.length > 1 ? farray.length : 1;
       console.log(num);
-      newvalues = changeui(fields, newvalues, num, true);
+      newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
     }
     console.log(props.initialValues);
@@ -214,15 +220,25 @@ export function TemplatedStringcomponentsetting(
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     const name = event.target.name.replace(props.fieldName, '');
     if (name === 'numberfield') {
-      let fields: Array<string> = [];
+      const options: Array<option> = [];
+      //TODO pass the value of all field in this form
+
+      // let fields: Array<string> = [];
       props.uiSpec['viewsets'][props.currentform]['views'].map(
-        (view: string) =>
-          (fields = [...fields, ...props.uiSpec['views'][view]['fields']])
-      );
-      fields = fields.filter(
-        (field: string) =>
-          props.uiSpec['fields'][field]['component-name'] !==
-          'TemplatedStringField'
+        (view: string) => {
+          props.uiSpec['views'][view]['fields'].map((field: string) =>
+            props.uiSpec['fields'][field]['component-name'] !==
+            'TemplatedStringField'
+              ? options.push({
+                  value: field,
+                  label:
+                    props.uiSpec['fields'][field]['component-name'] +
+                    ' - ' +
+                    field,
+                })
+              : field
+          );
+        }
       );
 
       if (
@@ -230,13 +246,19 @@ export function TemplatedStringcomponentsetting(
         props.projectvalue.meta !== null
       ) {
         for (const [key, value] of Object.entries(props.projectvalue.meta)) {
-          fields.push(props.projectvalue.meta[key]);
+          options.push({
+            value: props.projectvalue.meta[key],
+            label: key + ' - ' + props.projectvalue.meta[key],
+          });
         }
       }
-      if (fields.length > 0) {
+
+      console.log(options);
+
+      if (options.length > 0) {
         //get numbers of fields that not IDs
         let newuis: ProjectUIModel = uiSetting;
-        newuis = changeui(fields, newuis, event.target.value, false);
+        newuis = changeui(options, newuis, event.target.value, false);
 
         const newuiSpec = props.uiSpec;
         newuiSpec['fields'][props.fieldName]['component-parameters'][
@@ -259,8 +281,8 @@ export function TemplatedStringcomponentsetting(
       if (event.target.value.indexOf('newfield') !== -1)
         value[num] = '{{' + event.target.value + '}}';
       else value[num] = event.target.value;
-      let subvalue = value.join('-');
-      if (!subvalue.includes('αβγ ')) subvalue = 'αβγ ' + subvalue;
+      const subvalue = value.join('-');
+      // if (!subvalue.includes('αβγ ')) subvalue = 'αβγ ' + subvalue;
       newvalues['fields'][props.fieldName]['component-parameters'][
         'template'
       ] = subvalue;
@@ -309,7 +331,7 @@ const uiSpec = {
     helperText: 'Human Readable ID',
     variant: 'outlined',
     required: true,
-    template: 'αβγ {{}}',
+    template: ' {{}}',
     InputProps: {
       type: 'text', // must be a valid html type
     },

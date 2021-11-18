@@ -58,12 +58,16 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   React.useEffect(() => {
-    (async () => {
-      const records = await getAllRecordsOfType(project_id, props.related_type);
-      setOptions(records);
-    })();
+    if (project_id !== undefined) {
+      (async () => {
+        const records = await getAllRecordsOfType(
+          project_id,
+          props.related_type
+        );
+        setOptions(records);
+      })();
+    }
   }, []);
-  console.log(props);
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
@@ -173,35 +177,13 @@ const uiSetting = () => {
     ],
     initialValue: false,
   };
-  newuiSetting['fields']['related_type'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Select',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: 'stringield',
-      variant: 'outlined',
-      required: true,
-      select: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {
-        options: [],
-      },
-      InputLabelProps: {
-        label: 'Select Form or Field',
-      },
-    },
-    validationSchema: [['yup.string']],
-    initialValue: '',
-  };
   newuiSetting['fields']['relation_type'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Select',
     'type-returned': 'faims-core::String', // matches a type in the Project Model
     'component-parameters': {
       fullWidth: true,
-      helperText: 'stringield',
+      helperText: '',
       variant: 'outlined',
       required: true,
       select: true,
@@ -226,14 +208,37 @@ const uiSetting = () => {
     validationSchema: [['yup.string']],
     initialValue: 'faims-core::Child',
   };
+  newuiSetting['fields']['related_type'] = {
+    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+    'component-name': 'Select',
+    'type-returned': 'faims-core::String', // matches a type in the Project Model
+    'component-parameters': {
+      fullWidth: true,
+      helperText: 'Select Form ',
+      variant: 'outlined',
+      required: true,
+      select: true,
+      InputProps: {},
+      SelectProps: {},
+      ElementProps: {
+        options: [],
+      },
+      InputLabelProps: {
+        label: 'Select ',
+      },
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  };
+
   newuiSetting['views']['FormParamater']['fields'] = [
-    'relation_type',
     'related_type',
+    'relation_type',
     'multiple',
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps', 'FormParamater'],
+      views: ['FormParamater'],
       label: 'settings',
     },
   };
@@ -254,18 +259,18 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
     setini();
   }, [props.uiSpec['visible_types']]);
 
-  const setrelatedtype = (fields: Array<string>) => {
-    if (fields.length > 0) {
+  const setrelatedtype = (options: Array<option>) => {
+    if (options.length > 0) {
       //get numbers of fields that not IDs
       const newvalues = uiSetting;
-      const options: Array<option> = [];
-      fields.map(
-        (field: string, index: number) =>
-          (options[index] = {
-            value: field,
-            label: field,
-          })
-      );
+      // const options: Array<option> = [];
+      // fields.map(
+      //   (field: string, index: number) =>
+      //     (options[index] = {
+      //       value: field,
+      //       label: field,
+      //     })
+      // );
       if (newvalues['fields']['related_type' + props.fieldName] !== undefined)
         newvalues['fields']['related_type' + props.fieldName][
           'component-parameters'
@@ -278,7 +283,13 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
   const setini = () => {
     const options: Array<option> = [];
     //TODO pass the value of all field in this form
-    const fields: Array<string> = props.uiSpec['visible_types'];
+    const fields: Array<option> = [];
+    props.uiSpec['visible_types'].map((viewset: string) =>
+      fields.push({
+        label: props.uiSpec['viewsets'][viewset]['label'] ?? viewset,
+        value: viewset,
+      })
+    );
     //fields=fields.filter((type:string)=>type!==props.currentform)
     setrelatedtype(fields);
   };

@@ -32,7 +32,7 @@ export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const project_info = getProjectInfo(project_id);
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Projects'},
     {title: project_info !== null ? project_info.name : ''},
   ];

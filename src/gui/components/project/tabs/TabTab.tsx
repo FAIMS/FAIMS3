@@ -143,7 +143,27 @@ export function TabEditable(props: TabProps) {
 
   return (
     <Grid container className={classes.subtab}>
-      <Grid item sm={11} xs={12}>
+      <Grid item sm={2} xs={12}>
+        {isedited === false ? (
+          <>
+            <AddSectionButton
+              onButtonClick={handleAdd}
+              value={1}
+              id="add"
+              text="X"
+            />
+            <EditButton
+              onButtonClick={handleEdit}
+              value={1}
+              id="edit"
+              text="X"
+            />
+          </>
+        ) : (
+          ''
+        )}
+      </Grid>
+      <Grid item sm={10} xs={12}>
         {isedited === false ? (
           <Tabs
             value={value}
@@ -170,26 +190,6 @@ export function TabEditable(props: TabProps) {
             handleChangeForm={handleChangeForm}
             handleSubmit={handleSubmitForm}
           />
-        )}
-      </Grid>
-      <Grid item sm={1} xs={12}>
-        {isedited === false ? (
-          <>
-            <EditButton
-              onButtonClick={handleEdit}
-              value={1}
-              id="edit"
-              text="X"
-            />
-            <AddSectionButton
-              onButtonClick={handleAdd}
-              value={1}
-              id="add"
-              text="X"
-            />
-          </>
-        ) : (
-          ''
         )}
       </Grid>
     </Grid>

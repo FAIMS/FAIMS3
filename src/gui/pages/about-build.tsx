@@ -38,7 +38,7 @@ import BoxTab from '../components/ui/boxTab';
 
 export default function AboutBuild() {
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
+    {link: ROUTES.HOME, title: 'Home'},
     {title: 'about-build'},
   ];
   return (

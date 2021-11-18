@@ -49,7 +49,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
     handleChange: FAIMShandlerType
   ) => {
     return (
-      <Grid container>
+      <Grid container key={behaviour.label}>
         <Grid item sm={4} xs={1}>
           <Typography variant={'h6'} component={'h6'}>
             {behaviour.label}

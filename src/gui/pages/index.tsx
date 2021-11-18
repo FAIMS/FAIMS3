@@ -53,7 +53,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
   }
 
   render() {
-    const breadcrumbs = [{title: 'Index'}];
+    const breadcrumbs = [{title: 'HOME'}];
     return (
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
@@ -93,17 +93,17 @@ export class Index extends React.Component<IndexProps, IndexState> {
           <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.HOME}>
+                <MenuItem component={NavLink} to={ROUTES.WORKSHOP}>
                   <ListItemIcon>
                     <HomeIcon fontSize="small" />
                   </ListItemIcon>
-                  Home
+                  Workshop
                 </MenuItem>
                 <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
                   <ListItemIcon>
                     <AccountTree fontSize="small" />
                   </ListItemIcon>
-                  Projects
+                  Notebooks
                 </MenuItem>
               </MenuList>
             </Paper>
