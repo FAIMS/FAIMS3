@@ -120,7 +120,7 @@ export function AddSectionButton(props: ButtonProps) {
       value={props.value}
       id={props.id}
     >
-      <AddCircleIcon fontSize="large" color="error"/>
+      <AddCircleIcon fontSize="large" color="primary"/>
     </IconButton>
   );
 }
@@ -133,7 +133,7 @@ export function EditButton(props: ButtonProps) {
       value={props.value}
       id={props.id}
     >
-      <EditIcon fontSize="large" color="error"/>
+      <EditIcon fontSize="large" color="primary"/>
     </IconButton>
   );
 }

@@ -41,6 +41,7 @@ type ProjectInfoProps = {
   handleChangeFormProject: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
   formProps: any;
+  handleChangeFormProjectAttachment:FAIMShandlerType;
 };
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
@@ -152,6 +153,14 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   const isready = (uiSp: any) => {
     if (uiSp['views']['start-view'] !== undefined) return true;
     return false;
+  };
+
+  const handleChangeFormProjectAttachment = (event: any) => {
+    // const newproject = projectvalue;
+    // newproject['attachments'] = props.formProps.values.attachments;
+    // newproject['filenames'] = props.formProps.values.attachments[0].name;
+    // setProjectValue({...newproject});
+    props.setProjecttabvalue(1)
   };
 
   const metaTab = () => {
@@ -324,7 +333,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             getprojectform(projectvalue, 'attachments'),
             fieldName,
             formProps,
-            (event: any) => setMetaAdded(event.target.value)
+            ()=>console.log('pass')
           )
         )}
         
@@ -356,12 +365,13 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
           Add Attachment
           <Paper>{AttachmentTab()}</Paper>
           <br/>
+          <Paper>File Attached:<br/><br/>  {projectvalue.filenames} <br/><br/></Paper><br/><br/>
           <ProjectSubmit
           id="gotonext_info"
           type="submit"
           isSubmitting={false}
           text="Go To Next"
-          onButtonClick={() => props.setProjecttabvalue(1)}
+          onButtonClick={handleChangeFormProjectAttachment } //props.setProjecttabvalue(1)
         />
         </TabPanel>
       </Grid>
