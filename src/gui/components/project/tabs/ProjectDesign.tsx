@@ -689,7 +689,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const compnentPanel = () => {
     return (
       <Formik
-        enableReinitialize
+        // enableReinitialize
         initialValues={initialValues}
         validateOnMount={true}
         onSubmit={(values, {setSubmitting}) => {
