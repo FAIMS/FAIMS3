@@ -17,7 +17,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.0.2'
-          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+          # bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - run: |
           bundle install # to get cocoapods...           
       - name: Use Node.js ${{ matrix.node-version }}
@@ -37,12 +37,13 @@ jobs:
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
+      - run: chmod --recursive 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.1.0
         with:
           lane: closed_beta
           subdirectory: 'ios/App'
-          bundle-install-path: 'vendor/bundle'
+          bundle-install-path: '$HOME/vendor/bundle'
           verbose: true
         env:
           APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
