@@ -1,23 +1,37 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="End to End Tests" verbose="2" annotations="JDK">
-  <test name="Alpha Tests" preserve-order="true" >
+  <!-- For developers: Change parameter to true for local runs -->
+  <parameter name="runLocally" value="false" />
+  <test name="Android Tests" >     
+    <!-- Android tests -->   
+    <parameter name="driver" value="android" />
+    <classes>   
+      <class name="org.fedarch.faims3.TestPopulateForm"/>
+      <class name="org.fedarch.faims3.TestStagingForm" />
+      <class name="org.fedarch.faims3.TestIncompleteDraftObservation" />
+    </classes>
+  </test>
+  <test name="Chrome Tests" >     
+    <!-- Chrome tests -->   
+    <parameter name="driver" value="chrome" />
+    <classes>   
+      <class name="org.fedarch.faims3.TestPopulateForm"/>
+      <class name="org.fedarch.faims3.TestStagingForm" />
+      <class name="org.fedarch.faims3.TestIncompleteDraftObservation" />
+    </classes>
+  </test>  
+  <test name="iOS Tests" >     
+    <!-- iOS tests -->   
+    <parameter name="driver" value="ios" />
+    <classes>   
+      <class name="org.fedarch.faims3.TestPopulateForm"/>
+      <class name="org.fedarch.faims3.TestStagingForm" />
+      <class name="org.fedarch.faims3.TestIncompleteDraftObservation" />
+    </classes>
+  </test>
+  <test name="multi platform parallel tests">
     <classes>
-      <!-- Android tests -->      
-      <class name="org.fedarch.faims3.android.TestPopulateFormAndroid" />
-      <class name="org.fedarch.faims3.android.TestStagingFormAndroid" />
-      <!-- NOTE: TestIncompleteDraftObservationAndroid below requires other existing records created by above tests -->
-      <class name="org.fedarch.faims3.android.TestIncompleteDraftObservationAndroid" />
-      <!-- Chrome tests -->
-      <class name="org.fedarch.faims3.chrome.TestPopulateFormChrome" />
-      <class name="org.fedarch.faims3.chrome.TestStagingFormChrome" />      
-      <class name="org.fedarch.faims3.chrome.TestIncompleteDraftObservationChrome" />
-      <!-- iOS tests -->
-      <!-- temporarily disable IOS because they're not ready
-      <class name="org.fedarch.faims3.ios.TestPopulateFormIOS" />
-      <class name="org.fedarch.faims3.ios.TestStagingFormIOS" />      
-      <class name="org.fedarch.faims3.ios.TestIncompleteDraftObservationIOS" />-->
-      <!-- This is a multi device parallel test that depends on records created from previous tests -->
-      <!-- <class name="org.fedarch.faims3.TestUpdateObservationsAndDraftDatabaseIOS" /> -->
+      <class name="org.fedarch.faims3.TestUpdateObservationsAndDraftDatabase" />
     </classes>
   </test>
 </suite>

@@ -21,6 +21,8 @@ package org.fedarch.faims3;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -35,10 +37,8 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import io.appium.java_client.MobileBy;
 import io.appium.java_client.TouchAction;
 import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.android.AndroidElement;
-import io.appium.java_client.touch.offset.PointOption;
-
 import io.appium.java_client.ios.IOSDriver;
+import io.appium.java_client.touch.offset.PointOption;
 
 /**
  * Utility class for reusable methods across tests.
@@ -97,17 +97,7 @@ public class TestUtils {
 			// Chrome
 			JavascriptExecutor js = (JavascriptExecutor) driver;
 			js.executeScript("window.scrollBy(0," + (fromY - toY) + ")", "");
-		} 
-	}
-
-	/**
-	 * Scroll to an element by text
-	 * @param driver AndroidDriver
-	 * @param elementText The text on the element to be found
-	 */
-	public static AndroidElement scrollToText(AndroidDriver<AndroidElement> driver, String elementText) {
-	    return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
-            + "new UiSelector().text(\"" + elementText + "\"));"));
+		}
 	}
 
 	/**
@@ -116,7 +106,12 @@ public class TestUtils {
 	 * @param elementText The text on the element to be found
 	 */
 	public static WebElement scrollToText(WebDriver driver, String text) {
+		if (driver instanceof AndroidDriver) {
+			return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
+		            + "new UiSelector().text(\"" + text + "\"));"));
+		}
 		WebElement element = driver.findElement(By.xpath("//*[text()='" + text + "']"));
+
 		Actions actions = new Actions(driver);
 		actions.moveToElement(element);
 		actions.perform();
@@ -125,13 +120,22 @@ public class TestUtils {
 	}
 
 	/**
-	 * Scroll to an element by resource id
-	 * @param driver
+	 * Scroll to an element by id
+	 * @param driver WebDriver
 	 * @param resourceId Resource id on the element to be found
 	 */
-	public static AndroidElement scrollToResourceId(AndroidDriver<AndroidElement> driver, String resourceId) {
-	    return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
-            + "new UiSelector().resourceIdMatches(\"" + resourceId + "\"));"));
+	public static WebElement scrollToId(WebDriver driver, String id) {
+		if (driver instanceof AndroidDriver) {
+			return driver.findElement(MobileBy.AndroidUIAutomator("new UiScrollable(new UiSelector()).scrollIntoView("
+		            + "new UiSelector().resourceIdMatches(\"" + id + "\"));"));
+		}
+		WebElement element = driver.findElement(By.id(id));
+
+		Actions actions = new Actions(driver);
+		actions.moveToElement(element);
+		actions.perform();
+
+		return element;
 	}
 
 	/**
@@ -141,11 +145,7 @@ public class TestUtils {
 	 * @param passed True if the test passed. False otherwise.
 	 * @param message Reason it passed/failed.
 	 */
-	public static void markBrowserstackTestResult(WebDriver driver, boolean isBrowserstackConnected, boolean passed, String message) {
-		if (!isBrowserstackConnected) {
-			// only for browserstack
-			return;
-		}
+	public static void markBrowserstackTestResult(WebDriver driver, boolean passed, String message) {
 	    JavascriptExecutor jse = (JavascriptExecutor) driver;
 	    // Setting the status of test as 'passed' or 'failed' based on the condition
 	    if (passed) {
@@ -197,5 +197,15 @@ public class TestUtils {
 	    Field props = pe.getDeclaredField("theCaseInsensitiveEnvironment");
 	    props.setAccessible(true);
 	    return (Map<String, String>) props.get(null);
+	}
+
+	/**
+	 * Round a coordinate that is a lat or long up to 3 decimal point.
+	 * This is because sometimes the device location differs a little in the test.
+	 * @param coord
+	 * @return
+	 */
+	public static String roundCoordinate(String coord) {
+		return new BigDecimal(coord).setScale(3,RoundingMode.DOWN).toString();
 	}
 }

@@ -23,21 +23,17 @@ import static org.testng.Assert.assertEquals;
 
 import java.net.MalformedURLException;
 
-import org.fedarch.faims3.android.AndroidTest;
-import org.fedarch.faims3.chrome.ChromeTest;
-import org.fedarch.faims3.ios.IOSTest;
+import org.fedarch.faims3.pages.AstroSkyMainPage;
+import org.fedarch.faims3.pages.ProjectsPage;
 import org.json.JSONException;
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
-import io.appium.java_client.MobileBy;
-import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
 /**
  * Doable task 2.4 - Update Observations and the Draft Database
@@ -50,35 +46,53 @@ import io.appium.java_client.android.AndroidElement;
  */
 
 public class TestUpdateObservationsAndDraftDatabase {
-	// Android instance
-	private AndroidTest androidDevice;
 
-	// iOS instance
-	private IOSTest iosDevice;
+	private class Device {
 
-	// Chrome instance
-	private ChromeTest chromeDevice;
+		protected WebDriver driver;
+
+		protected AstroSkyMainPage astroSky;
+
+		protected ProjectsPage projects;
+
+		public Device(String driverType, boolean isLocal, String desc)
+				throws MalformedURLException, JSONException {
+
+			this.driver = WebDriverFactory.createDriver(
+					driverType, isLocal, desc);
+
+			this.projects = new ProjectsPage(driver);
+			this.astroSky = new AstroSkyMainPage(driver);
+		}
+
+	}
+
+	private Device androidDevice;
+
+	private Device chromeDevice;
+
+	private Device iosDevice;
+
+	//Test description
+	private String description;
 
 	@BeforeClass
-	public void setup() throws MalformedURLException, JSONException {
-		// Test with browserstack by default
-		// Change to true for local test connection
-		androidDevice = new AndroidTest();
-		androidDevice.setup(false, "Test update observations and draft database (multi platform/parallel)");
-
-		chromeDevice = new ChromeTest();
-		chromeDevice.setup(false, "Test update observations and draft database (multi platform/parallel)");
-
-		iosDevice = new IOSTest();
-		iosDevice.setup(false,  "Test update observations and draft database (multi platform/parallel)");
+	@Parameters({"runLocally"})
+	public void setup(@Optional("false") boolean runLocally) throws MalformedURLException, JSONException {
+		this.description = "Test update observations and draft database (multi platform/parallel)";
+		// create all drivers
+		this.androidDevice = new Device("android", runLocally, description);
+//TODO: test IOS too?
+//		this.iosDevice = new Device("ios", runLocally, description);
+		this.chromeDevice = new Device("chrome", runLocally, description);
 	}
 
 	@AfterClass
 	public void tearDown() {
 		// Quit all the drivers
-		androidDevice.tearDown();
-		chromeDevice.tearDown();
-		iosDevice.tearDown();
+		androidDevice.driver.quit();
+		chromeDevice.driver.quit();
+		//TODO: iosDevice.driver.quit();
 	}
 
 	/**
@@ -89,97 +103,85 @@ public class TestUpdateObservationsAndDraftDatabase {
 	 */
 	@Test
 	public void testUpdateObservation() throws Exception {
-		WebDriver driver = androidDevice.driver;
 		try {
 			// Navigate to the projects view
-			androidDevice.loadProjects();
+			androidDevice.projects.loadProjects();
 
 			// Load a observation of your choice.
 			// Note the first 6 characters of the UUID here (for ease of future reference)
-			String uuid = androidDevice.getRecordId();
-			androidDevice.loadObservationForm(uuid);
+			String recordId = androidDevice.projects.loadFirstObservationRecord();
 			// Manually increment number of revisions every time we save to compare later
-			int revisionCount = androidDevice.getRevisions().length;
+			int revisionCount = androidDevice.astroSky.getRevisions().length;
 
 			// Edit data. Wait for the draft to save, leave the observation
-			WebDriverWait androidWait = new WebDriverWait(driver, 20);
-			AndroidElement strField = (AndroidElement) androidWait.until(
-					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
+			WebElement strField = TestUtils.scrollToId(androidDevice.driver, "str-field");
 
 			final String FIRST_EDIT_ANDROID = "Green";
 			strField.sendKeys(FIRST_EDIT_ANDROID);
 			Thread.sleep(2000);
-			androidDevice.leaveObservationForm();
+			androidDevice.astroSky.leaveObservationForm();
 
 			// Load the observation on a different device – observe that your changes have
 			// not propagated
-			driver = chromeDevice.driver;
-			chromeDevice.loadProjects();
-			chromeDevice.loadObservationForm(uuid);
-			WebDriverWait chromeWait = new WebDriverWait(driver, 20);
-			WebElement chromeStrField = chromeWait
-					.until(ExpectedConditions.presenceOfElementLocated(By.id("str-field")));
-			assertEquals(chromeStrField.getText(), AstroSky.COLOUR);
+			chromeDevice.projects.loadProjects();
+			chromeDevice.projects.loadObservationRecord(recordId);
+			WebElement chromeStrField = TestUtils.scrollToId(chromeDevice.driver, "str-field");
+			assertEquals(chromeStrField.getText(), AstroSkyMainPage.COLOUR);
 
 			// On the original device, start a new observation, wait for the draft to save,
 			// leave the observation
-			driver = androidDevice.driver;
-			androidDevice.loadNewAstroSkyForm();
-			AndroidElement newStrField = (AndroidElement) androidWait.until(
-					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
-
+			androidDevice.projects.loadNewAstroSkyForm();
+			AndroidElement newStrField = (AndroidElement) TestUtils.scrollToId(androidDevice.driver, "str-field");
 			final String ANDROID_DRAFT_EDIT = "Grey";
 			newStrField.sendKeys(ANDROID_DRAFT_EDIT);
 			Thread.sleep(2000);
-			androidDevice.leaveObservationForm();
+			// note draft id for later
+			String draftId = androidDevice.astroSky.getRecordId();
+			androidDevice.astroSky.leaveObservationForm();
 
 			// Still on the original device, return to the observation you were initially
 			// editing, note that your edits were preserved
-			androidDevice.loadObservationForm(uuid);
-			strField = (AndroidElement) androidWait.until(
-					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
+			androidDevice.projects.loadObservationRecord(recordId);
+			strField = TestUtils.scrollToId(androidDevice.driver, "str-field");
 			assertEquals(strField.getText(), FIRST_EDIT_ANDROID);
 
 			// Finish editing data, press UPDATE
-			TestUtils.scrollToText((AndroidDriver<AndroidElement>) driver, "UPDATE").click();
+			TestUtils.scrollToText(androidDevice.driver, "UPDATE").click();
 			revisionCount++;
 
 			// Edit data again, press UPDATE again
-			TestUtils.scrollToText(androidDevice.driver, FIRST_EDIT_ANDROID);
-			strField = (AndroidElement) androidWait.until(
-					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
+			strField = TestUtils.scrollToId(androidDevice.driver, "str-field");
 			strField.sendKeys("Black");
-			TestUtils.scrollToText((AndroidDriver<AndroidElement>) driver, "UPDATE").click();
+			TestUtils.scrollToText(androidDevice.driver, "UPDATE").click();
 			revisionCount++;
 
-			// Click new observation and ensure that your draft new observation is still
+			// Ensure that your draft new observation is still
 			// there.
-			androidDevice.leaveObservationForm();
-			androidDevice.loadNewAstroSkyForm();
-			newStrField = (AndroidElement) androidWait.until(
-					ExpectedConditions.presenceOfElementLocated(MobileBy.xpath("//*[@resource-id='str-field']")));
+			androidDevice.astroSky.leaveObservationForm();
+			androidDevice.projects.loadObservationDraft(draftId);
+			newStrField = (AndroidElement) TestUtils.scrollToId(androidDevice.driver, "str-field");
 			assertEquals(newStrField.getText(), ANDROID_DRAFT_EDIT);
 
 			// Return to the edited observation.
-			androidDevice.leaveObservationForm();
-			androidDevice.loadObservationForm(uuid);
+			androidDevice.astroSky.leaveObservationForm();
+			androidDevice.projects.loadObservationRecord(recordId);
 
 			// Verify that a new revision has been created by selecting the REVISIONS tab at
 			// the top of the screen. This will show the ID for each of the revisions of the
 			// observation.
-			int numRevisions = androidDevice.getRevisions().length;
+			int numRevisions = androidDevice.astroSky.getRevisions().length;
 			assertEquals(numRevisions, revisionCount);
 		} catch (Exception e) {
-			TestUtils.markBrowserstackTestResult(driver, androidDevice.isUsingBrowserstack(), false,
+			TestUtils.markBrowserstackTestResult(androidDevice.driver, false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
 			throw e;
 		} catch (AssertionError e) {
-			TestUtils.markBrowserstackTestResult(driver, androidDevice.isUsingBrowserstack(), false,
+			TestUtils.markBrowserstackTestResult(androidDevice.driver, false,
 					"Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
 			throw e;
 		}
-		TestUtils.markBrowserstackTestResult(driver, androidDevice.isUsingBrowserstack(), true,
-				"Android - TestPopulateForm.testNewObservationWithGPS() passed!");
+		TestUtils.markBrowserstackTestResult(androidDevice.driver, true,
+				description + " passed!");
     }
 
 	/**
