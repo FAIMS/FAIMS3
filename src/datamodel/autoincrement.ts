@@ -185,7 +185,19 @@ export async function add_autoincrement_reference_for_project(
       LOCAL_AUTOINCREMENT_NAME
     );
     const ref_set = new Set(doc.references);
-    ref.map((r: AutoIncrementReference) => ref_set.add(r));
+    ref.map((r: AutoIncrementReference) => {
+      let found = false;
+      for (const existing_ref of doc.references) {
+        if (r.toString() === existing_ref.toString()) {
+          found = true;
+        }
+      }
+      if (!found) {
+        ref_set.add(r)
+        
+      }
+      }
+      );
     doc.references = Array.from(ref_set.values());
     await projdb.put(doc);
   } catch (err: any) {
