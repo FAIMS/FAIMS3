@@ -565,9 +565,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                       index={4}
                       tabname="primarytab"
                     >
-                      <Alert severity="info">
+                      {/* <Alert severity="info">
                       Below are Behavious that be auto enabled
-                      </Alert>
+                      </Alert> */}
                       <ProjectBehaviourTab
                         project_id={project_id}
                         projectvalue={projectvalue}
