@@ -30,7 +30,7 @@ ENV REACT_APP_DIRECTORY_PORT 443
 RUN echo -e "COMMIT VERSION: $REACT_APP_COMMIT_VERSION\nDB: $REACT_APP_DIRECTORY_HOST"
 RUN npm run-script build
 
-FROM nginx:mainline-alpine@sha256:06f01ac91b094480c48b345c611d1884eedf7e541a3b456872c91c8a92b39744
+FROM nginx:mainline-alpine@sha256:12aa12ec4a8ca049537dd486044b966b0ba6cd8890c4c900ccb5e7e630e03df0
 RUN rm -rf /usr/share/nginx/html/*
 # not /app/www but /app/build because react
 COPY ./.nginx/nginx.conf /etc/nginx/nginx.conf
