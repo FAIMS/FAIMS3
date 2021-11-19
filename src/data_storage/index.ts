@@ -32,6 +32,7 @@ import {
   getRevision,
   getFormDataFromRevision,
   updateHeads,
+  getHRID,
 } from './internals';
 
 export interface ProjectRevisionListing {
@@ -252,6 +253,7 @@ export async function getRecordMetadata(
   try {
     const record = await getRecord(project_id, record_id);
     const revision = await getRevision(project_id, revision_id);
+    const hrid = (await getHRID(project_id, revision)) ?? record_id;
     return {
       project_id: project_id,
       record_id: record_id,
@@ -262,6 +264,8 @@ export async function getRecordMetadata(
       updated_by: revision.created_by,
       conflicts: record.heads.length > 1,
       deleted: revision.deleted ? true : false,
+      hrid: hrid,
+      type: record.type,
     };
   } catch (err) {
     console.error(err);

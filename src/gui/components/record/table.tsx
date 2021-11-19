@@ -64,7 +64,7 @@ function RecordsTable(props: RecordsTableProps) {
   const defaultMaxRowsMobile = 10;
   const columns: GridColDef[] = [
     {
-      field: 'record_id',
+      field: 'hrid',
       headerName: 'Obs ID',
       description: 'Record ID',
       type: 'string',

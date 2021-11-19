@@ -59,6 +59,8 @@ export interface RecordMetadata {
   updated_by: string;
   conflicts: boolean;
   deleted: boolean;
+  hrid: string;
+  type: FAIMSTypeName;
 }
 
 export type RecordMetadataList = {
