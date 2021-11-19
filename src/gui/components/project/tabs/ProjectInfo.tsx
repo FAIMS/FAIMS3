@@ -155,21 +155,11 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     return false;
   };
 
-  const handleChangeFormProjectAttachment = (event: any) => {
-    // const newproject = projectvalue;
-    // newproject['attachments'] = props.formProps.values.attachments;
-    // newproject['filenames'] = props.formProps.values.attachments[0].name;
-    // setProjectValue({...newproject});
-    props.setProjecttabvalue(1)
-  };
-
   const metaTab = () => {
     return (
       <Grid container>
         <Grid item sm={12} xs={12}>
-         
-           Add New Meta Component
-
+          Add New Meta Component
         </Grid>
         <Grid item sm={4} xs={12}>
           {getfields(
@@ -194,19 +184,20 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         </Grid>
         <Grid item sm={6} xs={12}>
           <Alert severity="info">
-            Add Meta component by filling Label and clicking the Add button, <br/>
-            {'Meta been added and filled values can be selected in Design > SECTION DEFINITION > COMPONENT tab RElated Field '}
-            Example: 
+            Add Meta component by filling Label and clicking the Add button,{' '}
+            <br />
+            {
+              'Meta been added and filled values can be selected in Design > SECTION DEFINITION > COMPONENT tab RElated Field '
+            }
+            Example:
           </Alert>
         </Grid>
-        <Grid item sm={12} xs={12} >
-        <br />
+        <Grid item sm={12} xs={12}>
+          <br />
           <hr /> Meta List:
           <br />
         </Grid>
         <Grid item sm={6} xs={12}>
-        
-          
           {isready(uiSpec_meta) &&
             uiSpec_meta['views']['start-view'][
               'fields'
@@ -220,20 +211,20 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             )}
         </Grid>
         <Grid item sm={6} xs={12}>
-        <Alert severity="info">
-           Fill the Meta Value After Meta been added
+          <Alert severity="info">
+            Fill the Meta Value After Meta been added
           </Alert>
         </Grid>
-        <br/>
-        <br/>
-        <br/>
+        <br />
+        <br />
+        <br />
         <ProjectSubmit
-            id="gotonext_info"
-            type="submit"
-            isSubmitting={false}
-            text="Go To Next"
-            onButtonClick={() => setinfotabvalue(2)}
-          />
+          id="gotonext_info"
+          type="submit"
+          isSubmitting={false}
+          text="Go To Next"
+          onButtonClick={() => setinfotabvalue(2)}
+        />
       </Grid>
     );
   };
@@ -309,22 +300,20 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             to these roles later in the User tab.
           </Alert>
         </Grid>
-        <br/>
+        <br />
         <ProjectSubmit
-            id="gotonext_info"
-            type="submit"
-            isSubmitting={false}
-            text="Go To Next"
-            onButtonClick={() => setinfotabvalue(3)}
-          />
-        
+          id="gotonext_info"
+          type="submit"
+          isSubmitting={false}
+          text="Go To Next"
+          onButtonClick={() => setinfotabvalue(3)}
+        />
       </Grid>
     );
   };
 
   const AttachmentTab = () => {
     return (
-
       <Grid>
         {getfields(
           getprojectform(projectvalue, 'attachments')
@@ -336,10 +325,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             ()=>console.log('pass')
           )
         )}
-        
       </Grid>
-      
-
     );
   };
 
@@ -364,15 +350,14 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         <TabPanel value={infotabvalue} index={3} tabname="primarytab">
           Add Attachment
           <Paper>{AttachmentTab()}</Paper>
-          <br/>
-          <Paper>File Attached:<br/><br/>  {projectvalue.filenames} <br/><br/></Paper><br/><br/>
+          <br />
           <ProjectSubmit
-          id="gotonext_info"
-          type="submit"
-          isSubmitting={false}
-          text="Go To Next"
-          onButtonClick={handleChangeFormProjectAttachment } //props.setProjecttabvalue(1)
-        />
+            id="gotonext_info"
+            type="submit"
+            isSubmitting={false}
+            text="Go To Next"
+            onButtonClick={() => props.setProjecttabvalue(1)}
+          />
         </TabPanel>
       </Grid>
     </Grid>

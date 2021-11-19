@@ -158,7 +158,6 @@ export function TabEditable(props: TabProps) {
               id="edit"
               text="X"
             />
-            
           </>
         ) : (
           ''
@@ -193,7 +192,6 @@ export function TabEditable(props: TabProps) {
           />
         )}
       </Grid>
-      
     </Grid>
   );
 }

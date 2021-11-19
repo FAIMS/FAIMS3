@@ -51,17 +51,13 @@ import {
 
 import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
-import {
-  add_autoincrement_reference_for_project,
-
-} from '../../../datamodel/autoincrement';
+import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
 import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {setProjectMetadata, getProjectMetadata,setProjectMetadataFiles} from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -565,16 +561,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                       index={4}
                       tabname="primarytab"
                     >
-                      {/* <Alert severity="info">
-                      Below are Behavious that be auto enabled
-                      </Alert> */}
                       <ProjectBehaviourTab
                         project_id={project_id}
                         projectvalue={projectvalue}
                         setProjectValue={setProjectValue}
                         formProps={formProps}
                       />
-                      
+
                       <ProjectSubmit
                         id="gotonextbehaviour"
                         type="submit"
@@ -622,7 +615,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               <>
                 <Alert severity="info">
                   High level view of Notebook showing relationships between
-                  forms. To modify a relationship, go to the Design Tab, add Related field in Each Form each Section
+                  forms. To modify a relationship, go to the Design Tab, add
+                  Related field in Each Form each Section
                 </Alert>
                 <ProjectOverviewTab formuiSpec={formuiSpec} />
                 <ProjectSubmit
