@@ -1,6 +1,6 @@
 #https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
 
-FROM node:lts-alpine3.14 as build
+FROM node:lts-alpine3.14@sha256:60ef0bed1dc2ec835cfe3c4226d074fdfaba571fd619c280474cc04e93f0ec5b as build
 ARG REACT_APP_COMMIT_VERSION
 ARG REACT_APP_DIRECTORY_HOST
 RUN apk update && apk add python3 make g++
