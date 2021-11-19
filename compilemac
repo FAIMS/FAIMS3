@@ -1,4 +1,26 @@
 sudo gem install cocoapods
 npx cap sync --deployment ios
+npx cap update ios
 # https://github.com/ionic-team/capacitor/issues/324#issuecomment-731098153
 npx iconic capacitor build ios --no-open
+
+build, then archive, then validate, then distribute for development
+
+########### fastlane
+
+brew install fastlane
+
+
+https://litoarias.medium.com/continuous-delivery-for-ios-using-fastlane-and-github-actions-edf62ee68ecc
+Making an appstore api key *must* be app manager. refresh the page to get the privkey
+
+build a local .env first, then do CI stuff
+
+commit changelog thingo?
+changelog_from_git_commits(
+  match_lightweight_tag: false,
+  merge_commit_filtering: "exclude_merges"
+)
+
+
+Use https://blog.curtisherbert.com/automated-xcode-build-numbers-early-2019-edition/ for build numbers
