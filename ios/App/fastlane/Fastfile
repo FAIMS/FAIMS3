@@ -44,8 +44,9 @@ platform :ios do
       in_house: false
     )
 
-    increment_build_number(xcodeproj: "App.xcodeproj")
-
+    #increment_build_number(xcodeproj: "App.xcodeproj")
+    #handled by script and xcode in build phases, I hope.
+    
     cocoapods(
       clean_install: true
     )
@@ -76,7 +77,7 @@ platform :ios do
       apple_id: "#{DEVELOPER_APP_ID}",
       app_identifier: "#{DEVELOPER_APP_IDENTIFIER}",
       skip_waiting_for_build_processing: false,
-      skip_submission: false,
+      skip_submission: true,
       distribute_external: false,
       notify_external_testers: false,
       ipa: "App.ipa"
