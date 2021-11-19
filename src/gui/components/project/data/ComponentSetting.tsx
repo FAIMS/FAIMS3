@@ -570,13 +570,15 @@ export const getprojectform = (
     fields[tab] = [];
     if (projectvalue.meta !== undefined && projectvalue.meta !== null) {
       for (const [key, value] of Object.entries(projectvalue.meta)) {
+        console.log('++++');
+        console.log(projectvalue.meta[key]);
         fields[tab].push({
           name: key,
           label: key,
           namespace: 'formik-material-ui',
           componentName: 'TextField',
           view: tab,
-          initialValue: value,
+          initialValue: projectvalue.meta[key],
         });
       }
     }
@@ -622,6 +624,7 @@ export const getprojectform = (
       fieldsarray[index] = field.name;
     });
   }
+  console.log(fields_list);
   const returnui: any = {
     fields: fields_list,
     views: {'start-view': {fields: fieldsarray, uidesign: tab}},

@@ -18,10 +18,10 @@
  *   TODO:
  */
 
-import {Grid, Typography, Switch} from '@material-ui/core';
+import {Grid, Typography} from '@material-ui/core';
 import {FAIMShandlerType, BehaviourProperties} from '../../../../datamodel/ui';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 type ProjectBehaviourProps = any;
 
 export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
@@ -50,14 +50,18 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
   ) => {
     return (
       <Grid container key={behaviour.label}>
-        <Grid item sm={4} xs={1}>
+        <Grid item sm={5} xs={10}>
           <Typography variant={'h6'} component={'h6'}>
             {behaviour.label}
           </Typography>
           <Typography>{behaviour.helpText}</Typography>
         </Grid>
+        <Grid item sm={1} xs={1}>
+          <br />
+        </Grid>
         <Grid item sm={4} xs={1}>
-          <Switch
+          <CheckCircleIcon color="primary" />
+          {/* <Switch
             disabled
             edge="end"
             onChange={handleChange}
@@ -65,7 +69,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
             inputProps={{
               'aria-labelledby': 'switch-',
             }}
-          />
+          />*/}
         </Grid>
         <br />
         <br />

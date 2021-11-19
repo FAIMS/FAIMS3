@@ -47,7 +47,7 @@ export function FileUploader(props: FieldProps & Props) {
   // TODO: work out correct typing for getRootProps and getInputProps
   return (
     <Dropzone
-      accept={accepted_filetypes}
+      // accept={accepted_filetypes}
       disabled={disabled}
       multiple={multiple}
       maxFiles={maximum_number_of_files}
@@ -63,8 +63,8 @@ export function FileUploader(props: FieldProps & Props) {
           <p>Drag 'n' drop some files here, or click to select files</p>
           <p>File uploaded:</p>
           <ul>
-            {current_files.map((file: File) => (
-              <li>{file.name}</li>
+            {current_files.map((file: File, index: number) => (
+              <li key={index}>{file.name}</li>
             ))}
           </ul>
         </div>

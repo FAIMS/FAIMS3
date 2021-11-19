@@ -41,6 +41,7 @@ type ProjectInfoProps = {
   handleChangeFormProject: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
   formProps: any;
+  handleChangeFormProjectAttachment: FAIMShandlerType;
 };
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
@@ -321,7 +322,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             getprojectform(projectvalue, 'attachments'),
             fieldName,
             formProps,
-            (event: any) => setMetaAdded(event.target.value)
+            () => console.log('pass')
           )
         )}
       </Grid>

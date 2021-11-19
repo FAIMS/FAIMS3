@@ -142,6 +142,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
               variant="outlined"
               color="primary"
               component={RouterLink}
+              onClick={onButtonClick}
               to={ROUTES.PROJECT + project_id}
             >
               Check Notebook
@@ -165,7 +166,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
           projectvalue.isrequest !== true && (
             <ProjectSubmit
               id="submit_publish"
-              type="submit"
+              type="button"
               isSubmitting={
                 state === false || issubmit === true ? true : isSubmitting
               }
@@ -178,7 +179,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
           (projectvalue.isrequest === true && (
             <ProjectSubmit
               id="submit_publish"
-              type="submit"
+              type="button"
               isSubmitting={true}
               issubmittext="Request Sent"
               text={'Request Sent'}

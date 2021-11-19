@@ -95,7 +95,7 @@ export class App extends React.Component<AppProps, AppState> {
                 path={ROUTES.FORGOT_PASSWORD}
                 component={ForgotPassword}
               />
-              <Route exact path={ROUTES.WORKSHOP} component={Home} />
+              <Route exact path={ROUTES.WORKSPACE} component={Home} />
               <Route exact path={ROUTES.RECORD_LIST} component={RecordList} />
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
               <Route

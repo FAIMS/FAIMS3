@@ -28,6 +28,7 @@ import {
   RevisionID,
   FAIMSTypeName,
   Annotations,
+  HRID_STRING,
 } from '../datamodel/core';
 import {
   AttributeValuePair,
@@ -141,6 +142,23 @@ export async function getLatestRevision(
   }
 }
 
+export async function getHRID(
+  project_id: ProjectID,
+  revision: Revision
+): Promise<string | null> {
+  const hrid_avp_id = revision.avps[HRID_STRING];
+  if (hrid_avp_id === undefined) {
+    return null;
+  }
+  try {
+    const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
+    return hrid_avp.data as string;
+  } catch (err) {
+    console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
+    return null;
+  }
+}
+
 /**
  * Returns a list of not deleted records
  * @param project_id Project ID to get list of record for
@@ -162,9 +180,10 @@ export async function listRecordMetadata(
     const revisions = await getRevisions(project_id, revision_ids);
 
     const out: RecordMetadataList = {};
-    records.forEach((record, record_id) => {
+    records.forEach(async (record, record_id) => {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
+      const hrid = (await getHRID(project_id, revision)) ?? record_id;
       out[record_id] = {
         project_id: project_id,
         record_id: record_id,
@@ -175,6 +194,8 @@ export async function listRecordMetadata(
         updated_by: revision.created_by,
         conflicts: record.heads.length > 1,
         deleted: revision.deleted ? true : false,
+        hrid: hrid,
+        type: record.type,
       };
     });
     return out;

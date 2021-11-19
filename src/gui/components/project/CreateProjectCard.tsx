@@ -56,7 +56,11 @@ import {setUiSpecForProject} from '../../../uiSpecification';
 import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
-import {setProjectMetadata, getProjectMetadata} from '../../../projectMetadata';
+import {
+  setProjectMetadata,
+  getProjectMetadata,
+  setProjectMetadataFiles,
+} from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -106,6 +110,7 @@ const ini_projectvalue = {
   project_lead: '',
   lead_institution: '',
   behavious: {},
+  filenames: [],
 };
 
 const PROJECT_META = [
@@ -121,6 +126,7 @@ const PROJECT_META = [
   'project_lead',
   'lead_institution',
   'pre_description',
+  'filenames',
 ];
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
@@ -269,21 +275,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const get_autoincrement = () => {
     const form_ids: Array<string> = [];
     const field_ids: Array<string> = [];
-    // let existauto:AutoIncrementReference[]=[]
-    // if(project_id!==null)
-    // existauto=await get_autoincrement_references_for_project(project_id)
-    // console.log(existauto)
+
     for (const [key, value] of Object.entries(formuiSpec['fields'])) {
-      // if(project_id!==null&&existauto.includes({
-      //   project_id: project_id,
-      //   form_id: value['component-parameters']['form_id'],
-      //   field_id: key,
-      // })) console.log('contain')
-      // console.log({
-      //   project_id: project_id,
-      //   form_id: value['component-parameters']['form_id'],
-      //   field_id: key,
-      // })
       if (value['component-name'] === 'BasicAutoIncrementer') {
         form_ids.push(value['component-parameters']['form_id']);
         field_ids.push(key);
@@ -291,7 +284,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
     return {form_id: form_ids, field_id: field_ids};
   };
-  console.log(get_autoincrement());
 
   const add_autoince_refereence = async (autoince: any) => {
     if (project_id !== null) {
@@ -333,20 +325,15 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     try {
       try {
         if (project_id !== null) {
-          getProjectMetadata(project_id, 'projectvalue')
-            .then(res => {
-              setProjectValue({...projectvalue, ...res});
-              const projectui = getprojectform(projectvalue, 'project');
-              setinitialValues(
-                setProjectInitialValues(projectui, 'start-view', {
-                  _id: project_id,
-                })
-              );
-              console.log(initialValues);
+          const res = await getProjectMetadata(project_id, 'projectvalue');
+          setProjectValue({...projectvalue, ...res});
+          const projectui = getprojectform(projectvalue, 'project');
+          setinitialValues(
+            setProjectInitialValues(projectui, 'start-view', {
+              _id: project_id,
             })
-            .catch(error => {
-              console.error('Not get meta data', error);
-            });
+          );
+          console.log(initialValues);
         }
       } catch (error) {
         console.error('DO not get the meta data...');
@@ -355,6 +342,20 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     } catch (err) {
       console.error('databases not created...');
       console.log(err);
+    }
+  };
+
+  const saveattachement = async (projectvalue: any) => {
+    try {
+      if (project_id !== null && projectvalue.attachments !== undefined)
+        await setProjectMetadataFiles(
+          project_id,
+          'attachments',
+          projectvalue.attachments
+        );
+    } catch (err) {
+      console.error('databases needs cleaning for save attachment error...');
+      console.debug(err);
     }
   };
 
@@ -404,6 +405,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         console.error('databases needs cleaning for update error...');
         console.debug(err);
       }
+
+      saveattachement(projectvalue);
     } catch (err) {
       console.error('databases not created...');
       console.log(err);
@@ -420,16 +423,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     setProjectValue(newproject);
   };
 
-  const submithandlerProject = (values: any) => {
-    //this function is to save project information
-    //TODO currently just save for projectname so added getnewdb function here, need to update it
-    // if (project_id === undefined) {
-    //   getnewdb();
-    // } else {
-    //   updateproject(values);
-    // }
-  };
-
   const handleSaveUiSpec = () => {
     if (
       project_id !== '' &&
@@ -438,6 +431,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     ) {
       saveformuiSpec();
     }
+  };
+
+  const handleChangeFormProjectAttachment = () => {
+    console.log('run');
   };
 
   const handlerprojectsubmit_pounch = async () => {
@@ -493,7 +490,14 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     alert('Request Send!');
   };
 
-  const handleSubmit = (values: any) => {};
+  const handleSubmit = (values: any) => {
+    if (values.attachments !== undefined && values.attachments.length > 0) {
+      const newproject = projectvalue;
+      newproject['attachments'] = values.attachments;
+      newproject['filenames'] = values.attachments[0].name;
+      setProjectValue({...newproject});
+    }
+  };
 
   const isready = () => {
     // return !(initialValues['name']===''&&project_id!==null)
@@ -543,6 +547,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                           handleChangeFormProject={handleChangeFormProject}
                           setProjecttabvalue={setProjecttabvalue}
                           formProps={formProps}
+                          handleChangeFormProjectAttachment={
+                            handleChangeFormProjectAttachment
+                          }
                         />
                       ) : (
                         ''
@@ -553,9 +560,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                       index={4}
                       tabname="primarytab"
                     >
-                      <Alert severity="info">
-                        Below are Behavious that be auto enabled
-                      </Alert>
                       <ProjectBehaviourTab
                         project_id={project_id}
                         projectvalue={projectvalue}
