@@ -262,7 +262,8 @@ public class AstroSkyMainPage {
 			assertEquals(TestUtils.roundCoordinate(getLatitude()),
 					TestUtils.roundCoordinate(lat.getText()));
 			WebElement longi = driver.findElement(By.xpath("//*[@text='Lat: ']/../" + className + "[4]"));
-			assertEquals(getLongitude(), longi.getText());
+			assertEquals(TestUtils.roundCoordinate(getLongitude()),
+					TestUtils.roundCoordinate(longi.getText()));
 		} else if (driver instanceof IOSDriver) {
 			String latVal = this.lat.getText();
 			assertNotNull(latVal);
@@ -334,6 +335,8 @@ public class AstroSkyMainPage {
 	public String getRecordId() {
 		// Take note of the UUID for the rest of the tests
 		TestUtils.scrollToText(driver, "Current URL:");
+		// Scroll down again to see the URL underneath
+		TestUtils.scrollDown(driver);
 	    String[] urlPaths = this.currentURL.getAttribute("text").split("/");
 	    return urlPaths[urlPaths.length - 1];
     }
