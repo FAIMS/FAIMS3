@@ -199,15 +199,6 @@ public class AstroSkyMainPage {
 	    // Text area - test unicode
 	    TestUtils.scrollToId(driver, "multi-str-field").sendKeys(UNICODE);
 
-	    // Integer field
-	    this.intField.click();
-	    if (driver instanceof AndroidDriver) {
-		    ((AndroidDriver) driver).pressKey(new KeyEvent(AndroidKey.DEL));
-		    ((AndroidDriver) driver).pressKey(new KeyEvent(AndroidKey.DIGIT_1));
-		    // Hide the number keyboard so we can see the rest of the screen
-		    ((AndroidDriver) driver).hideKeyboard();
-	    }
-
 	    // Multiple currency field
 	    this.multiCurrField.click();
 	    // choose first, second: $, Euro
