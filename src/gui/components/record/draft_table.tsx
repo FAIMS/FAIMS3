@@ -70,6 +70,7 @@ export default function DraftsTable(props: DraftsTableProps) {
         </Link>
       ),
     },
+    {field: 'type', headerName: 'Kind', type: 'string', width: 200},
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
   ];

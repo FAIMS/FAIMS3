@@ -56,7 +56,11 @@ import {setUiSpecForProject} from '../../../uiSpecification';
 import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
-import {setProjectMetadata, getProjectMetadata,setProjectMetadataFiles} from '../../../projectMetadata';
+import {
+  setProjectMetadata,
+  getProjectMetadata,
+  setProjectMetadataFiles,
+} from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -106,7 +110,7 @@ const ini_projectvalue = {
   project_lead: '',
   lead_institution: '',
   behavious: {},
-  filenames:[]
+  filenames: [],
 };
 
 const PROJECT_META = [
@@ -273,7 +277,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     const field_ids: Array<string> = [];
 
     for (const [key, value] of Object.entries(formuiSpec['fields'])) {
-
       if (value['component-name'] === 'BasicAutoIncrementer') {
         form_ids.push(value['component-parameters']['form_id']);
         field_ids.push(key);
@@ -281,7 +284,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
     return {form_id: form_ids, field_id: field_ids};
   };
-
 
   const add_autoince_refereence = async (autoince: any) => {
     if (project_id !== null) {
@@ -323,17 +325,15 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     try {
       try {
         if (project_id !== null) {
-            
-          const res=await getProjectMetadata(project_id, 'projectvalue')
-            setProjectValue({...projectvalue,...res});
-            const projectui = getprojectform(projectvalue, 'project');
-            setinitialValues(
-              setProjectInitialValues(projectui, 'start-view', {
-                _id: project_id,
-              })
-            );
-            console.log(initialValues);
-            
+          const res = await getProjectMetadata(project_id, 'projectvalue');
+          setProjectValue({...projectvalue, ...res});
+          const projectui = getprojectform(projectvalue, 'project');
+          setinitialValues(
+            setProjectInitialValues(projectui, 'start-view', {
+              _id: project_id,
+            })
+          );
+          console.log(initialValues);
         }
       } catch (error) {
         console.error('DO not get the meta data...');
@@ -345,17 +345,19 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   };
 
-  const saveattachement = async(projectvalue:any) => {
-    try{
-      if(project_id!==null&&projectvalue.attachments!==undefined)
-      await setProjectMetadataFiles(project_id,
-        'attachments',
-        projectvalue.attachments)
-    }catch (err) {
+  const saveattachement = async (projectvalue: any) => {
+    try {
+      if (project_id !== null && projectvalue.attachments !== undefined)
+        await setProjectMetadataFiles(
+          project_id,
+          'attachments',
+          projectvalue.attachments
+        );
+    } catch (err) {
       console.error('databases needs cleaning for save attachment error...');
       console.debug(err);
     }
-  }
+  };
 
   const updateproject = async (values: any, fieldlist: Array<string>) => {
     try {
@@ -421,7 +423,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     setProjectValue(newproject);
   };
 
-
   const handleSaveUiSpec = () => {
     if (
       project_id !== '' &&
@@ -432,9 +433,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   };
 
-  const handleChangeFormProjectAttachment = () =>{
-    console.log('run')
-  }
+  const handleChangeFormProjectAttachment = () => {
+    console.log('run');
+  };
 
   const handlerprojectsubmit_pounch = async () => {
     //save into local pounch
@@ -468,13 +469,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
     try {
       updateproject(projectvalue, PROJECT_META);
-      
     } catch {
       console.error('not saved meta data');
     }
   };
-
-  
 
   const handlerprojectsubmit_counch = () => {
     //if project online save it
@@ -493,13 +491,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   const handleSubmit = (values: any) => {
-    if(values.attachments!==undefined&&values.attachments.length>0){
+    if (values.attachments !== undefined && values.attachments.length > 0) {
       const newproject = projectvalue;
       newproject['attachments'] = values.attachments;
       newproject['filenames'] = values.attachments[0].name;
       setProjectValue({...newproject});
     }
-    
   };
 
   const isready = () => {
@@ -550,7 +547,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                           handleChangeFormProject={handleChangeFormProject}
                           setProjecttabvalue={setProjecttabvalue}
                           formProps={formProps}
-                          handleChangeFormProjectAttachment={handleChangeFormProjectAttachment}
+                          handleChangeFormProjectAttachment={
+                            handleChangeFormProjectAttachment
+                          }
                         />
                       ) : (
                         ''

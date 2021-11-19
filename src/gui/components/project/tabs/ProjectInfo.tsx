@@ -41,7 +41,7 @@ type ProjectInfoProps = {
   handleChangeFormProject: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
   formProps: any;
-  handleChangeFormProjectAttachment:FAIMShandlerType;
+  handleChangeFormProjectAttachment: FAIMShandlerType;
 };
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
@@ -322,7 +322,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             getprojectform(projectvalue, 'attachments'),
             fieldName,
             formProps,
-            ()=>console.log('pass')
+            () => console.log('pass')
           )
         )}
       </Grid>

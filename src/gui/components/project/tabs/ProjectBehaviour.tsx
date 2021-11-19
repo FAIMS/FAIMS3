@@ -18,7 +18,7 @@
  *   TODO:
  */
 
-import {Grid, Typography, Switch} from '@material-ui/core';
+import {Grid, Typography} from '@material-ui/core';
 import {FAIMShandlerType, BehaviourProperties} from '../../../../datamodel/ui';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
@@ -56,9 +56,11 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
           </Typography>
           <Typography>{behaviour.helpText}</Typography>
         </Grid>
-        <Grid item sm={1} xs={1}><br/></Grid>
+        <Grid item sm={1} xs={1}>
+          <br />
+        </Grid>
         <Grid item sm={4} xs={1}>
-          <CheckCircleIcon  color="primary" />
+          <CheckCircleIcon color="primary" />
           {/* <Switch
             disabled
             edge="end"
@@ -66,7 +68,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
             checked={true}
             inputProps={{
               'aria-labelledby': 'switch-',
-            }} 
+            }}
           />*/}
         </Grid>
         <br />

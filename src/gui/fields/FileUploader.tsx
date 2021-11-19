@@ -58,12 +58,12 @@ export function FileUploader(props: FieldProps & Props) {
       }}
     >
       {({getRootProps, getInputProps}) => (
-        <div {...getRootProps()} >
+        <div {...getRootProps()}>
           <input {...getInputProps()} />
           <p>Drag 'n' drop some files here, or click to select files</p>
           <p>File uploaded:</p>
           <ul>
-            {current_files.map((file: File,index:number) => (
+            {current_files.map((file: File, index: number) => (
               <li key={index}>{file.name}</li>
             ))}
           </ul>

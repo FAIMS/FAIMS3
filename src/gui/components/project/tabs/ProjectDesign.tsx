@@ -108,7 +108,7 @@ type ProjectDesignProps = {
   setProjecttabvalue: FAIMShandlerType;
 };
 type formcomponents = any;
-
+// eslint-disable-next-line
 export default function ProjectDesignTab(props: ProjectDesignProps) {
   // if(props.project_id===undefined) console.log('New Project'+props.project_id)
 

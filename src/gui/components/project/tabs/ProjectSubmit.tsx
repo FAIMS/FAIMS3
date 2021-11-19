@@ -161,28 +161,31 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
             issubmit !== true &&
             'Click to save notebook to local device'}
         </Typography>
-        {issubmit !== true && projectvalue.ispublic !== true &&projectvalue.isrequest!==true && (
-          <ProjectSubmit
-            id="submit_publish"
-            type="button"
-            isSubmitting={
-              state === false || issubmit === true ? true : isSubmitting
-            }
-            issubmittext="Request resources"
-            text={issubmit !== true ? 'Request resources' : 'Request Sent'}
-            onButtonClick={onSubmit}
-          />
-        )}
-        {issubmit === true && projectvalue.ispublic !== true || projectvalue.isrequest===true && (
-          <ProjectSubmit
-            id="submit_publish"
-            type="button"
-            isSubmitting={true}
-            issubmittext="Request Sent"
-            text={'Request Sent'}
-            onButtonClick={onSubmit}
-          />
-        )}
+        {issubmit !== true &&
+          projectvalue.ispublic !== true &&
+          projectvalue.isrequest !== true && (
+            <ProjectSubmit
+              id="submit_publish"
+              type="button"
+              isSubmitting={
+                state === false || issubmit === true ? true : isSubmitting
+              }
+              issubmittext="Request resources"
+              text={issubmit !== true ? 'Request resources' : 'Request Sent'}
+              onButtonClick={onSubmit}
+            />
+          )}
+        {(issubmit === true && projectvalue.ispublic !== true) ||
+          (projectvalue.isrequest === true && (
+            <ProjectSubmit
+              id="submit_publish"
+              type="button"
+              isSubmitting={true}
+              issubmittext="Request Sent"
+              text={'Request Sent'}
+              onButtonClick={onSubmit}
+            />
+          ))}
         <Typography>
           {projectvalue.ispublic === true
             ? 'Notebook is Online Save your new design by Click Update Button'
