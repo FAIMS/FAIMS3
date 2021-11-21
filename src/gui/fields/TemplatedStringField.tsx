@@ -210,11 +210,9 @@ export function TemplatedStringcomponentsetting(
       ]['template'].split('-');
       farray = farray.filter((f: string) => f !== '');
       const num = farray.length > 1 ? farray.length : 1;
-      console.log(num);
       newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
     }
-    console.log(props.initialValues);
   };
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
@@ -352,7 +350,7 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText:
-        'Slect number of Component for This ID field,please enaure to add BasicAutoIncrementer Component',
+        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component',
       variant: 'outlined',
       required: true,
       select: true,
@@ -380,7 +378,6 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText: '',
-
       required: false,
       InputProps: {
         type: 'hidden', // must be a valid html type
@@ -394,13 +391,35 @@ function UISetting() {
     validationSchema: [['yup.string']],
     initialValue: '',
   };
+  newuiSetting['fields']['hrid']={
+    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+    'component-name': 'Checkbox',
+    'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+    'component-parameters': {
+      required: false,
+      type: 'checkbox',
+      FormControlLabelProps: {
+        label: 'Choose as Human Readable ID',
+      },
+      FormHelperTextProps: {
+        children: 'Tick if choose as Human Readable ID',
+      },
+      // Label: {label: 'Terms and Conditions'},
+    },
+    validationSchema: [
+      ['yup.bool'],
+    ],
+    initialValue: false,
+  };
   newuiSetting['views']['FormParamater']['fields'] = [
+    'helperText',
     'numberfield',
     'template',
+    'hrid'
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['InputLabelProps','FormParamater'],
       label: 'settings',
     },
   };

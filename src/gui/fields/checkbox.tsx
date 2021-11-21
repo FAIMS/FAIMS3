@@ -98,8 +98,6 @@ const uiSpec = {
   },
   validationSchema: [
     ['yup.bool'],
-    ['yup.oneOf', [true], 'You must accept the terms and conditions'],
-    ['yup.required'],
   ],
   initialValue: false,
 };

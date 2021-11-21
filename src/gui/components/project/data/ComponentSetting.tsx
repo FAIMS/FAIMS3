@@ -624,7 +624,6 @@ export const getprojectform = (
       fieldsarray[index] = field.name;
     });
   }
-  console.log(fields_list);
   const returnui: any = {
     fields: fields_list,
     views: {'start-view': {fields: fieldsarray, uidesign: tab}},

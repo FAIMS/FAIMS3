@@ -161,7 +161,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   useEffect(() => {
     setinit();
     setProjectID(props.project_id);
-    console.debug('change project_id' + props.project_id);
+    console.log('+++++++++++++++++get project value ++++++++'+project_id+props.project_id);
   }, [props.project_id]);
 
   useEffect(() => {
@@ -176,7 +176,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
-      console.log('get project value');
+      console.log('+++++++++++++++++get project value ++++++++'+project_id);
 
       const projectui = getprojectform(projectvalue, 'project');
       const ini = {
@@ -194,16 +194,16 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       });
   }, [props.project_info]);
 
-  useEffect(() => {
-    if (
-      project_id !== null &&
-      project_id !== null &&
-      project_id !== undefined
-    ) {
-      console.log(project_id);
-      handlerprojectsubmit_pounch();
-    }
-  }, [project_id]);
+  // useEffect(() => {
+  //   if (
+  //     project_id !== null &&
+  //     project_id !== null &&
+  //     project_id !== undefined
+  //   ) {
+  //     console.log('+++++++++++++++++set initial project value ++++++++');
+  //     handlerprojectsubmit_pounch();
+  //   }
+  // }, [project_id]);
 
   const setinifornewproject = () => {
     //if create new notebook then set an empty formUI
@@ -244,7 +244,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const setinit = () => {
     if (props.project_id === null || props.project_id === undefined) {
       //if create new notebook then set an empty formUI
-      console.debug('setup' + props.project_id + '---START');
+      console.log('setup' + props.project_id + '---START');
       setinifornewproject();
       console.log(project_id);
       console.log(initialValues);
@@ -333,6 +333,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               _id: project_id,
             })
           );
+          console.log('++++++++++=get meta data')
+          console.log(res)
           console.log(initialValues);
         }
       } catch (error) {
