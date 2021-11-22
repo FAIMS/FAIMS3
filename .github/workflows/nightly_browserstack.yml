@@ -9,8 +9,8 @@ on:
   # This is UTC. For dev timing look at https://www.worldtimebuddy.com/?pl=1&lid=2147714,100,2063523&h=2147714&hf=1
   # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#scheduled-events
   # Note: The schedule event can be delayed during periods of high loads of GitHub Actions workflow runs. High load times include the start of every hour. To decrease the chance of delay, schedule your workflow to run at a different time of the hour.
-  schedule:
-    - cron: '39 22 * * 2-6'
+  # schedule:
+  #   - cron: '39 22 * * 2-6'
   
 # It's great having an on schedule, but bloody impossible to test.
 # on:
@@ -18,7 +18,7 @@ on:
 #   # but only for the main branch
   push:
     branches:
-      - browserstack
+      - browserstack-ios
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:

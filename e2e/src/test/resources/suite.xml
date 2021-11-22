@@ -2,7 +2,7 @@
 <suite name="End to End Tests" verbose="2" annotations="JDK">
   <!-- For developers: Change parameter to true for local runs -->
   <parameter name="runLocally" value="false" />
-  <test name="Android Tests" >     
+  <!-- <test name="Android Tests" >     
     <!-- Android tests -->   
     <parameter name="driver" value="android" />
     <classes>   
@@ -19,7 +19,7 @@
       <class name="org.fedarch.faims3.TestStagingForm" />
       <class name="org.fedarch.faims3.TestIncompleteDraftObservation" />
     </classes>
-  </test>  
+  </test>   -->
   <test name="iOS Tests" >     
     <!-- iOS tests -->   
     <parameter name="driver" value="ios" />
