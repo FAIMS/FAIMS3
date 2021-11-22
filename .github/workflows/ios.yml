@@ -1,7 +1,7 @@
 name: ios-fastlane-testflight
 on:
   push:
-    branches: [ main ]  
+    branches: [ main, ios ]  
 
   # Allows you to run this workflow manually from the Actions a tab
   workflow_dispatch:
@@ -19,7 +19,8 @@ jobs:
           ruby-version: '3.0.2'
           # bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - run: |
-          bundle install # to get cocoapods...           
+          bundle install # to get cocoapods...   
+      - run: fastlane install_plugins
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
@@ -60,3 +61,6 @@ jobs:
           APPLE_KEY_ID: '${{ secrets.APPLE_KEY_ID }}'
           APPLE_ISSUER_ID: '${{ secrets.APPLE_ISSUER_ID }}'
           APPLE_KEY_CONTENT: '${{ secrets.APPLE_KEY_CONTENT }}'
+          BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'
+          BROWSERSTACK_ACCESS_KEY: '${{secrets.BROWSERSTACK_ACCESS_KEY}}'
+      
