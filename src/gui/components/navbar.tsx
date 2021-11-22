@@ -184,12 +184,12 @@ export default function Navbar() {
       to: ROUTES.PROJECT_CREATE,
       disabled: false,
     },
-    {
-      title: 'Tools',
-      icon: <BuildIcon />,
-      to: '/',
-      disabled: true,
-    },
+    // {
+    //   title: 'Tools',
+    //   icon: <BuildIcon />,
+    //   to: '/',
+    //   disabled: true,
+    // },
     {
       title: 'Notifications',
       icon: <NotificationsIcon />,
@@ -210,12 +210,12 @@ export default function Navbar() {
       to: '/',
       disabled: true,
     },
-    {
-      title: 'Messages',
-      icon: <MessageIcon />,
-      to: '/',
-      disabled: true,
-    },
+    // {
+    //   title: 'Messages',
+    //   icon: <MessageIcon />,
+    //   to: '/',
+    //   disabled: true,
+    // },
     {
       title: 'Settings',
       icon: <SettingsIcon />,

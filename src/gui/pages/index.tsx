@@ -67,7 +67,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   </ListItemIcon>
                   Sign In
                 </MenuItem>
-                <MenuItem
+                {/* <MenuItem
                   component={NavLink}
                   to={ROUTES.SIGN_UP}
                   disabled={true}
@@ -76,7 +76,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                     <PersonAddIcon fontSize="small" />
                   </ListItemIcon>
                   Sign Up <TimelapseIcon color={'secondary'} />
-                </MenuItem>
+                </MenuItem> */}
                 <MenuItem
                   component={NavLink}
                   to={ROUTES.FORGOT_PASSWORD}

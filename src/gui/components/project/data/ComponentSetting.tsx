@@ -662,8 +662,8 @@ export function generateaddfieldui() {
 }
 
 function setmeta(meta: any) {
-  if (meta.isannotation === false) return undefined;
-  if (meta.isannotation)
+  // if (meta.isannotation === false) return undefined;
+  // if (meta.isannotation)
     return {
       annotation_label: 'annotation',
       uncertainty: {
@@ -671,7 +671,7 @@ function setmeta(meta: any) {
         label: 'uncertainty',
       },
     };
-  return false;
+  // return undefined;
 }
 
 export const updateuiSpec = (type: string, props: any) => {
@@ -766,9 +766,9 @@ const newfromui = (
           // if(setmeta({isannotation:true,isuncertainty:false})!==undefined)
           field['meta'] = setmeta({
             isannotation:
-              projectvalue['forms'][variant]['annotation' + variant],
+            projectvalue['forms'][variant]!==undefined?projectvalue['forms'][variant]['annotation' + variant]:false,
             isuncertainty:
-              projectvalue['forms'][variant]['uncertainty' + variant],
+            projectvalue['forms'][variant]!==undefined?projectvalue['forms'][variant]['uncertainty' + variant]:false,
           });
         const fieldprops = {};
         const newuiSpeclist = FieldSettings(
@@ -777,30 +777,37 @@ const newfromui = (
           fieldprops,
           access
         );
-        initialfieldvalue = {
-          ...initialfieldvalue,
-          ...setSetingInitialValues(
-            getComponentPropertiesByName(
-              field['component-namespace'],
-              field['component-name']
-            ).settingsProps[0],
-            field,
-            gefieldname
-          ),
-        };
-        newformcom[view] = [
-          ...newformcom[view],
-          {
-            id: gefieldname,
-            uiSpec: newuiSpeclist,
-            designvalue: 'settings',
-            componentName: field['component-name'],
-            namespace: field['component-namespace'],
-          },
-        ];
+        try{
+          const newse=getComponentPropertiesByName(
+            field['component-namespace'],
+            field['component-name']
+          ).settingsProps[0]
+          initialfieldvalue = {
+            ...initialfieldvalue,
+            ...setSetingInitialValues(
+              newse,
+              field,
+              gefieldname
+            ),
+          };
+          newformcom[view] = [
+            ...newformcom[view],
+            {
+              id: gefieldname,
+              uiSpec: newuiSpeclist,
+              designvalue: 'settings',
+              componentName: field['component-name'],
+              namespace: field['component-namespace'],
+            },
+          ];
+        }catch(error){
+          console.error(gefieldname+' not set correctly')
+          console.error(error)
+        }
       });
     });
   });
+  console.log(newformcom)
   return {newformcom, initialfieldvalue};
 };
 

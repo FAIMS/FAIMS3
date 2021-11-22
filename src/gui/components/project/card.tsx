@@ -54,7 +54,7 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
 import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
-
+import {getUiSpecForProject} from '../../../uiSpecification';
 type ProjectSearchCardProps = {
   project: ProjectInformation;
 };
@@ -111,6 +111,7 @@ export default function Card(props: ProjectCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
+  const [formuiSpec,setUiSpec] =  useState<any>({});
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 

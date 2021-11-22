@@ -613,7 +613,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                 </Grid>
                 <Grid item sm={7} xs={9}>
                   <Typography variant="subtitle2">Configuration</Typography>
-
+                  {!(formcomponent['designvalue'] === 'meta'&&formuiSpec['fields'][formcomponent['id']]['meta']===undefined)&&
                   <ResetComponentProperties
                     namespace={formcomponent['namespace']}
                     componentName={formcomponent['componentName']}
@@ -627,7 +627,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                     initialValues={initialValues}
                     setinitialValues={setinitialValues}
                     projectvalue={projectvalue}
-                  />
+                  />}
 
                   {formcomponent['designvalue'] === 'access' ? (
                     <AutocompleteForm
