@@ -9,7 +9,8 @@ APPLE_ISSUER_ID = ENV["APPLE_ISSUER_ID"]
 APPLE_KEY_ID = ENV["APPLE_KEY_ID"]
 APPLE_KEY_CONTENT = ENV["APPLE_KEY_CONTENT"]
 GIT_AUTHORIZATION = ENV["GIT_AUTHORIZATION"]
-
+BROWSERSTACK_USERNAME = ENV["BROWSERSTACK_USERNAME"]
+BROWSERSTACK_ACCESS_KEY = ENV["BROWSERSTACK_ACCESS_KEY"]
 def delete_temp_keychain(name)
   delete_keychain(
     name: name
@@ -75,6 +76,12 @@ platform :ios do
     changelog = changelog_from_git_commits(
       match_lightweight_tag: false,
       merge_commit_filtering: "exclude_merges"
+    )
+
+    upload_to_browserstack_app_automate(
+      browserstack_username: "#{BROWSERSTACK_USERNAME}",
+      browserstack_access_key: "#{BROWSERSTACK_ACCESS_KEY}",,      
+      custom_id: "ios-github-actions-fastlane"
     )
 
     pilot(
