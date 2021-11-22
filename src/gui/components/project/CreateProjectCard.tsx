@@ -78,7 +78,7 @@ type CreateProjectCardProps = {
   project_info: ProjectInformation | null;
 };
 
-const accessgroup = ['moderator', 'admin', 'team'];
+const accessgroup = [ 'admin','moderator', 'team'];
 
 const sections_default = ['SECTION1'];
 const variant_default = ['FORM1'];
@@ -99,10 +99,15 @@ const ini_projectvalue = {
       submitActionFORM1: 'Save and New',
       annotationFORM1: true,
       uncertaintyFORM1: false,
+      formaccessinheritFORM1:false
     },
   },
   sections: {},
-  access: {},
+  access: {
+    "accessFORM1": [
+      "admin"
+    ]
+  },
   ispublic: false,
   isrequest: false,
   errors: {is_valid: true},
@@ -194,16 +199,18 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       });
   }, [props.project_info]);
 
-  // useEffect(() => {
-  //   if (
-  //     project_id !== null &&
-  //     project_id !== null &&
-  //     project_id !== undefined
-  //   ) {
-  //     console.log('+++++++++++++++++set initial project value ++++++++');
-  //     handlerprojectsubmit_pounch();
-  //   }
-  // }, [project_id]);
+  useEffect(() => {
+    if (
+      project_id !== null &&
+      project_id !== null &&
+      project_id !== undefined &&
+      projectvalue.pre_description !==undefined &&
+      projectvalue.pre_description !==''
+    ) {
+      console.log('+++++++++++++++++set initial project value ++++++++');
+      handlerprojectsubmit_pounch();
+    }
+  }, [project_id]);
 
   const setinifornewproject = () => {
     //if create new notebook then set an empty formUI
@@ -664,9 +671,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           </Grid>
         )}
 
-        <Grid item sm={4} xs={12}>
+        <Grid item sm={6} xs={12}>
           <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
             <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
+          </Box>
+        </Grid>
+        <Grid item sm={6} xs={12}>
+          <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
             <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
           </Box>
         </Grid>

@@ -388,7 +388,12 @@ export const getprojectform = (
         view: 'info_general',
         multiline: true,
         multirows: 4,
+        required: true,
         initialValue: projectvalue.pre_description,
+        validationSchema: [
+          ['yup.string'],
+          ['yup.required'],
+        ],
       },
       {
         name: 'project_lead',

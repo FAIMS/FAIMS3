@@ -48,10 +48,11 @@ export default function MetadataRenderer(props: MetadataProps) {
       }
     };
     getMeta();
+    console.log(metadata_value)
   }, []);
 
   return chips ? (
-    <Chip
+    metadata_value? <Chip
       size={'small'}
       style={{marginRight: '5px', marginBottom: '5px'}}
       label={
@@ -68,7 +69,7 @@ export default function MetadataRenderer(props: MetadataProps) {
           )}
         </React.Fragment>
       }
-    />
+    />:<> </>
   ) : (
     <>{metadata_value}</>
   );

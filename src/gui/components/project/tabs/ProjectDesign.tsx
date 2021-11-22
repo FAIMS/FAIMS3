@@ -381,6 +381,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         'Save and New';
       newprojectvalue['forms'][tabname]['annotation' + tabname] = true;
       newprojectvalue['forms'][tabname]['uncertainty' + tabname] = false;
+      newprojectvalue['forms'][tabname]['formaccessinherit' + tabname] = false
+      newprojectvalue['access']['access'+tabname]=['admin']
       props.setProjectValue({...newprojectvalue});
     } else {
       //after tabname changes direct user to form1 section1
@@ -432,24 +434,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       return ['admin'];
     }
   };
-
-  const handleChangeForm = (event: any, type = 'change', value = '') => {
-    const {newviews, components} = updateuiSpec('updatefield', {
-      event: event,
-      formuiSpec: formuiSpec,
-      formcomponents: formcomponents,
-      formuiview: formuiview,
-      access: getinitaccess(),
-    });
-    setFormuiSpec({...formuiSpec, fields: newviews.fields});
-    setFormComponents(components);
-    console.log(event.target.name);
-    console.log(initialValues);
-    return true;
-  };
-
-  /****This function is to save data to DB TODO LIST*********/
-  const saveorsync = () => {};
 
   const handleChangeFormSection = (event: any) => {
     const newprojectvalue = props.projectvalue;
@@ -553,7 +537,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     id: string,
     type: string
   ) => {
-    if (!newvalue.includes('admin')) newvalue = [...newvalue, 'admin'];
+    if(newvalue===undefined) newvalue =['admin']
+    if (newvalue!==undefined&&!newvalue.includes('admin')) newvalue = [...newvalue, 'admin'];
     if (type === 'form') {
       const newproj = props.projectvalue;
       if (newproj['access'] === undefined) newproj['access'] = {};

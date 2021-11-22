@@ -180,18 +180,8 @@ export function AutocompleteForm(props: any) {
       props.handleAutocomplete(props.access, props.id, props.type);
     }
     if (event.target.name.includes('formaccessinherit')) {
-      // const newvalue = props.projectvalue;
-      // newvalue['forms'][event.target.name.replace('formaccessinherit', '')][
-      //   event.target.name
-      // ] = event.target.checked;
-      // props.setProjectValue({...newvalue});
       props.handlerChanges(event);
     } else {
-      // const newvalue = props.projectvalue;
-      // newvalue['sections'][
-      //   event.target.name.replace('sectionaccessinherit', '')
-      // ][event.target.name] = event.target.checked;
-      // props.setProjectValue({...newvalue});
       props.handlerChanges(event);
     }
     setIschecked(event.target.checked);
