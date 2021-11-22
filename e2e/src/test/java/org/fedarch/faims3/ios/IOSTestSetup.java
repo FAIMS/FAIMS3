@@ -48,6 +48,10 @@ public class IOSTestSetup extends E2ETestSetup {
 	    // accept location pop ups
 	    caps.setCapability(IOSMobileCapabilityType.AUTO_ACCEPT_ALERTS, "true");
 	    caps.setCapability("automationName", "XCUITest");
+	    caps.setCapability("platformName", "iOS");
+	    caps.setCapability("platformVersion", "13.7");
+	    caps.setCapability("deviceName", "iPhone 11");
+	    caps.setCapability("adbExecTimeout", "1200000");
 		if (localTest) {
 			localConnectionSetup(caps);
 			isLocal = true;
@@ -68,11 +72,6 @@ public class IOSTestSetup extends E2ETestSetup {
 	 * @throws MalformedURLException
 	 */
 	public void localConnectionSetup(DesiredCapabilities caps) throws MalformedURLException {
-	    caps.setCapability("automationName", "XCUITest");
-		caps.setCapability("platformName", "iOS");
-	    caps.setCapability("platformVersion", "13.7");
-	    caps.setCapability("deviceName", "iPhone 11");
-	    caps.setCapability("adbExecTimeout", "1200000");
 	    caps.setCapability("app", "/Users/riniangreani/Documents/Payload/App.app");
 	    driver = new IOSDriver<IOSElement>(new URL("http://127.0.0.1:4723/wd/hub"), caps);
 	}
@@ -90,10 +89,6 @@ public class IOSTestSetup extends E2ETestSetup {
 	    		// only 255 characters allowed
 	    		desc.substring(0, Math.min(desc.length(), 255))
 	    );
-
-	    // Specify device and os_version for testing
-	    caps.setCapability("device", "iPhone 12");
-        caps.setCapability("os_version", "14");
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
@@ -102,9 +97,6 @@ public class IOSTestSetup extends E2ETestSetup {
 	    caps.setCapability("app", System.getenv("custom_id"));
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
 	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
-		
-            // Trying to workaround WDA proxying error
-            caps.setCapability("useNewWDA", true);
 
 	    driver = new IOSDriver<IOSElement>(
                 new URL("http://hub-cloud.browserstack.com/wd/hub"), caps);
