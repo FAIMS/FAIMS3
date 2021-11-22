@@ -102,6 +102,9 @@ public class IOSTestSetup extends E2ETestSetup {
 	    caps.setCapability("app", System.getenv("custom_id"));
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
 	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
+		
+            // Trying to workaround WDA proxying error
+            caps.setCapability("useNewWDA", true);
 
 	    driver = new IOSDriver<IOSElement>(
                 new URL("http://hub-cloud.browserstack.com/wd/hub"), caps);
