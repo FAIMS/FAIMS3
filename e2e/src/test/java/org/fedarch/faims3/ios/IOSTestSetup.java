@@ -93,7 +93,7 @@ public class IOSTestSetup extends E2ETestSetup {
 
 	    // Specify device and os_version for testing
 	    caps.setCapability("device", "iPhone 12");
-        caps.setCapability("os_version", "12");
+        caps.setCapability("os_version", "14");
 	    // Latest Appium browserstack version with correct geolocation
 	    caps.setCapability("browserstack.appium_version", "1.21.0");
 
