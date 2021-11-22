@@ -41,8 +41,8 @@ public class IOSTestSetup extends E2ETestSetup {
 	 * @throws MalformedURLException
 	 */
 	public IOSDriver setup(boolean localTest, String testDesc) throws MalformedURLException {
-		DesiredCapabilities caps = new DesiredCapabilities();
-		// allow location services
+	    DesiredCapabilities caps = new DesiredCapabilities();
+	    // allow location services
 	    caps.setCapability(IOSMobileCapabilityType.LOCATION_SERVICES_ENABLED, "true");
 	    caps.setCapability(IOSMobileCapabilityType.LOCATION_SERVICES_AUTHORIZED, "true");
 	    // accept location pop ups
@@ -51,19 +51,20 @@ public class IOSTestSetup extends E2ETestSetup {
 	    caps.setCapability("platformName", "iOS");
 	    caps.setCapability("platformVersion", "13.7");
 	    caps.setCapability("deviceName", "iPhone 11");
-	    caps.setCapability("adbExecTimeout", "1200000");
-		if (localTest) {
-			localConnectionSetup(caps);
-			isLocal = true;
-		} else {
-		    browserstackSetup(caps, testDesc);
-		    isLocal = false;
-		}
-		// this is required because the autoAcceptAlerts doesn't actually work..
-		// see https://github.com/appium/appium/issues/14741
-		((IOSDriver) driver).setSetting("acceptAlertButtonSelector",
-				"**/XCUIElementTypeButton[`label == 'Allow While Using App'`]");
-		return (IOSDriver) driver;
+	    caps.setCapability("adbExecTimeout", "1200000");            
+	    caps.setCapability("bundleId", "org.fedarch.faims3");
+	    if (localTest) {
+	        localConnectionSetup(caps);
+	        isLocal = true;
+	    } else {
+		browserstackSetup(caps, testDesc);
+	        isLocal = false;
+	    }
+	    // this is required because the autoAcceptAlerts doesn't actually work..
+	    // see https://github.com/appium/appium/issues/14741
+	    ((IOSDriver) driver).setSetting("acceptAlertButtonSelector",
+		"**/XCUIElementTypeButton[`label == 'Allow While Using App'`]");
+	    return (IOSDriver) driver;
 
 	}
 
