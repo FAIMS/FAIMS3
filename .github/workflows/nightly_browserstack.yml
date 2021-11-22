@@ -57,18 +57,18 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: browserstack
-      - name: Cache node modules
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-node-modules
-        with:
-          # npm cache files are stored in `~/.npm` on Linux/macOS
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+      # - name: Cache node modules
+      #   uses: actions/cache@v2
+      #   env:
+      #     cache-name: cache-node-modules
+      #   with:
+      #     # npm cache files are stored in `~/.npm` on Linux/macOS
+      #     path: ~/.npm
+      #     key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-build-${{ env.cache-name }}-
+      #       ${{ runner.os }}-build-
+      #       ${{ runner.os }}-
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
         uses: actions/cache@v2
@@ -91,41 +91,41 @@ jobs:
           cache: 'maven'
 
       # https://github.com/android-actions/setup-android
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2.0.6
-      - name: Building webapp
-        run: |
-          export REACT_APP_PRODUCTION_BUILD=true
-          export REACT_APP_DIRECTORY_HOST=selenium.db.faims.edu.au
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh selenium-android)
-          git clean -xfd
-          npm ci
-          npm run build
+      # - name: Setup Android SDK
+      #   uses: android-actions/setup-android@v2.0.6
+      # - name: Building webapp
+      #   run: |
+      #     export REACT_APP_PRODUCTION_BUILD=true
+      #     export REACT_APP_DIRECTORY_HOST=selenium.db.faims.edu.au
+      #     export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh selenium-android)
+      #     git clean -xfd
+      #     npm ci
+      #     npm run build
       # https://capacitorjs.com/docs/android
-      - run: npx cap sync --deployment android
+      # - run: npx cap sync --deployment android
      
-      - name: Archive build
-        uses: actions/upload-artifact@v2
-        with:
-          name: npm-build
-          path: |
-            build
-            android
+      # - name: Archive build
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: npm-build
+      #     path: |
+      #       build
+      #       android
       
       # https://forum.ionicframework.com/t/how-to-build-apk-from-capacitor-ionic-poject-without-using-android-studio/177814/7
         # setting the environment variable app_url with the output of this cURL.
         # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-output-parameter
-      - run: cd android && ./gradlew assembleDebug
-      - run: cp "$(find . -name '*.apk')" .
-      - name: "Upload APK to Browserstack with curl"
-        run: |
-          curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=Alpha-Github-Actions" | jq .app_url -M | xargs -I{} echo "app_url={}" >> $GITHUB_ENV
-      - name: Archive apks
-        uses: actions/upload-artifact@v2
-        with:
-          name: apks
-          path: |
-            ./*.apk
+      # - run: cd android && ./gradlew assembleDebug
+      # - run: cp "$(find . -name '*.apk')" .
+      # - name: "Upload APK to Browserstack with curl"
+      #   run: |
+      #     curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=Alpha-Github-Actions" | jq .app_url -M | xargs -I{} echo "app_url={}" >> $GITHUB_ENV
+      # - name: Archive apks
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: apks
+      #     path: |
+      #       ./*.apk
       
       - name: 'BrowserStack Env Setup'
         uses: 'browserstack/github-actions/setup-env@master'
@@ -158,14 +158,14 @@ jobs:
       #     restore-keys: |
       #       ${{ runner.os }}-maven-
       # https://www.marcobehler.com/guides/mvn-clean-install-a-short-guide-to-maven
-      - name: Android-ios-Build with Maven
+      - name: ios-Build with Maven
         run: |
           cd e2e                    
           mvn --no-transfer-progress compile
         env:
           custom_id: ios-github-actions-fastlane
           # The android id is passed in from above curl line
-      - name: Android-ios-Test with Maven
+      - name: ios-Test with Maven
         run: |
           cd e2e
           mvn --no-transfer-progress test
