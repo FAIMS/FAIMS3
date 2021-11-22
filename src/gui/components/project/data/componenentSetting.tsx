@@ -29,7 +29,7 @@ import {
 } from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
-
+import {HRID_STRING} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const uiSettingOthers: ProjectUIModel = {
@@ -477,6 +477,11 @@ export function ResetComponentProperties(props: resetprops) {
       if (name === 'required')
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.checked;
+      else if (name === 'hrid'){
+        //not update value here
+        // newvalues['fields'][fieldName]['component-parameters'][name] =
+        // event.target.checked;
+      }
       else
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.value;
@@ -491,6 +496,14 @@ export function ResetComponentProperties(props: resetprops) {
       newvalues['fields'][fieldName]['component-parameters'][elementprop][
         name
       ] = event.target.value;
+
+    if(newvalues['fields'][fieldName]['component-name']==='TemplatedStringField'&&newvalues['fields'][fieldName]['component-parameters']===true){
+      //set newvalue for hird
+      const newfieldname=HRID_STRING+currentform
+      newvalues['fields'][newfieldname]=newui['fields'][fieldName] //change uifield name
+      newvalues['fields'][newfieldname]['component-parameters']['id']=newfieldname
+      newvalues['fields'][newfieldname]['component-parameters']['name']=newfieldname
+    }
     setuiSpec({...newvalues});
     return true;
   };
