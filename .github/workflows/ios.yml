@@ -19,7 +19,8 @@ jobs:
           ruby-version: '3.0.2'
           # bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - run: |
-          bundle install # to get cocoapods...           
+          bundle install # to get cocoapods...   
+      - run: fastlane install_plugins
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
