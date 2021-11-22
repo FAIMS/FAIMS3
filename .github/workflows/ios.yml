@@ -30,7 +30,7 @@ jobs:
         run: |
           export REACT_APP_PRODUCTION_BUILD=true
           export REACT_APP_DIRECTORY_HOST=alpha.db.faims.edu.au
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh ios)
+          export REACT_APP_COMMIT_VERSION=$(/Users/runner/work/FAIMS3/bin/getDescribeString.sh ios)
           git clean -xfd
           npm ci
           npm run build
@@ -45,7 +45,7 @@ jobs:
           lane: closed_beta
           subdirectory: 'ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
-          verbose: true
+          verbose: false
         env:
           APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
           DEVELOPER_APP_ID: '${{ secrets.DEVELOPER_APP_ID }}'
@@ -63,4 +63,10 @@ jobs:
           APPLE_KEY_CONTENT: '${{ secrets.APPLE_KEY_CONTENT }}'
           BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'
           BROWSERSTACK_ACCESS_KEY: '${{secrets.BROWSERSTACK_ACCESS_KEY}}'
+      - name: Archive ipas
+        uses: actions/upload-artifact@v2
+        with:
+          name: ipa
+          path: |
+            /Users/runner/work/FAIMS3/FAIMS3/ios/App/App.ipa
       
