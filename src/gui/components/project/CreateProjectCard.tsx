@@ -78,7 +78,7 @@ type CreateProjectCardProps = {
   project_info: ProjectInformation | null;
 };
 
-const accessgroup = [ 'admin','moderator', 'team'];
+const accessgroup = ['admin', 'moderator', 'team'];
 
 const sections_default = ['SECTION1'];
 const variant_default = ['FORM1'];
@@ -99,14 +99,12 @@ const ini_projectvalue = {
       submitActionFORM1: 'Save and New',
       annotationFORM1: true,
       uncertaintyFORM1: false,
-      formaccessinheritFORM1:false
+      formaccessinheritFORM1: false,
     },
   },
   sections: {},
   access: {
-    "accessFORM1": [
-      "admin"
-    ]
+    accessFORM1: ['admin'],
   },
   ispublic: false,
   isrequest: false,
@@ -166,7 +164,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   useEffect(() => {
     setinit();
     setProjectID(props.project_id);
-    console.log('+++++++++++++++++get project value ++++++++'+project_id+props.project_id);
+    console.log(
+      '+++++++++++++++++get project value ++++++++' +
+        project_id +
+        props.project_id
+    );
   }, [props.project_id]);
 
   useEffect(() => {
@@ -181,7 +183,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
-      console.log('+++++++++++++++++get project value ++++++++'+project_id);
+      console.log('+++++++++++++++++get project value ++++++++' + project_id);
 
       const projectui = getprojectform(projectvalue, 'project');
       const ini = {
@@ -204,8 +206,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       project_id !== null &&
       project_id !== null &&
       project_id !== undefined &&
-      projectvalue.pre_description !==undefined &&
-      projectvalue.pre_description !==''
+      projectvalue.pre_description !== undefined &&
+      projectvalue.pre_description !== ''
     ) {
       console.log('+++++++++++++++++set initial project value ++++++++');
       handlerprojectsubmit_pounch();
@@ -340,8 +342,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               _id: project_id,
             })
           );
-          console.log('++++++++++=get meta data')
-          console.log(res)
+          console.log('++++++++++=get meta data');
+          console.log(res);
           console.log(initialValues);
         }
       } catch (error) {

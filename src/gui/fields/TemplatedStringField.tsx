@@ -138,8 +138,8 @@ export function TemplatedStringcomponentsetting(
       value = value + '{{' + name + '}}-';
     }
     newvalues['views']['FormParamater']['fields'] = [
-      'hrid'+ props.fieldName,
-      'helperText'+ props.fieldName,
+      'hrid' + props.fieldName,
+      'helperText' + props.fieldName,
       'numberfield' + props.fieldName,
       ...newfieldlist,
       'template' + props.fieldName,
@@ -293,43 +293,66 @@ export function TemplatedStringcomponentsetting(
       setuiSetting({...newuis});
     }
 
-    if(name==='hrid'){
-      console.log('Change target name: '+event.target.checked)
-      if(event.target.checked===true){
-        //check if there is hird 
-        let ishird=false;
+    if (name === 'hrid') {
+      console.log('Change target name: ' + event.target.checked);
+      if (event.target.checked === true) {
+        //check if there is hird
+        let ishird = false;
         props.uiSpec['viewsets'][props.currentform]['views'].map(
           (view: string) => {
-            if(props.uiSpec['views'][view]['fields'].includes(HRID_STRING+props.currentform)&&props.uiSpec['fields'][props.fieldName]['component-parameters']!==true)
-            ishird=true;
+            if (
+              props.uiSpec['views'][view]['fields'].includes(
+                HRID_STRING + props.currentform
+              ) &&
+              props.uiSpec['fields'][props.fieldName][
+                'component-parameters'
+              ] !== true
+            )
+              ishird = true;
           }
         );
-        if(ishird){
-          console.log('set hird twice')
+        if (ishird) {
+          console.log('set hird twice');
           //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
-        }else{
+        } else {
           //change all name to hird
-        const newfieldname=HRID_STRING+props.currentform
-        const newui=props.uiSpec
-        newui['fields'][newfieldname]=JSON.parse(JSON.stringify(newui['fields'][props.fieldName])) //change uifield name
-        newui['fields'][newfieldname]['component-parameters']['id']=newfieldname
-        newui['fields'][newfieldname]['component-parameters']['name']=newfieldname
-        newui['fields'][newfieldname]['component-parameters']['linked']=props.fieldName
-        newui['views'][props.currentview]['fields']=newui['views'][props.currentview]['fields'].map((field:string)=>field===props.fieldName?field=newfieldname:field)
-        newui['fields'][props.fieldName]['component-parameters']['hrid']=event.target.checked
-        console.log(newui)
-        props.setuiSpec({...newui});
+          const newfieldname = HRID_STRING + props.currentform;
+          const newui = props.uiSpec;
+          newui['fields'][newfieldname] = JSON.parse(
+            JSON.stringify(newui['fields'][props.fieldName])
+          ); //change uifield name
+          newui['fields'][newfieldname]['component-parameters'][
+            'id'
+          ] = newfieldname;
+          newui['fields'][newfieldname]['component-parameters'][
+            'name'
+          ] = newfieldname;
+          newui['fields'][newfieldname]['component-parameters']['linked'] =
+            props.fieldName;
+          newui['views'][props.currentview]['fields'] = newui['views'][
+            props.currentview
+          ]['fields'].map((field: string) =>
+            field === props.fieldName ? (field = newfieldname) : field
+          );
+          newui['fields'][props.fieldName]['component-parameters']['hrid'] =
+            event.target.checked;
+          console.log(newui);
+          props.setuiSpec({...newui});
         }
-        
-      }else{
-        const newfieldname=HRID_STRING+props.currentform
-        const newui=props.uiSpec
-        newui['views'][props.currentview]['fields']=newui['views'][props.currentview]['fields'].map((field:string)=>field===newfieldname?field=props.fieldName:field)
-        newui['fields'][props.fieldName]['component-parameters']['hrid']=event.target.checked
+      } else {
+        const newfieldname = HRID_STRING + props.currentform;
+        const newui = props.uiSpec;
+        newui['views'][props.currentview]['fields'] = newui['views'][
+          props.currentview
+        ]['fields'].map((field: string) =>
+          field === newfieldname ? (field = props.fieldName) : field
+        );
+        newui['fields'][props.fieldName]['component-parameters']['hrid'] =
+          event.target.checked;
         props.setuiSpec({...newui});
       }
     }
-    console.log(name)
+    console.log(name);
   };
 
   return (
@@ -368,7 +391,7 @@ const uiSpec = {
     InputLabelProps: {
       label: 'Human Readable ID',
     },
-    hrid:false
+    hrid: false,
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: '',
@@ -426,7 +449,7 @@ function UISetting() {
     initialValue: '',
   };
 
-  newuiSetting['fields']['hrid']={
+  newuiSetting['fields']['hrid'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Checkbox',
     'type-returned': 'faims-core::Bool', // matches a type in the Project Model
@@ -437,15 +460,14 @@ function UISetting() {
         label: 'Choose as Unique Human Readable ID',
       },
       FormHelperTextProps: {
-        children: 'Tick if choose as Human Readable ID, each Form can only set one Human Readable ID, if set multiple, only first one will be taken',
+        children:
+          'Tick if choose as Human Readable ID, each Form can only set one Human Readable ID, if set multiple, only first one will be taken',
       },
     },
-    validationSchema: [
-      ['yup.bool'],
-    ],
+    validationSchema: [['yup.bool']],
     initialValue: false,
   };
-  
+
   newuiSetting['views']['FormParamater']['fields'] = [
     'hrid',
     'helperText',
@@ -454,7 +476,7 @@ function UISetting() {
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps','FormParamater'],
+      views: ['InputLabelProps', 'FormParamater'],
       label: 'settings',
     },
   };

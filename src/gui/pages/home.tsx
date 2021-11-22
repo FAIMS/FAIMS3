@@ -66,7 +66,10 @@ export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = getProjectList();
-  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'WorkSpace'}];
+  const breadcrumbs = [
+    {link: ROUTES.HOME, title: 'Home'},
+    {title: 'WorkSpace'},
+  ];
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />

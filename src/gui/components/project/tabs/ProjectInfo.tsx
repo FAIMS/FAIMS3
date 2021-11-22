@@ -155,18 +155,22 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     return false;
   };
 
-  const handleattachment = () =>{
+  const handleattachment = () => {
     //handle to add attachemtns
-    if (props.formProps.values.attachments !== undefined && props.formProps.values.attachments.length > 0){
-    const newproject = projectvalue;
-    const filename=props.formProps.values.attachments[0].name
-    if(newproject['attachments']===undefined) newproject['attachments']={}
-    if(newproject['filenames']===undefined) newproject['filenames']=[]
-    newproject['attachments'][filename] = props.formProps.values.attachments;
-    newproject['filenames'].push(filename);
-    setProjectValue({...newproject});
+    if (
+      props.formProps.values.attachments !== undefined &&
+      props.formProps.values.attachments.length > 0
+    ) {
+      const newproject = projectvalue;
+      const filename = props.formProps.values.attachments[0].name;
+      if (newproject['attachments'] === undefined)
+        newproject['attachments'] = {};
+      if (newproject['filenames'] === undefined) newproject['filenames'] = [];
+      newproject['attachments'][filename] = props.formProps.values.attachments;
+      newproject['filenames'].push(filename);
+      setProjectValue({...newproject});
     }
-  }
+  };
 
   const metaTab = () => {
     return (
@@ -372,11 +376,12 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
           /> */}
           <br />
           <Paper>
-          Files Attached:
-          <br/><br/>
-            {projectvalue.filenames}</Paper>
-          
-          <br/>
+            Files Attached:
+            <br />
+            <br />
+            {projectvalue.filenames}
+          </Paper>
+          <br />
           <ProjectSubmit
             id="gotonext_info"
             type="submit"

@@ -390,10 +390,7 @@ export const getprojectform = (
         multirows: 4,
         required: true,
         initialValue: projectvalue.pre_description,
-        validationSchema: [
-          ['yup.string'],
-          ['yup.required'],
-        ],
+        validationSchema: [['yup.string'], ['yup.required']],
       },
       {
         name: 'project_lead',
@@ -749,17 +746,21 @@ const newfromui = (
       newformcom[view] = [];
       newuiSpec['views'][view]['fields'].map((fieldname: string) => {
         let field = newuiSpec['fields'][fieldname];
-        let gefieldname=fieldname
-        if(gefieldname.includes(HRID_STRING)) {
+        let gefieldname = fieldname;
+        if (gefieldname.includes(HRID_STRING)) {
           //find the hird value
-          const newnhirdname=newuiSpec['fields'][fieldname]['component-parameters']['linked']
-          console.log("Linked name"+newnhirdname)
-          if(newnhirdname!==undefined&&newuiSpec['fields'][newnhirdname]!==undefined){
-            field=newuiSpec['fields'][newnhirdname]
-            gefieldname=newnhirdname
+          const newnhirdname =
+            newuiSpec['fields'][fieldname]['component-parameters']['linked'];
+          console.log('Linked name' + newnhirdname);
+          if (
+            newnhirdname !== undefined &&
+            newuiSpec['fields'][newnhirdname] !== undefined
+          ) {
+            field = newuiSpec['fields'][newnhirdname];
+            gefieldname = newnhirdname;
           }
-          
-          console.log(field)
+
+          console.log(field);
         }
         if (field['meta'] === undefined)
           // if(setmeta({isannotation:true,isuncertainty:false})!==undefined)
@@ -897,7 +898,6 @@ const addfield = (props: any) => {
   console.log(initialfieldvalue);
   return {newviews, components, newuiSpeclist, newuiSpec, initialfieldvalue};
 };
-
 
 const changeuifield = (newfieldname: string, newfield: any, uiSpec: any) => {
   //update the formuiSpec

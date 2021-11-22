@@ -470,57 +470,60 @@ export function ResetComponentProperties(props: resetprops) {
     if (['meta', 'access', 'validationSchema'].includes(elementprop))
       return true;
     const newvalues = uiSpec;
-    let ishird=false
-    const newfieldname=HRID_STRING+currentform
-    if(newvalues['fields'][fieldName]['component-name']==='TemplatedStringField'&&newvalues['fields'][fieldName]['component-parameters']['hrid']===true){
+    let ishird = false;
+    const newfieldname = HRID_STRING + currentform;
+    if (
+      newvalues['fields'][fieldName]['component-name'] ===
+        'TemplatedStringField' &&
+      newvalues['fields'][fieldName]['component-parameters']['hrid'] === true
+    ) {
       //set newvalue for hird
-      
-      ishird=true
-      console.log('++++++++++++++'+newfieldname)
-     
+
+      ishird = true;
+      console.log('++++++++++++++' + newfieldname);
     }
-    if (newvalues['fields'][fieldName] === undefined){
+    if (newvalues['fields'][fieldName] === undefined) {
       newvalues['fields'][fieldName] = generatenewname(fieldui, fieldName);
     }
     const name = event.target.name.replace(fieldName, '');
     if (elementprop === 'FormParamater')
-      if (name === 'required'){
+      if (name === 'required') {
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.checked;
-        if(ishird) newvalues['fields'][newfieldname]['component-parameters'][name] =
-        event.target.checked;
-      }
-      else if (name === 'hrid'){
+        if (ishird)
+          newvalues['fields'][newfieldname]['component-parameters'][name] =
+            event.target.checked;
+      } else if (name === 'hrid') {
         //not update value here
         // newvalues['fields'][fieldName]['component-parameters'][name] =
         // event.target.checked;
-      }
-      else{
+      } else {
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.value;
-        if(ishird) newvalues['fields'][newfieldname]['component-parameters'][name] =
-        event.target.value;
+        if (ishird)
+          newvalues['fields'][newfieldname]['component-parameters'][name] =
+            event.target.value;
       }
     else if (
       elementprop === 'FormLabelProps' ||
       elementprop === 'FormHelperTextProps'
-    ){
+    ) {
       newvalues['fields'][fieldName]['component-parameters'][elementprop][
         'children'
       ] = event.target.value;
-      if(ishird) newvalues['fields'][newfieldname]['component-parameters'][elementprop][
-        'children'
-      ] = event.target.value;
-    }
-    else if (name !== 'options'){
+      if (ishird)
+        newvalues['fields'][newfieldname]['component-parameters'][elementprop][
+          'children'
+        ] = event.target.value;
+    } else if (name !== 'options') {
       newvalues['fields'][fieldName]['component-parameters'][elementprop][
         name
       ] = event.target.value;
-      if(ishird) newvalues['fields'][newfieldname]['component-parameters'][elementprop][
-        name
-      ] = event.target.value;
+      if (ishird)
+        newvalues['fields'][newfieldname]['component-parameters'][elementprop][
+          name
+        ] = event.target.value;
     }
-      
 
     setuiSpec({...newvalues});
     return true;

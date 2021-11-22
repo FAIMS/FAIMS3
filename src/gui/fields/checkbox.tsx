@@ -96,9 +96,7 @@ const uiSpec = {
     },
     // Label: {label: 'Terms and Conditions'},
   },
-  validationSchema: [
-    ['yup.bool'],
-  ],
+  validationSchema: [['yup.bool']],
   initialValue: false,
 };
 
