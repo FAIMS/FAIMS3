@@ -311,9 +311,10 @@ export function TemplatedStringcomponentsetting(
           //change all name to hird
         const newfieldname=HRID_STRING+props.currentform
         const newui=props.uiSpec
-        newui['fields'][newfieldname]=newui['fields'][props.fieldName] //change uifield name
+        newui['fields'][newfieldname]=JSON.parse(JSON.stringify(newui['fields'][props.fieldName])) //change uifield name
         newui['fields'][newfieldname]['component-parameters']['id']=newfieldname
         newui['fields'][newfieldname]['component-parameters']['name']=newfieldname
+        newui['fields'][newfieldname]['component-parameters']['linked']=props.fieldName
         newui['views'][props.currentview]['fields']=newui['views'][props.currentview]['fields'].map((field:string)=>field===props.fieldName?field=newfieldname:field)
         newui['fields'][props.fieldName]['component-parameters']['hrid']=event.target.checked
         console.log(newui)
