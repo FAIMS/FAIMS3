@@ -158,17 +158,22 @@ jobs:
       #     restore-keys: |
       #       ${{ runner.os }}-maven-
       # https://www.marcobehler.com/guides/mvn-clean-install-a-short-guide-to-maven
-      - name: Build with Maven
+      - name: Android-ios-Build with Maven
         run: |
           cd e2e                    
           mvn compile
-      - name: Test with Maven
+        env:
+          custom_id: ios-github-actions-fastlane
+          # The android id is passed in from above curl line
+      - name: Android-ios-Test with Maven
         run: |
           cd e2e
           mvn test
           mvn package
           mvn verify
           mvn install
+        env:
+          custom_id: ios-github-actions-fastlane          
       - name: Archive log
         if: ${{ always() }} # - name: Archive log https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#job-status-check-functions
         uses: actions/upload-artifact@v2
