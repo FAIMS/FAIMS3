@@ -94,7 +94,7 @@ public class IOSTestSetup extends E2ETestSetup {
 
 	    turnOnBrowserstackLogs(caps);
 
-	    caps.setCapability("app", System.getenv("app_url"));
+	    caps.setCapability("app", System.getenv("custom_id"));
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
 	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
 
