@@ -49,6 +49,7 @@ public class TestPopulateForm {
 	// Test description
 	private String description;
 
+
 	@BeforeClass
 	@Parameters({ "driver", "runLocally"})
 	public void setup(String driverType, @Optional("false") boolean runLocally)
@@ -58,6 +59,9 @@ public class TestPopulateForm {
 	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
 		this.projects = new ProjectsPage(driver);
 		this.astroSky = new AstroSkyMainPage(driver);
+		// always make sure auto increment id has a default range
+		// if not, create one
+        this.projects.checkAutoIncrement();
 	}
 
 	// Doable Task 2.1 - Observation creation
@@ -89,7 +93,7 @@ public class TestPopulateForm {
 			// Load the just-created observation
 			projects.loadObservationRecord(recordId);
 			// Ensure that location and change are still present in the data
-			astroSky.validateLatLong();
+			astroSky.checkLatLongValues();
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");

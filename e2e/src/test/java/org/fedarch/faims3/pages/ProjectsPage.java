@@ -41,12 +41,6 @@ import io.appium.java_client.pagefactory.iOSXCUITFindBy;
  * @author Rini Angreani, CSIRO
  */
 public class ProjectsPage {
-
-	@AndroidFindBy(xpath = "//android.view.MenuItem[contains(@text, 'Projects')]")
-	@iOSXCUITFindBy(xpath = "//XCUIElementTypeMenuItem[@name=\"Projects\"]")
-	@FindBy(xpath = "//a[@href='/projects']")
-	private WebElement projects;
-
 	@AndroidFindBy(xpath = "//*[contains(@text, 'Astrosky')]")
 	@FindBy(xpath = "//div[@class='MuiCardHeader-content']/span/div/b[contains(., 'Astrosky')]")
 	private WebElement astroSky;
@@ -55,28 +49,67 @@ public class ProjectsPage {
 	@AndroidFindBy(xpath = "//*[@text='settings']")
 	@iOSXCUITFindBy(xpath = "(//XCUIElementTypeButton[@name=\"settings\"])[1]")
 	@FindBy(xpath = "//div[@class='MuiCardHeader-content']/span/div/b[contains(., 'Astrosky')]/../../../..//button[span='New Record']")
-	private WebElement projectSettingsButton;
+	private WebElement projectMenuButton;
+
+	@AndroidFindBy(xpath = "//*[@text='Project Settings']")
+	@FindBy(xpath = "//a[@href='/projects/default||test_proj/settings']")
+	private WebElement projectSettingsLink;
 
 	@AndroidFindBy(xpath = "//*[@text='New astro_sky::main']")
 	@iOSXCUITFindBy(xpath = "//XCUIElementTypeMenuItem[@name=\"New Observation\"]")
 	@FindBy(xpath = "//a[@href='/projects/default||test_proj/new/astro_sky::main']")
-	private WebElement newObservationButton;
+	private WebElement newAstroSkyMain;
 
 	private WebDriver driver;
 
 	private WebDriverWait wait;
 
+	private AutoIncrementPage autoIncrementPage;
+
+	private IndexPage indexPage;
+
+	private ProjectSettingsPage projectSettingsPage;
+
 	public ProjectsPage(WebDriver driver) {
 		this.driver = driver;
 		wait = new WebDriverWait(driver, 20);
 		PageFactory.initElements(new AppiumFieldDecorator(driver), this);
+		this.autoIncrementPage = new AutoIncrementPage(driver);
+		this.indexPage = new IndexPage(driver);
+		this.projectSettingsPage = new ProjectSettingsPage(driver);
 	}
 
 	/**
-	 * Load up new test Observation form
+	 * Check if auto increments settings has an entry. If not, create a new one.
+	 */
+	public void checkAutoIncrement() {
+		loadAstroSkyProject();
+		// Go to settings -> edit auto increment allocations
+		this.projectMenuButton.click();
+		this.projectSettingsLink.click();
+		this.projectSettingsPage.editAutoIncrementAllocations();
+		// Create new range if none exists
+		this.autoIncrementPage.createNewRangeIfNoDefault();
+		// return to Index
+		indexPage.returnToIndex();
+	}
+
+	/**
+	 * Load up new test AstroSky main form
 	 */
 	public void loadNewAstroSkyForm() {
-		//TODO: remove when FAIMS3-297 is fixed
+		loadAstroSkyProject();
+
+		// Find the '+' button
+		this.projectMenuButton.click();
+		this.newAstroSkyMain.click();
+	}
+
+	/**
+	 * Load AstroSky project from home
+	 */
+	public void loadAstroSkyProject() {
+		// TODO: remove when FAIMS3-297 is fixed
 		// temporary workaround for the bug
 		try {
 			Thread.sleep(12000);
@@ -85,7 +118,7 @@ public class ProjectsPage {
 			e.printStackTrace();
 		}
 
-		loadProjects();
+		indexPage.loadProjects();
 
 		// Get the right project
 		wait.until(ExpectedConditions.visibilityOf(this.astroSky));
@@ -97,18 +130,6 @@ public class ProjectsPage {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		// Find the '+' button
-		this.projectSettingsButton.click();
-
-		this.newObservationButton.click();
-	}
-
-	public void loadProjects() {
-		// Click on "Projects"
-		wait.until(ExpectedConditions
-				.elementToBeClickable(this.projects))
-		            .click();
 	}
 
 	public void loadObservationDraft(String draftId) {
@@ -174,6 +195,10 @@ public class ProjectsPage {
 		}
 		return recordId;
 
+	}
+
+	public void loadProjects() {
+		this.indexPage.loadProjects();
 	}
 
 

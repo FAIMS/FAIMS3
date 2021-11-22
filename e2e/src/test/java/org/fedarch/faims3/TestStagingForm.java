@@ -91,7 +91,7 @@ public class TestStagingForm {
 			// Load the just-created observation
 			projects.loadObservationDraft(recordId);
 			// Ensure that location and change are still present in the data
-			astroSky.validateLatLong();
+			astroSky.checkLatLongValues();
 
 			WebElement email = TestUtils.scrollToId(driver, "email-field");
 			AssertJUnit.assertEquals(AstroSkyMainPage.EMAIL_ANDROID, email.getText());
