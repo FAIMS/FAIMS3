@@ -80,7 +80,7 @@ platform :ios do
 
     upload_to_browserstack_app_automate(
       browserstack_username: "#{BROWSERSTACK_USERNAME}",
-      browserstack_access_key: "#{BROWSERSTACK_ACCESS_KEY}",,      
+      browserstack_access_key: "#{BROWSERSTACK_ACCESS_KEY}",    
       custom_id: "ios-github-actions-fastlane"
     )
 
