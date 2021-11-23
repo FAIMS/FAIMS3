@@ -44,21 +44,21 @@ type RecordsTableProps = {
   maxRows: number | null;
   rows: RecordMetadata[];
   loading: boolean;
-  viewsets?:ProjectUIViewsets |null;
+  viewsets?: ProjectUIViewsets | null;
 };
 
 type RecordsBrowseTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   filter_deleted: boolean;
-  viewsets?:ProjectUIViewsets |null;
+  viewsets?: ProjectUIViewsets | null;
 };
 
 type RecordsSearchTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   query: string;
-  viewsets?:ProjectUIViewsets |null;
+  viewsets?: ProjectUIViewsets | null;
 };
 
 function RecordsTable(props: RecordsTableProps) {
@@ -89,11 +89,22 @@ function RecordsTable(props: RecordsTableProps) {
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
     {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
-    {field: 'type', headerName: 'Kind', type: 'string', width: 200,renderCell: (params: GridCellParams) => (
-      <>
-        {props.viewsets!==null&&props.viewsets!==undefined&&params.value!==null&&params.value!==undefined?props.viewsets[params.value.toString()].label??params.value:params.value}
-      </>
-    ),},
+    {
+      field: 'type',
+      headerName: 'Kind',
+      type: 'string',
+      width: 200,
+      renderCell: (params: GridCellParams) => (
+        <>
+          {props.viewsets !== null &&
+          props.viewsets !== undefined &&
+          params.value !== null &&
+          params.value !== undefined
+            ? props.viewsets[params.value.toString()].label ?? params.value
+            : params.value}
+        </>
+      ),
+    },
     {
       field: 'updated_by',
       headerName: 'Last updated by',

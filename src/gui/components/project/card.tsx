@@ -112,7 +112,7 @@ export default function Card(props: ProjectCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
-  const [viewsets,setViewsets] =  useState<null |ProjectUIViewsets>(null);
+  const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 
@@ -139,8 +139,7 @@ export default function Card(props: ProjectCardProps) {
       },
       () => {}
     );
-  
-}, [project.project_id]);
+  }, [project.project_id]);
 
   return (
     <React.Fragment>

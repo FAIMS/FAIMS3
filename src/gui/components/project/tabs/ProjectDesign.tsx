@@ -613,21 +613,26 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                 </Grid>
                 <Grid item sm={7} xs={9}>
                   <Typography variant="subtitle2">Configuration</Typography>
-                  {!(formcomponent['designvalue'] === 'meta'&&formuiSpec['fields'][formcomponent['id']]['meta']===undefined)&&
-                  <ResetComponentProperties
-                    namespace={formcomponent['namespace']}
-                    componentName={formcomponent['componentName']}
-                    uiSpec={formuiSpec}
-                    setuiSpec={setFormuiSpec}
-                    fieldName={formcomponent['id']}
-                    formProps={formProps}
-                    designvalue={formcomponent['designvalue']}
-                    currentview={formuiview}
-                    currentform={formvariants}
-                    initialValues={initialValues}
-                    setinitialValues={setinitialValues}
-                    projectvalue={projectvalue}
-                  />}
+                  {!(
+                    formcomponent['designvalue'] === 'meta' &&
+                    formuiSpec['fields'][formcomponent['id']]['meta'] ===
+                      undefined
+                  ) && (
+                    <ResetComponentProperties
+                      namespace={formcomponent['namespace']}
+                      componentName={formcomponent['componentName']}
+                      uiSpec={formuiSpec}
+                      setuiSpec={setFormuiSpec}
+                      fieldName={formcomponent['id']}
+                      formProps={formProps}
+                      designvalue={formcomponent['designvalue']}
+                      currentview={formuiview}
+                      currentform={formvariants}
+                      initialValues={initialValues}
+                      setinitialValues={setinitialValues}
+                      projectvalue={projectvalue}
+                    />
+                  )}
 
                   {formcomponent['designvalue'] === 'access' ? (
                     <AutocompleteForm
