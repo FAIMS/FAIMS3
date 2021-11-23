@@ -84,7 +84,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const NEWFIELDS = 'newfield';
+
 const sections_default = ['SECTION1'];
 const variant_default = ['FORM1'];
 const form_defult = {FORM1SECTION1: []};

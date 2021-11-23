@@ -535,18 +535,7 @@ export const getprojectform = (
       fields[tab][index] = {...newfield};
     });
   }
-  // if (tab === 'form_setting') {
-  //   form_setting.map((field: any, index: number) => {
-  //     const fieldname = field.name + props.formname;
-  //     const newfield = {...field, name: fieldname};
-  //     //TODO Maybe set pre-select value for user
-  //     // if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
-  //     //   if(projectvalue['forms'][props.props.formname]!==undefined) newfield['initialValue']=['forms'][props.props.formname][fieldname]
-  //     // else if(newfield['initialValue']===undefined)
-  //     //   newfield['initialValue']='Save and New'
-  //     fields[tab][index] = {...newfield};
-  //   });
-  // }
+
   if (
     tab === 'project_meta' &&
     projectvalue.meta !== undefined &&
@@ -820,7 +809,8 @@ const removefield = (
   formcomponents: any,
   formuiview: string
 ) => {
-  const name = NEWFIELDS + id;
+
+  const name = id;
   const components = formcomponents;
   components[formuiview] = components[formuiview].filter(
     (formcomponent: any) => formcomponent.id !== name
