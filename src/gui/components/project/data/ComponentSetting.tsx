@@ -788,7 +788,7 @@ const newfromui = (
       });
     });
   });
-  console.log(newformcom)
+  console.log(initialfieldvalue)
   return {newformcom, initialfieldvalue};
 };
 

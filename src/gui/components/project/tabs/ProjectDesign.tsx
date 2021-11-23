@@ -515,6 +515,15 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           newviews['fields'][field]['meta']['uncertainty']['include'] = event.target.checked;
           
         });
+        const {newformcom, initialfieldvalue} = updateuiSpec('newfromui', {
+          formuiSpec: newviews,
+          formcomponents: formcomponents,
+          access: accessgroup,
+          initialfieldvalue: initialValues,
+          projectvalue: projectvalue,
+        });
+
+        setinitialValues({...initialValues,...initialfieldvalue})
       }
 
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
