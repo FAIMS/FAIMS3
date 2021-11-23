@@ -32,7 +32,7 @@ import {
 import AccountTree from '@material-ui/icons/AccountTree';
 import HomeIcon from '@material-ui/icons/Home';
 import LockOpenIcon from '@material-ui/icons/LockOpen';
-import PersonAddIcon from '@material-ui/icons/PersonAdd';
+//import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
 
@@ -67,7 +67,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   </ListItemIcon>
                   Sign In
                 </MenuItem>
-                <MenuItem
+                {/* <MenuItem
                   component={NavLink}
                   to={ROUTES.SIGN_UP}
                   disabled={true}
@@ -76,7 +76,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                     <PersonAddIcon fontSize="small" />
                   </ListItemIcon>
                   Sign Up <TimelapseIcon color={'secondary'} />
-                </MenuItem>
+                </MenuItem> */}
                 <MenuItem
                   component={NavLink}
                   to={ROUTES.FORGOT_PASSWORD}

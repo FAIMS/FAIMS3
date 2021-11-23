@@ -66,7 +66,10 @@ export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = getProjectList();
-  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'WorkShop'}];
+  const breadcrumbs = [
+    {link: ROUTES.HOME, title: 'Home'},
+    {title: 'WorkSpace'},
+  ];
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
@@ -80,11 +83,11 @@ export default function Home() {
 
         {/* Recent Projects */}
         <Grid item xs={12} md={12} lg={12}>
-          <Typography variant="overline">My Projects</Typography>
+          <Typography variant="overline">My Notebooks</Typography>
           <Paper className={classes.paper}>
             <Grid container spacing={1}>
               {Object.keys(pouchProjectList).length === 0 ? (
-                <span>No projects found</span>
+                <span>No Notebooks found</span>
               ) : (
                 pouchProjectList.map(project_info => {
                   const project_id = project_info.project_id;
@@ -114,7 +117,7 @@ export default function Home() {
                 component={RouterLink}
                 to={ROUTES.PROJECT_LIST}
               >
-                View all projects
+                View all notebooks
                 {/*<ChevronRightIcon />*/}
               </Link>
             </Box>

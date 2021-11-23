@@ -34,6 +34,7 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
+import {HRID_STRING} from '../../datamodel/core';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface FieldValues {
@@ -124,15 +125,6 @@ export function TemplatedStringcomponentsetting(
         name,
         null
       );
-      // const options: Array<option> = [];
-
-      // fields.map(
-      //   (field: string, index: number) =>
-      //     (options[index] = {
-      //       value: field,
-      //       label: field,
-      //     })
-      // );
       newfield['component-parameters']['ElementProps']['options'] = options;
       let inivalue = templatevalue.split('-');
       inivalue =
@@ -146,6 +138,8 @@ export function TemplatedStringcomponentsetting(
       value = value + '{{' + name + '}}-';
     }
     newvalues['views']['FormParamater']['fields'] = [
+      'hrid' + props.fieldName,
+      'helperText' + props.fieldName,
       'numberfield' + props.fieldName,
       ...newfieldlist,
       'template' + props.fieldName,
@@ -210,11 +204,9 @@ export function TemplatedStringcomponentsetting(
       ]['template'].split('-');
       farray = farray.filter((f: string) => f !== '');
       const num = farray.length > 1 ? farray.length : 1;
-      console.log(num);
       newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
     }
-    console.log(props.initialValues);
   };
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
@@ -300,6 +292,67 @@ export function TemplatedStringcomponentsetting(
       console.log(newuis['fields']);
       setuiSetting({...newuis});
     }
+
+    if (name === 'hrid') {
+      console.log('Change target name: ' + event.target.checked);
+      if (event.target.checked === true) {
+        //check if there is hird
+        let ishird = false;
+        props.uiSpec['viewsets'][props.currentform]['views'].map(
+          (view: string) => {
+            if (
+              props.uiSpec['views'][view]['fields'].includes(
+                HRID_STRING + props.currentform
+              ) &&
+              props.uiSpec['fields'][props.fieldName][
+                'component-parameters'
+              ] !== true
+            )
+              ishird = true;
+          }
+        );
+        if (ishird) {
+          console.log('set hird twice');
+          //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
+        } else {
+          //change all name to hird
+          const newfieldname = HRID_STRING + props.currentform;
+          const newui = props.uiSpec;
+          newui['fields'][newfieldname] = JSON.parse(
+            JSON.stringify(newui['fields'][props.fieldName])
+          ); //change uifield name
+          newui['fields'][newfieldname]['component-parameters'][
+            'id'
+          ] = newfieldname;
+          newui['fields'][newfieldname]['component-parameters'][
+            'name'
+          ] = newfieldname;
+          newui['fields'][newfieldname]['component-parameters']['linked'] =
+            props.fieldName;
+          newui['views'][props.currentview]['fields'] = newui['views'][
+            props.currentview
+          ]['fields'].map((field: string) =>
+            field === props.fieldName ? (field = newfieldname) : field
+          );
+          newui['fields'][props.fieldName]['component-parameters']['hrid'] =
+            event.target.checked;
+          console.log(newui);
+          props.setuiSpec({...newui});
+        }
+      } else {
+        const newfieldname = HRID_STRING + props.currentform;
+        const newui = props.uiSpec;
+        newui['views'][props.currentview]['fields'] = newui['views'][
+          props.currentview
+        ]['fields'].map((field: string) =>
+          field === newfieldname ? (field = props.fieldName) : field
+        );
+        newui['fields'][props.fieldName]['component-parameters']['hrid'] =
+          event.target.checked;
+        props.setuiSpec({...newui});
+      }
+    }
+    console.log(name);
   };
 
   return (
@@ -338,6 +391,7 @@ const uiSpec = {
     InputLabelProps: {
       label: 'Human Readable ID',
     },
+    hrid: false,
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: '',
@@ -345,6 +399,7 @@ const uiSpec = {
 
 function UISetting() {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+
   newuiSetting['fields']['numberfield'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Select',
@@ -352,7 +407,7 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText:
-        'Slect number of Component for This ID field,please enaure to add BasicAutoIncrementer Component',
+        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component',
       variant: 'outlined',
       required: true,
       select: true,
@@ -361,8 +416,8 @@ function UISetting() {
       ElementProps: {
         options: [
           {
-            value: '1',
-            label: '1',
+            value: '0',
+            label: '0',
           },
         ],
       },
@@ -380,7 +435,6 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText: '',
-
       required: false,
       InputProps: {
         type: 'hidden', // must be a valid html type
@@ -394,13 +448,35 @@ function UISetting() {
     validationSchema: [['yup.string']],
     initialValue: '',
   };
+
+  newuiSetting['fields']['hrid'] = {
+    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+    'component-name': 'Checkbox',
+    'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+    'component-parameters': {
+      required: false,
+      type: 'checkbox',
+      FormControlLabelProps: {
+        label: 'Choose as Unique Human Readable ID',
+      },
+      FormHelperTextProps: {
+        children:
+          'Tick if choose as Human Readable ID, each Form can only set one Human Readable ID, if set multiple, only first one will be taken',
+      },
+    },
+    validationSchema: [['yup.bool']],
+    initialValue: false,
+  };
+
   newuiSetting['views']['FormParamater']['fields'] = [
+    'hrid',
+    'helperText',
     'numberfield',
     'template',
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['InputLabelProps', 'FormParamater'],
       label: 'settings',
     },
   };

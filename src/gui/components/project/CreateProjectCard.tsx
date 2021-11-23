@@ -78,7 +78,7 @@ type CreateProjectCardProps = {
   project_info: ProjectInformation | null;
 };
 
-const accessgroup = ['moderator', 'admin', 'team'];
+const accessgroup = ['admin', 'moderator', 'team'];
 
 const sections_default = ['SECTION1'];
 const variant_default = ['FORM1'];
@@ -99,10 +99,13 @@ const ini_projectvalue = {
       submitActionFORM1: 'Save and New',
       annotationFORM1: true,
       uncertaintyFORM1: false,
+      formaccessinheritFORM1: false,
     },
   },
   sections: {},
-  access: {},
+  access: {
+    accessFORM1: ['admin'],
+  },
   ispublic: false,
   isrequest: false,
   errors: {is_valid: true},
@@ -161,7 +164,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   useEffect(() => {
     setinit();
     setProjectID(props.project_id);
-    console.debug('change project_id' + props.project_id);
+    console.log(
+      '+++++++++++++++++get project value ++++++++' +
+        project_id +
+        props.project_id
+    );
   }, [props.project_id]);
 
   useEffect(() => {
@@ -176,7 +183,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
-      console.log('get project value');
+      console.log('+++++++++++++++++get project value ++++++++' + project_id);
 
       const projectui = getprojectform(projectvalue, 'project');
       const ini = {
@@ -198,9 +205,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     if (
       project_id !== null &&
       project_id !== null &&
-      project_id !== undefined
+      project_id !== undefined &&
+      projectvalue.pre_description !== undefined &&
+      projectvalue.pre_description !== ''
     ) {
-      console.log(project_id);
+      console.log('+++++++++++++++++set initial project value ++++++++');
       handlerprojectsubmit_pounch();
     }
   }, [project_id]);
@@ -244,7 +253,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const setinit = () => {
     if (props.project_id === null || props.project_id === undefined) {
       //if create new notebook then set an empty formUI
-      console.debug('setup' + props.project_id + '---START');
+      console.log('setup' + props.project_id + '---START');
       setinifornewproject();
       console.log(project_id);
       console.log(initialValues);
@@ -333,6 +342,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               _id: project_id,
             })
           );
+          console.log('++++++++++=get meta data');
+          console.log(res);
           console.log(initialValues);
         }
       } catch (error) {
@@ -662,9 +673,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           </Grid>
         )}
 
-        <Grid item sm={4} xs={12}>
+        <Grid item sm={6} xs={12}>
           <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
             <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
+          </Box>
+        </Grid>
+        <Grid item sm={6} xs={12}>
+          <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
             <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
           </Box>
         </Grid>

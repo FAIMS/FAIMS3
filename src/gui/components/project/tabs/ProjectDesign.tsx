@@ -56,6 +56,7 @@ import {
   ProjectSubmit,
 } from './ProjectButton';
 import {ResetComponentProperties} from '../data/componenentSetting';
+import {HRID_STRING} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -381,6 +382,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         'Save and New';
       newprojectvalue['forms'][tabname]['annotation' + tabname] = true;
       newprojectvalue['forms'][tabname]['uncertainty' + tabname] = false;
+      newprojectvalue['forms'][tabname]['formaccessinherit' + tabname] = false;
+      newprojectvalue['access']['access' + tabname] = ['admin'];
       props.setProjectValue({...newprojectvalue});
     } else {
       //after tabname changes direct user to form1 section1
@@ -432,24 +435,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       return ['admin'];
     }
   };
-
-  const handleChangeForm = (event: any, type = 'change', value = '') => {
-    const {newviews, components} = updateuiSpec('updatefield', {
-      event: event,
-      formuiSpec: formuiSpec,
-      formcomponents: formcomponents,
-      formuiview: formuiview,
-      access: getinitaccess(),
-    });
-    setFormuiSpec({...formuiSpec, fields: newviews.fields});
-    setFormComponents(components);
-    console.log(event.target.name);
-    console.log(initialValues);
-    return true;
-  };
-
-  /****This function is to save data to DB TODO LIST*********/
-  const saveorsync = () => {};
 
   const handleChangeFormSection = (event: any) => {
     const newprojectvalue = props.projectvalue;
@@ -553,7 +538,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     id: string,
     type: string
   ) => {
-    if (!newvalue.includes('admin')) newvalue = [...newvalue, 'admin'];
+    if (newvalue === undefined) newvalue = ['admin'];
+    if (newvalue !== undefined && !newvalue.includes('admin'))
+      newvalue = [...newvalue, 'admin'];
     if (type === 'form') {
       const newproj = props.projectvalue;
       if (newproj['access'] === undefined) newproj['access'] = {};
@@ -562,7 +549,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     } else if (type === 'uiS') {
       const newui = formuiSpec;
       console.log(id);
-      newui['fields']['newfield' + id]['access'] = newvalue;
+      newui['fields'][id]['access'] = newvalue;
+      //change for hird
+      if (
+        newui['fields'][id]['component-name'] === 'TemplatedStringField' &&
+        newui['fields'][id]['component-parameters']['hrid'] === true
+      ) {
+        newui['fields'][HRID_STRING + formvariants]['access'] = newvalue;
+      }
       console.log(newui);
       setFormuiSpec({...formuiSpec, fields: newui.fields});
     }
@@ -597,11 +591,15 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               <Grid container spacing={1}>
                 <Grid item sm={4} xs={12}>
                   <Typography variant="subtitle2">
-                    {'newfield' + formcomponent['id']}
+                    {formuiSpec['fields'][formcomponent['id']][
+                      'component-parameters'
+                    ]['hrid'] === true
+                      ? 'Unique Human Readable ID:' + HRID_STRING + formvariants
+                      : formcomponent['id']}
                   </Typography>
                   {getComponentFromField(
                     formuiSpec,
-                    'newfield' + formcomponent['id'],
+                    formcomponent['id'],
                     formProps,
                     () => {} //this is preview field only, so no need to handler changes
                   )}
@@ -615,21 +613,26 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                 </Grid>
                 <Grid item sm={7} xs={9}>
                   <Typography variant="subtitle2">Configuration</Typography>
-
-                  <ResetComponentProperties
-                    namespace={formcomponent['namespace']}
-                    componentName={formcomponent['componentName']}
-                    uiSpec={formuiSpec}
-                    setuiSpec={setFormuiSpec}
-                    fieldName={'newfield' + formcomponent['id']}
-                    formProps={formProps}
-                    designvalue={formcomponent['designvalue']}
-                    currentview={formuiview}
-                    currentform={formvariants}
-                    initialValues={initialValues}
-                    setinitialValues={setinitialValues}
-                    projectvalue={projectvalue}
-                  />
+                  {!(
+                    formcomponent['designvalue'] === 'meta' &&
+                    formuiSpec['fields'][formcomponent['id']]['meta'] ===
+                      undefined
+                  ) && (
+                    <ResetComponentProperties
+                      namespace={formcomponent['namespace']}
+                      componentName={formcomponent['componentName']}
+                      uiSpec={formuiSpec}
+                      setuiSpec={setFormuiSpec}
+                      fieldName={formcomponent['id']}
+                      formProps={formProps}
+                      designvalue={formcomponent['designvalue']}
+                      currentview={formuiview}
+                      currentform={formvariants}
+                      initialValues={initialValues}
+                      setinitialValues={setinitialValues}
+                      projectvalue={projectvalue}
+                    />
+                  )}
 
                   {formcomponent['designvalue'] === 'access' ? (
                     <AutocompleteForm
@@ -640,9 +643,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
                         ]
                       )}
                       labels={
-                        formuiSpec['fields']['newfield' + formcomponent['id']][
-                          'access'
-                        ]
+                        formuiSpec['fields'][formcomponent['id']]['access']
                       }
                       handleAutocomplete={handleAutocomplete}
                       type={'uiS'}

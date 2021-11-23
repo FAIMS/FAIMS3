@@ -649,7 +649,7 @@ const example_ui_specs: {[key: string]: ProjectUIModel} = {
           'str-field',
           'multi-str-field',
           'int-field',
-          'multi-select-field',
+          // 'multi-select-field',
           'checkbox-field',
           'radio-group-field',
         ],
