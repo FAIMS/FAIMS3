@@ -96,18 +96,23 @@ export class TakePoint extends React.Component<
     const error = this.props.form.errors[this.props.field.name];
     let postext = <span>No point taken.</span>;
     if (pos !== null && pos !== undefined) {
+      console.error('Position:', pos.geometry.coordinates);
       postext = (
         <span {...this.props['ValueTextProps']}>
-          Lat: {pos.geometry.coordinates[0]}; Long:{' '}
-          {pos.geometry.coordinates[0]}; Acc: {pos.properties.accuracy}; Alt:{' '}
+          Lat: {pos.geometry.coordinates[1] ?? 'Not captured'}; Long:{' '}
+          {pos.geometry.coordinates[0] ?? 'Not captured'}; Acc:{' '}
+          {pos.properties.accuracy ?? 'Not captured'}; Alt:{' '}
           {pos.properties.altitude ?? 'Not captured'}; AltAcc:{' '}
-          {pos.properties.altitude_accuracy ?? 'Not captured'};
+          {pos.properties.altitude_accuracy ?? 'Not captured'}
         </span>
       );
     }
+    console.error(postext);
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
-      error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
+      error_text = (
+        <span {...this.props['ErrorTextProps']}>{error.toString()}</span>
+      );
     }
     return (
       <div>
@@ -142,17 +147,7 @@ const uiSpec = {
     helperText: 'Get position',
     variant: 'outlined',
   },
-  validationSchema: [
-    ['yup.object'],
-    ['yup.nullable'],
-    [
-      'yup.shape',
-      {
-        latitude: [['yup.number'], ['yup.required']],
-        longitude: [['yup.number'], ['yup.required']],
-      },
-    ],
-  ],
+  validationSchema: [['yup.object'], ['yup.nullable']],
   initialValue: null,
 };
 
