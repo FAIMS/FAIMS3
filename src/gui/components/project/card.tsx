@@ -55,6 +55,7 @@ import TimelapseIcon from '@material-ui/icons/Timelapse';
 import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
 import {getUiSpecForProject} from '../../../uiSpecification';
+import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 type ProjectSearchCardProps = {
   project: ProjectInformation;
 };
@@ -111,7 +112,7 @@ export default function Card(props: ProjectCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
-  const [formuiSpec,setUiSpec] =  useState<any>({});
+  const [viewsets,setViewsets] =  useState<null |ProjectUIViewsets>(null);
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 
@@ -130,6 +131,16 @@ export default function Card(props: ProjectCardProps) {
       setLoading(false);
     }
   }, [project]);
+
+  useEffect(() => {
+    getUiSpecForProject(project.project_id).then(
+      uiSpec => {
+        setViewsets(uiSpec.viewsets);
+      },
+      () => {}
+    );
+  
+}, [project.project_id]);
 
   return (
     <React.Fragment>
@@ -237,6 +248,7 @@ export default function Card(props: ProjectCardProps) {
                 <DraftsTable
                   project_id={project.project_id}
                   maxRows={listView ? 10 : 25}
+                  viewsets={viewsets}
                 />
               </Box>
             ) : (
@@ -248,6 +260,7 @@ export default function Card(props: ProjectCardProps) {
                 <RecordsTable
                   project_id={project.project_id}
                   maxRows={listView ? 10 : 25}
+                  viewsets={viewsets}
                 />
               </Box>
             ) : (

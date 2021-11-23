@@ -37,24 +37,28 @@ import {RecordMetadata} from '../../../datamodel/ui';
 import * as ROUTES from '../../../constants/routes';
 import {listenRecordsList} from '../../../data_storage/listeners';
 import {getAllRecordsWithRegex} from '../../../data_storage/queries';
+import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 
 type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   rows: RecordMetadata[];
   loading: boolean;
+  viewsets?:ProjectUIViewsets |null;
 };
 
 type RecordsBrowseTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   filter_deleted: boolean;
+  viewsets?:ProjectUIViewsets |null;
 };
 
 type RecordsSearchTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   query: string;
+  viewsets?:ProjectUIViewsets |null;
 };
 
 function RecordsTable(props: RecordsTableProps) {
@@ -85,7 +89,11 @@ function RecordsTable(props: RecordsTableProps) {
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
     {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
-    {field: 'type', headerName: 'Kind', type: 'string', width: 200},
+    {field: 'type', headerName: 'Kind', type: 'string', width: 200,renderCell: (params: GridCellParams) => (
+      <>
+        {props.viewsets!==null&&props.viewsets!==undefined&&params.value!==null&&params.value!==undefined?props.viewsets[params.value.toString()].label??params.value:params.value}
+      </>
+    ),},
     {
       field: 'updated_by',
       headerName: 'Last updated by',
@@ -165,6 +173,7 @@ export default function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       maxRows={maxRows}
       rows={rows}
       loading={loading}
+      viewsets={props.viewsets}
     />
   );
 }
@@ -197,6 +206,7 @@ export function RecordsSearchTable(props: RecordsSearchTableProps) {
       maxRows={maxRows}
       rows={rows}
       loading={loading}
+      viewsets={props.viewsets}
     />
   );
 }
