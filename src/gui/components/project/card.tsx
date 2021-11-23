@@ -435,6 +435,10 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
               <br />
             </Typography>
 
+            <Typography variant="body2" color="textPrimary" component="div">
+              Search the data within the records (does not search record
+              metadata):
+            </Typography>
             <TextField
               id="query"
               type="search"
