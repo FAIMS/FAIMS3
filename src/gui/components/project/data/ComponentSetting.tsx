@@ -226,18 +226,6 @@ export const getprojectform = (
       multiline: true,
       multirows: 4,
     },
-    // {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,helperText:'Now disbaled, Will be enabled after access field been defined.'},
-    // {
-    //   name: 'sectiondeaccessinherit',
-    //   label: 'Inherit Access from Form',
-    //   namespace: 'faims-custom',
-    //   componentName: 'Checkbox',
-    //   type_return: 'faims-core::Bool',
-    //   validationSchema: [['yup.bool']],
-    //   type: 'checkbox',
-    //   initialValue: false,
-    //   helperText: 'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
-    // },
   ];
   const sectionaccess = [
     {
@@ -540,15 +528,10 @@ export const getprojectform = (
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
       //TODO Maybe set pre-select value for user
-      if (
-        projectvalue['forms'] !== undefined &&
-        newfield['initialValue'] === undefined
-      )
+      if (projectvalue['forms'] !== undefined )
         if (projectvalue['forms'][props.formname] !== undefined)
           newfield['initialValue'] =
-            projectvalue['forms'][props.formname][fieldname];
-      // else if(newfield['initialValue']===undefined)
-      //   newfield['initialValue']='Save and New'
+            projectvalue['forms'][props.formname][fieldname]??newfield['initialValue'];
       fields[tab][index] = {...newfield};
     });
   }
@@ -662,16 +645,14 @@ export function generateaddfieldui() {
 }
 
 function setmeta(meta: any) {
-  // if (meta.isannotation === false) return undefined;
-  // if (meta.isannotation)
     return {
       annotation_label: 'annotation',
+      annotation:meta.isannotation??true,
       uncertainty: {
-        include: meta.isuncertainty,
+        include: meta.isuncertainty??false,
         label: 'uncertainty',
       },
     };
-  // return undefined;
 }
 
 export const updateuiSpec = (type: string, props: any) => {

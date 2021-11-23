@@ -153,13 +153,6 @@ const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'RadioGroup',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     name: 'radio-group-field',
     id: 'radio-group-field',

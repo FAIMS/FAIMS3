@@ -23,13 +23,6 @@ const DefaultuiSpec = {
   'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
   'component-name': 'TextField',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     fullWidth: true,
     helperText: 'Helper Text',
@@ -54,13 +47,6 @@ const DefaultuiSetting: ProjectUIModel = {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      meta: {
-        annotation_label: 'annotation',
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
-      },
       access: ['admin'],
       'component-parameters': {
         name: 'textInput',
@@ -82,13 +68,6 @@ const DefaultuiSetting: ProjectUIModel = {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      meta: {
-        annotation_label: 'annotation',
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
-      },
       access: ['admin'],
       'component-parameters': {
         name: 'textInput',
@@ -110,13 +89,6 @@ const DefaultuiSetting: ProjectUIModel = {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      meta: {
-        annotation_label: 'annotation',
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
-      },
       access: ['admin'],
       'component-parameters': {
         variant: 'outlined',
@@ -186,13 +158,6 @@ export const MultiTextuiSpec = {
   'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
   'component-name': 'MultipleTextField',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     fullWidth: true,
     helperText: 'Helper Text',

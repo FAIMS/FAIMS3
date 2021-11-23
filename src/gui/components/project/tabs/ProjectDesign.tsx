@@ -92,6 +92,7 @@ const VISIBLE_TYPE = 'visible_types';
 const variant_label = 'Form1';
 const DefaultAnnotation = {
   annotation_label: 'annotation',
+  annotation:true,
   uncertainty: {
     include: false,
     label: 'uncertainty',
@@ -313,7 +314,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     });
 
     setFormComponents(formcomponent);
-    setDesignvalue(index);
+    setDesignvalue(index+getid());
   };
 
   const handelonChangeSection = (event: any, index: number) => {
@@ -496,32 +497,23 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       );
       //set undefined meta
       if (
-        event.target.checked &&
         event.target.name === 'annotation' + formvariants
       ) {
         fields.map((field: string) => {
           if (newviews['fields'][field]['meta'] === undefined)
             newviews['fields'][field]['meta'] = DefaultAnnotation;
+          newviews['fields'][field]['meta']['annotation']=event.target.checked
         });
-      }
-      if (
-        !event.target.checked &&
-        event.target.name === 'annotation' + formvariants
-      ) {
-        //remove all annotation??
       }
 
       if (
-        event.target.checked &&
         event.target.name === 'uncertainty' + formvariants
       ) {
         fields.map((field: string) => {
-          if (newviews['fields'][field]['meta'] === undefined) {
+          if (newviews['fields'][field]['meta'] === undefined) 
             newviews['fields'][field]['meta'] = DefaultAnnotation;
-            newviews['fields'][field]['meta']['uncertainty']['include'] = true;
-          } else {
-            newviews['fields'][field]['meta']['uncertainty']['include'] = true;
-          }
+          newviews['fields'][field]['meta']['uncertainty']['include'] = event.target.checked;
+          
         });
       }
 

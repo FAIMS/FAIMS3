@@ -293,6 +293,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
     return {form_id: form_ids, field_id: field_ids};
   };
+  // console.log(get_autoincrement())
 
   const add_autoince_refereence = async (autoince: any) => {
     if (project_id !== null) {
@@ -307,7 +308,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       }
     }
   };
-
+  console.log('+++++++++=')
+  console.log(get_autoincrement())
   const saveformuiSpec = async (res: any = undefined) => {
     try {
       console.log(
@@ -318,6 +320,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       );
 
       const autoincrecs = get_autoincrement();
+      console.log(autoincrecs)
       add_autoince_refereence(autoincrecs);
       //autoincrecs.map((autoince: any) => );
 

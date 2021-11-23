@@ -19,8 +19,7 @@
  */
 
 import {getComponentPropertiesByName} from '../../../component_registry';
-
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {
   ProjectUIModel,
   resetprops,
@@ -352,6 +351,40 @@ const Componentsetting = (props: componenentSettingprops) => {
 
   const [uiSetting, setuiSetting] = useState(props.uiSetting);
 
+  useEffect(() => {
+    //this function should be used to get new project ui when project_id changes??
+    setini()
+  }, [props.projectvalue['forms'][props.currentform]['uncertainty'+props.currentform]]);
+
+  const updatecertainty = (value:boolean) =>{
+    if (value === true) {
+      const newuis: ProjectUIModel = uiSetting;
+      newuis['views']['meta']['fields'] = [
+        'annotation_label' + props.fieldName,
+        'uncertainty_include' + props.fieldName,
+        'uncertainty_label' + props.fieldName,
+      ];
+      newuis['fields']['uncertainty_include' + props.fieldName].checked=true
+      console.log('value true');
+      console.log(newuis['views']['meta']);
+      setuiSetting({...newuis});
+    }
+
+    if (value === false) {
+      const newuis: ProjectUIModel = uiSetting;
+      newuis['views']['meta']['fields'] = [
+        'annotation_label' + props.fieldName,
+        'uncertainty_include' + props.fieldName,
+      ];
+      newuis['fields']['uncertainty_include' + props.fieldName].checked=false
+      console.log('value false');
+      console.log(newuis['views']['meta']);
+      setuiSetting({...newuis});
+    }
+  }
+  const setini = () =>{
+    updatecertainty(props.projectvalue['forms'][props.currentform]['uncertainty'+props.currentform]??true)
+  }
   const handlerchanges = (event: any) => {
     const name = event.target.name.replace(props.fieldName, '');
   };
@@ -380,28 +413,7 @@ const Componentsetting = (props: componenentSettingprops) => {
 
       if (name === 'uncertainty_include') {
         const value = event.target.checked;
-        if (value === true) {
-          const newuis: ProjectUIModel = uiSetting;
-          newuis['views']['meta']['fields'] = [
-            'annotation_label' + props.fieldName,
-            'uncertainty_include' + props.fieldName,
-            'uncertainty_label' + props.fieldName,
-          ];
-          console.log('value true');
-          console.log(newuis['views']['meta']);
-          setuiSetting({...newuis});
-        }
-
-        if (value === false) {
-          const newuis: ProjectUIModel = uiSetting;
-          newuis['views']['meta']['fields'] = [
-            'annotation_label' + props.fieldName,
-            'uncertainty_include' + props.fieldName,
-          ];
-          console.log('value false');
-          console.log(newuis['views']['meta']);
-          setuiSetting({...newuis});
-        }
+        updatecertainty(value)
         console.log(uiSetting);
       }
     }

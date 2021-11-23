@@ -110,13 +110,6 @@ const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'Select',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     fullWidth: true,
     helperText: 'Choose a field from the dropdown',
