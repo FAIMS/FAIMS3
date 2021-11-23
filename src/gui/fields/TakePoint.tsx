@@ -55,6 +55,7 @@ interface Props {
   enableHighAccuracy?: boolean;
   timeout?: number;
   maximumAge?: number;
+  instruction_text?: string;
 }
 
 export class TakePoint extends React.Component<
@@ -94,6 +95,8 @@ export class TakePoint extends React.Component<
   render() {
     const pos = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
+    const instruction_text =
+      this.props.instruction_text ?? 'Click to save current location';
     let postext = <span>No point taken.</span>;
     if (pos !== null && pos !== undefined && pos.geometry !== undefined) {
       postext = (
@@ -114,6 +117,7 @@ export class TakePoint extends React.Component<
     }
     return (
       <div>
+        <p>{instruction_text}</p>
         <Button
           variant="outlined"
           color={'primary'}
