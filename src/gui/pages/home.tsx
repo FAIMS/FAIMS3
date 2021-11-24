@@ -68,7 +68,7 @@ export default function Home() {
   const pouchProjectList = getProjectList();
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
-    {title: 'WorkSpace'},
+    {title: 'Workspace'},
   ];
   return (
     <Container maxWidth="lg">
