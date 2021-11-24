@@ -1,11 +1,17 @@
 name: Integration test for Android compile, no upload
 on:
-  push:
-    branches: [ main, ios ]  
-
   # Allows you to run this workflow manually from the Actions a tab
   workflow_dispatch:
-
+  push:
+    branches:
+      - main
+      - staging
+      - trying
+  pull_request:
+    branches:
+      - main
+      - staging
+      - trying
 jobs:
   deploy:
     name: Deploying to Testflight
