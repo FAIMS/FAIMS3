@@ -346,6 +346,14 @@ export const setSetingInitialValues = (
   return initialValues;
 };
 
+const isArrayInArray=(arr:Array<any>, item:Array<any>)=>{
+  const item_as_string = JSON.stringify(item);
+  const contains = arr.some((ele)=>{
+    return JSON.stringify(ele) === item_as_string;
+  });
+  return contains;
+}
+
 const Componentsetting = (props: componenentSettingprops) => {
   const {handlerchangewithview, ...others} = props;
 
@@ -377,8 +385,6 @@ const Componentsetting = (props: componenentSettingprops) => {
         'uncertainty_include' + props.fieldName,
       ];
       newuis['fields']['uncertainty_include' + props.fieldName].checked=false
-      console.log('value false');
-      console.log(newuis['views']['meta']);
       setuiSetting({...newuis});
     }
   }
@@ -417,6 +423,32 @@ const Componentsetting = (props: componenentSettingprops) => {
         console.log(uiSetting);
       }
     }
+    if(view==='FormParamater'){
+      const newvalues = props.uiSpec;
+      const name = event.target.name.replace(props.fieldName, '');
+      if(name==='required'){
+        const value = event.target.checked;
+        if(value===true) {
+          if(!isArrayInArray (newvalues['fields'][props.fieldName]['validationSchema'],["yup.required"])) {
+            newvalues['fields'][props.fieldName]['validationSchema'].push(["yup.required"])
+            props.setuiSpec({...newvalues});
+            console.log('Not contain'+"SHOULD")
+          }
+          
+        }else{
+          if(isArrayInArray (newvalues['fields'][props.fieldName]['validationSchema'],["yup.required"])){
+            newvalues['fields'][props.fieldName]['validationSchema']=
+            newvalues['fields'][props.fieldName]['validationSchema'].filter((valid:Array<string>)=>{return !valid.includes('yup.required')})
+            props.setuiSpec({...newvalues});
+            console.log('Contain'+"SHould NOT")
+          }
+          
+          
+        }
+        console.log(newvalues['fields'][props.fieldName]['validationSchema'])
+      }
+    }
+    console.log(event.target.name+view+event.target.checked)
   };
   return (
     <Defaultcomponentsetting

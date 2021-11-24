@@ -43,7 +43,7 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
     );
 
     let graph = 'digraph {';
-    tabs.map((tabs: string) => (graph = graph + tabs + ';'));
+    tabs.map((tabs: string) => (graph = graph + '"'+tabs + '"'+ ';'));
 
     formuiSpec['visible_types'].map((tab: string) =>
       newconnections.push(...getconnections(tab, formuiSpec, tabs))
@@ -53,11 +53,14 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
       connection.link === 'Linked'
         ? (graph =
             graph +
-            connection.otab +
+            '"'+connection.otab +
             '->' +
-            connection.tab +
+             connection.tab + '"'+
             '[arrowhead = "forward"];')
-        : (graph = graph + connection.otab + '->' + connection.tab + ';')
+        : (graph =
+           '"'+connection.otab +
+          '->' +
+           connection.tab + '"' + ';')
     );
 
     graph = graph + '}';
