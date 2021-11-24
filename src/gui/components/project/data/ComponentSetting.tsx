@@ -67,7 +67,7 @@ export const getconnections = (
     uiSpec['views'][view]['fields'].map((field: string) =>
       uiSpec['fields'][field]['component-name'] === 'RelatedRecordSelector'
         ? uiSpec['fields'][field]['component-parameters']['related_type'] !==
-            '' &&
+            '' &&uiSpec['fields'][field]['component-parameters']['related_type']!==undefined &&
           conectiontabs.push({
             tab:
               uiSpec['viewsets'][

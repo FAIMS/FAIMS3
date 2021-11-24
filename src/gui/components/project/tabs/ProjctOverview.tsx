@@ -48,23 +48,30 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
     formuiSpec['visible_types'].map((tab: string) =>
       newconnections.push(...getconnections(tab, formuiSpec, tabs))
     );
+    
 
     newconnections.map((connection: any) =>
       connection.link === 'Linked'
         ? (graph =
             graph +
-            '"'+connection.otab +
+            '"'+connection.otab + '"'+
             '->' +
-             connection.tab + '"'+
+            '"'+ connection.tab + '"'+
             '[arrowhead = "forward"];')
         : (graph =
-           '"'+connection.otab +
+          graph +
+           '"'+connection.otab + '"'+
           '->' +
-           connection.tab + '"' + ';')
+          '"'+connection.tab + '"' + ';')
     );
 
+   
     graph = graph + '}';
+    console.log(graph)
     setGraph(graph);
+    
+    
+    
   };
 
   return (
