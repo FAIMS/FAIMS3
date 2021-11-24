@@ -69,7 +69,7 @@ platform :ios do
       export_method: "development",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => PROVISIONING_PROFILE_SPECIFIER
+            DEVELOPER_APP_ID => "match Development #{DEVELOPER_APP_IDENTIFIER}"        
         }
       }
     )
