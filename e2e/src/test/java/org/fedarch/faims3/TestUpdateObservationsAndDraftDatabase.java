@@ -190,8 +190,8 @@ public class TestUpdateObservationsAndDraftDatabase {
 	 * as new-observations-in-progress. Here we are performing the inverse of task 2.2 –
 	 * editing a observation, pausing our edits, creating a new observation, and then resuming our edits.
 	 */
-	@Test
-	public void testDatabaseDataPreservation() {
+	//@Test
+	//public void testDatabaseDataPreservation() {
 	//Edit an observation on the browser but do not press update
 
     //What are the first 6 characters of this observation’s UUID?
@@ -209,7 +209,7 @@ public class TestUpdateObservationsAndDraftDatabase {
     //Allow the application to sync
     //Observe observations on other devices after they sync – verify that only the latest data appears, but the list of all revisions is shown in the REVISIONS tab.
 
-	}
+	//}
 
 
 }
