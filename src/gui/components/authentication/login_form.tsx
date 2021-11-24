@@ -91,7 +91,7 @@ export function LoginForm(props: LoginFormProps) {
     return <CircularProgress color="primary" size="2rem" thickness={5} />;
   } else if ('error' in listingInfo) {
     return <span>Error: {listingInfo.error.toString()}</span>;
-  } else {
+  } else if ('auth_mechanisms' in listingInfo) {
     return (
       <Box>
         {Object.keys(listingInfo.auth_mechanisms).map(auth_id => (
@@ -103,5 +103,7 @@ export function LoginForm(props: LoginFormProps) {
         ))}
       </Box>
     );
+  } else {
+    return <span>Unable to connect to login system</span>;
   }
 }
