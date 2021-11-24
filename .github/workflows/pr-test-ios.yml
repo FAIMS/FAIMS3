@@ -1,14 +1,20 @@
-name: ios-fastlane-testflight
+name: Integration test for Apple compile, no upload
 on:
-  push:
-    branches: [ main, ios ]  
-
   # Allows you to run this workflow manually from the Actions a tab
   workflow_dispatch:
-
+  push:
+    branches:
+      - main
+      - staging
+      - trying
+  pull_request:
+    branches:
+      - main
+      - staging
+      - trying
 jobs:
   deploy:
-    name: Deploying to Testflight
+    name: Running Fastlane
     runs-on: macOS-latest
 
     steps:
@@ -39,10 +45,10 @@ jobs:
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
       - run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
-      - name: Deploy iOS Beta to TestFlight via Fastlane
+      - name: Build iOS fastlane IPA
         uses: maierj/fastlane-action@v2.1.0
         with:
-          lane: closed_beta
+          lane: test_ipa
           subdirectory: 'ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: true
@@ -63,4 +69,9 @@ jobs:
           APPLE_KEY_CONTENT: '${{ secrets.APPLE_KEY_CONTENT }}'
           BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'
           BROWSERSTACK_ACCESS_KEY: '${{secrets.BROWSERSTACK_ACCESS_KEY}}'
-      
+      - name: Archive ipas
+        uses: actions/upload-artifact@v2
+        with:
+          name: ipa
+          path: |
+            /Users/runner/work/FAIMS3/FAIMS3/ios/App/App.ipa
