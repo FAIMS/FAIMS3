@@ -16,9 +16,19 @@ or alternatively using `brew install fastlane`
 
 # Available Actions
 ## iOS
-### ios closed_beta
+### ios test_ipa
 ```
-fastlane ios closed_beta
+fastlane ios test_ipa
+```
+
+### ios closed_beta_browserstack
+```
+fastlane ios closed_beta_browserstack
+```
+
+### ios closed_beta_testflight
+```
+fastlane ios closed_beta_testflight
 ```
 
 

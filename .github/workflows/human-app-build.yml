@@ -70,7 +70,7 @@ jobs:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version }}            
           cache: 'npm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Set up JDK 1.8
@@ -119,12 +119,12 @@ jobs:
           ruby-version: '3.0.2'
           # bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - run: |
-          bundle install # to get cocoapods...
+          bundle install # to get cocoapods...   
       - run: fastlane install_plugins
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version }}            
           cache: 'npm'
       - name: Building webapp
         run: |
@@ -142,7 +142,7 @@ jobs:
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.1.0
         with:
-          lane: closed_beta_testflight
+          lane: closed_beta
           subdirectory: 'ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
