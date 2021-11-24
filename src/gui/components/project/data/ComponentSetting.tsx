@@ -740,9 +740,13 @@ const newfromui = (
           // if(setmeta({isannotation:true,isuncertainty:false})!==undefined)
           field['meta'] = setmeta({
             isannotation:
-            projectvalue['forms'][variant]!==undefined?projectvalue['forms'][variant]['annotation' + variant]:false,
+              projectvalue['forms'][variant] !== undefined
+                ? projectvalue['forms'][variant]['annotation' + variant]
+                : false,
             isuncertainty:
-            projectvalue['forms'][variant]!==undefined?projectvalue['forms'][variant]['uncertainty' + variant]:false,
+              projectvalue['forms'][variant] !== undefined
+                ? projectvalue['forms'][variant]['uncertainty' + variant]
+                : false,
           });
         const fieldprops = {};
         const newuiSpeclist = FieldSettings(
@@ -751,18 +755,14 @@ const newfromui = (
           fieldprops,
           access
         );
-        try{
-          const newse=getComponentPropertiesByName(
+        try {
+          const newse = getComponentPropertiesByName(
             field['component-namespace'],
             field['component-name']
-          ).settingsProps[0]
+          ).settingsProps[0];
           initialfieldvalue = {
             ...initialfieldvalue,
-            ...setSetingInitialValues(
-              newse,
-              field,
-              gefieldname
-            ),
+            ...setSetingInitialValues(newse, field, gefieldname),
           };
           newformcom[view] = [
             ...newformcom[view],
@@ -774,9 +774,9 @@ const newfromui = (
               namespace: field['component-namespace'],
             },
           ];
-        }catch(error){
-          console.error(gefieldname+' not set correctly')
-          console.error(error)
+        } catch (error) {
+          console.error(gefieldname + ' not set correctly');
+          console.error(error);
         }
       });
     });

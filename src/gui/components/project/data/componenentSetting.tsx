@@ -292,7 +292,7 @@ const getvalue = (
     return returnvalue;
   }
   if (['access', 'validationSchema'].includes(view)) return fieldui[name];
-  if (view === 'meta'&&fieldui['meta']!==undefined) {
+  if (view === 'meta' && fieldui['meta'] !== undefined) {
     if (name === 'uncertainty_include' || name === 'uncertainty_label')
       return fieldui['meta']['uncertainty'][name.replace('uncertainty_', '')];
     return fieldui['meta'][name];

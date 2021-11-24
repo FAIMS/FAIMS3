@@ -1,0 +1,868 @@
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Fauxton for Pouch</title>
+        <style>
+#table {
+    display:flex;
+    flex-direction:row;
+    width: max-content;
+    margin:0px;
+    background-color:gainsboro;
+    min-width:100%;
+    min-height:100%;
+}
+body {
+    margin:0;
+    height: 100%;
+}
+body > div {
+    min-height: 100%;
+    display: flex;
+}
+.db_item .db_data {
+    overflow-y:auto;
+    overflow-x:auto;
+    /*
+    Like nowrap, but preserves whitespace
+    https://bugzilla.mozilla.org/show_bug.cgi?id=1137650
+    */
+    white-space:pre;
+    font-family: 'Fira Code', 'Droid Sans Mono', 'monospace', monospace, 'Droid Sans Fallback';
+    font-size:7pt;
+    padding:2px;
+}
+.db_item, .db_add_item {
+    margin:4px;
+    border:none;border-radius:4px;
+    margin-top:0px;
+}
+#error_modal {
+    position:fixed;
+    width:100%;
+    height:100%;
+    left:0;
+    align-items:center;
+    justify-content:center;
+    display:flex;
+    top:-99999px;
+    animation-fill-mode:both;
+    background-color:rgba(0,0,0,0.3);
+}
+@keyframes error_modal_anim2 {
+    from {top: -99999px; opacity:0;}
+    1%   {top:      0px; opacity:0;}
+    to   {top:      0px; opacity:1;}
+}
+@keyframes error_modal_anim {
+    from {top: -99999px; opacity:0;}
+    1%   {top:      0px; opacity:0;}
+    to   {top:      0px; opacity:1;}
+}
+#error_modal.hidden {
+    animation: error_modal_anim 180ms ease-out reverse both;
+}
+#error_modal.visible {
+    animation: error_modal_anim2 180ms ease-in normal both;
+    animation-direction:normal;
+}
+#error_dialog {
+    box-shadow:
+        0px 4px 0px 0px rgba(0,0,0,0.42);
+    border-radius:4px;
+    padding:0px 7px;
+
+    background-color:whitesmoke;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+#error_dialog:before {
+    content: 'Error occurred';
+    width:100%;
+    background-color:rgb(236, 96, 96);
+    box-shadow: 0px 4px 0px 0px rgb(168, 81, 81);
+    padding:2.5px 7px;
+    display:flex;
+    margin-bottom:4px;
+    color:whitesmoke;
+    border-top-left-radius:4px;
+    border-top-right-radius:4px;
+}
+#error_text {
+    margin: 6.5px 10px;
+    color: red;
+}
+#add_db > form {
+    display:flex;
+    flex-direction:row;
+    width:400px;
+    margin:4px;
+    border:none;border-radius:4px;
+    align-items: flex-start;
+}
+#add_db > form > input[type="text"] {
+    flex-grow:1;
+}
+#add_db > form > input[type="submit"] {
+    flex-grow:0;
+}
+.buttons > *, .del_button, .load_button, .right_button, .left_button {
+    width: 2em;
+}
+.buttons > * {
+    flex-grow:1;
+}
+.column {
+    display:flex;
+    flex-direction:column;
+    padding:6px;
+    padding-bottom:8px;
+    animation-duration: 60ms;
+    animation-timing-function: ease-in;
+}
+@keyframes column_appear {
+    from {
+        opacity:0.2;
+        transform:translateY(-100%);
+    }
+    to {
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+@keyframes column_disappear {
+    from {
+        opacity:1;
+        transform:translateY(0);
+    }
+    to {
+        opacity:0.2;
+        transform:translateY(-100%);
+    }
+}
+.column_appear {
+    animation-name: column_appear;
+}
+.column_disappear {
+    animation-name: column_disappear;
+}
+.column_move {
+    transition: transform 60ms ease, background-color 60ms ease;
+}
+.column_shuffle {
+    transition: transform 60ms ease, background-color 60ms ease;
+}
+#table > .column_move:nth-child(2), #table > .column_shuffle:nth-child(2) {
+    background-color:rgba(255,255,255,0);
+}
+#table > .column_move:not(:nth-child(2)), #table > .column_shuffle:not(:nth-child(2)) {
+    background-color:rgba(255,255,255,0.5);
+}
+#table > *:nth-child(2) {
+    background-color:rgba(255,255,255,0.5);
+}
+#add_db.column_shuffle {
+    transition: background-color 60ms ease;
+    animation: add_db_shuffle ease 60ms;
+}
+@keyframes add_db_shuffle {
+    to {
+        transform: translateX(0px);
+    }
+}
+.highlighted {
+    outline: 4px solid rgb(0, 153, 255)
+}
+.title_item {
+    display:flex;
+    flex-direction:row;
+    margin:4px;
+    border-radius:4px;
+}
+.title_item > * {
+    border-bottom-left-radius:0px !important;
+    border-bottom-right-radius:0px !important;
+}
+.replicate {
+    display:flex;
+    flex-direction:row;
+    margin:4px;
+    margin-top:0px;
+    border-radius:4px;
+}
+.replicate .target {
+    flex-grow:1;
+}
+.db_item > *, .db_item > .buttons > *, .replicate > * {
+    border-radius:0px !important;
+}
+.db_item:last-child > * {
+    border-bottom-left-radius:4px !important;
+}
+.db_item:last-child > .buttons > *:last-child {
+    border-bottom-right-radius:4px !important;
+}
+.title {
+    padding: 7.5px 11px;
+    font-size:14.6667px;
+    font-family: Cantarell;
+    flex-grow:1;
+}
+input[type="button"], input[type="submit"], a {
+    -webkit-appearance: none;
+    background-color:rgb(236, 96, 96);
+    color:white;
+    border-radius:4px;
+    padding:6.5px 10px;
+    box-shadow: 0px 4px 0px 0px rgb(168, 81, 81);
+    border:none;
+    transform:translateY(0px);
+
+    transition:all 200ms ease;
+
+    font-size:14.6667px;
+    font-family: Cantarell;
+    text-decoration: none;
+}
+input[type="button"]:focus, input[type="submit"]:focus, a:focus {
+    outline:none;
+    transform:translateY(-2px);
+    box-shadow: 0px 6px 0px 0px rgb(168, 81, 81);
+}
+input[type="button"]:hover, input[type="submit"]:hover, a:hover {
+    background-color:rgb(253, 75, 75);
+    transform:translateY(-2px);
+    box-shadow: 0px 6px 0px 0px rgb(168, 81, 81);
+
+}
+input[type="button"]:active:hover, input[type="submit"]:active:hover, a:active:hover {
+    transform:translateY(2px);
+    box-shadow: 0px 2px 0px 0px rgb(168, 81, 81);
+    transition: all 10ms ease;
+    
+}
+input[type="button"]:disabled, input[type="submit"]:disabled,
+input[type="button"]:disabled:active, input[type="submit"]:disabled:active {
+    background-color:darkgray;
+    box-shadow: 0px 4px 0px 0px grey;
+    transform:translateY(0px);
+}
+input[type="text"], textarea {
+    box-shadow:0px 4px 0px 0px rgba(0,0,0,0.12);
+    border-radius:4px;
+    border:none;
+    padding:6.5px 10px;
+    margin:0;
+    transition:box-shadow 200ms ease, transform 200ms ease;
+    
+    transform:translateY(0px);
+
+    font-size:14.6667px;
+    font-family: Cantarell;
+}
+input[type="text"]:focus, textarea:focus { 
+    outline:none;
+    transform:translateY(-2px);
+    box-shadow:0px 6px 0px 0px rgba(0,0,0,0.12);
+    transition: all 10ms ease;
+}
+.replicate_log.active, .list {
+    background-color: rgba(255,255,255,0.5);
+    margin:0px 4px;
+    list-style: none;
+    padding: 4px;
+}
+#add_db > .list {
+    cursor:pointer;
+}
+.list > li {
+    display:block;
+}
+.list > li:nth-child(even) {
+    background-color:rgba(255,255,255,0.5);
+}
+.linked_horizontal {
+    display:flex;
+    flex-direction:row;
+}
+.linked_vertical {
+    display:flex;
+    flex-direction:column
+}
+.linked_horizontal > input:not(:last-child),
+.linked_horizontal > a:not(:last-child) {
+    margin-right:0;
+    border-right-style: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.linked_horizontal > input:not(:first-child),
+.linked_horizontal > a:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left:0;
+}
+.linked_horizontal > input:not(:last-child),
+.linked_horizontal > textarea:not(:last-child),
+.linked_horizontal > div:not(:last-child) > input,
+.linked_horizontal > div:not(:last-child) > textarea  {
+    margin-right:0;
+    border-right-style: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.linked_horizontal > input:not(:first-child),
+.linked_horizontal > textarea:not(:first-child),
+.linked_horizontal > div:not(:first-child) > input,
+.linked_horizontal > div:not(:first-child) > textarea {
+    margin-left:0;
+    border-left-style: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.linked_vertical > input:not(:last-child),
+.linked_vertical > textarea:not(:last-child),
+.linked_vertical > div:not(:last-child) > input,
+.linked_vertical > div:not(:last-child) > textarea {
+    margin-bottom:0;
+    border-bottom-style: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.linked_vertical > input:not(:first-child),
+.linked_vertical > textarea:not(:first-child),
+.linked_vertical > div:not(:first-child) > input,
+.linked_vertical > div:not(:first-child) > textarea {
+    margin-top:0;
+    border-top-style: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+.replicate .placeholder.full {
+    content: 'Sync target';
+}
+        </style>
+        <script src="http://cdn.jsdelivr.net/npm/pouchdb@7.2.1/dist/pouchdb.min.js"></script>
+        <script>
+            var MAX_WIDTH=600;
+            var MAX_HEIGHT=1200;
+            function action_add(event) {
+                event.preventDefault();
+                new DBView(event.srcElement.db_name.value);
+                return false;
+            }
+            function getPins() {
+                var pins = null;
+                try {
+                    pins = JSON.parse(localStorage.getItem('pins'));
+                } catch(err) {}
+                return pins || [];
+            }
+            function setPins(pins) {
+                localStorage.setItem('pins', JSON.stringify(pins));
+            }
+            function removePin(db_name) {
+                var pins = getPins();
+                var existing_index = pins.indexOf(db_name);
+                if(existing_index >= 0) {
+                    pins.splice(existing_index, 1);
+                }
+                setPins(pins);
+                return existing_index;
+            }
+            function addPin(db_name, index=-1) {
+                if(index < 0) {
+                    index = Object.keys(created_dbs).length + index + 1;
+                }
+                var existing_index = removePin(db_name);
+                if(existing_index >= 0 && existing_index < index) {index -= 1;}
+                var pins = getPins();
+
+                pins.splice(index, 0, db_name);
+                setPins(pins);
+                return index;
+            }
+            function error_message(message) {
+                if(message !== null) {
+                    console.error(message);
+                    document.getElementById('error_modal').className = 'visible';
+                    document.getElementById('error_text').innerText = message;
+                } else if (document.getElementById('error_modal').className === 'visible') {
+                    // Clear error
+                    document.getElementById('error_modal').className = 'hidden';
+                    setTimeout(() => 
+                        document.getElementById('error_text').innerText = ''
+                    , 180);
+                }
+            }
+
+            var add_shuffle_amount = 0;
+            var del_shuffle_amount = 0;
+            function add_shuffle(my_size) {
+                var add_db = document.getElementById('add_db');
+                var start_new_animation = add_shuffle_amount == 0;
+
+                if (my_size < 0) {
+                    del_shuffle_amount += my_size;
+                }
+                add_shuffle_amount += my_size;
+
+                add_db.style.transform = 'translateX(' + -add_shuffle_amount + 'px)';
+                add_db.style.marginLeft = del_shuffle_amount + 'px';
+
+                if (start_new_animation) {
+                    add_db.className += ' column_shuffle';
+                } 
+
+                setTimeout(() => {
+                    if (my_size < 0) {
+                        del_shuffle_amount -= my_size;
+                    }
+                    add_shuffle_amount -= my_size;
+
+                    add_db.style.transform = 'translateX(' + -add_shuffle_amount + 'px)';
+                    add_db.style.marginLeft = del_shuffle_amount + 'px';
+
+                    if (add_shuffle_amount == 0) {
+                        // stop animation
+                        add_db.className = add_db.className.replace(' column_shuffle', '');
+                    }
+                }, 60)
+            }
+
+            var created_dbs = {};
+            function DBView(db_name) {
+                if(created_dbs[db_name]) {
+                    var column = created_dbs[db_name].column;
+                    var old_classname = column.className;
+                    var new_classname = old_classname + ' highlighted';
+                    column.className = new_classname
+                    var animation = setInterval(() => {
+                        if(column.className.indexOf('highlighted') < 0) {
+                            column.className = new_classname;
+                        } else {
+                            column.className = old_classname;
+                        }
+                    }, 500)
+                    setTimeout(() => {
+                        clearInterval(animation);
+                            column.className = old_classname;
+                    }, 180);
+                    return;
+                } else {
+                    created_dbs[db_name] = this;
+                    addPin(db_name);
+                }
+                try {
+                    this.db = new PouchDB(db_name);
+                } catch(err) {
+                    error_message(err.message);
+                }
+                
+                var db_index = Object.keys(created_dbs).length - 1;
+
+                var table_elem = document.getElementById('table');
+                var add_db_elem = document.getElementById('add_db');
+
+                this.column = document.createElement('div');
+                this.add_cell = document.createElement('form');
+                var add_data = document.createElement('textarea');
+                var add_buttons = document.createElement('div');
+                var clear_button = document.createElement('input');
+                var mod_button   = document.createElement('input');
+                var title_cell = document.createElement('div');
+                var title = document.createElement('span');
+                var del_button   = document.createElement('input');
+                var load_button  = document.createElement('input');
+                var left_button   = document.createElement('input');
+                var right_button   = document.createElement('input');
+                var replicate_cell = document.createElement('form');
+                var replicate_target = document.createElement('input');
+                var replicate_placeholder = document.createElement('span');
+                var start_button = document.createElement('input');
+                this.replicate_log = document.createElement('div');
+                
+                title_cell.appendChild(left_button);
+                title_cell.appendChild(title);
+                title_cell.appendChild(load_button);
+                title_cell.appendChild(del_button);
+                title_cell.appendChild(right_button);
+                this.column.appendChild(title_cell);
+                replicate_cell.appendChild(replicate_placeholder);
+                replicate_cell.appendChild(replicate_target);
+                replicate_cell.appendChild(start_button);
+                this.column.appendChild(replicate_cell);
+                this.column.appendChild(this.replicate_log);
+                this.add_cell.appendChild(add_data);
+                add_buttons.append(clear_button);
+                add_buttons.append(mod_button);
+                this.add_cell.appendChild(add_buttons);
+                this.column.appendChild(this.add_cell);
+                table_elem.insertBefore(this.column, add_db_elem);
+                
+                this.column.className='column';
+                this.add_cell.className='db_add_item db_item linked_horizontal';
+                title.className = 'title';
+                title_cell.className = 'linked_horizontal title_item';
+                replicate_cell.className = 'linked_horizontal replicate';
+                replicate_target.className = 'target';
+                replicate_target.type = 'text';
+                replicate_target.setAttribute('value', '');
+                start_button.className = 'start';
+                start_button.type = 'submit';
+                start_button.value = '⇅';
+                this.replicate_log.className = 'replicate_log';
+                add_data.className = 'db_data';
+                add_buttons.className = 'linked_vertical buttons';
+                clear_button.type = 'button';
+                clear_button.value = '×';
+                clear_button.disabled = true;
+                mod_button.type='submit';
+                mod_button.value='+';
+                del_button.className = 'del_button';
+                del_button.type='button';
+                del_button.value='-';
+                load_button.className = 'load_button';
+                load_button.type = 'button';
+                load_button.value = '↻';
+                left_button.className = 'load_button';
+                left_button.type = 'button';
+                left_button.value = '←';
+                right_button.className = 'load_button';
+                right_button.type = 'button';
+                right_button.value = '→';
+                title.innerText = db_name;
+                this.column.className += ' column_appear';
+                setTimeout(() => {
+                    this.column.className = this.column.className.replace(' column_appear', '');
+                }, 60);
+                add_shuffle(this.column.offsetWidth);
+
+                var update_clear = (event) => {
+                    clear_button.disabled = add_data.value == '';
+                };
+
+                this.update_arrows = () => {
+                    var pins = getPins();
+                    left_button.disabled = pins.indexOf(db_name) == 0;
+                    right_button.disabled = pins.indexOf(db_name) == pins.length-1;
+                }
+
+                for(var pin_name in created_dbs) {
+                    created_dbs[pin_name].update_arrows();
+                }
+
+                clear_button.addEventListener('click', (event) => {
+                    add_data.value = '';
+                    update_clear();
+                });
+
+                add_data.addEventListener('change', update_clear);
+                add_data.addEventListener('focus', update_clear);
+                add_data.addEventListener('blur', update_clear);
+                add_data.addEventListener('keydown', update_clear);
+                add_data.addEventListener('keyup', update_clear);
+                add_data.addEventListener('keypress', update_clear);
+
+                this.cells = {};
+                
+                var update = () => 
+                    this.db.allDocs({include_docs:true}).then(all_docs => {
+                        for(var cell_id in this.cells) {
+                            if(!all_docs.rows.includes(doc => doc.id == cell_id)) {
+                                this.cells[cell_id].cell.parentElement.removeChild(this.cells[cell_id].cell);
+                            }
+                        }
+
+                        all_docs.rows.forEach(doc => {
+                            var first_run = this.cells[doc.id] == null;
+                            var cell_data = this.cells[doc.id] = this.cells[doc.id] || {};
+                            var cell      = cell_data.cell     = cell_data.cell     || document.createElement('form');
+                            var buttons   = cell_data.buttons  = cell_data.buttons  || document.createElement('div');
+                            var pre       = cell_data.pre      = cell_data.pre      || document.createElement('textarea');
+                            var del       = cell_data.del      = cell_data.del      || document.createElement('input');
+                            var mod       = cell_data.mod      = cell_data.mod      || document.createElement('input');
+
+                            if(cell_data.cell.parentElement != this.column)
+                                this.column.insertBefore(cell, this.add_cell);
+                            
+                            if(first_run) {
+                                buttons.appendChild(del);
+                                buttons.appendChild(mod);
+                                cell.appendChild(pre);
+                                cell.appendChild(buttons);
+                                
+                                cell.className = 'cell';
+                                pre.className = 'db_data';
+                                cell.className = 'db_item linked_horizontal';
+                                buttons.className = 'linked_vertical buttons';
+                                del.type='button';
+                                del.value='×';
+                                mod.type = 'submit';
+                                mod.value = '⏎';
+                            }
+                            
+                            const new_value = JSON.stringify(doc.doc, null, '    ');
+                            const reset_size = pre.value === '';
+                            pre.value = new_value;
+                            if (reset_size) { //New value from non-existant value
+                                pre.style.width = '0px';
+                                pre.style.height = '0px';
+                                pre.style.width = Math.min(MAX_WIDTH, pre.offsetWidth + pre.scrollWidth) + 'px';
+                                pre.style.height = Math.min(MAX_HEIGHT, pre.offsetHeight + pre.scrollHeight) + 'px';
+                            }
+
+                            // Event handlers change based on doc._rev
+                            if(cell_data.del_listener)
+                                del.removeEventListener('click', cell_data.del_listener);
+
+                            del.addEventListener('click',  cell_data.del_listener = (event) => {
+                                this.db.remove(doc.id, doc.doc._rev).catch(err => 
+                                error_message(err.message))
+                                .then(() => {cell.parentElement.removeChild(cell)});
+                            });
+
+                            if(cell_data.mod_listener)
+                                cell.removeEventListener('submit', cell_data.mod_listener);
+
+                            cell.addEventListener('submit', cell_data.mod_listener = (event) => {
+                                event.preventDefault();
+                                var data;
+                                try {
+                                    data = JSON.parse(pre.value);
+                                    this.db.put(data).catch(err => error_message(err.message)).then(update);
+                                } catch(err) {
+                                    error_message(err);
+                                }
+                                update();
+                                return false;
+                            });
+                        });
+                    }).catch(err => {
+                        error_message(err);
+                    })
+                
+                left_button.addEventListener('click', (event) => {
+                    var pins = getPins();
+                    var db_index = pins.indexOf(db_name);
+                    if(db_index == 0) {return;}
+                    db_index -= 1;
+                    addPin(db_name, db_index);
+                    var parent = document.getElementById('table');
+
+                    var nextElem = created_dbs[pins[db_index]].column;
+
+                    this.column.className += ' column_move';
+                    nextElem.className += ' column_move';
+
+                    this.column.style.transform = 'translateX(-'+nextElem.offsetWidth+'px)';
+                    nextElem.style.transform = 'translateX('+this.column.offsetWidth+'px)';
+
+                    setTimeout(() => {
+                        nextElem.className = nextElem.className.replace(' column_move', '')
+                        this.column.className = this.column.className.replace(' column_move', '')
+
+                        this.column.style.transform = '';
+                        nextElem.style.transform = '';
+
+                        parent.removeChild(this.column);
+                        parent.insertBefore(this.column, nextElem);
+
+                        created_dbs[pins[db_index]].update_arrows();
+                        this.update_arrows();
+                    }, 60);
+                });
+                
+                right_button.addEventListener('click', (event) => {
+                    var pins = getPins();
+                    var db_index = pins.indexOf(db_name);
+                    if(db_index == pins.length-1) {return;}
+                    db_index += 1;
+                    addPin(db_name, db_index+1);
+                    var parent = document.getElementById('table');
+
+                    var nextElem = db_index+1 >= pins.length ? document.getElementById('add_db') : created_dbs[pins[db_index+1]].column
+                    var prevElem = created_dbs[pins[db_index]].column;
+
+                    this.column.className += ' column_move';
+                    prevElem.className += ' column_move';
+
+                    this.column.style.transform = 'translateX('+prevElem.offsetWidth+'px)';
+                    prevElem.style.transform = 'translateX(-'+this.column.offsetWidth+'px)';
+
+                    setTimeout(() => {
+                        prevElem.className = prevElem.className.replace(' column_move', '')
+                        this.column.className = this.column.className.replace(' column_move', '')
+
+                        this.column.style.transform = '';
+                        prevElem.style.transform = '';
+
+                        parent.removeChild(this.column);
+                        parent.insertBefore(this.column, nextElem);
+
+                        created_dbs[pins[db_index]].update_arrows();
+                        this.update_arrows();
+                    }, 60);
+                })
+                
+                del_button.addEventListener('click', (event) => {
+                    this.column.className += ' column_disappear';
+
+                    var my_width = this.column.offsetWidth;
+
+                    var pins = getPins();
+                    var db_index = pins.indexOf(db_name);
+                    var to_shuffle = pins.slice(db_index+1).map(pin_name => created_dbs[pin_name].column);
+
+                    to_shuffle.forEach(column => {
+                        column.className += ' column_shuffle';
+                        column.style.transform = 'translateX(-'+my_width+'px)';
+                    });
+                    
+                    add_shuffle(-my_width);
+
+                    setTimeout(() => {
+                        delete created_dbs[db_name];
+                        this.column.parentElement.removeChild(this.column);
+                        removePin(db_name);
+
+                        getPins().forEach(pin_name => created_dbs[pin_name].update_arrows());
+
+                        to_shuffle.forEach(column => {
+                            column.className = column.className.replace(' column_shuffle', '');
+                            column.style.transform = '';
+                        })
+                    }, 60);
+                });
+
+                load_button.addEventListener('click', update);
+
+                var append_log = (event_name, arg) => {
+                    console.log(event_name, arg);
+                    var elem = document.createElement('div');
+                    elem.className = 'log ' + event_name;
+                    elem.innerText = event_name + (arg === undefined ? '' : arg);
+                    this.replicate_log.appendChild(elem);
+                    this.replicate_log.className = 'replicate_log active';
+                }
+
+                replicate_cell.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    replicate_target.disabled = true;
+                    start_button.disabled = true;
+                    this.sync = PouchDB.sync(this.db, this.replicate_to = new PouchDB(replicate_target.value), {
+                        live: true,
+                        retry: true
+                    }).on('change', function (info) {
+                        append_log('change ', info);
+                    }).on('paused', function (err) {
+                        append_log('paused ', err);
+                    }).on('active', function () {
+                        append_log('active ', undefined);
+                    }).on('denied', function (err) {
+                        append_log('denied ', err);
+                    }).on('complete', function (info) {
+                        append_log('change ', info);
+                    }).on('error', function (err) {
+                        append_log('error ', err);
+                    });
+                    return false;
+                })
+
+                const placeholder_event = () => {
+                    replicate_placeholder.className = 'placeholder ' + 
+                        (replicate_target.value.trim() == '') ?
+                        '' : 'full'
+                };
+
+                replicate_target.addEventListener('focus', placeholder_event);
+                replicate_target.addEventListener('blur', placeholder_event);
+                placeholder_event();
+                
+                this.add_cell.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    // Handle add button
+                    var data;
+                    var put = (data) => {
+                        this.db.put(data)
+                            .catch(err => 
+                                error_message(err.message))
+                            .then(() => 
+                                update());
+                    }
+                    try {
+                        data = JSON.parse(add_data.value);
+                        
+                        if(data._id !== undefined ) { //Resolve conflicts
+                            this.db.get(data._id)
+                                .then(existing => {
+                                    data._rev = existing._rev;
+                                    put(data);
+                                }).catch(err => {
+                                    // Don't try to resolve conflict, it doesn't conflict
+                                    console.warn(err);
+                                    put(data);
+                                })
+                        } else {
+                            put(data);
+                        }
+                    } catch(err) {
+                        error_message(err);
+                    }
+                    update();
+                    return false;
+                });
+                
+                update();
+            }
+        </script>
+    </head>
+    <body>
+        <div>
+            <div id="table">
+                <div class="column" id="add_db">
+                    <form onsubmit="return action_add(event);" class="linked_horizontal" style="display:flex;flex-direction:row">
+                        <a href="/">←</a>
+                        <input type="text" id="add_db_db_name" name="db_name" value="active" list="db_list">
+                        <input type="submit" name="add" value="+">
+                    </form>
+                    <ul id="add_opts" class="list"></ul>
+                </div>
+            </div>
+        </div>
+        <div id="error_modal" onclick="error_message(null)">
+            <div id="error_dialog">
+                <span id="error_text"></span>
+            </div>
+        </div>
+        <datalist id="db_list"></datalist>
+        <script>
+            var autocomplete_list = document.getElementById('db_list');
+            var ul_list = document.getElementById('add_opts');
+            var add_text = document.getElementById("add_db_db_name");
+            Object.keys(localStorage).forEach(key => {
+                if(key.indexOf("_pouch_") === 0) {
+                    var db_name = key.slice(7);
+                    if(db_name == 'check_localstorage') return;
+
+                    var opt = document.createElement('option');
+                    opt.value = db_name;
+                    db_list.appendChild(opt);
+
+                    var li = document.createElement('li');
+                    li.innerText = db_name;
+                    li.onclick = () => add_db_db_name.value = db_name;
+                    ul_list.appendChild(li);
+                }
+            })
+
+            try {
+                getPins().forEach(db_name => new DBView(db_name));
+            } catch(err) {console.error(err)}
+        </script>
+    </body>
+</html>

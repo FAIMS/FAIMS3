@@ -31,10 +31,7 @@ import {
 } from '@material-ui/core';
 import AccountTree from '@material-ui/icons/AccountTree';
 import HomeIcon from '@material-ui/icons/Home';
-import LockOpenIcon from '@material-ui/icons/LockOpen';
-// import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
 
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
@@ -53,7 +50,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
   }
 
   render() {
-    const breadcrumbs = [{title: 'HOME'}];
+    const breadcrumbs = [{title: 'Home'}];
     return (
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
@@ -67,26 +64,6 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   </ListItemIcon>
                   Sign In
                 </MenuItem>
-                {/* <MenuItem
-                  component={NavLink}
-                  to={ROUTES.SIGN_UP}
-                  disabled={true}
-                >
-                  <ListItemIcon>
-                    <PersonAddIcon fontSize="small" />
-                  </ListItemIcon>
-                  Sign Up <TimelapseIcon color={'secondary'} />
-                </MenuItem> */}
-                <MenuItem
-                  component={NavLink}
-                  to={ROUTES.FORGOT_PASSWORD}
-                  disabled={true}
-                >
-                  <ListItemIcon>
-                    <LockOpenIcon fontSize="small" />
-                  </ListItemIcon>
-                  Forgot Password <TimelapseIcon color={'secondary'} />
-                </MenuItem>
               </MenuList>
             </Paper>
           </Grid>
@@ -97,7 +74,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   <ListItemIcon>
                     <HomeIcon fontSize="small" />
                   </ListItemIcon>
-                  WorkSpace
+                  Workspace
                 </MenuItem>
                 <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
                   <ListItemIcon>

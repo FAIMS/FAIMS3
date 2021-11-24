@@ -146,7 +146,17 @@ export async function getHRID(
   project_id: ProjectID,
   revision: Revision
 ): Promise<string | null> {
-  const hrid_avp_id = revision.avps[HRID_STRING];
+  let hrid_name: string | null = null;
+  for (const possible_name of Object.keys(revision.avps)) {
+    if (possible_name.startsWith(HRID_STRING)) {
+      hrid_name = possible_name;
+      break;
+    }
+  }
+  if (hrid_name === null) {
+    return null;
+  }
+  const hrid_avp_id = revision.avps[hrid_name];
   if (hrid_avp_id === undefined) {
     return null;
   }
