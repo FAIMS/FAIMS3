@@ -80,20 +80,24 @@ public class TestPopulateForm {
 			projects.loadNewAstroSkyForm();
 			// The form should load up
 			astroSky.fillOutFormWithValidFields();
+
+			//TODO: remember record id for next tests
+			//Currently this is not working because hrid is not yet shown on the list of records
+			//String hrID = astroSky.getHrID();
+
 			// validate JSON
 			astroSky.validateJSON();
 			// Click save and new
 			astroSky.submit();
-			// remember record id for next tests
-			String recordId = astroSky.getObsId();
 			// Check the message
 			astroSky.verifyMessage("Record successfully created");
 			// return to the projects page
 			astroSky.leaveObservationForm();
+			// TODO: we'll do this when hrid is shown in records list instead of observation id
 			// Load the just-created observation
-			projects.loadObservationRecord(recordId);
+			//projects.loadObservationRecord(recordId);
 			// Ensure that location and change are still present in the data
-			astroSky.checkLatLongValues();
+			//astroSky.checkLatLongValues();
 		} catch (Exception e) {
 			TestUtils.markBrowserstackTestResult(driver, false,
 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");

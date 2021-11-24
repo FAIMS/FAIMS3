@@ -397,20 +397,13 @@ public class AstroSkyMainPage {
     }
 
 	/**
-	 * Get record observation id represented by JSON "_id"
+	 * Get record observation id represented by human readable id
 	 * @return
 	 * @throws JSONException
 	 */
-	public String getObsId() throws JSONException {
-		// Find JSON
-		TestUtils.scrollToText(driver, "DEVELOPER TOOL: FORM STATE");
-
-		WebElement json = wait.until(ExpectedConditions.visibilityOf(this.JSON));
-		JSONObject jsonObject = new JSONObject(json.getText());
-		JSONObject values = jsonObject.getJSONObject("values");
-
-		return values.get("_id").toString();
-
+	public String getHrID() throws JSONException {
+		WebElement hrid = TestUtils.scrollToId(driver, "hrid-field");
+		return hrid.getText();
 	}
 
 	/**
