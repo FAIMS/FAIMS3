@@ -46,6 +46,7 @@ public class IndexPage {
 	private WebElement homeMenu;
 
     @AndroidFindBy(xpath = "//*[@text='Index']")
+    @FindBy(xpath = "//a[@href='/']")
 	private WebElement indexLink;
 
 	@AndroidFindBy(xpath = "//android.view.MenuItem[contains(@text, 'Projects')]")
