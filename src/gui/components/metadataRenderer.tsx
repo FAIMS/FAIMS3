@@ -48,27 +48,32 @@ export default function MetadataRenderer(props: MetadataProps) {
       }
     };
     getMeta();
+    console.log(metadata_value);
   }, []);
 
   return chips ? (
-    <Chip
-      size={'small'}
-      style={{marginRight: '5px', marginBottom: '5px'}}
-      label={
-        <React.Fragment>
-          {metadata_label ? (
-            <span>{metadata_label}: </span>
-          ) : (
-            <React.Fragment />
-          )}
-          {metadata_value ? (
-            <span>{metadata_value}</span>
-          ) : (
-            <CircularProgress size={12} thickness={4} />
-          )}
-        </React.Fragment>
-      }
-    />
+    metadata_value ? (
+      <Chip
+        size={'small'}
+        style={{marginRight: '5px', marginBottom: '5px'}}
+        label={
+          <React.Fragment>
+            {metadata_label ? (
+              <span>{metadata_label}: </span>
+            ) : (
+              <React.Fragment />
+            )}
+            {metadata_value ? (
+              <span>{metadata_value}</span>
+            ) : (
+              <CircularProgress size={12} thickness={4} />
+            )}
+          </React.Fragment>
+        }
+      />
+    ) : (
+      <> </>
+    )
   ) : (
     <>{metadata_value}</>
   );

@@ -48,11 +48,11 @@ function prod_build(): boolean {
   if (
     prodbuild === '' ||
     prodbuild === undefined ||
-    FALSEY_STRINGS.includes(prodbuild.toLowerCase())
+    TRUTHY_STRINGS.includes(prodbuild.toLowerCase())
   ) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(prodbuild.toLowerCase())) {
     return true;
+  } else if (FALSEY_STRINGS.includes(prodbuild.toLowerCase())) {
+    return false;
   } else {
     console.error('REACT_APP_PRODUCTION_BUILD badly defined, assuming false');
     return false;
@@ -117,7 +117,7 @@ function directory_protocol(): string {
 function directory_host(): string {
   const host = process.env.REACT_APP_DIRECTORY_HOST;
   if (host === '' || host === undefined) {
-    return '10.80.11.44';
+    return 'dev.db.faims.edu.au';
   }
   return host;
 }

@@ -82,7 +82,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
       setisSubmitting(false);
     else setisSubmitting(true);
     setProjectValue({...projectvalue, errors: {...errors}});
-    //check project setting
+    // check project setting
     setTimeout(() => {
       setischecked(true);
     }, 3000);
@@ -97,7 +97,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
       seState(true);
       setTimeout(() => {
         setischecked(true);
-      }, 3000);
+      }, 5000);
     }
   };
 
