@@ -267,7 +267,7 @@ public class AstroSkyMainPage {
 			this.generatedLat = lat.getText();
 			assertEquals(TestUtils.roundCoordinate(getLatitude()),
 					TestUtils.roundCoordinate(this.generatedLat));
-			WebElement longi = driver.findElement(By.xpath("//*[@text='Long: ']/../" + className + "[4]"));
+			WebElement longi = driver.findElement(By.xpath("//*[@text='; Long: ']/../" + className + "[4]"));
 			this.generatedLong = longi.getText();
 			assertEquals(TestUtils.roundCoordinate(getLongitude()),
 					TestUtils.roundCoordinate(this.generatedLong));
