@@ -48,80 +48,80 @@ import io.appium.java_client.ios.IOSDriver;
  *
  */
 public class TestIncompleteDraftObservation {
-    protected AstroSkyMainPage astroSky;
+//     protected AstroSkyMainPage astroSky;
 
-	protected ProjectsPage projects;
+// 	protected ProjectsPage projects;
 
-	private WebDriver driver;
+// 	private WebDriver driver;
 
-	private String description;
+// 	private String description;
 
-	@BeforeClass
-	@Parameters({ "driver", "runLocally"})
-	public void setup(String driverType, @Optional("false") boolean runLocally)
-			throws MalformedURLException, JSONException {
-		this.description = "\"Test incomplete draft observation form ("
-	        + driverType + ")";
-	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
-		this.projects = new ProjectsPage(driver);
-		this.astroSky = new AstroSkyMainPage(driver);
-	}
+// 	@BeforeClass
+// 	@Parameters({ "driver", "runLocally"})
+// 	public void setup(String driverType, @Optional("false") boolean runLocally)
+// 			throws MalformedURLException, JSONException {
+// 		this.description = "\"Test incomplete draft observation form ("
+// 	        + driverType + ")";
+// 	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
+// 		this.projects = new ProjectsPage(driver);
+// 		this.astroSky = new AstroSkyMainPage(driver);
+// 	}
 
-	@AfterClass
-	public void tearDown() {
-		this.driver.quit();
-	}
+// 	@AfterClass
+// 	public void tearDown() {
+// 		this.driver.quit();
+// 	}
 
-	@Test
-	public void testIncompleteDraft() throws Exception {
-		try {
-			//In Test Project “Astrosky” click + New Observation on both chrome and android.
-			projects.loadNewAstroSkyForm();
-			//Enter a sample email address into the form:
-			//draft-observation-android-testername@faims.edu.au on the android
-			WebDriverWait wait = new WebDriverWait(driver, 10);
-			WebElement emailField = TestUtils.scrollToId(driver, "email-field");
-			if (driver instanceof AndroidDriver) {
-		        emailField.sendKeys(AstroSkyMainPage.EMAIL_DRAFT_ANDROID);
-			} else if (driver instanceof IOSDriver) {
-				emailField.sendKeys(AstroSkyMainPage.EMAIL_DRAFT_IOS);
-			} else {
-				emailField.sendKeys(AstroSkyMainPage.EMAIL_DRAFT_CHROME);
-			}
+// 	@Test
+// 	public void testIncompleteDraft() throws Exception {
+// 		try {
+// 			//In Test Project “Astrosky” click + New Observation on both chrome and android.
+// 			projects.loadNewAstroSkyForm();
+// 			//Enter a sample email address into the form:
+// 			//draft-observation-android-testername@faims.edu.au on the android
+// 			WebDriverWait wait = new WebDriverWait(driver, 10);
+// 			WebElement emailField = TestUtils.scrollToId(driver, "email-field");
+// 			if (driver instanceof AndroidDriver) {
+// 		        emailField.sendKeys(AstroSkyMainPage.EMAIL_DRAFT_ANDROID);
+// 			} else if (driver instanceof IOSDriver) {
+// 				emailField.sendKeys(AstroSkyMainPage.EMAIL_DRAFT_IOS);
+// 			} else {
+// 				emailField.sendKeys(AstroSkyMainPage.EMAIL_DRAFT_CHROME);
+// 			}
 
-			//Wait 2 seconds but do not click SAVE AND NEW
-		    Thread.sleep(2000);
+// 			//Wait 2 seconds but do not click SAVE AND NEW
+// 		    Thread.sleep(2000);
 
-			//Note the blue box at the top of the form notifying
-			//“✔ Draft last saved a few seconds ago DD Mmm dd hh:mm:ss GMT+1000 (AEST)”
-		    WebElement messages = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(
-		    		"//*[@text='TAKE POINT']/preceding-sibling::android.view.View/android.view.View[2]")));
-		    // Clean the html spaces
-		    String message = messages.getText().replace("\u00a0"," ").trim();
-		    // We can only compare the date, as the time zone is different with browserstack
-		    assertTrue(message.startsWith(
-		    		"Draft last saved a few seconds ago ".concat(TestUtils.getTodaysDate())));
-		    // Note draft id
-		    String draftId = astroSky.getRecordId();
+// 			//Note the blue box at the top of the form notifying
+// 			//“✔ Draft last saved a few seconds ago DD Mmm dd hh:mm:ss GMT+1000 (AEST)”
+// 		    WebElement messages = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(
+// 		    		"//*[@text='TAKE POINT']/preceding-sibling::android.view.View/android.view.View[2]")));
+// 		    // Clean the html spaces
+// 		    String message = messages.getText().replace("\u00a0"," ").trim();
+// 		    // We can only compare the date, as the time zone is different with browserstack
+// 		    assertTrue(message.startsWith(
+// 		    		"Draft last saved a few seconds ago ".concat(TestUtils.getTodaysDate())));
+// 		    // Note draft id
+// 		    String draftId = astroSky.getRecordId();
 
-			//Leave the observation entry form
-		    astroSky.leaveObservationForm();
+// 			//Leave the observation entry form
+// 		    astroSky.leaveObservationForm();
 
-			//Did your draft observation reappear?
-			projects.loadObservationDraft(draftId);
-		} catch (Exception e) {
-			TestUtils.markBrowserstackTestResult(driver, false,
-					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
-			throw e;
-		} catch (AssertionError e) {
-			TestUtils.markBrowserstackTestResult(driver, false,
-					"Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
-			throw e;
-		}
-		// if we make it to the end with no exceptions, that means we passed!
-		TestUtils.markBrowserstackTestResult(driver, true,
-				this.description + " passed!");
-  }
+// 			//Did your draft observation reappear?
+// 			projects.loadObservationDraft(draftId);
+// 		} catch (Exception e) {
+// 			TestUtils.markBrowserstackTestResult(driver, false,
+// 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
+// 			throw e;
+// 		} catch (AssertionError e) {
+// 			TestUtils.markBrowserstackTestResult(driver, false,
+// 					"Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
+// 			throw e;
+// 		}
+// 		// if we make it to the end with no exceptions, that means we passed!
+// 		TestUtils.markBrowserstackTestResult(driver, true,
+// 				this.description + " passed!");
+//   }
 
 
 }

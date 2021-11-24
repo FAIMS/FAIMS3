@@ -2,7 +2,7 @@ package org.fedarch.faims3;
 
 import java.net.MalformedURLException;
 
-import org.fedarch.faims3.android.AndroidTestSetup;
+//import org.fedarch.faims3.android.AndroidTestSetup;
 import org.fedarch.faims3.chrome.ChromeTestSetup;
 import org.fedarch.faims3.ios.IOSTestSetup;
 import org.json.JSONException;
@@ -27,7 +27,7 @@ public class WebDriverFactory {
 
 		switch(driverType.toLowerCase()) {
 		case "android":
-			driver = new AndroidTestSetup().setup(localTest, testDesc);
+			//driver = new AndroidTestSetup().setup(localTest, testDesc);
 			break;
 		case "ios":
 			driver = new IOSTestSetup().setup(localTest, testDesc);

@@ -43,92 +43,92 @@ import org.testng.annotations.Test;
  *
  */
 public class TestStagingForm {
-	protected AstroSkyMainPage astroSky;
+// 	protected AstroSkyMainPage astroSky;
 
-	protected ProjectsPage projects;
+// 	protected ProjectsPage projects;
 
-	private WebDriver driver;
+// 	private WebDriver driver;
 
-	private String description;
+// 	private String description;
 
-	@BeforeClass
-	@Parameters({ "driver", "runLocally"})
-	public void setup(String driverType, @Optional("false") boolean runLocally)
-			throws MalformedURLException, JSONException {
-		this.description = "Test create new draft for AstroSky observation form ("
-	        + driverType + ")";
-	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
-		this.projects = new ProjectsPage(driver);
-		this.astroSky = new AstroSkyMainPage(driver);
-	}
+// 	@BeforeClass
+// 	@Parameters({ "driver", "runLocally"})
+// 	public void setup(String driverType, @Optional("false") boolean runLocally)
+// 			throws MalformedURLException, JSONException {
+// 		this.description = "Test create new draft for AstroSky observation form ("
+// 	        + driverType + ")";
+// 	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
+// 		this.projects = new ProjectsPage(driver);
+// 		this.astroSky = new AstroSkyMainPage(driver);
+// 	}
 
-	/**
-	 * This test scenario is when you put in all the mandatory fields and switch to
-	 * another project on the top tab. When you open the form again, it should have
-	 * saved the previous values.
-	 *
-	 * @throws JSONException
-	 * @throws MalformedURLException
-	 * @throws NoSuchMethodException
-	 * @throws SecurityException
-	 * @throws IllegalAccessException
-	 * @throws IllegalArgumentException
-	 * @throws InvocationTargetException
-	 */
-	@Test
-	public void testNewObservationDraft() throws Exception {
-		try {
-			// Start a new observation
-			projects.loadNewAstroSkyForm();
-			// The form should load up
-			astroSky.fillOutFormWithValidFields();
-			// validate JSON
-			astroSky.validateJSON();
-			// remember record id for next tests
-			String recordId = astroSky.getRecordId();
-			// return to the projects page
-			astroSky.leaveObservationForm();
-			// Load the just-created observation
-			projects.loadObservationDraft(recordId);
-			// Ensure that location and change are still present in the data
-			astroSky.validateLatLong();
+// 	/**
+// 	 * This test scenario is when you put in all the mandatory fields and switch to
+// 	 * another project on the top tab. When you open the form again, it should have
+// 	 * saved the previous values.
+// 	 *
+// 	 * @throws JSONException
+// 	 * @throws MalformedURLException
+// 	 * @throws NoSuchMethodException
+// 	 * @throws SecurityException
+// 	 * @throws IllegalAccessException
+// 	 * @throws IllegalArgumentException
+// 	 * @throws InvocationTargetException
+// 	 */
+// 	@Test
+// 	public void testNewObservationDraft() throws Exception {
+// 		try {
+// 			// Start a new observation
+// 			projects.loadNewAstroSkyForm();
+// 			// The form should load up
+// 			astroSky.fillOutFormWithValidFields();
+// 			// validate JSON
+// 			astroSky.validateJSON();
+// 			// remember record id for next tests
+// 			String recordId = astroSky.getRecordId();
+// 			// return to the projects page
+// 			astroSky.leaveObservationForm();
+// 			// Load the just-created observation
+// 			projects.loadObservationDraft(recordId);
+// 			// Ensure that location and change are still present in the data
+// 			astroSky.validateLatLong();
 
-			WebElement email = TestUtils.scrollToId(driver, "email-field");
-			AssertJUnit.assertEquals(AstroSkyMainPage.EMAIL_ANDROID, email.getText());
+// 			WebElement email = TestUtils.scrollToId(driver, "email-field");
+// 			AssertJUnit.assertEquals(AstroSkyMainPage.EMAIL_ANDROID, email.getText());
 
-			WebElement colour = TestUtils.scrollToId(driver, "str-field");
-			AssertJUnit.assertEquals(AstroSkyMainPage.COLOUR, colour.getText());
+// 			WebElement colour = TestUtils.scrollToId(driver, "str-field");
+// 			AssertJUnit.assertEquals(AstroSkyMainPage.COLOUR, colour.getText());
 
-			WebElement unicode = TestUtils.scrollToId(driver, "multi-str-field");
-			AssertJUnit.assertEquals(AstroSkyMainPage.UNICODE, unicode.getText());
+// 			WebElement unicode = TestUtils.scrollToId(driver, "multi-str-field");
+// 			AssertJUnit.assertEquals(AstroSkyMainPage.UNICODE, unicode.getText());
 
-			AssertJUnit.assertEquals(AstroSkyMainPage.INTEGER, astroSky.getIntFieldValue());
-			AssertJUnit.assertEquals("Currencies $, €", astroSky.getMultiCurrenciesValue());
-			AssertJUnit.assertEquals("true", astroSky.isCheckBoxChecked());
+// 			AssertJUnit.assertEquals(AstroSkyMainPage.INTEGER, astroSky.getIntFieldValue());
+// 			AssertJUnit.assertEquals("Currencies $, €", astroSky.getMultiCurrenciesValue());
+// 			AssertJUnit.assertEquals("true", astroSky.isCheckBoxChecked());
 
-			// the fourth radio button should be selected
-			WebElement radioField = TestUtils.scrollToId(driver, "radio-group-field-4");
-			AssertJUnit.assertEquals("true", radioField.getAttribute("checked"));
+// 			// the fourth radio button should be selected
+// 			WebElement radioField = TestUtils.scrollToId(driver, "radio-group-field-4");
+// 			AssertJUnit.assertEquals("true", radioField.getAttribute("checked"));
 
-			// Make sure JSON is still the same
-			astroSky.validateJSON();
-		} catch (Exception e) {
-			TestUtils.markBrowserstackTestResult(driver, false,
-					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
-			throw e;
-		} catch (AssertionError e) {
-			TestUtils.markBrowserstackTestResult(driver, false,
-					"Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
-			throw e;
-		}
-		// if we make it to the end with no exceptions, that means we passed!
-		TestUtils.markBrowserstackTestResult(driver, true, this.description + " passed!");
+// 			// Make sure JSON is still the same
+// 			astroSky.validateJSON();
+// 		} catch (Exception e) {
+// 			TestUtils.markBrowserstackTestResult(driver, false,
+// 					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
+// 			throw e;
+// 		} catch (AssertionError e) {
+// 			TestUtils.markBrowserstackTestResult(driver, false,
+// 					"Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
+// 			throw e;
+// 		}
+// 		// if we make it to the end with no exceptions, that means we passed!
+// 		TestUtils.markBrowserstackTestResult(driver, true, this.description + " passed!");
 
-	}
+// 	}
 
-	@AfterClass
-	public void tearDown() {
-	    this.driver.quit();
-	}
+// 	@AfterClass
+// 	public void tearDown() {
+// 	    this.driver.quit();
+// 	}
 
 }

@@ -51,7 +51,7 @@ public class IOSTestSetup extends E2ETestSetup {
 	    caps.setCapability("platformName", "iOS");
 	    caps.setCapability("platformVersion", "13.7");
 	    caps.setCapability("deviceName", "iPhone 11");
-	    caps.setCapability("adbExecTimeout", "1200000");
+	    //caps.setCapability("adbExecTimeout", "1200000");
 		if (localTest) {
 			localConnectionSetup(caps);
 			isLocal = true;
@@ -61,8 +61,8 @@ public class IOSTestSetup extends E2ETestSetup {
 		}
 		// this is required because the autoAcceptAlerts doesn't actually work..
 		// see https://github.com/appium/appium/issues/14741
-		((IOSDriver) driver).setSetting("acceptAlertButtonSelector",
-				"**/XCUIElementTypeButton[`label == 'Allow While Using App'`]");
+		// ((IOSDriver) driver).setSetting("acceptAlertButtonSelector",
+		// 		"**/XCUIElementTypeButton[`label == 'Allow While Using App'`]");
 		return (IOSDriver) driver;
 
 	}
@@ -83,18 +83,29 @@ public class IOSTestSetup extends E2ETestSetup {
 	 */
 	public void browserstackSetup(DesiredCapabilities caps, String testDescription) throws MalformedURLException {
 	    caps.setCapability("project", "FAIMS3 - iOS Tests");
-	    caps.setCapability("build", "Alpha");
+	    caps.setCapability("build", "Test Build");
+	    System.out.println("Build"+TestUtils.getCommitHash());
+
+		caps.setCapability("os_version", "14");
+		caps.setCapability("device", "iPad Pro 12.9 2021");
+		caps.setCapability("project", "FAIMS3 - iOS Tests");		
+		caps.setCapability("name", "brian test");
+		caps.setCapability("browserstack.appium_version", "1.22.0");
+		caps.setCapability("browserstack.idleTimeout", "1200");
+		caps.setCapability("browserstack.acceptInsecureCerts", "true");
+
+
 	    String desc = testDescription.concat(" : ").concat(TestUtils.getCommitMessage());
 	    caps.setCapability("name",
 	    		// only 255 characters allowed
 	    		desc.substring(0, Math.min(desc.length(), 255))
 	    );
 	    // Latest Appium browserstack version with correct geolocation
-	    caps.setCapability("browserstack.appium_version", "1.21.0");
+	    caps.setCapability("browserstack.appium_version", "1.22.0");
 
 	    turnOnBrowserstackLogs(caps);
 
-	    caps.setCapability("app", System.getenv("app_url"));
+	    caps.setCapability("app", "ios-github-actions-fastlane");
 	    caps.setCapability("browserstack.user", System.getenv("BROWSERSTACK_USERNAME"));
 	    caps.setCapability("browserstack.key", System.getenv("BROWSERSTACK_ACCESS_KEY"));
 

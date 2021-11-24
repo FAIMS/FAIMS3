@@ -40,10 +40,12 @@ import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.ios.IOSDriver;
 import io.appium.java_client.touch.offset.PointOption;
 
+
+
 /**
  * Utility class for reusable methods across tests.
  * @author Rini Angreani, CSIRO
- *
+ * @author Brian Ballsun-Stanton, MQ
  */
 public class TestUtils {
 	/**
@@ -162,10 +164,31 @@ public class TestUtils {
 	public static String getCommitMessage() {
 	    //Set commit message as session name
 	    String description = System.getenv("BROWSERSTACK_BUILD_NAME");
+
 	    if (description == null || description.isEmpty()) {
 	    	description = "Manual run";
 	    }
 	    return description;
+	}
+
+	/**
+	 * Get commit hash for browserstack. Defaults to "manual run".
+	 * @return
+	 */
+	public static String getCommitHash() {
+
+		String sha = System.getenv("GITHUB_SHA");
+		String ref = System.getenv("GITHUB_REF_NAME");
+
+	    if (sha == null || sha.isEmpty()) {
+	    	String description = "Manual run";
+	    	return description;
+	    } else {
+		    String description = "[ "+sha.substring(0,6)+" ]"+ref;
+		    return description;
+		}
+
+		
 	}
 
 	public static boolean isUsingBrowserstack(WebDriver driver) {

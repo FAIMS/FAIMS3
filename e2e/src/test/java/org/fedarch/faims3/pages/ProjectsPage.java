@@ -42,12 +42,13 @@ import io.appium.java_client.pagefactory.iOSXCUITFindBy;
  */
 public class ProjectsPage {
 
-	@AndroidFindBy(xpath = "//android.view.MenuItem[contains(@text, 'Projects')]")
-	@iOSXCUITFindBy(xpath = "//XCUIElementTypeMenuItem[@name=\"Projects\"]")
+	@AndroidFindBy(xpath = "//android.view.MenuItem[contains(@text, 'Notebooks')]")
+	@iOSXCUITFindBy(xpath = "//XCUIElementTypeMenuItem[@name=\"Notebooks\"]")
 	@FindBy(xpath = "//a[@href='/projects']")
 	private WebElement projects;
 
 	@AndroidFindBy(xpath = "//*[contains(@text, 'Astrosky')]")
+	@iOSXCUITFindBy(xpath = "//*[contains(@text, 'Astrosky')]") //https://developer.apple.com/documentation/xctest/xcuielement/elementtype
 	@FindBy(xpath = "//div[@class='MuiCardHeader-content']/span/div/b[contains(., 'Astrosky')]")
 	private WebElement astroSky;
 
