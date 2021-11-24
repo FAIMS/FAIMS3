@@ -66,7 +66,7 @@ platform :ios do
       configuration: "Debug",
       workspace: "App.xcworkspace",
       scheme: "FAIMS3",
-      export_method: "development",
+      export_method: "app-store",
       export_options: {
         provisioningProfiles: {
             DEVELOPER_APP_ID => PROVISIONING_PROFILE_SPECIFIER
@@ -108,7 +108,7 @@ platform :ios do
       configuration: "Debug",
       workspace: "App.xcworkspace",
       scheme: "FAIMS3",
-      export_method: "development",
+      export_method: "app-store",
       export_options: {
         provisioningProfiles: {
             DEVELOPER_APP_ID => PROVISIONING_PROFILE_SPECIFIER
