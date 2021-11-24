@@ -51,8 +51,7 @@ public class IOSTestSetup extends E2ETestSetup {
 	    caps.setCapability("platformName", "iOS");
 	    caps.setCapability("platformVersion", "13.7");
 	    caps.setCapability("deviceName", "iPhone 11");
-	    caps.setCapability("adbExecTimeout", "1200000");            
-	    caps.setCapability("bundleId", "org.fedarch.faims3");
+	    caps.setCapability("adbExecTimeout", "1200000");
 	    if (localTest) {
 	        localConnectionSetup(caps);
 	        isLocal = true;
