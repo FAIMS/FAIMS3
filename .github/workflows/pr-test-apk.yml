@@ -1,6 +1,6 @@
 ---
 # Nightly compile for e2e testing
-name: Mobile app build for humans
+name: Integration test for Android compile, no upload
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
@@ -9,10 +9,13 @@ name: Mobile app build for humans
 on:
   # Trigger the workflow on push or pull request,
   # but only for the main branch
-  push:
-    branches:
-      - github-actions
-      - main
+  # push:
+  #   branches:
+  #     - github-actions
+  #     - main
+
+  workflow_dispatch:
+
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -131,15 +134,15 @@ jobs:
           name: apks
           path: |
             ./*.apk
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest-android"
-          prerelease: true
-          title: "Android APK Development Build"
-          files: |
-            LICENSE
-            *.apk
+      # - uses: "marvinpinto/action-automatic-releases@latest"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     automatic_release_tag: "latest-android"
+      #     prerelease: true
+      #     title: "Android APK Development Build"
+      #     files: |
+      #       LICENSE
+      #       *.apk
       # https://www.browserstack.com/docs/automate/selenium/github-actions#set-up-a-github-workflow-to-run-browserstack-tests
       # Thereafter, invoke setup-env BrowserStack Action to set up 
       # environment variables in the runner
