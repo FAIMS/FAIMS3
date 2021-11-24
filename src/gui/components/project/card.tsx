@@ -130,6 +130,7 @@ export default function Card(props: ProjectCardProps) {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       setLoading(false);
     }
+    console.log(project.project_id)
   }, [project]);
 
   useEffect(() => {
@@ -139,7 +140,7 @@ export default function Card(props: ProjectCardProps) {
       },
       () => {}
     );
-  
+  console.log("+++++++++++"+project.project_id)
 }, [project.project_id]);
 
   return (

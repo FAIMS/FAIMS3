@@ -36,6 +36,7 @@ export default function Project() {
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {title: project_info !== null ? project_info.name : ''},
   ];
+
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />

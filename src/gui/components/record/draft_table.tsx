@@ -74,13 +74,13 @@ export default function DraftsTable(props: DraftsTableProps) {
     },
     {field: 'type', headerName: 'Kind', type: 'string', width: 200,renderCell: (params: GridCellParams) => (
       <>
-        {props.viewsets!==null&&props.viewsets!==undefined&&params.value!==null&&params.value!==undefined?props.viewsets[params.value.toString()].label??params.value:params.value}
+        {props.viewsets!==null&&props.viewsets!==undefined&&params.value!==null&&params.value!==undefined&&props.viewsets[params.value.toString()]!==undefined?
+        props.viewsets[params.value.toString()].label??params.value:params.value}
       </>
     ),},
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
   ];
-
 
 
   useEffect(() => {

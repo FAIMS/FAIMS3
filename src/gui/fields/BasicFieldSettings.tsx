@@ -263,7 +263,7 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
     <>
       {uiSetting['viewsets'][props.designvalue]['views'] !== undefined &&
       uiSetting['viewsets'][props.designvalue]['views'].length === 0
-        ? 'next'
+        ? ''
         : uiSetting['viewsets'][props.designvalue]['views'].map((view: any) =>
             getfieldNamesbyView(uiSetting, view, props.fieldui).map(
               (fieldName: string) =>
