@@ -176,6 +176,12 @@ export const FieldSettings = (
     views: views,
     view_list: view_list,
     start_view: 'start-view',
+    viewsets: {
+      settings: {
+        views: ['settings'],
+        label: 'settings',
+      },
+    },
   };
 };
 
@@ -729,8 +735,6 @@ const newfromui = (
             field = newuiSpec['fields'][newnhirdname];
             gefieldname = newnhirdname;
           }
-
-          console.log(field);
         }
         if (field['meta'] === undefined)
           // if(setmeta({isannotation:true,isuncertainty:false})!==undefined)
@@ -777,7 +781,6 @@ const newfromui = (
       });
     });
   });
-  console.log(initialfieldvalue)
   return {newformcom, initialfieldvalue};
 };
 
@@ -918,3 +921,17 @@ const formvariantsadd = (props: any) => {
   }
   return {newviews, components};
 };
+
+
+export const validationschema_design_form = (formcomponents:any,settings:any) =>{
+  // get all field name for that form section
+  const uiSpeclist:any={}
+  formcomponents.map((fields:any)=>
+  fields.map((field:any)=>{
+    const ui=settings.settingsProps !== undefined && settings.settingsProps.length > 1
+    ? settings.settingsProps[1]
+    : field['uiSpec']
+    uiSpeclist[fields]
+  })
+  )
+}

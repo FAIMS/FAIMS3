@@ -245,7 +245,7 @@ export function TemplatedStringcomponentsetting(
         }
       }
 
-      console.log(options);
+
 
       if (options.length > 0) {
         //get numbers of fields that not IDs
@@ -278,9 +278,7 @@ export function TemplatedStringcomponentsetting(
       newvalues['fields'][props.fieldName]['component-parameters'][
         'template'
       ] = subvalue;
-      console.log(
-        newvalues['fields'][props.fieldName]['component-parameters']['template']
-      );
+
       props.setuiSpec({...newvalues});
 
       // const newini=props.initialValues
@@ -288,8 +286,7 @@ export function TemplatedStringcomponentsetting(
       // props.setinitialValues({...newini})
       const newuis = uiSetting;
       newuis['fields']['template' + props.fieldName]['value'] = subvalue;
-      console.log('value false');
-      console.log(newuis['fields']);
+
       setuiSetting({...newuis});
     }
 
@@ -352,7 +349,6 @@ export function TemplatedStringcomponentsetting(
         props.setuiSpec({...newui});
       }
     }
-    console.log(name);
   };
 
   return (
