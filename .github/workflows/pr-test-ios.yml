@@ -1,4 +1,4 @@
-name: Integration test for Android compile, no upload
+name: Integration test for Apple compile, no upload
 on:
   # Allows you to run this workflow manually from the Actions a tab
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
       - trying
 jobs:
   deploy:
-    name: Deploying to Testflight
+    name: Running Fastlane
     runs-on: macOS-latest
 
     steps:
