@@ -35,6 +35,8 @@ import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
+import io.appium.java_client.android.AndroidDriver;
+
 /**
  * Test creating an observation draft:
  * https://faimsproject.atlassian.net/browse/FAIMS3-153
@@ -102,13 +104,28 @@ public class TestStagingForm {
 			WebElement unicode = TestUtils.scrollToId(driver, "multi-str-field");
 			AssertJUnit.assertEquals(AstroSkyMainPage.UNICODE, unicode.getText());
 
-			AssertJUnit.assertEquals(AstroSkyMainPage.INTEGER, astroSky.getIntFieldValue());
-			AssertJUnit.assertEquals("Currencies $, €", astroSky.getMultiCurrenciesValue());
+			WebElement multiCurr = TestUtils.scrollToId(driver, "multi-select-field");
+			if (driver instanceof AndroidDriver) {
+			    AssertJUnit.assertEquals("Currencies $, €", multiCurr.getText());
+			} else {
+				AssertJUnit.assertEquals("$, €", multiCurr.getText());
+			}
+
 			AssertJUnit.assertEquals("true", astroSky.isCheckBoxChecked());
 
 			// the fourth radio button should be selected
 			WebElement radioField = TestUtils.scrollToId(driver, "radio-group-field-4");
 			AssertJUnit.assertEquals("true", radioField.getAttribute("checked"));
+
+			// Second page
+			TestUtils.scrollToText(driver, "next-view").click();
+			AssertJUnit.assertEquals(AstroSkyMainPage.INTEGER, astroSky.getIntFieldValue());
+			String currency = astroSky.getCurrencyValue();
+			if (driver instanceof AndroidDriver) {
+			    AssertJUnit.assertEquals("Currencies $, €", currency);
+			} else {
+				AssertJUnit.assertEquals("$, €", currency);
+			}
 
 			// Make sure JSON is still the same
 			astroSky.validateJSON();

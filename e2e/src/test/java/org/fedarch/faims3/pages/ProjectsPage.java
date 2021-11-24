@@ -85,7 +85,9 @@ public class ProjectsPage {
 	public void checkAutoIncrement() {
 		loadAstroSkyProject();
 		// Go to settings -> edit auto increment allocations
-		this.projectMenuButton.click();
+		if (driver instanceof AndroidDriver || driver instanceof IOSDriver) {
+		    this.projectMenuButton.click();
+		}
 		this.projectSettingsLink.click();
 		this.projectSettingsPage.editAutoIncrementAllocations();
 		// Create new range if none exists

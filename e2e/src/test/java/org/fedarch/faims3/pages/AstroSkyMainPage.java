@@ -419,26 +419,10 @@ public class AstroSkyMainPage {
         assertEquals(INTEGER, values.get("int-field").toString());
         assertEquals("[\"USD\",\"EUR\"]", values.get("multi-select-field").toString());
         assertEquals("EUR", values.get("select-field").toString());
-        // FIXME: seems like an appium bug. The values below aren't updating despite us waiting and reretrieving them
-        // Our attempt as below:
-		// wait for JSON to be updated by checking that touched has been updated for the last field
-		//int tries = 0;
-		//while (tries < 3 && !jsonObject.getJSONObject("touched").has("checkbox-field")) {
-		//	try {
-		//		Thread.sleep(5000);
-		//	} catch (InterruptedException e) {
-		//		// TODO Auto-generated catch block
-		//		e.printStackTrace();
-		//	}
-		//	json = driver.findElement(MobileBy.xpath(
-		//			"//*[@text='DEVELOPER TOOL: FORM STATE']/following-sibling::android.view.View/android.view.View"));
-		//	jsonObject = new JSONObject(json.getText());
-		//	tries++;
-		//}
-        //assertEquals("true", values.get("checkbox-field").toString());
-        //assertEquals("4", values.get("radio-group-field").toString());
+        assertEquals("true", values.get("checkbox-field").toString());
+        assertEquals("4", values.get("radio-group-field").toString());
         // no errors
-        //assertEquals("{}", jsonObject.get("errors").toString());
+        assertEquals("{}", jsonObject.get("errors").toString());
 
 	}
 
@@ -483,6 +467,10 @@ public class AstroSkyMainPage {
 
 	public String getIntFieldValue() {
 		return this.intField.getText();
+	}
+
+	public String getCurrencyValue() {
+		return this.currField.getText();
 	}
 
 	public String getMultiCurrenciesValue() {
