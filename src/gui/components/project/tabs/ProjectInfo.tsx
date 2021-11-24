@@ -155,6 +155,23 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     return false;
   };
 
+  const handleattachment = () => {
+    //handle to add attachemtns
+    if (
+      props.formProps.values.attachments !== undefined &&
+      props.formProps.values.attachments.length > 0
+    ) {
+      const newproject = projectvalue;
+      const filename = props.formProps.values.attachments[0].name;
+      if (newproject['attachments'] === undefined)
+        newproject['attachments'] = {};
+      if (newproject['filenames'] === undefined) newproject['filenames'] = [];
+      newproject['attachments'][filename] = props.formProps.values.attachments;
+      newproject['filenames'].push(filename);
+      setProjectValue({...newproject});
+    }
+  };
+
   const metaTab = () => {
     return (
       <Grid container>
@@ -176,7 +193,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
         <Grid item sm={2} xs={12}>
           <br />
           <AddUserButton
-            id="submit"
+            id="AddMetaButton"
             type="button"
             onButtonClick={handleaddmeta}
             value={metaAdded}
@@ -277,7 +294,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
                 )}
               <Box pl={2} pr={2}>
                 <AddUserButton
-                  id="submit"
+                  id="AddUserRoleButton"
                   type="button"
                   onButtonClick={handleAddAccess}
                   value={accessAdded}
@@ -325,6 +342,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             () => console.log('pass')
           )
         )}
+        <br />
       </Grid>
     );
   };
@@ -348,8 +366,21 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
           {metaTab()}
         </TabPanel>
         <TabPanel value={infotabvalue} index={3} tabname="primarytab">
-          Add Attachment
+          Add File as Attachment
           <Paper>{AttachmentTab()}</Paper>
+          {/* <AddUserButton
+            id="AddAttach"
+            type="button"
+            onButtonClick={handleattachment}
+            value={metaAdded}
+          /> */}
+          <br />
+          <Paper>
+            Files Attached:
+            <br />
+            <br />
+            {projectvalue.filenames}
+          </Paper>
           <br />
           <ProjectSubmit
             id="gotonext_info"

@@ -69,7 +69,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
       },
       () => {}
     );
-  }, [project.project_id]);
+  }, [props.project]);
 
   if (viewSets === null) {
     return <CircularProgress thickness={2} size={12} />;
