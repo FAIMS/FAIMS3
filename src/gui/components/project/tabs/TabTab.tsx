@@ -25,6 +25,7 @@ import {useState, useEffect} from 'react';
 import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
 import {gettabform} from '../data/ComponentSetting';
+import { on } from 'events';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 function a11yProps(tabname: any, index: any) {
@@ -171,6 +172,8 @@ export function TabEditable(props: TabProps) {
             aria-label={tab_id}
             id={tab_id}
             orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
+            scrollButtons="on"
+            variant="scrollable"
           >
             {tablists.map((tab, index) => (
               <Tab

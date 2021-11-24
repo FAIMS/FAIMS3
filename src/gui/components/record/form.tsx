@@ -32,6 +32,7 @@ import {
   Step,
   Stepper,
   StepButton,
+  MobileStepper
 } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 import grey from '@material-ui/core/colors/grey';
@@ -69,6 +70,9 @@ import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 
+import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
+import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
+import {useTheme} from '@material-ui/core/styles';
 type RecordFormProps = {
   project_id: ProjectID;
   // Might be given in the URL:
@@ -109,6 +113,7 @@ type RecordFormState = {
   // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
+  activeStep: number;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
@@ -144,6 +149,7 @@ class RecordForm extends React.Component<
         initialValues: null,
         type_cached: null,
         view_cached: null,
+        activeStep:0,
         revision_cached: null,
         annotation: {},
       });
@@ -159,6 +165,7 @@ class RecordForm extends React.Component<
       draftError: null,
       type_cached: this.props.type ?? null,
       view_cached: null,
+      activeStep:0,
       revision_cached: null,
       initialValues: null,
       is_saving: false,
@@ -609,9 +616,11 @@ class RecordForm extends React.Component<
       const is_final_view =
         view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
       // this expression checks if we have the last element in the viewset array
+      
 
       return (
         <React.Fragment>
+          <Box display={{ xs: "none", lg: "block" }} >
           <Stepper nonLinear activeStep={view_index} alternativeLabel>
             {ui_specification.viewsets[viewsetName].views.map(
               (view_name: string) => (
@@ -627,6 +636,41 @@ class RecordForm extends React.Component<
               )
             )}
           </Stepper>
+          </Box>
+          <Box display={{ xs: "block", lg: "none" }}>
+              <MobileStepper
+                  variant="text"
+                  steps={ui_specification.viewsets[viewsetName].views.length}
+                  position="static"
+                  activeStep={this.state.activeStep}
+                  nextButton={
+                    <Button
+                      size="small"
+                      onClick={()=>{
+                        const stepnum=this.state.activeStep+1;
+                        this.setState({activeStep:stepnum,view_cached: ui_specification.viewsets[viewsetName].views[stepnum]});
+                      }}
+                      disabled={this.state.activeStep === ui_specification.viewsets[viewsetName].views.length - 1}
+                    >
+                      Next
+                    </Button>
+                  }
+                  backButton={
+                    <Button 
+                      size="small" 
+                      onClick={()=>{
+                        const stepnum=this.state.activeStep-1
+                        this.setState({activeStep:stepnum,view_cached: ui_specification.viewsets[viewsetName].views[stepnum]});}} 
+                      disabled={this.state.activeStep === 0}>
+                      Back
+                    </Button>
+                  }
+                />
+                <Typography variant="h5" align="center">
+                {ui_specification.views[ui_specification.viewsets[viewsetName].views[this.state.activeStep]].label}
+                </Typography>
+              </Box>
+              
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
