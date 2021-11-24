@@ -136,7 +136,7 @@ public class TestUpdateObservationsAndDraftDatabase {
 			newStrField.sendKeys(ANDROID_DRAFT_EDIT);
 			Thread.sleep(2000);
 			// note draft id for later
-			String draftId = androidDevice.astroSky.getRecordId();
+			String draftId = androidDevice.astroSky.getDraftId();
 			androidDevice.astroSky.leaveObservationForm();
 
 			// Still on the original device, return to the observation you were initially

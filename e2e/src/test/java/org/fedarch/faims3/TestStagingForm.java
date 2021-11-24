@@ -86,12 +86,12 @@ public class TestStagingForm {
 			astroSky.fillOutFormWithValidFields();
 			// validate JSON
 			astroSky.validateJSON();
-			// remember record id for next tests
-			String recordId = astroSky.getRecordId();
+			// remember draft id for next tests
+			String draftId = astroSky.getDraftId();
 			// return to the projects page
 			astroSky.leaveObservationForm();
 			// Load the just-created observation
-			projects.loadObservationDraft(recordId);
+			projects.loadObservationDraft(draftId);
 			// Ensure that location and change are still present in the data
 			astroSky.checkLatLongValues();
 

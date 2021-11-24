@@ -102,7 +102,7 @@ public class TestIncompleteDraftObservation {
 		    assertTrue(message.startsWith(
 		    		"Draft last saved a few seconds ago ".concat(TestUtils.getTodaysDate())));
 		    // Note draft id
-		    String draftId = astroSky.getRecordId();
+		    String draftId = astroSky.getDraftId();
 
 			//Leave the observation entry form
 		    astroSky.leaveObservationForm();

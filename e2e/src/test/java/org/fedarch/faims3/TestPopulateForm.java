@@ -82,10 +82,10 @@ public class TestPopulateForm {
 			astroSky.fillOutFormWithValidFields();
 			// validate JSON
 			astroSky.validateJSON();
-			// remember record id for next tests
-			String recordId = astroSky.getRecordId();
 			// Click save and new
 			astroSky.submit();
+			// remember record id for next tests
+			String recordId = astroSky.getObsId();
 			// Check the message
 			astroSky.verifyMessage("Record successfully created");
 			// return to the projects page

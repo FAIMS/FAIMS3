@@ -383,7 +383,11 @@ public class AstroSkyMainPage {
 		}
 	}
 
-	public String getRecordId() {
+	/**
+	 * Get draft id from current URL at the bottom.
+	 * @return
+	 */
+	public String getDraftId() {
 		// Take note of the UUID for the rest of the tests
 		TestUtils.scrollToText(driver, "Current URL:");
 		// Scroll down again to see the URL underneath
@@ -391,6 +395,23 @@ public class AstroSkyMainPage {
 	    String[] urlPaths = this.currentURL.getAttribute("text").split("/");
 	    return urlPaths[urlPaths.length - 1];
     }
+
+	/**
+	 * Get record observation id represented by JSON "_id"
+	 * @return
+	 * @throws JSONException
+	 */
+	public String getObsId() throws JSONException {
+		// Find JSON
+		TestUtils.scrollToText(driver, "DEVELOPER TOOL: FORM STATE");
+
+		WebElement json = wait.until(ExpectedConditions.visibilityOf(this.JSON));
+		JSONObject jsonObject = new JSONObject(json.getText());
+		JSONObject values = jsonObject.getJSONObject("values");
+
+		return values.get("_id").toString();
+
+	}
 
 	/**
 	 * Validate JSON at the end of the form with input values.

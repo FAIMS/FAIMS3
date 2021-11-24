@@ -56,13 +56,13 @@ public class IOSTestSetup extends E2ETestSetup {
 	        localConnectionSetup(caps);
 	        isLocal = true;
 	    } else {
-		browserstackSetup(caps, testDesc);
+		    browserstackSetup(caps, testDesc);
 	        isLocal = false;
 	    }
 	    // this is required because the autoAcceptAlerts doesn't actually work..
 	    // see https://github.com/appium/appium/issues/14741
 	    ((IOSDriver) driver).setSetting("acceptAlertButtonSelector",
-		"**/XCUIElementTypeButton[`label == 'Allow While Using App'`]");
+		    "**/XCUIElementTypeButton[`label == 'Allow While Using App'`]");
 	    return (IOSDriver) driver;
 
 	}
