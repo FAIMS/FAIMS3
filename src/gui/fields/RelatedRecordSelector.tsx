@@ -108,7 +108,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             project_id +
             ROUTES.RECORD_CREATE +
             props.related_type +
-            '?link=' +
+            '?field_id='+ props.id+
+            '&link=' +
             useLocation().pathname
           }
         >
