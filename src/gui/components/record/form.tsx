@@ -387,18 +387,24 @@ class RecordForm extends React.Component<
       console.log(url_split)
       const field_id=url_split[0].replace('?field_id=','')
       const sub_record_id=url_split[1].replace('record_id=','')
-      if(Array.isArray(initialValues[field_id])) {
-        if(!initialValues[field_id].includes(sub_record_id)) initialValues[field_id].push({
-          "project_id": this.props.project_id,
-          "record_id": sub_record_id,
-          "record_label": sub_record_id
+      const new_record={
+        "project_id": this.props.project_id,
+        "record_id": sub_record_id,
+        "record_label": sub_record_id
+      }
+      if(Array.isArray(initialValues[field_id])) 
+      {
+        
+        let isincluded=false;
+        initialValues[field_id].map((r:any)=>{
+          if(r.record_id===new_record.record_id){
+            isincluded=true;
+          }
         })
+        if(isincluded===false) initialValues[field_id].push(new_record)
+        
       }else{
-        initialValues[field_id]={
-          "project_id": this.props.project_id,
-          "record_id": sub_record_id,
-          "record_label": sub_record_id
-        }
+        initialValues[field_id]=new_record
       }
     }
 
