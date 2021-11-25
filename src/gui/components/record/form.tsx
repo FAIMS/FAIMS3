@@ -754,7 +754,12 @@ class RecordForm extends React.Component<
                             )}
                           </Button>
                         ) : (
-                          <p>Continue filling out form</p>
+                          <Button 
+                          onClick={()=>{
+                            const stepnum=this.state.activeStep+1;
+                            this.setState({activeStep:stepnum,view_cached: ui_specification.viewsets[viewsetName].views[stepnum]});
+                          }}
+                          > Continue </Button>
                         )}
                       </ButtonGroup>
                     </Grid>
