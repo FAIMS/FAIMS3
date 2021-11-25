@@ -183,7 +183,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
-
       const projectui = getprojectform(projectvalue, 'project');
       const ini = {
         ...setProjectInitialValues(projectui, 'start-view', {_id: project_id}),
