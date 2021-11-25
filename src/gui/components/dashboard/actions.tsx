@@ -29,6 +29,7 @@ import {ProjectInformation} from '../../../datamodel/ui';
 import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
+import {Link as RouterLink} from 'react-router-dom';
 type DashboardActionProps = {
   pouchProjectList: ProjectInformation[];
 };
@@ -50,9 +51,10 @@ export default function DashboardActions(props: DashboardActionProps) {
   const [value, setValue] = React.useState<any | null>(null);
   const [inputValue, setInputValue] = React.useState('');
   const handleSubmit = () => {
-    if (value !== null) {
-      history.push(value.url + ROUTES.RECORD_CREATE);
-    }
+    // if (value !== null) {
+    //   history.push(value.url + ROUTES.RECORD_CREATE);
+    // }
+    
   };
 
   // viewsets and the list of visible views
@@ -77,6 +79,7 @@ export default function DashboardActions(props: DashboardActionProps) {
       );
     });
     setViewSets(newviewset);
+    console.log(viewSets)
   }, [pouchProjectList]);
 
   return (
@@ -123,6 +126,13 @@ export default function DashboardActions(props: DashboardActionProps) {
                     type={'submit'}
                     style={{marginLeft: '5px'}}
                     key={viewset_name + 'viewset'}
+                    component={RouterLink}
+                    to={
+                      ROUTES.PROJECT +
+                      value.value +
+                      ROUTES.RECORD_CREATE +
+                      viewset_name
+                    }
                   >
                     {viewSets[value.value][1].length === 1
                       ? 'Add'
