@@ -62,6 +62,7 @@ import {
   setProjectMetadataFiles,
 } from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
+import { indexOf } from 'lodash';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -271,6 +272,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       );
 
       getprojectmeta();
+      console.log(get_autoincrement())
     }
 
     setProjecttabvalue(0);
@@ -284,6 +286,19 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       if (value['component-name'] === 'BasicAutoIncrementer') {
         form_ids.push(value['component-parameters']['form_id']);
         field_ids.push(key);
+      }
+      if(value['component-name'] === 'TemplatedStringField'){
+        if(key.includes('hrid')){
+          if(formuiSpec['fields'][value['component-parameters']['linked']]!==undefined&&
+          value['component-parameters']['template']!==formuiSpec['fields'][value['component-parameters']['linked']]['component-parameters']['template']){
+            const fields=formuiSpec['fields']
+            fields[key]['component-parameters']['template']=formuiSpec['fields'][value['component-parameters']['linked']]['component-parameters']['template']
+            setFormuiSpec({...formuiSpec,fields:fields})
+          }
+          console.log('contain'+key+indexOf(key,'hrid'))
+        }else{
+          console.log('not contain'+key+indexOf(key,'hrid'))
+        }
       }
     }
     return {form_id: form_ids, field_id: field_ids};
