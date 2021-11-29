@@ -20,7 +20,6 @@
 
 import React, {useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {useHistory} from 'react-router-dom';
 import {Grid, Button, TextField} from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 // import Skeleton from '@material-ui/lab/Skeleton';
@@ -42,7 +41,6 @@ const useStyles = makeStyles(() => ({
 export default function DashboardActions(props: DashboardActionProps) {
   const {pouchProjectList} = props;
   const classes = useStyles();
-  const history = useHistory();
   const options = pouchProjectList.map(project_info => ({
     title: project_info.name,
     url: ROUTES.PROJECT + project_info.project_id,
