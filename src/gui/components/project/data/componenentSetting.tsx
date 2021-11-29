@@ -346,13 +346,13 @@ export const setSetingInitialValues = (
   return initialValues;
 };
 
-const isArrayInArray=(arr:Array<any>, item:Array<any>)=>{
+const isArrayInArray = (arr: Array<any>, item: Array<any>) => {
   const item_as_string = JSON.stringify(item);
-  const contains = arr.some((ele)=>{
+  const contains = arr.some(ele => {
     return JSON.stringify(ele) === item_as_string;
   });
   return contains;
-}
+};
 
 const Componentsetting = (props: componenentSettingprops) => {
   const {handlerchangewithview, ...others} = props;
@@ -361,10 +361,14 @@ const Componentsetting = (props: componenentSettingprops) => {
 
   useEffect(() => {
     //this function should be used to get new project ui when project_id changes??
-    setini()
-  }, [props.projectvalue['forms'][props.currentform]['uncertainty'+props.currentform]]);
+    setini();
+  }, [
+    props.projectvalue['forms'][props.currentform][
+      'uncertainty' + props.currentform
+    ],
+  ]);
 
-  const updatecertainty = (value:boolean) =>{
+  const updatecertainty = (value: boolean) => {
     if (value === true) {
       const newuis: ProjectUIModel = uiSetting;
       newuis['views']['meta']['fields'] = [
@@ -372,7 +376,7 @@ const Componentsetting = (props: componenentSettingprops) => {
         'uncertainty_include' + props.fieldName,
         'uncertainty_label' + props.fieldName,
       ];
-      newuis['fields']['uncertainty_include' + props.fieldName].checked=true
+      newuis['fields']['uncertainty_include' + props.fieldName].checked = true;
       console.log('value true');
       console.log(newuis['views']['meta']);
       setuiSetting({...newuis});
@@ -384,13 +388,17 @@ const Componentsetting = (props: componenentSettingprops) => {
         'annotation_label' + props.fieldName,
         'uncertainty_include' + props.fieldName,
       ];
-      newuis['fields']['uncertainty_include' + props.fieldName].checked=false
+      newuis['fields']['uncertainty_include' + props.fieldName].checked = false;
       setuiSetting({...newuis});
     }
-  }
-  const setini = () =>{
-    updatecertainty(props.projectvalue['forms'][props.currentform]['uncertainty'+props.currentform]??true)
-  }
+  };
+  const setini = () => {
+    updatecertainty(
+      props.projectvalue['forms'][props.currentform][
+        'uncertainty' + props.currentform
+      ] ?? true
+    );
+  };
   const handlerchanges = (event: any) => {
     const name = event.target.name.replace(props.fieldName, '');
   };
@@ -419,36 +427,50 @@ const Componentsetting = (props: componenentSettingprops) => {
 
       if (name === 'uncertainty_include') {
         const value = event.target.checked;
-        updatecertainty(value)
+        updatecertainty(value);
         console.log(uiSetting);
       }
     }
-    if(view==='FormParamater'){
+    if (view === 'FormParamater') {
       const newvalues = props.uiSpec;
       const name = event.target.name.replace(props.fieldName, '');
-      if(name==='required'){
+      if (name === 'required') {
         const value = event.target.checked;
-        if(value===true) {
-          if(!isArrayInArray (newvalues['fields'][props.fieldName]['validationSchema'],["yup.required"])) {
-            newvalues['fields'][props.fieldName]['validationSchema'].push(["yup.required"])
+        if (value === true) {
+          if (
+            !isArrayInArray(
+              newvalues['fields'][props.fieldName]['validationSchema'],
+              ['yup.required']
+            )
+          ) {
+            newvalues['fields'][props.fieldName]['validationSchema'].push([
+              'yup.required',
+            ]);
             props.setuiSpec({...newvalues});
-            console.log('Not contain'+"SHOULD")
+            console.log('Not contain' + 'SHOULD');
           }
-          
-        }else{
-          if(isArrayInArray (newvalues['fields'][props.fieldName]['validationSchema'],["yup.required"])){
-            newvalues['fields'][props.fieldName]['validationSchema']=
-            newvalues['fields'][props.fieldName]['validationSchema'].filter((valid:Array<string>)=>{return !valid.includes('yup.required')})
+
+          if (
+            isArrayInArray(
+              newvalues['fields'][props.fieldName]['validationSchema'],
+              ['yup.required']
+            )
+          ) {
+            newvalues['fields'][props.fieldName][
+              'validationSchema'
+            ] = newvalues['fields'][props.fieldName]['validationSchema'].filter(
+              (valid: Array<string>) => {
+                return !valid.includes('yup.required');
+              }
+            );
             props.setuiSpec({...newvalues});
-            console.log('Contain'+"SHould NOT")
+            console.log('Contain' + 'SHould NOT');
           }
-          
-          
         }
-        console.log(newvalues['fields'][props.fieldName]['validationSchema'])
+        console.log(newvalues['fields'][props.fieldName]['validationSchema']);
       }
     }
-    console.log(event.target.name+view+event.target.checked)
+    console.log(event.target.name + view + event.target.checked);
   };
   return (
     <Defaultcomponentsetting

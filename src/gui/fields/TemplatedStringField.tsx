@@ -245,8 +245,6 @@ export function TemplatedStringcomponentsetting(
         }
       }
 
-
-
       if (options.length > 0) {
         //get numbers of fields that not IDs
         let newuis: ProjectUIModel = uiSetting;

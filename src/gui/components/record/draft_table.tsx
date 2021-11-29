@@ -82,8 +82,8 @@ export default function DraftsTable(props: DraftsTableProps) {
           {props.viewsets !== null &&
           props.viewsets !== undefined &&
           params.value !== null &&
-          params.value !== undefined
-          &&props.viewsets[params.value.toString()]!==undefined
+          params.value !== undefined &&
+          props.viewsets[params.value.toString()] !== undefined
             ? props.viewsets[params.value.toString()].label ?? params.value
             : params.value}
         </>

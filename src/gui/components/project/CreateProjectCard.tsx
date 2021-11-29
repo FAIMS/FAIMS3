@@ -183,7 +183,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
-
       const projectui = getprojectform(projectvalue, 'project');
       const ini = {
         ...setProjectInitialValues(projectui, 'start-view', {_id: project_id}),
@@ -290,7 +289,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     return {form_id: form_ids, field_id: field_ids};
   };
 
-
   const add_autoince_refereence = async (autoince: any) => {
     if (project_id !== null) {
       try {
@@ -307,16 +305,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const saveformuiSpec = async (res: any = undefined) => {
     try {
-     
-        await setUiSpecForProject(
-          metadata_dbs[res ?? project_id].local,
-          formuiSpec
-        )
-
+      await setUiSpecForProject(
+        metadata_dbs[res ?? project_id].local,
+        formuiSpec
+      );
 
       const autoincrecs = get_autoincrement();
       add_autoince_refereence(autoincrecs);
-
     } catch (err) {
       console.error(
         'databases needs cleaning value not saved...' + res + project_id
@@ -488,7 +483,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   const isready = () => {
-
     if (initialValues['name'] !== '' && props.project_id !== null) return true; //for edit project
     if (props.project_id === null && initialValues['name'] === '') return true; //for new project, create new project
     return false;

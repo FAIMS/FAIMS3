@@ -172,22 +172,20 @@ export async function add_autoincrement_reference_for_project(
   field_id: string[]
 ) {
   const projdb = getProjectDB(project_id);
-  const refs: Array<AutoIncrementReference> = []
-  form_id.map((id:string,index:number)=>refs.push(
-    {
+  const refs: Array<AutoIncrementReference> = [];
+  form_id.map((id: string, index: number) =>
+    refs.push({
       project_id: project_id,
       form_id: id,
       field_id: field_id[index],
-    }
-  )
-
+    })
   );
-  const refs_add: Array<AutoIncrementReference> = []
+  const refs_add: Array<AutoIncrementReference> = [];
   try {
     const doc: AutoIncrementReferenceDoc = await projdb.get(
       LOCAL_AUTOINCREMENT_NAME
     );
-    refs.map((ref:AutoIncrementReference)=>{
+    refs.map((ref: AutoIncrementReference) => {
       let found = false;
       for (const existing_ref of doc.references) {
         if (ref.toString() === existing_ref.toString()) {
@@ -195,15 +193,12 @@ export async function add_autoincrement_reference_for_project(
         }
       }
       if (!found) {
-        refs_add.push(ref)
+        refs_add.push(ref);
       }
-    }
+    });
+    doc.references = refs;
 
-    )
-    doc.references=refs;
-    
     await projdb.put(doc);
-    
   } catch (err: any) {
     if (err.status === 404) {
       // No autoincrementers currently

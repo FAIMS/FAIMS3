@@ -67,7 +67,9 @@ export const getconnections = (
     uiSpec['views'][view]['fields'].map((field: string) =>
       uiSpec['fields'][field]['component-name'] === 'RelatedRecordSelector'
         ? uiSpec['fields'][field]['component-parameters']['related_type'] !==
-            '' &&uiSpec['fields'][field]['component-parameters']['related_type']!==undefined &&
+            '' &&
+          uiSpec['fields'][field]['component-parameters']['related_type'] !==
+            undefined &&
           conectiontabs.push({
             tab:
               uiSpec['viewsets'][
@@ -534,10 +536,11 @@ export const getprojectform = (
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
       //TODO Maybe set pre-select value for user
-      if (projectvalue['forms'] !== undefined )
+      if (projectvalue['forms'] !== undefined)
         if (projectvalue['forms'][props.formname] !== undefined)
           newfield['initialValue'] =
-            projectvalue['forms'][props.formname][fieldname]??newfield['initialValue'];
+            projectvalue['forms'][props.formname][fieldname] ??
+            newfield['initialValue'];
       fields[tab][index] = {...newfield};
     });
   }
@@ -640,14 +643,14 @@ export function generateaddfieldui() {
 }
 
 function setmeta(meta: any) {
-    return {
-      annotation_label: 'annotation',
-      annotation:meta.isannotation??true,
-      uncertainty: {
-        include: meta.isuncertainty??false,
-        label: 'uncertainty',
-      },
-    };
+  return {
+    annotation_label: 'annotation',
+    annotation: meta.isannotation ?? true,
+    uncertainty: {
+      include: meta.isuncertainty ?? false,
+      label: 'uncertainty',
+    },
+  };
 }
 
 export const updateuiSpec = (type: string, props: any) => {
@@ -812,7 +815,6 @@ const removefield = (
   formcomponents: any,
   formuiview: string
 ) => {
-
   const name = id;
   const components = formcomponents;
   components[formuiview] = components[formuiview].filter(
@@ -922,16 +924,20 @@ const formvariantsadd = (props: any) => {
   return {newviews, components};
 };
 
-
-export const validationschema_design_form = (formcomponents:any,settings:any) =>{
+export const validationschema_design_form = (
+  formcomponents: any,
+  settings: any
+) => {
   // get all field name for that form section
-  const uiSpeclist:any={}
-  formcomponents.map((fields:any)=>
-  fields.map((field:any)=>{
-    const ui=settings.settingsProps !== undefined && settings.settingsProps.length > 1
-    ? settings.settingsProps[1]
-    : field['uiSpec']
-    uiSpeclist[fields]
-  })
-  )
-}
+  const uiSpeclist: any = {};
+  formcomponents.map((fields: any) =>
+    fields.map((field: any) => {
+      const ui =
+        settings.settingsProps !== undefined &&
+        settings.settingsProps.length > 1
+          ? settings.settingsProps[1]
+          : field['uiSpec'];
+      uiSpeclist[fields];
+    })
+  );
+};

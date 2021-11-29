@@ -84,7 +84,6 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-
 const sections_default = ['SECTION1'];
 const variant_default = ['FORM1'];
 const form_defult = {FORM1SECTION1: []};
@@ -92,7 +91,7 @@ const VISIBLE_TYPE = 'visible_types';
 const variant_label = 'Form1';
 const DefaultAnnotation = {
   annotation_label: 'annotation',
-  annotation:true,
+  annotation: true,
   uncertainty: {
     include: false,
     label: 'uncertainty',
@@ -314,7 +313,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     });
 
     setFormComponents(formcomponent);
-    setDesignvalue(index+getid());
+    setDesignvalue(index + getid());
   };
 
   const handelonChangeSection = (event: any, index: number) => {
@@ -496,24 +495,21 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           (fields = [...fields, ...newviews['views'][view]['fields']])
       );
       //set undefined meta
-      if (
-        event.target.name === 'annotation' + formvariants
-      ) {
+      if (event.target.name === 'annotation' + formvariants) {
         fields.map((field: string) => {
           if (newviews['fields'][field]['meta'] === undefined)
             newviews['fields'][field]['meta'] = DefaultAnnotation;
-          newviews['fields'][field]['meta']['annotation']=event.target.checked
+          newviews['fields'][field]['meta']['annotation'] =
+            event.target.checked;
         });
       }
 
-      if (
-        event.target.name === 'uncertainty' + formvariants
-      ) {
+      if (event.target.name === 'uncertainty' + formvariants) {
         fields.map((field: string) => {
-          if (newviews['fields'][field]['meta'] === undefined) 
+          if (newviews['fields'][field]['meta'] === undefined)
             newviews['fields'][field]['meta'] = DefaultAnnotation;
-          newviews['fields'][field]['meta']['uncertainty']['include'] = event.target.checked;
-          
+          newviews['fields'][field]['meta']['uncertainty']['include'] =
+            event.target.checked;
         });
         const {newformcom, initialfieldvalue} = updateuiSpec('newfromui', {
           formuiSpec: newviews,
@@ -523,7 +519,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           projectvalue: projectvalue,
         });
 
-        setinitialValues({...initialValues,...initialfieldvalue})
+        setinitialValues({...initialValues, ...initialfieldvalue});
       }
 
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
@@ -693,8 +689,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const compnentPanel = () => {
-    console.log('=======+++++++++=')
-    console.log(formcomponents)
+    console.log('=======+++++++++=');
+    console.log(formcomponents);
     return (
       <Formik
         // enableReinitialize

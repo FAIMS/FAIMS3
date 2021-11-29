@@ -162,9 +162,7 @@ const uiSetting = () => {
         children: 'Tick if user can add multiple record for this relateionship',
       },
     },
-    validationSchema: [
-      ['yup.bool'],
-    ],
+    validationSchema: [['yup.bool']],
     initialValue: false,
   };
   newuiSetting['fields']['relation_type'] = {

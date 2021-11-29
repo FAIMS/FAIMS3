@@ -66,11 +66,15 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
             (view: string) =>
               formuiSpec['views'][view]['fields'].length === 0 &&
               errors['formdesign'].push(
-                formuiSpec['viewsets'][viewset]['label']+" Form > "+ formuiSpec['views'][view]['label'] + ' Section: Section has no component yet,please add it'
+                formuiSpec['viewsets'][viewset]['label'] +
+                  ' Form > ' +
+                  formuiSpec['views'][view]['label'] +
+                  ' Section: Section has no component yet,please add it'
               )
           )
         : errors['formdesign'].push(
-          formuiSpec['viewsets'][viewset]['label'] + ': Form was defined, but setcion not added'
+            formuiSpec['viewsets'][viewset]['label'] +
+              ': Form was defined, but setcion not added'
           )
     );
     if (errors['formdesign'].length > 0) {

@@ -24,7 +24,15 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Grid, Step, Stepper, StepButton,MobileStepper,Button,Box,Card} from '@material-ui/core';
+import {
+  Grid,
+  Step,
+  Stepper,
+  StepButton,
+  MobileStepper,
+  Button,
+  Box,
+} from '@material-ui/core';
 import {Formik, Form} from 'formik';
 import {getComponentFromField, FormForm} from '../FormElement';
 import {TabTab} from './TabTab';
@@ -35,8 +43,6 @@ import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
-import { indexOf } from 'lodash';
-import { on } from 'events';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -55,11 +61,11 @@ const useStyles = makeStyles(theme => ({
   settingtab: {
     backgroundColor: '#e1e4e8',
   },
-  steepscorller:{
-    overflowY:"auto",
-    with:"100%",
+  steepscorller: {
+    overflowY: 'auto',
+    with: '100%',
     flexGrow: 1,
-  }
+  },
 }));
 
 type ProjectPreviewProps = {
@@ -187,77 +193,86 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                 })}
               />
             </Grid>
-            <Grid item sm={1} xs={12}>
-            </Grid>
+            <Grid item sm={1} xs={12}></Grid>
             <Grid item sm={8} xs={12} className={classes.steepscorller}>
-
-              {not_xs?
-              (<Stepper
-                nonLinear
-                activeStep={formuiSpec.viewsets[formvariants].views.indexOf(
-                  formvariants + view_name
-                )}
-                alternativeLabel
-              >
-                {formuiSpec.viewsets[formvariants].views.map(
-                  (view_name: string) => (
-                    <Step key={view_name}>
-                      <StepButton
+              {not_xs ? (
+                <Stepper
+                  nonLinear
+                  activeStep={formuiSpec.viewsets[formvariants].views.indexOf(
+                    formvariants + view_name
+                  )}
+                  alternativeLabel
+                >
+                  {formuiSpec.viewsets[formvariants].views.map(
+                    (view_name: string) => (
+                      <Step key={view_name}>
+                        <StepButton
+                          onClick={() => {
+                            setView(view_name.replace(formvariants, ''));
+                          }}
+                        >
+                          {formuiSpec.views[view_name].label}
+                        </StepButton>
+                      </Step>
+                    )
+                  )}
+                </Stepper>
+              ) : (
+                <Box>
+                  <MobileStepper
+                    variant="text"
+                    steps={formuiSpec.viewsets[formvariants].views.length}
+                    position="static"
+                    activeStep={activeStep}
+                    nextButton={
+                      <Button
+                        size="small"
                         onClick={() => {
-                          setView(view_name.replace(formvariants, ''));
+                          const stepnum = activeStep + 1;
+                          setActiveStep(stepnum);
+
+                          formuiSpec.viewsets[formvariants].views[
+                            stepnum
+                          ].replace(formvariants, '');
                         }}
+                        disabled={
+                          activeStep ===
+                          formuiSpec.viewsets[formvariants].views.length - 1
+                        }
                       >
-                        {formuiSpec.views[view_name].label}
-                      </StepButton>
-                    </Step>
-                  )
-                )}
-              </Stepper>)
-              :
-              (<Box>
-              <MobileStepper
-                  variant="text"
-                  steps={formuiSpec.viewsets[formvariants].views.length}
-                  position="static"
-                  activeStep={activeStep}
-                  nextButton={
-                    <Button
-                      size="small"
-                      onClick={()=>{
-                        const stepnum=activeStep+1
-                        setActiveStep(stepnum);
-                        
-                        setView(formuiSpec.viewsets[formvariants].views[stepnum].replace(formvariants, ''));
-                      }}
-                      disabled={activeStep === formuiSpec.viewsets[formvariants].views.length - 1}
-                    >
-                      Next
-                      {theme.direction === 'rtl' ? (
-                        <KeyboardArrowLeft />
-                      ) : (
-                        <KeyboardArrowRight />
-                      )}
-                    </Button>
-                  }
-                  backButton={
-                    <Button 
-                      size="small" 
-                      onClick={()=>{
-                        const stepnum=activeStep-1
-                        setActiveStep(stepnum)
-                        setView(formuiSpec.viewsets[formvariants].views[stepnum].replace(formvariants, ''))}} 
-                      disabled={activeStep === 0}>
-                      {theme.direction === 'rtl' ? (
-                        <KeyboardArrowRight />
-                      ) : (
-                        <KeyboardArrowLeft />
-                      )}
-                      Back
-                    </Button>
-                  }
-                />
-              </Box>)
-              }
+                        Next
+                        {theme.direction === 'rtl' ? (
+                          <KeyboardArrowLeft />
+                        ) : (
+                          <KeyboardArrowRight />
+                        )}
+                      </Button>
+                    }
+                    backButton={
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          const stepnum = activeStep - 1;
+                          setActiveStep(stepnum);
+                          setView(
+                            formuiSpec.viewsets[formvariants].views[
+                              stepnum
+                            ].replace(formvariants, '')
+                          );
+                        }}
+                        disabled={activeStep === 0}
+                      >
+                        {theme.direction === 'rtl' ? (
+                          <KeyboardArrowRight />
+                        ) : (
+                          <KeyboardArrowLeft />
+                        )}
+                        Back
+                      </Button>
+                    }
+                  />
+                </Box>
+              )}
               {fieldNames.length > 0 ? (
                 <Formik
                   key={index}
@@ -285,13 +300,10 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                     );
                   }}
                 </Formik>
-                
               ) : (
                 'No Form component yet,click the GO TO DESIGN FORM button to design Form and add component before Preview'
               )}
-              
             </Grid>
-            
           </Grid>
         </TabPanel>
       ))}

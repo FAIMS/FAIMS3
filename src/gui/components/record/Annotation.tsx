@@ -69,16 +69,15 @@ export function Annotation(props: any) {
       'uncertainty'
     );
   };
-  return field.meta !== undefined&&field.meta.annotation!==false?(
+  return field.meta !== undefined && field.meta.annotation !== false ? (
     <>
-      
-        <IconButton edge="end" onClick={() => setIsClick(true)}>
-          <NoteIcon fontSize="small" />
-        </IconButton>
-      
-      { isclicked ? (
+      <IconButton edge="end" onClick={() => setIsClick(true)}>
+        <NoteIcon fontSize="small" />
+      </IconButton>
+
+      {isclicked ? (
         <UpButton onButtonClick={() => setIsClick(false)} value={1} id={1} />
-      ): (
+      ) : (
         <DownButton onButtonClick={() => setIsClick(true)} value={2} id={3} />
       )}
       <br />
@@ -94,7 +93,7 @@ export function Annotation(props: any) {
           label={field['meta']['annotation_label']}
         />
       )}
-      { field.meta['uncertainty'] !== undefined &&
+      {field.meta['uncertainty'] !== undefined &&
         !field['meta']['uncertainty']['include'] &&
         isclicked && (
           <Field
@@ -113,7 +112,7 @@ export function Annotation(props: any) {
       <br />
       <br />
     </>
-  ):(
+  ) : (
     <></>
   );
 }

@@ -25,7 +25,6 @@ import {useState, useEffect} from 'react';
 import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
 import {gettabform} from '../data/ComponentSetting';
-import { on } from 'events';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 function a11yProps(tabname: any, index: any) {
