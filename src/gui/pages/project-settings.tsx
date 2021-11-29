@@ -63,7 +63,7 @@ export default function ProjectSettings() {
     getDB();
   }, []);
 
-  console.error('MetaDB contents', metadbContents);
+  console.debug('MetaDB contents', metadbContents);
 
   return project_info ? (
     <Container maxWidth="lg">

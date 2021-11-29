@@ -349,7 +349,7 @@ class RecordForm extends React.Component<
       staged_data,
       staged_annotations,
     ] = await this.draftState.getInitialValues();
-    console.error('Staged values', staged_data, staged_annotations);
+    console.debug('Staged values', staged_data, staged_annotations);
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
@@ -451,7 +451,7 @@ class RecordForm extends React.Component<
   filterValues(values: object) {
     const new_values: any = {};
     for (const [k, v] of Object.entries(values)) {
-      if (k !== '_id' && k !== '_project_id') {
+      if (k !== '_id' && k !== '_project_id' && k !== '_current_revision_id') {
         new_values[k] = v;
         if (k[0] === '_') {
           console.error(`Including possibly bad key ${k} in record`);
