@@ -349,7 +349,7 @@ class RecordForm extends React.Component<
       staged_data,
       staged_annotations,
     ] = await this.draftState.getInitialValues();
-    console.error('Staged values', staged_data, staged_annotations);
+    console.debug('Staged values', staged_data, staged_annotations);
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
