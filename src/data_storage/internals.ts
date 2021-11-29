@@ -153,15 +153,20 @@ export async function getHRID(
       break;
     }
   }
+  console.debug('hrid_name:', hrid_name);
   if (hrid_name === null) {
+    console.warn('No HRID field found');
     return null;
   }
   const hrid_avp_id = revision.avps[hrid_name];
   if (hrid_avp_id === undefined) {
+    console.warn('No HRID field set for revision');
     return null;
   }
+  console.debug('hrid_avp_id:', hrid_avp_id);
   try {
     const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
+    console.debug('hrid_avp:', hrid_avp);
     return hrid_avp.data as string;
   } catch (err) {
     console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
@@ -190,10 +195,11 @@ export async function listRecordMetadata(
     const revisions = await getRevisions(project_id, revision_ids);
 
     const out: RecordMetadataList = {};
-    records.forEach(async (record, record_id) => {
+    for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
       const hrid = (await getHRID(project_id, revision)) ?? record_id;
+      console.debug('hrid:', hrid);
       out[record_id] = {
         project_id: project_id,
         record_id: record_id,
@@ -207,7 +213,8 @@ export async function listRecordMetadata(
         hrid: hrid,
         type: record.type,
       };
-    });
+    }
+    console.debug('Record metadata list', out);
     return out;
   } catch (err) {
     console.warn(err);

@@ -57,13 +57,18 @@ export function listenRecordsList(
   const runCallback = () =>
     listRecordMetadata(project_id)
       .then(record_list => {
+        console.debug('Full record list', record_list);
         if (filter_deleted) {
           const new_record_list: RecordMetadataList = {};
-          for (const [key, metadata] of Object.entries(record_list)) {
+          for (const key in record_list) {
+            const metadata = record_list[key];
+            console.debug('Records', key, metadata);
             if (!metadata.deleted) {
               new_record_list[key] = metadata;
+              console.debug('Not deleted Records', key, metadata);
             }
           }
+          console.debug('Reduced record list', new_record_list);
           return new_record_list;
         } else {
           return record_list;
