@@ -24,7 +24,15 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Grid, Step, Stepper, StepButton} from '@material-ui/core';
+import {
+  Grid,
+  Step,
+  Stepper,
+  StepButton,
+  MobileStepper,
+  Button,
+  Box,
+} from '@material-ui/core';
 import {Formik, Form} from 'formik';
 import {getComponentFromField, FormForm} from '../FormElement';
 import {TabTab} from './TabTab';
@@ -33,6 +41,8 @@ import {getprojectform, uiSpecType} from '../data/ComponentSetting';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
+import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
+import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -50,6 +60,11 @@ const useStyles = makeStyles(theme => ({
   },
   settingtab: {
     backgroundColor: '#e1e4e8',
+  },
+  steepscorller: {
+    overflowY: 'auto',
+    with: '100%',
+    flexGrow: 1,
   },
 }));
 
@@ -89,6 +104,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   const [initialValues, setinitialValues] = useState({});
   const [role, setrole] = useState('admin');
   const [view_name, setView] = useState('SECTION1');
+  const [activeStep, setActiveStep] = React.useState(0);
 
   useEffect(() => {
     setinit();
@@ -167,28 +183,96 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
           tabname="primarytab"
         >
           <Grid container>
-            <Grid item sm={6} xs={12}>
-              <Stepper
-                nonLinear
-                activeStep={formuiSpec.viewsets[formvariants].views.indexOf(
-                  formvariants + view_name
-                )}
-                alternativeLabel
-              >
-                {formuiSpec.viewsets[formvariants].views.map(
-                  (view_name: string) => (
-                    <Step key={view_name}>
-                      <StepButton
+            <Grid item sm={3} xs={12}>
+              <FormForm
+                currentView={'start-view'}
+                handleChangeForm={handleChangeFormRole}
+                handleSubmit={handleSubmitForm}
+                uiSpec={getprojectform(projectvalue, 'preview', {
+                  forms: [formvariants],
+                })}
+              />
+            </Grid>
+            <Grid item sm={1} xs={12}></Grid>
+            <Grid item sm={8} xs={12} className={classes.steepscorller}>
+              {not_xs ? (
+                <Stepper
+                  nonLinear
+                  activeStep={formuiSpec.viewsets[formvariants].views.indexOf(
+                    formvariants + view_name
+                  )}
+                  alternativeLabel
+                >
+                  {formuiSpec.viewsets[formvariants].views.map(
+                    (view_name: string) => (
+                      <Step key={view_name}>
+                        <StepButton
+                          onClick={() => {
+                            setView(view_name.replace(formvariants, ''));
+                          }}
+                        >
+                          {formuiSpec.views[view_name].label}
+                        </StepButton>
+                      </Step>
+                    )
+                  )}
+                </Stepper>
+              ) : (
+                <Box>
+                  <MobileStepper
+                    variant="text"
+                    steps={formuiSpec.viewsets[formvariants].views.length}
+                    position="static"
+                    activeStep={activeStep}
+                    nextButton={
+                      <Button
+                        size="small"
                         onClick={() => {
-                          setView(view_name.replace(formvariants, ''));
+                          const stepnum = activeStep + 1;
+                          setActiveStep(stepnum);
+
+                          formuiSpec.viewsets[formvariants].views[
+                            stepnum
+                          ].replace(formvariants, '');
                         }}
+                        disabled={
+                          activeStep ===
+                          formuiSpec.viewsets[formvariants].views.length - 1
+                        }
                       >
-                        {formuiSpec.views[view_name].label}
-                      </StepButton>
-                    </Step>
-                  )
-                )}
-              </Stepper>
+                        Next
+                        {theme.direction === 'rtl' ? (
+                          <KeyboardArrowLeft />
+                        ) : (
+                          <KeyboardArrowRight />
+                        )}
+                      </Button>
+                    }
+                    backButton={
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          const stepnum = activeStep - 1;
+                          setActiveStep(stepnum);
+                          setView(
+                            formuiSpec.viewsets[formvariants].views[
+                              stepnum
+                            ].replace(formvariants, '')
+                          );
+                        }}
+                        disabled={activeStep === 0}
+                      >
+                        {theme.direction === 'rtl' ? (
+                          <KeyboardArrowRight />
+                        ) : (
+                          <KeyboardArrowLeft />
+                        )}
+                        Back
+                      </Button>
+                    }
+                  />
+                </Box>
+              )}
               {fieldNames.length > 0 ? (
                 <Formik
                   key={index}
@@ -219,16 +303,6 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
               ) : (
                 'No Form component yet,click the GO TO DESIGN FORM button to design Form and add component before Preview'
               )}
-            </Grid>
-            <Grid item sm={4} xs={12}>
-              <FormForm
-                currentView={'start-view'}
-                handleChangeForm={handleChangeFormRole}
-                handleSubmit={handleSubmitForm}
-                uiSpec={getprojectform(projectvalue, 'preview', {
-                  forms: [formvariants],
-                })}
-              />
             </Grid>
           </Grid>
         </TabPanel>

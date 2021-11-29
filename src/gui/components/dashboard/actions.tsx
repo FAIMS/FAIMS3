@@ -20,7 +20,6 @@
 
 import React, {useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {useHistory} from 'react-router-dom';
 import {Grid, Button, TextField} from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 // import Skeleton from '@material-ui/lab/Skeleton';
@@ -29,6 +28,7 @@ import {ProjectInformation} from '../../../datamodel/ui';
 import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
+import {Link as RouterLink} from 'react-router-dom';
 type DashboardActionProps = {
   pouchProjectList: ProjectInformation[];
 };
@@ -41,7 +41,6 @@ const useStyles = makeStyles(() => ({
 export default function DashboardActions(props: DashboardActionProps) {
   const {pouchProjectList} = props;
   const classes = useStyles();
-  const history = useHistory();
   const options = pouchProjectList.map(project_info => ({
     title: project_info.name,
     url: ROUTES.PROJECT + project_info.project_id,
@@ -50,9 +49,9 @@ export default function DashboardActions(props: DashboardActionProps) {
   const [value, setValue] = React.useState<any | null>(null);
   const [inputValue, setInputValue] = React.useState('');
   const handleSubmit = () => {
-    if (value !== null) {
-      history.push(value.url + ROUTES.RECORD_CREATE);
-    }
+    // if (value !== null) {
+    //   history.push(value.url + ROUTES.RECORD_CREATE);
+    // }
   };
 
   // viewsets and the list of visible views
@@ -77,6 +76,7 @@ export default function DashboardActions(props: DashboardActionProps) {
       );
     });
     setViewSets(newviewset);
+    console.log(viewSets);
   }, [pouchProjectList]);
 
   return (
@@ -123,6 +123,13 @@ export default function DashboardActions(props: DashboardActionProps) {
                     type={'submit'}
                     style={{marginLeft: '5px'}}
                     key={viewset_name + 'viewset'}
+                    component={RouterLink}
+                    to={
+                      ROUTES.PROJECT +
+                      value.value +
+                      ROUTES.RECORD_CREATE +
+                      viewset_name
+                    }
                   >
                     {viewSets[value.value][1].length === 1
                       ? 'Add'

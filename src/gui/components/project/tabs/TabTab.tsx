@@ -171,6 +171,8 @@ export function TabEditable(props: TabProps) {
             aria-label={tab_id}
             id={tab_id}
             orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
+            scrollButtons="on"
+            variant="scrollable"
           >
             {tablists.map((tab, index) => (
               <Tab

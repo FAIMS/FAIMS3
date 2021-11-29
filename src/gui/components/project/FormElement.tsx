@@ -250,11 +250,15 @@ export function AutocompleteForm(props: any) {
                     )}
                   />
                 )}
-                {labels.map((label: string) =>
+                {labels.map((label: string, index: number) =>
                   label !== 'admin' ? (
-                    <Chip label={label} onDelete={() => handleDelete(label)} />
+                    <Chip
+                      label={label}
+                      onDelete={() => handleDelete(label)}
+                      key={label + index}
+                    />
                   ) : (
-                    <Chip label={label} />
+                    <Chip label={label} key={label + index} />
                   )
                 )}
               </Form>

@@ -31,7 +31,6 @@ import {
 } from '@material-ui/core';
 import AccountTree from '@material-ui/icons/AccountTree';
 import HomeIcon from '@material-ui/icons/Home';
-//import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 
 import * as ROUTES from '../../constants/routes';

@@ -19,8 +19,7 @@
  */
 
 import {getComponentPropertiesByName} from '../../../component_registry';
-
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import {
   ProjectUIModel,
   resetprops,
@@ -129,6 +128,45 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.bool']],
       initialValue: false,
     },
+    field_type: {
+      'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+      'component-name': 'Select',
+      'type-returned': 'faims-core::String', // matches a type in the Project Model
+      'component-parameters': {
+        fullWidth: true,
+        helperText: 'Select Type of the field ',
+        variant: 'outlined',
+        required: false,
+        select: true,
+        InputProps: {},
+        SelectProps: {},
+        ElementProps: {
+          options: [
+            {
+              value: 'default',
+              label: 'default',
+            },
+            {
+              value: 'string',
+              label: 'string',
+            },
+            {
+              value: 'number',
+              label: 'number',
+            },
+            {
+              value: 'email',
+              label: 'email',
+            },
+          ],
+        },
+        InputLabelProps: {
+          label: 'Select Field Type',
+        },
+      },
+      validationSchema: [['yup.string']],
+      initialValue: '1',
+    },
     validationSchema: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
@@ -180,6 +218,11 @@ const uiSettingOthers: ProjectUIModel = {
       uidesign: 'form',
       label: 'FormParamater',
     },
+    other: {
+      fields: ['field_type'],
+      uidesign: 'form',
+      label: 'other',
+    },
   },
   viewsets: {
     notes: {
@@ -215,6 +258,7 @@ const regeneratesettinguiSpec = (
     fieldsnames.push(...uiSpec['viewsets'][viewset]['views'])
   );
   fieldsnames.map((view: string) => (fields[view] = []));
+
   for (const [key, value] of Object.entries(uiSpec['fields'])) {
     const newname = key + fieldName;
     newui['fields'][newname] = generatenewname(value, newname);
@@ -347,11 +391,59 @@ export const setSetingInitialValues = (
   return initialValues;
 };
 
+const isArrayInArray = (arr: Array<any>, item: Array<any>) => {
+  const item_as_string = JSON.stringify(item);
+  const contains = arr.some(ele => {
+    return JSON.stringify(ele) === item_as_string;
+  });
+  return contains;
+};
+
 const Componentsetting = (props: componenentSettingprops) => {
   const {handlerchangewithview, ...others} = props;
 
   const [uiSetting, setuiSetting] = useState(props.uiSetting);
 
+  useEffect(() => {
+    //this function should be used to get new project ui when project_id changes??
+    setini();
+  }, [
+    props.projectvalue['forms'][props.currentform][
+      'uncertainty' + props.currentform
+    ],
+  ]);
+
+  const updatecertainty = (value: boolean) => {
+    if (value === true) {
+      const newuis: ProjectUIModel = uiSetting;
+      newuis['views']['meta']['fields'] = [
+        'annotation_label' + props.fieldName,
+        'uncertainty_include' + props.fieldName,
+        'uncertainty_label' + props.fieldName,
+      ];
+      newuis['fields']['uncertainty_include' + props.fieldName].checked = true;
+      console.log('value true');
+      console.log(newuis['views']['meta']);
+      setuiSetting({...newuis});
+    }
+
+    if (value === false) {
+      const newuis: ProjectUIModel = uiSetting;
+      newuis['views']['meta']['fields'] = [
+        'annotation_label' + props.fieldName,
+        'uncertainty_include' + props.fieldName,
+      ];
+      newuis['fields']['uncertainty_include' + props.fieldName].checked = false;
+      setuiSetting({...newuis});
+    }
+  };
+  const setini = () => {
+    updatecertainty(
+      props.projectvalue['forms'][props.currentform][
+        'uncertainty' + props.currentform
+      ] ?? true
+    );
+  };
   const handlerchanges = (event: any) => {
     const name = event.target.name.replace(props.fieldName, '');
   };
@@ -380,31 +472,123 @@ const Componentsetting = (props: componenentSettingprops) => {
 
       if (name === 'uncertainty_include') {
         const value = event.target.checked;
-        if (value === true) {
-          const newuis: ProjectUIModel = uiSetting;
-          newuis['views']['meta']['fields'] = [
-            'annotation_label' + props.fieldName,
-            'uncertainty_include' + props.fieldName,
-            'uncertainty_label' + props.fieldName,
-          ];
-          console.log('value true');
-          console.log(newuis['views']['meta']);
-          setuiSetting({...newuis});
-        }
-
-        if (value === false) {
-          const newuis: ProjectUIModel = uiSetting;
-          newuis['views']['meta']['fields'] = [
-            'annotation_label' + props.fieldName,
-            'uncertainty_include' + props.fieldName,
-          ];
-          console.log('value false');
-          console.log(newuis['views']['meta']);
-          setuiSetting({...newuis});
-        }
+        updatecertainty(value);
         console.log(uiSetting);
       }
     }
+    if (view === 'FormParamater') {
+      const newvalues = props.uiSpec;
+      const name = event.target.name.replace(props.fieldName, '');
+      if (name === 'required') {
+        const value = event.target.checked;
+        if (value === true) {
+          if (
+            !isArrayInArray(
+              newvalues['fields'][props.fieldName]['validationSchema'],
+              ['yup.required']
+            )
+          ) {
+            newvalues['fields'][props.fieldName]['validationSchema'].push([
+              'yup.required',
+            ]);
+            props.setuiSpec({...newvalues});
+            console.log('Not contain' + 'SHOULD');
+          }
+
+          if (
+            isArrayInArray(
+              newvalues['fields'][props.fieldName]['validationSchema'],
+              ['yup.required']
+            )
+          ) {
+            newvalues['fields'][props.fieldName][
+              'validationSchema'
+            ] = newvalues['fields'][props.fieldName]['validationSchema'].filter(
+              (valid: Array<string>) => {
+                return !valid.includes('yup.required');
+              }
+            );
+            props.setuiSpec({...newvalues});
+            console.log('Contain' + 'SHould NOT');
+          }
+        }
+        console.log(newvalues['fields'][props.fieldName]['validationSchema']);
+      }
+    }
+    console.log(event.target.name + view + event.target.checked);
+    if (view === 'other') {
+      const name = event.target.name.replace(props.fieldName, '');
+      if (name === 'field_type') {
+        const value = event.target.value;
+        if (value !== 'default') {
+          const newvalues = props.uiSpec;
+          newvalues['fields'][props.fieldName]['component-parameters'][
+            'InputProps'
+          ]['type'] = value;
+          switch (value) {
+            case 'string':
+              newvalues['fields'][props.fieldName]['type-returned'] =
+                'faims-core::String';
+              newvalues['fields'][props.fieldName]['validationSchema'] = [
+                ['yup.string'],
+              ];
+              if (
+                newvalues['fields'][props.fieldName]['component-parameters'][
+                  'required'
+                ]
+              )
+                newvalues['fields'][props.fieldName]['validationSchema'] = [
+                  ['yup.string'],
+                  ['yup.required'],
+                ];
+              break;
+            case 'number':
+              newvalues['fields'][props.fieldName][
+                'validationSchema'
+              ] = newvalues['fields'][props.fieldName]['type-returned'] =
+                'faims-core::Integer';
+              newvalues['fields'][props.fieldName]['validationSchema'] = [
+                ['yup.number'],
+              ];
+              if (
+                newvalues['fields'][props.fieldName]['component-parameters'][
+                  'required'
+                ]
+              )
+                newvalues['fields'][props.fieldName]['validationSchema'] = [
+                  ['yup.number'],
+                  ['yup.required'],
+                ];
+              break;
+            case 'email':
+              newvalues['fields'][props.fieldName]['type-returned'] =
+                'faims-core::Email';
+              newvalues['fields'][props.fieldName]['validationSchema'] = [
+                ['yup.string'],
+                ['yup.email', 'Enter a valid email'],
+              ];
+              if (
+                newvalues['fields'][props.fieldName]['component-parameters'][
+                  'required'
+                ]
+              )
+                newvalues['fields'][props.fieldName]['validationSchema'] = [
+                  ['yup.string'],
+                  ['yup.email', 'Enter a valid email'],
+                  ['yup.required'],
+                ];
+              break;
+            default:
+              break;
+          }
+          props.setuiSpec({...newvalues});
+          // InputProps: {
+          //   type: 'number',
+          // }
+        }
+      }
+    }
+    console.log(event.target.name + view + event.target.checked);
   };
   return (
     <Defaultcomponentsetting
@@ -432,7 +616,14 @@ const getuivalue = (
     const Component = originprops.builder_component;
     return {newui, fieldui, Component};
   } else {
-    const uiSetting = uiSettingOthers;
+    const uiSetting = JSON.parse(JSON.stringify(uiSettingOthers));
+    if (uiSpec['fields'][fieldName]['component-name'] === 'TextField') {
+      uiSetting['viewsets']['valid']['views'] = [
+        'other',
+        'FormParamater',
+        'validationSchema',
+      ];
+    }
     const fieldui = uiSpec['fields'][fieldName];
     const newui = regeneratesettinguiSpec(uiSetting, fieldName, designvalue);
     const Component = Componentsetting;
@@ -467,7 +658,7 @@ export function ResetComponentProperties(props: resetprops) {
     event: FAIMSEVENTTYPE,
     elementprop: string
   ) => {
-    if (['meta', 'access', 'validationSchema'].includes(elementprop))
+    if (['meta', 'access', 'validationSchema', 'other'].includes(elementprop))
       return true;
     const newvalues = uiSpec;
     let ishird = false;

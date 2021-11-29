@@ -133,7 +133,7 @@ registerComponent(
   'formik-material-ui',
   'TextField',
   setupComponentProperties(
-    'HTML input field',
+    'Input field',
     'text plus sepcial characters',
     'Text',
     FormikTextField,

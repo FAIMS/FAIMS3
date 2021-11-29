@@ -108,7 +108,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             project_id +
             ROUTES.RECORD_CREATE +
             props.related_type +
-            '?link=' +
+            '?field_id=' +
+            props.id +
+            '&link=' +
             useLocation().pathname
           }
         >
@@ -141,18 +143,11 @@ const uiSpec = {
     FormHelperTextProps: {},
   },
   validationSchema: [['yup.string'], ['yup.required']],
-  initialValue: [],
+  initialValue: '',
 };
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  // console.log(generatenewfield('faims-custom','Select',null,null,null))
-  // newuiSetting['fields']['related_type']=
-  // newuiSetting['fields']['relation_type']=generatenewfield('faims-custom','Select',null,'related_type',null)
-  // newuiSetting['fields']['relation_type']['component-parameters']['ElementProps']=[{
-  //   value: 'faims-core::Child',
-  //   label: 'Contained',
-  // }]
   newuiSetting['fields']['multiple'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Checkbox',
@@ -168,13 +163,8 @@ const uiSetting = () => {
       FormHelperTextProps: {
         children: 'Tick if user can add multiple record for this relateionship',
       },
-      // Label: {label: 'Terms and Conditions'},
     },
-    validationSchema: [
-      ['yup.bool'],
-      ['yup.oneOf', [true], 'You must accept the terms and conditions'],
-      ['yup.required'],
-    ],
+    validationSchema: [['yup.bool']],
     initialValue: false,
   };
   newuiSetting['fields']['relation_type'] = {
@@ -299,6 +289,9 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
       const newvalues = props.uiSpec;
       newvalues['fields'][props.fieldName]['component-parameters']['multiple'] =
         event.target.checked;
+      if (event.target.checked === true)
+        newvalues['fields'][props.fieldName]['initialValue'] = [];
+      else newvalues['fields'][props.fieldName]['initialValue'] = '';
       props.setuiSpec({...newvalues});
     }
   };

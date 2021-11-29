@@ -99,7 +99,7 @@ describe('roundtrip reading and writing to db', () => {
       const meta_db = getProjectDB(project_id);
 
       return setUiSpecForProject(meta_db, uiInfo)
-        .then(result => {
+        .then(_result => {
           return getUiSpecForProject(project_id);
         })
         .then(result => {

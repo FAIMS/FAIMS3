@@ -153,13 +153,6 @@ const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'RadioGroup',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     name: 'radio-group-field',
     id: 'radio-group-field',
@@ -189,37 +182,7 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['fields']['settingchoose'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Select',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: 'Choose a field from the dropdown',
-      variant: 'outlined',
-      required: true,
-      select: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {
-        options: [
-          {
-            value: 'USD',
-            label: 'USD',
-          },
-        ],
-      },
-      InputLabelProps: {
-        label: 'Field',
-      },
-    },
-    validationSchema: [['yup.string']],
-    initialValue: 'USD',
-  };
-  newuiSetting['views']['FormParamater']['fields'] = [
-    ...newuiSetting['views']['FormParamater']['fields'],
-    'settingchoose',
-  ];
+
   newuiSetting['viewsets'] = {
     settings: {
       views: ['InputLabelProps', 'FormParamater', 'ElementProps'],

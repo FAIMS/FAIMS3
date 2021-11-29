@@ -72,7 +72,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(projdbs !== {});
 
       return setProjectMetadata(project_id, metadata_key, metadata)
-        .then(result => {
+        .then(_result => {
           return getProjectMetadata(project_id, metadata_key);
         })
         .then(result => {

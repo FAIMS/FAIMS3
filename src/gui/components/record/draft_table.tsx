@@ -82,7 +82,8 @@ export default function DraftsTable(props: DraftsTableProps) {
           {props.viewsets !== null &&
           props.viewsets !== undefined &&
           params.value !== null &&
-          params.value !== undefined
+          params.value !== undefined &&
+          props.viewsets[params.value.toString()] !== undefined
             ? props.viewsets[params.value.toString()].label ?? params.value
             : params.value}
         </>
@@ -91,7 +92,6 @@ export default function DraftsTable(props: DraftsTableProps) {
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
   ];
-
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
     // on load - if the record list is updated, the callback should be fired
