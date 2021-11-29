@@ -47,8 +47,7 @@ import * as ROUTES from '../../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation} from '../../../datamodel/ui';
 import DraftsTable from '../record/draft_table';
-import RecordsTable from '../record/table';
-import {RecordsSearchTable} from '../record/table';
+import {RecordsBrowseTable, RecordsSearchTable} from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimelapseIcon from '@material-ui/icons/Timelapse';
@@ -256,7 +255,7 @@ export default function Card(props: ProjectCardProps) {
 
             {showRecords ? (
               <Box mt={1}>
-                <RecordsTable
+                <RecordsBrowseTable
                   project_id={project.project_id}
                   maxRows={listView ? 10 : 25}
                   viewsets={viewsets}

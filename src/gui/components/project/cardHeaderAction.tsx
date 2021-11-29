@@ -65,11 +65,18 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
   useEffect(() => {
     getUiSpecForProject(project.project_id).then(
       uiSpec => {
-        setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
+        if (
+          uiSpec.viewsets !== null ||
+          uiSpec.viewsets !== null ||
+          uiSpec.visible_types !== undefined ||
+          uiSpec.visible_types !== undefined
+        ) {
+          setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
+        }
       },
       () => {}
     );
-  }, [props.project]);
+  }, [project.project_id]);
 
   if (viewSets === null) {
     return <CircularProgress thickness={2} size={12} />;

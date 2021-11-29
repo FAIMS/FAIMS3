@@ -66,11 +66,12 @@ function RecordsTable(props: RecordsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
+  console.debug('Rows:', rows);
   const columns: GridColDef[] = [
     {
       field: 'hrid',
-      headerName: 'Obs ID',
-      description: 'Record ID',
+      headerName: 'HRID',
+      description: 'Human Readable Record ID',
       type: 'string',
       width: not_xs ? 300 : 100,
       renderCell: (params: GridCellParams) => (
@@ -117,6 +118,25 @@ function RecordsTable(props: RecordsTableProps) {
       type: 'boolean',
       width: 200,
     },
+    {
+      field: 'record_id',
+      headerName: 'UUID',
+      description: 'UUID Record ID',
+      type: 'string',
+      width: not_xs ? 300 : 100,
+      renderCell: (params: GridCellParams) => (
+        <Link
+          component={RouterLink}
+          to={ROUTES.getRecordRoute(
+            project_id || 'dummy',
+            (params.getValue('record_id') || '').toString(),
+            (params.getValue('revision_id') || '').toString()
+          )}
+        >
+          {params.value}
+        </Link>
+      ),
+    },
   ];
 
   return (
@@ -155,10 +175,11 @@ function RecordsTable(props: RecordsTableProps) {
   );
 }
 
-export default function RecordsBrowseTable(props: RecordsBrowseTableProps) {
+export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {project_id, maxRows, filter_deleted} = props;
   const [rows, setRows] = useState<Array<RecordMetadata>>([]);
   const [loading, setLoading] = useState(true);
+  console.debug('Browse Rows:', rows);
 
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
