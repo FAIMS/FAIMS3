@@ -99,7 +99,8 @@ function RecordsTable(props: RecordsTableProps) {
           {props.viewsets !== null &&
           props.viewsets !== undefined &&
           params.value !== null &&
-          params.value !== undefined
+          params.value !== undefined &&
+          props.viewsets[params.value.toString()] !== undefined
             ? props.viewsets[params.value.toString()].label ?? params.value
             : params.value}
         </>

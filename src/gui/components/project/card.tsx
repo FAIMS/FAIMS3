@@ -24,7 +24,6 @@ import {
   Box,
   Button,
   Card as MuiCard,
-  Chip,
   CardActions,
   CardContent,
   CardHeader,
@@ -51,7 +50,6 @@ import RecordsTable from '../record/table';
 import {RecordsSearchTable} from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
 import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
 import {getUiSpecForProject} from '../../../uiSpecification';
@@ -125,7 +123,7 @@ export default function Card(props: ProjectCardProps) {
   //     dialogTitle: 'Share ' + project.name,
   //   });
   // };
-
+  console.log(project);
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       setLoading(false);
@@ -270,7 +268,13 @@ export default function Card(props: ProjectCardProps) {
           <CardActions style={{width: '100%'}}>
             <Grid container alignItems="center">
               <Grid item xs={6} sm={6}>
-                <Box>{!listView ? <ProjectSync project={project} /> : ''}</Box>
+                <Box>
+                  {!listView && project.status !== 'new' ? (
+                    <ProjectSync project={project} />
+                  ) : (
+                    ''
+                  )}
+                </Box>
               </Grid>
               <Grid item xs={6} sm={6}>
                 {listView ? (
@@ -289,38 +293,6 @@ export default function Card(props: ProjectCardProps) {
               </Grid>
             </Grid>
           </CardActions>
-          {/*{listView ? (*/}
-          {/*  ''*/}
-          {/*) : (*/}
-          {/*  <CardActions>*/}
-          {/*    {webShare ? (*/}
-          {/*      <Button size="small" color="primary" onClick={getShare}>*/}
-          {/*        Share*/}
-          {/*      </Button>*/}
-          {/*    ) : (*/}
-          {/*      <EmailShareButton*/}
-          {/*        url={project_url}*/}
-          {/*        subject={'FAIMS Project: ' + project.name}*/}
-          {/*        body={"I'd like to share this FAIMS project with you "}*/}
-          {/*        resetButtonStyle={false}*/}
-          {/*        className={*/}
-          {/*          'MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-textSizeSmall MuiButton-sizeSmall'*/}
-          {/*        }*/}
-          {/*      >*/}
-          {/*        <span className="MuiButton-label">*/}
-          {/*          <span className="MuiButton-startIcon MuiButton-iconSizeSmall">*/}
-          {/*            <MailOutlineIcon*/}
-          {/*              className="MuiSvgIcon-root"*/}
-          {/*              viewBox={'0 0 24 24'}*/}
-          {/*            />*/}
-          {/*          </span>*/}
-          {/*          Share*/}
-          {/*        </span>*/}
-          {/*        <span className="MuiTouchRipple-root" />*/}
-          {/*      </EmailShareButton>*/}
-          {/*    )}*/}
-          {/*  </CardActions>*/}
-          {/*)}*/}
         </MuiCard>
       )}
     </React.Fragment>
@@ -381,43 +353,10 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
           />
           <CardContent style={{paddingTop: 0}}>
             <Box mb={2}>
-              <Chip
-                size={'small'}
-                label={
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>Active team members: 10</span>&nbsp;{' '}
-                    <TimelapseIcon
-                      color={'secondary'}
-                      style={{fontSize: '13px'}}
-                    />
-                  </div>
-                }
-                style={{marginRight: '5px', marginBottom: '5px'}}
-              />
-              <Chip
-                size={'small'}
-                label={
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>Status: active</span>&nbsp;{' '}
-                    <TimelapseIcon
-                      color={'secondary'}
-                      style={{fontSize: '13px'}}
-                    />
-                  </div>
-                }
-                style={{marginRight: '5px', marginBottom: '5px'}}
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'project_status'}
+                metadata_label={'Status'}
               />
               <MetadataRenderer
                 project_id={project.project_id}

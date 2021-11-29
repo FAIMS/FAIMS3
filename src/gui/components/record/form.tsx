@@ -378,6 +378,30 @@ class RecordForm extends React.Component<
       // initialValues['uncertainty'][fieldName]=''
     });
 
+    const url_split = window.location.search.split('&');
+    if (url_split.length > 1) {
+      //save the sub_record id into intitial value
+      console.log(url_split);
+      const field_id = url_split[0].replace('?field_id=', '');
+      const sub_record_id = url_split[1].replace('record_id=', '');
+      const new_record = {
+        project_id: this.props.project_id,
+        record_id: sub_record_id,
+        record_label: sub_record_id,
+      };
+      if (Array.isArray(initialValues[field_id])) {
+        let isincluded = false;
+        initialValues[field_id].map((r: any) => {
+          if (r.record_id === new_record.record_id) {
+            isincluded = true;
+          }
+        });
+        if (isincluded === false) initialValues[field_id].push(new_record);
+      } else {
+        initialValues[field_id] = new_record;
+      }
+    }
+
     this.setState({initialValues: initialValues, annotation: annotations});
     console.log(
       this.props.ui_specification.viewsets[this.requireViewsetName()]
@@ -460,9 +484,11 @@ class RecordForm extends React.Component<
         return doc;
       })
       .then(doc => {
-        return upsertFAIMSData(this.props.project_id, doc);
+        upsertFAIMSData(this.props.project_id, doc);
+        return doc.record_id;
       })
       .then(result => {
+        console.log(result);
         console.debug(result);
         const message =
           this.props.revision_id === undefined
@@ -475,6 +501,7 @@ class RecordForm extends React.Component<
             severity: 'success',
           },
         });
+        return result;
       })
       .catch(err => {
         const message =
@@ -492,8 +519,11 @@ class RecordForm extends React.Component<
         console.error('Failed to save data');
       })
       // Clear the current draft area (Possibly after redirecting back to project page)
-      .then(() => this.draftState.clear())
-      .then(() => {
+      .then(result => {
+        this.draftState.clear();
+        return result;
+      })
+      .then(result => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
         if (this.props.revision_id === undefined) {
@@ -501,12 +531,18 @@ class RecordForm extends React.Component<
             this.props.ui_specification.viewsets[this.requireViewsetName()]
               .submit_label === 'Jump to Upper Level'
           ) {
-            let linkurl = window.location.search;
+            const url_split = window.location.search.split('&');
 
-            if (linkurl.includes('?link=')) {
-              linkurl = linkurl.replace('?link=/projects/', '');
-              console.log(ROUTES.PROJECT + linkurl);
-              this.props.history.push(ROUTES.PROJECT + linkurl);
+            if (url_split.length > 1 && url_split[1].includes('link=')) {
+              const fieldid = url_split[0];
+              let linkurl = url_split[1];
+              linkurl = linkurl.replace('link=/projects/', '');
+              console.log(
+                ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
+              );
+              this.props.history.push(
+                ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
+              );
               window.scrollTo(0, 0);
             } else {
               this.props.history.push(ROUTES.PROJECT + this.props.project_id);
@@ -524,7 +560,7 @@ class RecordForm extends React.Component<
             );
             window.scrollTo(0, 0);
           }
-
+          console.log('new');
           // scroll to top of page, seems to be needed on mobile devices
         } else {
           // otherwise, redirect to the project page listing all records
@@ -693,7 +729,7 @@ class RecordForm extends React.Component<
             onSubmit={(values, {setSubmitting}) => {
               this.setTimeout(() => {
                 setSubmitting(false);
-                console.log(JSON.stringify(values, null, 2));
+
                 this.save(values);
               }, 500);
             }}
@@ -769,7 +805,21 @@ class RecordForm extends React.Component<
                             )}
                           </Button>
                         ) : (
-                          <p>Continue filling out form</p>
+                          <Button
+                            onClick={() => {
+                              const stepnum = this.state.activeStep + 1;
+                              this.setState({
+                                activeStep: stepnum,
+                                view_cached:
+                                  ui_specification.viewsets[viewsetName].views[
+                                    stepnum
+                                  ],
+                              });
+                            }}
+                          >
+                            {' '}
+                            Continue{' '}
+                          </Button>
                         )}
                       </ButtonGroup>
                     </Grid>

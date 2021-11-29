@@ -108,7 +108,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             project_id +
             ROUTES.RECORD_CREATE +
             props.related_type +
-            '?link=' +
+            '?field_id=' +
+            props.id +
+            '&link=' +
             useLocation().pathname
           }
         >
@@ -141,7 +143,7 @@ const uiSpec = {
     FormHelperTextProps: {},
   },
   validationSchema: [['yup.string'], ['yup.required']],
-  initialValue: [],
+  initialValue: '',
 };
 
 const uiSetting = () => {
@@ -287,6 +289,9 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
       const newvalues = props.uiSpec;
       newvalues['fields'][props.fieldName]['component-parameters']['multiple'] =
         event.target.checked;
+      if (event.target.checked === true)
+        newvalues['fields'][props.fieldName]['initialValue'] = [];
+      else newvalues['fields'][props.fieldName]['initialValue'] = '';
       props.setuiSpec({...newvalues});
     }
   };

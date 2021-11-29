@@ -19,10 +19,7 @@
  */
 
 import {testProp, fc} from 'jest-fast-check';
-import {
-  resolve_record_id,
-  split_full_record_id,
-} from './datamodel/core';
+import {resolve_record_id, split_full_record_id} from './datamodel/core';
 
 testProp('not a full record id errors', [fc.fullUnicodeString()], id => {
   fc.pre(!id.includes('||'));

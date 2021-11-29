@@ -237,6 +237,7 @@ const getfieldNamesbyView = (
     return uiSetting['views'][view]['fields'] ?? [];
   if (view === 'access') return uiSetting['views'][view]['fields'] ?? [];
   if (view === 'FormParamater') return uiSetting['views'][view]['fields'] ?? [];
+  if (view === 'other') return uiSetting['views'][view]['fields'] ?? [];
   if (
     uiSetting['views'][view] !== undefined &&
     fieldui['component-parameters'][view] !== undefined
@@ -247,7 +248,6 @@ const getfieldNamesbyView = (
 
 export function Defaultcomponentsetting(props: componenentSettingprops) {
   const uiSetting = props.uiSetting;
-
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     if (props.handlerchanges !== undefined) {
       props.handlerchanges(event);
