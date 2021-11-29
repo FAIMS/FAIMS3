@@ -354,7 +354,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setformuiview('');
       setCurrentView('');
       setformvalue(0);
-      setfieldValue(2); //TODO: remove it
+      setfieldValue(0); //TODO: remove it
     }
   };
 
@@ -391,6 +391,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       ChangeVariants(tabname);
       setformlabel(formtabs[0]);
     }
+    setformsectionvalue(0)
   };
 
   const handelonChangeLabelSection = (tabs: Array<string>, type: string) => {
@@ -768,6 +769,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               Select each new component, they will be automatically layout in
               the interface, then config each of them
             </Alert>
+            FormUIVIew: {formuiview}
             {fieldvalue === 1 &&
             formuiview !== '' &&
             formcomponents[formuiview].length > 0
