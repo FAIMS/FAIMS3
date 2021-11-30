@@ -709,8 +709,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const compnentPanel = () => {
-    console.log('=======+++++++++=');
-    console.log(formcomponents);
+
     return (
       <Formik
         // enableReinitialize
