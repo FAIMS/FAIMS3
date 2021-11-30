@@ -18,8 +18,9 @@
  *   TODO
  */
 
-import {active_db, local_auth_db} from './sync/databases';
+import {active_db, directory_db, local_auth_db} from './sync/databases';
 import {ProjectID} from './datamodel/core';
+import {AuthInfo} from './datamodel/database';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
@@ -54,5 +55,18 @@ export async function getTokenForCluster(
     console.debug(err);
     console.warn('Token not found for:', cluster_id);
     return undefined;
+  }
+}
+
+export async function getAuthMechianismsForListing(
+  listing_id: string
+): Promise<{[name: string]: AuthInfo} | null> {
+  try {
+    const doc = await directory_db.local.get(listing_id);
+    return doc.auth_mechanisms;
+  } catch (err) {
+    console.debug(err);
+    console.warn('AuthInfo not found for:', listing_id);
+    return null;
   }
 }
