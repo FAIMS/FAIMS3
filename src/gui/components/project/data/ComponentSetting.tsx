@@ -27,10 +27,11 @@
 import {v4 as uuidv4} from 'uuid';
 import {getcomponent} from './uiFieldsRegistry';
 import {getComponentPropertiesByName} from '../../../component_registry';
-import {setSetingInitialValues, generatenewfield} from './componenentSetting';
+import {setSetingInitialValues, generatenewfield,regeneratesettinguiSpec} from './componenentSetting';
 import {ProjevtValueList} from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {HRID_STRING} from '../../../../datamodel/core';
+import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const VISIBLE_TYPE = 'visible_types';
@@ -720,8 +721,29 @@ const newfromui = (
   initialfieldvalue: any,
   projectvalue: any
 ) => {
+  const formdesignuiSpec:any= {viewsets: {
+    settings: {
+      views: ['settings'],
+      label: 'settings',
+    },
+  },fields:{},views:{ settings: {
+    fields: [],
+    uidesign: 'form',
+    label: 'settings',
+  }}}
   newuiSpec[VISIBLE_TYPE].map((variant: any, index: any) => {
+    
     newuiSpec['viewsets'][variant]['views'].map((view: string) => {
+
+      formdesignuiSpec['viewsets'][view]={
+        views: [view],
+        label: view,
+      }
+      formdesignuiSpec['views'][view]={
+        fields: [],
+        uidesign: 'form',
+        label: 'settings',
+      }
       newformcom[view] = [];
       newuiSpec['views'][view]['fields'].map((fieldname: string) => {
         let field = newuiSpec['fields'][fieldname];
@@ -763,6 +785,12 @@ const newfromui = (
             field['component-namespace'],
             field['component-name']
           ).settingsProps[0];
+          const newui = regeneratesettinguiSpec(newse, gefieldname, 'settings');
+          formdesignuiSpec['fields']={...formdesignuiSpec['fields'],...newui['fields']}
+          const viewfields:Array<string>=[]
+          newui['viewsets']['settings']['views'].map((view:string)=>viewfields.push(...newui['views'][view]['fields']))
+          formdesignuiSpec['views']['settings']['fields']=[...formdesignuiSpec['views']['settings']['fields'],...viewfields]
+          formdesignuiSpec['views'][view]['fields']=[...formdesignuiSpec['views'][view]['fields'],...viewfields]
           initialfieldvalue = {
             ...initialfieldvalue,
             ...setSetingInitialValues(newse, field, gefieldname),
@@ -784,7 +812,8 @@ const newfromui = (
       });
     });
   });
-  return {newformcom, initialfieldvalue};
+  console.log(formdesignuiSpec)
+  return {newformcom, initialfieldvalue,formdesignuiSpec};
 };
 
 const swithField = (
@@ -837,9 +866,11 @@ const addfield = (props: any) => {
     accessgroup,
     project_id,
     meta,
+    formdesignuiSpec
   } = props;
   const settings = id;
   const name = NEWFIELDS + uuid;
+  const newformdesignuiSpec=formdesignuiSpec
   const newfield: ProjectUIFields =
     settings.settingsProps !== undefined && settings.settingsProps.length > 1
       ? {
@@ -856,11 +887,19 @@ const addfield = (props: any) => {
           ...id.uiSpecProps,
         });
   newfield['meta'] = setmeta(meta);
+  
+  
   const newuiSpec = formuiSpec.fields;
   newuiSpec[name] = newfield;
   const newviews = formuiSpec.views;
   const fieldprops = {};
   const newuiSpeclist = FieldSettings(newfield, name, fieldprops, accessgroup);
+  const settingui=regeneratesettinguiSpec(settings.settingsProps.length > 1?settings.settingsProps[0]:newuiSpeclist, name, 'settings');
+  newformdesignuiSpec['fields']={...newformdesignuiSpec['fields'],...settingui['fields']}
+  const viewfields:Array<string>=[]
+  settingui['viewsets']['settings']['views'].map((view:string)=>viewfields.push(...settingui['views'][view]['fields']))
+  newformdesignuiSpec['views']['settings']['fields']=[...newformdesignuiSpec['views']['settings']['fields'],...viewfields]
+
   const components = formcomponents;
   newviews[formuiview]['fields'] = [...newviews[formuiview]['fields'], name];
   components[formuiview] = [
@@ -879,7 +918,8 @@ const addfield = (props: any) => {
     name
   );
   console.log(initialfieldvalue);
-  return {newviews, components, newuiSpeclist, newuiSpec, initialfieldvalue};
+  console.log(newformdesignuiSpec)
+  return {newviews, components, newuiSpeclist, newuiSpec, initialfieldvalue,newformdesignuiSpec};
 };
 
 const changeuifield = (newfieldname: string, newfield: any, uiSpec: any) => {
@@ -924,20 +964,3 @@ const formvariantsadd = (props: any) => {
   return {newviews, components};
 };
 
-export const validationschema_design_form = (
-  formcomponents: any,
-  settings: any
-) => {
-  // get all field name for that form section
-  const uiSpeclist: any = {};
-  formcomponents.map((fields: any) =>
-    fields.map((field: any) => {
-      const ui =
-        settings.settingsProps !== undefined &&
-        settings.settingsProps.length > 1
-          ? settings.settingsProps[1]
-          : field['uiSpec'];
-      uiSpeclist[fields];
-    })
-  );
-};

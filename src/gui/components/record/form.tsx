@@ -528,10 +528,10 @@ class RecordForm extends React.Component<
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
         if (this.props.revision_id === undefined) {
-          if (
-            this.props.ui_specification.viewsets[this.requireViewsetName()]
-              .submit_label !== 'Save and New'
-          ) {
+          // if (
+          //   this.props.ui_specification.viewsets[this.requireViewsetName()]
+          //     .submit_label !== 'Save and New'
+          // ) {
             const url_split = window.location.search.split('&');
 
             if (url_split.length > 1 && url_split[1].includes('link=')) {
@@ -546,22 +546,25 @@ class RecordForm extends React.Component<
               );
               window.scrollTo(0, 0);
             } else {
-              this.props.history.push(ROUTES.PROJECT + this.props.project_id);
+              this.props.history.push(
+                ROUTES.PROJECT +
+                  this.props.project_id +
+                  ROUTES.RECORD_CREATE +
+                  this.state.type_cached
+              );
+              window.scrollTo(0, 0);
               
             }
-          } else {
-            console.log(
-              this.props.ui_specification.viewsets[this.requireViewsetName()]
-                .submit_label
-            );
-            this.props.history.push(
-              ROUTES.PROJECT +
-                this.props.project_id +
-                ROUTES.RECORD_CREATE +
-                this.state.type_cached
-            );
-            window.scrollTo(0, 0);
-          }
+          // } else {
+            // this.props.history.push(
+            //   ROUTES.PROJECT +
+            //     this.props.project_id +
+            //     ROUTES.RECORD_CREATE +
+            //     this.state.type_cached
+            // );
+            // window.scrollTo(0, 0);
+            
+          // }
           console.log('new');
           // scroll to top of page, seems to be needed on mobile devices
         } else {

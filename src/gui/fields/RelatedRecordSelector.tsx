@@ -195,7 +195,7 @@ const uiSetting = () => {
         label: 'Select Relation Type',
       },
     },
-    validationSchema: [['yup.string']],
+    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: 'faims-core::Child',
   };
   newuiSetting['fields']['related_type'] = {
@@ -217,7 +217,7 @@ const uiSetting = () => {
         label: 'Select ',
       },
     },
-    validationSchema: [['yup.string']],
+    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
   };
 
