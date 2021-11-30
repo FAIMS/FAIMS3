@@ -47,7 +47,7 @@
   "dependencies": {
     "@capacitor/android": "2.4.9",
     "@capacitor/cli": "2.5.0",
-    "@capacitor/core": "2.4.9",
+    "@capacitor/core": "3.3.2",
     "@capacitor/ios": "2.4.9",
     "@demvsystems/yup-ast": "1.2.0",
     "@faims-project/faims3-map-input": "1.0.1",
