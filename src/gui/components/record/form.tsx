@@ -69,7 +69,7 @@ import {
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
-import { indexOf } from 'lodash';
+import {indexOf} from 'lodash';
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -532,38 +532,37 @@ class RecordForm extends React.Component<
           //   this.props.ui_specification.viewsets[this.requireViewsetName()]
           //     .submit_label !== 'Save and New'
           // ) {
-            const url_split = window.location.search.split('&');
+          const url_split = window.location.search.split('&');
 
-            if (url_split.length > 1 && url_split[1].includes('link=')) {
-              const fieldid = url_split[0];
-              let linkurl = url_split[1];
-              linkurl = linkurl.replace('link=/projects/', '');
-              console.log(
-                ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
-              );
-              this.props.history.push(
-                ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
-              );
-              window.scrollTo(0, 0);
-            } else {
-              this.props.history.push(
-                ROUTES.PROJECT +
-                  this.props.project_id +
-                  ROUTES.RECORD_CREATE +
-                  this.state.type_cached
-              );
-              window.scrollTo(0, 0);
-              
-            }
+          if (url_split.length > 1 && url_split[1].includes('link=')) {
+            const fieldid = url_split[0];
+            let linkurl = url_split[1];
+            linkurl = linkurl.replace('link=/projects/', '');
+            console.log(
+              ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
+            );
+            this.props.history.push(
+              ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
+            );
+            window.scrollTo(0, 0);
+          } else {
+            this.props.history.push(
+              ROUTES.PROJECT +
+                this.props.project_id +
+                ROUTES.RECORD_CREATE +
+                this.state.type_cached
+            );
+            window.scrollTo(0, 0);
+          }
           // } else {
-            // this.props.history.push(
-            //   ROUTES.PROJECT +
-            //     this.props.project_id +
-            //     ROUTES.RECORD_CREATE +
-            //     this.state.type_cached
-            // );
-            // window.scrollTo(0, 0);
-            
+          // this.props.history.push(
+          //   ROUTES.PROJECT +
+          //     this.props.project_id +
+          //     ROUTES.RECORD_CREATE +
+          //     this.state.type_cached
+          // );
+          // window.scrollTo(0, 0);
+
           // }
           console.log('new');
           // scroll to top of page, seems to be needed on mobile devices
@@ -666,7 +665,11 @@ class RecordForm extends React.Component<
                       onClick={() => {
                         this.setState({
                           view_cached: view_name,
-                          activeStep:indexOf(ui_specification.viewsets[viewsetName].views,view_name)});
+                          activeStep: indexOf(
+                            ui_specification.viewsets[viewsetName].views,
+                            view_name
+                          ),
+                        });
                       }}
                     >
                       {ui_specification.views[view_name].label}
@@ -779,7 +782,6 @@ class RecordForm extends React.Component<
                         color="primary"
                         aria-label="contained primary button group"
                       >
-                        
                         {is_final_view ? (
                           <Button
                             type="submit"
@@ -797,9 +799,12 @@ class RecordForm extends React.Component<
                                 : 'Working...'
                               : !(this.props.revision_id === undefined)
                               ? 'Update'
-                              : window.location.search.includes('link=')&&ui_specification.viewsets[viewsetName]
-                                  .submit_label !==undefined? ui_specification.viewsets[viewsetName]
-                                  .submit_label: 'Save and new'}
+                              : window.location.search.includes('link=') &&
+                                ui_specification.viewsets[viewsetName]
+                                  .submit_label !== undefined
+                              ? ui_specification.viewsets[viewsetName]
+                                  .submit_label
+                              : 'Save and new'}
                             {formProps.isSubmitting && (
                               <CircularProgress
                                 size={24}
@@ -818,29 +823,33 @@ class RecordForm extends React.Component<
                         )}
                       </ButtonGroup>
                       {this.state.activeStep <
-                      ui_specification.viewsets[viewsetName].views.length - 1&&
-                      (<Button
-                        variant="outlined"
-                        color='primary'
-                            onClick={() => {
-                              console.log(this.state.activeStep)
-                              const stepnum = this.state.activeStep + 1;
-                              console.log(ui_specification.viewsets[viewsetName].views[
+                        ui_specification.viewsets[viewsetName].views.length -
+                          1 && (
+                        <Button
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => {
+                            console.log(this.state.activeStep);
+                            const stepnum = this.state.activeStep + 1;
+                            console.log(
+                              ui_specification.viewsets[viewsetName].views[
                                 stepnum
-                              ])
-                              
-                              this.setState({
-                                activeStep: stepnum,
-                                view_cached:
-                                  ui_specification.viewsets[viewsetName].views[
-                                    stepnum
-                                  ],
-                              });
-                            }}
-                          >
-                            {'  '}
-                            Continue{' '}
-                          </Button>)}
+                              ]
+                            );
+
+                            this.setState({
+                              activeStep: stepnum,
+                              view_cached:
+                                ui_specification.viewsets[viewsetName].views[
+                                  stepnum
+                                ],
+                            });
+                          }}
+                        >
+                          {'  '}
+                          Continue{' '}
+                        </Button>
+                      )}
                     </Grid>
                     <Grid item sm={6} xs={12}>
                       <BoxTab title={'Developer tool: form state'} />

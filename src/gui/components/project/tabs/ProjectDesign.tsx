@@ -150,17 +150,23 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const [fieldvalue, setfieldValue] = useState(0); //field tab
   const [formvalue, setformvalue] = useState(0); //formtabs for each form
   const [formsectionvalue, setformsectionvalue] = useState(0);
-  const [designvalidate,setdesignvalidate]=useState<any>(null)
-  const [formdesignuiSpec,setformdesignuiSpec]=useState<any>({viewsets: {
-    settings: {
-      views: ['settings'],
-      label: 'settings',
+  const [designvalidate, setdesignvalidate] = useState<any>(null);
+  const [formdesignuiSpec, setformdesignuiSpec] = useState<any>({
+    viewsets: {
+      settings: {
+        views: ['settings'],
+        label: 'settings',
+      },
     },
-  },fields:{},views:{ settings: {
-    fields: [],
-    uidesign: 'form',
-    label: 'settings',
-  }}})
+    fields: {},
+    views: {
+      settings: {
+        fields: [],
+        uidesign: 'form',
+        label: 'settings',
+      },
+    },
+  });
 
   useEffect(() => {
     setinit();
@@ -177,16 +183,19 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     formui[VISIBLE_TYPE].map((tab: string) =>
       tabs.push(formuiSpec['viewsets'][tab]['label'] ?? tab)
     );
-    const {newformcom, initialfieldvalue,formdesignuiSpec} = updateuiSpec('newfromui', {
-      formuiSpec: formui,
-      formcomponents: formcomponents,
-      access: accessgroup,
-      initialfieldvalue: initialValues,
-      projectvalue: projectvalue,
-    });
+    const {newformcom, initialfieldvalue, formdesignuiSpec} = updateuiSpec(
+      'newfromui',
+      {
+        formuiSpec: formui,
+        formcomponents: formcomponents,
+        access: accessgroup,
+        initialfieldvalue: initialValues,
+        projectvalue: projectvalue,
+      }
+    );
 
     const newformvariants = formui[VISIBLE_TYPE][0];
-    setformdesignuiSpec({...formdesignuiSpec})
+    setformdesignuiSpec({...formdesignuiSpec});
     setFormVariants(newformvariants);
     setformTabs(
       formui[VISIBLE_TYPE].map(
@@ -215,7 +224,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormuiSpec(formui);
     setformlabel(formtabs[0]);
     // setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,formuiview))
-    setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,"settings"))
+    setdesignvalidate(
+      getValidationSchemaForViewset(formdesignuiSpec, 'settings')
+    );
     return true;
   };
 
@@ -247,7 +258,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       newuiSpeclist,
       newuiSpec,
       initialfieldvalue,
-      newformdesignuiSpec
+      newformdesignuiSpec,
     } = updateuiSpec('addfield', {
       uuid: uuid,
       id: id,
@@ -265,10 +276,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
             ? projectvalue['forms'][formvariants]['uncertainty' + formvariants]
             : false,
       },
-      formdesignuiSpec:formdesignuiSpec
+      formdesignuiSpec: formdesignuiSpec,
     });
-    setformdesignuiSpec({...newformdesignuiSpec})
-    setdesignvalidate(getValidationSchemaForViewset(newformdesignuiSpec,'settings'))
+    setformdesignuiSpec({...newformdesignuiSpec});
+    setdesignvalidate(
+      getValidationSchemaForViewset(newformdesignuiSpec, 'settings')
+    );
     setinitialValues({
       ...initialValues,
       ...initialfieldvalue,
@@ -709,7 +722,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const compnentPanel = () => {
-
     return (
       <Formik
         // enableReinitialize
@@ -724,16 +736,16 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         }}
       >
         {formProps => {
-          return (<Form>
-            {/* {formProps.isValid===false&&<Alert severity="error">
+          return (
+            <Form>
+              {/* {formProps.isValid===false&&<Alert severity="error">
             Form has errors, please fill required field in settings for each component.
           </Alert>} */}
-            {fieldform(formProps)}
-            {/* <pre>{JSON.stringify(formProps.errors, null, 2)}</pre> */}
-          </Form>);
-          
+              {fieldform(formProps)}
+              {/* <pre>{JSON.stringify(formProps.errors, null, 2)}</pre> */}
+            </Form>
+          );
         }}
-        
       </Formik>
     );
   };
