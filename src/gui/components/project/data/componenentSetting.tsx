@@ -241,7 +241,7 @@ const uiSettingOthers: ProjectUIModel = {
   visible_types: ['notes', 'valid', 'access'],
 };
 
-const regeneratesettinguiSpec = (
+export const regeneratesettinguiSpec = (
   uiSpec: ProjectUIModel,
   fieldName: string,
   designvalue: string
