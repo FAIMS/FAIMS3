@@ -185,7 +185,7 @@ public class ProjectsPage {
 			WebElement firstRow = recentRecordsGrid.findElement(MobileBy.xpath(
 					"(//android.widget.CheckBox)[2]/../../.."));
 			WebElement firstRecord = firstRow.findElement(MobileBy.xpath(
-			         "(//android.view.View)[2]/android.view.View"));
+			         "//android.view.View[@index='1']/android.view.View"));
 			recordId = firstRecord.getText();
 			firstRecord.click();
 		} else if (driver instanceof IOSDriver) {

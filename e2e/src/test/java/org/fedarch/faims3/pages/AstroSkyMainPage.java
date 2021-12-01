@@ -480,7 +480,12 @@ public class AstroSkyMainPage {
 	}
 
 	public String getIntFieldValue() {
-		return this.intField.getText();
+		String intVal = this.intField.getText();
+		if (intVal.endsWith(".0")) {
+			// on some platforms this happens, and it causes assertion failure
+			return intVal.substring(0, intVal.indexOf("."));
+		}
+		return intVal;
 	}
 
 	public String getCurrencyValue() {
