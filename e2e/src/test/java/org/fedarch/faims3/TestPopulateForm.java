@@ -59,9 +59,6 @@ public class TestPopulateForm {
 	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
 		this.projects = new ProjectsPage(driver);
 		this.astroSky = new AstroSkyMainPage(driver);
-		// always make sure auto increment id has a default range
-		// if not, create one
-        this.projects.checkAutoIncrement();
 	}
 
 	// Doable Task 2.1 - Observation creation
@@ -76,6 +73,9 @@ public class TestPopulateForm {
 	@Test
 	public void testNewObservationWithGPS() throws Exception {
 		try {
+			// first make sure auto increment id has a default range
+			// if not, create one
+	        this.projects.checkAutoIncrement();
 			// Start a new observation
 			projects.loadNewAstroSkyForm();
 			// The form should load up

@@ -104,6 +104,9 @@ public class TestUpdateObservationsAndDraftDatabase {
 	@Test
 	public void testUpdateObservation() throws Exception {
 		try {
+			// make sure auto increment id has a default range
+			// if not, create one
+	        androidDevice.projects.checkAutoIncrement();
 			// Navigate to the projects view
 			androidDevice.projects.loadProjects();
 
@@ -123,6 +126,7 @@ public class TestUpdateObservationsAndDraftDatabase {
 
 			// Load the observation on a different device – observe that your changes have
 			// not propagated
+			chromeDevice.projects.checkAutoIncrement();
 			chromeDevice.projects.loadProjects();
 			chromeDevice.projects.loadObservationRecord(recordId);
 			WebElement chromeStrField = TestUtils.scrollToId(chromeDevice.driver, "str-field");

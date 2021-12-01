@@ -62,6 +62,7 @@ public class TestStagingForm {
 	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
 		this.projects = new ProjectsPage(driver);
 		this.astroSky = new AstroSkyMainPage(driver);
+
 	}
 
 	/**
@@ -80,6 +81,9 @@ public class TestStagingForm {
 	@Test
 	public void testNewObservationDraft() throws Exception {
 		try {
+			// make sure auto increment id has a default range
+			// if not, create one
+	        this.projects.checkAutoIncrement();
 			// Start a new observation
 			projects.loadNewAstroSkyForm();
 			// The form should load up

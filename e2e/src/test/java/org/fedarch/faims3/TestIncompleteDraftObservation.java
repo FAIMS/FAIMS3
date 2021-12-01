@@ -75,6 +75,9 @@ public class TestIncompleteDraftObservation {
 	@Test
 	public void testIncompleteDraft() throws Exception {
 		try {
+			// make sure auto increment id has a default range
+			// if not, create one
+	        this.projects.checkAutoIncrement();
 			//In Test Project “Astrosky” click + New Observation on both chrome and android.
 			projects.loadNewAstroSkyForm();
 			//Enter a sample email address into the form:
