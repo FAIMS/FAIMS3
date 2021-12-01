@@ -226,7 +226,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setdesignvalidate(
       getValidationSchemaForViewset(formdesignuiSpec, formuiview)
     );
-    // setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,"settings"))
+    // setdesignvalidate(
+    //   getValidationSchemaForViewset(formdesignuiSpec, 'settings')
+    // );
     return true;
   };
 

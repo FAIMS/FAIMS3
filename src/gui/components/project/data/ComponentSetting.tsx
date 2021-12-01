@@ -945,6 +945,7 @@ const addfield = (props: any) => {
     ...formdesignuiSpec['views'][formuiview]['fields'],
     ...viewfields,
   ];
+
   const components = formcomponents;
   newviews[formuiview]['fields'] = [...newviews[formuiview]['fields'], name];
   components[formuiview] = [

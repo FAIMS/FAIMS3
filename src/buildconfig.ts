@@ -31,7 +31,7 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 function commit_version(): string {
   const commitver = process.env.REACT_APP_COMMIT_VERSION;
-  console.log(commitver);
+  console.log('Commit version', commitver);
   if (
     commitver === '' ||
     commitver === undefined ||
