@@ -206,7 +206,7 @@ export function TemplatedStringcomponentsetting(
         'component-parameters'
       ]['template'].split('-');
       farray = farray.filter((f: string) => f !== '');
-      const num = farray.length > 1 ? (farray.length+1) : 1;
+      const num = farray.length > 1 ? (farray.length) : 1;
       newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
     }
