@@ -5,6 +5,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {ProjectUIFields} from '../../datamodel/typesystem';
+import {Typography} from '@material-ui/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const getdvalue = (value: any) => {
@@ -270,7 +271,7 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
           handlerchangewithview(event, view);
         }
       )}
-      {formProps.errors[fieldName]}
+      {'   '}<Typography style={{color: 'red'}} variant="caption">{formProps.errors[fieldName]!==undefined&&formProps.errors[fieldName].replace(fieldName,'  It ')}</Typography>
       </>
     )
   }

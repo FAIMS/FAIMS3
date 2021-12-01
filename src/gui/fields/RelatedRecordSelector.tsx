@@ -204,7 +204,7 @@ const uiSetting = () => {
     'type-returned': 'faims-core::String', // matches a type in the Project Model
     'component-parameters': {
       fullWidth: true,
-      helperText: 'Select Form ',
+      helperText: ' ',
       variant: 'outlined',
       required: true,
       select: true,
@@ -214,7 +214,7 @@ const uiSetting = () => {
         options: [],
       },
       InputLabelProps: {
-        label: 'Select ',
+        label: 'Select Related Form',
       },
     },
     validationSchema: [['yup.string'], ['yup.required']],

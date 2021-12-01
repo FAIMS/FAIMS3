@@ -126,6 +126,8 @@ export function TemplatedStringcomponentsetting(
         null
       );
       newfield['component-parameters']['ElementProps']['options'] = options;
+      newfield['component-parameters']['required']=true;
+      newfield['validationSchema']=[['yup.string'], ['yup.required']]
       let inivalue = templatevalue.split('-');
       inivalue =
         inivalue.length > 0 && inivalue[i] !== undefined
@@ -137,6 +139,7 @@ export function TemplatedStringcomponentsetting(
       newfieldlist[i] = name;
       value = value + '{{' + name + '}}-';
     }
+    value=value.substring(0, value.length - 1)
     newvalues['views']['FormParamater']['fields'] = [
       'hrid' + props.fieldName,
       'helperText' + props.fieldName,
@@ -203,7 +206,7 @@ export function TemplatedStringcomponentsetting(
         'component-parameters'
       ]['template'].split('-');
       farray = farray.filter((f: string) => f !== '');
-      const num = farray.length > 1 ? farray.length : 1;
+      const num = farray.length > 1 ? (farray.length+1) : 1;
       newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
     }
@@ -263,9 +266,10 @@ export function TemplatedStringcomponentsetting(
 
     if (name.includes('fieldselect1')) {
       const newvalues = props.uiSpec;
-      const value = props.uiSpec['fields'][props.fieldName][
+      const string = props.uiSpec['fields'][props.fieldName][
         'component-parameters'
-      ]['template'].split('-');
+      ]['template']+'-'
+      const value=string.split('-');
       console.log(value);
       const num = name.replace('fieldselect1', '');
       if (event.target.value.indexOf('newfield') !== -1)
@@ -275,7 +279,7 @@ export function TemplatedStringcomponentsetting(
       // if (!subvalue.includes('αβγ ')) subvalue = 'αβγ ' + subvalue;
       newvalues['fields'][props.fieldName]['component-parameters'][
         'template'
-      ] = subvalue;
+      ] = subvalue.substring(0, subvalue.length - 1);
 
       props.setuiSpec({...newvalues});
 
@@ -401,7 +405,7 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText:
-        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component',
+        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component. And then select field or meta value from following dropdown list',
       variant: 'outlined',
       required: true,
       select: true,
@@ -419,7 +423,7 @@ function UISetting() {
         label: 'Number of Field',
       },
     },
-    validationSchema: [['yup.string']],
+    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '1',
   };
   newuiSetting['fields']['template'] = {
