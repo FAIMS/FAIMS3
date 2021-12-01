@@ -58,7 +58,6 @@ import {
 import {ResetComponentProperties} from '../data/componenentSetting';
 import {HRID_STRING} from '../../../../datamodel/core';
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
-import form from '../../record/form';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -151,17 +150,23 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const [fieldvalue, setfieldValue] = useState(0); //field tab
   const [formvalue, setformvalue] = useState(0); //formtabs for each form
   const [formsectionvalue, setformsectionvalue] = useState(0);
-  const [designvalidate,setdesignvalidate]=useState<any>(null)
-  const [formdesignuiSpec,setformdesignuiSpec]=useState<any>({viewsets: {
-    settings: {
-      views: ['settings'],
-      label: 'settings',
+  const [designvalidate, setdesignvalidate] = useState<any>(null);
+  const [formdesignuiSpec, setformdesignuiSpec] = useState<any>({
+    viewsets: {
+      settings: {
+        views: ['settings'],
+        label: 'settings',
+      },
     },
-  },fields:{},views:{ settings: {
-    fields: [],
-    uidesign: 'form',
-    label: 'settings',
-  }}})
+    fields: {},
+    views: {
+      settings: {
+        fields: [],
+        uidesign: 'form',
+        label: 'settings',
+      },
+    },
+  });
 
   useEffect(() => {
     setinit();
@@ -178,16 +183,19 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     formui[VISIBLE_TYPE].map((tab: string) =>
       tabs.push(formuiSpec['viewsets'][tab]['label'] ?? tab)
     );
-    const {newformcom, initialfieldvalue,formdesignuiSpec} = updateuiSpec('newfromui', {
-      formuiSpec: formui,
-      formcomponents: formcomponents,
-      access: accessgroup,
-      initialfieldvalue: initialValues,
-      projectvalue: projectvalue,
-    });
+    const {newformcom, initialfieldvalue, formdesignuiSpec} = updateuiSpec(
+      'newfromui',
+      {
+        formuiSpec: formui,
+        formcomponents: formcomponents,
+        access: accessgroup,
+        initialfieldvalue: initialValues,
+        projectvalue: projectvalue,
+      }
+    );
 
     const newformvariants = formui[VISIBLE_TYPE][0];
-    setformdesignuiSpec({...formdesignuiSpec})
+    setformdesignuiSpec({...formdesignuiSpec});
     setFormVariants(newformvariants);
     setformTabs(
       formui[VISIBLE_TYPE].map(
@@ -215,7 +223,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormComponents(newformcom);
     setFormuiSpec(formui);
     setformlabel(formtabs[0]);
-    setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,formuiview))
+    setdesignvalidate(
+      getValidationSchemaForViewset(formdesignuiSpec, formuiview)
+    );
     // setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,"settings"))
     return true;
   };
@@ -248,7 +258,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       newuiSpeclist,
       newuiSpec,
       initialfieldvalue,
-      newformdesignuiSpec
+      newformdesignuiSpec,
     } = updateuiSpec('addfield', {
       uuid: uuid,
       id: id,
@@ -266,10 +276,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
             ? projectvalue['forms'][formvariants]['uncertainty' + formvariants]
             : false,
       },
-      formdesignuiSpec:formdesignuiSpec
+      formdesignuiSpec: formdesignuiSpec,
     });
-    setformdesignuiSpec({...newformdesignuiSpec})
-    setdesignvalidate(getValidationSchemaForViewset(newformdesignuiSpec,formuiview))
+    setformdesignuiSpec({...newformdesignuiSpec});
+    setdesignvalidate(
+      getValidationSchemaForViewset(newformdesignuiSpec, formuiview)
+    );
     setinitialValues({
       ...initialValues,
       ...initialfieldvalue,
@@ -343,8 +355,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setformuiview(id);
     setfieldValue(0); //TODO: remove it
     setformsectionvalue(index);
-    if(formuiSpec['views'][id]['fields'].length>0)
-      setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,id))
+    if (formuiSpec['views'][id]['fields'].length > 0)
+      setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec, id));
   };
 
   const handelonChangeVariants = (event: any, index: number) => {
@@ -711,7 +723,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const compnentPanel = () => {
-    console.log(error)
+    console.log(error);
     return (
       <Formik
         // enableReinitialize
@@ -726,17 +738,17 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         }}
       >
         {formProps => {
-          
-          return (<Form>
-            {formProps.isValid===false&&<Alert severity="error">
-            Form has errors, please fill required field in settings for each component.
-          </Alert>}
+          <Form>
+            {formProps.isValid === false && (
+              <Alert severity="error">
+                Form has errors, please fill required field in settings for each
+                component.
+              </Alert>
+            )}
             {fieldform(formProps)}
             {/* <pre>{JSON.stringify(formProps.errors, null, 2)}</pre> */}
-          </Form>);
-          
+          </Form>;
         }}
-        
       </Formik>
     );
   };

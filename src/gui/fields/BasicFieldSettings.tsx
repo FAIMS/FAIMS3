@@ -260,21 +260,31 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
     handlerchanges(event);
   };
 
-  const getfield=(fieldName:string,uiSetting:any,formProps:any,handlerchangewithview:any,view:string) =>{
+  const getfield = (
+    fieldName: string,
+    uiSetting: any,
+    formProps: any,
+    handlerchangewithview: any,
+    view: string
+  ) => {
     return (
       <>
-      {getComponentFromField(
-        uiSetting,
-        fieldName,
-        props.formProps,
-        (event: FAIMSEVENTTYPE) => {
-          handlerchangewithview(event, view);
-        }
-      )}
-      {'   '}<Typography style={{color: 'red'}} variant="caption">{formProps.errors[fieldName]!==undefined&&formProps.errors[fieldName].replace(fieldName,'  It ')}</Typography>
+        {getComponentFromField(
+          uiSetting,
+          fieldName,
+          props.formProps,
+          (event: FAIMSEVENTTYPE) => {
+            handlerchangewithview(event, view);
+          }
+        )}
+        {'   '}
+        <Typography style={{color: 'red'}} variant="caption">
+          {formProps.errors[fieldName] !== undefined &&
+            formProps.errors[fieldName].replace(fieldName, '  It ')}
+        </Typography>
       </>
-    )
-  }
+    );
+  };
 
   return (
     <>
@@ -282,9 +292,18 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
       uiSetting['viewsets'][props.designvalue]['views'].length === 0
         ? ''
         : uiSetting['viewsets'][props.designvalue]['views'].map((view: any) =>
-            getfieldNamesbyView(uiSetting, view, props.fieldui).map(
-              (fieldName: string) =>
-              getfield(fieldName,uiSetting,props.formProps,handlerchangewithview,view)
+            getfieldNamesbyView(
+              uiSetting,
+              view,
+              props.fieldui
+            ).map((fieldName: string) =>
+              getfield(
+                fieldName,
+                uiSetting,
+                props.formProps,
+                handlerchangewithview,
+                view
+              )
             )
           )}
     </>

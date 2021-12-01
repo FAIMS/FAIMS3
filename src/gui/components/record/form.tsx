@@ -69,7 +69,7 @@ import {
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
-import { indexOf } from 'lodash';
+import {indexOf} from 'lodash';
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -211,7 +211,6 @@ class RecordForm extends React.Component<
   }
 
   async formChanged(draft_saving_started_already: boolean) {
-
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -504,7 +503,7 @@ class RecordForm extends React.Component<
             severity: 'success',
           },
         });
-        console.error('SaveSave'+result);
+        console.error('SaveSave' + result);
         return result;
       })
       .catch(err => {
@@ -530,40 +529,38 @@ class RecordForm extends React.Component<
       .then(result => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
-        let redirecturl=this.props.project_id
-        let search=''
+        let redirecturl = this.props.project_id;
+        let search = '';
         if (this.props.revision_id === undefined) {
-            const url_split = window.location.search.split('&');
+          const url_split = window.location.search.split('&');
 
-            redirecturl=this.props.project_id +
+          redirecturl =
+            this.props.project_id +
             ROUTES.RECORD_CREATE +
             this.state.type_cached;
 
-            if (url_split.length > 1 && url_split[1].includes('link=')) {
-              const fieldid = url_split[0];
-              let linkurl = url_split[1];
-              linkurl = linkurl.replace('link=/projects/', '');
-              
-              search = fieldid + '&record_id=' + result
-              
-              redirecturl= linkurl 
-              
+          if (url_split.length > 1 && url_split[1].includes('link=')) {
+            const fieldid = url_split[0];
+            let linkurl = url_split[1];
+            linkurl = linkurl.replace('link=/projects/', '');
 
-            } 
-          
+            search = fieldid + '&record_id=' + result;
+
+            redirecturl = linkurl;
+          }
+
           // scroll to top of page, seems to be needed on mobile devices
-        } 
+        }
 
-        if(search===''){
-          this.props.history.push(ROUTES.PROJECT +redirecturl);
-        }else{
+        if (search === '') {
+          this.props.history.push(ROUTES.PROJECT + redirecturl);
+        } else {
           this.props.history.push({
-            pathname: ROUTES.PROJECT +redirecturl,
+            pathname: ROUTES.PROJECT + redirecturl,
             search: search,
           });
         }
         window.scrollTo(0, 0);
-
       });
   }
 
@@ -659,7 +656,11 @@ class RecordForm extends React.Component<
                       onClick={() => {
                         this.setState({
                           view_cached: view_name,
-                          activeStep:indexOf(ui_specification.viewsets[viewsetName].views,view_name)});
+                          activeStep: indexOf(
+                            ui_specification.viewsets[viewsetName].views,
+                            view_name
+                          ),
+                        });
                       }}
                     >
                       {ui_specification.views[view_name].label}
@@ -763,8 +764,8 @@ class RecordForm extends React.Component<
                         ''
                       ) : (
                         <Alert severity="error">
-                          Form has errors, please check previous tab or scroll up and make changes
-                          before submitting.
+                          Form has errors, please check previous tab or scroll
+                          up and make changes before submitting.
                         </Alert>
                       )}
                       <br />
@@ -772,7 +773,6 @@ class RecordForm extends React.Component<
                         color="primary"
                         aria-label="contained primary button group"
                       >
-                        
                         {is_final_view ? (
                           <Button
                             type="submit"
@@ -780,7 +780,6 @@ class RecordForm extends React.Component<
                               formProps.isSubmitting ? 'default' : 'primary'
                             }
                             variant="contained"
-                            
                             disableElevation
                             disabled={formProps.isSubmitting}
                           >
@@ -790,9 +789,12 @@ class RecordForm extends React.Component<
                                 : 'Working...'
                               : !(this.props.revision_id === undefined)
                               ? 'Update'
-                              : window.location.search.includes('link=')&&ui_specification.viewsets[viewsetName]
-                                  .submit_label !==undefined? ui_specification.viewsets[viewsetName]
-                                  .submit_label: 'Save and new'}
+                              : window.location.search.includes('link=') &&
+                                ui_specification.viewsets[viewsetName]
+                                  .submit_label !== undefined
+                              ? ui_specification.viewsets[viewsetName]
+                                  .submit_label
+                              : 'Save and new'}
                             {formProps.isSubmitting && (
                               <CircularProgress
                                 size={24}
@@ -811,29 +813,33 @@ class RecordForm extends React.Component<
                         )}
                       </ButtonGroup>
                       {this.state.activeStep <
-                      ui_specification.viewsets[viewsetName].views.length - 1&&
-                      (<Button
-                        variant="outlined"
-                        color='primary'
-                            onClick={() => {
-                              console.log(this.state.activeStep)
-                              const stepnum = this.state.activeStep + 1;
-                              console.log(ui_specification.viewsets[viewsetName].views[
+                        ui_specification.viewsets[viewsetName].views.length -
+                          1 && (
+                        <Button
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => {
+                            console.log(this.state.activeStep);
+                            const stepnum = this.state.activeStep + 1;
+                            console.log(
+                              ui_specification.viewsets[viewsetName].views[
                                 stepnum
-                              ])
-                              
-                              this.setState({
-                                activeStep: stepnum,
-                                view_cached:
-                                  ui_specification.viewsets[viewsetName].views[
-                                    stepnum
-                                  ],
-                              });
-                            }}
-                          >
-                            {'  '}
-                            Continue{' '}
-                          </Button>)}
+                              ]
+                            );
+
+                            this.setState({
+                              activeStep: stepnum,
+                              view_cached:
+                                ui_specification.viewsets[viewsetName].views[
+                                  stepnum
+                                ],
+                            });
+                          }}
+                        >
+                          {'  '}
+                          Continue{' '}
+                        </Button>
+                      )}
                     </Grid>
                     <Grid item sm={6} xs={12}>
                       <BoxTab title={'Developer tool: form state'} />
