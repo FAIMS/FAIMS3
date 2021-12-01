@@ -465,6 +465,7 @@ class RecordForm extends React.Component<
   save(values: object) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
+
     getCurrentUserId(this.props.project_id)
       .then(userid => {
         const now = new Date();
@@ -502,6 +503,7 @@ class RecordForm extends React.Component<
             severity: 'success',
           },
         });
+        console.error('SaveSave' + result);
         return result;
       })
       .catch(err => {
@@ -519,7 +521,7 @@ class RecordForm extends React.Component<
         console.warn(err);
         console.error('Failed to save data');
       })
-      // Clear the current draft area (Possibly after redirecting back to project page)
+      //Clear the current draft area (Possibly after redirecting back to project page)
       .then(result => {
         this.draftState.clear();
         return result;
@@ -527,49 +529,38 @@ class RecordForm extends React.Component<
       .then(result => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
+        let redirecturl = this.props.project_id;
+        let search = '';
         if (this.props.revision_id === undefined) {
-          // if (
-          //   this.props.ui_specification.viewsets[this.requireViewsetName()]
-          //     .submit_label !== 'Save and New'
-          // ) {
           const url_split = window.location.search.split('&');
+
+          redirecturl =
+            this.props.project_id +
+            ROUTES.RECORD_CREATE +
+            this.state.type_cached;
 
           if (url_split.length > 1 && url_split[1].includes('link=')) {
             const fieldid = url_split[0];
             let linkurl = url_split[1];
             linkurl = linkurl.replace('link=/projects/', '');
-            console.log(
-              ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
-            );
-            this.props.history.push(
-              ROUTES.PROJECT + linkurl + fieldid + '&record_id=' + result
-            );
-            window.scrollTo(0, 0);
-          } else {
-            this.props.history.push(
-              ROUTES.PROJECT +
-                this.props.project_id +
-                ROUTES.RECORD_CREATE +
-                this.state.type_cached
-            );
-            window.scrollTo(0, 0);
-          }
-          // } else {
-          // this.props.history.push(
-          //   ROUTES.PROJECT +
-          //     this.props.project_id +
-          //     ROUTES.RECORD_CREATE +
-          //     this.state.type_cached
-          // );
-          // window.scrollTo(0, 0);
 
-          // }
-          console.log('new');
+            search = fieldid + '&record_id=' + result;
+
+            redirecturl = linkurl;
+          }
+
           // scroll to top of page, seems to be needed on mobile devices
-        } else {
-          // otherwise, redirect to the project page listing all records
-          this.props.history.push(ROUTES.PROJECT + this.props.project_id);
         }
+
+        if (search === '') {
+          this.props.history.push(ROUTES.PROJECT + redirecturl);
+        } else {
+          this.props.history.push({
+            pathname: ROUTES.PROJECT + redirecturl,
+            search: search,
+          });
+        }
+        window.scrollTo(0, 0);
       });
   }
 
@@ -773,8 +764,8 @@ class RecordForm extends React.Component<
                         ''
                       ) : (
                         <Alert severity="error">
-                          Form has errors, please scroll up and make changes
-                          before re-submitting.
+                          Form has errors, please check previous tab or scroll
+                          up and make changes before submitting.
                         </Alert>
                       )}
                       <br />
@@ -789,7 +780,6 @@ class RecordForm extends React.Component<
                               formProps.isSubmitting ? 'default' : 'primary'
                             }
                             variant="contained"
-                            onClick={formProps.submitForm}
                             disableElevation
                             disabled={formProps.isSubmitting}
                           >

@@ -5,6 +5,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {ProjectUIFields} from '../../datamodel/typesystem';
+import {Typography} from '@material-ui/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const getdvalue = (value: any) => {
@@ -259,22 +260,50 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
     handlerchanges(event);
   };
 
+  const getfield = (
+    fieldName: string,
+    uiSetting: any,
+    formProps: any,
+    handlerchangewithview: any,
+    view: string
+  ) => {
+    return (
+      <>
+        {getComponentFromField(
+          uiSetting,
+          fieldName,
+          props.formProps,
+          (event: FAIMSEVENTTYPE) => {
+            handlerchangewithview(event, view);
+          }
+        )}
+        {'   '}
+        <Typography style={{color: 'red'}} variant="caption">
+          {formProps.errors[fieldName] !== undefined &&
+            formProps.errors[fieldName].replace(fieldName, '  It ')}
+        </Typography>
+      </>
+    );
+  };
+
   return (
     <>
       {uiSetting['viewsets'][props.designvalue]['views'] !== undefined &&
       uiSetting['viewsets'][props.designvalue]['views'].length === 0
         ? ''
         : uiSetting['viewsets'][props.designvalue]['views'].map((view: any) =>
-            getfieldNamesbyView(uiSetting, view, props.fieldui).map(
-              (fieldName: string) =>
-                getComponentFromField(
-                  uiSetting,
-                  fieldName,
-                  props.formProps,
-                  (event: FAIMSEVENTTYPE) => {
-                    handlerchangewithview(event, view);
-                  }
-                )
+            getfieldNamesbyView(
+              uiSetting,
+              view,
+              props.fieldui
+            ).map((fieldName: string) =>
+              getfield(
+                fieldName,
+                uiSetting,
+                props.formProps,
+                handlerchangewithview,
+                view
+              )
             )
           )}
     </>

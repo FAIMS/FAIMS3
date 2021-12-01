@@ -930,6 +930,21 @@ const addfield = (props: any) => {
     ...newformdesignuiSpec['views']['settings']['fields'],
     ...viewfields,
   ];
+  if (newformdesignuiSpec['viewsets'][formuiview] === undefined)
+    newformdesignuiSpec['viewsets'][formuiview] = {
+      views: [formuiview],
+      label: formuiview,
+    };
+  if (newformdesignuiSpec['views'][formuiview] === undefined)
+    newformdesignuiSpec['views'][formuiview] = {
+      fields: [],
+      uidesign: 'form',
+      label: formuiview,
+    };
+  newformdesignuiSpec['views'][formuiview]['fields'] = [
+    ...formdesignuiSpec['views'][formuiview]['fields'],
+    ...viewfields,
+  ];
 
   const components = formcomponents;
   newviews[formuiview]['fields'] = [...newviews[formuiview]['fields'], name];
