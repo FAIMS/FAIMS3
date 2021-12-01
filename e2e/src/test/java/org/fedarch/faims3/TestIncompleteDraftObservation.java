@@ -95,6 +95,9 @@ public class TestIncompleteDraftObservation {
 			//Wait 2 seconds but do not click SAVE AND NEW
 		    Thread.sleep(2000);
 
+		    // Scroll to the top
+		    TestUtils.scrollToText(driver, "start-view");
+
 			//Note the blue box at the top of the form notifying
 			//“✔ Draft last saved a few seconds ago DD Mmm dd hh:mm:ss GMT+1000 (AEST)”
 		    WebElement messages = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(
