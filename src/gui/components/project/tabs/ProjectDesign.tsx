@@ -58,6 +58,7 @@ import {
 import {ResetComponentProperties} from '../data/componenentSetting';
 import {HRID_STRING} from '../../../../datamodel/core';
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
+import form from '../../record/form';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -146,7 +147,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const [sectiontabs, setsectiontabs] = useState<Array<string>>([]);
 
   const [projecttabvalue, setProjecttabvalue] = useState(0);
-  const [error, setError] = useState(null as null | {});
+  const [error, setError] = useState<any>(null);
   const [fieldvalue, setfieldValue] = useState(0); //field tab
   const [formvalue, setformvalue] = useState(0); //formtabs for each form
   const [formsectionvalue, setformsectionvalue] = useState(0);
@@ -214,8 +215,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormComponents(newformcom);
     setFormuiSpec(formui);
     setformlabel(formtabs[0]);
-    // setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,formuiview))
-    setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,"settings"))
+    setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,formuiview))
+    // setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,"settings"))
     return true;
   };
 
@@ -268,7 +269,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       formdesignuiSpec:formdesignuiSpec
     });
     setformdesignuiSpec({...newformdesignuiSpec})
-    setdesignvalidate(getValidationSchemaForViewset(newformdesignuiSpec,'settings'))
+    setdesignvalidate(getValidationSchemaForViewset(newformdesignuiSpec,formuiview))
     setinitialValues({
       ...initialValues,
       ...initialfieldvalue,
@@ -342,7 +343,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setformuiview(id);
     setfieldValue(0); //TODO: remove it
     setformsectionvalue(index);
-    // setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,id))
+    if(formuiSpec['views'][id]['fields'].length>0)
+      setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec,id))
   };
 
   const handelonChangeVariants = (event: any, index: number) => {
@@ -709,7 +711,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const compnentPanel = () => {
-
+    console.log(error)
     return (
       <Formik
         // enableReinitialize
@@ -724,10 +726,11 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         }}
       >
         {formProps => {
+          
           return (<Form>
-            {/* {formProps.isValid===false&&<Alert severity="error">
+            {formProps.isValid===false&&<Alert severity="error">
             Form has errors, please fill required field in settings for each component.
-          </Alert>} */}
+          </Alert>}
             {fieldform(formProps)}
             {/* <pre>{JSON.stringify(formProps.errors, null, 2)}</pre> */}
           </Form>);

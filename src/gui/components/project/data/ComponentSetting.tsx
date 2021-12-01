@@ -899,7 +899,16 @@ const addfield = (props: any) => {
   const viewfields:Array<string>=[]
   settingui['viewsets']['settings']['views'].map((view:string)=>viewfields.push(...settingui['views'][view]['fields']))
   newformdesignuiSpec['views']['settings']['fields']=[...newformdesignuiSpec['views']['settings']['fields'],...viewfields]
-
+  if(newformdesignuiSpec['viewsets'][formuiview]===undefined) newformdesignuiSpec['viewsets'][formuiview]={
+    views: [formuiview],
+    label: formuiview,
+  }
+  if(newformdesignuiSpec['views'][formuiview]===undefined) newformdesignuiSpec['views'][formuiview]={
+    fields: [],
+    uidesign: 'form',
+    label: formuiview,
+  }
+  newformdesignuiSpec['views'][formuiview]['fields']=[...formdesignuiSpec['views'][formuiview]['fields'],...viewfields]
   const components = formcomponents;
   newviews[formuiview]['fields'] = [...newviews[formuiview]['fields'], name];
   components[formuiview] = [

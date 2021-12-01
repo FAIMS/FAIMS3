@@ -259,6 +259,22 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
     handlerchanges(event);
   };
 
+  const getfield=(fieldName:string,uiSetting:any,formProps:any,handlerchangewithview:any,view:string) =>{
+    return (
+      <>
+      {getComponentFromField(
+        uiSetting,
+        fieldName,
+        props.formProps,
+        (event: FAIMSEVENTTYPE) => {
+          handlerchangewithview(event, view);
+        }
+      )}
+      {formProps.errors[fieldName]}
+      </>
+    )
+  }
+
   return (
     <>
       {uiSetting['viewsets'][props.designvalue]['views'] !== undefined &&
@@ -267,14 +283,7 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
         : uiSetting['viewsets'][props.designvalue]['views'].map((view: any) =>
             getfieldNamesbyView(uiSetting, view, props.fieldui).map(
               (fieldName: string) =>
-                getComponentFromField(
-                  uiSetting,
-                  fieldName,
-                  props.formProps,
-                  (event: FAIMSEVENTTYPE) => {
-                    handlerchangewithview(event, view);
-                  }
-                )
+              getfield(fieldName,uiSetting,props.formProps,handlerchangewithview,view)
             )
           )}
     </>
