@@ -313,7 +313,7 @@ public class AstroSkyMainPage {
 			String newLat = lat.getText();
 			assertEquals(TestUtils.roundCoordinate(newLat), TestUtils.roundCoordinate(this.generatedLat));
 
-			WebElement longi = driver.findElement(By.xpath("//*[@text='Long: ']/../" + className + "[4]"));
+			WebElement longi = driver.findElement(By.xpath("//*[@text='; Long: ']/../" + className + "[4]"));
 			String newLong = longi.getText();
 			assertEquals(TestUtils.roundCoordinate(newLong), TestUtils.roundCoordinate(this.generatedLong));
 		} else if (driver instanceof IOSDriver) {
