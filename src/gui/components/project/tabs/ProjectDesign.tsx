@@ -112,7 +112,6 @@ type ProjectDesignProps = {
 type formcomponents = any;
 // eslint-disable-next-line
 export default function ProjectDesignTab(props: ProjectDesignProps) {
-
   const theme = useTheme();
   const classes = useStyles(theme);
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
