@@ -764,8 +764,8 @@ class RecordForm extends React.Component<
                         ''
                       ) : (
                         <Alert severity="error">
-                          Form has errors, please check previous tab or scroll
-                          up and make changes before submitting.
+                          Form has errors, please scroll
+                          up or check other tab and make changes before submitting.
                         </Alert>
                       )}
                       <br />
