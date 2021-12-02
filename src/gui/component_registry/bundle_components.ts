@@ -79,6 +79,7 @@ import {
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
 import {MapFormField} from '@faims-project/faims3-map-input';
+import {MapFieldBuilderSettings} from '../fields/TmpMapSettings';
 
 import {
   setAttachmentLoaderForType,
@@ -343,7 +344,10 @@ registerComponent(
     'Map Input Field',
     'Input Geo Data via a map',
     'Maps',
-    MapFormField
+    MapFormField,
+    MapFieldBuilderSettings[1],
+    MapFieldBuilderSettings,
+    Defaultcomponentsetting
   )
 );
 
