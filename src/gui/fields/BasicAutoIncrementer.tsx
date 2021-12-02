@@ -31,6 +31,9 @@ import {
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
 import {ProjectUIModel} from '../../datamodel/ui';
+import {Link as RouterLink} from 'react-router-dom';
+import Link from '@material-ui/core/Link';
+import * as ROUTES from '../../constants/routes';
 interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
@@ -39,6 +42,7 @@ interface Props {
 
 interface State {
   has_run: boolean;
+  is_ranger:boolean;
 }
 
 export class BasicAutoIncrementer extends React.Component<
@@ -49,6 +53,7 @@ export class BasicAutoIncrementer extends React.Component<
     super(props);
     this.state = {
       has_run: false,
+      is_ranger:true
     };
   }
 
@@ -71,10 +76,11 @@ export class BasicAutoIncrementer extends React.Component<
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: 'No ranges allocated for autoincrement ID, add ranges',
+          message: 'No ranges set up, Go to this project > Setting > EDIT AUTOINCREMENT ALLOCATIONS to set up ranges',
           severity: 'error',
         },
       });
+      this.setState({...this.state,is_ranger:false})
       return null;
     }
     if (local_state.last_used_id === null) {
@@ -163,12 +169,26 @@ export class BasicAutoIncrementer extends React.Component<
 
   render() {
     return (
+      <>
       <Input
         name={this.props.field.name}
         id={this.props.field.name}
         readOnly={true}
         type={'hidden'}
       />
+      {this.state.is_ranger===false&&
+      <Link
+          component={RouterLink}
+          to={
+            ROUTES.PROJECT +
+            this.props.form.values['_project_id'] +
+            ROUTES.AUTOINCREMENT +
+            this.props.form_id+"/"+this.props.field.name
+          }
+        >
+          Add Ranger
+        </Link>}
+      </>
     );
   }
 }
