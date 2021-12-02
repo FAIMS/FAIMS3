@@ -44,12 +44,11 @@ export default function MetadataRenderer(props: MetadataProps) {
         const meta = await getProjectMetadata(project_id, metadata_key);
         setMetadata(meta);
       } catch (err) {
-        setMetadata('Unknown');
+        setMetadata('');
       }
     };
     getMeta();
-    console.log(metadata_value);
-  }, []);
+  }, [project_id]);
 
   return chips ? (
     metadata_value ? (

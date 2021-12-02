@@ -188,7 +188,7 @@ export default function Card(props: ProjectCardProps) {
             className={classes.cardHeader}
             avatar={
               <Avatar aria-label={project.name} className={classes.avatar}>
-                {project.name.charAt(0)}
+                {project.name!==''&&project.name!==undefined?project.name.charAt(0):'P'}
               </Avatar>
             }
             action={<ProjectCardHeaderAction project={project} />}
@@ -205,7 +205,7 @@ export default function Card(props: ProjectCardProps) {
                 </div>
               </React.Fragment>
             }
-            subheader={
+            subheader={project.created==='Unknown'?'Created ' + 'last record updated':
               'Created' +
               project.created +
               ', last record updated ' +
