@@ -1,25 +1,19 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
-import React, {useState} from 'react';
-import {useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Box, Button, CircularProgress} from '@material-ui/core';
 
-import {
-  AuthInfo,
-  ListingsObject,
-  LocalAuthDoc,
-} from '../../../datamodel/database';
-import {directory_db} from '../../../sync/databases';
-import {setTokenForCluster} from '../../../users';
+import {AuthInfo} from '../../../datamodel/database';
+import {setTokenForCluster, getAuthMechianismsForListing} from '../../../users';
 
 export type LoginFormProps = {
   listing_id: string;
-  auth_doc?: LocalAuthDoc;
+  setToken: React.Dispatch<React.SetStateAction<string | undefined>>;
 };
 
 export type LoginButtonProps = {
   listing_id: string;
-  auth_id: string; // ID to use with the portal
   auth_info: AuthInfo; // User-visible name
+  setToken: React.Dispatch<React.SetStateAction<string | undefined>>;
 };
 
 function LoginButton(props: LoginButtonProps) {
@@ -35,7 +29,9 @@ function LoginButton(props: LoginButtonProps) {
             if (event.source !== oauth_window) {
               console.error('Bad message:', event);
             }
+            console.log('Received token for:', props.listing_id);
             await setTokenForCluster(event.data.token, props.listing_id);
+            props.setToken(event.data.token);
           },
           false
         );
@@ -55,55 +51,30 @@ function LoginButton(props: LoginButtonProps) {
  * @param props ID of this cluster + any info if it's already logged in
  */
 export function LoginForm(props: LoginFormProps) {
-  const [listingInfo, setListingInfo] = useState(
-    null as null | ListingsObject | {error: {}}
+  const [auth_mechanisms, setAuth_mechanisms] = useState(
+    null as null | {[name: string]: AuthInfo}
   );
 
   useEffect(() => {
-    directory_db.local.get(props.listing_id).then(
-      info => setListingInfo(info),
-      (err: any) => {
-        setListingInfo({error: err});
-      }
-    );
+    const getMech = async () => {
+      setAuth_mechanisms(await getAuthMechianismsForListing(props.listing_id));
+    };
+    getMech();
+  }, [props.listing_id]);
 
-    const changes = directory_db.local.changes({
-      include_docs: true,
-      since: 'now',
-    });
-    const change_listener = (
-      change: PouchDB.Core.ChangesResponseChange<ListingsObject>
-    ) => {
-      setListingInfo(change.doc!);
-    };
-    const error_listener = (err: any) => {
-      setListingInfo({error: err});
-    };
-    changes.on('change', change_listener);
-    changes.on('error', error_listener);
-    return () => {
-      changes.removeListener('change', change_listener);
-      changes.removeListener('error', error_listener);
-    };
-  });
-
-  if (listingInfo === null) {
+  if (auth_mechanisms === null) {
     return <CircularProgress color="primary" size="2rem" thickness={5} />;
-  } else if ('error' in listingInfo) {
-    return <span>Error: {listingInfo.error.toString()}</span>;
-  } else if ('auth_mechanisms' in listingInfo) {
+  } else {
     return (
       <Box>
-        {Object.keys(listingInfo.auth_mechanisms).map(auth_id => (
+        {Object.keys(auth_mechanisms).map(auth_id => (
           <LoginButton
-            listing_id={listingInfo._id}
-            auth_id={auth_id}
-            auth_info={listingInfo.auth_mechanisms[auth_id]}
+            listing_id={props.listing_id}
+            auth_info={auth_mechanisms[auth_id]}
+            setToken={props.setToken}
           />
         ))}
       </Box>
     );
-  } else {
-    return <span>Unable to connect to login system</span>;
   }
 }

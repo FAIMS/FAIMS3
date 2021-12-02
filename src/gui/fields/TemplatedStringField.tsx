@@ -126,8 +126,8 @@ export function TemplatedStringcomponentsetting(
         null
       );
       newfield['component-parameters']['ElementProps']['options'] = options;
-      newfield['component-parameters']['required']=true;
-      newfield['validationSchema']=[['yup.string'], ['yup.required']]
+      newfield['component-parameters']['required'] = true;
+      newfield['validationSchema'] = [['yup.string'], ['yup.required']];
       let inivalue = templatevalue.split('-');
       inivalue =
         inivalue.length > 0 && inivalue[i] !== undefined
@@ -139,7 +139,7 @@ export function TemplatedStringcomponentsetting(
       newfieldlist[i] = name;
       value = value + '{{' + name + '}}-';
     }
-    value=value.substring(0, value.length - 1)
+    value = value.substring(0, value.length - 1);
     newvalues['views']['FormParamater']['fields'] = [
       'hrid' + props.fieldName,
       'helperText' + props.fieldName,
@@ -206,7 +206,7 @@ export function TemplatedStringcomponentsetting(
         'component-parameters'
       ]['template'].split('-');
       farray = farray.filter((f: string) => f !== '');
-      const num = farray.length > 1 ? (farray.length) : 1;
+      const num = farray.length > 1 ? farray.length : 1;
       newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
     }
@@ -266,10 +266,11 @@ export function TemplatedStringcomponentsetting(
 
     if (name.includes('fieldselect1')) {
       const newvalues = props.uiSpec;
-      const string = props.uiSpec['fields'][props.fieldName][
-        'component-parameters'
-      ]['template']+'-'
-      const value=string.split('-');
+      const string =
+        props.uiSpec['fields'][props.fieldName]['component-parameters'][
+          'template'
+        ] + '-';
+      const value = string.split('-');
       console.log(value);
       const num = name.replace('fieldselect1', '');
       if (event.target.value.indexOf('newfield') !== -1)
