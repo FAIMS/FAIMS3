@@ -50,7 +50,7 @@
     "@capacitor/core": "2.4.9",
     "@capacitor/ios": "2.4.9",
     "@demvsystems/yup-ast": "1.2.0",
-    "@faims-project/faims3-map-input": "1.0.1",
+    "@faims-project/faims3-map-input": "1.0.2",
     "@ionic/pwa-elements": "3.0.2",
     "@material-ui/core": "4.12.3",
     "@material-ui/data-grid": "4.0.0-alpha.28",
