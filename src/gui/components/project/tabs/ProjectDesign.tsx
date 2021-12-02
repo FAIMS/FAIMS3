@@ -112,8 +112,6 @@ type ProjectDesignProps = {
 type formcomponents = any;
 // eslint-disable-next-line
 export default function ProjectDesignTab(props: ProjectDesignProps) {
-  // if(props.project_id===undefined) console.log('New Project'+props.project_id)
-
   const theme = useTheme();
   const classes = useStyles(theme);
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -226,9 +224,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setdesignvalidate(
       getValidationSchemaForViewset(formdesignuiSpec, formuiview)
     );
-    // setdesignvalidate(
-    //   getValidationSchemaForViewset(formdesignuiSpec, 'settings')
-    // );
     return true;
   };
 
@@ -246,7 +241,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       if (newvalue[view] === undefined) newvalue[view] = [];
       return newvalue;
     });
-    // console.log(formuiSpec)
     if (formuiSpec !== null) {
       generateunifromformui(formuiSpec);
     }
@@ -350,7 +344,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const handelonChangeSection = (event: any, index: number) => {
-    console.log(index);
     const id = formuiSpec['viewsets'][formvariants]['views'][index];
     console.log(id);
     setCurrentView(sectiontabs[index - 1]);
@@ -371,7 +364,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormVariants(id);
 
     if (formuiSpec['viewsets'][id]['views'].length > 0) {
-      console.log(formuiSpec['viewsets'][id]['views'][0]);
       const tabs: any = [];
       if (formuiSpec['viewsets'][id]['views'].length > 0) {
         formuiSpec['viewsets'][id]['views'].map(
@@ -497,7 +489,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     const newproject = props.projectvalue;
     if (newproject['forms'][formvariants] === undefined) {
       newproject['forms'][formvariants] = {};
-      console.log(event.target.checked);
     }
     if (
       event.target.name.includes('accessinherit') ||
@@ -581,7 +572,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setProjectValue({...newproj});
     } else if (type === 'uiS') {
       const newui = formuiSpec;
-      console.log(id);
       newui['fields'][id]['access'] = newvalue;
       //change for hird
       if (
@@ -590,13 +580,11 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       ) {
         newui['fields'][HRID_STRING + formvariants]['access'] = newvalue;
       }
-      console.log(newui);
       setFormuiSpec({...formuiSpec, fields: newui.fields});
     }
   };
 
   const gotonext = () => {
-    console.log(formtabs.indexOf(formlabel));
     let indextab = formtabs.indexOf(formlabel);
     if (indextab < 0) indextab = 0;
     if (indextab === formtabs.length - 1) {
@@ -725,10 +713,10 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const compnentPanel = () => {
-    console.log(error);
     return (
       <Formik
         // enableReinitialize
+        key={formuiview}
         initialValues={initialValues}
         validateOnMount={true}
         validationSchema={designvalidate}
@@ -740,16 +728,17 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         }}
       >
         {formProps => {
-          <Form>
-            {formProps.isValid === false && (
-              <Alert severity="error">
-                Form has errors, please fill required field in settings for each
-                component.
-              </Alert>
-            )}
-            {fieldform(formProps)}
-            {/* <pre>{JSON.stringify(formProps.errors, null, 2)}</pre> */}
-          </Form>;
+          return (
+            <Form>
+              {formProps.isValid === false && (
+                <Alert severity="error">
+                  Form has errors, please fill required field in settings for
+                  each component.
+                </Alert>
+              )}
+              {fieldform(formProps)}
+            </Form>
+          );
         }}
       </Formik>
     );
@@ -813,6 +802,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               Select each new component, they will be automatically layout in
               the interface, then config each of them
             </Alert>
+
             {fieldvalue === 1 &&
             formuiview !== '' &&
             formcomponents[formuiview].length > 0

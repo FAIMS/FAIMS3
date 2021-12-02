@@ -21,7 +21,7 @@
 import React from 'react';
 import {useParams} from 'react-router-dom';
 
-import {Box, Container, Typography, Paper} from '@material-ui/core';
+import {Box, Container, Typography, Paper, Button} from '@material-ui/core';
 
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel/core';
@@ -29,6 +29,7 @@ import {getProjectInfo} from '../../databaseAccess';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementEditForm from '../components/autoincrement/edit-form';
+import {useHistory} from 'react-router-dom';
 
 export default function AutoIncrementEdit() {
   const {project_id, form_id, field_id} = useParams<{
@@ -38,6 +39,7 @@ export default function AutoIncrementEdit() {
   }>();
   const name = `${form_id} (${field_id})`;
   const project_info = getProjectInfo(project_id);
+  const history = useHistory();
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
@@ -72,6 +74,9 @@ export default function AutoIncrementEdit() {
           field_id={field_id}
         />
       </Paper>
+      <Button color="primary" size="large" onClick={() => history.goBack()}>
+        Go Back
+      </Button>
     </Container>
   );
 }
