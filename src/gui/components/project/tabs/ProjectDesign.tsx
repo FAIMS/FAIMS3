@@ -229,6 +229,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     // setdesignvalidate(
     //   getValidationSchemaForViewset(formdesignuiSpec, 'settings')
     // );
+    console.log(formcomponents)
     return true;
   };
 
@@ -725,10 +726,10 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const compnentPanel = () => {
-    console.log(error);
     return (
       <Formik
         // enableReinitialize
+        key={formuiview}
         initialValues={initialValues}
         validateOnMount={true}
         validationSchema={designvalidate}
@@ -739,17 +740,16 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           }, 500);
         }}
       >
+        
         {formProps => {
+          return (
           <Form>
-            {formProps.isValid === false && (
-              <Alert severity="error">
-                Form has errors, please fill required field in settings for each
-                component.
-              </Alert>
-            )}
+            {formProps.isValid===false&&
+            <Alert severity="error">
+            Form has errors, please fill required field in settings for each component.
+            </Alert>}
             {fieldform(formProps)}
-            {/* <pre>{JSON.stringify(formProps.errors, null, 2)}</pre> */}
-          </Form>;
+          </Form>);
         }}
       </Formik>
     );
@@ -813,6 +813,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               Select each new component, they will be automatically layout in
               the interface, then config each of them
             </Alert>
+            
             {fieldvalue === 1 &&
             formuiview !== '' &&
             formcomponents[formuiview].length > 0
