@@ -78,10 +78,8 @@ import {
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
-import {
-  MapFormField,
-  MapFieldBuilderSettings,
-} from '@faims-project/faims3-map-input';
+import {MapFormField} from '@faims-project/faims3-map-input';
+import {MapFieldBuilderSettings} from '../fields/TmpMapSettings';
 
 import {
   setAttachmentLoaderForType,
@@ -347,13 +345,7 @@ registerComponent(
     'Input Geo Data via a map',
     'Maps',
     MapFormField,
-    {
-      'component-namespace': 'mapping-plugin',
-      'component-name': 'MapFormField',
-      'type-returned': 'faims-core::JSON',
-      validationSchema: [['yup.object']],
-      initialValue: {},
-    },
+    MapFieldBuilderSettings[1],
     MapFieldBuilderSettings,
     Defaultcomponentsetting
   )
