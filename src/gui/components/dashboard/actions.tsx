@@ -114,7 +114,7 @@ export default function DashboardActions(props: DashboardActionProps) {
             </Grid>
             {value !== null && value.value in viewSets ? (
               <Grid>
-                {viewSets[value.value][1].map(viewset_name => (
+                {viewSets[value.value][1].map(viewset_name => viewSets[value.value][0][viewset_name].is_visible!==false&&(
                   <Button
                     classes={{root: classes.fullHeightButton}}
                     variant="contained"

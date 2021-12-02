@@ -407,6 +407,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       newprojectvalue['forms'][tabname]['annotation' + tabname] = true;
       newprojectvalue['forms'][tabname]['uncertainty' + tabname] = false;
       newprojectvalue['forms'][tabname]['formaccessinherit' + tabname] = false;
+      newprojectvalue['forms'][tabname]['visible' + tabname] = true;
       newprojectvalue['access']['access' + tabname] = ['admin'];
       setProjectValue({...newprojectvalue});
     } else {
@@ -498,7 +499,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     if (
       event.target.name.includes('accessinherit') ||
       event.target.name.includes('annotation') ||
-      event.target.name.includes('uncertainty')
+      event.target.name.includes('uncertainty')||
+      event.target.name.includes('visible')
     ) {
       newproject['forms'][formvariants][event.target.name] =
         event.target.checked;
@@ -511,6 +513,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       const newviews = formuiSpec;
       //update uiSpecf
       newviews['viewsets'][formvariants]['submit_label'] = event.target.value;
+      setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
+    }
+
+    if(event.target.name === 'visible'+ formvariants){
+      const newviews = formuiSpec;
+      newviews['viewsets'][formvariants]['is_visible'] = event.target.checked;
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
     }
 
@@ -959,7 +967,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           />
         </Grid>
         <Grid item sm={not_xs && formtabs.length > 1 ? 10 : 12} xs={12}>
-          {formnamevalue+formuiview+formvariants}
           {formtabs.map((formtab: string, index: number) => (
             <TabPanel
               value={formnamevalue}

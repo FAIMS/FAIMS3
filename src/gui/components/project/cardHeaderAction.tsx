@@ -115,7 +115,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               open={Boolean(createAnchor)}
               onClose={handleCreateClose}
             >
-              {viewSets[1].map(viewset_name => (
+              {viewSets[1].map(viewset_name => viewSets[0][viewset_name].is_visible!==false&&(
                 <MenuItem
                   component={RouterLink}
                   to={
@@ -173,7 +173,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               </MenuItem>
             ) : (
               <React.Fragment>
-                {viewSets[1].map(viewset_name => (
+                {viewSets[1].map(viewset_name => viewSets[0][viewset_name].is_visible!==false&&(
                   <MenuItem
                     component={RouterLink}
                     to={
@@ -188,12 +188,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                 ))}
               </React.Fragment>
             )}
-            <MenuItem disabled={true}>
-              <ListItemIcon>
-                <ShareIcon fontSize="small" />
-              </ListItemIcon>
-              Share
-            </MenuItem>
+            
             <MenuItem
               component={NavLink}
               to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SETTINGS}
