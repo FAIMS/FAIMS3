@@ -153,7 +153,6 @@ const example_autoincrement_references: {
 } = {
   default_astro_sky: [
     {
-      project_id: 'default_astro_sky',
       form_id: 'default', // TODO: This needs sorting
       field_id: 'basic-autoincrementer-field',
     },
@@ -961,13 +960,13 @@ export async function setupExampleProjectMetadata(
     for (const ref of example_autoincrement_refs) {
       try {
         await add_autoincrement_reference_for_project(
-          ref.project_id,
+          projname,
           [ref.form_id],
           [ref.field_id]
         );
         const new_range = create_new_autoincrement_range(0, 10000);
         const doc = await get_local_autoincrement_state_for_field(
-          ref.project_id,
+          projname,
           ref.form_id,
           ref.field_id
         );

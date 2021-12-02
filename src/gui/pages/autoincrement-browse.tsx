@@ -63,7 +63,7 @@ export default function Record() {
     references.length > 0 ? (
       <div>
         {references.map(ref => {
-          return <AutoIncrementConfigForm reference={ref} />;
+          return <AutoIncrementConfigForm project_id={project_id} reference={ref} />;
         })}
       </div>
     ) : (
