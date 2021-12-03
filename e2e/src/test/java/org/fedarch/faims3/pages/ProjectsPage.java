@@ -184,7 +184,7 @@ public class ProjectsPage {
 					"//*[@text='RECENT RECORDS']/following-sibling::android.widget.GridView"));
 			// Unfortunately there's no other way...
 			WebElement firstRecord = recentRecordsGrid.findElement(MobileBy.xpath(
-					"(//android.view.View[1]/android.view.View[2]/android.view.View"
+					"//android.view.View[1]/android.view.View[2]/android.view.View"
 					    + "/android.view.View/android.view.View/android.view.View"
 							+ "/android.view.View/android.view.View[2]/android.view.View"));
 
