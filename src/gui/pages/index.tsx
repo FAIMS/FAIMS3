@@ -30,9 +30,8 @@ import {
   ListItemIcon,
 } from '@material-ui/core';
 import AccountTree from '@material-ui/icons/AccountTree';
-import HomeIcon from '@material-ui/icons/Home';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
-
+import WorkSharpIcon from '@material-ui/icons/WorkSharp';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 
@@ -62,7 +61,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   <ListItemIcon>
                     <AccountBoxIcon fontSize="small" />
                   </ListItemIcon>
-                  Sign In
+                  Sign In To NoteBooks
                 </MenuItem>
               </MenuList>
             </Paper>
@@ -72,7 +71,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
               <MenuList>
                 <MenuItem component={NavLink} to={ROUTES.WORKSPACE}>
                   <ListItemIcon>
-                    <HomeIcon fontSize="small" />
+                    <WorkSharpIcon fontSize="small" />
                   </ListItemIcon>
                   Workspace
                 </MenuItem>

@@ -49,6 +49,8 @@ interface Props {
   relation_type: FAIMSTypeName;
   multiple?: boolean;
   id: string;
+  InputLabelProps: {label: string};
+  required: boolean;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -68,6 +70,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       })();
     }
   }, []);
+  console.log(props.InputLabelProps);
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
@@ -89,7 +92,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         renderInput={(params: any) => (
           <TextField
             {...params}
-            label="Select Record "
+            label={props.InputLabelProps.label}
+            required={props.required}
             variant="outlined"
             InputProps={{
               ...params.InputProps,
@@ -138,7 +142,7 @@ const uiSpec = {
     multiple: false,
     SelectProps: {},
     InputLabelProps: {
-      label: 'Related Field',
+      label: 'Select Related',
     },
     FormHelperTextProps: {},
   },
@@ -228,7 +232,7 @@ const uiSetting = () => {
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['InputLabelProps', 'FormParamater'],
       label: 'settings',
     },
   };

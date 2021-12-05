@@ -313,17 +313,17 @@ export const getprojectform = (
       initialValue: false,
       helperText: 'Tick for enable Uncertainty for Form components',
     },
-    // {
-    //   name: 'visible',
-    //   label: 'Visible in Main menu',
-    //   namespace: 'faims-custom',
-    //   componentName: 'Checkbox',
-    //   type_return: 'faims-core::Bool',
-    //   validationSchema: [['yup.bool']],
-    //   type: 'checkbox',
-    //   initialValue: true,
-    //   helperText: 'Tick if user can see from Add New options',
-    // },
+    {
+      name: 'visible',
+      label: 'Visible in Top ',
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+      initialValue: true,
+      helperText: 'Tick if user can see from Add New options',
+    },
   ];
 
   const users = [

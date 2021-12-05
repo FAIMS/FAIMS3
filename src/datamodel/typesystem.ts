@@ -45,6 +45,7 @@ export interface ProjectUIViewsets {
     label?: string;
     views: string[];
     submit_label?: string;
+    is_visible?: boolean;
   };
 }
 

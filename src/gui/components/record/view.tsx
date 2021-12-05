@@ -18,14 +18,14 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import {FormikProps} from 'formik';
 
 import {ProjectUIModel} from '../../../datamodel/ui';
 import RecordDraftState from '../../../sync/draft-state';
 import {getComponentFromFieldConfig} from './fields';
-import {Annotation} from './Annotation';
-
+import {Annotation, AnnotationField} from './Annotation';
+import {Grid} from '@material-ui/core';
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
@@ -35,38 +35,66 @@ type ViewProps = {
   handerannoattion: any;
 };
 
-export class ViewComponent extends React.Component<ViewProps> {
-  render() {
-    const ui_specification = this.props.ui_specification;
-    const viewName = this.props.viewName;
-    const fieldNames: string[] = ui_specification.views[viewName].fields;
-    const fields = ui_specification.fields;
-    return (
-      <React.Fragment>
-        {fieldNames.map(fieldName => (
-          <>
-            {getComponentFromFieldConfig(
-              fields[fieldName],
-              fieldName,
-              this.props.formProps
-            )}
-            {this.props.annotation !== undefined &&
-              fields[fieldName].meta !== undefined &&
-              fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-              fields[fieldName]['component-name'] !==
-                'TemplatedStringField' && (
-                <Annotation
-                  key={'annotation' + fieldName + 'box'}
-                  fieldName={fieldName}
-                  formProps={this.props.formProps}
-                  field={fields[fieldName]}
-                  annotation={this.props.annotation}
-                  handerannoattion={this.props.handerannoattion}
-                />
-              )}
-          </>
-        ))}
-      </React.Fragment>
-    );
-  }
+function SingleComponent(props: any) {
+  const fieldName = props.fieldName;
+  const fields = props.fields;
+  const [isclicked, setIsClick] = useState(false);
+
+  return (
+    <Grid container>
+      <Grid item sm={10} xs={12}>
+        {getComponentFromFieldConfig(
+          fields[fieldName],
+          fieldName,
+          props.formProps
+        )}
+      </Grid>
+      <Grid item sm={2} xs={12} style={{marginTop: '0.5em'}}>
+        {props.annotation !== undefined &&
+          fields[fieldName].meta !== undefined &&
+          fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
+          fields[fieldName]['component-name'] !== 'TemplatedStringField' && (
+            <Annotation
+              key={'annotation' + fieldName + 'box'}
+              setIsClick={setIsClick}
+              isclicked={isclicked}
+              field={fields[fieldName]}
+            />
+          )}
+      </Grid>
+      <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
+        <AnnotationField
+          key={'annotation' + fieldName + 'box'}
+          fieldName={fieldName}
+          // formProps={this.props.formProps}
+          field={fields[fieldName]}
+          annotation={props.annotation}
+          handerannoattion={props.handerannoattion}
+          isclicked={isclicked}
+        />
+      </Grid>
+    </Grid>
+  );
+}
+
+export function ViewComponent(props: ViewProps) {
+  const ui_specification = props.ui_specification;
+  const viewName = props.viewName;
+  const fieldNames: string[] = ui_specification.views[viewName].fields;
+  const fields = ui_specification.fields;
+
+  return (
+    <React.Fragment>
+      {fieldNames.map(fieldName => (
+        <SingleComponent
+          fieldName={fieldName}
+          fields={fields}
+          formProps={props.formProps}
+          draftState={props.draftState}
+          annotation={props.annotation}
+          handerannoattion={props.handerannoattion}
+        />
+      ))}
+    </React.Fragment>
+  );
 }
