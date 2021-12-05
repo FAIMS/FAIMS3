@@ -30,7 +30,6 @@ import {
   ListItemIcon,
 } from '@material-ui/core';
 import AccountTree from '@material-ui/icons/AccountTree';
-import HomeIcon from '@material-ui/icons/Home';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import WorkSharpIcon from '@material-ui/icons/WorkSharp';
 import * as ROUTES from '../../constants/routes';

@@ -19,51 +19,72 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import {Field} from 'formik';
 import {IconButton} from '@material-ui/core';
 import NoteIcon from '@material-ui/icons/Note';
-import {generatenewfield} from '../project/data/componenentSetting';
+
 import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
-import {Field} from 'formik';
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export function Annotation(props: any) {
-  const {field, isclicked,setIsClick} = props;
-  const [subisclicked,setIsclicks]=useState(false)
+  const {field, isclicked, setIsClick} = props;
+  const [subisclicked, setIsclicks] = useState(false);
 
   useEffect(() => {
-    setIsClick(false)
+    setIsClick(false);
   }, []);
 
   return field.meta !== undefined && field.meta.annotation !== false ? (
     <>
-      <IconButton edge="end" onClick={()=>{const isc=!subisclicked;setIsClick(isc);setIsclicks(isc);}}>
+      <IconButton
+        edge="end"
+        onClick={() => {
+          const isc = !subisclicked;
+          setIsClick(isc);
+          setIsclicks(isc);
+        }}
+      >
         <NoteIcon fontSize="small" />
       </IconButton>
 
-      {subisclicked ?(
-        <UpButton onButtonClick={()=>{setIsClick(false);setIsclicks(false);}} value={1} id={1} />
-      ):(
-        <DownButton onButtonClick={()=>{setIsClick(true);setIsclicks(true);}} value={0} id={0} />
+      {subisclicked ? (
+        <UpButton
+          onButtonClick={() => {
+            setIsClick(false);
+            setIsclicks(false);
+          }}
+          value={1}
+          id={1}
+        />
+      ) : (
+        <DownButton
+          onButtonClick={() => {
+            setIsClick(true);
+            setIsclicks(true);
+          }}
+          value={0}
+          id={0}
+        />
       )}
       <br />
-      
     </>
   ) : (
     <></>
   );
 }
 
-type AnnotationFieldProp={
-  isclicked:boolean;
-  fieldName:string;
-  field:any;
-  handerannoattion:any;
-  annotation:any;
+type AnnotationFieldProp = {
+  isclicked: boolean;
+  fieldName: string;
+  field: any;
+  handerannoattion: any;
+  annotation: any;
   // formProps:any
 };
 
-export function AnnotationField(props:AnnotationFieldProp) {
-  const {field, fieldName, handerannoattion,isclicked} = props;
+export function AnnotationField(props: AnnotationFieldProp) {
+  const {field, fieldName, handerannoattion, isclicked} = props;
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
       ? props.annotation[fieldName] !== undefined
@@ -99,7 +120,7 @@ export function AnnotationField(props:AnnotationFieldProp) {
   };
   return (
     <>
-    {isclicked && (
+      {isclicked && (
         <Field
           component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
           name={fieldName + 'annotation'}
@@ -128,5 +149,5 @@ export function AnnotationField(props:AnnotationFieldProp) {
           />
         )}
     </>
-  )
+  );
 }
