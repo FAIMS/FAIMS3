@@ -101,7 +101,7 @@ const ini_projectvalue = {
       annotationFORM1: true,
       uncertaintyFORM1: false,
       formaccessinheritFORM1: false,
-      visibleFORM1:true,
+      visibleFORM1: true,
     },
   },
   sections: {},

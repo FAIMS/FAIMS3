@@ -50,7 +50,7 @@ interface Props {
   multiple?: boolean;
   id: string;
   InputLabelProps: {label: string};
-  required:boolean;
+  required: boolean;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -70,7 +70,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       })();
     }
   }, []);
-  console.log(props.InputLabelProps)
+  console.log(props.InputLabelProps);
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
@@ -232,7 +232,7 @@ const uiSetting = () => {
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps','FormParamater'],
+      views: ['InputLabelProps', 'FormParamater'],
       label: 'settings',
     },
   };

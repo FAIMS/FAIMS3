@@ -308,6 +308,7 @@ export function TemplatedStringcomponentsetting(
                 'component-parameters'
               ] !== true
             )
+            
               ishird = true;
           }
         );

@@ -114,30 +114,34 @@ export default function DashboardActions(props: DashboardActionProps) {
             </Grid>
             {value !== null && value.value in viewSets ? (
               <Grid>
-                {viewSets[value.value][1].map(viewset_name => viewSets[value.value][0][viewset_name].is_visible!==false&&(
-                  <Button
-                    classes={{root: classes.fullHeightButton}}
-                    variant="contained"
-                    color="primary"
-                    size={'medium'}
-                    type={'submit'}
-                    style={{marginLeft: '5px'}}
-                    key={viewset_name + 'viewset'}
-                    component={RouterLink}
-                    to={
-                      ROUTES.PROJECT +
-                      value.value +
-                      ROUTES.RECORD_CREATE +
-                      viewset_name
-                    }
-                  >
-                    {viewSets[value.value][1].length === 1
-                      ? 'Add'
-                      : 'Add ' +
-                        (viewSets[value.value][0][viewset_name].label ||
-                          viewset_name)}
-                  </Button>
-                ))}
+                {viewSets[value.value][1].map(
+                  viewset_name =>
+                    viewSets[value.value][0][viewset_name].is_visible !==
+                      false && (
+                      <Button
+                        classes={{root: classes.fullHeightButton}}
+                        variant="contained"
+                        color="primary"
+                        size={'medium'}
+                        type={'submit'}
+                        style={{marginLeft: '5px'}}
+                        key={viewset_name + 'viewset'}
+                        component={RouterLink}
+                        to={
+                          ROUTES.PROJECT +
+                          value.value +
+                          ROUTES.RECORD_CREATE +
+                          viewset_name
+                        }
+                      >
+                        {viewSets[value.value][1].length === 1
+                          ? 'Add'
+                          : 'Add ' +
+                            (viewSets[value.value][0][viewset_name].label ||
+                              viewset_name)}
+                      </Button>
+                    )
+                )}
               </Grid>
             ) : (
               <></>

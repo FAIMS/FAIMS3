@@ -234,7 +234,6 @@ export interface LocalAutoIncrementState {
 }
 
 export interface AutoIncrementReference {
-  project_id: ProjectID;
   form_id: string;
   field_id: string;
 }

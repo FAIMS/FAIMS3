@@ -12,7 +12,6 @@ import {
 } from '@material-ui/core';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
-import ShareIcon from '@material-ui/icons/Share';
 import AddIcon from '@material-ui/icons/Add';
 import SearchIcon from '@material-ui/icons/Search';
 import SettingsIcon from '@material-ui/icons/Settings';
@@ -63,22 +62,22 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
   >(null);
 
   useEffect(() => {
-    getUiSpecForProject(project.project_id).then(
-      uiSpec => {
-        if (
-          uiSpec.viewsets !== null ||
-          uiSpec.viewsets !== null ||
-          uiSpec.visible_types !== undefined ||
-          uiSpec.visible_types !== undefined
-        ) {
-          setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
-        }
-      },
-      () => {}
-    );
+    getUiSpecForProject(project.project_id).then(uiSpec => {
+      if (
+        uiSpec.viewsets !== null ||
+        uiSpec.viewsets !== null ||
+        uiSpec.visible_types !== undefined ||
+        uiSpec.visible_types !== undefined
+      ) {
+        setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
+      } else {
+        console.error('Viewsets or visable types not set up:', uiSpec);
+      }
+    }, console.error);
   }, [project.project_id]);
 
   if (viewSets === null) {
+    console.info('Viewsets is null for:', project.project_id);
     return <CircularProgress thickness={2} size={12} />;
   }
 
@@ -115,19 +114,22 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               open={Boolean(createAnchor)}
               onClose={handleCreateClose}
             >
-              {viewSets[1].map(viewset_name => viewSets[0][viewset_name].is_visible!==false&&(
-                <MenuItem
-                  component={RouterLink}
-                  to={
-                    ROUTES.PROJECT +
-                    project.project_id +
-                    ROUTES.RECORD_CREATE +
-                    viewset_name
-                  }
-                >
-                  {viewSets[0][viewset_name].label || viewset_name}
-                </MenuItem>
-              ))}
+              {viewSets[1].map(
+                viewset_name =>
+                  viewSets[0][viewset_name].is_visible !== false && (
+                    <MenuItem
+                      component={RouterLink}
+                      to={
+                        ROUTES.PROJECT +
+                        project.project_id +
+                        ROUTES.RECORD_CREATE +
+                        viewset_name
+                      }
+                    >
+                      {viewSets[0][viewset_name].label || viewset_name}
+                    </MenuItem>
+                  )
+              )}
             </Menu>
 
             <IconButton
@@ -173,22 +175,25 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               </MenuItem>
             ) : (
               <React.Fragment>
-                {viewSets[1].map(viewset_name => viewSets[0][viewset_name].is_visible!==false&&(
-                  <MenuItem
-                    component={RouterLink}
-                    to={
-                      ROUTES.PROJECT +
-                      project.project_id +
-                      ROUTES.RECORD_CREATE +
-                      viewset_name
-                    }
-                  >
-                    New {viewSets[0][viewset_name].label || viewset_name}
-                  </MenuItem>
-                ))}
+                {viewSets[1].map(
+                  viewset_name =>
+                    viewSets[0][viewset_name].is_visible !== false && (
+                      <MenuItem
+                        component={RouterLink}
+                        to={
+                          ROUTES.PROJECT +
+                          project.project_id +
+                          ROUTES.RECORD_CREATE +
+                          viewset_name
+                        }
+                      >
+                        New {viewSets[0][viewset_name].label || viewset_name}
+                      </MenuItem>
+                    )
+                )}
               </React.Fragment>
             )}
-            
+
             <MenuItem
               component={NavLink}
               to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SETTINGS}
