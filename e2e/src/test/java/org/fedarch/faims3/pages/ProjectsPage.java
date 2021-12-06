@@ -185,9 +185,9 @@ public class ProjectsPage {
 			// Unfortunately there's no other way...
 			// TODO fix this when we have HRID in the records list
 			// it should be easier then
-			WebElement firstRecord = recentRecordsGrid.findElement(MobileBy.xpath(
-					"//*[contains(@text, '/202')]/preceding-sibling::android.view.View/android.view.View"));
-
+			WebElement firstRecord = recentRecordsGrid.findElement(
+					MobileBy.xpath("(//android.widget.CheckBox)[2]/../../"
+							+ "following-sibling::android.view.View"));
 			recordId = firstRecord.getText();
 			firstRecord.click();
 		} else if (driver instanceof IOSDriver) {

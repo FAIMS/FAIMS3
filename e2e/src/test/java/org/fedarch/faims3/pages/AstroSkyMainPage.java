@@ -39,9 +39,7 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import io.appium.java_client.MobileBy;
 import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.android.AndroidElement;
 import io.appium.java_client.android.nativekey.AndroidKey;
 import io.appium.java_client.android.nativekey.KeyEvent;
 import io.appium.java_client.ios.IOSDriver;
@@ -154,7 +152,12 @@ public class AstroSkyMainPage {
 	@AndroidFindBy(xpath = "//android.widget.TextView[contains(@text, 'Projects')]")
 	private WebElement projectsPath;
 
-	@AndroidFindBy(xpath = "//*[@text='DEVELOPER TOOL: OBSERVATION REVISIONS']/"
+	@AndroidFindBy(xpath = "//*[@text='REVISIONS']")
+	@iOSXCUITFindBy(xpath = "//*[@name='REVISIONS']")
+	@FindBy(xpath = "//*[text()='REVISIONS']")
+    private WebElement revisionsTab;
+
+	@AndroidFindBy(xpath = "//*[@text='DEVELOPER TOOL: RECORD REVISIONS']/"
 						+ "following-sibling::android.view.View/android.view.View")
 	private WebElement revisions;
 
@@ -464,11 +467,9 @@ public class AstroSkyMainPage {
 	 * @return
 	 */
 	public String[] getRevisions() {
-		wait.until(ExpectedConditions.presenceOfElementLocated(MobileBy.linkText("REVISIONS"))).click();
-
-		AndroidElement revisions = (AndroidElement)wait.until(ExpectedConditions.presenceOfElementLocated(
-				MobileBy.xpath("//*[@text='DEVELOPER TOOL: OBSERVATION REVISIONS']/"
-						+ "following-sibling::android.view.View/android.view.View")));
+		wait.until(ExpectedConditions.visibilityOf(this.revisionsTab)).click();
+		WebElement revisions = wait.until(ExpectedConditions.visibilityOf(
+				this.revisions));
 		// remove square brackets and split by comma separator
 		return revisions.getText().replaceAll("\\[", "").replaceAll("\\]","").split(",");
 

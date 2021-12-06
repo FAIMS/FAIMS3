@@ -117,6 +117,7 @@ public class TestUpdateObservationsAndDraftDatabase {
 			int revisionCount = androidDevice.astroSky.getRevisions().length;
 
 			// Edit data. Wait for the draft to save, leave the observation
+			TestUtils.scrollToText(androidDevice.driver, "EDIT").click();
 			WebElement strField = TestUtils.scrollToId(androidDevice.driver, "str-field");
 
 			final String FIRST_EDIT_ANDROID = "Green";
