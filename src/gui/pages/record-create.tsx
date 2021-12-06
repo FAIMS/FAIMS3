@@ -34,11 +34,14 @@ import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {ProjectInformation, ProjectUIModel} from '../../datamodel/ui';
 import {useEffect} from 'react';
-import {getUiSpecForProject} from '../../uiSpecification';
+import {
+  getUiSpecForProject,
+  getReturnedTypesForViewSet,
+} from '../../uiSpecification';
 import {ActionType} from '../../actions';
 import {store} from '../../store';
 import {newStagedData} from '../../sync/draft-storage';
-
+import {useLocation} from 'react-router-dom';
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -52,10 +55,23 @@ function DraftCreate(props: DraftCreateProps) {
 
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
+  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
 
   useEffect(() => {
-    newStagedData(project_id, null, type_name).then(setDraft_id, setError);
+    getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
+
+  useEffect(() => {
+    if (uiSpec !== null) {
+      const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
+      newStagedData(project_id, null, type_name, field_types).then(
+        setDraft_id,
+        setError
+      );
+    } else {
+      setDraft_id(null);
+    }
+  }, [project_id, uiSpec]);
 
   if (error !== null) {
     dispatch({
@@ -79,7 +95,8 @@ function DraftCreate(props: DraftCreateProps) {
           ROUTES.RECORD_CREATE +
           type_name +
           ROUTES.RECORD_DRAFT +
-          draft_id
+          draft_id +
+          useLocation().search
         }
       />
     );
@@ -155,8 +172,8 @@ export default function RecordCreate() {
 
   const project_info = getProjectInfo(project_id);
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,

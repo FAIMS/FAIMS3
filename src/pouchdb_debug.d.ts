@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: revisions.tsx
+ * Filename: pouchdb_debug.d.ts
  * Description:
- *   TODO
+ *   This module exports the configuration of the build, including things like
+ *   which server to use and whether to include test data
  */
-
-import React, {useContext} from 'react';
+declare module 'pouchdb-debug';

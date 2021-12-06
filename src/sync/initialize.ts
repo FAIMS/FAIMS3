@@ -17,8 +17,10 @@
  * Description:
  *   TODO
  */
+import PouchDB from 'pouchdb';
+
 import {setupExampleActive} from '../dummyData';
-import {USE_REAL_DATA} from '../buildconfig';
+import {USE_REAL_DATA, DEBUG_POUCHDB} from '../buildconfig';
 import {
   process_listings,
   process_projects,
@@ -54,6 +56,7 @@ export function initialize() {
 
 async function initialize_nocheck() {
   if (!USE_REAL_DATA) await setupExampleActive(active_db);
+  if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
 
   const initialized = new Promise(resolve => {
     events.once('projects_created', resolve);

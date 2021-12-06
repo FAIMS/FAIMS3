@@ -132,6 +132,8 @@ describe('roundtrip reading and writing to db', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -189,6 +191,8 @@ describe('CRUD for data', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       const new_doc: Record = {
@@ -201,6 +205,8 @@ describe('CRUD for data', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -229,7 +235,7 @@ describe('CRUD for data', () => {
         .then(result => {
           expect(recordsEqual(result, new_doc)).toBe(true);
         })
-        .then(result => {
+        .then(_result => {
           return deleteFAIMSDataForID(project_id, record_id, userid);
         })
         .then(revision_id => {
@@ -238,7 +244,7 @@ describe('CRUD for data', () => {
         .then(result => {
           expect(result).toBe(null);
         })
-        .then(result => {
+        .then(_result => {
           return undeleteFAIMSDataForID(project_id, record_id, userid);
         })
         .then(revision_id => {
@@ -285,10 +291,12 @@ describe('listing revisions', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
-        .then(result => {
+        .then(_result => {
           return listFAIMSProjectRevisions(project_id);
         })
         .then(result => {

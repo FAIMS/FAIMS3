@@ -28,7 +28,7 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
+
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -66,7 +66,10 @@ export default function Home() {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = getProjectList();
-  const breadcrumbs = [{link: ROUTES.INDEX, title: 'Index'}, {title: 'Home'}];
+  const breadcrumbs = [
+    {link: ROUTES.HOME, title: 'Home'},
+    {title: 'Workspace'},
+  ];
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
@@ -77,46 +80,14 @@ export default function Home() {
             <DashboardActions pouchProjectList={pouchProjectList} />
           </Paper>
         </Grid>
-        {/* Recent Records */}
-        <Grid item xs={12} md={8} lg={9}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <Typography variant="overline" display={'inline'}>
-              Recent Records&nbsp;&nbsp;
-            </Typography>
-            <TimelapseIcon color={'secondary'} style={{fontSize: '1.1rem'}} />
-          </div>
 
-          <Paper className={classes.paper}>
-            {/*<Records />*/}
-            <Box mt={2}>
-              <Link
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                }}
-                component={RouterLink}
-                to={ROUTES.RECORD_LIST}
-              >
-                See more records
-                {/*<ChevronRightIcon />*/}
-              </Link>
-            </Box>
-          </Paper>
-        </Grid>
         {/* Recent Projects */}
-        <Grid item xs={12} md={4} lg={3}>
-          <Typography variant="overline">My Projects</Typography>
+        <Grid item xs={12} md={12} lg={12}>
+          <Typography variant="overline">My Notebooks</Typography>
           <Paper className={classes.paper}>
             <Grid container spacing={1}>
               {Object.keys(pouchProjectList).length === 0 ? (
-                <span>No projects found</span>
+                <span>No Notebooks found</span>
               ) : (
                 pouchProjectList.map(project_info => {
                   const project_id = project_info.project_id;
@@ -146,7 +117,7 @@ export default function Home() {
                 component={RouterLink}
                 to={ROUTES.PROJECT_LIST}
               >
-                View all projects
+                View all notebooks
                 {/*<ChevronRightIcon />*/}
               </Link>
             </Box>

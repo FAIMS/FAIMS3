@@ -20,7 +20,6 @@
 
 import React, {useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {useHistory} from 'react-router-dom';
 import {Grid, Button, TextField} from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 // import Skeleton from '@material-ui/lab/Skeleton';
@@ -29,6 +28,7 @@ import {ProjectInformation} from '../../../datamodel/ui';
 import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
+import {Link as RouterLink} from 'react-router-dom';
 type DashboardActionProps = {
   pouchProjectList: ProjectInformation[];
 };
@@ -41,20 +41,17 @@ const useStyles = makeStyles(() => ({
 export default function DashboardActions(props: DashboardActionProps) {
   const {pouchProjectList} = props;
   const classes = useStyles();
-  const history = useHistory();
   const options = pouchProjectList.map(project_info => ({
     title: project_info.name,
     url: ROUTES.PROJECT + project_info.project_id,
     value: project_info.project_id,
   }));
-  const [value, setValue] = React.useState(
-    options.length > 0 ? options[0] : null
-  );
+  const [value, setValue] = React.useState<any | null>(null);
   const [inputValue, setInputValue] = React.useState('');
   const handleSubmit = () => {
-    if (value !== null) {
-      history.push(value.url + ROUTES.RECORD_CREATE);
-    }
+    // if (value !== null) {
+    //   history.push(value.url + ROUTES.RECORD_CREATE);
+    // }
   };
 
   // viewsets and the list of visible views
@@ -66,17 +63,20 @@ export default function DashboardActions(props: DashboardActionProps) {
   >({});
 
   useEffect(() => {
+    const newviewset = viewSets;
     pouchProjectList.map(project_info => {
       getUiSpecForProject(project_info.project_id).then(
         uiSpec => {
-          setViewSets({
-            ...viewSets,
-            [project_info.project_id]: [uiSpec.viewsets, uiSpec.visible_types],
-          });
+          newviewset[project_info.project_id] = [
+            uiSpec.viewsets,
+            uiSpec.visible_types,
+          ];
         },
         () => {}
       );
     });
+    setViewSets(newviewset);
+    console.log(viewSets);
   }, [pouchProjectList]);
 
   return (
@@ -90,6 +90,7 @@ export default function DashboardActions(props: DashboardActionProps) {
                 value={value}
                 onChange={(event, newValue) => {
                   if (newValue !== null) {
+                    console.log(newValue);
                     setValue(newValue);
                   }
                 }}
@@ -113,25 +114,37 @@ export default function DashboardActions(props: DashboardActionProps) {
             </Grid>
             {value !== null && value.value in viewSets ? (
               <Grid>
-                {viewSets[value.value][1].map(viewset_name => (
-                  <Button
-                    classes={{root: classes.fullHeightButton}}
-                    variant="contained"
-                    color="primary"
-                    size={'medium'}
-                    type={'submit'}
-                    style={{marginLeft: '5px'}}
-                  >
-                    {viewSets[value.value][1].length === 1
-                      ? 'Add'
-                      : 'Add ' +
-                        (viewSets[value.value][0][viewset_name].label ||
-                          viewset_name)}
-                  </Button>
-                ))}
+                {viewSets[value.value][1].map(
+                  viewset_name =>
+                    viewSets[value.value][0][viewset_name].is_visible !==
+                      false && (
+                      <Button
+                        classes={{root: classes.fullHeightButton}}
+                        variant="contained"
+                        color="primary"
+                        size={'medium'}
+                        type={'submit'}
+                        style={{marginLeft: '5px'}}
+                        key={viewset_name + 'viewset'}
+                        component={RouterLink}
+                        to={
+                          ROUTES.PROJECT +
+                          value.value +
+                          ROUTES.RECORD_CREATE +
+                          viewset_name
+                        }
+                      >
+                        {viewSets[value.value][1].length === 1
+                          ? 'Add'
+                          : 'Add ' +
+                            (viewSets[value.value][0][viewset_name].label ||
+                              viewset_name)}
+                      </Button>
+                    )
+                )}
               </Grid>
             ) : (
-              <React.Fragment />
+              <></>
             )}
           </Grid>
         </form>

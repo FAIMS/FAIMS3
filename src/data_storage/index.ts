@@ -32,6 +32,7 @@ import {
   getRevision,
   getFormDataFromRevision,
   updateHeads,
+  getHRID,
 } from './internals';
 
 export interface ProjectRevisionListing {
@@ -107,11 +108,13 @@ export async function getFullRecordData(
     record_id: record_id,
     revision_id: revision_id,
     type: revision.type,
-    data: form_data,
+    data: form_data.data,
     updated_by: revision.created_by,
     updated: new Date(revision.created),
     created: new Date(record.created),
     created_by: record.created_by,
+    annotations: form_data.annotations,
+    field_types: form_data.types,
   };
 }
 
@@ -250,6 +253,7 @@ export async function getRecordMetadata(
   try {
     const record = await getRecord(project_id, record_id);
     const revision = await getRevision(project_id, revision_id);
+    const hrid = (await getHRID(project_id, revision)) ?? record_id;
     return {
       project_id: project_id,
       record_id: record_id,
@@ -259,6 +263,9 @@ export async function getRecordMetadata(
       updated: new Date(revision.created),
       updated_by: revision.created_by,
       conflicts: record.heads.length > 1,
+      deleted: revision.deleted ? true : false,
+      hrid: hrid,
+      type: record.type,
     };
   } catch (err) {
     console.error(err);

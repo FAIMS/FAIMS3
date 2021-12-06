@@ -24,6 +24,7 @@ import {Field, FormikProps} from 'formik';
 import {Box} from '@material-ui/core';
 
 import {getComponentByName} from '../../component_registry';
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export function getComponentFromFieldConfig(
   fieldConfig: any,
@@ -34,6 +35,9 @@ export function getComponentFromFieldConfig(
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
   let Component: React.Component;
+  const handler = (event: any) => {
+    console.log(event);
+  };
   try {
     Component = getComponentByName(namespace, name);
   } catch (err) {

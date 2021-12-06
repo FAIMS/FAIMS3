@@ -1,8 +1,9 @@
 #https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
 
-FROM node:16.10.0-alpine3.14@sha256:4348589598e18251212266117f1b0af23ed3549bbf9392bbde8e2b1d1101f399 as build
+FROM node:lts-alpine3.14@sha256:a9b9cb880fa429b0bea899cd3b1bc081ab7277cc97e6d2dcd84bd9753b2027e1 as build
 ARG REACT_APP_COMMIT_VERSION
 ARG REACT_APP_DIRECTORY_HOST
+RUN apk --no-cache add python3=~3.9 make=~4.3 g++=~10.3
 
 # we need as build due to line 22
 
@@ -26,10 +27,9 @@ ENV REACT_APP_DIRECTORY_PORT 443
 # https://blog.knoldus.com/deployment-with-docker-in-ionic/
 #USER node
 # They say to run with min privs, but since we're building and not running, I CBF'd right now.
-RUN echo -e "COMMIT VERSION: $REACT_APP_COMMIT_VERSION\nDB: $REACT_APP_DIRECTORY_HOST"
 RUN npm run-script build
 
-FROM nginx:1.21.0-alpine@sha256:cc8c413c74aba9fef9dae7f3da736725136bad1e3f24fbc93788aea1944f51c4
+FROM nginx:mainline-alpine@sha256:12aa12ec4a8ca049537dd486044b966b0ba6cd8890c4c900ccb5e7e630e03df0
 RUN rm -rf /usr/share/nginx/html/*
 # not /app/www but /app/build because react
 COPY ./.nginx/nginx.conf /etc/nginx/nginx.conf

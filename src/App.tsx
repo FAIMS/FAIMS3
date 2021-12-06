@@ -25,15 +25,14 @@ import * as ROUTES from './constants/routes';
 import NavBar from './gui/components/navbar';
 import Footer from './gui/components/footer';
 import {Index} from './gui/pages';
-import {SignUp} from './gui/pages/signup';
 import {SignIn} from './gui/pages/signin';
 import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';
-import {ForgotPassword} from './gui/pages/forgot-password';
 import Home from './gui/pages/home';
 import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
 import ProjectSettings from './gui/pages/project-settings';
+import ProjectSearch from './gui/pages/project-search';
 import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
@@ -82,19 +81,13 @@ export class App extends React.Component<AppProps, AppState> {
           <Router>
             <NavBar />
             <Switch>
-              <Route exact path={ROUTES.SIGN_UP} component={SignUp} />
               <Route exact path={ROUTES.SIGN_IN} component={SignIn} />
               <Route
                 exact
                 path={ROUTES.SIGN_IN_RETURN}
                 component={SignInReturnLoader}
               />
-              <Route
-                exact
-                path={ROUTES.FORGOT_PASSWORD}
-                component={ForgotPassword}
-              />
-              <Route exact path={ROUTES.HOME} component={Home} />
+              <Route exact path={ROUTES.WORKSPACE} component={Home} />
               <Route exact path={ROUTES.RECORD_LIST} component={RecordList} />
               <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
               <Route
@@ -111,6 +104,11 @@ export class App extends React.Component<AppProps, AppState> {
                 exact
                 path={ROUTES.PROJECT + ':project_id'}
                 component={Project}
+              />
+              <Route
+                exact
+                path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SEARCH}
+                component={ProjectSearch}
               />
               <Route
                 exact

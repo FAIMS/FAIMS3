@@ -18,8 +18,10 @@
  *   TODO
  */
 import {getDataDB} from '../sync';
-import {ProjectID, FAIMSTypeName} from '../datamodel/core';
-import {RecordReference} from '../datamodel/ui';
+import {ProjectID, FAIMSTypeName, RecordID} from '../datamodel/core';
+import {AttributeValuePair} from '../datamodel/database';
+import {RecordReference, RecordMetadataList} from '../datamodel/ui';
+import {listRecordMetadata} from './internals';
 
 export async function getAllRecordsOfType(
   project_id: ProjectID,
@@ -39,4 +41,24 @@ export async function getAllRecordsOfType(
       record_label: o._id, // TODO: decide how we're getting HRIDs from db
     };
   });
+}
+
+export async function getAllRecordsWithRegex(
+  project_id: ProjectID,
+  regex: string
+): Promise<RecordMetadataList> {
+  const datadb = getDataDB(project_id);
+  const res = await datadb.find({
+    selector: {
+      avp_format_version: 1,
+      data: {$regex: regex},
+    },
+  });
+  const record_ids = res.docs.map(o => {
+    const avp = o as AttributeValuePair;
+    return avp.record_id;
+  });
+  // Remove duplicates, no order is implied
+  const deduped_record_ids = Array.from(new Set<RecordID>(record_ids));
+  return await listRecordMetadata(project_id, deduped_record_ids);
 }

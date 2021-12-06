@@ -69,8 +69,8 @@ export default function Record() {
   const [error, setError] = useState(null as null | {});
 
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,

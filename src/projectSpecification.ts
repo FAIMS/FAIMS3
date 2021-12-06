@@ -20,10 +20,11 @@
 
 import {getProjectDB} from './sync/index';
 import PouchDB from 'pouchdb';
-import {ProjectID} from './datamodel/core';
+import {ProjectID, FAIMSTypeName} from './datamodel/core';
 import {
   PROJECT_SPECIFICATION_PREFIX,
   ProjectSchema,
+  AttributeValuePair,
 } from './datamodel/database';
 import {FAIMSType, FAIMSConstant} from './datamodel/typesystem';
 
@@ -63,7 +64,7 @@ export function createTypeContext(
   };
 }
 
-export function parseTypeName(typename: string): TypeReference {
+export function parseTypeName(typename: FAIMSTypeName): TypeReference {
   const splitname = typename.split('::');
   if (
     splitname.length !== 2 ||
@@ -77,7 +78,10 @@ export function parseTypeName(typename: string): TypeReference {
   return {namespace: splitname[0], name: splitname[1]};
 }
 
-export async function lookupFAIMSType(faimsType: string, context: TypeContext) {
+export async function lookupFAIMSType(
+  faimsType: FAIMSTypeName,
+  context: TypeContext
+) {
   if (context.use_cache && typeCache.has(faimsType)) {
     return typeCache.get(faimsType);
   }

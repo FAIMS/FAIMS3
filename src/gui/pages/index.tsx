@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {NavLink} from 'react-router-dom';
-import * as ROUTES from '../../constants/routes';
+
 import {
   Grid,
   Container,
@@ -30,13 +30,11 @@ import {
   ListItemIcon,
 } from '@material-ui/core';
 import AccountTree from '@material-ui/icons/AccountTree';
-import HomeIcon from '@material-ui/icons/Home';
-import DescriptionIcon from '@material-ui/icons/Description';
-import LockOpenIcon from '@material-ui/icons/LockOpen';
-import PersonAddIcon from '@material-ui/icons/PersonAdd';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
+import WorkSharpIcon from '@material-ui/icons/WorkSharp';
+import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+
 type IndexProps = {
   // project: string;
 };
@@ -51,7 +49,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
   }
 
   render() {
-    const breadcrumbs = [{title: 'Index'}];
+    const breadcrumbs = [{title: 'Home'}];
     return (
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
@@ -63,27 +61,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   <ListItemIcon>
                     <AccountBoxIcon fontSize="small" />
                   </ListItemIcon>
-                  Sign In
-                </MenuItem>
-                <MenuItem
-                  component={NavLink}
-                  to={ROUTES.SIGN_UP}
-                  disabled={true}
-                >
-                  <ListItemIcon>
-                    <PersonAddIcon fontSize="small" />
-                  </ListItemIcon>
-                  Sign Up <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-                <MenuItem
-                  component={NavLink}
-                  to={ROUTES.FORGOT_PASSWORD}
-                  disabled={true}
-                >
-                  <ListItemIcon>
-                    <LockOpenIcon fontSize="small" />
-                  </ListItemIcon>
-                  Forgot Password <TimelapseIcon color={'secondary'} />
+                  Sign In To NoteBooks
                 </MenuItem>
               </MenuList>
             </Paper>
@@ -91,29 +69,17 @@ export class Index extends React.Component<IndexProps, IndexState> {
           <Grid item xs={12} sm={4}>
             <Paper>
               <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.HOME}>
+                <MenuItem component={NavLink} to={ROUTES.WORKSPACE}>
                   <ListItemIcon>
-                    <HomeIcon fontSize="small" />
+                    <WorkSharpIcon fontSize="small" />
                   </ListItemIcon>
-                  Home
+                  Workspace
                 </MenuItem>
                 <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
                   <ListItemIcon>
                     <AccountTree fontSize="small" />
                   </ListItemIcon>
-                  Projects
-                </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.RECORD_LIST}>
-                  <ListItemIcon>
-                    <DescriptionIcon fontSize="small" />
-                  </ListItemIcon>
-                  Records <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.ABOUT_BUILD}>
-                  <ListItemIcon>
-                    <DescriptionIcon fontSize="small" />
-                  </ListItemIcon>
-                  About Build <TimelapseIcon color={'secondary'} />
+                  Notebooks
                 </MenuItem>
               </MenuList>
             </Paper>

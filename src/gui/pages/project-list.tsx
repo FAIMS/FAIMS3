@@ -68,8 +68,8 @@ export default function ProjectList() {
     null as null | ProjectInformation[]
   );
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {title: 'Notebooks'},
   ];
 
   useEffect(() => {

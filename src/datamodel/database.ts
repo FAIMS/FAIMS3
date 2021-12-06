@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import PouchDB from 'pouchdb';
 import {
   NonUniqueProjectID,
   RecordID,
@@ -25,6 +26,7 @@ import {
   AttributeValuePairID,
   ProjectID,
   FAIMSTypeName,
+  Annotations,
 } from './core';
 import {
   FAIMSConstantCollection,
@@ -42,14 +44,6 @@ export const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 export const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 export const LOCALLY_CREATED_PROJECT_PREFIX = 'locallycreatedproject';
 
-/*
- * This may already exist in pouchdb's typing, but lets make a temporary one for
- * our needs
- */
-export interface PouchAttachments {
-  [key: string]: any; // any for now until we work out what we need
-}
-
 export interface ConnectionInfo {
   proto: string;
   host: string;
@@ -60,6 +54,7 @@ export interface ConnectionInfo {
     username: string;
     password: string;
   };
+  jwt_token?: string;
 }
 
 /**
@@ -85,6 +80,7 @@ export type PossibleConnectionInfo =
         username: string;
         password: string;
       };
+      jwt_token?: string;
     };
 
 export interface ListingsObject {
@@ -112,7 +108,7 @@ export interface ActiveDoc {
 
 export interface LocalAuthDoc {
   _id: string; //Corresponds to a listings ID
-  dc_token: string;
+  token: string;
 }
 
 /**
@@ -158,9 +154,10 @@ export interface EncodedProjectMetadata {
   _id: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean;
-  _attachments?: PouchAttachments;
+  _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
+  single_attachment?: boolean;
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
@@ -210,13 +207,13 @@ export interface AttributeValuePair {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
-  _attachments?: PouchAttachments;
+  _attachments?: PouchDB.Core.Attachments;
   avp_format_version: number;
   type: FAIMSTypeName;
   data: any;
   revision_id: RevisionID;
   record_id: RecordID;
-  annotations: any;
+  annotations: Annotations;
 }
 
 /*
@@ -237,7 +234,6 @@ export interface LocalAutoIncrementState {
 }
 
 export interface AutoIncrementReference {
-  project_id: ProjectID;
   form_id: string;
   field_id: string;
 }

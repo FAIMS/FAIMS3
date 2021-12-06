@@ -36,10 +36,12 @@ import {ProjectID} from '../../../datamodel/core';
 import {DraftMetadata} from '../../../datamodel/drafts';
 import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../data_storage/listeners';
+import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 
 type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
+  viewsets?: ProjectUIViewsets | null;
 };
 
 export default function DraftsTable(props: DraftsTableProps) {
@@ -70,10 +72,26 @@ export default function DraftsTable(props: DraftsTableProps) {
         </Link>
       ),
     },
+    {
+      field: 'type',
+      headerName: 'Kind',
+      type: 'string',
+      width: 200,
+      renderCell: (params: GridCellParams) => (
+        <>
+          {props.viewsets !== null &&
+          props.viewsets !== undefined &&
+          params.value !== null &&
+          params.value !== undefined &&
+          props.viewsets[params.value.toString()] !== undefined
+            ? props.viewsets[params.value.toString()].label ?? params.value
+            : params.value}
+        </>
+      ),
+    },
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
   ];
-
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
     // on load - if the record list is updated, the callback should be fired

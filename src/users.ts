@@ -18,8 +18,9 @@
  *   TODO
  */
 
-import {active_db} from './sync/databases';
+import {active_db, directory_db, local_auth_db} from './sync/databases';
 import {ProjectID} from './datamodel/core';
+import {AuthInfo} from './datamodel/database';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
@@ -34,4 +35,38 @@ export async function getFriendlyUserName(
 export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
   const doc = await active_db.get(project_id);
   return doc.username || 'Dummy User';
+}
+
+export async function setTokenForCluster(token: string, cluster_id: string) {
+  try {
+    await local_auth_db.put({_id: cluster_id, token: token});
+  } catch (err) {
+    console.warn(err);
+    throw Error(`Failed to set token for: ${cluster_id}`);
+  }
+}
+
+export async function getTokenForCluster(
+  cluster_id: string
+): Promise<string | undefined> {
+  try {
+    return await local_auth_db.get(cluster_id);
+  } catch (err) {
+    console.debug(err);
+    console.warn('Token not found for:', cluster_id);
+    return undefined;
+  }
+}
+
+export async function getAuthMechianismsForListing(
+  listing_id: string
+): Promise<{[name: string]: AuthInfo} | null> {
+  try {
+    const doc = await directory_db.local.get(listing_id);
+    return doc.auth_mechanisms;
+  } catch (err) {
+    console.debug(err);
+    console.warn('AuthInfo not found for:', listing_id);
+    return null;
+  }
 }

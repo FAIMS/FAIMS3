@@ -22,7 +22,13 @@
  * User readable information about a project
  * Do not use with sync code; UI code only
  */
-import {ProjectID, RecordID, RevisionID, FAIMSTypeName} from './core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  FAIMSTypeName,
+  Annotations,
+} from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
 export interface ProjectInformation {
@@ -52,6 +58,9 @@ export interface RecordMetadata {
   updated: Date;
   updated_by: string;
   conflicts: boolean;
+  deleted: boolean;
+  hrid: string;
+  type: FAIMSTypeName;
 }
 
 export type RecordMetadataList = {
@@ -67,6 +76,8 @@ export interface Record {
   data: {[field_name: string]: any};
   updated: Date;
   updated_by: string;
+  field_types: {[field_name: string]: FAIMSTypeName};
+  annotations: {[field_name: string]: Annotations};
   /*
   created{_by} are optional as we don't need to track them with the actual data.
   If you need creation information, then use record metadata
@@ -100,8 +111,8 @@ export interface ComponentRegistryProperties {
   description: string;
   category: string;
   component: FAIMSFormField;
-  componentname: string;
   uiSpecProps: FAIMSUiSpec;
+  settingsProps: Array<FAIMSUiSpec>;
   builder_component: FAIMSBuilderFormField;
   icon: FAIMSBuilderIcon;
 }
@@ -118,3 +129,47 @@ export interface FormComponent {
   component_properties: ComponentRegistryProperties;
 }
 export type FormComponentList = FormComponent[];
+
+export type FAIMShandlerType = any;
+export type FAIMSEVENTTYPE = any;
+export interface ProjevtValueList {
+  [key: string]: any;
+}
+
+export interface BehaviourProperties {
+  label: string;
+  helpText: string;
+}
+
+export type componenentSettingprops = {
+  uiSetting: ProjectUIModel;
+  formProps: any;
+  component: FAIMSBuilderFormField;
+  uiSpec: ProjectUIModel;
+  setuiSpec: FAIMShandlerType;
+  fieldName: string;
+  fieldui: ProjectUIFields;
+  handlerchanges?: any;
+  handlerchangewithview: FAIMShandlerType;
+  designvalue: string;
+  initialValues: ProjectUIFields;
+  setinitialValues: FAIMShandlerType;
+  currentview: string;
+  currentform: string;
+  projectvalue: any;
+};
+
+export type resetprops = {
+  namespace: string;
+  componentName: string;
+  uiSpec: ProjectUIModel;
+  setuiSpec: FAIMShandlerType;
+  fieldName: string;
+  formProps: any;
+  designvalue: string;
+  currentview: string;
+  currentform: string;
+  initialValues: ProjectUIFields;
+  setinitialValues: FAIMShandlerType;
+  projectvalue: any;
+};

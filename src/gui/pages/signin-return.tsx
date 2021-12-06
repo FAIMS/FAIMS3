@@ -130,7 +130,7 @@ export function SignInReturnLoader(props: RouteComponentProps<any>) {
     } else {
       // Working
       window.scrollTo(0, 0);
-      return <Redirect to={state_parsed.redirect_url || ROUTES.INDEX} />;
+      return <Redirect to={state_parsed.redirect_url || ROUTES.HOME} />;
     }
   }
 }

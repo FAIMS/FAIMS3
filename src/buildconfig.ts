@@ -31,7 +31,7 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 function commit_version(): string {
   const commitver = process.env.REACT_APP_COMMIT_VERSION;
-  console.log(commitver);
+  console.log('Commit version', commitver);
   if (
     commitver === '' ||
     commitver === undefined ||
@@ -48,11 +48,11 @@ function prod_build(): boolean {
   if (
     prodbuild === '' ||
     prodbuild === undefined ||
-    FALSEY_STRINGS.includes(prodbuild.toLowerCase())
+    TRUTHY_STRINGS.includes(prodbuild.toLowerCase())
   ) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(prodbuild.toLowerCase())) {
     return true;
+  } else if (FALSEY_STRINGS.includes(prodbuild.toLowerCase())) {
+    return false;
   } else {
     console.error('REACT_APP_PRODUCTION_BUILD badly defined, assuming false');
     return false;
@@ -81,6 +81,21 @@ function use_real_data(): boolean {
   }
 }
 
+function include_pouchdb_debugging(): boolean {
+  const debug_pouch = process.env.REACT_APP_DEBUG_POUCHDB;
+  if (debug_pouch === '' || debug_pouch === undefined) {
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(debug_pouch.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(debug_pouch.toLowerCase())) {
+    return true;
+  } else {
+    console.error('REACT_APP_DEBUG_POUCHDB badly defined, assuming false');
+    return false;
+  }
+}
+
 function directory_protocol(): string {
   const usehttps = process.env.REACT_APP_USE_HTTPS;
   if (PROD_BUILD) {
@@ -102,7 +117,7 @@ function directory_protocol(): string {
 function directory_host(): string {
   const host = process.env.REACT_APP_DIRECTORY_HOST;
   if (host === '' || host === undefined) {
-    return '10.80.11.44';
+    return 'dev.db.faims.edu.au';
   }
   return host;
 }
@@ -149,6 +164,7 @@ function is_testing() {
 }
 
 export const USE_REAL_DATA = PROD_BUILD || use_real_data();
+export const DEBUG_POUCHDB = !PROD_BUILD && include_pouchdb_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();

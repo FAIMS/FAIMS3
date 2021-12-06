@@ -17,6 +17,8 @@
  * Description:
  *   TODO
  */
+import {FAIMSTypeName} from './core';
+import {AttributeValuePair} from './database';
 
 export interface FAIMSType {
   [key: string]: any; // any for now until we lock down the json
@@ -43,6 +45,7 @@ export interface ProjectUIViewsets {
     label?: string;
     views: string[];
     submit_label?: string;
+    is_visible?: boolean;
   };
 }
 
@@ -50,6 +53,58 @@ export interface ProjectUIViews {
   [key: string]: {
     label?: string;
     fields: string[];
+    uidesign?: string;
     next_label?: string;
   };
+}
+
+export interface option {
+  value: string;
+  label: string;
+  key?: string;
+}
+
+type AttributeValuePairConverter = (
+  avp: AttributeValuePair
+) => AttributeValuePair;
+
+const attachment_dumpers: {
+  [typename: string]: AttributeValuePairConverter;
+} = {};
+const attachment_loaders: {
+  [typename: string]: AttributeValuePairConverter;
+} = {};
+
+export function getAttachmentLoaderForType(
+  type: FAIMSTypeName
+): AttributeValuePairConverter | null {
+  const loader = attachment_loaders[type];
+  if (loader === null || loader === undefined) {
+    return null;
+  }
+  return loader;
+}
+
+export function getAttachmentDumperForType(
+  type: FAIMSTypeName
+): AttributeValuePairConverter | null {
+  const dumper = attachment_dumpers[type];
+  if (dumper === null || dumper === undefined) {
+    return null;
+  }
+  return dumper;
+}
+
+export function setAttachmentLoaderForType(
+  type: FAIMSTypeName,
+  loader: AttributeValuePairConverter
+) {
+  attachment_loaders[type] = loader;
+}
+
+export function setAttachmentDumperForType(
+  type: FAIMSTypeName,
+  dumper: AttributeValuePairConverter
+) {
+  attachment_dumpers[type] = dumper;
 }

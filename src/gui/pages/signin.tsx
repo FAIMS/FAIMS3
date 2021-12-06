@@ -37,10 +37,7 @@ export function SignIn(/* props: SignInProps */) {
   const classes = useStyles();
   const globalState = useContext(store);
 
-  const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'Sign In'},
-  ];
+  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Sign In'}];
 
   return (
     <Container maxWidth="lg">

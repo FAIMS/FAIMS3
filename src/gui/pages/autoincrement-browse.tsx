@@ -39,8 +39,8 @@ export default function Record() {
 
   const project_info = getProjectInfo(project_id);
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
@@ -63,7 +63,9 @@ export default function Record() {
     references.length > 0 ? (
       <div>
         {references.map(ref => {
-          return <AutoIncrementConfigForm reference={ref} />;
+          return (
+            <AutoIncrementConfigForm project_id={project_id} reference={ref} />
+          );
         })}
       </div>
     ) : (
