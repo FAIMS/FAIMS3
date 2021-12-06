@@ -63,22 +63,22 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
   >(null);
 
   useEffect(() => {
-    getUiSpecForProject(project.project_id).then(
-      uiSpec => {
-        if (
-          uiSpec.viewsets !== null ||
-          uiSpec.viewsets !== null ||
-          uiSpec.visible_types !== undefined ||
-          uiSpec.visible_types !== undefined
-        ) {
-          setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
-        }
-      },
-      () => {}
-    );
+    getUiSpecForProject(project.project_id).then(uiSpec => {
+      if (
+        uiSpec.viewsets !== null ||
+        uiSpec.viewsets !== null ||
+        uiSpec.visible_types !== undefined ||
+        uiSpec.visible_types !== undefined
+      ) {
+        setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
+      } else {
+        console.error('Viewsets or visable types not set up:', uiSpec);
+      }
+    }, console.error);
   }, [project.project_id]);
 
   if (viewSets === null) {
+    console.info('Viewsets is null for:', project.project_id);
     return <CircularProgress thickness={2} size={12} />;
   }
 
