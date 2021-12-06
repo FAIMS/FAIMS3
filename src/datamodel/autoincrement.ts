@@ -175,7 +175,6 @@ export async function add_autoincrement_reference_for_project(
   const refs: Array<AutoIncrementReference> = [];
   form_id.map((id: string, index: number) =>
     refs.push({
-      project_id: project_id,
       form_id: id,
       field_id: field_id[index],
     })
@@ -220,7 +219,6 @@ export async function remove_autoincrement_reference_for_project(
 ) {
   const projdb = getProjectDB(project_id);
   const ref: AutoIncrementReference = {
-    project_id: project_id,
     form_id: form_id,
     field_id: field_id,
   };

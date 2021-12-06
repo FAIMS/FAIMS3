@@ -22,25 +22,27 @@ import {Link as RouterLink} from 'react-router-dom';
 import {Button} from '@material-ui/core';
 
 import * as ROUTES from '../../../constants/routes';
+import {ProjectID} from '../../../datamodel/core';
 import {AutoIncrementReference} from '../../../datamodel/database';
 
 type AutoIncrementConfigFormProps = {
+  project_id: ProjectID;
   reference: AutoIncrementReference;
 };
 export default function AutoIncrementConfigForm(
   props: AutoIncrementConfigFormProps
 ) {
-  const {reference} = props;
+  const {project_id, reference} = props;
 
   return (
     <div>
-      {reference.project_id} {reference.form_id} {reference.field_id}
+      {project_id} {reference.form_id} {reference.field_id}
       <Button
         color="primary"
         component={RouterLink}
         to={
           ROUTES.PROJECT +
-          reference.project_id +
+          project_id +
           ROUTES.AUTOINCREMENT +
           reference.form_id +
           '/' +
