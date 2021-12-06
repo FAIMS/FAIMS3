@@ -376,7 +376,6 @@ class RecordForm extends React.Component<
         database_annotations[fieldName],
         {annotation: '', uncertainty: false},
       ]);
-      // initialValues['uncertainty'][fieldName]=''
     });
 
     const url_split = window.location.search.split('&');

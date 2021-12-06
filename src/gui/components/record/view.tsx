@@ -56,7 +56,6 @@ function SingleComponent (props:any) {
       fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
       fields[fieldName]['component-name'] !==
         'TemplatedStringField' && (
-
           <Annotation
           key={'annotation' + fieldName + 'box'}
           setIsClick={setIsClick}

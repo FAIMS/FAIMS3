@@ -111,7 +111,7 @@ export function AnnotationField(props:AnnotationFieldProp) {
           label={field['meta']['annotation_label']}
         />
       )}
-      {field.meta['uncertainty'] !== undefined &&
+      {field.meta!==undefined&&field.meta['uncertainty'] !== undefined &&
         !field['meta']['uncertainty']['include'] &&
         isclicked && (
           <Field
