@@ -3,7 +3,7 @@
 FROM node:lts-alpine3.14@sha256:a9b9cb880fa429b0bea899cd3b1bc081ab7277cc97e6d2dcd84bd9753b2027e1 as build
 ARG REACT_APP_COMMIT_VERSION
 ARG REACT_APP_DIRECTORY_HOST
-RUN apk --no-cache add python3=~3.9.7 make=~4.3 g++=~10.3.1
+RUN apk --no-cache add python3=~3.9 make=~4.3 g++=~10.3
 
 # we need as build due to line 22
 
