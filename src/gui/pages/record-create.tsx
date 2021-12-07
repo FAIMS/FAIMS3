@@ -32,7 +32,7 @@ import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel/core';
+import {ProjectID, RecordID} from '../../datamodel/core';
 import {ProjectInformation, ProjectUIModel} from '../../datamodel/ui';
 import {
   getUiSpecForProject,
@@ -108,17 +108,16 @@ interface DraftEditProps {
   type_name: string;
   draft_id: string;
   project_info: ProjectInformation | null;
+  record_id: RecordID;
 }
 
 function DraftEdit(props: DraftEditProps) {
-  const {project_id, type_name, draft_id, project_info} = props;
+  const {project_id, type_name, draft_id, project_info, record_id} = props;
   const {dispatch} = useContext(store);
   const history = useHistory();
 
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
-
-  const record_id = generateFAIMSDataID();
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -196,6 +195,7 @@ export default function RecordCreate() {
             project_id={project_id}
             type_name={type_name}
             draft_id={draft_id}
+            record_id={generateFAIMSDataID()}
           />
         )}
       </Container>
