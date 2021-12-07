@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useContext, useState} from 'react';
+import React, {useContext, useState, useEffect} from 'react';
 import {
   Box,
   Container,
@@ -26,14 +26,14 @@ import {
   Paper,
   CircularProgress,
 } from '@material-ui/core';
-import {Redirect, useHistory, useParams} from 'react-router-dom';
+import {Redirect, useHistory, useParams, useLocation} from 'react-router-dom';
+
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {ProjectInformation, ProjectUIModel} from '../../datamodel/ui';
-import {useEffect} from 'react';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
@@ -41,7 +41,7 @@ import {
 import {ActionType} from '../../actions';
 import {store} from '../../store';
 import {newStagedData} from '../../sync/draft-storage';
-import {useLocation} from 'react-router-dom';
+import {generateFAIMSDataID} from '../../data_storage';
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -118,6 +118,8 @@ function DraftEdit(props: DraftEditProps) {
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
 
+  const record_id = generateFAIMSDataID();
+
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
@@ -155,6 +157,7 @@ function DraftEdit(props: DraftEditProps) {
               draft_id={draft_id}
               type={type_name}
               ui_specification={uiSpec}
+              record_id={record_id}
             />
           </Box>
         </Paper>

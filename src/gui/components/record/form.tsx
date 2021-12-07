@@ -53,11 +53,7 @@ import {
   Annotations,
 } from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {
-  upsertFAIMSData,
-  getFullRecordData,
-  generateFAIMSDataID,
-} from '../../../data_storage';
+import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
 import RecordDraftState from '../../../sync/draft-state';
@@ -73,13 +69,13 @@ import {indexOf} from 'lodash';
 
 type RecordFormProps = {
   project_id: ProjectID;
+  record_id: RecordID;
   // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
-      record_id: RecordID;
       revision_id: RevisionID;
       // The user can view records without editing them, and to facilitate this,
       // having a draft id is optional.
@@ -101,7 +97,6 @@ type RecordFormProps = {
 
       // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
       // you get back undefined:
-      record_id?: undefined;
       revision_id?: undefined;
     }
 );
@@ -470,7 +465,7 @@ class RecordForm extends React.Component<
       .then(userid => {
         const now = new Date();
         const doc = {
-          record_id: this.props.record_id ?? generateFAIMSDataID(),
+          record_id: this.props.record_id,
           revision_id: this.props.revision_id ?? null,
           type: this.state.type_cached!,
           data: this.filterValues(values),
