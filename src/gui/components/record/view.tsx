@@ -62,17 +62,22 @@ function SingleComponent(props: any) {
             />
           )}
       </Grid>
-      <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
-        <AnnotationField
-          key={'annotation' + fieldName + 'box'}
-          fieldName={fieldName}
-          // formProps={this.props.formProps}
-          field={fields[fieldName]}
-          annotation={props.annotation}
-          handerannoattion={props.handerannoattion}
-          isclicked={isclicked}
-        />
-      </Grid>
+      {props.annotation !== undefined &&
+        fields[fieldName].meta !== undefined &&
+        fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
+        fields[fieldName]['component-name'] !== 'TemplatedStringField' && (
+          <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
+            <AnnotationField
+              key={'annotation' + fieldName + 'box'}
+              fieldName={fieldName}
+              // formProps={this.props.formProps}
+              field={fields[fieldName]}
+              annotation={props.annotation}
+              handerannoattion={props.handerannoattion}
+              isclicked={isclicked}
+            />
+          </Grid>
+        )}
     </Grid>
   );
 }

@@ -132,7 +132,7 @@ class RecordForm extends React.Component<
   async componentDidUpdate(prevProps: RecordFormProps) {
     if (
       prevProps.project_id !== this.props.project_id ||
-      prevProps.record_id !== this.props.record_id ||
+      // prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
         this.state.revision_cached !== this.props.revision_id) ||
       prevProps.draft_id !== this.props.draft_id //add this to reload the form when user jump back to previous record
@@ -371,7 +371,6 @@ class RecordForm extends React.Component<
         database_annotations[fieldName],
         {annotation: '', uncertainty: false},
       ]);
-      // initialValues['uncertainty'][fieldName]=''
     });
 
     const url_split = window.location.search.split('&');
@@ -380,11 +379,13 @@ class RecordForm extends React.Component<
       console.log(url_split);
       const field_id = url_split[0].replace('?field_id=', '');
       const sub_record_id = url_split[1].replace('record_id=', '');
+
       const new_record = {
         project_id: this.props.project_id,
         record_id: sub_record_id,
         record_label: sub_record_id,
       };
+
       if (Array.isArray(initialValues[field_id])) {
         let isincluded = false;
         initialValues[field_id].map((r: any) => {
@@ -392,17 +393,16 @@ class RecordForm extends React.Component<
             isincluded = true;
           }
         });
-        if (isincluded === false) initialValues[field_id].push(new_record);
+
+        if (isincluded === false) {
+          initialValues[field_id].push(new_record);
+        }
       } else {
         initialValues[field_id] = new_record;
       }
     }
 
     this.setState({initialValues: initialValues, annotation: annotations});
-    console.log(
-      this.props.ui_specification.viewsets[this.requireViewsetName()]
-        .submit_label
-    );
   }
 
   /**
@@ -527,19 +527,34 @@ class RecordForm extends React.Component<
         let redirecturl = this.props.project_id;
         let search = '';
         if (this.props.revision_id === undefined) {
-          const url_split = window.location.search.split('&');
+          const ori_search = window.location.search;
+          const url_split = ori_search.split('&');
 
           redirecturl =
             this.props.project_id +
             ROUTES.RECORD_CREATE +
             this.state.type_cached;
 
-          if (url_split.length > 1 && url_split[1].includes('link=')) {
-            const fieldid = url_split[0];
+          if (url_split.length > 1 && ori_search.includes('link=')) {
+            let fieldid = url_split[0];
             let linkurl = url_split[1];
+            let parentsearch = ori_search.replace(
+              url_split[0] + '&' + url_split[1],
+              ''
+            );
+            //if the record has parent record, replace the field id
+            if (ori_search.includes('record_id') && url_split.length >= 3) {
+              fieldid = url_split[2];
+              linkurl = url_split[3];
+              parentsearch = parentsearch.replace(
+                '&' + url_split[2] + '&' + url_split[3],
+                ''
+              );
+            }
+
             linkurl = linkurl.replace('link=/projects/', '');
 
-            search = fieldid + '&record_id=' + result;
+            search = fieldid + '&record_id=' + result + parentsearch;
 
             redirecturl = linkurl;
           }

@@ -120,7 +120,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
   };
   return (
     <>
-      {isclicked && (
+      {isclicked && field.meta !== undefined && (
         <Field
           component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
           name={fieldName + 'annotation'}
@@ -132,7 +132,8 @@ export function AnnotationField(props: AnnotationFieldProp) {
           label={field['meta']['annotation_label']}
         />
       )}
-      {field.meta['uncertainty'] !== undefined &&
+      {field.meta !== undefined &&
+        field.meta['uncertainty'] !== undefined &&
         !field['meta']['uncertainty']['include'] &&
         isclicked && (
           <Field
