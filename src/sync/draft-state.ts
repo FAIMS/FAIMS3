@@ -44,10 +44,10 @@ const DRAFT_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
   project_id: ProjectID;
+  record_id: RecordID;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
-      record_id: RecordID;
       revision_id: RevisionID;
       // This draft state usually requires a draft to keep
       // track of, BUT if the user is viewing an existing record,
@@ -67,7 +67,6 @@ type RelevantProps = {
 
       // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
       // you get back undefined:
-      record_id?: undefined;
       revision_id?: undefined;
     }
 );

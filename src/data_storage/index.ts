@@ -272,3 +272,20 @@ export async function getRecordMetadata(
     throw Error('failed to get metadata');
   }
 }
+
+export async function getHRIDforRecordID(
+  project_id: ProjectID,
+  record_id: RecordID
+): Promise<string> {
+  try {
+    const record = await getRecord(project_id, record_id);
+    const revision_id = record.heads[0];
+    const revision = await getRevision(project_id, revision_id);
+    const hrid = (await getHRID(project_id, revision)) ?? record_id;
+    return hrid;
+  } catch (err) {
+    console.debug(err);
+    console.warn('Failed to get hrid');
+    return record_id;
+  }
+}
