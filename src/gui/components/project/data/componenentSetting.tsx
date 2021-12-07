@@ -388,6 +388,7 @@ export const setSetingInitialValues = (
       )
     )
   );
+  console.error(initialValues)
   return initialValues;
 };
 

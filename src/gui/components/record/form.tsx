@@ -531,19 +531,29 @@ class RecordForm extends React.Component<
         let redirecturl = this.props.project_id;
         let search = '';
         if (this.props.revision_id === undefined) {
-          const url_split = window.location.search.split('&');
-
+          const ori_search=window.location.search
+          const url_split = ori_search.split('&');
+          
           redirecturl =
             this.props.project_id +
             ROUTES.RECORD_CREATE +
             this.state.type_cached;
-
-          if (url_split.length > 1 && url_split[1].includes('link=')) {
-            const fieldid = url_split[0];
+          
+          if (url_split.length > 1 && ori_search.includes('link=')) {
+            let fieldid = url_split[0];
             let linkurl = url_split[1];
+            let parentsearch=ori_search.replace(url_split[0]+'&'+url_split[1],'')
+            //if the record has parent record, replace the field id 
+            if(ori_search.includes('record_id')&&url_split.length>=3) {
+              fieldid=url_split[2];
+              linkurl = url_split[3];
+              parentsearch=parentsearch.replace('&'+url_split[2]+'&'+url_split[3],'')
+            }
+            
             linkurl = linkurl.replace('link=/projects/', '');
 
-            search = fieldid + '&record_id=' + result;
+
+            search = fieldid + '&record_id=' + result + parentsearch;
 
             redirecturl = linkurl;
           }

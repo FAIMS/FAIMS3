@@ -22,7 +22,6 @@ import {ProjectID, FAIMSTypeName, RecordID} from '../datamodel/core';
 import {AttributeValuePair} from '../datamodel/database';
 import {RecordReference, RecordMetadataList} from '../datamodel/ui';
 import {listRecordMetadata} from './internals';
-import {HRID_STRING} from '../datamodel/core'
 
 export async function getAllRecordsOfType(
   project_id: ProjectID,
@@ -35,16 +34,10 @@ export async function getAllRecordsOfType(
       type: type,
     },
   });
+  console.log(res)
+  // const hrid = (await getHRID(project_id, o.revision)) ;
   return res.docs.map(o => {
-    let hrid_name='';
-    for (const possible_name of Object.keys(o)) {
-      if (possible_name.startsWith(HRID_STRING)) {
-        hrid_name = possible_name;
-        break;
-      }
-    }
     console.log(o)
-    console.log(hrid_name)
     return {
       project_id: project_id,
       record_id: o._id,
