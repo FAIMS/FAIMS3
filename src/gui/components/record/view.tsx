@@ -67,6 +67,11 @@ function SingleComponent(props: any) {
         
       )}
       </Grid>
+      {props.annotation !== undefined &&
+      fields[fieldName].meta !== undefined &&
+      fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
+      fields[fieldName]['component-name'] !==
+        'TemplatedStringField' && (
       <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
         <AnnotationField
           key={'annotation' + fieldName + 'box'}
@@ -78,6 +83,7 @@ function SingleComponent(props: any) {
           isclicked={isclicked}
         />
       </Grid>
+      )}
     </Grid>
   );
 }

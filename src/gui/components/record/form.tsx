@@ -66,6 +66,7 @@ import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import {indexOf} from 'lodash';
+import  {getHRIDforRecordID} from '../../../data_storage'
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -132,7 +133,7 @@ class RecordForm extends React.Component<
   async componentDidUpdate(prevProps: RecordFormProps) {
     if (
       prevProps.project_id !== this.props.project_id ||
-      prevProps.record_id !== this.props.record_id ||
+      // prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
         this.state.revision_cached !== this.props.revision_id) ||
       prevProps.draft_id !== this.props.draft_id //add this to reload the form when user jump back to previous record
@@ -379,29 +380,32 @@ class RecordForm extends React.Component<
       console.log(url_split);
       const field_id = url_split[0].replace('?field_id=', '');
       const sub_record_id = url_split[1].replace('record_id=', '');
+      
       const new_record = {
         project_id: this.props.project_id,
         record_id: sub_record_id,
         record_label: sub_record_id,
       };
+
       if (Array.isArray(initialValues[field_id])) {
         let isincluded = false;
-        initialValues[field_id].map((r: any) => {
+        initialValues[field_id].map((r: any,index:number) => {
           if (r.record_id === new_record.record_id) {
             isincluded = true;
           }
         });
-        if (isincluded === false) initialValues[field_id].push(new_record);
+        
+        if (isincluded === false) {
+          initialValues[field_id].push(new_record);
+          
+        }
       } else {
         initialValues[field_id] = new_record;
       }
     }
 
     this.setState({initialValues: initialValues, annotation: annotations});
-    console.log(
-      this.props.ui_specification.viewsets[this.requireViewsetName()]
-        .submit_label
-    );
+    
   }
 
   /**

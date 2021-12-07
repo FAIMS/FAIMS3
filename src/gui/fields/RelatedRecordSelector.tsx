@@ -60,6 +60,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   const location=useLocation()
+  const search=location.search.includes('link=')?location.search.replace('?','&'):''
   React.useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
@@ -116,7 +117,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             props.id +
             '&link=' +
             location.pathname + 
-            location.search.replace('?','&')}
+            search
+          }
         >
           New Record
         </Button>
