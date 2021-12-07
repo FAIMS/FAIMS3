@@ -95,7 +95,7 @@
   "devDependencies": {
     "@types/jest": "27.0.3",
     "@types/json-stable-stringify": "1.0.33",
-    "@types/node": "16.11.10",
+    "@types/node": "16.11.11",
     "@types/yup": "0.29.13",
     "fast-check": "2.20.0",
     "gts": "3.1.0",
