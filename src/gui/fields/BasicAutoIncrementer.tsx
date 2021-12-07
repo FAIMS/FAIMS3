@@ -42,7 +42,7 @@ interface Props {
 
 interface State {
   has_run: boolean;
-  is_ranger:boolean;
+  is_ranger: boolean;
 }
 
 export class BasicAutoIncrementer extends React.Component<
@@ -53,7 +53,7 @@ export class BasicAutoIncrementer extends React.Component<
     super(props);
     this.state = {
       has_run: false,
-      is_ranger:true
+      is_ranger: true,
     };
   }
 
@@ -76,8 +76,8 @@ export class BasicAutoIncrementer extends React.Component<
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: 
-          'No ranges set up, Go to this project > Setting > EDIT AUTOINCREMENT ALLOCATIONS to set up ranges',
+          message:
+            'No ranges set up, Go to this project > Setting > EDIT AUTOINCREMENT ALLOCATIONS to set up ranges',
           severity: 'error',
         },
       });
@@ -171,26 +171,26 @@ export class BasicAutoIncrementer extends React.Component<
   render() {
     return (
       <>
-      <Input
-        name={this.props.field.name}
-        id={this.props.field.name}
-        readOnly={true}
-        type={'hidden'}
-      />
-      {this.state.is_ranger === false&& (
-      <Link
-          component={RouterLink}
-          to={
-            ROUTES.PROJECT +
-            this.props.form.values['_project_id'] +
-            ROUTES.AUTOINCREMENT +
-            this.props.form_id+
-            '/'+
-            this.props.field.name
-          }
-        >
-          Add Ranger
-        </Link>
+        <Input
+          name={this.props.field.name}
+          id={this.props.field.name}
+          readOnly={true}
+          type={'hidden'}
+        />
+        {this.state.is_ranger === false && (
+          <Link
+            component={RouterLink}
+            to={
+              ROUTES.PROJECT +
+              this.props.form.values['_project_id'] +
+              ROUTES.AUTOINCREMENT +
+              this.props.form_id +
+              '/' +
+              this.props.field.name
+            }
+          >
+            Add Ranger
+          </Link>
         )}
       </>
     );

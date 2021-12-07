@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 import TextField from '@material-ui/core/TextField';
@@ -59,9 +59,11 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
-  const location=useLocation()
-  const search=location.search.includes('link=')?location.search.replace('?','&'):''
-  React.useEffect(() => {
+  const location = useLocation();
+  const search = location.search.includes('link=')
+    ? location.search.replace('?', '&')
+    : '';
+  useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
         const records = await getAllRecordsOfType(
@@ -116,7 +118,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             '?field_id=' +
             props.id +
             '&link=' +
-            location.pathname + 
+            location.pathname +
             search
           }
         >
@@ -251,7 +253,7 @@ export const LinkedSetting = [uiSetting(), uiSpec];
 export function Linkedcomponentsetting(props: componenentSettingprops) {
   const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setini();
   }, [props.uiSpec['visible_types']]);
 

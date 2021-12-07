@@ -40,50 +40,44 @@ function SingleComponent(props: any) {
   const fields = props.fields;
   const [isclicked, setIsClick] = useState(false);
 
-  return ( 
-  <Grid container>
-   
-    <Grid item sm={10} xs={12} >
-    {getComponentFromFieldConfig(
-      fields[fieldName],
-      fieldName,
-      props.formProps
-    )}
-    </Grid>
-    <Grid item sm={2} xs={12} style={{marginTop:'0.5em'}}>
-    {props.annotation !== undefined &&
-      fields[fieldName].meta !== undefined &&
-      fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-      fields[fieldName]['component-name'] !==
-        'TemplatedStringField' && (
-          <Annotation
-          key={'annotation' + fieldName + 'box'}
-          setIsClick={setIsClick}
-          isclicked={isclicked}
-          field={fields[fieldName]}
-          
-        />
-          
-        
-      )}
+  return (
+    <Grid container>
+      <Grid item sm={10} xs={12}>
+        {getComponentFromFieldConfig(
+          fields[fieldName],
+          fieldName,
+          props.formProps
+        )}
+      </Grid>
+      <Grid item sm={2} xs={12} style={{marginTop: '0.5em'}}>
+        {props.annotation !== undefined &&
+          fields[fieldName].meta !== undefined &&
+          fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
+          fields[fieldName]['component-name'] !== 'TemplatedStringField' && (
+            <Annotation
+              key={'annotation' + fieldName + 'box'}
+              setIsClick={setIsClick}
+              isclicked={isclicked}
+              field={fields[fieldName]}
+            />
+          )}
       </Grid>
       {props.annotation !== undefined &&
-      fields[fieldName].meta !== undefined &&
-      fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-      fields[fieldName]['component-name'] !==
-        'TemplatedStringField' && (
-      <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
-        <AnnotationField
-          key={'annotation' + fieldName + 'box'}
-          fieldName={fieldName}
-          // formProps={this.props.formProps}
-          field={fields[fieldName]}
-          annotation={props.annotation}
-          handerannoattion={props.handerannoattion}
-          isclicked={isclicked}
-        />
-      </Grid>
-      )}
+        fields[fieldName].meta !== undefined &&
+        fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
+        fields[fieldName]['component-name'] !== 'TemplatedStringField' && (
+          <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
+            <AnnotationField
+              key={'annotation' + fieldName + 'box'}
+              fieldName={fieldName}
+              // formProps={this.props.formProps}
+              field={fields[fieldName]}
+              annotation={props.annotation}
+              handerannoattion={props.handerannoattion}
+              isclicked={isclicked}
+            />
+          </Grid>
+        )}
     </Grid>
   );
 }
