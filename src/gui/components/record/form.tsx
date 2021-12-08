@@ -66,7 +66,6 @@ import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
 import {indexOf} from 'lodash';
-import  {getHRIDforRecordID} from '../../../data_storage'
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -380,7 +379,10 @@ class RecordForm extends React.Component<
       console.log(url_split);
       const field_id = url_split[0].replace('?field_id=', '');
       const sub_record_id = url_split[1].replace('record_id=', '');
-      const hrid = url_split.length>2?url_split[2].replace('hrid=', ''):sub_record_id;
+      const hrid =
+        url_split.length > 2
+          ? url_split[2].replace('hrid=', '')
+          : sub_record_id;
       const new_record = {
         project_id: this.props.project_id,
         record_id: sub_record_id,
@@ -389,15 +391,14 @@ class RecordForm extends React.Component<
 
       if (Array.isArray(initialValues[field_id])) {
         let isincluded = false;
-        initialValues[field_id].map((r: any,index:number) => {
+        initialValues[field_id].map((r: any) => {
           if (r.record_id === new_record.record_id) {
             isincluded = true;
           }
         });
-        
+
         if (isincluded === false) {
           initialValues[field_id].push(new_record);
-          
         }
       } else {
         initialValues[field_id] = new_record;
@@ -405,7 +406,6 @@ class RecordForm extends React.Component<
     }
 
     this.setState({initialValues: initialValues, annotation: annotations});
-    
   }
 
   /**
@@ -485,7 +485,9 @@ class RecordForm extends React.Component<
       })
       .then(doc => {
         upsertFAIMSData(this.props.project_id, doc);
-        return doc.data['hrid'+ this.state.type_cached]??this.props.record_id;
+        return (
+          doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
+        );
       })
       .then(result => {
         console.log(result);
@@ -530,29 +532,40 @@ class RecordForm extends React.Component<
         let redirecturl = this.props.project_id;
         let search = '';
         if (this.props.revision_id === undefined) {
-          const ori_search=window.location.search
+          const ori_search = window.location.search;
           const url_split = ori_search.split('&');
-          
+
           redirecturl =
             this.props.project_id +
             ROUTES.RECORD_CREATE +
             this.state.type_cached;
-          
+
           if (url_split.length > 1 && ori_search.includes('link=')) {
             let fieldid = url_split[0];
             let linkurl = url_split[1];
-            let parentsearch=ori_search.replace(url_split[0]+'&'+url_split[1],'')
-            //if the record has parent record, replace the field id 
-            if(ori_search.includes('record_id')&&url_split.length>=4) {
-              fieldid=url_split[3];
+            let parentsearch = ori_search.replace(
+              url_split[0] + '&' + url_split[1],
+              ''
+            );
+            //if the record has parent record, replace the field id
+            if (ori_search.includes('record_id') && url_split.length >= 4) {
+              fieldid = url_split[3];
               linkurl = url_split[4];
-              parentsearch=parentsearch.replace('&'+url_split[2]+'&'+url_split[3]+'&'+url_split[4],'')
+              parentsearch = parentsearch.replace(
+                '&' + url_split[2] + '&' + url_split[3] + '&' + url_split[4],
+                ''
+              );
             }
-            
+
             linkurl = linkurl.replace('link=/projects/', '');
 
-
-            search = fieldid + '&record_id=' + this.props.record_id+'&hrid='+ result + parentsearch;
+            search =
+              fieldid +
+              '&record_id=' +
+              this.props.record_id +
+              '&hrid=' +
+              result +
+              parentsearch;
 
             redirecturl = linkurl;
           }

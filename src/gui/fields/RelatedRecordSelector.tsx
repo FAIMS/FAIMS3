@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 import TextField from '@material-ui/core/TextField';
@@ -59,19 +59,21 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
-  const location=useLocation()
-  let search=location.search.includes('link=')?location.search.replace('?','&'):''
-  if(search.includes('record_id=')) {
-    const searches=search.split('&')
-    searches.map((s:string,index:number)=>
-    {if(s.includes('record_id=')){
-      searches.splice(index-1,3)
-    }}
-    )
-    search=searches.join('&')
+  const location = useLocation();
+  let search = location.search.includes('link=')
+    ? location.search.replace('?', '&')
+    : '';
+  if (search.includes('record_id=')) {
+    const searches = search.split('&');
+    searches.map((s: string, index: number) => {
+      if (s.includes('record_id=')) {
+        searches.splice(index - 1, 3);
+      }
+    });
+    search = searches.join('&');
   }
-  
-  React.useEffect(() => {
+
+  useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
         const records = await getAllRecordsOfType(
@@ -126,7 +128,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             '?field_id=' +
             props.id +
             '&link=' +
-            location.pathname + 
+            location.pathname +
             search
           }
         >
@@ -261,7 +263,7 @@ export const LinkedSetting = [uiSetting(), uiSpec];
 export function Linkedcomponentsetting(props: componenentSettingprops) {
   const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setini();
   }, [props.uiSpec['visible_types']]);
 
