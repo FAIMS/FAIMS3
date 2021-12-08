@@ -72,7 +72,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     });
     search = searches.join('&');
   }
-
   useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
