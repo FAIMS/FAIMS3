@@ -56,7 +56,9 @@ export function materializeConnectionInfo(
 export function ConnectionInfo_create_pouch<Content extends {}>(
   connection_info: ConnectionInfo
 ): PouchDB.Database<Content> {
-  const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
+  const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {
+    skip_setup: true,
+  };
 
   // Username & password auth is optional
   if ('auth' in connection_info && connection_info.auth !== undefined) {
