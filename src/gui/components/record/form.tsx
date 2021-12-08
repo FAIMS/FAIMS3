@@ -380,11 +380,11 @@ class RecordForm extends React.Component<
       console.log(url_split);
       const field_id = url_split[0].replace('?field_id=', '');
       const sub_record_id = url_split[1].replace('record_id=', '');
-      
+      const hrid = url_split.length>2?url_split[2].replace('hrid=', ''):sub_record_id;
       const new_record = {
         project_id: this.props.project_id,
         record_id: sub_record_id,
-        record_label: sub_record_id,
+        record_label: hrid,
       };
 
       if (Array.isArray(initialValues[field_id])) {
@@ -485,7 +485,7 @@ class RecordForm extends React.Component<
       })
       .then(doc => {
         upsertFAIMSData(this.props.project_id, doc);
-        return doc.record_id;
+        return doc.data['hrid'+ this.state.type_cached]??this.props.record_id;
       })
       .then(result => {
         console.log(result);
@@ -543,16 +543,16 @@ class RecordForm extends React.Component<
             let linkurl = url_split[1];
             let parentsearch=ori_search.replace(url_split[0]+'&'+url_split[1],'')
             //if the record has parent record, replace the field id 
-            if(ori_search.includes('record_id')&&url_split.length>=3) {
-              fieldid=url_split[2];
-              linkurl = url_split[3];
-              parentsearch=parentsearch.replace('&'+url_split[2]+'&'+url_split[3],'')
+            if(ori_search.includes('record_id')&&url_split.length>=4) {
+              fieldid=url_split[3];
+              linkurl = url_split[4];
+              parentsearch=parentsearch.replace('&'+url_split[2]+'&'+url_split[3]+'&'+url_split[4],'')
             }
             
             linkurl = linkurl.replace('link=/projects/', '');
 
 
-            search = fieldid + '&record_id=' + result + parentsearch;
+            search = fieldid + '&record_id=' + this.props.record_id+'&hrid='+ result + parentsearch;
 
             redirecturl = linkurl;
           }

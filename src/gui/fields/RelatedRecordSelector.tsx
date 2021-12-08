@@ -65,7 +65,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     const searches=search.split('&')
     searches.map((s:string,index:number)=>
     {if(s.includes('record_id=')){
-      searches.splice(index-1,2)
+      searches.splice(index-1,3)
     }}
     )
     search=searches.join('&')
