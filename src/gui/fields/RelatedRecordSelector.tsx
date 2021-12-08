@@ -60,9 +60,18 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   const location = useLocation();
-  const search = location.search.includes('link=')
+  let search = location.search.includes('link=')
     ? location.search.replace('?', '&')
     : '';
+  if (search.includes('record_id=')) {
+    const searches = search.split('&');
+    searches.map((s: string, index: number) => {
+      if (s.includes('record_id=')) {
+        searches.splice(index - 1, 3);
+      }
+    });
+    search = searches.join('&');
+  }
   useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
