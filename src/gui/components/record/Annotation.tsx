@@ -133,7 +133,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
         />
       )}
       {field.meta!==undefined&&field.meta['uncertainty'] !== undefined &&
-        !field['meta']['uncertainty']['include'] &&
+        field['meta']['uncertainty']['include'] &&
         isclicked && (
           <Field
             component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
