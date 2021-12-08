@@ -60,16 +60,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   const location=useLocation()
-  let search=location.search.includes('link=')?location.search.replace('?','&'):''
-  if(search.includes('record_id=')) {
-    const searches=search.split('&')
-    searches.map((s:string,index:number)=>
-    {if(s.includes('record_id=')){
-      searches.splice(index-1,3)
-    }}
-    )
-    search=searches.join('&')
-  }
+  let search=location.search.includes('link=')?location.search.replace('?',''):''
+  
+  const url_split=search.split('&');
+  console.error(url_split)
+  if(url_split.length>1&&url_split[0].replace('field_id=','')===props.id) search=search.replace(url_split[0]+'&'+url_split[1],'')
+  if(search!=='') search='&'+search
   
   React.useEffect(() => {
     if (project_id !== undefined) {
@@ -118,17 +114,20 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           color="primary"
           startIcon={<AddIcon />}
           component={Link}
-          to={
+          to={{
+            pathname:
             ROUTES.PROJECT +
             project_id +
             ROUTES.RECORD_CREATE +
-            props.related_type +
+            props.related_type ,
+            state:location.state,
+            search:
             '?field_id=' +
             props.id +
             '&link=' +
             location.pathname + 
             search
-          }
+          }}
         >
           New Record
         </Button>

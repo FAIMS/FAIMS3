@@ -373,14 +373,14 @@ class RecordForm extends React.Component<
         {annotation: '', uncertainty: false},
       ]);
     });
-
-    const url_split = window.location.search.split('&');
-    if (url_split.length > 1) {
+    const child_state:any=this.props.location.state
+    console.error(child_state)
+    if (child_state!==undefined&&child_state.record_id!==undefined) {
       //save the sub_record id into intitial value
-      console.log(url_split);
-      const field_id = url_split[0].replace('?field_id=', '');
-      const sub_record_id = url_split[1].replace('record_id=', '');
-      const hrid = url_split.length>2?url_split[2].replace('hrid=', ''):sub_record_id;
+      
+      const field_id = child_state.field_id.replace('?', '');
+      const sub_record_id = child_state.record_id;
+      const hrid = child_state.hrid??sub_record_id;
       const new_record = {
         project_id: this.props.project_id,
         record_id: sub_record_id,
@@ -529,6 +529,7 @@ class RecordForm extends React.Component<
         // the user to rapidly add more records
         let redirecturl = this.props.project_id;
         let search = '';
+        let state_pa={}
         if (this.props.revision_id === undefined) {
           const ori_search=window.location.search
           const url_split = ori_search.split('&');
@@ -539,24 +540,12 @@ class RecordForm extends React.Component<
             this.state.type_cached;
           
           if (url_split.length > 1 && ori_search.includes('link=')) {
-            let fieldid = url_split[0];
-            let linkurl = url_split[1];
-            let parentsearch=ori_search.replace(url_split[0]+'&'+url_split[1],'')
-            //if the record has parent record, replace the field id 
-            if(ori_search.includes('record_id')&&url_split.length>=4) {
-              fieldid=url_split[3];
-              linkurl = url_split[4];
-              parentsearch=parentsearch.replace('&'+url_split[2]+'&'+url_split[3]+'&'+url_split[4],'')
-            }
-            
-            linkurl = linkurl.replace('link=/projects/', '');
-
-
-            search = fieldid + '&record_id=' + this.props.record_id+'&hrid='+ result + parentsearch;
-
-            redirecturl = linkurl;
+            const fieldid = url_split[0];
+            redirecturl = url_split[1].replace('link=/projects/', '');
+            search=ori_search.replace(url_split[0]+'&'+url_split[1]+'&','')
+            if(url_split.length>3&&url_split[0]===url_split[2]) search=ori_search.replace(url_split[2]+'&'+url_split[3],'')
+            state_pa={ field_id: fieldid.replace('?field_id=',''),record_id:this.props.record_id,hrid:result,parent_link:search}
           }
-
           // scroll to top of page, seems to be needed on mobile devices
         }
 
@@ -566,6 +555,7 @@ class RecordForm extends React.Component<
           this.props.history.push({
             pathname: ROUTES.PROJECT + redirecturl,
             search: search,
+            state: state_pa
           });
         }
         window.scrollTo(0, 0);
