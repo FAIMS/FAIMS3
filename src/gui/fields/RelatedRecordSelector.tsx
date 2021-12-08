@@ -95,12 +95,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         getOptionLabel={(option: RecordReference) => option.record_label}
         options={options}
         defaultValue={null}
+        
         // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
         renderInput={(params: any) => (
           <TextField
             {...params}
             label={props.InputLabelProps.label}
-            required={props.required}
+            error={props.form.errors[props.id]===undefined?false:true}
             variant="outlined"
             InputProps={{
               ...params.InputProps,
