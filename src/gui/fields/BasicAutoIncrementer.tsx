@@ -189,7 +189,7 @@ export class BasicAutoIncrementer extends React.Component<
             this.props.field.name
           }
         >
-          Add Ranger
+          Add Range
         </Link>
         )}
       </>

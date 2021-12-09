@@ -63,7 +63,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   let search=location.search.includes('link=')?location.search.replace('?',''):''
   
   const url_split=search.split('&');
-  console.error(url_split)
+
   if(url_split.length>1&&url_split[0].replace('field_id=','')===props.id) search=search.replace(url_split[0]+'&'+url_split[1],'')
   if(search!=='') search='&'+search
   

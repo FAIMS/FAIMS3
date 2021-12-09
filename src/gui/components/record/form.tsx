@@ -373,8 +373,8 @@ class RecordForm extends React.Component<
         {annotation: '', uncertainty: false},
       ]);
     });
+    
     const child_state:any=this.props.location.state
-    console.error(child_state)
     if (child_state!==undefined&&child_state.record_id!==undefined) {
       //save the sub_record id into intitial value
       
@@ -386,8 +386,9 @@ class RecordForm extends React.Component<
         record_id: sub_record_id,
         record_label: hrid,
       };
-
-      if (Array.isArray(initialValues[field_id])) {
+      console.error(this.props.ui_specification['fields'][field_id]['component-parameters']['multiple'])
+      if (this.props.ui_specification['fields'][field_id]['component-parameters']['multiple']) {
+        console.error(initialValues[field_id])
         let isincluded = false;
         initialValues[field_id].map((r: any,index:number) => {
           if (r.record_id === new_record.record_id) {
