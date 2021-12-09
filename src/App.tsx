@@ -188,7 +188,7 @@ export class App extends React.Component<AppProps, AppState> {
                   ROUTES.PROJECT +
                   ':project_id' +
                   ROUTES.AUTOINCREMENT +
-                  ':form_id/:field_id'
+                  ':form_id/:field_id/:label'
                 }
                 component={AutoIncrementEdit}
               />
