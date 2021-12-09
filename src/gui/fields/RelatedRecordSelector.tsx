@@ -61,17 +61,18 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
   const location = useLocation();
   let search = location.search.includes('link=')
-    ? location.search.replace('?', '&')
+    ? location.search.replace('?', '')
     : '';
-  if (search.includes('record_id=')) {
-    const searches = search.split('&');
-    searches.map((s: string, index: number) => {
-      if (s.includes('record_id=')) {
-        searches.splice(index - 1, 3);
-      }
-    });
-    search = searches.join('&');
-  }
+
+  const url_split = search.split('&');
+
+  if (
+    url_split.length > 1 &&
+    url_split[0].replace('field_id=', '') === props.id
+  )
+    search = search.replace(url_split[0] + '&' + url_split[1], '');
+  if (search !== '') search = '&' + search;
+
   useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
@@ -105,7 +106,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           <TextField
             {...params}
             label={props.InputLabelProps.label}
-            required={props.required}
+            error={props.form.errors[props.id] === undefined ? false : true}
             variant="outlined"
             InputProps={{
               ...params.InputProps,
@@ -119,17 +120,16 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           color="primary"
           startIcon={<AddIcon />}
           component={Link}
-          to={
-            ROUTES.PROJECT +
-            project_id +
-            ROUTES.RECORD_CREATE +
-            props.related_type +
-            '?field_id=' +
-            props.id +
-            '&link=' +
-            location.pathname +
-            search
-          }
+          to={{
+            pathname:
+              ROUTES.PROJECT +
+              project_id +
+              ROUTES.RECORD_CREATE +
+              props.related_type,
+            state: location.state,
+            search:
+              '?field_id=' + props.id + '&link=' + location.pathname + search,
+          }}
         >
           New Record
         </Button>

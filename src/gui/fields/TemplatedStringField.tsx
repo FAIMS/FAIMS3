@@ -152,7 +152,7 @@ export function TemplatedStringcomponentsetting(
       : value;
     newini['numberfield' + props.fieldName] = fieldnum;
     // newini['template'+props.fieldName]=isinit?templatevalue:value
-    props.setinitialValues({...newini});
+    props.setinitialValues({...props.initialValues, ...newini});
     return newvalues;
   };
 
@@ -209,6 +209,14 @@ export function TemplatedStringcomponentsetting(
       const num = farray.length > 1 ? farray.length : 1;
       newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
+    }
+
+    if (
+      props.uiSpec['fields'][props.fieldName]['component-parameters'][
+        'hrid'
+      ] === true
+    ) {
+      setuphrid();
     }
   };
 
@@ -296,49 +304,7 @@ export function TemplatedStringcomponentsetting(
     if (name === 'hrid') {
       console.log('Change target name: ' + event.target.checked);
       if (event.target.checked === true) {
-        //check if there is hird
-        let ishird = false;
-        props.uiSpec['viewsets'][props.currentform]['views'].map(
-          (view: string) => {
-            if (
-              props.uiSpec['views'][view]['fields'].includes(
-                HRID_STRING + props.currentform
-              ) &&
-              props.uiSpec['fields'][props.fieldName][
-                'component-parameters'
-              ] !== true
-            )
-              ishird = true;
-          }
-        );
-        if (ishird) {
-          console.log('set hird twice');
-          //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
-        } else {
-          //change all name to hird
-          const newfieldname = HRID_STRING + props.currentform;
-          const newui = props.uiSpec;
-          newui['fields'][newfieldname] = JSON.parse(
-            JSON.stringify(newui['fields'][props.fieldName])
-          ); //change uifield name
-          newui['fields'][newfieldname]['component-parameters'][
-            'id'
-          ] = newfieldname;
-          newui['fields'][newfieldname]['component-parameters'][
-            'name'
-          ] = newfieldname;
-          newui['fields'][newfieldname]['component-parameters']['linked'] =
-            props.fieldName;
-          newui['views'][props.currentview]['fields'] = newui['views'][
-            props.currentview
-          ]['fields'].map((field: string) =>
-            field === props.fieldName ? (field = newfieldname) : field
-          );
-          newui['fields'][props.fieldName]['component-parameters']['hrid'] =
-            event.target.checked;
-          console.log(newui);
-          props.setuiSpec({...newui});
-        }
+        setuphrid();
       } else {
         const newfieldname = HRID_STRING + props.currentform;
         const newui = props.uiSpec;
@@ -351,6 +317,47 @@ export function TemplatedStringcomponentsetting(
           event.target.checked;
         props.setuiSpec({...newui});
       }
+    }
+  };
+
+  const setuphrid = () => {
+    //check if there is hird
+    let ishird = false;
+    props.uiSpec['viewsets'][props.currentform]['views'].map((view: string) => {
+      if (
+        props.uiSpec['views'][view]['fields'].includes(
+          HRID_STRING + props.currentform
+        ) &&
+        props.uiSpec['fields'][props.fieldName]['component-parameters'] !== true
+      )
+        ishird = true;
+    });
+    if (ishird) {
+      console.log('set hird twice');
+      //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
+    } else {
+      //change all name to hird
+      const newfieldname = HRID_STRING + props.currentform;
+      const newui = props.uiSpec;
+      newui['fields'][newfieldname] = JSON.parse(
+        JSON.stringify(newui['fields'][props.fieldName])
+      ); //change uifield name
+      newui['fields'][newfieldname]['component-parameters'][
+        'id'
+      ] = newfieldname;
+      newui['fields'][newfieldname]['component-parameters'][
+        'name'
+      ] = newfieldname;
+      newui['fields'][newfieldname]['component-parameters']['linked'] =
+        props.fieldName;
+      newui['views'][props.currentview]['fields'] = newui['views'][
+        props.currentview
+      ]['fields'].map((field: string) =>
+        field === props.fieldName ? (field = newfieldname) : field
+      );
+      newui['fields'][props.fieldName]['component-parameters']['hrid'] = true;
+      console.log(newui);
+      props.setuiSpec({...newui});
     }
   };
 
@@ -390,7 +397,7 @@ const uiSpec = {
     InputLabelProps: {
       label: 'Human Readable ID',
     },
-    hrid: false,
+    hrid: true,
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: '',

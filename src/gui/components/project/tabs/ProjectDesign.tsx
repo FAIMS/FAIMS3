@@ -211,9 +211,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormComponents(newformcom);
     setFormuiSpec(formui);
     setformlabel(formtabs[0]);
-    setdesignvalidate(
-      getValidationSchemaForViewset(formdesignuiSpec, formuiview)
-    );
+    try {
+      setdesignvalidate(
+        getValidationSchemaForViewset(formdesignuiSpec, formuiview)
+      );
+    } catch (error) {
+      console.error('not get validation');
+    }
+
     return true;
   };
 
@@ -354,7 +359,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const ChangeVariants = (index: number, id: string) => {
     setFormVariants(id);
     setFormNameValue(index);
-    console.error(formnamevalue);
     if (formuiSpec['viewsets'][id]['views'].length > 0) {
       const tabs: any = [];
       if (formuiSpec['viewsets'][id]['views'].length > 0) {
@@ -621,7 +625,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               <Grid container spacing={1}>
                 <Grid item sm={4} xs={12}>
                   <Typography variant="subtitle2">
-                    {formuiSpec['fields'][formcomponent['id']][
+                    {formuiSpec['fields'][formcomponent['id']] !== undefined &&
+                    formuiSpec['fields'][formcomponent['id']][
                       'component-parameters'
                     ]['hrid'] === true
                       ? 'Unique Human Readable ID:' + HRID_STRING + formvariants
