@@ -211,9 +211,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormComponents(newformcom);
     setFormuiSpec(formui);
     setformlabel(formtabs[0]);
-    setdesignvalidate(
-      getValidationSchemaForViewset(formdesignuiSpec, formuiview)
-    );
+    try{
+      setdesignvalidate(
+        getValidationSchemaForViewset(formdesignuiSpec, formuiview)
+      );
+    }catch(error){
+      console.error('not get validation')
+    }
+    
     return true;
   };
 
@@ -354,7 +359,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const ChangeVariants = (index: number, id: string) => {
     setFormVariants(id);
     setFormNameValue(index);
-    console.error(formnamevalue);
     if (formuiSpec['viewsets'][id]['views'].length > 0) {
       const tabs: any = [];
       if (formuiSpec['viewsets'][id]['views'].length > 0) {

@@ -152,7 +152,6 @@ export function TemplatedStringcomponentsetting(
       : value;
     newini['numberfield' + props.fieldName] = fieldnum;
     // newini['template'+props.fieldName]=isinit?templatevalue:value
-    console.error({...props.initialValues,...newini})
     props.setinitialValues({...props.initialValues,...newini});
     return newvalues;
   };
