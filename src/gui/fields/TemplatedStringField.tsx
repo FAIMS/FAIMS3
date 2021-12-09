@@ -152,7 +152,7 @@ export function TemplatedStringcomponentsetting(
       : value;
     newini['numberfield' + props.fieldName] = fieldnum;
     // newini['template'+props.fieldName]=isinit?templatevalue:value
-    props.setinitialValues({...props.initialValues,...newini});
+    props.setinitialValues({...props.initialValues, ...newini});
     return newvalues;
   };
 
@@ -211,9 +211,11 @@ export function TemplatedStringcomponentsetting(
       setuiSetting({...newvalues});
     }
 
-    if(props.uiSpec['fields'][props.fieldName][
-      'component-parameters'
-    ]['hrid']===true){
+    if (
+      props.uiSpec['fields'][props.fieldName]['component-parameters'][
+        'hrid'
+      ] === true
+    ) {
       setuphrid();
     }
   };
@@ -302,7 +304,7 @@ export function TemplatedStringcomponentsetting(
     if (name === 'hrid') {
       console.log('Change target name: ' + event.target.checked);
       if (event.target.checked === true) {
-        setuphrid()
+        setuphrid();
       } else {
         const newfieldname = HRID_STRING + props.currentform;
         const newui = props.uiSpec;
@@ -318,24 +320,18 @@ export function TemplatedStringcomponentsetting(
     }
   };
 
-
-  const setuphrid = () =>{
+  const setuphrid = () => {
     //check if there is hird
     let ishird = false;
-    props.uiSpec['viewsets'][props.currentform]['views'].map(
-      (view: string) => {
-        if (
-          props.uiSpec['views'][view]['fields'].includes(
-            HRID_STRING + props.currentform
-          ) &&
-          props.uiSpec['fields'][props.fieldName][
-            'component-parameters'
-          ] !== true
-        )
-        
-          ishird = true;
-      }
-    );
+    props.uiSpec['viewsets'][props.currentform]['views'].map((view: string) => {
+      if (
+        props.uiSpec['views'][view]['fields'].includes(
+          HRID_STRING + props.currentform
+        ) &&
+        props.uiSpec['fields'][props.fieldName]['component-parameters'] !== true
+      )
+        ishird = true;
+    });
     if (ishird) {
       console.log('set hird twice');
       //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
@@ -359,12 +355,11 @@ export function TemplatedStringcomponentsetting(
       ]['fields'].map((field: string) =>
         field === props.fieldName ? (field = newfieldname) : field
       );
-      newui['fields'][props.fieldName]['component-parameters']['hrid'] =
-        true;
+      newui['fields'][props.fieldName]['component-parameters']['hrid'] = true;
       console.log(newui);
       props.setuiSpec({...newui});
     }
-  }
+  };
 
   return (
     <>
