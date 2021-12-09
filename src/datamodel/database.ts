@@ -236,6 +236,7 @@ export interface LocalAutoIncrementState {
 export interface AutoIncrementReference {
   form_id: string;
   field_id: string;
+  label?: string;
 }
 
 export interface AutoIncrementReferenceDoc {

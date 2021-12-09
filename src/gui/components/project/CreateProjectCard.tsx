@@ -282,11 +282,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const get_autoincrement = () => {
     const form_ids: Array<string> = [];
     const field_ids: Array<string> = [];
+    const labels: Array<string> = [];
 
     for (const [key, value] of Object.entries(formuiSpec['fields'])) {
       if (value['component-name'] === 'BasicAutoIncrementer') {
         form_ids.push(value['component-parameters']['form_id']);
         field_ids.push(key);
+        labels.push(value['component-parameters']['label']);
       }
       if (value['component-name'] === 'TemplatedStringField') {
         if (key.includes(HRID_STRING)) {
@@ -308,7 +310,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         }
       }
     }
-    return {form_id: form_ids, field_id: field_ids};
+    return {form_id: form_ids, field_id: field_ids, label: labels};
   };
 
   const add_autoince_refereence = async (autoince: any) => {
@@ -317,7 +319,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         await add_autoincrement_reference_for_project(
           project_id,
           autoince.form_id,
-          autoince.field_id
+          autoince.field_id,
+          autoince.label
         );
       } catch (error) {
         console.error(error);

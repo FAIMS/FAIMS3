@@ -36,6 +36,7 @@ interface Props {
   project_id: ProjectID;
   form_id: string;
   field_id: string;
+  label: string;
 }
 
 interface State {

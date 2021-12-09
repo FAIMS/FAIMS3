@@ -32,12 +32,12 @@ import AutoIncrementEditForm from '../components/autoincrement/edit-form';
 import {useHistory} from 'react-router-dom';
 
 export default function AutoIncrementEdit() {
-  const {project_id, form_id, field_id} = useParams<{
+  const {project_id, form_id, field_id, label} = useParams<{
     project_id: ProjectID;
     form_id: string;
     field_id: string;
+    label: string;
   }>();
-  const name = `${form_id} (${field_id})`;
   const project_info = getProjectInfo(project_id);
   const history = useHistory();
   const breadcrumbs = [
@@ -52,7 +52,7 @@ export default function AutoIncrementEdit() {
       title: 'AutoIncrement Settings',
     },
     {
-      title: name,
+      title: label,
     },
   ];
 
@@ -64,7 +64,7 @@ export default function AutoIncrementEdit() {
           Update AutoIncrement Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the settings for the AutoIncrementer for {name}.
+          Update the settings for the AutoIncrementer for {label}.
         </Typography>
       </Box>
       <Paper square>
@@ -72,6 +72,7 @@ export default function AutoIncrementEdit() {
           project_id={project_id}
           form_id={form_id}
           field_id={field_id}
+          label={label}
         />
       </Paper>
       <Button color="primary" size="large" onClick={() => history.goBack()}>
