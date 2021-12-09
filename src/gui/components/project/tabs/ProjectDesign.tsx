@@ -621,7 +621,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               <Grid container spacing={1}>
                 <Grid item sm={4} xs={12}>
                   <Typography variant="subtitle2">
-                    {formuiSpec['fields'][formcomponent['id']][
+                    {formuiSpec['fields'][formcomponent['id']]!==undefined&&
+                    formuiSpec['fields'][formcomponent['id']][
                       'component-parameters'
                     ]['hrid'] === true
                       ? 'Unique Human Readable ID:' + HRID_STRING + formvariants
