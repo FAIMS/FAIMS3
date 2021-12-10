@@ -34,7 +34,7 @@ import {
   StepButton,
   MobileStepper,
 } from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
+
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
@@ -118,6 +118,7 @@ type RecordFormState = {
    * letting them redirect to the draft's URL
    */
   draft_created: string | null;
+  error_view:boolean;
 };
 
 class RecordForm extends React.Component<
@@ -145,6 +146,7 @@ class RecordForm extends React.Component<
         activeStep: 0,
         revision_cached: null,
         annotation: {},
+        error_view:false
       });
       // Re-initialize basically everything.
       this.formChanged(true);
@@ -165,6 +167,7 @@ class RecordForm extends React.Component<
       last_saved: new Date(),
       draft_created: null,
       annotation: {},
+      error_view:false
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -764,14 +767,7 @@ class RecordForm extends React.Component<
                         handerannoattion={this.updateannotation}
                       />
                       <br />
-                      {formProps.isValid ? (
-                        ''
-                      ) : (
-                        <Alert severity="error">
-                          Form has errors, please scroll up or check other tab
-                          and make changes before submitting.
-                        </Alert>
-                      )}
+                      
                       <br />
                       <ButtonGroup
                         color="primary"
