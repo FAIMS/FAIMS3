@@ -310,6 +310,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         }
       }
     }
+    console.error({form_id: form_ids, field_id: field_ids, label: labels})
     return {form_id: form_ids, field_id: field_ids, label: labels};
   };
 

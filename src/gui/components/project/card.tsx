@@ -53,6 +53,8 @@ import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
+import RangeHeader from './RangeHeader';
+
 type ProjectSearchCardProps = {
   project: ProjectInformation;
 };
@@ -208,14 +210,10 @@ export default function Card(props: ProjectCardProps) {
               </React.Fragment>
             }
             subheader={
-              project.created === 'Unknown'
-                ? 'Created ' + 'last record updated'
-                : 'Created' +
-                  project.created +
-                  ', last record updated ' +
-                  project.last_updated
+               <RangeHeader project={project} />
             }
           />
+          
           <CardContent style={{paddingTop: 0}}>
             <Box mb={2}>
               <MetadataRenderer
