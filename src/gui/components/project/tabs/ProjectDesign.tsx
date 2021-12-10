@@ -211,14 +211,14 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormComponents(newformcom);
     setFormuiSpec(formui);
     setformlabel(formtabs[0]);
-    try{
+    try {
       setdesignvalidate(
         getValidationSchemaForViewset(formdesignuiSpec, formuiview)
       );
-    }catch(error){
-      console.error('not get validation')
+    } catch (error) {
+      console.error('not get validation');
     }
-    
+
     return true;
   };
 
@@ -625,7 +625,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               <Grid container spacing={1}>
                 <Grid item sm={4} xs={12}>
                   <Typography variant="subtitle2">
-                    {formuiSpec['fields'][formcomponent['id']]!==undefined&&
+                    {formuiSpec['fields'][formcomponent['id']] !== undefined &&
                     formuiSpec['fields'][formcomponent['id']][
                       'component-parameters'
                     ]['hrid'] === true

@@ -59,16 +59,21 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
-  const location=useLocation()
-  let search=location.search.includes('link=')?location.search.replace('?',''):''
-  
-  const url_split=search.split('&');
+  const location = useLocation();
+  let search = location.search.includes('link=')
+    ? location.search.replace('?', '')
+    : '';
 
-  if(url_split.length>1&&url_split[0].replace('field_id=','')===props.id) 
-    search=search.replace(url_split[0]+'&'+url_split[1],'')
-  if(search!=='') search='&'+search
-  
-  React.useEffect(() => {
+  const url_split = search.split('&');
+
+  if (
+    url_split.length > 1 &&
+    url_split[0].replace('field_id=', '') === props.id
+  )
+    search = search.replace(url_split[0] + '&' + url_split[1], '');
+  if (search !== '') search = '&' + search;
+
+  useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
         const records = await getRecordsByType(
@@ -96,13 +101,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         getOptionLabel={(option: RecordReference) => option.record_label}
         options={options}
         defaultValue={null}
-        
         // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
         renderInput={(params: any) => (
           <TextField
             {...params}
             label={props.InputLabelProps.label}
-            error={props.form.errors[props.id]===undefined?false:true}
+            error={props.form.errors[props.id] === undefined ? false : true}
             variant="outlined"
             InputProps={{
               ...params.InputProps,
@@ -118,17 +122,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           component={Link}
           to={{
             pathname:
-            ROUTES.PROJECT +
-            project_id +
-            ROUTES.RECORD_CREATE +
-            props.related_type ,
-            state:location.state,
+              ROUTES.PROJECT +
+              project_id +
+              ROUTES.RECORD_CREATE +
+              props.related_type,
+            state: location.state,
             search:
-            '?field_id=' +
-            props.id +
-            '&link=' +
-            location.pathname +
-            search
+              '?field_id=' + props.id + '&link=' + location.pathname + search,
           }}
         >
           New Record

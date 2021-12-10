@@ -171,26 +171,26 @@ export class BasicAutoIncrementer extends React.Component<
   render() {
     return (
       <>
-      <Input
-        name={this.props.field.name}
-        id={this.props.field.name}
-        readOnly={true}
-        type={'hidden'}
-      />
-      {this.state.is_ranger === false&& (
-      <Link
-          component={RouterLink}
-          to={
-            ROUTES.PROJECT +
-            this.props.form.values['_project_id'] +
-            ROUTES.AUTOINCREMENT +
-            this.props.form_id+
-            '/'+
-            this.props.field.name
-          }
-        >
-          Add Range
-        </Link>
+        <Input
+          name={this.props.field.name}
+          id={this.props.field.name}
+          readOnly={true}
+          type={'hidden'}
+        />
+        {this.state.is_ranger === false && (
+          <Link
+            component={RouterLink}
+            to={
+              ROUTES.PROJECT +
+              this.props.form.values['_project_id'] +
+              ROUTES.AUTOINCREMENT +
+              this.props.form_id +
+              '/' +
+              this.props.field.name
+            }
+          >
+            Add Range
+          </Link>
         )}
       </>
     );

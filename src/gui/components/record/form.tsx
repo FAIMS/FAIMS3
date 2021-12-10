@@ -375,24 +375,29 @@ class RecordForm extends React.Component<
         {annotation: '', uncertainty: false},
       ]);
     });
-    
-    const child_state:any=this.props.location.state
-    if (child_state!==undefined&&child_state.record_id!==undefined) {
-      //save the sub_record id into intitial value
 
-      
+    const child_state: any = this.props.location.state;
+    if (child_state !== undefined && child_state.record_id !== undefined) {
+      //save the sub_record id into intitial value
       const field_id = child_state.field_id.replace('?', '');
       const sub_record_id = child_state.record_id;
       const hrid = child_state.hrid??sub_record_id;
-
       const new_record = {
         project_id: this.props.project_id,
         record_id: sub_record_id,
         record_label: hrid,
       };
-      console.error(this.props.ui_specification['fields'][field_id]['component-parameters']['multiple'])
-      if (this.props.ui_specification['fields'][field_id]['component-parameters']['multiple']) {
-        console.error(initialValues[field_id])
+      console.error(
+        this.props.ui_specification['fields'][field_id]['component-parameters'][
+          'multiple'
+        ]
+      );
+      if (
+        this.props.ui_specification['fields'][field_id]['component-parameters'][
+          'multiple'
+        ]
+      ) {
+        console.error(initialValues[field_id]);
         let isincluded = false;
         initialValues[field_id].map((r: any) => {
           if (r.record_id === new_record.record_id) {
@@ -534,7 +539,7 @@ class RecordForm extends React.Component<
         // the user to rapidly add more records
         let redirecturl = this.props.project_id;
         let search = '';
-        let state_pa={}
+        let state_pa = {};
         if (this.props.revision_id === undefined) {
           const ori_search = window.location.search;
           const url_split = ori_search.split('&');
@@ -546,15 +551,22 @@ class RecordForm extends React.Component<
 
           if (url_split.length > 1 && ori_search.includes('link=')) {
             const fieldid = url_split[0];
-            
-            search=ori_search.replace(url_split[0]+'&'+url_split[1]+'&','')
-            if(url_split.length>3&&url_split[0]===url_split[2]) search=ori_search.replace(url_split[2]+'&'+url_split[3],'')
-            const url_split_re = search.split('&');
-            if(url_split_re.length>1&&url_split_re[1].replace('link=/projects/'+this.props.project_id,'')===pathname.replace('/projects/'+pathname.replace('/projects/','').split('/')[0],'')) 
-            search=search.replace(url_split_re[0]+'&'+url_split_re[1],'')
-            state_pa={ field_id: fieldid.replace('?field_id=',''),record_id:this.props.record_id,hrid:result,parent_link:search}
-            if(search!=='') redirecturl = url_split[1].replace('link=/projects/', '');
-            console.error(state_pa)
+            redirecturl = url_split[1].replace('link=/projects/', '');
+            search = ori_search.replace(
+              url_split[0] + '&' + url_split[1] + '&',
+              ''
+            );
+            if (url_split.length > 3 && url_split[0] === url_split[2])
+              search = ori_search.replace(
+                url_split[2] + '&' + url_split[3],
+                ''
+              );
+            state_pa = {
+              field_id: fieldid.replace('?field_id=', ''),
+              record_id: this.props.record_id,
+              hrid: result,
+              parent_link: search,
+            };
           }
           // scroll to top of page, seems to be needed on mobile devices
         }
@@ -564,7 +576,7 @@ class RecordForm extends React.Component<
           this.props.history.push({
             pathname: ROUTES.PROJECT + redirecturl,
             search: search,
-            state: state_pa
+            state: state_pa,
           });
         }
         window.scrollTo(0, 0);
