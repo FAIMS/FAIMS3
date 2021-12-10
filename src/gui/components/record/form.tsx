@@ -534,7 +534,7 @@ class RecordForm extends React.Component<
         if (this.props.revision_id === undefined) {
           const ori_search=window.location.search
           const url_split = ori_search.split('&');
-          
+          const pathname=window.location.pathname
           redirecturl =
             this.props.project_id +
             ROUTES.RECORD_CREATE +
@@ -542,14 +542,18 @@ class RecordForm extends React.Component<
           
           if (url_split.length > 1 && ori_search.includes('link=')) {
             const fieldid = url_split[0];
-            redirecturl = url_split[1].replace('link=/projects/', '');
+            
             search=ori_search.replace(url_split[0]+'&'+url_split[1]+'&','')
             if(url_split.length>3&&url_split[0]===url_split[2]) search=ori_search.replace(url_split[2]+'&'+url_split[3],'')
+            const url_split_re = search.split('&');
+            if(url_split_re.length>1&&url_split_re[1].replace('link=/projects/'+this.props.project_id,'')===pathname.replace('/projects/'+pathname.replace('/projects/','').split('/')[0],'')) 
+            search=search.replace(url_split_re[0]+'&'+url_split_re[1],'')
             state_pa={ field_id: fieldid.replace('?field_id=',''),record_id:this.props.record_id,hrid:result,parent_link:search}
+            if(search!=='') redirecturl = url_split[1].replace('link=/projects/', '');
+            
           }
           // scroll to top of page, seems to be needed on mobile devices
         }
-
         if (search === '') {
           this.props.history.push(ROUTES.PROJECT + redirecturl);
         } else {
