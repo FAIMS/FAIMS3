@@ -155,6 +155,7 @@ const example_autoincrement_references: {
     {
       form_id: 'default', // TODO: This needs sorting
       field_id: 'basic-autoincrementer-field',
+      label: 'AutoIncrementer',
     },
   ],
 };
@@ -962,7 +963,8 @@ export async function setupExampleProjectMetadata(
         await add_autoincrement_reference_for_project(
           projname,
           [ref.form_id],
-          [ref.field_id]
+          [ref.field_id],
+          [ref.label ?? ref.form_id]
         );
         const new_range = create_new_autoincrement_range(0, 10000);
         const doc = await get_local_autoincrement_state_for_field(
