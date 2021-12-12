@@ -250,7 +250,7 @@ export const getprojectform = (
       type: 'checkbox',
       initialValue: false,
       helperText:
-        'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
+        'Check to inherit access for user roles from Form, You can change access for each form component in Commponet > Access tab',
     },
   ];
   const formaccess = [
@@ -264,7 +264,7 @@ export const getprojectform = (
       type: 'checkbox',
       initialValue: false,
       helperText:
-        'Check to inherit access for user roles from Notebook, You can change acess for each form component in Section Definition > Info tab',
+        'Check to inherit access for user roles from Notebook, You can change access for each form component in Section Definition > Info tab',
     },
   ];
   const form_info_options: Array<optionType> = [

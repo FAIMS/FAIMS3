@@ -74,7 +74,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
           )
         : errors['formdesign'].push(
             formuiSpec['viewsets'][viewset]['label'] +
-              ': Form was defined, but setcion not added'
+              ': Form was defined, but section not added'
           )
     );
     if (errors['formdesign'].length > 0) {
