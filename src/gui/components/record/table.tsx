@@ -73,7 +73,7 @@ function RecordsTable(props: RecordsTableProps) {
   //   r.type !== null &&
   //   r.type !== undefined &&
   //   props.viewsets[r.type] !== undefined? newrows[index]={...r,type_label:props.viewsets[r.type].label?? r.type }:newrows[index]={...r})
-  
+
   const columns: GridColDef[] = [
     {
       field: 'hrid',
@@ -102,7 +102,7 @@ function RecordsTable(props: RecordsTableProps) {
       headerName: 'Kind',
       type: 'string',
       width: 200,
-     renderCell: (params: GridCellParams) => (
+      renderCell: (params: GridCellParams) => (
         <>
           {props.viewsets !== null &&
           props.viewsets !== undefined &&

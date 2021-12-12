@@ -209,11 +209,9 @@ export default function Card(props: ProjectCardProps) {
                 </div>
               </React.Fragment>
             }
-            subheader={
-               <RangeHeader project={project} />
-            }
+            subheader={<RangeHeader project={project} />}
           />
-          
+
           <CardContent style={{paddingTop: 0}}>
             <Box mb={2}>
               <MetadataRenderer

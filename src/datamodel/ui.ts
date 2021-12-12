@@ -94,7 +94,7 @@ export interface RecordReference {
   project_id?: ProjectID;
   record_id: RecordID;
   // This is for HRIDs or other non ID descriptions of reference
-  record_label: RecordID | string ;
+  record_label: RecordID | string;
 }
 
 /*

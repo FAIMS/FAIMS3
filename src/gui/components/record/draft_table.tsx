@@ -50,12 +50,12 @@ type DraftsRecordProps = {
   rows: any;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
-  not_xs:boolean;
+  not_xs: boolean;
 };
 
-function DraftRecord (props: DraftsRecordProps) {
-  const {project_id, maxRows, rows, loading,not_xs} = props;
-  const newrows:any=rows;
+function DraftRecord(props: DraftsRecordProps) {
+  const {project_id, maxRows, rows, loading, not_xs} = props;
+  // const newrows: any = rows;
   const defaultMaxRowsMobile = 10;
 
   // newrows.map((r:any)=>
@@ -65,82 +65,81 @@ function DraftRecord (props: DraftsRecordProps) {
   //   r.type !== undefined &&
   //   props.viewsets[r.type] !== undefined?r.type_label=props.viewsets[r.type].label ?? r.type:r.type)
 
-    const columns: GridColDef[] = [
-      {
-        field: '_id',
-        headerName: 'ID',
-        description: 'Draft ID',
-        type: 'string',
-        width: not_xs ? 300 : 100,
-        renderCell: (params: GridCellParams) => (
-          <Link
-            component={RouterLink}
-            to={ROUTES.getDraftRoute(
-              project_id ?? 'dummy',
-              params.getValue('_id') as DraftMetadata['_id'],
-              params.getValue('existing')! as DraftMetadata['existing'],
-              params.getValue('type')! as DraftMetadata['type']
-            )}
-          >
-            {params.value}
-          </Link>
-        ),
-      },
-      {
-        field: 'type',
-        headerName: 'Kind',
-        type: 'string',
-        width: 200,
-       renderCell: (params: GridCellParams) => (
-          <>
-            {props.viewsets !== null &&
-            props.viewsets !== undefined &&
-            params.value !== null &&
-            params.value !== undefined &&
-            props.viewsets[params.value.toString()] !== undefined
-              ? props.viewsets[params.value.toString()].label ?? params.value
-              : params.value}
-          </>
-        ),
-      },
-      {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-      {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
-    ];
+  const columns: GridColDef[] = [
+    {
+      field: '_id',
+      headerName: 'ID',
+      description: 'Draft ID',
+      type: 'string',
+      width: not_xs ? 300 : 100,
+      renderCell: (params: GridCellParams) => (
+        <Link
+          component={RouterLink}
+          to={ROUTES.getDraftRoute(
+            project_id ?? 'dummy',
+            params.getValue('_id') as DraftMetadata['_id'],
+            params.getValue('existing')! as DraftMetadata['existing'],
+            params.getValue('type')! as DraftMetadata['type']
+          )}
+        >
+          {params.value}
+        </Link>
+      ),
+    },
+    {
+      field: 'type',
+      headerName: 'Kind',
+      type: 'string',
+      width: 200,
+      renderCell: (params: GridCellParams) => (
+        <>
+          {props.viewsets !== null &&
+          props.viewsets !== undefined &&
+          params.value !== null &&
+          params.value !== undefined &&
+          props.viewsets[params.value.toString()] !== undefined
+            ? props.viewsets[params.value.toString()].label ?? params.value
+            : params.value}
+        </>
+      ),
+    },
+    {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+    {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+  ];
   return (
     <DataGrid
-          key={'drafttable'}
-          rows={rows}
-          loading={loading}
-          getRowId={r => r._id}
-          columns={columns}
-          autoHeight
-          pageSize={
-            maxRows !== null
-              ? not_xs
-                ? maxRows
-                : defaultMaxRowsMobile
-              : not_xs
-              ? 25
-              : defaultMaxRowsMobile
-          }
-          checkboxSelection
-          density={not_xs ? 'standard' : 'comfortable'}
-          components={{
-            Toolbar: GridToolbar,
-          }}
-          sortModel={[{field: 'updated', sort: 'desc'}]}
-        />
-  )
-  
+      key={'drafttable'}
+      rows={rows}
+      loading={loading}
+      getRowId={r => r._id}
+      columns={columns}
+      autoHeight
+      pageSize={
+        maxRows !== null
+          ? not_xs
+            ? maxRows
+            : defaultMaxRowsMobile
+          : not_xs
+          ? 25
+          : defaultMaxRowsMobile
+      }
+      checkboxSelection
+      density={not_xs ? 'standard' : 'comfortable'}
+      components={{
+        Toolbar: GridToolbar,
+      }}
+      sortModel={[{field: 'updated', sort: 'desc'}]}
+    />
+  );
 }
 export default function DraftsTable(props: DraftsTableProps) {
   const {project_id, maxRows} = props;
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
-  
+
   const [rows, setRows] = useState<Array<DraftMetadata>>([]);
-  
+
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
     // on load - if the record list is updated, the callback should be fired
@@ -155,7 +154,7 @@ export default function DraftsTable(props: DraftsTableProps) {
         }
       }
     );
-    
+
     return destroyListener; // destroyListener called when this component unmounts.
   }, [project_id, rows]);
 

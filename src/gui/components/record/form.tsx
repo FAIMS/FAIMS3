@@ -118,7 +118,7 @@ type RecordFormState = {
    * letting them redirect to the draft's URL
    */
   draft_created: string | null;
-  error_view:boolean;
+  error_view: boolean;
 };
 
 class RecordForm extends React.Component<
@@ -146,7 +146,7 @@ class RecordForm extends React.Component<
         activeStep: 0,
         revision_cached: null,
         annotation: {},
-        error_view:false
+        error_view: false,
       });
       // Re-initialize basically everything.
       this.formChanged(true);
@@ -167,7 +167,7 @@ class RecordForm extends React.Component<
       last_saved: new Date(),
       draft_created: null,
       annotation: {},
-      error_view:false
+      error_view: false,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -381,23 +381,18 @@ class RecordForm extends React.Component<
       //save the sub_record id into intitial value
       const field_id = child_state.field_id.replace('?', '');
       const sub_record_id = child_state.record_id;
-      const hrid = child_state.hrid??sub_record_id;
+      const hrid = child_state.hrid ?? sub_record_id;
       const new_record = {
         project_id: this.props.project_id,
         record_id: sub_record_id,
         record_label: hrid,
       };
-      console.error(
-        this.props.ui_specification['fields'][field_id]['component-parameters'][
-          'multiple'
-        ]
-      );
+
       if (
         this.props.ui_specification['fields'][field_id]['component-parameters'][
           'multiple'
         ]
       ) {
-        console.error(initialValues[field_id]);
         let isincluded = false;
         initialValues[field_id].map((r: any) => {
           if (r.record_id === new_record.record_id) {
@@ -543,7 +538,7 @@ class RecordForm extends React.Component<
         if (this.props.revision_id === undefined) {
           const ori_search = window.location.search;
           const url_split = ori_search.split('&');
-          const pathname=window.location.pathname
+          const pathname = window.location.pathname;
           redirecturl =
             this.props.project_id +
             ROUTES.RECORD_CREATE +
@@ -551,7 +546,7 @@ class RecordForm extends React.Component<
 
           if (url_split.length > 1 && ori_search.includes('link=')) {
             const fieldid = url_split[0];
-            redirecturl = url_split[1].replace('link=/projects/', '');
+
             search = ori_search.replace(
               url_split[0] + '&' + url_split[1] + '&',
               ''
@@ -561,12 +556,31 @@ class RecordForm extends React.Component<
                 url_split[2] + '&' + url_split[3],
                 ''
               );
+            const url_split_re = search.split('&');
+            if (
+              url_split_re.length > 1 &&
+              url_split_re[1].replace(
+                'link=/projects/' + this.props.project_id,
+                ''
+              ) ===
+                pathname.replace(
+                  '/projects/' +
+                    pathname.replace('/projects/', '').split('/')[0],
+                  ''
+                )
+            )
+              search = search.replace(
+                url_split_re[0] + '&' + url_split_re[1],
+                ''
+              );
             state_pa = {
               field_id: fieldid.replace('?field_id=', ''),
               record_id: this.props.record_id,
               hrid: result,
               parent_link: search,
             };
+            if (search !== '')
+              redirecturl = url_split[1].replace('link=/projects/', '');
           }
           // scroll to top of page, seems to be needed on mobile devices
         }
@@ -779,7 +793,7 @@ class RecordForm extends React.Component<
                         handerannoattion={this.updateannotation}
                       />
                       <br />
-                      
+
                       <br />
                       <ButtonGroup
                         color="primary"

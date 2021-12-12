@@ -21,9 +21,14 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
-import {RecordID, ProjectID, RevisionID,FAIMSTypeName} from '../datamodel/core';
+import {
+  RecordID,
+  ProjectID,
+  RevisionID,
+  FAIMSTypeName,
+} from '../datamodel/core';
 import {Revision} from '../datamodel/database';
-import {Record, RecordMetadata,RecordReference} from '../datamodel/ui';
+import {Record, RecordMetadata, RecordReference} from '../datamodel/ui';
 import {
   addNewRevisionFromForm,
   createNewRecord,
@@ -33,9 +38,9 @@ import {
   getFormDataFromRevision,
   updateHeads,
   getHRID,
-  listRecordMetadata
+  listRecordMetadata,
 } from './internals';
-import {getAllRecordsOfType} from './queries'
+import {getAllRecordsOfType} from './queries';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
@@ -292,19 +297,18 @@ export async function getHRIDforRecordID(
   }
 }
 
-
 export async function getRecordsByType(
   project_id: ProjectID,
-  type: FAIMSTypeName,
+  type: FAIMSTypeName
 ): Promise<RecordReference[]> {
   try {
-    const records:RecordReference[]=[]
-    await listRecordMetadata(project_id).then(record_list=>{
+    const records: RecordReference[] = [];
+    await listRecordMetadata(project_id).then(record_list => {
       for (const key in record_list) {
         const metadata = record_list[key];
         console.debug('Records', key, metadata);
-        if (!metadata.deleted&&metadata.type===type) {
-          records.push( {
+        if (!metadata.deleted && metadata.type === type) {
+          records.push({
             project_id: project_id,
             record_id: metadata.record_id,
             record_label: metadata.hrid, // TODO: decide how we're getting HRIDs from db
@@ -312,12 +316,11 @@ export async function getRecordsByType(
           console.debug('Not deleted Records', key, metadata);
         }
       }
-    }
-    )
+    });
     return records;
-  }catch(error){
-    const records=await getAllRecordsOfType(project_id,type)
-    console.error('error')
+  } catch (error) {
+    const records = await getAllRecordsOfType(project_id, type);
+    console.error('error');
     return records;
   }
 }

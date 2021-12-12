@@ -87,16 +87,15 @@ export function ViewComponent(props: ViewProps) {
   const viewName = props.viewName;
   const fieldNames: string[] = ui_specification.views[viewName].fields;
   const fields = ui_specification.fields;
-  const [error,setError]=useState(true)
-
+  const [error, setError] = useState(true);
 
   useEffect(() => {
-    let iserror=false;
-    fieldNames.map(field=>
-      props.formProps.errors[field]!==undefined?iserror=true:field
-    )
-    setError(iserror)
-    console.error(error)
+    let iserror = false;
+    fieldNames.map(field =>
+      props.formProps.errors[field] !== undefined ? (iserror = true) : field
+    );
+    setError(iserror);
+    console.error(error);
   }, [props.formProps]);
 
   return (
@@ -111,17 +110,16 @@ export function ViewComponent(props: ViewProps) {
           handerannoattion={props.handerannoattion}
         />
       ))}
-      {!props.formProps.isValid&& error!==false&&
-                       <Alert severity="error">
-                       Form has errors, please scroll up 
-                       and make changes before submitting.
-                     </Alert>
-                       }
-      {!props.formProps.isValid&& error===false&&
-                       <Alert severity="warning">
-                       Form has errors, please check other tabs before submitting.
-                     </Alert>
-                       }
+      {!props.formProps.isValid && error !== false && (
+        <Alert severity="error">
+          Form has errors, please scroll up and make changes before submitting.
+        </Alert>
+      )}
+      {!props.formProps.isValid && error === false && (
+        <Alert severity="warning">
+          Form has errors, please check other tabs before submitting.
+        </Alert>
+      )}
     </React.Fragment>
   );
 }

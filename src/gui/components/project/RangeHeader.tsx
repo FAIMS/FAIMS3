@@ -19,32 +19,38 @@
  *   TODO: different design settings
  */
 
-import { Typography } from '@material-ui/core';
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {get_user_friendly_status_for_project,UserFriendlyAutoincrementStatus} from '../../../datamodel/autoincrement'
+import {
+  get_user_friendly_status_for_project,
+  UserFriendlyAutoincrementStatus,
+} from '../../../datamodel/autoincrement';
 
-export default function RangeHeader (
-   props:{project:any}
-  )  {
-    const [status,setStatus]=useState<UserFriendlyAutoincrementStatus[]>()
-    useEffect(() => {
-        get_user_friendly_status_for_project(props.project.project_id).then(res=>setStatus(res))
-        console.error('RUN Here'+props.project.project_id)
-      }, [props.project.project_id])
-  
-    return (
-     <>
-    { props.project.created === 'Unknown'
-                ? 'Created ' +'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'+ 'last record updated'
-                : 'Created' +
-                  props.project.created +
-                  ', last record updated ' +
-                  props.project.last_updated}
-    {'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'}
-     Range Index: {status?.map(sta=><>{sta.label}:{sta.last_used}/{sta.end}{'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'}</>
-        )}
-     </>
+export default function RangeHeader(props: {project: any}) {
+  const [status, setStatus] = useState<UserFriendlyAutoincrementStatus[]>();
+  useEffect(() => {
+    get_user_friendly_status_for_project(props.project.project_id).then(res =>
+      setStatus(res)
     );
-  }
-  
+    console.error('RUN Here' + props.project.project_id);
+  }, [props.project.project_id]);
+
+  return (
+    <>
+      {props.project.created === 'Unknown'
+        ? 'Created ' + '\xa0\xa0\xa0\xa0\xa0\xa0\xa0' + 'last record updated'
+        : 'Created' +
+          props.project.created +
+          ', last record updated ' +
+          props.project.last_updated}
+      {'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'}
+      Range Index:{' '}
+      {status?.map(sta => (
+        <>
+          {sta.label}:{sta.last_used}/{sta.end}
+          {'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'}
+        </>
+      ))}
+    </>
+  );
+}
