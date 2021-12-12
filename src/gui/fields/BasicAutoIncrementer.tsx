@@ -209,6 +209,7 @@ const uiSpec = {
     required: true,
     num_digits: 5,
     form_id: 'default', // TODO: sort out this
+    label: 'AutoIncrece',
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: null,
@@ -216,9 +217,10 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['views']['FormParamater']['fields'] = ['label'];
   newuiSetting['viewsets'] = {
     settings: {
-      views: [],
+      views: ['FormParamater'],
       label: 'settings',
     },
   };

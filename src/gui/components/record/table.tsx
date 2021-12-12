@@ -66,7 +66,14 @@ function RecordsTable(props: RecordsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  console.debug('Rows:', rows);
+  // const newrows:any=[];
+  // rows.map((r:any,index:number)=>
+  //   props.viewsets !== null &&
+  //   props.viewsets !== undefined &&
+  //   r.type !== null &&
+  //   r.type !== undefined &&
+  //   props.viewsets[r.type] !== undefined? newrows[index]={...r,type_label:props.viewsets[r.type].label?? r.type }:newrows[index]={...r})
+
   const columns: GridColDef[] = [
     {
       field: 'hrid',

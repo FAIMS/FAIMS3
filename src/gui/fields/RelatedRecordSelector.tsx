@@ -29,7 +29,7 @@ import {Autocomplete} from 'formik-material-ui-lab';
 import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName} from '../../datamodel/core';
 import {RecordReference} from '../../datamodel/ui';
-import {getAllRecordsOfType} from '../../data_storage/queries';
+import {getRecordsByType} from '../../data_storage';
 import {
   getDefaultuiSetting,
   Defaultcomponentsetting,
@@ -76,10 +76,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
-        const records = await getAllRecordsOfType(
-          project_id,
-          props.related_type
-        );
+        const records = await getRecordsByType(project_id, props.related_type);
         setOptions(records);
       })();
     }

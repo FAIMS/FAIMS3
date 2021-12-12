@@ -37,7 +37,6 @@ export async function getAllRecordsOfType(
   console.log(res);
   // const hrid = (await getHRID(project_id, o.revision)) ;
   return res.docs.map(o => {
-    console.log(o);
     return {
       project_id: project_id,
       record_id: o._id,
