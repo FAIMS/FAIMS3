@@ -46,7 +46,7 @@ export default function ProjectSettings() {
   const [metadbContents, setMetadbContents] = useState<object[]>([]);
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
-    {link: ROUTES.PROJECT_LIST, title: 'Nootebook'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebook'},
     {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : '',

@@ -135,7 +135,7 @@ registerComponent(
   'TextField',
   setupComponentProperties(
     'Input field',
-    'text plus sepcial characters',
+    'text plus special characters',
     'Text',
     FormikTextField,
     {
