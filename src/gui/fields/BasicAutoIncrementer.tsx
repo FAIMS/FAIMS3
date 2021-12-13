@@ -38,11 +38,13 @@ interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
   form_id: string;
+  label?:string;
 }
 
 interface State {
   has_run: boolean;
   is_ranger: boolean;
+  label:string;
 }
 
 export class BasicAutoIncrementer extends React.Component<
@@ -51,9 +53,12 @@ export class BasicAutoIncrementer extends React.Component<
 > {
   constructor(props: FieldProps & Props) {
     super(props);
+    const label=this.props.label!==''&&this.props.label!==undefined?this.props.label:this.props.form_id
+    console.error("label"+label)
     this.state = {
       has_run: false,
       is_ranger: true,
+      label: label??this.props.form_id
     };
   }
 
@@ -186,7 +191,9 @@ export class BasicAutoIncrementer extends React.Component<
               ROUTES.AUTOINCREMENT +
               this.props.form_id +
               '/' +
-              this.props.field.name
+              this.props.field.name +
+              '/' +
+              this.state.label
             }
           >
             Add Range
@@ -209,7 +216,7 @@ const uiSpec = {
     required: true,
     num_digits: 5,
     form_id: 'default', // TODO: sort out this
-    label: 'AutoIncrece',
+    label: '',
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: null,
