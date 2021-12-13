@@ -95,7 +95,6 @@ export function ViewComponent(props: ViewProps) {
       props.formProps.errors[field] !== undefined ? (iserror = true) : field
     );
     setError(iserror);
-    console.error(error);
   }, [props.formProps]);
 
   return (
