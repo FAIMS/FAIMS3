@@ -18,7 +18,8 @@
  *   TODO
  */
 
-import React, {useContext, useState} from 'react';
+import React, {useContext, useState, useEffect} from 'react';
+import {useHistory, useParams, Redirect} from 'react-router-dom';
 import {
   Box,
   Container,
@@ -26,17 +27,18 @@ import {
   Paper,
   CircularProgress,
 } from '@material-ui/core';
-import {useHistory, useParams} from 'react-router-dom';
+
+import {ActionType} from '../../actions';
 import * as ROUTES from '../../constants/routes';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import {ProjectID, RecordID} from '../../datamodel/core';
+import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
+import {store} from '../../store';
+import {getUiSpecForProject} from '../../uiSpecification';
+
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
-import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID, RecordID} from '../../datamodel/core';
-import {ProjectUIModel} from '../../datamodel/ui';
-import {useEffect} from 'react';
-import {getUiSpecForProject} from '../../uiSpecification';
-import {ActionType} from '../../actions';
-import {store} from '../../store';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
 
 export default function RecordCreate() {
   const {project_id, type_name, record_id} = useParams<{
@@ -47,7 +49,23 @@ export default function RecordCreate() {
   const {dispatch} = useContext(store);
   const history = useHistory();
 
-  const project_info = getProjectInfo(project_id);
+  let project_info: ProjectInformation | null;
+  try {
+    project_info = useEventedPromise(
+      getProjectInfo,
+      constantArgsShared(listenProjectInfo, project_id),
+      false,
+      [project_id],
+      project_id
+    ).expect();
+  } catch (err: any) {
+    if (err.message !== 'missing') {
+      throw err;
+    } else {
+      return <Redirect to="/404" />;
+    }
+  }
+
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
 

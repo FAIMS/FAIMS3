@@ -30,7 +30,7 @@ import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {useEventedPromise} from '../../pouchHook';
 import {listenProjectList} from '../../../databaseAccess';
-import { listenProjectDB } from '../../../sync';
+import {listenProjectDB} from '../../../sync';
 type DashboardActionProps = {
   pouchProjectList: ProjectInformation[];
 };

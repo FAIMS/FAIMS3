@@ -49,6 +49,7 @@ export default function Project() {
       return <Redirect to="/404" />;
     }
   }
+
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Index'},
     {link: ROUTES.PROJECT_LIST, title: 'Projects'},

@@ -347,7 +347,6 @@ export function listenDataDB(
   );
 }
 
-
 /**
  * Returns the current Meta PouchDB of a project. This waits for the initial
  * sync to finish enough to know if the project exists or not before returning
