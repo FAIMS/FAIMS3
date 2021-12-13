@@ -38,13 +38,13 @@ interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
   form_id: string;
-  label?:string;
+  label?: string;
 }
 
 interface State {
   has_run: boolean;
   is_ranger: boolean;
-  label:string;
+  label: string;
 }
 
 export class BasicAutoIncrementer extends React.Component<
@@ -53,12 +53,14 @@ export class BasicAutoIncrementer extends React.Component<
 > {
   constructor(props: FieldProps & Props) {
     super(props);
-    const label=this.props.label!==''&&this.props.label!==undefined?this.props.label:this.props.form_id
-    console.error("label"+label)
+    const label =
+      this.props.label !== '' && this.props.label !== undefined
+        ? this.props.label
+        : this.props.form_id;
     this.state = {
       has_run: false,
       is_ranger: true,
-      label: label??this.props.form_id
+      label: label ?? this.props.form_id,
     };
   }
 
