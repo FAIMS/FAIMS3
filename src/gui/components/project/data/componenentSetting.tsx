@@ -61,6 +61,25 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.string']],
       initialValue: 'Annotation_label',
     },
+    annotation: {
+      'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+      'component-name': 'Checkbox',
+      'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+      'component-parameters': {
+        name: 'annotation',
+        id: 'annotation',
+        required: false,
+        type: 'checkbox',
+        FormControlLabelProps: {
+          label: 'Include Annotation',
+        },
+        FormHelperTextProps: {
+          children: 'Include Annotation',
+        },
+      },
+      validationSchema: [['yup.bool']],
+      initialValue: true,
+    },
     uncertainty_include: {
       'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
       'component-name': 'Checkbox',
@@ -76,7 +95,6 @@ const uiSettingOthers: ProjectUIModel = {
         FormHelperTextProps: {
           children: 'Include Uncertainty',
         },
-        // Label: {label: 'Terms and Conditions'},
       },
       validationSchema: [['yup.bool']],
       initialValue: true,
@@ -85,13 +103,6 @@ const uiSettingOthers: ProjectUIModel = {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      meta: {
-        annotation_label: 'annotation',
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
-      },
       access: ['admin'],
       'component-parameters': {
         name: 'textInput',
@@ -199,7 +210,7 @@ const uiSettingOthers: ProjectUIModel = {
   },
   views: {
     meta: {
-      fields: ['annotation_label', 'uncertainty_include'],
+      fields: ['annotation', 'annotation_label', 'uncertainty_include'],
       uidesign: 'form',
       label: 'meta',
     },
@@ -307,11 +318,6 @@ export const generatenewfield = (
     uifield['component-parameters']['form_id'] = props.currentform;
     return uifield;
   }
-  // if(props!==null){
-  //   for (const [key, value] of props) {
-  //     uifield[key]=value
-  //   }
-  // }
 
   return uifield;
 };
@@ -341,6 +347,9 @@ const getvalue = (
     if (name === 'uncertainty_include' || name === 'uncertainty_label')
       return fieldui['meta']['uncertainty'][name.replace('uncertainty_', '')];
     return fieldui['meta'][name];
+  }
+  if (view === 'meta' && fieldui['meta'] === undefined) {
+    return false;
   }
   try {
     return (
@@ -414,36 +423,42 @@ const Componentsetting = (props: componenentSettingprops) => {
     ],
   ]);
 
-  const updatecertainty = (value: boolean) => {
-    if (value === true) {
-      const newuis: ProjectUIModel = uiSetting;
-      newuis['views']['meta']['fields'] = [
-        'annotation_label' + props.fieldName,
-        'uncertainty_include' + props.fieldName,
-        'uncertainty_label' + props.fieldName,
-      ];
-      newuis['fields']['uncertainty_include' + props.fieldName].checked = true;
-      console.log('value true');
-      console.log(newuis['views']['meta']);
-      setuiSetting({...newuis});
-    }
-
-    if (value === false) {
-      const newuis: ProjectUIModel = uiSetting;
-      newuis['views']['meta']['fields'] = [
-        'annotation_label' + props.fieldName,
-        'uncertainty_include' + props.fieldName,
-      ];
-      newuis['fields']['uncertainty_include' + props.fieldName].checked = false;
-      setuiSetting({...newuis});
-    }
+  const updatecertainty = (
+    annotation_value: boolean,
+    uncertainty_value: boolean
+  ) => {
+    const newuis: ProjectUIModel = uiSetting;
+    newuis['fields']['annotation' + props.fieldName].checked = annotation_value;
+    newuis['fields'][
+      'uncertainty_include' + props.fieldName
+    ].checked = uncertainty_value;
+    newuis['views']['meta']['fields'] = ['annotation' + props.fieldName];
+    if (annotation_value === true)
+      newuis['views']['meta']['fields'].push(
+        'annotation_label' + props.fieldName
+      );
+    newuis['views']['meta']['fields'].push(
+      'uncertainty_include' + props.fieldName
+    );
+    if (uncertainty_value === true)
+      newuis['views']['meta']['fields'].push(
+        'uncertainty_label' + props.fieldName
+      );
+    setuiSetting({...newuis});
   };
   const setini = () => {
-    updatecertainty(
-      props.projectvalue['forms'][props.currentform][
-        'uncertainty' + props.currentform
-      ] ?? true
-    );
+    try {
+      updatecertainty(
+        props.projectvalue['forms'][props.currentform][
+          'annotation' + props.currentform
+        ] ?? true,
+        props.projectvalue['forms'][props.currentform][
+          'uncertainty' + props.currentform
+        ] ?? true
+      );
+    } catch (error) {
+      updatecertainty(true, false);
+    }
   };
   const handlerchanges = (event: any) => {
     const name = event.target.name.replace(props.fieldName, '');
@@ -463,7 +478,10 @@ const Componentsetting = (props: componenentSettingprops) => {
         newvalues['fields'][props.fieldName]['meta']['uncertainty'][
           name.replace('uncertainty_', '')
         ] = event.target.checked;
-      if (name === 'uncertainty_label')
+      else if (name === 'annotation')
+        newvalues['fields'][props.fieldName]['meta'][name] =
+          event.target.checked;
+      else if (name === 'uncertainty_label')
         newvalues['fields'][props.fieldName]['meta']['uncertainty'][
           name.replace('uncertainty_', '')
         ] = event.target.value;
@@ -473,8 +491,27 @@ const Componentsetting = (props: componenentSettingprops) => {
 
       if (name === 'uncertainty_include') {
         const value = event.target.checked;
-        updatecertainty(value);
-        console.log(uiSetting);
+        updatecertainty(
+          props.uiSpec['fields'][props.fieldName]['meta'] !== undefined
+            ? props.uiSpec['fields'][props.fieldName]['meta']['annotation'] ??
+                true
+            : true,
+          value
+        );
+      }
+
+      if (name === 'annotation') {
+        const value = event.target.checked;
+        updatecertainty(
+          value,
+          props.uiSpec['fields'][props.fieldName]['meta'] !== undefined &&
+            props.uiSpec['fields'][props.fieldName]['meta']['uncertainty'] !==
+              undefined
+            ? props.uiSpec['fields'][props.fieldName]['meta']['uncertainty'][
+                'include'
+              ] ?? false
+            : false
+        );
       }
     }
     if (view === 'FormParamater') {

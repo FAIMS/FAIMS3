@@ -35,7 +35,10 @@ export function Annotation(props: any) {
     setIsClick(false);
   }, []);
 
-  return field.meta !== undefined && field.meta.annotation !== false ? (
+  return (field.meta !== undefined && field.meta.annotation !== false) ||
+    (field.meta !== undefined &&
+      field.meta.uncertainty !== undefined &&
+      field.meta.uncertainty.include !== false) ? (
     <>
       <IconButton
         edge="end"
@@ -120,18 +123,20 @@ export function AnnotationField(props: AnnotationFieldProp) {
   };
   return (
     <>
-      {isclicked && field.meta !== undefined && (
-        <Field
-          component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
-          name={fieldName + 'annotation'}
-          id={props.fieldName + 'annotation'}
-          value={annotation}
-          variant="outlined"
-          onChange={handlerchangesAnnotation}
-          InputProps={{type: 'text'}}
-          label={field['meta']['annotation_label']}
-        />
-      )}
+      {isclicked &&
+        field.meta !== undefined &&
+        field.meta.annotation !== false && (
+          <Field
+            component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
+            name={fieldName + 'annotation'}
+            id={props.fieldName + 'annotation'}
+            value={annotation}
+            variant="outlined"
+            onChange={handlerchangesAnnotation}
+            InputProps={{type: 'text'}}
+            label={field['meta']['annotation_label']}
+          />
+        )}
       {field.meta !== undefined &&
         field.meta['uncertainty'] !== undefined &&
         field['meta']['uncertainty']['include'] &&

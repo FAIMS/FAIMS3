@@ -542,6 +542,15 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           newviews['fields'][field]['meta']['annotation'] =
             event.target.checked;
         });
+        const {newformcom, initialfieldvalue} = updateuiSpec('newfromui', {
+          formuiSpec: newviews,
+          formcomponents: formcomponents,
+          access: accessgroup,
+          initialfieldvalue: initialValues,
+          projectvalue: projectvalue,
+        });
+
+        setinitialValues({...initialValues, ...initialfieldvalue});
       }
 
       if (event.target.name === 'uncertainty' + formvariants) {
@@ -562,7 +571,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         setinitialValues({...initialValues, ...initialfieldvalue});
       }
 
-      setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
+      setFormuiSpec({...formuiSpec, fields: newviews.fields});
     }
 
     setfieldValue(0); //TODO: remove it
