@@ -127,7 +127,11 @@ export function TemplatedStringcomponentsetting(
       );
       newfield['component-parameters']['ElementProps']['options'] = options;
       newfield['component-parameters']['required'] = true;
-      newfield['validationSchema'] = [['yup.string'], ['yup.required']];
+      newfield['validationSchema'] = [
+        ['yup.string'],
+        ['yup.required'],
+        ['yup.min', 1],
+      ];
       let inivalue = templatevalue.split('-');
       inivalue =
         inivalue.length > 0 && inivalue[i] !== undefined
@@ -273,6 +277,11 @@ export function TemplatedStringcomponentsetting(
     }
 
     if (name.includes('fieldselect1')) {
+      let targetvalue = event.target.value;
+      if (event.target.value === '' || event.target.value === undefined) {
+        targetvalue = ' ';
+      }
+
       const newvalues = props.uiSpec;
       const string =
         props.uiSpec['fields'][props.fieldName]['component-parameters'][
@@ -281,7 +290,7 @@ export function TemplatedStringcomponentsetting(
       const value = string.split('-');
       console.log(value);
       const num = name.replace('fieldselect1', '');
-      if (event.target.value.indexOf('newfield') !== -1)
+      if (targetvalue.indexOf('newfield') !== -1)
         value[num] = '{{' + event.target.value + '}}';
       else value[num] = event.target.value;
       const subvalue = value.join('-');
@@ -292,9 +301,6 @@ export function TemplatedStringcomponentsetting(
 
       props.setuiSpec({...newvalues});
 
-      // const newini=props.initialValues
-      // newini['template'+props.fieldName]=subvalue
-      // props.setinitialValues({...newini})
       const newuis = uiSetting;
       newuis['fields']['template' + props.fieldName]['value'] = subvalue;
 
