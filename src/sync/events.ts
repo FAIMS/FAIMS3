@@ -20,6 +20,7 @@
 
 import {EventEmitter} from 'events';
 import {createdListingsInterface, createdProjectsInterface} from './state';
+import {ListingID} from '../datamodel/core';
 import {ListingsObject, ProjectObject} from '../datamodel/database';
 import {ExistingActiveDoc} from './databases';
 
@@ -34,6 +35,7 @@ export class DebugEmitter extends EventEmitter {
 }
 
 export const events: DirectoryEmitter = new DebugEmitter();
+events.setMaxListeners(100); // Default is 10, but that is soon exceeded with multiple watchers of a single project
 
 type ProjectEventInfo = [ListingsObject, ExistingActiveDoc, ProjectObject];
 
@@ -125,7 +127,7 @@ export interface DirectoryEmitter extends EventEmitter {
       type: ['update', createdListingsInterface] | ['delete'] | ['create'],
       projects_changed: boolean,
       people_changed: boolean,
-      listing: ListingsObject
+      listing_id: ListingID
     ) => unknown
   ): this;
   on(
@@ -188,7 +190,7 @@ export interface DirectoryEmitter extends EventEmitter {
     type: ['update', createdListingsInterface] | ['delete'] | ['create'],
     projects_changed: boolean,
     people_changed: boolean,
-    listing: ListingsObject
+    listing_id: ListingID
   ): boolean;
   emit(event: 'listing_error', listing_id: string, err: unknown): boolean;
   emit(event: 'listings_sync_state', syncing: boolean): boolean;

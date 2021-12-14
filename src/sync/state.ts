@@ -153,13 +153,13 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
   });
   initializeEvents.on(
     'listing_update',
-    (type, projects_changed, people_changed, listing) => {
+    (type, projects_changed, people_changed, listing_id) => {
       // Now we know we have to wait for the projects DB of listing
       // to fully sync by setting to false (But we don't have to wait if
       // projects_changed == false, and no projects_sync_state triggers)
       listing_projects_synced.set(
-        listing._id,
-        listing_projects_synced.get(listing._id) ?? !projects_changed
+        listing_id,
+        listing_projects_synced.get(listing_id) ?? !projects_changed
       );
 
       common_check();
@@ -188,7 +188,8 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
       common_check();
     }
   );
-  initializeEvents.on('project_error', (listing, active) => {
+  initializeEvents.on('project_error', (listing, active, err) => {
+    console.debug('project_error info', listing, 'active', active, 'err', err);
     // Don't hold up other things waiting for it to not be an error:
     projects_meta_synced.set(active._id, true);
     projects_data_synced.set(active._id, true);

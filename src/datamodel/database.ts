@@ -20,6 +20,7 @@
 
 import {
   NonUniqueProjectID,
+  ListingID,
   RecordID,
   RevisionID,
   AttributeValuePairID,
@@ -69,7 +70,7 @@ export type PossibleConnectionInfo =
     };
 
 export interface ListingsObject {
-  _id: string;
+  _id: ListingID;
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
@@ -83,7 +84,7 @@ export interface NonNullListingsObject extends ListingsObject {
 
 export interface ActiveDoc {
   _id: ProjectID;
-  listing_id: string;
+  listing_id: ListingID;
   project_id: NonUniqueProjectID;
   username: string | null;
   password: string | null;
@@ -107,7 +108,7 @@ export interface ProjectPeople {
  * Do not use with UI code; sync code only
  */
 export interface ProjectObject {
-  _id: string;
+  _id: NonUniqueProjectID;
   name: string;
   description?: string;
   data_db?: PossibleConnectionInfo;

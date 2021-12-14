@@ -17,6 +17,7 @@
  * Description:
  *   TODO
  */
+import {USE_REAL_DATA} from '../buildconfig';
 import {setupExampleActive} from '../dummyData';
 import {update_directory} from './process-initialization';
 import {active_db, directory_connection_info} from './databases';
@@ -52,7 +53,9 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  await setupExampleActive(active_db);
+  if (!USE_REAL_DATA) {
+    await setupExampleActive(active_db);
+  }
 
   register_sync_state(events);
   register_basic_automerge_resolver(events);

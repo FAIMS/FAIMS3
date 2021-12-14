@@ -19,12 +19,12 @@
  */
 
 import {USE_REAL_DATA, AUTOACTIVATE_PROJECTS} from '../buildconfig';
+import {ProjectID, ListingID, split_full_project_id} from '../datamodel/core';
 import {
   ConnectionInfo,
   ListingsObject,
   ProjectObject,
 } from '../datamodel/database';
-import {ProjectID} from '../datamodel/core';
 import {
   setupExampleDirectory,
   setupExampleListing,
@@ -78,14 +78,19 @@ export async function update_directory(
   // So that's why active_db.changes is set to 'now' and everything needing
   // all docs + listening for docs usees its own changes object
   active_db.changes({...default_changes_opts, since: 0}).on('change', info => {
-    const listing_id = info.doc!.listing_id;
+    console.debug('ActiveDB Info', info);
+    if (info.doc === undefined) {
+      console.error('Active doc changes has doc undefined');
+      return undefined;
+    }
+    const listing_id = split_full_project_id(info.doc._id).listing_id;
 
     if (info.deleted) {
       to_sync[listing_id] -= 1;
       if (to_sync[listing_id] === 0) {
         // Some listing no longer used by anything: delete
         delete to_sync[listing_id];
-        process_listing(true, listing_id);
+        delete_listing_by_id(listing_id);
       }
     } else {
       // Some listing activated
@@ -105,6 +110,7 @@ export async function update_directory(
           );
       }
     }
+    return undefined;
   });
 
   // We just use the 1 events object
@@ -116,7 +122,8 @@ export async function update_directory(
   directory_db.changes = directory_db.local
     .changes({...default_changes_opts, since: 0})
     .on('change', info => {
-      if (info.id in to_sync) {
+      console.debug('DirectoryDB Info', info);
+      if (info.id in to_sync || AUTOACTIVATE_PROJECTS) {
         // Only active listings
         // This can delete for deletion changes
         process_listing(info.deleted || false, info.doc!);
@@ -135,7 +142,7 @@ export async function update_directory(
     // This code runs at a point where the directory is pretty stable
     // it should have had all changes already done, any more are from remote.
     // So that's why we put the debugging here:
-    console.debug(`Active listing IDs are ${to_sync} (${message}`);
+    console.debug('Active listing IDs are:', to_sync, 'with message', message);
     events.emit('listings_sync_state', false);
   };
 
@@ -169,39 +176,40 @@ export async function update_directory(
  * @param listing_id_or_listing Listing to delete/undelete
  */
 function process_listing(
-  ...args:
-    | [boolean, PouchDB.Core.ExistingDocument<ListingsObject>]
-    | [true, string]
+  delete_listing: boolean,
+  listing: PouchDB.Core.ExistingDocument<ListingsObject>
 ) {
-  if (args[0]) {
+  if (delete_listing) {
     // Delete listing from memory
-    const listing = args[1] as PouchDB.Core.ExistingDocument<ListingsObject>;
-    const listing_id = listing._id;
-
-    if (people_dbs[listing_id].remote?.connection !== null) {
-      people_dbs[listing_id].local.removeAllListeners();
-      people_dbs[listing_id].remote!.connection!.cancel();
-    }
-
-    if (projects_dbs[listing_id].remote?.connection !== null) {
-      projects_dbs[listing_id].local.removeAllListeners();
-      projects_dbs[listing_id].remote!.connection!.cancel();
-    }
-
-    delete people_dbs[listing_id];
-    delete projects_dbs[listing_id];
-    delete createdListings[listing_id];
-
     // DON'T MOVE THIS PAST AN AWAIT POINT
-    events.emit('listing_update', ['delete'], false, false, listing);
+    delete_listing_by_id(listing._id);
   } else {
     // Create listing, convert from async to event emitter
-    const listing_id = typeof args[1] === 'string' ? args[1] : args[1]._id;
     // DON'T MOVE THIS PAST AN AWAIT POINT
-    update_listing(args[1]).catch(err =>
-      events.emit('listing_error', listing_id, err)
+    update_listing(listing).catch(err =>
+      events.emit('listing_error', listing._id, err)
     );
   }
+}
+
+function delete_listing_by_id(listing_id: ListingID) {
+  // Delete listing from memory
+  if (people_dbs[listing_id]?.remote?.connection !== null) {
+    people_dbs[listing_id].local.removeAllListeners();
+    people_dbs[listing_id].remote!.connection!.cancel();
+  }
+
+  if (projects_dbs[listing_id]?.remote?.connection !== null) {
+    projects_dbs[listing_id].local.removeAllListeners();
+    projects_dbs[listing_id].remote!.connection!.cancel();
+  }
+
+  delete people_dbs[listing_id];
+  delete projects_dbs[listing_id];
+  delete createdListings[listing_id];
+
+  // DON'T MOVE THIS PAST AN AWAIT POINT
+  events.emit('listing_update', ['delete'], false, false, listing_id);
 }
 
 /**
@@ -266,7 +274,7 @@ export async function update_listing(
     old_value === undefined ? ['create'] : ['update', old_value],
     projects_did_change,
     people_did_change,
-    listing_object
+    listing_object._id
   );
 
   // Only sync active listings: To do so, get all active docs,
@@ -285,16 +293,26 @@ export async function update_listing(
     active_db
       .changes({...default_changes_opts, since: 0})
       .on('change', info => {
+        if (info.doc === undefined) {
+          console.error('Active doc changes has doc undefined');
+          return undefined;
+        }
+        const split_id = split_full_project_id(info.doc._id);
+        const listing_id = split_id.listing_id;
+        const project_id = split_id.project_id;
+        console.debug('Active db listing id', listing_id);
+        console.debug('ActiveDB Info in update listing', info);
         if (info.deleted) {
           // Some listing deactivated: delete its local dbs and such
-          delete to_sync[info.doc!.listing_id];
-          process_listing(true, info.doc!.listing_id);
+          delete to_sync[listing_id];
+          delete_listing_by_id(listing_id);
         } else {
           // Some listing activated
-          to_sync[info.doc!.listing_id] = info.doc!;
+          console.debug('info.id', info.id);
+          to_sync[info.id] = info.doc!;
           // Need to fetch it first though.
           projects_local.local
-            .get(info.doc!.listing_id)
+            .get(project_id)
             // If get succeeds, undelete/create:
             .then(
               existing_project =>
@@ -307,9 +325,10 @@ export async function update_listing(
                 ),
               // Even for 404 errors, since the listing is active, it should exist
               // so it's an error if it doesn't exist.
-              err => events.emit('listing_error', info.doc!.listing_id, err)
+              err => events.emit('listing_error', listing_id, err)
             );
         }
+        return undefined;
       });
 
     // As with directory, when updates come through to the projects db,
@@ -318,6 +337,10 @@ export async function update_listing(
     projects_local.local
       .changes({...default_changes_opts, since: 0})
       .on('change', info => {
+        if (info.doc === undefined) {
+          console.error('projects_local doc changes has doc undefined');
+          return undefined;
+        }
         if (info.id in to_sync) {
           // Only active projects
           // This can delete for deletion changes
@@ -333,6 +356,7 @@ export async function update_listing(
         if (AUTOACTIVATE_PROJECTS) {
           autoactivate_projects(listing_id, [info.id]);
         }
+        return undefined;
       })
       .on('error', err => {
         events.emit('listing_error', listing_id, err);
@@ -341,13 +365,13 @@ export async function update_listing(
 
   const people_pause = (message?: string) => () => {
     if (!people_did_change) return;
-    console.debug(`People settled for ${listing_id} (${message})`);
+    console.debug('People settled for', listing_id, 'with message', message);
   };
 
   const projects_pause = (message?: string) => () => {
     if (!projects_did_change) return;
-    console.debug(`Projects settled for ${listing_id} (${message})`);
-    console.debug(`Active project IDs in ${listing_id} are ${to_sync}`);
+    console.debug('Projects settled for', listing_id, 'with message', message);
+    console.debug('Active project IDs in', listing_id, 'are', to_sync);
     events.emit('projects_sync_state', false, listing_object);
   };
 
@@ -476,6 +500,7 @@ function process_project(
     );
   } else {
     // DON'T MOVE THIS PAST AN AWAIT POINT
+    console.debug('check error', listing, active_project);
     update_project(
       listing,
       active_project,
@@ -506,7 +531,7 @@ export async function update_project(
    * metadata/data databases.
    */
   const active_id = active_project._id;
-  console.debug(`Processing project ${active_id}`);
+  console.debug('Processing project', active_id);
 
   const [meta_did_change, meta_local] = ensure_local_db(
     'metadata',
@@ -549,7 +574,7 @@ export async function update_project(
       active_project,
       project_object
     );
-    if (USE_REAL_DATA) {
+    if (!USE_REAL_DATA) {
       await setupExampleProjectMetadata(active_project._id, meta_local.local);
     }
   }
@@ -562,7 +587,7 @@ export async function update_project(
       active_project,
       project_object
     );
-    if (USE_REAL_DATA) {
+    if (!USE_REAL_DATA) {
       await setupExampleData(active_project._id);
     }
   }

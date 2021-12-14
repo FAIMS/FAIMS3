@@ -65,6 +65,7 @@ export function listenProjectList(
   error: (err: any) => void
 ): () => void {
   events.on('project_update', listener);
+  console.debug(`${error} will never be called`);
   return () => {
     // Event remover
     events.removeListener('project_update', listener);
