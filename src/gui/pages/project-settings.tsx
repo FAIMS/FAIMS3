@@ -107,7 +107,10 @@ export default function ProjectSettings() {
         {loading ? (
           'Loading...'
         ) : (
-          <TextareaAutosize defaultValue={JSON.stringify(metadbContents)} />
+          <TextareaAutosize
+            defaultValue={JSON.stringify(metadbContents)}
+            disabled={true}
+          />
         )}
       </Box>
     </Container>
