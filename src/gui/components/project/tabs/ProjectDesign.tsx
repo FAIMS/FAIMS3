@@ -412,15 +412,18 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       newprojectvalue['forms'][tabname]['visible' + tabname] = true;
       newprojectvalue['access']['access' + tabname] = ['admin'];
       setProjectValue({...newprojectvalue});
+      setformsectionvalue(0);
     } else {
       //after tabname changes direct user to form1 section1
-      const tabname = formuiSpec['visible_types'][0];
-      console.error(tabname);
-      ChangeVariants(0, tabname);
-      setformlabel(formtabs[0]);
+      // const tabname = formuiSpec['visible_types'][0];
+      // console.error(tabname);
+      // ChangeVariants(0, tabname);
+      // setformlabel(formtabs[0]);
+      
+      console.debug('Current Form is '+formvariants);
     }
-    console.error(formvariants);
-    setformsectionvalue(0);
+    console.error(formvariants+formsectionvalue+formvalue)
+    
   };
 
   const handelonChangeLabelSection = (tabs: Array<string>, type: string) => {
@@ -443,9 +446,10 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setformuiview(
         formuiSpec['viewsets'][formvariants]['views'][sectiontabs.length - 1]
       );
+      setformsectionvalue(sectiontabs.length - 1);
     } else {
-      setCurrentView(sectiontabs[0]);
-      setformuiview(formuiSpec['viewsets'][formvariants]['views'][0]);
+      // setCurrentView(sectiontabs[0]);
+      // setformuiview(formuiSpec['viewsets'][formvariants]['views'][0]);
     }
     setfieldValue(0); //TODO: remove it
     setDesignvalue('' + getid());
@@ -862,6 +866,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const SectionPanel = () => {
     return (
       <>
+      {formvariants +'formnamevalue:'+ formnamevalue+'formlabel:' +formlabel+'formvalue:' +formvalue + 'formuiview: '+ formuiview + 'formsection' + formsectionvalue +'fieldvalue: '+fieldvalue}
         <TabTab
           tabs={['Access', ' Section Definition', 'Advanced']}
           value={formvalue}
@@ -989,7 +994,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         </Grid>
         {not_xs && formtabs.length > 1 ? (
           <Grid item sm={2} xs={12} className={classes.formtabcard}>
-            {formtabs.length > 1 && (
+            {formtabs.length > 1 &&formlabel!==undefined&& (
               <FormConnectionCard
                 tabs={formtabs}
                 formuiSpec={formuiSpec}
