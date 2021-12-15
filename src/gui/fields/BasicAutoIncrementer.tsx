@@ -218,7 +218,7 @@ const uiSpec = {
     required: true,
     num_digits: 5,
     form_id: 'default', // TODO: sort out this
-    label: '',
+    label: 'Auto Increase Range',
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: null,

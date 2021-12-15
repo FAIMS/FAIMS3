@@ -155,7 +155,9 @@ export function TemplatedStringcomponentsetting(
       ? templatevalue
       : value;
     newini['numberfield' + props.fieldName] = fieldnum;
+    newini['label'+ props.fieldName]=props.uiSpec['fields'][props.fieldName]['component-parameters']['InputLabelProps']['label']
     // newini['template'+props.fieldName]=isinit?templatevalue:value
+    console.error(newini)
     props.setinitialValues({...props.initialValues, ...newini});
     return newvalues;
   };

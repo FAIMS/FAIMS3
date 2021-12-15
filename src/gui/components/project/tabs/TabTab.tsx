@@ -69,6 +69,8 @@ export function TabTab(props: TabProps) {
       aria-label={tab_id}
       id={tab_id}
       orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
+      scrollButtons="on"
+      variant="scrollable"
     >
       {tabs.map((tab: any, index: number) => (
         <Tab

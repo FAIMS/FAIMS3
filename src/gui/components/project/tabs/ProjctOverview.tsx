@@ -80,10 +80,10 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
 
   return (
     <Grid container>
-      <Grid item sm={6} xs={11}>
-        {graphs !== '' && <Graphviz dot={graphs} />}
+      <Grid item sm={8} xs={11}>
+        {graphs !== '' && <Graphviz options={{zoom:true,width: '100%'}} dot={graphs} />}
       </Grid>
-      <Grid item sm={6} xs={1}>
+      <Grid item sm={4} xs={1}>
         <br />
         <br />
         <br />
@@ -94,6 +94,8 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
           {' -----> Contained'}
           <br />
           ------ Linked
+          <br />
+          Graph can be zoomed in and out
         </Alert>
       </Grid>
     </Grid>
