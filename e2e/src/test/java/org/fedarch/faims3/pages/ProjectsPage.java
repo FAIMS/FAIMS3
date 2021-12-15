@@ -165,7 +165,7 @@ public class ProjectsPage {
 		} else if (driver instanceof IOSDriver) {
 			//TODO
 		} else {
-			String xpath = "//*[@data-value='" + recordId + "' and @data-field='record_id']/a";
+			String xpath = "//*[contains(@href, '" + recordId + "')]";
 			driver.findElement(By.xpath(xpath)).click();
 		}
 
@@ -182,18 +182,15 @@ public class ProjectsPage {
 		if (driver instanceof AndroidDriver) {
 			WebElement recentRecordsGrid = driver.findElement(MobileBy.xpath(
 					"//*[@text='RECENT RECORDS']/following-sibling::android.widget.GridView"));
-			// Unfortunately there's no other way...
-			// TODO fix this when we have HRID in the records list
-			// it should be easier then
+
 			WebElement firstRecord = recentRecordsGrid.findElement(
-					MobileBy.xpath("(//android.widget.CheckBox)[2]/../../"
-							+ "following-sibling::android.view.View"));
+					MobileBy.xpath("//*[contains(@text, 'αβγ')]"));
 			recordId = firstRecord.getText();
 			firstRecord.click();
 		} else if (driver instanceof IOSDriver) {
 			//TODO
 		} else {
-			WebElement firstRecord = driver.findElement(By.xpath("//*[@data-field='record_id']"));
+			WebElement firstRecord = driver.findElement(By.xpath("//*[@data-field='hrid']"));
 			recordId = firstRecord.getAttribute("data-value");
 			firstRecord.findElement(By.tagName("a")).click();
 		}

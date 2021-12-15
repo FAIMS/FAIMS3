@@ -83,7 +83,7 @@ public class IOSTestSetup extends E2ETestSetup {
 	 */
 	public void browserstackSetup(DesiredCapabilities caps, String testDescription) throws MalformedURLException {
 	    caps.setCapability("project", "FAIMS3 - iOS Tests");
-	    caps.setCapability("build", "Alpha");
+	    caps.setCapability("build", "Beta");
 	    String desc = testDescription.concat(" : ").concat(TestUtils.getCommitMessage());
 	    caps.setCapability("name",
 	    		// only 255 characters allowed

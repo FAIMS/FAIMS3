@@ -112,7 +112,7 @@ public class ChromeTestSetup extends E2ETestSetup {
 		caps.setCapability("browser", "Chrome");
 		caps.setCapability("browser_version", "latest");
 		caps.setCapability("project", "FAIMS3 - Chrome Windows Tests");
-	    caps.setCapability("build", "Alpha");
+	    caps.setCapability("build", "Beta");
 	    String desc = testDesc.concat(" : ").concat(TestUtils.getCommitMessage());
 	    caps.setCapability("name",
 	    		// only 255 characters allowed

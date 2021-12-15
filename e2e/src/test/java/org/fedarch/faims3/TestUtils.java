@@ -208,4 +208,35 @@ public class TestUtils {
 	public static String roundCoordinate(String coord) {
 		return new BigDecimal(coord).setScale(3,RoundingMode.DOWN).toString();
 	}
+
+	/**
+	 * The page names are different in Chrome and Android, so we have to create a method.
+	 * @param driver
+	 * @return
+	 */
+	public static void goToFirstPage(WebDriver driver) {
+		String pageName = null;
+		if (driver instanceof AndroidDriver) {
+			pageName = "start-view";
+		} else if (driver instanceof IOSDriver) {
+			// TODO
+		} else if (driver instanceof RemoteWebDriver) {
+			// FIXME: But sometimes also appears as "Next" depending on the window size
+			pageName = "Main";
+		}
+		TestUtils.scrollToText(driver, pageName).click();
+	}
+
+	public static void goToSecondPage(WebDriver driver) {
+		String pageName = null;
+		if (driver instanceof AndroidDriver) {
+			pageName = "next-view";
+		} else if (driver instanceof IOSDriver) {
+			// TODO
+		} else if (driver instanceof RemoteWebDriver) {
+			// FIXME: But sometimes also appears as "Next" depending on the window size
+			pageName = "Common";
+		}
+		TestUtils.scrollToText(driver, pageName).click();
+	}
 }

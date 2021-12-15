@@ -77,6 +77,7 @@ public class AstroSkyMainPage {
 
 	@AndroidFindBy(xpath = "//*[@text='Lat: ']")
 	@iOSXCUITFindBy(xpath = "//XCUIElementTypeStaticText[@name=\"Lat:\"]/following-sibling::XCUIElementTypeStaticText")
+	@FindBy(xpath = "//*[text()='Lat: ']")
 	private WebElement lat;
 
 	@iOSXCUITFindBy(xpath = "//XCUIElementTypeStaticText[@name=\"; Long:\"]/following-sibling::XCUIElementTypeStaticText")
@@ -128,7 +129,7 @@ public class AstroSkyMainPage {
 	private WebElement radioField;
 
 	@AndroidFindBy(xpath = "//*[@resource-id='next-view']")
-	@FindBy(xpath = "//*[text()='next-view']")
+	@FindBy(xpath = "//*[text()='Common']")
 	@iOSXCUITFindBy(xpath = "//*[@name='next-view']")
 	private WebElement nextView;
 
@@ -159,6 +160,7 @@ public class AstroSkyMainPage {
 
 	@AndroidFindBy(xpath = "//*[@text='DEVELOPER TOOL: RECORD REVISIONS']/"
 						+ "following-sibling::android.view.View/android.view.View")
+	@FindBy(xpath = "//*[text()='DEVELOPER TOOL: RECORD REVISIONS']/following-sibling::div/pre")
 	private WebElement revisions;
 
 	protected WebDriver driver;
@@ -229,7 +231,7 @@ public class AstroSkyMainPage {
 	    this.radioField.click();
 
 	    // scroll up to the very top, and click "next-view"
-	    TestUtils.scrollToText(driver, "next-view").click();
+	    TestUtils.goToSecondPage(driver);
 
 	    // Integer field on page 2
 	    this.intField.click();
@@ -467,7 +469,7 @@ public class AstroSkyMainPage {
 	 * @return
 	 */
 	public String[] getRevisions() {
-		wait.until(ExpectedConditions.visibilityOf(this.revisionsTab)).click();
+		TestUtils.scrollToText(driver, "REVISIONS").click();
 		WebElement revisions = wait.until(ExpectedConditions.visibilityOf(
 				this.revisions));
 		// remove square brackets and split by comma separator

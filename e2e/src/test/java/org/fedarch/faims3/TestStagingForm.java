@@ -122,13 +122,13 @@ public class TestStagingForm {
 			AssertJUnit.assertEquals("true", radioField.getAttribute("checked"));
 
 			// Second page
-			TestUtils.scrollToText(driver, "next-view").click();
+			TestUtils.goToSecondPage(driver);
 			AssertJUnit.assertEquals(AstroSkyMainPage.INTEGER, astroSky.getIntFieldValue());
 			String currency = astroSky.getCurrencyValue();
 			if (driver instanceof AndroidDriver) {
-			    AssertJUnit.assertEquals("Currencies $, €", currency);
+			    AssertJUnit.assertEquals("Currency €", currency);
 			} else {
-				AssertJUnit.assertEquals("$, €", currency);
+				AssertJUnit.assertEquals("€", currency);
 			}
 
 			// Make sure JSON is still the same
