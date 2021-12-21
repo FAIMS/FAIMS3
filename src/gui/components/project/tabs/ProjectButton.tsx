@@ -28,6 +28,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 import DeleteIcon from '@material-ui/icons/Delete';
 import ArrowForwardIosOutlinedIcon from '@material-ui/icons/ArrowForwardIosOutlined';
+import { red } from '@material-ui/core/colors';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 type ButtonProps = any;
 
@@ -35,15 +36,15 @@ export function ProjectSubmit(props: ButtonProps) {
   return (
     <Button
       id={props.id}
-      type="submit"
-      color="primary"
+      type={props.type??"submit"}
+      color={props.color??"primary"}
       variant="contained"
       onClick={() => props.onButtonClick(props.id)}
       disableElevation
       disabled={props.isSubmitting}
     >
       {props.isSubmitting ? props.issubmittext ?? 'Working...' : props.text}
-      {/*{props.isSubmitting && (
+      {/* {props.isSubmitting && (
                               <CircularProgress
                                 size={24}
                                 style={{
@@ -54,7 +55,23 @@ export function ProjectSubmit(props: ButtonProps) {
                                   marginLeft: -12,
                                 }}
                               />
-                            )}*/}
+                            )} */}
+    </Button>
+  );
+}
+
+export function ProjectDelete(props: ButtonProps) {
+  return (
+    <Button
+      id={props.id}
+      type={props.type??"submit"}
+      color={props.color??"primary"}
+      variant="contained"
+      onClick={() => props.onButtonClick(props.id)}
+      disableElevation
+      style={{backgroundColor: "#d32f2f",}}
+    >
+      {props.text}
     </Button>
   );
 }

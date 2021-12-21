@@ -50,7 +50,18 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
     );
 
     newconnections.map((connection: any) =>
-      connection.link === 'Linked'
+      connection.link === 'Linked' && connection.multiple===true
+        ? (graph =
+            graph +
+            '"' +
+            connection.otab +
+            '"' +
+            '->' +
+            '"' +
+            connection.tab +
+            '"' +
+            '[arrowhead = "forward" label="multiple"];')
+        : connection.link === 'Linked' && connection.multiple===false
         ? (graph =
             graph +
             '"' +
@@ -61,6 +72,17 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
             connection.tab +
             '"' +
             '[arrowhead = "forward"];')
+        : connection.link !== 'Linked' && connection.multiple===true
+        ? (graph =
+            graph +
+            '"' +
+            connection.otab +
+            '"' +
+            '->' +
+            '"' +
+            connection.tab +
+            '"' +
+            '[label = "multiple"];')
         : (graph =
             graph +
             '"' +

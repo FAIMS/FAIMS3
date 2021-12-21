@@ -54,7 +54,7 @@ type signlefieldType = any;
 type fieldlistType = any;
 type viewlistType = any;
 type optionType = {value: string; label: string};
-type tabLinkType = {tab: string; link: string; otab: string};
+type tabLinkType = {tab: string; link: string; otab: string;multiple:boolean};
 type projectuilistType = any;
 export const getid = () => {
   return uuidv4().split('-')[0];
@@ -83,6 +83,7 @@ export const getconnections = (
               'relation_type'
             ].replace('faims-core::', ''),
             otab: uiSpec['viewsets'][comparetab]['label'] ?? comparetab,
+            multiple:uiSpec['fields'][field]['component-parameters']['multiple']??false
           })
         : field
     )
@@ -759,7 +760,6 @@ const newfromui = (
           //find the hird value
           const newnhirdname =
             newuiSpec['fields'][fieldname]['component-parameters']['linked'];
-          console.log('Linked name' + newnhirdname);
           if (
             newnhirdname !== undefined &&
             newuiSpec['fields'][newnhirdname] !== undefined
