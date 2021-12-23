@@ -146,7 +146,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const [projecttabvalue, setProjecttabvalue] = useState(0);
   const [error, setError] = useState<any>(null);
   const [fieldvalue, setfieldValue] = useState(0); //field tab
-  const [formvalue, setformvalue] = useState(0); //formtabs for each form
   const [formnamevalue, setFormNameValue] = useState(0);
   const [formsectionvalue, setformsectionvalue] = useState(0);
   const [designvalidate, setdesignvalidate] = useState<any>(null);
@@ -287,40 +286,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setDesignvalue('settings');
   };
 
-  const handleRemoveField = (index: string) => {
-    const {newviews, components} = updateuiSpec('removefield', {
-      index: index,
-      formuiSpec: formuiSpec,
-      formcomponents: formcomponents,
-      formuiview: formuiview,
-    });
-    setFormComponents(components);
-    setFormuiSpec({...formuiSpec, views: newviews.views});
-  };
 
-
-  const handleUpFieldButton = (index: number) => {
-    const {newviews, components} = updateuiSpec('switch', {
-      index: index,
-      type: false,
-      formuiSpec: formuiSpec,
-      formcomponents: formcomponents,
-      formuiview: formuiview,
-    });
-    setFormuiSpec({...formuiSpec, views: newviews.views});
-    setFormComponents(components);
-  };
-  const handleDownFieldButton = (index: number) => {
-    const {newviews, components} = updateuiSpec('switch', {
-      index: index,
-      type: true,
-      formuiSpec: formuiSpec,
-      formcomponents: formcomponents,
-      formuiview: formuiview,
-    });
-    setFormuiSpec({...formuiSpec, views: newviews.views});
-    setFormComponents(components);
-  };
 
   const handelonChangeSection = (event: any, index: number) => {
     const id = formuiSpec['viewsets'][formvariants]['views'][index];
@@ -353,14 +319,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setsectiontabs(tabs);
       setformuiview(formuiSpec['viewsets'][id]['views'][0]);
       setCurrentView(formuiSpec['viewsets'][id]['views'][0]); // this part seems not working, check it to fix the issue
-      setformvalue(0);
       setfieldValue(0); //TODO: remove it
       console.log(formvariants + formuiview);
     } else {
       setsectiontabs([]);
       setformuiview('');
       setCurrentView('');
-      setformvalue(0);
       setfieldValue(0); //TODO: remove it
     }
     setDesignvalue(index + getid());
@@ -403,7 +367,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       
       console.debug('Current Form is '+formvariants);
     }
-    console.error(formvariants+formsectionvalue+formvalue)
     
   };
 
@@ -440,9 +403,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setfieldValue(index);
   };
 
-  const handleChangeformvalueTab = (event: any, index: number) => {
-    setformvalue(index);
-  };
+
 
   const getinitaccess = () => {
     try {
@@ -667,11 +628,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
             >
               <FormTab
               formvariants={formvariants}
-              formvalue={formvalue}
-              handleChangeformvalueTab={handleChangeformvalueTab}
               handleAutocomplete={handleAutocomplete}
               handleChangeFormAction={handleChangeFormAction}
-              setformvalue={setformvalue}
               gotonext={gotonext}
               sectiontabs={sectiontabs}
               formsectionvalue={formsectionvalue}
@@ -681,7 +639,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               handleChangetabfield={handleChangetabfield}
               handleChangeFormSection={ handleChangeFormSection}
               formuiview={formuiview}
-              isAddField={isAddField}
               formcomponents={formcomponents}
               setfieldValue={setfieldValue}
               handleAddField={handleAddField}
@@ -691,11 +648,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               setFormuiSpec={setFormuiSpec}
               setinitialValues={setinitialValues}
               projectvalue={projectvalue}
-              handleUpFieldButton={handleUpFieldButton}
-              handleDownFieldButton={handleDownFieldButton}
-              handleRemoveField={handleRemoveField}
               setProjectValue={setProjectValue}
               deleteform={deleteform}
+              setFormComponents={setFormComponents}
               />
             </TabPanel>
           ))}

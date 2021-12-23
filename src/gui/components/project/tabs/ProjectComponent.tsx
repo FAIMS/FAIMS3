@@ -81,6 +81,104 @@ const useStyles = makeStyles(theme => ({
     width: '100%',
   },
 }));
+
+const getinitaccess = () => {
+  try {
+    return ['admin'];
+  } catch (error) {
+    console.error("can't get access");
+    return ['admin'];
+  }
+};
+
+type FieldToolBarProps={
+    index:number;
+    formuiSpec:any;
+    formcomponents:any;
+    formuiview:string;
+    fieldName:string;
+    setFormComponents:any;
+    setFormuiSpec:any
+
+}
+function FieldToolBar (props:FieldToolBarProps){
+  const theme = useTheme();
+  const classes = useStyles(theme);
+  const {
+    index,
+    formuiSpec,
+    formcomponents,
+    formuiview,
+    fieldName,
+    setFormComponents,
+    setFormuiSpec
+    }=props
+  const length=formcomponents[formuiview].length
+
+    const handleRemoveField = (index: string) => {
+      const {newviews, components} = updateuiSpec('removefield', {
+        index: index,
+        formuiSpec: formuiSpec,
+        formcomponents: formcomponents,
+        formuiview: formuiview,
+      });
+      setFormComponents(components);
+      setFormuiSpec({...formuiSpec, views: newviews.views});
+    };
+  
+  
+    const handleUpFieldButton = (index: number) => {
+      const {newviews, components} = updateuiSpec('switch', {
+        index: index,
+        type: false,
+        formuiSpec: formuiSpec,
+        formcomponents: formcomponents,
+        formuiview: formuiview,
+      });
+      setFormuiSpec({...formuiSpec, views: newviews.views});
+      setFormComponents(components);
+    };
+    const handleDownFieldButton = (index: number) => {
+      const {newviews, components} = updateuiSpec('switch', {
+        index: index,
+        type: true,
+        formuiSpec: formuiSpec,
+        formcomponents: formcomponents,
+        formuiview: formuiview,
+      });
+      setFormuiSpec({...formuiSpec, views: newviews.views});
+      setFormComponents(components);
+    };
+
+  return (
+    <Grid item sm={2} xs={12} className={classes.newfield_button}>
+           {index > 0 && (
+            <UpButton
+              onButtonClick={handleUpFieldButton}
+              value={index}
+              id={index}
+              text="X"
+            />
+          )}
+          {index <  length - 1 ? (
+            <DownButton
+              onButtonClick={handleDownFieldButton}
+              value={index}
+              id={index}
+              text="X"
+            />
+          ) : (
+            ''
+          )} 
+          <CloseButton
+            onButtonClick={handleRemoveField}
+            value={fieldName}
+            id={fieldName}
+            text="X"
+          />
+        </Grid>
+  )
+}
 /* eslint-disable @typescript-eslint/no-unused-vars */
 type SectionComponent = {
   formuiSpec:any;
@@ -94,10 +192,9 @@ type SectionComponent = {
   projectvalue:any;
   handleAutocomplete:any;
   index:number;
-  handleUpFieldButton:any;
-  handleDownFieldButton:any;
-  formcomponents:any;
-  handleRemoveField:any;};
+  formcomponents:any
+  setFormComponents:any
+};
 
 function SectionComponent(props: SectionComponent) {
     const theme = useTheme();
@@ -113,11 +210,8 @@ function SectionComponent(props: SectionComponent) {
         setinitialValues,
         projectvalue,
         handleAutocomplete,
-        index,
-        handleUpFieldButton,
-        handleDownFieldButton,
-        formcomponents,
-        handleRemoveField}= props
+        ...others}= props
+
   const fieldName=formcomponent['id'];
   const [designvalue,setDesignValue]= useState('settings')
 
@@ -200,32 +294,15 @@ function SectionComponent(props: SectionComponent) {
             </Grid>
           </Grid>
         </Grid>
-        <Grid item sm={2} xs={12} className={classes.newfield_button}>
-           {index > 0 && (
-            <UpButton
-              onButtonClick={handleUpFieldButton}
-              value={index}
-              id={index}
-              text="X"
-            />
-          )}
-          {index < formcomponents[formuiview].length - 1 ? (
-            <DownButton
-              onButtonClick={handleDownFieldButton}
-              value={index}
-              id={index}
-              text="X"
-            />
-          ) : (
-            ''
-          )} 
-          <CloseButton
-            onButtonClick={handleRemoveField}
-            value={formcomponent.id}
-            id={formcomponent.id}
-            text="X"
-          />
-        </Grid>
+        <FieldToolBar 
+        fieldName={fieldName}
+        index={props.index}
+        formuiSpec={formuiSpec}
+        formcomponents={props.formcomponents}
+        formuiview={formuiview}
+        setFormComponents={props.setFormComponents}
+        setFormuiSpec={setFormuiSpec}
+        />
       </Grid>
     </Card>
     <Grid item sm={10} xs={12}>
@@ -243,11 +320,9 @@ type SectionComponentsProps= {
   setinitialValues:any;
   projectvalue:any;
   handleAutocomplete:any;
-  handleUpFieldButton:any;
-  handleDownFieldButton:any;
   formcomponents:any;
-  handleRemoveField:any;
   designvalidate:any;
+  setFormComponents:any;
 }
 
 function SectionComponents(props: SectionComponentsProps){
@@ -307,10 +382,7 @@ type SectionTabProps={
   setinitialValues:any;
   projectvalue:any;
   handleAutocomplete:any;
-  handleUpFieldButton:any;
-  handleDownFieldButton:any;
   formcomponents:any;
-  handleRemoveField:any;
   designvalidate:any;
   fieldvalue:any;
   handleChangetabfield:any;
@@ -318,7 +390,8 @@ type SectionTabProps={
   setfieldValue:any;
   formsectionvalue:any;
   handleAddField:any;
-  deleteform:any
+  deleteform:any;
+  setFormComponents:any
 }
 
 type ConfirmdeleteDisalogProps={
@@ -379,8 +452,10 @@ function SectionTab(props:SectionTabProps){
         formcomponents,
         setfieldValue,
         formsectionvalue,
-        handleAddField,
         deleteform,
+        formuiSpec,
+        projectvalue,
+        handleAddField,
         ...others}= props
     // const [fieldvalue,setFieldValue]=useState(0)
     const handleSubmitFormSection = () => {console.log('section submit')}
@@ -458,6 +533,8 @@ function SectionTab(props:SectionTabProps){
               formuiview={formuiview}
               formvariants={formvariants} 
               formcomponents={formcomponents}
+              formuiSpec={formuiSpec}
+              projectvalue={projectvalue}
               {...others} />
               : ''}
             <AddButton
@@ -498,28 +575,22 @@ type FormTabProps={
   setinitialValues:any;
   projectvalue:any;
   handleAutocomplete:any;
-  handleUpFieldButton:any;
-  handleDownFieldButton:any;
   formcomponents:any;
-  handleRemoveField:any;
   designvalidate:any;
   fieldvalue:any;
   handleChangetabfield:any;
   handleChangeFormSection:any;
-  isAddField:any;
   setfieldValue:any;
   formsectionvalue:any;
   handleAddField:any;
-  formvalue:any;
-  handleChangeformvalueTab:any;
   handleChangeFormAction:any;
-  setformvalue:any;
   gotonext:any;
   sectiontabs:any;
   handelonChangeSection:any;
   handelonChangeLabelSection:any;
   setProjectValue:any;
   deleteform:any;
+  setFormComponents:any;
 }
 
 type SectionTabsProps={
@@ -531,10 +602,7 @@ type SectionTabsProps={
   setinitialValues:any;
   projectvalue:any;
   handleAutocomplete:any;
-  handleUpFieldButton:any;
-  handleDownFieldButton:any;
   formcomponents:any;
-  handleRemoveField:any;
   designvalidate:any;
   fieldvalue:any;
   handleChangetabfield:any;
@@ -546,6 +614,7 @@ type SectionTabsProps={
   sectiontabs:any;
   handelonChangeSection:any;
   handelonChangeLabelSection:any;
+  setFormComponents:any;
 }
 
 function SectionTabs(props:SectionTabsProps){
@@ -590,11 +659,8 @@ function SectionTabs(props:SectionTabsProps){
 function LiveFormTab (props:FormTabProps){
     const {
         formvariants,
-        formvalue,
-        handleChangeformvalueTab,
         handleAutocomplete,
         handleChangeFormAction,
-        setformvalue,
         gotonext,
         fieldvalue,
         deleteform,
@@ -602,6 +668,12 @@ function LiveFormTab (props:FormTabProps){
     const handleSubmitFormAction = () =>{
 
     }
+
+    const [formvalue,setformvalue]=useState(0);
+
+    const handleChangeformvalueTab = (event: any, index: number) => {
+      setformvalue(index);
+    };
 
     return (
         <>
