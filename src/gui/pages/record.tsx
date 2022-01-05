@@ -53,10 +53,11 @@ import InProgress from '../components/ui/inProgress';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 
 export default function Record() {
-  const {project_id, record_id, revision_id} = useParams<{
+  const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
     revision_id: RevisionID;
+    draft_id?: string;
   }>();
   const {dispatch} = useContext(store);
   const history = useHistory();
@@ -85,8 +86,8 @@ export default function Record() {
   const [error, setError] = useState(null as null | {});
 
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
@@ -154,7 +155,8 @@ export default function Record() {
                     project_id={project_id}
                     record_id={record_id}
                     revision_id={revision_id}
-                    uiSpec={uiSpec}
+                    ui_specification={uiSpec}
+                    draft_id={draft_id}
                   />
                 );
               }

@@ -1,4 +1,6 @@
 import React from 'react';
+import {Link as RouterLink, NavLink} from 'react-router-dom';
+
 import {
   Box,
   Button,
@@ -8,16 +10,14 @@ import {
   ListItemIcon,
   CircularProgress,
 } from '@material-ui/core';
-import ShareIcon from '@material-ui/icons/Share';
-import AddIcon from '@material-ui/icons/Add';
-import SettingsIcon from '@material-ui/icons/Settings';
-import MoreVertIcon from '@material-ui/icons/MoreVert';
-import {Link as RouterLink, NavLink} from 'react-router-dom';
-import * as ROUTES from '../../../constants/routes';
-
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
+import AddIcon from '@material-ui/icons/Add';
+import SearchIcon from '@material-ui/icons/Search';
+import SettingsIcon from '@material-ui/icons/Settings';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
 
+import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {listenProjectDB} from '../../../sync';
@@ -96,7 +96,6 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                       ROUTES.PROJECT +
                       project_id +
                       ROUTES.RECORD_CREATE +
-                      ROUTES.RECORD_TYPE +
                       visible_types,
                   }
                 : {
@@ -111,22 +110,31 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               open={Boolean(createAnchor)}
               onClose={handleCreateClose}
             >
-              {visible_types.map(viewset_name => (
-                <MenuItem
-                  component={RouterLink}
-                  to={
-                    ROUTES.PROJECT +
-                    project_id +
-                    ROUTES.RECORD_CREATE +
-                    ROUTES.RECORD_TYPE +
-                    viewset_name
-                  }
-                  key={viewset_name}
-                >
-                  {viewsets[viewset_name].label || viewset_name}
-                </MenuItem>
-              ))}
+              {visible_types.map(
+                viewset_name =>
+                  viewsets[viewset_name].is_visible !== false && (
+                    <MenuItem
+                      component={RouterLink}
+                      to={
+                        ROUTES.PROJECT +
+                        project.project_id +
+                        ROUTES.RECORD_CREATE +
+                        viewset_name
+                      }
+                      key={viewset_name}
+                    >
+                      {viewsets[viewset_name].label || viewset_name}
+                    </MenuItem>
+                  )
+              )}
             </Menu>
+
+            <IconButton
+              component={RouterLink}
+              to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SEARCH}
+            >
+              <SearchIcon />
+            </IconButton>
             <IconButton
               component={RouterLink}
               to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_SETTINGS}
@@ -154,7 +162,6 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                   ROUTES.PROJECT +
                   project_id +
                   ROUTES.RECORD_CREATE +
-                  ROUTES.RECORD_TYPE +
                   visible_types
                 }
               >
@@ -165,29 +172,26 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               </MenuItem>
             ) : (
               <React.Fragment>
-                {visible_types.map(viewset_name => (
-                  <MenuItem
-                    component={RouterLink}
-                    to={
-                      ROUTES.PROJECT +
-                      project_id +
-                      ROUTES.RECORD_CREATE +
-                      ROUTES.RECORD_TYPE +
-                      viewset_name
-                    }
-                    key={viewset_name}
-                  >
-                    New {viewsets[viewset_name].label || viewset_name}
-                  </MenuItem>
-                ))}
+                {visible_types.map(
+                  viewset_name =>
+                    viewsets[viewset_name].is_visible !== false && (
+                      <MenuItem
+                        component={RouterLink}
+                        to={
+                          ROUTES.PROJECT +
+                          project.project_id +
+                          ROUTES.RECORD_CREATE +
+                          viewset_name
+                        }
+                        key={viewset_name}
+                      >
+                        New {viewsets[viewset_name].label || viewset_name}
+                      </MenuItem>
+                    )
+                )}
               </React.Fragment>
             )}
-            <MenuItem disabled={true}>
-              <ListItemIcon>
-                <ShareIcon fontSize="small" />
-              </ListItemIcon>
-              Share
-            </MenuItem>
+
             <MenuItem
               component={NavLink}
               to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_SETTINGS}

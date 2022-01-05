@@ -54,7 +54,7 @@ async function cleanProjectDBS() {
 
     if (db !== undefined) {
       try {
-        const alldocs = await db.allDocs({include_docs: true});
+        const alldocsIgnored = await db.allDocs({include_docs: true});
         await db.destroy();
         //await db.close();
       } catch (err) {
@@ -151,7 +151,7 @@ describe('roundtrip reading and writing to db', () => {
       };
 
       return upsertFAIMSType(fulltype, typeInfo, context)
-        .then(result => {
+        .then(_result => {
           return lookupFAIMSType(fulltype, context);
         })
         .then(result => expect(equals(result, typeInfo)).toBe(true));
@@ -177,7 +177,7 @@ describe('roundtrip reading and writing to db', () => {
       const context = createTypeContext(project_id, false);
 
       return upsertFAIMSConstant(fullconst, constInfo, context)
-        .then(result => {
+        .then(_result => {
           return lookupFAIMSConstant(fullconst, context);
         })
         .then(result => expect(equals(result, constInfo)).toBe(true));
@@ -219,11 +219,11 @@ describe('roundtrip reading and writing to db', () => {
       };
 
       return upsertFAIMSType(fulltype, typeInfo, context)
-        .then(result => {
+        .then(_result => {
           return lookupFAIMSType(fulltype, context);
         })
         .then(result => expect(equals(result, typeInfo)).toBe(true))
-        .then(result => {
+        .then(_result => {
           return lookupFAIMSType(fulltype, context);
         })
         .then(result => expect(equals(result, typeInfo)).toBe(true));
@@ -250,11 +250,11 @@ describe('roundtrip reading and writing to db', () => {
       const context = createTypeContext(project_id);
 
       return upsertFAIMSConstant(fullconst, constInfo, context)
-        .then(result => {
+        .then(_result => {
           return lookupFAIMSConstant(fullconst, context);
         })
         .then(result => expect(equals(result, constInfo)).toBe(true))
-        .then(result => {
+        .then(_result => {
           return lookupFAIMSConstant(fullconst, context);
         })
         .then(result => expect(equals(result, constInfo)).toBe(true));

@@ -35,14 +35,13 @@ import Drawer from '@material-ui/core/Drawer';
 import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
-import BuildIcon from '@material-ui/icons/Build';
+import AddIcon from '@material-ui/icons/Add';
 import HomeIcon from '@material-ui/icons/Home';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import DescriptionIcon from '@material-ui/icons/Description';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import SettingsIcon from '@material-ui/icons/Settings';
-import MessageIcon from '@material-ui/icons/Message';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
@@ -149,7 +148,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     });
   });
   return {
-    title: 'Projects',
+    title: 'Notebooks',
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.PROJECT_LIST,
@@ -191,11 +190,17 @@ export default function Navbar() {
         }
       : getNestedProjects(pouchProjectList),
     {
-      title: 'Tools',
-      icon: <BuildIcon />,
-      to: '/',
-      disabled: true,
+      title: 'New Notebook',
+      icon: <AddIcon />,
+      to: ROUTES.PROJECT_CREATE,
+      disabled: false,
     },
+    // {
+    //   title: 'Tools',
+    //   icon: <BuildIcon />,
+    //   to: '/',
+    //   disabled: true,
+    // },
     {
       title: 'Notifications',
       icon: <NotificationsIcon />,
@@ -216,12 +221,12 @@ export default function Navbar() {
       to: '/',
       disabled: true,
     },
-    {
-      title: 'Messages',
-      icon: <MessageIcon />,
-      to: '/',
-      disabled: true,
-    },
+    // {
+    //   title: 'Messages',
+    //   icon: <MessageIcon />,
+    //   to: '/',
+    //   disabled: true,
+    // },
     {
       title: 'Settings',
       icon: <SettingsIcon />,

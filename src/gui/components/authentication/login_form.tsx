@@ -1,0 +1,80 @@
+/* eslint-disable node/no-unsupported-features/node-builtins */
+import React, {useState, useEffect} from 'react';
+import {Box, Button, CircularProgress} from '@material-ui/core';
+
+import {AuthInfo} from '../../../datamodel/database';
+import {setTokenForCluster, getAuthMechianismsForListing} from '../../../users';
+
+export type LoginFormProps = {
+  listing_id: string;
+  setToken: React.Dispatch<React.SetStateAction<string | undefined>>;
+};
+
+export type LoginButtonProps = {
+  listing_id: string;
+  auth_info: AuthInfo; // User-visible name
+  setToken: React.Dispatch<React.SetStateAction<string | undefined>>;
+};
+
+function LoginButton(props: LoginButtonProps) {
+  return (
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={() => {
+        let oauth_window: Window | null = null;
+        window.addEventListener(
+          'message',
+          async event => {
+            if (event.source !== oauth_window) {
+              console.error('Bad message:', event);
+            }
+            console.log('Received token for:', props.listing_id);
+            await setTokenForCluster(event.data.token, props.listing_id);
+            props.setToken(event.data.token);
+          },
+          false
+        );
+        oauth_window = window.open(props.auth_info.portal);
+        if (oauth_window === null) {
+          console.error('Failed to open oauth window');
+        }
+      }}
+    >
+      Sign-in with {props.auth_info.name}
+    </Button>
+  );
+}
+
+/**
+ * The component that goes inside a card for a FAIMS Cluster
+ * @param props ID of this cluster + any info if it's already logged in
+ */
+export function LoginForm(props: LoginFormProps) {
+  const [auth_mechanisms, setAuth_mechanisms] = useState(
+    null as null | {[name: string]: AuthInfo}
+  );
+
+  useEffect(() => {
+    const getMech = async () => {
+      setAuth_mechanisms(await getAuthMechianismsForListing(props.listing_id));
+    };
+    getMech();
+  }, [props.listing_id]);
+
+  if (auth_mechanisms === null) {
+    return <CircularProgress color="primary" size="2rem" thickness={5} />;
+  } else {
+    return (
+      <Box>
+        {Object.keys(auth_mechanisms).map(auth_id => (
+          <LoginButton
+            listing_id={props.listing_id}
+            auth_info={auth_mechanisms[auth_id]}
+            setToken={props.setToken}
+          />
+        ))}
+      </Box>
+    );
+  }
+}

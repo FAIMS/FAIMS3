@@ -88,6 +88,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc);
@@ -127,6 +129,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -141,6 +145,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id2 = await upsertFAIMSData(project_id, doc2);
@@ -155,6 +161,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -169,6 +177,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -210,6 +220,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -224,6 +236,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id2 = await upsertFAIMSData(project_id, doc2);
@@ -238,6 +252,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -252,6 +268,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -302,6 +320,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -316,6 +336,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -330,6 +352,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -344,6 +368,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -384,6 +410,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -398,6 +426,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -412,6 +442,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -426,6 +458,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -469,6 +503,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -486,6 +522,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -503,6 +541,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc3);
@@ -546,6 +586,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -563,6 +605,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -580,6 +624,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc3);
@@ -597,6 +643,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -641,6 +689,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -659,6 +709,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -677,6 +729,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc3);
@@ -695,6 +749,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -713,6 +769,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc5);
@@ -878,6 +936,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -895,6 +955,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -912,6 +974,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -966,6 +1030,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -983,6 +1049,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id2 = await upsertFAIMSData(project_id, doc2);
@@ -1000,6 +1068,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);

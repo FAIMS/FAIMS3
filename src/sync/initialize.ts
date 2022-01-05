@@ -17,11 +17,14 @@
  * Description:
  *   TODO
  */
-import {USE_REAL_DATA} from '../buildconfig';
+import PouchDB from 'pouchdb';
+
+import {USE_REAL_DATA, DEBUG_POUCHDB} from '../buildconfig';
 import {setupExampleActive} from '../dummyData';
-import {update_directory} from './process-initialization';
+
 import {active_db, directory_connection_info} from './databases';
 import {events} from './events';
+import {update_directory} from './process-initialization';
 import {
   all_projects_updated,
   register_basic_automerge_resolver,
@@ -53,9 +56,8 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  if (!USE_REAL_DATA) {
-    await setupExampleActive(active_db);
-  }
+  if (!USE_REAL_DATA) await setupExampleActive(active_db);
+  if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
 
   register_sync_state(events);
   register_basic_automerge_resolver(events);

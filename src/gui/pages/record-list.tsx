@@ -18,14 +18,12 @@
  *   TODO
  */
 
-import React, {useContext, useEffect} from 'react';
+import React from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import {Box, Container, Grid} from '@material-ui/core';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {store} from '../../store';
 import Skeleton from '@material-ui/lab/Skeleton';
-import {ActionType} from '../../actions';
 import InProgress from '../components/ui/inProgress';
 
 const useStyles = makeStyles(theme => ({
@@ -61,35 +59,7 @@ const useStyles = makeStyles(theme => ({
 
 export default function RecordList() {
   const classes = useStyles();
-  const globalState = useContext(store);
-  const {dispatch} = globalState;
-  const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'Records'},
-  ];
-  useEffect(() => {
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
-        message: 'Test: this is a global error message',
-        severity: 'error',
-      },
-    });
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
-        message: 'Test: this is a global success message',
-        severity: 'success',
-      },
-    });
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
-        message: 'Test: this is a global info message',
-        severity: 'info',
-      },
-    });
-  }, []);
+  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Records'}];
   // const pouchRecordList = {};
 
   return (

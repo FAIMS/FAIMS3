@@ -21,9 +21,14 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
-import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
+import {
+  RecordID,
+  ProjectID,
+  RevisionID,
+  FAIMSTypeName,
+} from '../datamodel/core';
 import {Revision} from '../datamodel/database';
-import {Record, RecordMetadata} from '../datamodel/ui';
+import {Record, RecordMetadata, RecordReference} from '../datamodel/ui';
 import {
   addNewRevisionFromForm,
   createNewRecord,
@@ -32,7 +37,10 @@ import {
   getRevision,
   getFormDataFromRevision,
   updateHeads,
+  getHRID,
+  listRecordMetadata,
 } from './internals';
+import {getAllRecordsOfType} from './queries';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
@@ -107,11 +115,13 @@ export async function getFullRecordData(
     record_id: record_id,
     revision_id: revision_id,
     type: revision.type,
-    data: form_data,
+    data: form_data.data,
     updated_by: revision.created_by,
     updated: new Date(revision.created),
     created: new Date(record.created),
     created_by: record.created_by,
+    annotations: form_data.annotations,
+    field_types: form_data.types,
   };
 }
 
@@ -250,6 +260,7 @@ export async function getRecordMetadata(
   try {
     const record = await getRecord(project_id, record_id);
     const revision = await getRevision(project_id, revision_id);
+    const hrid = (await getHRID(project_id, revision)) ?? record_id;
     return {
       project_id: project_id,
       record_id: record_id,
@@ -259,9 +270,78 @@ export async function getRecordMetadata(
       updated: new Date(revision.created),
       updated_by: revision.created_by,
       conflicts: record.heads.length > 1,
+      deleted: revision.deleted ? true : false,
+      hrid: hrid,
+      type: record.type,
     };
   } catch (err) {
     console.error(err);
     throw Error('failed to get metadata');
+  }
+}
+
+export async function getHRIDforRecordID(
+  project_id: ProjectID,
+  record_id: RecordID
+): Promise<string> {
+  try {
+    const record = await getRecord(project_id, record_id);
+    const revision_id = record.heads[0];
+    const revision = await getRevision(project_id, revision_id);
+    const hrid = (await getHRID(project_id, revision)) ?? record_id;
+    return hrid;
+  } catch (err) {
+    console.debug(err);
+    console.warn('Failed to get hrid');
+    return record_id;
+  }
+}
+
+export async function getRecordsByType(
+  project_id: ProjectID,
+  type: FAIMSTypeName
+): Promise<RecordReference[]> {
+  try {
+    const records: RecordReference[] = [];
+    await listRecordMetadata(project_id).then(record_list => {
+      for (const key in record_list) {
+        const metadata = record_list[key];
+        console.debug('Records', key, metadata);
+        if (!metadata.deleted && metadata.type === type) {
+          records.push({
+            project_id: project_id,
+            record_id: metadata.record_id,
+            record_label: metadata.hrid, // TODO: decide how we're getting HRIDs from db
+          });
+          console.debug('Not deleted Records', key, metadata);
+        }
+      }
+    });
+    return records;
+  } catch (error) {
+    const records = await getAllRecordsOfType(project_id, type);
+    console.error('error');
+    return records;
+  }
+}
+
+export async function getMetadataForAllRecords(
+  project_id: ProjectID,
+  filter_deleted: boolean
+): Promise<RecordMetadata[]> {
+  const record_list = Object.values(await listRecordMetadata(project_id));
+  if (filter_deleted) {
+    const new_record_list: RecordMetadata[] = [];
+    for (const metadata of record_list) {
+      console.debug('Records', metadata);
+      if (!metadata.deleted) {
+        new_record_list.push(metadata);
+        console.debug('Not deleted Records', metadata);
+      }
+    }
+    console.debug('Reduced record list', new_record_list);
+    return new_record_list;
+  } else {
+    return record_list;
   }
 }

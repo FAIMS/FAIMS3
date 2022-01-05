@@ -18,22 +18,59 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
+import {makeStyles} from '@material-ui/core/styles';
+import {Container, Grid, Typography} from '@material-ui/core';
 
-type SignInProps = {
-  // project: string;
-};
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import ClusterCard from '../components/authentication/cluster_card';
+import * as ROUTES from '../../constants/routes';
+import {ListingInformation} from '../../datamodel/ui';
+import {getSyncableListingsInfo} from '../../databaseAccess';
 
-type SignInState = {};
+const useStyles = makeStyles(() => ({
+  gridRoot: {
+    flexGrow: 1,
+  },
+}));
 
-export class SignIn extends React.Component<SignInProps, SignInState> {
-  constructor(props: SignInProps) {
-    super(props);
+/* type SignInProps = {}; */
 
-    this.state = {};
+export function SignIn(/* props: SignInProps */) {
+  const classes = useStyles();
+  const [listings, setListings] = useState(null as null | ListingInformation[]);
+
+  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Sign In'}];
+
+  useEffect(() => {
+    getSyncableListingsInfo().then(setListings).catch(console.error);
+  }, []);
+
+  if (listings === null) {
+    return (
+      <Container maxWidth="lg">
+        <Typography>{'Looking for notebooks...'}</Typography>
+      </Container>
+    );
   }
 
-  render() {
-    return <div>SignIn</div>;
-  }
+  return (
+    <Container maxWidth="lg">
+      <Breadcrumbs data={breadcrumbs} />
+      <div className={classes.gridRoot}>
+        <Grid container spacing={1}>
+          {listings.map(listing_info => (
+            <Grid item xs={6}>
+              <ClusterCard
+                key={listing_info.id}
+                listing_id={listing_info.id}
+                listing_name={listing_info.name}
+                listing_description={listing_info.description}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </div>
+    </Container>
+  );
 }

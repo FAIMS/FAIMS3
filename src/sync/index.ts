@@ -21,9 +21,19 @@
 import {events} from './events';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
+import pouchdbDebug from 'pouchdb-debug';
 import {ProjectID} from '../datamodel/core';
-import {ProjectDataObject, ProjectMetaObject} from '../datamodel/database';
-import {data_dbs, ExistingActiveDoc, metadata_dbs} from './databases';
+import {
+  ProjectDataObject,
+  ProjectMetaObject,
+  ListingsObject,
+} from '../datamodel/database';
+import {
+  data_dbs,
+  ExistingActiveDoc,
+  metadata_dbs,
+  directory_db,
+} from './databases';
 import {
   all_projects_updated,
   createdProjects,
@@ -31,6 +41,7 @@ import {
 } from './state';
 
 PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(pouchdbDebug);
 
 /**
  * Allows the user to asynchronously await for any of listings_updated,
@@ -404,4 +415,18 @@ export function listenProjectDB(
     },
     error_listener
   );
+}
+
+export async function getAllListings(): Promise<ListingsObject[]> {
+  const listings: ListingsObject[] = [];
+  const res = await directory_db.local.allDocs({
+    include_docs: true,
+  });
+  res.rows.forEach(e => {
+    if (e.doc !== undefined && !e.id.startsWith('_')) {
+      const doc = e.doc as ListingsObject;
+      listings.push(doc);
+    }
+  });
+  return listings;
 }

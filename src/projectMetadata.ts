@@ -23,6 +23,10 @@ import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
 } from './datamodel/database';
+import {
+  attachments_to_files,
+  files_to_attachments,
+} from './data_storage/attachments';
 
 export async function getProjectMetadata(
   project_id: ProjectID,
@@ -31,8 +35,21 @@ export async function getProjectMetadata(
   const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = await projdb.get(
-      PROJECT_METADATA_PREFIX + '-' + metadata_key
+      PROJECT_METADATA_PREFIX + '-' + metadata_key,
+      {
+        attachments: true,
+        binary: true,
+      }
     );
+    if (doc.is_attachment && doc._attachments !== undefined) {
+      const file_list = attachments_to_files(doc._attachments);
+      if (doc.single_attachment) {
+        return file_list[0];
+      }
+      return file_list;
+    } else if (doc.is_attachment && doc._attachments === undefined) {
+      console.error('Unable to load metadata attachments');
+    }
     return doc.metadata;
   } catch (err) {
     console.warn(err);
@@ -51,6 +68,36 @@ export async function setProjectMetadata(
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,
       is_attachment: false,
       metadata: metadata,
+    };
+
+    try {
+      const existing_metaDoc = await projdb.get(
+        PROJECT_METADATA_PREFIX + '-' + metadata_key
+      );
+      doc._rev = existing_metaDoc._rev;
+    } catch (err) {
+      // Probably no existing UI info
+    }
+
+    await projdb.put(doc);
+  } catch (err) {
+    console.warn(err);
+    throw Error('failed to set metadata');
+  }
+}
+
+export async function setProjectMetadataFiles(
+  project_id: ProjectID,
+  metadata_key: string,
+  files: File[]
+) {
+  const projdb = await getProjectDB(project_id);
+  try {
+    const doc: EncodedProjectMetadata = {
+      _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,
+      is_attachment: true,
+      metadata: null,
+      _attachments: files_to_attachments(files),
     };
 
     try {

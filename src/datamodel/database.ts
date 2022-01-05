@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import PouchDB from 'pouchdb';
 import {
   NonUniqueProjectID,
   ListingID,
@@ -26,6 +27,7 @@ import {
   AttributeValuePairID,
   ProjectID,
   FAIMSTypeName,
+  Annotations,
 } from './core';
 import {
   FAIMSConstantCollection,
@@ -43,21 +45,29 @@ export const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 export const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 export const LOCALLY_CREATED_PROJECT_PREFIX = 'locallycreatedproject';
 
-/*
- * This may already exist in pouchdb's typing, but lets make a temporary one for
- * our needs
- */
-export interface PouchAttachments {
-  [key: string]: any; // any for now until we work out what we need
-}
-
 export interface ConnectionInfo {
   proto: string;
   host: string;
   port: number;
   lan?: boolean;
   db_name: string;
+  auth?: {
+    username: string;
+    password: string;
+  };
+  jwt_token?: string;
 }
+
+/**
+ * User-facing description of an Authentication mechanism.
+ * The actual auth mechanisms are stored in authconfig.ts in the FAIMS3-conductor
+ * in the auth proxy of the listing that this auth is for.
+ */
+export type AuthInfo = {
+  portal: string; // Url to give AuthInfo to get token(s)
+  type: 'oauth';
+  name: string;
+};
 
 export type PossibleConnectionInfo =
   | undefined
@@ -67,6 +77,11 @@ export type PossibleConnectionInfo =
       port?: number | undefined;
       lan?: boolean | undefined;
       db_name?: string | undefined;
+      auth?: {
+        username: string;
+        password: string;
+      };
+      jwt_token?: string;
     };
 
 export interface ListingsObject {
@@ -74,12 +89,12 @@ export interface ListingsObject {
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  people_db?: PossibleConnectionInfo;
+  auth_mechanisms: {[key: string]: AuthInfo};
+  local_only?: boolean;
 }
 
 export interface NonNullListingsObject extends ListingsObject {
   projects_db: ConnectionInfo;
-  people_db: ConnectionInfo;
 }
 
 export interface ActiveDoc {
@@ -92,14 +107,9 @@ export interface ActiveDoc {
   is_sync: boolean;
 }
 
-/*
- * Objects that may be contained in a Project's metadata DB
- */
-
-export interface ProjectPeople {
-  _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
+export interface LocalAuthDoc {
+  _id: string; //Corresponds to a listings ID
+  token: string;
 }
 
 /**
@@ -145,9 +155,10 @@ export interface EncodedProjectMetadata {
   _id: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean;
-  _attachments?: PouchAttachments;
+  _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
+  single_attachment?: boolean;
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
@@ -197,13 +208,13 @@ export interface AttributeValuePair {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
-  _attachments?: PouchAttachments;
+  _attachments?: PouchDB.Core.Attachments;
   avp_format_version: number;
   type: FAIMSTypeName;
   data: any;
   revision_id: RevisionID;
   record_id: RecordID;
-  annotations: any;
+  annotations: Annotations;
 }
 
 /*
@@ -224,9 +235,9 @@ export interface LocalAutoIncrementState {
 }
 
 export interface AutoIncrementReference {
-  project_id: ProjectID;
   form_id: string;
   field_id: string;
+  label?: string;
 }
 
 export interface AutoIncrementReferenceDoc {
@@ -242,8 +253,8 @@ export interface AutoIncrementReferenceDoc {
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | AutoIncrementReferenceDoc
-  | ProjectPeople;
+  | EncodedProjectMetadata
+  | AutoIncrementReferenceDoc;
 
 /*
  * Elements of a Project's dataDB can be any one of these,
@@ -253,16 +264,4 @@ export type ProjectDataObject = AttributeValuePair | Revision | EncodedRecord;
 
 export function isRecord(doc: ProjectDataObject): doc is EncodedRecord {
   return (<EncodedRecord>doc).record_format_version !== undefined;
-}
-
-/**
- * Document from a people DB
- */
-export interface PeopleDoc {
-  roles: Array<string>;
-  devices: Array<string>;
-  salt: string;
-  ierations: 10;
-  derived_key: string;
-  passsword_scheme: string;
 }

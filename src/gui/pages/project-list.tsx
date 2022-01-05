@@ -69,8 +69,8 @@ export default function ProjectList() {
     []
   ).expect();
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {title: 'Notebooks'},
   ];
 
   return (

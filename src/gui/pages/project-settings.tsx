@@ -18,9 +18,8 @@
  *   TODO
  */
 
-import React from 'react';
-import {useParams, Redirect} from 'react-router-dom';
-import {Link as RouterLink} from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
 
 import {
   Box,
@@ -29,18 +28,26 @@ import {
   Typography,
   Paper,
   CircularProgress,
+  TextareaAutosize,
 } from '@material-ui/core';
+import EditIcon from '@material-ui/icons/Edit';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel/core';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {ProjectInformation} from '../../datamodel/ui';
+import {dumpMetadataDBContents} from '../../uiSpecification';
+import {ProjectID} from '../../datamodel/core';
 
 export default function ProjectSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
+
+  // TODO: remove these once we can send new project up
+  const [loading, setLoading] = useState(true);
+  const [metadbContents, setMetadbContents] = useState<object[]>([]);
+
   let project_info: ProjectInformation | null;
   try {
     project_info = useEventedPromise(
@@ -57,15 +64,28 @@ export default function ProjectSettings() {
       throw err;
     }
   }
+
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebook'},
     {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : '[loading]',
     },
     {title: 'Settings'},
   ];
+
+  useEffect(() => {
+    if (project_id === null) return;
+    const getDB = async () => {
+      setMetadbContents(await dumpMetadataDBContents(project_id));
+      setLoading(false);
+    };
+    getDB();
+  }, []);
+
+  console.debug('MetaDB contents', metadbContents);
+
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
@@ -82,12 +102,38 @@ export default function ProjectSettings() {
       <Paper square>
         <Button
           color="primary"
+          size="large"
+          startIcon={<EditIcon />}
           component={RouterLink}
+          to={ROUTES.PROJECT_DESIGN + project_id}
+        >
+          Edit Notebook Design
+        </Button>
+        <br />
+        <Button
+          color="primary"
+          size="large"
+          component={RouterLink}
+          startIcon={<EditIcon />}
           to={ROUTES.PROJECT + project_id + ROUTES.AUTOINCREMENT_LIST}
         >
           Edit AutoIncrement Allocations
         </Button>
       </Paper>
+      <Box mb={1}>
+        <Typography variant={'subtitle1'}>
+          The metadata database contents of
+          {project_info !== null ? project_info.name : project_id}.
+        </Typography>
+        {loading ? (
+          'Loading...'
+        ) : (
+          <TextareaAutosize
+            defaultValue={JSON.stringify(metadbContents)}
+            disabled={true}
+          />
+        )}
+      </Box>
     </Container>
   ) : (
     <CircularProgress />

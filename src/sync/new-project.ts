@@ -25,15 +25,11 @@ import {
 } from '../datamodel/database';
 import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
 
-import {
-  active_db,
-  directory_db,
-  ensure_local_db,
-  projects_dbs,
-} from './databases';
-import {activate_project, update_project} from './process-initialization';
+import {directory_db, ensure_local_db, projects_dbs} from './databases';
+import {activate_project} from './process-initialization';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
+  console.debug(`Requesting allocation for ${project_id}`);
   throw Error('not implemented yet');
 }
 
@@ -51,9 +47,20 @@ export async function request_allocation_for_project(project_id: ProjectID) {
  * 6. Return new project id (for further usage)
  */
 export async function create_new_project_dbs(name: string): Promise<ProjectID> {
+  // Get the local-only listing
   const listing = await ensure_locally_created_project_listing();
   const projects_db = ensure_locally_created_projects_db(listing._id);
+
+  // create the new project
   const new_project_id = generate_non_unique_project_id();
+  const project_object = {
+    _id: new_project_id,
+    name: name,
+    status: 'new', // TODO: work out proper status
+  };
+  await projects_db.local.put(project_object);
+  console.debug(`Created new project ${new_project_id}`);
+
   const active_id = await activate_project(
     listing._id,
     new_project_id,
@@ -61,16 +68,7 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
     null,
     false
   );
-  const active_project = await active_db.get(active_id);
-
-  const project_object = {
-    _id: active_id,
-    name: name,
-    status: 'new', // TODO: work out proper status
-  };
-  await projects_db.local.put(project_object);
-
-  update_project(listing, active_project, null, project_object);
+  console.debug(`Activated new project ${new_project_id}`);
 
   return active_id;
 }
@@ -84,11 +82,14 @@ async function ensure_locally_created_project_listing(): Promise<ListingsObject>
     return await directory_db.local.get(LOCALLY_CREATED_PROJECT_PREFIX);
   } catch (err: any) {
     if (err.status === 404) {
+      console.debug('Creating local-only listing');
       const listing_object = {
         _id: LOCALLY_CREATED_PROJECT_PREFIX,
         name: 'Locally Created Projects',
         description:
           'Projects created on this device (have not been submitted).',
+        local_only: true,
+        auth_mechanisms: {}, // No auth needed, nor allowed
       };
       await directory_db.local.put(listing_object);
       return listing_object;

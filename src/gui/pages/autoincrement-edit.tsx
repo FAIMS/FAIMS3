@@ -21,7 +21,7 @@
 import React from 'react';
 import {useParams} from 'react-router-dom';
 
-import {Box, Container, Typography, Paper} from '@material-ui/core';
+import {Box, Container, Typography, Paper, Button} from '@material-ui/core';
 
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel/core';
@@ -30,14 +30,15 @@ import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementEditForm from '../components/autoincrement/edit-form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
+import {useHistory} from 'react-router-dom';
 
 export default function AutoIncrementEdit() {
-  const {project_id, form_id, field_id} = useParams<{
+  const {project_id, form_id, field_id, label} = useParams<{
     project_id: ProjectID;
     form_id: string;
     field_id: string;
+    label: string;
   }>();
-  const name = `${form_id} (${field_id})`;
   const project_info = useEventedPromise(
     getProjectInfo,
     constantArgsShared(listenProjectInfo, project_id),
@@ -46,9 +47,11 @@ export default function AutoIncrementEdit() {
     project_id
   ).expect();
 
+  const history = useHistory();
+
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
@@ -58,7 +61,7 @@ export default function AutoIncrementEdit() {
       title: 'AutoIncrement Settings',
     },
     {
-      title: name,
+      title: label,
     },
   ];
 
@@ -70,7 +73,7 @@ export default function AutoIncrementEdit() {
           Update AutoIncrement Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the settings for the AutoIncrementer for {name}.
+          Update the settings for the AutoIncrementer for {label}.
         </Typography>
       </Box>
       <Paper square>
@@ -78,8 +81,12 @@ export default function AutoIncrementEdit() {
           project_id={project_id}
           form_id={form_id}
           field_id={field_id}
+          label={label}
         />
       </Paper>
+      <Button color="primary" size="large" onClick={() => history.goBack()}>
+        Go Back
+      </Button>
     </Container>
   );
 }

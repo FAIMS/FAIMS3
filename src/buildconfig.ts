@@ -31,7 +31,7 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
 function commit_version(): string {
   const commitver = process.env.REACT_APP_COMMIT_VERSION;
-  console.log(commitver);
+  console.log('Commit version', commitver);
   if (
     commitver === '' ||
     commitver === undefined ||
@@ -48,11 +48,11 @@ function prod_build(): boolean {
   if (
     prodbuild === '' ||
     prodbuild === undefined ||
-    FALSEY_STRINGS.includes(prodbuild.toLowerCase())
+    TRUTHY_STRINGS.includes(prodbuild.toLowerCase())
   ) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(prodbuild.toLowerCase())) {
     return true;
+  } else if (FALSEY_STRINGS.includes(prodbuild.toLowerCase())) {
+    return false;
   } else {
     console.error('REACT_APP_PRODUCTION_BUILD badly defined, assuming false');
     return false;
@@ -67,16 +67,31 @@ const PROD_BUILD = prod_build();
 
 function use_real_data(): boolean {
   const userealdata = process.env.REACT_APP_USE_REAL_DATA;
-  if (
-    userealdata === '' ||
-    userealdata === undefined ||
-    FALSEY_STRINGS.includes(userealdata.toLowerCase())
-  ) {
+  if (userealdata === '' || userealdata === undefined) {
+    // By default we don't include dummy data now
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(userealdata.toLowerCase())) {
     return false;
   } else if (TRUTHY_STRINGS.includes(userealdata.toLowerCase())) {
     return true;
   } else {
     console.error('REACT_APP_USE_REAL_DATA badly defined, assuming false');
+    return false;
+  }
+}
+
+function include_pouchdb_debugging(): boolean {
+  const debug_pouch = process.env.REACT_APP_DEBUG_POUCHDB;
+  if (debug_pouch === '' || debug_pouch === undefined) {
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(debug_pouch.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(debug_pouch.toLowerCase())) {
+    return true;
+  } else {
+    console.error('REACT_APP_DEBUG_POUCHDB badly defined, assuming false');
     return false;
   }
 }
@@ -102,7 +117,7 @@ function directory_protocol(): string {
 function directory_host(): string {
   const host = process.env.REACT_APP_DIRECTORY_HOST;
   if (host === '' || host === undefined) {
-    return '10.80.11.44';
+    return 'dev.db.faims.edu.au';
   }
   return host;
 }
@@ -124,6 +139,23 @@ function directory_port(): number {
   }
 }
 
+function directory_auth(): undefined | {username: string; password: string} {
+  // Used in the server, as opposed to COUCHDB_USER and PASSWORD for testing.
+  const username = process.env.REACT_APP_DIRECTORY_USERNAME;
+  const password = process.env.REACT_APP_DIRECTORY_PASSWORD;
+
+  if (
+    username === '' ||
+    username === undefined ||
+    password === '' ||
+    password === undefined
+  ) {
+    return undefined;
+  } else {
+    return {username: username, password: password};
+  }
+}
+
 function is_testing() {
   const jest_worker_is_running = process.env.JEST_WORKER_ID !== undefined;
   const jest_imported = typeof jest !== 'undefined';
@@ -132,9 +164,11 @@ function is_testing() {
 }
 
 export const USE_REAL_DATA = PROD_BUILD || use_real_data();
+export const DEBUG_POUCHDB = !PROD_BUILD && include_pouchdb_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
+export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
 export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this

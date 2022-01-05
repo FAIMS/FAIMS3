@@ -28,15 +28,23 @@ import {
   get_local_autoincrement_state_for_field,
   set_local_autoincrement_state_for_field,
 } from '../../datamodel/autoincrement';
-
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
+import {ProjectUIModel} from '../../datamodel/ui';
+import {Link as RouterLink} from 'react-router-dom';
+import Link from '@material-ui/core/Link';
+import * as ROUTES from '../../constants/routes';
 interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
   form_id: string;
+  label?: string;
 }
 
 interface State {
   has_run: boolean;
+  is_ranger: boolean;
+  label: string;
 }
 
 export class BasicAutoIncrementer extends React.Component<
@@ -45,8 +53,14 @@ export class BasicAutoIncrementer extends React.Component<
 > {
   constructor(props: FieldProps & Props) {
     super(props);
+    const label =
+      this.props.label !== '' && this.props.label !== undefined
+        ? this.props.label
+        : this.props.form_id;
     this.state = {
       has_run: false,
+      is_ranger: true,
+      label: label ?? this.props.form_id,
     };
   }
 
@@ -69,10 +83,12 @@ export class BasicAutoIncrementer extends React.Component<
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: 'No ranges allocated for autoincrement ID, add ranges',
+          message:
+            'No ranges set up, Go to this project > Setting > EDIT AUTOINCREMENT ALLOCATIONS to set up ranges',
           severity: 'error',
         },
       });
+      this.setState({...this.state, is_ranger: false});
       return null;
     }
     if (local_state.last_used_id === null) {
@@ -161,13 +177,68 @@ export class BasicAutoIncrementer extends React.Component<
 
   render() {
     return (
-      <Input
-        name={this.props.field.name}
-        id={this.props.field.name}
-        readOnly={true}
-        type={'hidden'}
-      />
+      <>
+        <Input
+          name={this.props.field.name}
+          id={this.props.field.name}
+          readOnly={true}
+          type={'hidden'}
+        />
+        {this.state.is_ranger === false && (
+          <Link
+            component={RouterLink}
+            to={
+              ROUTES.PROJECT +
+              this.props.form.values['_project_id'] +
+              ROUTES.AUTOINCREMENT +
+              this.props.form_id +
+              '/' +
+              this.props.field.name +
+              '/' +
+              this.state.label
+            }
+          >
+            Add Range
+          </Link>
+        )}
+      </>
     );
   }
 }
 BasicAutoIncrementer.contextType = store;
+
+const uiSpec = {
+  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+  'component-name': 'BasicAutoIncrementer',
+  'type-returned': 'faims-core::String', // matches a type in the Project Model
+  'component-parameters': {
+    name: 'basic-autoincrementer-field',
+    id: 'basic-autoincrementer-field',
+    variant: 'outlined',
+    required: true,
+    num_digits: 5,
+    form_id: 'default', // TODO: sort out this
+    label: '',
+  },
+  validationSchema: [['yup.string'], ['yup.required']],
+  initialValue: null,
+};
+
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['views']['FormParamater']['fields'] = ['label'];
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: ['FormParamater'],
+      label: 'settings',
+    },
+  };
+
+  return newuiSetting;
+};
+
+export function getAutoBuilderIcon() {
+  return <LibraryBooksIcon />;
+}
+
+export const AutoSetting = [uiSetting(), uiSpec];

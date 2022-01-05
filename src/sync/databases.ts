@@ -28,21 +28,20 @@ import {
   ActiveDoc,
   ConnectionInfo,
   ListingsObject,
-  NonNullListingsObject,
-  PeopleDoc,
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
+  LocalAuthDoc,
+  NonNullListingsObject,
 } from '../datamodel/database';
 import {
   ConnectionInfo_create_pouch,
   local_pouch_options,
   materializeConnectionInfo,
 } from './connection';
-import {staging_db} from './staging';
+import {draft_db} from './draft-storage';
 
-const DB_TIMEOUT = 2000;
-
+export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
 export const directory_connection_info: ConnectionInfo = {
@@ -120,7 +119,7 @@ export const directory_db: LocalDB<ListingsObject> = {
  *   For each project the current device is part of (so this is keyed by listing id + project id),
  *   * listing_id: A couchdb instance object's id (from "directory" db)
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
- *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
+ *   * authentication mechanism used (id of a doc in the auth_db)
  */
 export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 
@@ -130,14 +129,17 @@ export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 export const local_state_db = new PouchDB('local_state', local_pouch_options);
 
 /**
- * Each listing has a Projects database and Users/People DBs
+ * Login tokens for each FAIMS Cluster that needs it
  */
-export const projects_dbs: LocalDBList<ProjectObject> = {};
+export const local_auth_db = new PouchDB<LocalAuthDoc>(
+  'local_auth',
+  local_pouch_options
+);
 
 /**
- * mapping from listing id to a PouchDB CLIENTSIDE DB
+ * Each listing has a Projects database and Users DBs
  */
-export const people_dbs: LocalDBList<PeopleDoc> = {};
+export const projects_dbs: LocalDBList<ProjectObject> = {};
 
 /**
  * Per-[active]-project project data:
@@ -168,19 +170,74 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
         directory_connection_info,
         possibly_corrupted_instance.projects_db
       ),
-      people_db: materializeConnectionInfo(
-        directory_connection_info,
-        possibly_corrupted_instance.people_db
-      ),
+      auth_mechanisms: {},
     };
   }
   return default_instance;
 }
 
+let default_projects_db: null | ConnectionInfo = null;
+
+export async function get_base_connection_info(
+  listing_object: ListingsObject
+): Promise<ConnectionInfo> {
+  if (default_projects_db === null) {
+    try {
+      // Normal case of a single DEFAULT listing in the directory
+      const possibly_corrupted_instance = await directory_db.local.get(
+        DEFAULT_LISTING_ID
+      );
+      return (default_projects_db = materializeConnectionInfo(
+        directory_connection_info,
+        possibly_corrupted_instance.projects_db
+      ));
+    } catch (err: any) {
+      // Missing when directory_db has NOTHING in it
+      // i.e. current FAIMS app doesn't have a directory
+      // this is usually because it's the server, not the app.
+      if (err.message !== 'missing') {
+        // Other DB error
+        throw err;
+      }
+
+      const nullexcept = <T>(val: T | undefined | null, err: any): T => {
+        if (val === null || val === undefined) {
+          throw err;
+        }
+        return val;
+      };
+
+      // If running in server mode
+      // the listings object MUST have all the connection properties
+      return {
+        proto: nullexcept(
+          listing_object.projects_db?.proto,
+          'Server misconfigured: Missing proto'
+        ),
+        host: nullexcept(
+          listing_object.projects_db?.host,
+          'Server misconfigured: Missing host'
+        ),
+        port: nullexcept(
+          listing_object.projects_db?.port,
+          'Server misconfigured: Missing port'
+        ),
+        lan: listing_object.projects_db?.lan,
+        db_name: nullexcept(
+          listing_object.projects_db?.db_name,
+          'Server misconfigured: Missing db_name'
+        ),
+        auth: listing_object.projects_db?.auth,
+      };
+    }
+  }
+  return default_projects_db;
+}
+
 /**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db or people_db
+ * @param global_dbs projects_db
  * @returns Flag if newly created =true, already existing=false & The local DB
  */
 export function ensure_local_db<Content extends {}>(
@@ -211,7 +268,7 @@ export function ensure_local_db<Content extends {}>(
 
 /**
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db or people_db
+ * @param global_dbs projects_db
  * @param connection_info Info to use to connect to remote
  * @param options PouchDB options. Defaults to live: true, retry: true.
  *                if options.sync is defined, then this turns into ensuring the DB
@@ -220,15 +277,15 @@ export function ensure_local_db<Content extends {}>(
  */
 export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
-  connection_info: ConnectionInfo,
+  connection_info: ConnectionInfo | null,
   global_dbs: LocalDBList<Content>,
   options: DBReplicateOptions = {}
-): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
+): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
-  // Already connected/connecting
+  // Already connected/connecting, or local-only database
   if (
     global_dbs[local_db_id].remote !== null &&
     JSON.stringify(global_dbs[local_db_id].remote!.info) ===
@@ -244,6 +301,12 @@ export function ensure_synced_db<Content extends {}>(
       },
     ];
   }
+
+  // Special case for local-only projects
+  if (connection_info === null) {
+    return [false, global_dbs[local_db_id]];
+  }
+
   const db_info = (global_dbs[local_db_id] = {
     ...global_dbs[local_db_id],
     remote: {
@@ -273,6 +336,7 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
+  console.debug('Setting local connection:', db_info);
 
   if (db_info.is_sync && db_info.remote.connection === null) {
     // Start a new connection
@@ -300,6 +364,9 @@ export function setLocalConnection<Content extends {}>(
     // Stop an existing connection
     db_info.remote.connection.cancel();
     db_info.remote.connection = null;
+    console.debug('Removed sync for', db_info);
+  } else {
+    console.error('This is an odd state', db_info);
   }
 }
 
@@ -328,10 +395,14 @@ async function delete_synced_dbs(db_list: LocalDBList<any>) {
 }
 
 export async function wipe_all_pouch_databases() {
-  const local_only_dbs_to_wipe = [active_db, local_state_db, staging_db];
+  const local_only_dbs_to_wipe = [
+    active_db,
+    local_state_db,
+    draft_db,
+    local_auth_db,
+  ];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
-  await delete_synced_dbs(people_dbs);
   await delete_synced_dbs(projects_dbs);
   await delete_synced_db('directory', directory_db);
   for (const db of local_only_dbs_to_wipe) {

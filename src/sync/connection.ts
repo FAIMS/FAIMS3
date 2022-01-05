@@ -54,18 +54,31 @@ export function materializeConnectionInfo(
  * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
  */
 export function ConnectionInfo_create_pouch<Content extends {}>(
-  connection_info: ConnectionInfo,
-  username: string | null = null,
-  password: string | null = null,
-  skip_setup = false
+  connection_info: ConnectionInfo
 ): PouchDB.Database<Content> {
-  const pouch_options: any = {skip_setup: skip_setup};
-  if (username !== null && password !== null) {
+  const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {
+    skip_setup: true,
+  };
+
+  // Username & password auth is optional
+  if ('auth' in connection_info && connection_info.auth !== undefined) {
     pouch_options.auth = {
-      username: username,
-      password: password,
+      username: connection_info.auth.username,
+      password: connection_info.auth.password,
     };
   }
+  // TODO: Use a new enough pouchdb such that we don't need the fetch hook, see
+  // https://github.com/pouchdb/pouchdb/issues/8387
+  pouch_options.fetch = function (url: any, opts: any) {
+    if (
+      'jwt_token' in connection_info &&
+      connection_info.jwt_token !== undefined
+    ) {
+      opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
+    }
+    opts.keepalive = true;
+    return PouchDB.fetch(url, opts);
+  };
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +

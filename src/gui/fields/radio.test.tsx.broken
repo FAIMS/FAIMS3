@@ -1,0 +1,178 @@
+/*
+ * Copyright 2021 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: radio.test.tsx
+ * Description:
+ *   TODO
+ */
+
+import React from 'react';
+import {Field} from 'formik';
+import * as Yup from 'yup';
+import {render, fireEvent, act, waitFor} from './utils';
+
+import {RadioGroup} from './radio';
+
+test('renders as formik component', () => {
+  const onSubmit = jest.fn();
+  const {asFragment} = render(
+    <Field
+      component={RadioGroup}
+      name="radio"
+      type="radio"
+      ElementProps={{
+        options: [
+          {
+            value: '1',
+            label: '1',
+          },
+          {
+            value: '2',
+            label: '2',
+          },
+          {
+            value: '3',
+            label: '3',
+          },
+        ],
+      }}
+    />,
+    {
+      initialValues: {
+        radio: '3',
+      },
+      onSubmit,
+    }
+  );
+
+  expect(asFragment()).toMatchSnapshot();
+});
+
+test('submitting an option', async () => {
+  // given
+  const onSubmit = jest.fn();
+  const {getByTestId, findByText, getAllByRole} = render(
+    <Field
+      component={RadioGroup}
+      name="radio"
+      type="radio"
+      label="Radio"
+      data-testid="radio"
+      ElementProps={{
+        options: [
+          {
+            value: '1',
+            label: '1',
+          },
+          {
+            value: '2',
+            label: '2',
+          },
+          {
+            value: '3',
+            label: '3',
+          },
+        ],
+      }}
+    />,
+    {
+      initialValues: {
+        radio: '3',
+      },
+      onSubmit,
+    }
+  );
+
+  const radios = getAllByRole('radio');
+  const submit = getByTestId('submit');
+
+  fireEvent.click(radios[0]);
+  fireEvent.click(submit);
+
+  await findByText('submitted');
+
+  // then
+  expect(onSubmit).toBeCalledWith(
+    {
+      radio: '1',
+    },
+    expect.anything()
+  );
+});
+
+//test('shows error', async () => {
+//  const errorMessage = 'You must choose either 1 or 2';
+//  const validationSchema = Yup.object().shape({
+//    radio: Yup.string().oneOf(['1', '2'], errorMessage).required(),
+//  });
+//  const onSubmit = jest.fn();
+//  const {getByTestId, findByText, asFragment, getByLabelText} = render(
+//    <Field
+//      component={RadioGroup}
+//      name="radio"
+//      type="radio"
+//      data-testid="radio"
+//      FormLabelProps={{
+//        children: 'Pick a number',
+//      }}
+//      ElementProps={{
+//        options: [
+//          {
+//            value: '1',
+//            label: '1',
+//          },
+//          {
+//            value: '2',
+//            label: '2',
+//          },
+//          {
+//            value: '3',
+//            label: '3',
+//          },
+//        ],
+//      }}
+//    />,
+//    {
+//      initialValues: {
+//        radio: '1',
+//      },
+//      validateOnChange: true,
+//      onSubmit,
+//      validationSchema: validationSchema,
+//    }
+//  );
+//
+//  expect(asFragment()).toMatchSnapshot();
+//
+//  const radio3 = getByLabelText('3');
+//  const submit = getByTestId('submit');
+//  expect(radio3).not.toBeChecked();
+//
+//  act(() => {
+//    fireEvent.click(radio3);
+//    fireEvent.click(submit);
+//  });
+//
+//  await expect(radio3).toBeChecked();
+//
+//  // The validation message should be shown and the label should still be present
+//  await findByText('Pick a number');
+//  // check for Mui-error in classList
+//  const errorText = await findByText(errorMessage);
+//  await expect(errorText).toHaveClass('Mui-error');
+//  // await waitFor(() => {
+//  //   expect(getByText(errorMessage)).toBeInTheDocument();
+//  // });
+//});

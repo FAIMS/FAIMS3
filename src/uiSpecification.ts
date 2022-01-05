@@ -20,7 +20,7 @@
 
 import {getProjectDB} from './sync';
 import PouchDB from 'pouchdb';
-import {ProjectID} from './datamodel/core';
+import {ProjectID, FAIMSTypeName} from './datamodel/core';
 import {
   ProjectMetaObject,
   UI_SPECIFICATION_NAME,
@@ -46,7 +46,7 @@ export async function getUiSpecForProject(
     };
   } catch (err) {
     console.warn(err);
-    throw Error('failed to find ui specification');
+    throw Error(`failed to find ui specification for ${project_id}`);
   }
 }
 
@@ -74,5 +74,58 @@ export async function setUiSpecForProject(
   } catch (err) {
     console.warn(err);
     throw Error('failed to set ui specification');
+  }
+}
+
+export function getFieldsForViewSet(
+  ui_specification: ProjectUIModel,
+  viewset_name: string
+): {[key: string]: {[key: string]: any}} {
+  const views = ui_specification.viewsets[viewset_name].views;
+  const fields: {[key: string]: {[key: string]: any}} = {};
+  for (const view of views) {
+    const field_names = ui_specification.views[view].fields;
+    for (const field_name of field_names) {
+      fields[field_name] = ui_specification.fields[field_name];
+    }
+  }
+  return fields;
+}
+
+export function getFieldNamesFromFields(fields: {
+  [key: string]: {[key: string]: any};
+}): string[] {
+  return Object.keys(fields);
+}
+
+export function getReturnedTypesForViewSet(
+  ui_specification: ProjectUIModel,
+  viewset_name: string
+): {[field_name: string]: FAIMSTypeName} {
+  const fields = getFieldsForViewSet(ui_specification, viewset_name);
+  const types: {[field_name: string]: FAIMSTypeName} = {};
+  for (const field_name in fields) {
+    types[field_name] = fields[field_name]['type-returned'];
+  }
+  return types;
+}
+
+export async function dumpMetadataDBContents(
+  project_id: ProjectID
+): Promise<object[]> {
+  const projdb = await getProjectDB(project_id);
+  try {
+    const db_contents = await projdb.allDocs({
+      include_docs: true,
+      attachments: true,
+    });
+    const docs = [];
+    for (const o of db_contents.rows) {
+      docs.push(o.doc as object);
+    }
+    return docs;
+  } catch (err) {
+    console.warn(err);
+    throw Error(`failed to dump meta db for ${project_id}`);
   }
 }

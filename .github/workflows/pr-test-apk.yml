@@ -1,0 +1,158 @@
+---
+# Nightly compile for e2e testing
+name: Integration test for Android compile, no upload
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the main branch
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
+
+  
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  # push:
+  #   branches:
+  #     - github-actions
+  #     - main
+
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - staging
+      - trying
+  pull_request:
+    branches:
+      - main
+      - staging
+      - trying
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  node-deb-android-job:
+    # The type of runner that the job will run on
+    # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        node-version: ['lts/*']
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      
+      - name: Cache node modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}            
+          cache: 'npm'
+      # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      # https://github.com/android-actions/setup-android
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2.0.6
+      - name: Building webapp
+        run: |
+          export REACT_APP_PRODUCTION_BUILD=true
+          export REACT_APP_DIRECTORY_HOST=alpha.db.faims.edu.au
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          git clean -xfd
+          npm ci
+          npm run build
+      # https://capacitorjs.com/docs/android
+      - run: npx cap sync --deployment android
+        # Sync runs copy then update
+      #- run: npx cap copy android
+      #- run: npx cap update android
+      # Builds for debian, presently out of scope.
+
+      # # build local deb
+      # - run: npm run dist
+      # - run: cp "$(find . -name '*.deb')" .
+      # - name: Archive deb
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: ubuntu-deb
+      #     path: |
+      #       ./*.deb
+      # Don't need to explicitly unzip
+      # https://github.com/oxr463/setup-cordova
+      # This is a docker build, so I don't think any of the caching will do any good...
+      # This is also using gradle 5.7 instead of 7, so we'll have to rebuild this.
+      # - name: Use oxr463/setup-cordova
+      #   uses: oxr463/setup-cordova@0.0.2
+      #   with:
+      #     exec: |
+      #       cordova platform add android && \
+      #       cordova build --no-telemetry && \
+      #       echo "$(find . -name '*.apk')" && \
+      #       cp "$(find . -name '*.apk')" .
+      # https://docs.github.com/en/free-pro-team@latest/actions/guides/caching-dependencies-to-speed-up-workflows
+      
+      # https://github.com/marketplace/actions/setup-ionic
+      # - name: Use coturiv/setup-ionic
+      #   uses: coturiv/setup-ionic@v1
+      #   with:
+      #     cordova-version: 9
+      # - name: Build
+      #   run: |
+      #     cordova platform add android
+      #     cordova build --no-telemetry
+      
+      # https://cordova.apache.org/docs/en/latest/guide/cli/
+      # We need to make sure to cache this, but ... later
+      # - run: sudo npm install -g cordova # This installs cordova 10. We'll want to staple it to a specific major version.
+      # - run: cordova platform add android # Again, adding that... locally. How odd.
+      # - run: cordova requirements
+      # - run: cordova build android 
+      # limiting scope to only android here.
+      # - run: sudo npm install -g cordova
+      # https://forum.ionicframework.com/t/how-to-build-apk-from-capacitor-ionic-poject-without-using-android-studio/177814/7
+        # setting the environment variable app_url with the output of this cURL.
+        # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-output-parameter
+      - run: cd android && ./gradlew assembleDebug
+      - run: cp "$(find . -name '*.apk')" .
+      # - name: "Upload APK to Browserstack with curl"
+      #   run: |
+      #     curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=Alpha-Github-Actions" | jq .app_url -M | xargs -I{} echo "app_url={}" >> $GITHUB_ENV
+      - name: Archive apks
+        uses: actions/upload-artifact@v2
+        with:
+          name: apks
+          path: |
+            ./*.apk
+      # - uses: "marvinpinto/action-automatic-releases@latest"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     automatic_release_tag: "latest-android"
+      #     prerelease: true
+      #     title: "Android APK Development Build"
+      #     files: |
+      #       LICENSE
+      #       *.apk
+      # https://www.browserstack.com/docs/automate/selenium/github-actions#set-up-a-github-workflow-to-run-browserstack-tests
+      # Thereafter, invoke setup-env BrowserStack Action to set up 
+      # environment variables in the runner
+ 

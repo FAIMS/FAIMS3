@@ -26,9 +26,9 @@ import {
   ActiveDoc,
   isRecord,
   ListingsObject,
-  PeopleDoc,
 } from '../datamodel/database';
 import {mergeHeads} from '../data_storage/merging';
+
 import {ExistingActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';
 
@@ -53,7 +53,6 @@ export const createdProjects: {[key: string]: createdProjectsInterface} = {};
 export type createdListingsInterface = {
   listing: ListingsObject;
   projects: LocalDB<ProjectObject>;
-  people: LocalDB<PeopleDoc>;
 };
 
 /**

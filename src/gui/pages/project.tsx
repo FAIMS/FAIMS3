@@ -51,10 +51,11 @@ export default function Project() {
   }
 
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Index'},
-    {link: ROUTES.PROJECT_LIST, title: 'Projects'},
+    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {title: project_info !== null ? project_info.name : ''},
   ];
+
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />

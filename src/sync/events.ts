@@ -19,10 +19,11 @@
  */
 
 import {EventEmitter} from 'events';
-import {createdListingsInterface, createdProjectsInterface} from './state';
+
 import {ListingID} from '../datamodel/core';
 import {ListingsObject, ProjectObject} from '../datamodel/database';
 import {ExistingActiveDoc} from './databases';
+import {createdListingsInterface, createdProjectsInterface} from './state';
 
 export class DebugEmitter extends EventEmitter {
   constructor(opts?: {captureRejections?: boolean}) {

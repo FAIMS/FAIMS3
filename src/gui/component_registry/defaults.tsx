@@ -18,6 +18,7 @@
  *   TODO
  */
 import BrokenImageIcon from '@material-ui/icons/BrokenImage';
+import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
 
 export function getDefaultBuilderComponent() {
   return <p>This field has no configuration options.</p>;
@@ -25,4 +26,18 @@ export function getDefaultBuilderComponent() {
 
 export function getDefaultBuilderIcon() {
   return <BrokenImageIcon />;
+}
+
+export function getDefaultuiSpecProps() {
+  return {
+    namespace: 'formik-material-ui',
+    componentName: 'TextField',
+    type_return: 'faims-core::String',
+    validationSchema: [['yup.string']],
+    type: 'text',
+  };
+}
+
+export function getDefaultuisettings() {
+  return [getDefaultuiSetting()];
 }

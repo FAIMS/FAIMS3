@@ -24,7 +24,6 @@ import {
   Box,
   Button,
   Card as MuiCard,
-  Chip,
   CardActions,
   CardContent,
   CardHeader,
@@ -35,6 +34,7 @@ import {
   ListItemAvatar,
   ListItemText,
   Grid,
+  TextField,
 } from '@material-ui/core';
 
 // import {EmailShareButton} from 'react-share';
@@ -45,16 +45,24 @@ import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {makeStyles} from '@material-ui/core/styles';
 import {ProjectInformation} from '../../../datamodel/ui';
-import RecordsTable from '../record/table';
+import DraftsTable from '../record/draft_table';
+import {RecordsBrowseTable, RecordsSearchTable} from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
 import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
+import {getUiSpecForProject} from '../../../uiSpecification';
+import {ProjectUIViewsets} from '../../../datamodel/typesystem';
+import RangeHeader from './RangeHeader';
+
+type ProjectSearchCardProps = {
+  project: ProjectInformation;
+};
 
 type ProjectCardProps = {
   project: ProjectInformation;
   showRecords: boolean;
+  showDrafts: boolean;
   listView: boolean;
   dashboard: boolean;
 };
@@ -99,10 +107,11 @@ const useStyles = makeStyles(theme => ({
 }));
 
 export default function Card(props: ProjectCardProps) {
-  const {project, showRecords, listView, dashboard} = props;
+  const {project, showRecords, showDrafts, listView, dashboard} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
+  const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
 
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 
@@ -115,12 +124,22 @@ export default function Card(props: ProjectCardProps) {
   //     dialogTitle: 'Share ' + project.name,
   //   });
   // };
-
+  console.log(project);
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       setLoading(false);
     }
+    console.log(project.project_id);
   }, [project]);
+
+  useEffect(() => {
+    getUiSpecForProject(project.project_id).then(
+      uiSpec => {
+        setViewsets(uiSpec.viewsets);
+      },
+      () => {}
+    );
+  }, [project.project_id]);
 
   return (
     <React.Fragment>
@@ -171,7 +190,9 @@ export default function Card(props: ProjectCardProps) {
             className={classes.cardHeader}
             avatar={
               <Avatar aria-label={project.name} className={classes.avatar}>
-                {project.name.charAt(0)}
+                {project.name !== '' && project.name !== undefined
+                  ? project.name.charAt(0)
+                  : 'P'}
               </Avatar>
             }
             action={<ProjectCardHeaderAction project={project} />}
@@ -185,72 +206,18 @@ export default function Card(props: ProjectCardProps) {
                   }}
                 >
                   <b>{project.name}</b>&nbsp;
-                  {!listView ? (
-                    <React.Fragment>
-                      <Typography
-                        variant={'caption'}
-                        style={{cursor: 'not-allowed'}}
-                        color={'textSecondary'}
-                      >
-                        <i>edit title&nbsp;&nbsp;</i>
-                      </Typography>
-                      <TimelapseIcon
-                        color={'secondary'}
-                        style={{fontSize: '13px'}}
-                      />
-                    </React.Fragment>
-                  ) : (
-                    ''
-                  )}
                 </div>
               </React.Fragment>
             }
-            subheader={
-              'Created' +
-              project.created +
-              ', last record updated ' +
-              project.last_updated
-            }
+            subheader={<RangeHeader project={project} />}
           />
+
           <CardContent style={{paddingTop: 0}}>
             <Box mb={2}>
-              <Chip
-                size={'small'}
-                label={
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>Active team members: 10</span>&nbsp;{' '}
-                    <TimelapseIcon
-                      color={'secondary'}
-                      style={{fontSize: '13px'}}
-                    />
-                  </div>
-                }
-                style={{marginRight: '5px', marginBottom: '5px'}}
-              />
-              <Chip
-                size={'small'}
-                label={
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span>Status: active</span>&nbsp;{' '}
-                    <TimelapseIcon
-                      color={'secondary'}
-                      style={{fontSize: '13px'}}
-                    />
-                  </div>
-                }
-                style={{marginRight: '5px', marginBottom: '5px'}}
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'project_status'}
+                metadata_label={'Status'}
               />
               <MetadataRenderer
                 project_id={project.project_id}
@@ -265,38 +232,32 @@ export default function Card(props: ProjectCardProps) {
             </Box>
 
             <Typography variant="body2" color="textPrimary" component="div">
-              {project.description}&nbsp;
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'pre_description'}
+                chips={false}
+              />
               <br />
-              {listView ? (
-                ''
-              ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Typography
-                    variant={'caption'}
-                    style={{cursor: 'not-allowed'}}
-                    color={'textSecondary'}
-                  >
-                    <i>edit description&nbsp;&nbsp;</i>
-                  </Typography>
-                  <TimelapseIcon
-                    color={'secondary'}
-                    style={{fontSize: '14px'}}
-                  />
-                </div>
-              )}
             </Typography>
+
+            {showDrafts ? (
+              <Box mt={1}>
+                <DraftsTable
+                  project_id={project.project_id}
+                  maxRows={listView ? 10 : 25}
+                  viewsets={viewsets}
+                />
+              </Box>
+            ) : (
+              ''
+            )}
 
             {showRecords ? (
               <Box mt={1}>
-                <RecordsTable
+                <RecordsBrowseTable
                   project_id={project.project_id}
                   maxRows={listView ? 10 : 25}
+                  viewsets={viewsets}
                 />
               </Box>
             ) : (
@@ -306,7 +267,13 @@ export default function Card(props: ProjectCardProps) {
           <CardActions style={{width: '100%'}}>
             <Grid container alignItems="center">
               <Grid item xs={6} sm={6}>
-                <Box>{!listView ? <ProjectSync project={project} /> : ''}</Box>
+                <Box>
+                  {!listView && project.status !== 'new' ? (
+                    <ProjectSync project={project} />
+                  ) : (
+                    ''
+                  )}
+                </Box>
               </Grid>
               <Grid item xs={6} sm={6}>
                 {listView ? (
@@ -325,38 +292,6 @@ export default function Card(props: ProjectCardProps) {
               </Grid>
             </Grid>
           </CardActions>
-          {/*{listView ? (*/}
-          {/*  ''*/}
-          {/*) : (*/}
-          {/*  <CardActions>*/}
-          {/*    {webShare ? (*/}
-          {/*      <Button size="small" color="primary" onClick={getShare}>*/}
-          {/*        Share*/}
-          {/*      </Button>*/}
-          {/*    ) : (*/}
-          {/*      <EmailShareButton*/}
-          {/*        url={project_url}*/}
-          {/*        subject={'FAIMS Project: ' + project.name}*/}
-          {/*        body={"I'd like to share this FAIMS project with you "}*/}
-          {/*        resetButtonStyle={false}*/}
-          {/*        className={*/}
-          {/*          'MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-textSizeSmall MuiButton-sizeSmall'*/}
-          {/*        }*/}
-          {/*      >*/}
-          {/*        <span className="MuiButton-label">*/}
-          {/*          <span className="MuiButton-startIcon MuiButton-iconSizeSmall">*/}
-          {/*            <MailOutlineIcon*/}
-          {/*              className="MuiSvgIcon-root"*/}
-          {/*              viewBox={'0 0 24 24'}*/}
-          {/*            />*/}
-          {/*          </span>*/}
-          {/*          Share*/}
-          {/*        </span>*/}
-          {/*        <span className="MuiTouchRipple-root" />*/}
-          {/*      </EmailShareButton>*/}
-          {/*    )}*/}
-          {/*  </CardActions>*/}
-          {/*)}*/}
         </MuiCard>
       )}
     </React.Fragment>
@@ -364,6 +299,102 @@ export default function Card(props: ProjectCardProps) {
 }
 Card.defaultProps = {
   showRecords: false,
+  showDrafts: true,
   listView: false,
   dashboard: false,
 };
+
+export function ProjectSearchCard(props: ProjectSearchCardProps) {
+  const {project} = props;
+  const classes = useStyles();
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
+      setLoading(false);
+    }
+  }, [project]);
+
+  return (
+    <React.Fragment>
+      {loading ? (
+        <CircularProgress size={12} thickness={4} />
+      ) : (
+        <MuiCard>
+          <CardHeader
+            className={classes.cardHeader}
+            avatar={
+              <Avatar aria-label={project.name} className={classes.avatar}>
+                {project.name.charAt(0)}
+              </Avatar>
+            }
+            action={<ProjectCardHeaderAction project={project} />}
+            title={
+              <React.Fragment>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <b>{project.name}</b>&nbsp;
+                </div>
+              </React.Fragment>
+            }
+            subheader={
+              'Created' +
+              project.created +
+              ', last record updated ' +
+              project.last_updated
+            }
+          />
+          <CardContent style={{paddingTop: 0}}>
+            <Box mb={2}>
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'project_status'}
+                metadata_label={'Status'}
+              />
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'project_lead'}
+                metadata_label={'Project Lead'}
+              />{' '}
+              <MetadataRenderer
+                project_id={project.project_id}
+                metadata_key={'lead_institution'}
+                metadata_label={'Lead Institution'}
+              />
+            </Box>
+
+            <Typography variant="body2" color="textPrimary" component="div">
+              {project.description}&nbsp;
+              <br />
+            </Typography>
+
+            <Typography variant="body2" color="textPrimary" component="div">
+              Search the data within the records (does not search record
+              metadata):
+            </Typography>
+            <TextField
+              id="query"
+              type="search"
+              onChange={event => {
+                setQuery(event.target.value);
+              }}
+            />
+            <Box mt={1}>
+              <RecordsSearchTable
+                project_id={project.project_id}
+                maxRows={25}
+                query={query}
+              />
+            </Box>
+          </CardContent>
+        </MuiCard>
+      )}
+    </React.Fragment>
+  );
+}

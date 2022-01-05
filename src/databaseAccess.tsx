@@ -30,10 +30,15 @@
  */
 
 import {ProjectID} from './datamodel/core';
-import {ProjectInformation} from './datamodel/ui';
+import {ProjectInformation, ListingInformation} from './datamodel/ui';
 import {all_projects_updated, createdProjects} from './sync/state';
 import {events} from './sync/events';
-import {getProject, listenProject, waitForStateOnce} from './sync';
+import {
+  getProject,
+  listenProject,
+  waitForStateOnce,
+  getAllListings,
+} from './sync';
 
 export async function getProjectList(): Promise<ProjectInformation[]> {
   /**
@@ -108,3 +113,18 @@ export function listenProjectInfo(
 //export function updateProject(project_id: ProjectID) {}
 
 //export function removeProject(project_id: ProjectID) {}
+
+export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
+  const all_listings = await getAllListings();
+  const syncable_listings: ListingInformation[] = [];
+  for (const listing_object of all_listings) {
+    if (listing_object.local_only !== true) {
+      syncable_listings.push({
+        id: listing_object._id,
+        name: listing_object.name,
+        description: listing_object.description,
+      });
+    }
+  }
+  return syncable_listings;
+}

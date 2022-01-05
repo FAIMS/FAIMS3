@@ -19,7 +19,13 @@
  */
 
 import {USE_REAL_DATA, AUTOACTIVATE_PROJECTS} from '../buildconfig';
-import {ProjectID, ListingID, split_full_project_id} from '../datamodel/core';
+import {
+  ProjectID,
+  ListingID,
+  split_full_project_id,
+  NonUniqueProjectID,
+  resolve_project_id,
+} from '../datamodel/core';
 import {
   ConnectionInfo,
   ListingsObject,
@@ -31,28 +37,29 @@ import {
   setupExampleProjectMetadata,
   setupExampleData,
 } from '../dummyData';
+import {getTokenForCluster} from '../users';
+
 import {
   ConnectionInfo_create_pouch,
   materializeConnectionInfo,
 } from './connection';
 import {
-  directory_db,
   active_db,
-  get_default_instance,
+  data_dbs,
+  default_changes_opts,
+  DEFAULT_LISTING_ID,
+  directory_db,
   ensure_local_db,
-  people_dbs,
-  projects_dbs,
   ensure_synced_db,
   ExistingActiveDoc,
+  get_default_instance,
   metadata_dbs,
-  data_dbs,
-  DEFAULT_LISTING_ID,
-  default_changes_opts,
+  projects_dbs,
+  setLocalConnection,
 } from './databases';
 import {events} from './events';
 import {createdListings, createdProjects} from './state';
-import {setLocalConnection} from './databases';
-import {NonUniqueProjectID, resolve_project_id} from '../datamodel/core';
+
 const METADATA_DBNAME_PREFIX = 'metadata-';
 const DATA_DBNAME_PREFIX = 'data-';
 
@@ -158,6 +165,7 @@ export async function update_directory(
       options: {},
     };
 
+    console.debug('Setting up directory local connection');
     setLocalConnection({...directory_db, remote: directory_db.remote!});
 
     directory_db.remote!.connection!.once('paused', directory_pause('Sync'));
@@ -175,7 +183,7 @@ export async function update_directory(
  * @param delete Boolean: true to delete, false if to not be deleted
  * @param listing_id_or_listing Listing to delete/undelete
  */
-function process_listing(
+export function process_listing(
   delete_listing: boolean,
   listing: PouchDB.Core.ExistingDocument<ListingsObject>
 ) {
@@ -194,17 +202,11 @@ function process_listing(
 
 function delete_listing_by_id(listing_id: ListingID) {
   // Delete listing from memory
-  if (people_dbs[listing_id]?.remote?.connection !== null) {
-    people_dbs[listing_id].local.removeAllListeners();
-    people_dbs[listing_id].remote!.connection!.cancel();
-  }
-
   if (projects_dbs[listing_id]?.remote?.connection !== null) {
     projects_dbs[listing_id].local.removeAllListeners();
     projects_dbs[listing_id].remote!.connection!.cancel();
   }
 
-  delete people_dbs[listing_id];
   delete projects_dbs[listing_id];
   delete createdListings[listing_id];
 
@@ -226,13 +228,21 @@ export async function update_listing(
   listing_object: PouchDB.Core.ExistingDocument<ListingsObject>
 ) {
   const listing_id = listing_object._id;
+  //const local_only = listing_object.local_only ?? false;
   console.debug(`Processing listing id ${listing_id}`);
 
-  const projects_db_id = listing_object['projects_db']
-    ? listing_id
-    : DEFAULT_LISTING_ID;
+  const jwt_token = await getTokenForCluster(listing_id);
+  if (jwt_token === undefined) {
+    console.debug('No JWT token for:', listing_id);
+  } else {
+    console.debug('Using JWT token for:', listing_id);
+  }
 
-  const people_local_id = listing_object['people_db']
+  //const people_local_id = listing_object['people_db']
+  //  ? listing_id
+  //  : DEFAULT_LISTING_ID;
+
+  const projects_local_id = listing_object['projects_db']
     ? listing_id
     : DEFAULT_LISTING_ID;
 
@@ -241,21 +251,21 @@ export async function update_listing(
     listing_object['projects_db']
   );
 
-  const people_connection = materializeConnectionInfo(
-    (await get_default_instance())['people_db'],
-    listing_object['people_db']
-  );
+  //const people_connection = materializeConnectionInfo(
+  //  (await get_default_instance())['people_db'],
+  //  listing_object['people_db']
+  //);
 
-  const [people_did_change, people_local] = ensure_local_db(
-    'people',
-    people_local_id,
-    true,
-    people_dbs
-  );
+  //const [people_did_change, people_local] = ensure_local_db(
+  //  'people',
+  //  people_local_id,
+  //  true,
+  //  people_dbs
+  //);
 
   const [projects_did_change, projects_local] = ensure_local_db(
     'projects',
-    projects_db_id,
+    listing_id,
     true,
     projects_dbs
   );
@@ -266,14 +276,14 @@ export async function update_listing(
   createdListings[listing_id] = {
     listing: listing_object,
     projects: projects_local,
-    people: people_local,
+    //people: people_local,
   };
   // DON'T MOVE THIS PAST AN AWAIT POINT
   events.emit(
     'listing_update',
     old_value === undefined ? ['create'] : ['update', old_value],
     projects_did_change,
-    people_did_change,
+    false, //people_did_change,
     listing_object._id
   );
 
@@ -363,10 +373,10 @@ export async function update_listing(
       });
   }
 
-  const people_pause = (message?: string) => () => {
-    if (!people_did_change) return;
-    console.debug('People settled for', listing_id, 'with message', message);
-  };
+  //const people_pause = (message?: string) => () => {
+  //  if (!people_did_change) return;
+  //  console.debug('People settled for', listing_id, 'with message', message);
+  //};
 
   const projects_pause = (message?: string) => () => {
     if (!projects_did_change) return;
@@ -376,25 +386,28 @@ export async function update_listing(
   };
 
   if (USE_REAL_DATA) {
-    const [, people_remote] = ensure_synced_db(
-      people_local_id,
-      people_connection,
-      people_dbs
-    );
+    //const [, people_remote] = ensure_synced_db(
+    //  people_local_id,
+    //  people_connection,
+    //  people_dbs
+    //);
 
-    if (people_remote.remote.connection !== null) {
-      people_remote.remote.connection!.once('paused', people_pause('Sync'));
-    } else {
-      people_pause('No Sync')();
-    }
+    //if (people_remote.remote !== null && people_remote.remote.connection !== null) {
+    //  people_remote.remote.connection!.once('paused', people_pause('Sync'));
+    //} else {
+    //  people_pause('No Sync')();
+    //}
 
     const [, projects_remote] = ensure_synced_db(
-      projects_db_id,
+      projects_local_id,
       projects_connection,
       projects_dbs
     );
 
-    if (projects_remote.remote.connection !== null) {
+    if (
+      projects_remote.remote !== null &&
+      projects_remote.remote.connection !== null
+    ) {
       projects_remote.remote.connection!.once('paused', projects_pause('Sync'));
     } else {
       projects_pause('No Sync')();
@@ -467,7 +480,7 @@ function process_project(
   delete_proj: boolean,
   listing: ListingsObject,
   active_project: ExistingActiveDoc,
-  projects_db_connection: ConnectionInfo,
+  projects_db_connection: ConnectionInfo | null,
   project_object: ProjectObject
 ) {
   if (delete_proj) {
@@ -642,7 +655,7 @@ export async function update_project(
       metadata_dbs
     );
 
-    if (meta_remote.remote.connection !== null) {
+    if (meta_remote.remote !== null && meta_remote.remote.connection !== null) {
       meta_remote.remote.connection!.once('paused', meta_pause('Sync'));
     } else {
       meta_pause('No Sync')();
@@ -655,7 +668,7 @@ export async function update_project(
       {push: {}}
     );
 
-    if (data_remote.remote.connection !== null) {
+    if (data_remote.remote !== null && data_remote.remote.connection !== null) {
       data_remote.remote.connection!.once('paused', data_pause('Sync'));
     } else {
       data_pause('No Sync')();
