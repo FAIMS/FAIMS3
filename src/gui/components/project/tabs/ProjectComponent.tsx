@@ -56,7 +56,7 @@ import {ResetComponentProperties} from '../data/componenentSetting';
 import {HRID_STRING} from '../../../../datamodel/core';
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
 import ConfirmdeleteDisalog from './ConfirmdeleteDisalog'
-import SectionComponents from './PsectionComponents';
+import SectionTabs from './PSections';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -97,153 +97,7 @@ const getinitaccess = () => {
 
 
 
-type SectionTabProps={
-  formuiSpec:any;
-  formvariants:any;
-  setFormuiSpec:any;
-  formuiview:any;
-  initialValues:any;
-  setinitialValues:any;
-  projectvalue:any;
-  handleAutocomplete:any;
-  formcomponents:any;
-  designvalidate:any;
-  fieldvalue:any;
-  handleChangetabfield:any;
-  handleChangeFormSection:any;
-  setfieldValue:any;
-  formsectionvalue:any;
-  handleAddField:any;
-  deleteform:any;
-  setFormComponents:any
-}
 
-
-function SectionTab(props:SectionTabProps){
-    const theme = useTheme();
-    const classes = useStyles(theme);
-    const {
-        fieldvalue,
-        handleChangetabfield,
-        handleChangeFormSection,
-        formuiview,
-        formvariants,
-        formcomponents,
-        setfieldValue,
-        formsectionvalue,
-        deleteform,
-        formuiSpec,
-        projectvalue,
-        handleAddField,
-        ...others}= props
-    // const [fieldvalue,setFieldValue]=useState(0)
-    const handleSubmitFormSection = () => {console.log('section submit')}
-    const [isAddField,setIsAddField]=useState(true)
-    const handleAddFieldButton = () => {
-      setIsAddField(true);
-    };
-    const handleCloseFieldButton = () => {
-      setIsAddField(false);
-    };
-    
-    return (
-        <Grid container>
-        <Grid item sm={2} xs={12} className={classes.settingtab}>
-          <TabTab
-            tabs={['Info', 'Component']}
-            value={fieldvalue}
-            handleChange={handleChangetabfield}
-            tab_id="fieldtab"
-          />
-        </Grid>
-        <Grid item sm={10} xs={12}>
-          <TabPanel value={fieldvalue} index={0} tabname="fieldtab">
-            <FormForm
-              currentView="start-view"
-              handleChangeForm={handleChangeFormSection}
-              handleSubmit={handleSubmitFormSection}
-              uiSpec={getprojectform(props.projectvalue, 'section', {
-                sectionname: formuiview,
-              })}
-            />
-            <br />
-            <AutocompleteForm
-              id={formuiview}
-              options={getacessoption(
-                props.projectvalue['access']['access' + formvariants] ?? [
-                  'admin',
-                ]
-              )}
-              labels={props.projectvalue['access']['access' + formuiview]}
-              handleAutocomplete={props.handleAutocomplete}
-              type={'form'}
-              uiSpec={getprojectform(props.projectvalue, 'sectionaccess', {
-                sectionname: formuiview,
-              })}
-              currentView="start-view"
-              access={props.projectvalue['access']['access' + formvariants]}
-              // projectvalue={projectvalue}
-              // setProjectValue={props.setProjectValue}
-              handlerChanges={handleChangeFormSection}
-            />
-            <ConfirmdeleteDisalog 
-            id={formuiview}
-            deleteform={deleteform}
-            type={'SECTION'}
-            />
-            <ProjectSubmit
-              id="gotonext_info"
-              type="button"
-              isSubmitting={false}
-              text="Go To Next"
-              onButtonClick={() => setfieldValue(1)}
-            />
-          </TabPanel>
-          <TabPanel value={fieldvalue} index={1} tabname="fieldtab">
-            <Alert severity="info">
-              Select each new component, they will be automatically layout in
-              the interface, then config each of them
-            </Alert>
-
-            {fieldvalue === 1 &&
-            formuiview !== '' &&
-            formcomponents[formuiview].length > 0
-              ? <SectionComponents 
-              formuiview={formuiview}
-              formvariants={formvariants} 
-              formcomponents={formcomponents}
-              formuiSpec={formuiSpec}
-              projectvalue={projectvalue}
-              {...others} />
-              : ''}
-            <AddButton
-              id="AddField"
-              onButtonClick={handleAddFieldButton}
-              text="ADD"
-            />
-            {isAddField ? (
-              <Paper>
-                <Grid container className={classes.addfield}>
-                  <Grid item sm={11} xs={11}>
-                    <FieldsListCard cretenefield={handleAddField} />
-                  </Grid>
-                  <Grid item sm={1} xs={1} className={classes.newfield_button}>
-                    <CloseButton
-                      id="ColseAddField"
-                      onButtonClick={handleCloseFieldButton}
-                      text="X"
-                    />
-                  </Grid>
-                </Grid>
-              </Paper>
-            ) : (
-              ''
-            )}
-          </TabPanel>
-        </Grid>
-      </Grid>
-    )
-}
 
 type FormTabProps={
   formuiSpec:any;
@@ -272,67 +126,7 @@ type FormTabProps={
   setFormComponents:any;
 }
 
-type SectionTabsProps={
-  formuiSpec:any;
-  formvariants:any;
-  setFormuiSpec:any;
-  formuiview:any;
-  initialValues:any;
-  setinitialValues:any;
-  projectvalue:any;
-  handleAutocomplete:any;
-  formcomponents:any;
-  designvalidate:any;
-  fieldvalue:any;
-  handleChangetabfield:any;
-  handleChangeFormSection:any;
-  setfieldValue:any;
-  formsectionvalue:any;
-  handleAddField:any;
-  deleteform:any;
-  sectiontabs:any;
-  handelonChangeSection:any;
-  handelonChangeLabelSection:any;
-  setFormComponents:any;
-}
 
-function SectionTabs(props:SectionTabsProps){
-  // const [formsectionvalue,setformsectionvalue]=useState(0)
-  const {
-    sectiontabs,
-    formsectionvalue,
-    handelonChangeSection,
-    handelonChangeLabelSection,
-    formvariants,
-    ...others}= props
-
-  return(
-    <>
-  <TabEditable
-    tabs={sectiontabs}
-    value={formsectionvalue}
-    handleChange={handelonChangeSection}
-    tab_id="sectiontab"
-    handelonChangeLabel={handelonChangeLabelSection}
-    tabmaxindex={props.formuiSpec['viewsets'][formvariants]['views'].length>0?props.formuiSpec['viewsets'][formvariants]['views'][props.formuiSpec['viewsets'][formvariants]['views'].length-1].replace(formvariants+'SECTION',''):0}
-  />
-  {props.formuiSpec['viewsets'][formvariants]['views'].map((sectiontab: string, index: number) => 
-  props.formuiSpec['views'][sectiontab]['isdeleted']!==true&&(
-    <TabPanel
-      value={formsectionvalue}
-      index={index}
-      tabname="sectiontab"
-      key={'sectiontab' + index}
-    >
-      <SectionTab 
-      formvariants={formvariants}
-      formsectionvalue={formsectionvalue}
-      {...others} />
-    </TabPanel>
-  ))}
-  </>
-  )
-}
 
 
 function LiveFormTab (props:FormTabProps){
