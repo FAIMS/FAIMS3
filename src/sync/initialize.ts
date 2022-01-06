@@ -21,7 +21,7 @@ import PouchDB from 'pouchdb';
 
 import {DEBUG_POUCHDB} from '../buildconfig';
 
-import {active_db, directory_connection_info} from './databases';
+import {directory_connection_info} from './databases';
 import {events} from './events';
 import {update_directory} from './process-initialization';
 import {
