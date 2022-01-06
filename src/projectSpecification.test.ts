@@ -38,7 +38,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockProjectDB(project_id: ProjectID) {
+async function mockProjectDB(project_id: ProjectID) {
   if (projdbs[project_id] === undefined) {
     const db = new PouchDB(project_id, {adapter: 'memory'});
     projdbs[project_id] = db;
@@ -138,7 +138,12 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanProjectDBS();
+      try {
+        await cleanProjectDBS();
+      } catch (err) {
+        console.error(err);
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
@@ -170,7 +175,12 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanProjectDBS();
+      try {
+        await cleanProjectDBS();
+      } catch (err) {
+        console.error(err);
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fullconst = namespace + '::' + name;
@@ -205,7 +215,12 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanProjectDBS();
+      try {
+        await cleanProjectDBS();
+      } catch (err) {
+        console.error(err);
+        fail('Failed to clean dbs');
+      }
       clearAllCaches();
       fc.pre(projdbs !== {});
 
@@ -242,7 +257,12 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanProjectDBS();
+      try {
+        await cleanProjectDBS();
+      } catch (err) {
+        console.error(err);
+        fail('Failed to clean dbs');
+      }
       clearAllCaches();
       fc.pre(projdbs !== {});
 

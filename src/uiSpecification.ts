@@ -19,10 +19,8 @@
  */
 
 import {getProjectDB} from './sync';
-import PouchDB from 'pouchdb';
 import {ProjectID, FAIMSTypeName} from './datamodel/core';
 import {
-  ProjectMetaObject,
   UI_SPECIFICATION_NAME,
   EncodedProjectUIModel,
 } from './datamodel/database';
@@ -31,8 +29,8 @@ import {ProjectUIModel} from './datamodel/ui';
 export async function getUiSpecForProject(
   project_id: ProjectID
 ): Promise<ProjectUIModel> {
-  const projdb = await getProjectDB(project_id);
   try {
+    const projdb = await getProjectDB(project_id);
     const encUIInfo: EncodedProjectUIModel = await projdb.get(
       UI_SPECIFICATION_NAME
     );
@@ -51,9 +49,10 @@ export async function getUiSpecForProject(
 }
 
 export async function setUiSpecForProject(
-  projdb: PouchDB.Database<ProjectMetaObject>,
+  project_id: ProjectID,
   uiInfo: ProjectUIModel
 ) {
+  const projdb = await getProjectDB(project_id);
   const encUIInfo: EncodedProjectUIModel = {
     _id: UI_SPECIFICATION_NAME,
     fields: uiInfo.fields,
@@ -64,9 +63,11 @@ export async function setUiSpecForProject(
   try {
     const existing_encUIInfo = await projdb.get(encUIInfo._id);
     encUIInfo._rev = existing_encUIInfo._rev;
-  } catch (err) {
+  } catch (err: any) {
     // Probably no existing UI info
-    console.debug(err);
+    if (err?.status !== 404) {
+      console.debug(err);
+    }
   }
 
   try {

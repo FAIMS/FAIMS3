@@ -53,7 +53,6 @@ import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
 import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
-import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {
@@ -331,10 +330,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const saveformuiSpec = async (res: any = undefined) => {
     try {
-      await setUiSpecForProject(
-        metadata_dbs[res ?? project_id].local,
-        formuiSpec
-      );
+      await setUiSpecForProject(res ?? project_id, formuiSpec);
 
       const autoincrecs = get_autoincrement();
       add_autoince_refereence(autoincrecs);

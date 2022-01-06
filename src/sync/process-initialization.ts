@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {USE_REAL_DATA, AUTOACTIVATE_PROJECTS} from '../buildconfig';
+import {AUTOACTIVATE_PROJECTS} from '../buildconfig';
 import {
   ProjectID,
   ListingID,
@@ -31,12 +31,6 @@ import {
   ListingsObject,
   ProjectObject,
 } from '../datamodel/database';
-import {
-  setupExampleDirectory,
-  setupExampleListing,
-  setupExampleProjectMetadata,
-  setupExampleData,
-} from '../dummyData';
 import {getTokenForCluster} from '../users';
 
 import {
@@ -67,10 +61,6 @@ export async function update_directory(
   directory_connection_info: ConnectionInfo
 ) {
   events.emit('listings_sync_state', true);
-
-  if (!USE_REAL_DATA) {
-    await setupExampleDirectory(directory_db.local);
-  }
 
   // Only sync active listings: To do so, get all active docs,
   // then use that to select active listings from directory
@@ -153,25 +143,21 @@ export async function update_directory(
     events.emit('listings_sync_state', false);
   };
 
-  if (USE_REAL_DATA) {
-    const directory_paused = ConnectionInfo_create_pouch<ListingsObject>(
-      directory_connection_info
-    );
+  const directory_paused = ConnectionInfo_create_pouch<ListingsObject>(
+    directory_connection_info
+  );
 
-    directory_db.remote = {
-      db: directory_paused,
-      connection: null,
-      info: directory_connection_info,
-      options: {},
-    };
+  directory_db.remote = {
+    db: directory_paused,
+    connection: null,
+    info: directory_connection_info,
+    options: {},
+  };
 
-    console.debug('Setting up directory local connection');
-    setLocalConnection({...directory_db, remote: directory_db.remote!});
+  console.debug('Setting up directory local connection');
+  setLocalConnection({...directory_db, remote: directory_db.remote!});
 
-    directory_db.remote!.connection!.once('paused', directory_pause('Sync'));
-  } else {
-    setTimeout(directory_pause('Dummy; No Sync'), 50);
-  }
+  directory_db.remote!.connection!.once('paused', directory_pause('Sync'));
 }
 
 /**
@@ -296,9 +282,6 @@ export async function update_listing(
 
     // local_projects_db.changes has been changed
     // So we need to re-attach everything
-    if (!USE_REAL_DATA) {
-      await setupExampleListing(listing_id, projects_local.local);
-    }
 
     active_db
       .changes({...default_changes_opts, since: 0})
@@ -385,35 +368,31 @@ export async function update_listing(
     events.emit('projects_sync_state', false, listing_object);
   };
 
-  if (USE_REAL_DATA) {
-    //const [, people_remote] = ensure_synced_db(
-    //  people_local_id,
-    //  people_connection,
-    //  people_dbs
-    //);
+  //const [, people_remote] = ensure_synced_db(
+  //  people_local_id,
+  //  people_connection,
+  //  people_dbs
+  //);
 
-    //if (people_remote.remote !== null && people_remote.remote.connection !== null) {
-    //  people_remote.remote.connection!.once('paused', people_pause('Sync'));
-    //} else {
-    //  people_pause('No Sync')();
-    //}
+  //if (people_remote.remote !== null && people_remote.remote.connection !== null) {
+  //  people_remote.remote.connection!.once('paused', people_pause('Sync'));
+  //} else {
+  //  people_pause('No Sync')();
+  //}
 
-    const [, projects_remote] = ensure_synced_db(
-      projects_local_id,
-      projects_connection,
-      projects_dbs
-    );
+  const [, projects_remote] = ensure_synced_db(
+    projects_local_id,
+    projects_connection,
+    projects_dbs
+  );
 
-    if (
-      projects_remote.remote !== null &&
-      projects_remote.remote.connection !== null
-    ) {
-      projects_remote.remote.connection!.once('paused', projects_pause('Sync'));
-    } else {
-      projects_pause('No Sync')();
-    }
+  if (
+    projects_remote.remote !== null &&
+    projects_remote.remote.connection !== null
+  ) {
+    projects_remote.remote.connection!.once('paused', projects_pause('Sync'));
   } else {
-    projects_pause(USE_REAL_DATA ? 'Local-only; No Sync' : 'Dummy; No Sync');
+    projects_pause('No Sync')();
   }
 }
 
@@ -587,9 +566,6 @@ export async function update_project(
       active_project,
       project_object
     );
-    if (!USE_REAL_DATA) {
-      await setupExampleProjectMetadata(active_project._id, meta_local.local);
-    }
   }
 
   if (data_did_change) {
@@ -600,9 +576,6 @@ export async function update_project(
       active_project,
       project_object
     );
-    if (!USE_REAL_DATA) {
-      await setupExampleData(active_project._id);
-    }
   }
   const meta_pause = (message?: string) => () => {
     if (!meta_did_change) return;
@@ -631,7 +604,7 @@ export async function update_project(
   // If we must sync with a remote endpoint immediately,
   // do it here: (Otherwise, emit 'paused' anyway to allow
   // other parts of FAIMS to continue)
-  if (USE_REAL_DATA && projects_db_connection !== null) {
+  if (projects_db_connection !== null) {
     // Defaults to the same couch as the projects db, but different database name:
     const meta_connection_info = materializeConnectionInfo(
       {
@@ -674,7 +647,7 @@ export async function update_project(
       data_pause('No Sync')();
     }
   } else {
-    meta_pause(USE_REAL_DATA ? 'Local-only; No Sync' : 'Dummy; No Sync')();
-    data_pause(USE_REAL_DATA ? 'Local-only; No Sync' : 'Dummy; No Sync')();
+    meta_pause('Local-only; No Sync')();
+    data_pause('Local-only; No Sync')();
   }
 }

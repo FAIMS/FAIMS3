@@ -19,8 +19,7 @@
  */
 import PouchDB from 'pouchdb';
 
-import {USE_REAL_DATA, DEBUG_POUCHDB} from '../buildconfig';
-import {setupExampleActive} from '../dummyData';
+import {DEBUG_POUCHDB} from '../buildconfig';
 
 import {active_db, directory_connection_info} from './databases';
 import {events} from './events';
@@ -56,7 +55,6 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  if (!USE_REAL_DATA) await setupExampleActive(active_db);
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
 
   register_sync_state(events);

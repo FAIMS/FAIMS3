@@ -27,7 +27,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "pretest": "npm run compile",
-    "test": "NODE_ENV=test react-scripts test --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
+    "test": "NODE_ENV=test react-scripts test --forceExit --runInBand --detectOpenHandles --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
     "posttest": "npm run lint",
     "preintegration": "npm run compile",
     "integration": "NODE_ENV=test react-scripts test --forceExit --runInBand --detectOpenHandles src/integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
