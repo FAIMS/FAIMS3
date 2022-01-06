@@ -50,7 +50,8 @@ export async function getTokenForCluster(
   cluster_id: string
 ): Promise<string | undefined> {
   try {
-    return await local_auth_db.get(cluster_id);
+    const doc = await local_auth_db.get(cluster_id);
+    return doc.token;
   } catch (err) {
     console.debug(err);
     console.warn('Token not found for:', cluster_id);

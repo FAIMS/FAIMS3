@@ -53,6 +53,7 @@ export default function ClusterCard(props: ClusterCardProps) {
     };
     getToken();
   }, [props.listing_id]);
+  console.log('Token:', token);
 
   return (
     <MuiCard>
