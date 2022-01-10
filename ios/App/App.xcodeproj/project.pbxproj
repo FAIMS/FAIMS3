@@ -219,7 +219,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "buildNumber=$(date -u \"+%Y%m%d%H%M\")\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $buildNumber\" \"$INFOPLIST_FILE\"\n";
+			shellScript = "buildNumber=$(date -u \"+%Y%m%d%H%M\")\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $buildNumber#*v\" \"$plist\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $buildNumber#*v}\" \"$plist\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
