@@ -17,56 +17,67 @@
  */
 import React from 'react';
 
-import {Dialog,DialogActions,DialogContent,DialogContentText,DialogTitle,Button} from '@material-ui/core';
-
 import {
-  ProjectDelete,
-} from './ProjectButton';
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
+} from '@material-ui/core';
 
-type ConfirmdeleteDisalogProps={
-    id:string;
-    deleteform:any;
-    type:string
-  }
+import {ProjectDelete} from './ProjectButton';
 
-export default function ConfirmdeleteDisalog(props:ConfirmdeleteDisalogProps){
-    const [open, setOpen] = React.useState(false);
-    const {id,deleteform,type}=props
-    return (
-      <>
-      <br/>
-    <ProjectDelete
-      id={"delete"+id}
-      type="button"
-      isSubmitting={false}
-      text={"Delete  " + type }
-      onButtonClick={() => setOpen(true)}
-      /><br/><br/>
+type ConfirmdeleteDisalogProps = {
+  id: string;
+  deleteform: any;
+  type: string;
+};
+
+export default function ConfirmdeleteDisalog(props: ConfirmdeleteDisalogProps) {
+  const [open, setOpen] = React.useState(false);
+  const {id, deleteform, type} = props;
+  return (
+    <>
+      <br />
+      <ProjectDelete
+        id={'delete' + id}
+        type="button"
+        isSubmitting={false}
+        text={'Delete  ' + type}
+        onButtonClick={() => setOpen(true)}
+      />
+      <br />
+      <br />
       <Dialog
-      open={open}
-      onClose={() => setOpen(false)}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">
-        {"Confirm Delete"}
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          Are you sure you want to delete this {type} ?
-          {type==='FORM' && ' Delete form might affect others if there is connection, please make sure the field has been delelted. '} 
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setOpen(false)}>Cancel</Button>
-        <Button 
-        onClick={() => {setOpen(false); deleteform(id,type)}}
-        color='primary'
-        variant="contained"
-         autoFocus>
-          Confirm
-        </Button>
-      </DialogActions>
-    </Dialog>
-    </>)
-  }
+        open={open}
+        onClose={() => setOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{'Confirm Delete'}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete this {type} ?
+            {type === 'FORM' &&
+              ' Delete form might affect others if there is connection, please make sure the field has been delelted. '}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              deleteform(id, type);
+            }}
+            color="primary"
+            variant="contained"
+            autoFocus
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}

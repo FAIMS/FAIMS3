@@ -38,7 +38,7 @@ const theme = createMuiTheme({
     },
     error: {
       main: colors.red[500],
-    }
+    },
   },
   shadows: shadows as Shadows,
   typography,

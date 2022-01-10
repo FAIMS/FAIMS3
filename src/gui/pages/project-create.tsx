@@ -68,13 +68,6 @@ export default function ProjectCreate() {
       null as null | ProjectInformation
     );
 
-    useEffect(() => {
-      set_project_info(null);
-      if (project_id !== undefined) {
-        //only get UISpec when project is defined
-        getProjectInfo(project_id).then(set_project_info).catch(console.error);
-      }
-    }, [project_id]);
 
     if (project_info === null) {
       return (

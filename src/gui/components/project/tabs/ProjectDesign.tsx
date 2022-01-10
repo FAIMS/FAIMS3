@@ -58,7 +58,7 @@ import {
 import {ResetComponentProperties} from '../data/componenentSetting';
 import {HRID_STRING} from '../../../../datamodel/core';
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
-import {FormTab} from './ProjectComponent'
+import {FormTab} from './ProjectComponent';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -286,8 +286,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setDesignvalue('settings');
   };
 
-
-
   const handelonChangeSection = (event: any, index: number) => {
     const id = formuiSpec['viewsets'][formvariants]['views'][index];
     console.log(id);
@@ -364,10 +362,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       // const tabname = formuiSpec['visible_types'][0];
       // console.error(tabname);
       // ChangeVariants(0, tabname);
-      
-      console.debug('Current Form is '+formvariants);
+
+      console.debug('Current Form is ' + formvariants);
     }
-    
   };
 
   const handelonChangeLabelSection = (tabs: Array<string>, type: string) => {
@@ -402,8 +399,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const handleChangetabfield = (event: any, index: number) => {
     setfieldValue(index);
   };
-
-
 
   const getinitaccess = () => {
     try {
@@ -523,7 +518,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
 
   const handleSubmitFormAction = () => {};
 
-
   const handleAutocomplete = (
     newvalue: Array<string>,
     id: string,
@@ -565,44 +559,45 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     }
   };
 
-  const deleteform = (sectionid:string,type:string) =>{
-    console.error(type)
-    if(type=== 'SECTION'){
+  const deleteform = (sectionid: string, type: string) => {
+    console.error(type);
+    if (type === 'SECTION') {
       //for section delete section will empty the fields but the field will be saved
-        const newui=props.formuiSpec 
-        const newtabs=sectiontabs.filter((tab:string)=>tab!==newui['views'][sectionid]['label'])
-        const tabindex=newtabs.length
-        setsectiontabs(newtabs)
+      const newui = props.formuiSpec;
+      const newtabs = sectiontabs.filter(
+        (tab: string) => tab !== newui['views'][sectionid]['label']
+      );
+      const tabindex = newtabs.length;
+      setsectiontabs(newtabs);
 
-        newui['viewsets'][formvariants]['views']=newui['viewsets'][formvariants]['views'].filter((view:string)=>view!==sectionid);
-        const views=newui.views
-        delete views[sectionid];
-        setFormuiSpec({...newui,views:views})
+      newui['viewsets'][formvariants]['views'] = newui['viewsets'][
+        formvariants
+      ]['views'].filter((view: string) => view !== sectionid);
+      const views = newui.views;
+      delete views[sectionid];
+      setFormuiSpec({...newui, views: views});
 
-        //reset the formsection in projectvalue
-        const newpropjectvalue=projectvalue;
-        delete newpropjectvalue['sections'][sectionid];
-        delete newpropjectvalue['access']['access'+sectionid];
-        setProjectValue({...newpropjectvalue});
+      //reset the formsection in projectvalue
+      const newpropjectvalue = projectvalue;
+      delete newpropjectvalue['sections'][sectionid];
+      delete newpropjectvalue['access']['access' + sectionid];
+      setProjectValue({...newpropjectvalue});
 
-        setCurrentView(newtabs[tabindex]);
-        setformuiview(
-            formuiSpec['viewsets'][formvariants]['views'][tabindex]
-          );
-        setformsectionvalue(tabindex);
-        setfieldValue(0);
-        setDesignvalue('' + getid());
-        setFormComponents({...formcomponents,[sectionid]:[]})
-        
-    }else if(type=== 'FORM'){
-      //for form, the form will be kept, but won't be able to see to user, and can't be linked or contained to any other form and can be un-deleted. 
+      setCurrentView(newtabs[tabindex]);
+      setformuiview(formuiSpec['viewsets'][formvariants]['views'][tabindex]);
+      setformsectionvalue(tabindex);
+      setfieldValue(0);
+      setDesignvalue('' + getid());
+      setFormComponents({...formcomponents, [sectionid]: []});
+    } else if (type === 'FORM') {
+      //for form, the form will be kept, but won't be able to see to user, and can't be linked or contained to any other form and can be un-deleted.
       //The created record will be kept but user can't create new record????
-      const newui=props.formuiSpec 
-      newui['viewsets'][sectionid]['isdeleted']=true
-      newui['viewsets'][sectionid]['is_visible']=false
-      setFormuiSpec({...newui})
+      const newui = props.formuiSpec;
+      newui['viewsets'][sectionid]['isdeleted'] = true;
+      newui['viewsets'][sectionid]['is_visible'] = false;
+      setFormuiSpec({...newui});
     }
-  }
+  };
 
   const FormPanel = () => {
     return (
@@ -614,10 +609,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
             handleChange={handelonChangeVariants}
             tab_id="formtab"
             handelonChangeLabel={handelonChangeLabel}
-           
           />
         </Grid>
-        
+
         <Grid item sm={not_xs && formtabs.length > 1 ? 10 : 12} xs={12}>
           {formtabs.map((formtab: string, index: number) => (
             <TabPanel
@@ -627,37 +621,37 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               key={'formtab' + index}
             >
               <FormTab
-              formvariants={formvariants}
-              handleAutocomplete={handleAutocomplete}
-              handleChangeFormAction={handleChangeFormAction}
-              gotonext={gotonext}
-              sectiontabs={sectiontabs}
-              formsectionvalue={formsectionvalue}
-              handelonChangeSection={handelonChangeSection}
-              fieldvalue={fieldvalue}
-              handelonChangeLabelSection={handelonChangeLabelSection}
-              handleChangetabfield={handleChangetabfield}
-              handleChangeFormSection={ handleChangeFormSection}
-              formuiview={formuiview}
-              formcomponents={formcomponents}
-              setfieldValue={setfieldValue}
-              handleAddField={handleAddField}
-              designvalidate={designvalidate}
-              initialValues={initialValues}
-              formuiSpec={formuiSpec}
-              setFormuiSpec={setFormuiSpec}
-              setinitialValues={setinitialValues}
-              projectvalue={projectvalue}
-              setProjectValue={setProjectValue}
-              deleteform={deleteform}
-              setFormComponents={setFormComponents}
+                formvariants={formvariants}
+                handleAutocomplete={handleAutocomplete}
+                handleChangeFormAction={handleChangeFormAction}
+                gotonext={gotonext}
+                sectiontabs={sectiontabs}
+                formsectionvalue={formsectionvalue}
+                handelonChangeSection={handelonChangeSection}
+                fieldvalue={fieldvalue}
+                handelonChangeLabelSection={handelonChangeLabelSection}
+                handleChangetabfield={handleChangetabfield}
+                handleChangeFormSection={handleChangeFormSection}
+                formuiview={formuiview}
+                formcomponents={formcomponents}
+                setfieldValue={setfieldValue}
+                handleAddField={handleAddField}
+                designvalidate={designvalidate}
+                initialValues={initialValues}
+                formuiSpec={formuiSpec}
+                setFormuiSpec={setFormuiSpec}
+                setinitialValues={setinitialValues}
+                projectvalue={projectvalue}
+                setProjectValue={setProjectValue}
+                deleteform={deleteform}
+                setFormComponents={setFormComponents}
               />
             </TabPanel>
           ))}
         </Grid>
         {not_xs && formtabs.length > 1 ? (
           <Grid item sm={2} xs={12} className={classes.formtabcard}>
-            {formtabs.length > 1 &&formtabs[formnamevalue]!==undefined&& (
+            {formtabs.length > 1 && formtabs[formnamevalue] !== undefined && (
               <FormConnectionCard
                 tabs={formtabs}
                 formuiSpec={formuiSpec}

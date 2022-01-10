@@ -532,8 +532,7 @@ const Componentsetting = (props: componenentSettingprops) => {
             props.setuiSpec({...newvalues});
             console.log('Not contain' + 'SHOULD');
           }
-        }else{
-
+        } else {
           if (
             isArrayInArray(
               newvalues['fields'][props.fieldName]['validationSchema'],
@@ -631,14 +630,13 @@ const Componentsetting = (props: componenentSettingprops) => {
   };
   return (
     <>
-    <Defaultcomponentsetting
-      handlerchangewithview={handlerchangewithviewSpec}
-      handlerchanges={handlerchanges}
-      {...others}
-      fieldui={props.fieldui}
-      uiSetting={uiSetting}
-    />
-    
+      <Defaultcomponentsetting
+        handlerchangewithview={handlerchangewithviewSpec}
+        handlerchanges={handlerchanges}
+        {...others}
+        fieldui={props.fieldui}
+        uiSetting={uiSetting}
+      />
     </>
   );
 };

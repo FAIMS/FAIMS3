@@ -20,67 +20,71 @@
 import React from 'react';
 import Alert from '@material-ui/lab/Alert';
 import {Formik, Form} from 'formik';
-import SectionComponent from './PSectionComponent'
+import SectionComponent from './PSectionComponent';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-type SectionComponentsProps= {
-    formuiSpec:any;
-    formvariants:any;
-    setFormuiSpec:any;
-    formuiview:any;
-    initialValues:any;
-    setinitialValues:any;
-    projectvalue:any;
-    handleAutocomplete:any;
-    formcomponents:any;
-    designvalidate:any;
-    setFormComponents:any;
-  }
-  
-export default function SectionComponents(props: SectionComponentsProps){
-      const {
-          designvalidate,
-          formcomponents,
-          formuiview,
-          initialValues,...others}= props
-       const submithandler = (values:any) =>{
-  
-       }
-      return (
-          <Formik
-            // enableReinitialize
-            key={formuiview}
-            initialValues={initialValues}
-            validateOnMount={true}
-            validationSchema={designvalidate}
-            onSubmit={(values, {setSubmitting}) => {
-              setTimeout(() => {
-                setSubmitting(false);
-                submithandler(values);
-              }, 500);
-            }}
-          >
-            {formProps => {
-              return (
-                <Form>
-                  {formProps.isValid === false && (
-                    <Alert severity="error">
-                      Form has errors, please fill required field in settings for
-                      each component.
-                    </Alert>
-                  )}
-                  {formcomponents[formuiview].map((formcomponent: any, index: any) =>
-                  <SectionComponent
+type SectionComponentsProps = {
+  formuiSpec: any;
+  formvariants: any;
+  setFormuiSpec: any;
+  formuiview: any;
+  initialValues: any;
+  setinitialValues: any;
+  projectvalue: any;
+  handleAutocomplete: any;
+  formcomponents: any;
+  designvalidate: any;
+  setFormComponents: any;
+};
+
+export default function SectionComponents(props: SectionComponentsProps) {
+  const {
+    designvalidate,
+    formcomponents,
+    formuiview,
+    initialValues,
+    ...others
+  } = props;
+  const submithandler = (values: any) => {};
+  return (
+    <Formik
+      // enableReinitialize
+      key={formuiview}
+      initialValues={initialValues}
+      validateOnMount={true}
+      validationSchema={designvalidate}
+      onSubmit={(values, {setSubmitting}) => {
+        setTimeout(() => {
+          setSubmitting(false);
+          submithandler(values);
+        }, 500);
+      }}
+    >
+      {formProps => {
+        return (
+          <Form>
+            {formProps.isValid === false && (
+              <Alert severity="error">
+                Form has errors, please fill required field in settings for each
+                component.
+              </Alert>
+            )}
+            {formcomponents[formuiview].map(
+              (formcomponent: any, index: any) => (
+                <SectionComponent
                   formuiview={formuiview}
-                  initialValues= {initialValues}
+                  initialValues={initialValues}
                   formcomponent={formcomponent}
                   index={index}
                   formProps={formProps}
                   formcomponents={formcomponents}
-                  {...others} />)}
-                </Form>
-              );
-            }}
-          </Formik>
+                  {...others}
+                />
+              )
+            )}
+          </Form>
         );
-  }
+      }}
+    </Formik>
+  );
+}
