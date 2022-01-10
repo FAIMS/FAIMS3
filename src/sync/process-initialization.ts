@@ -489,20 +489,6 @@ export async function update_listing(
   }
 }
 
-async function autoactivate_projects(
-  listing_id: string,
-  project_ids: NonUniqueProjectID[]
-) {
-  for (const project_id of project_ids) {
-    try {
-      await activate_project(listing_id, project_id, null, null);
-    } catch (err) {
-      const active_id = resolve_project_id(listing_id, project_id);
-      console.debug('Unable to autoactivate', active_id);
-    }
-  }
-}
-
 export async function activate_project(
   listing_id: string,
   project_id: NonUniqueProjectID,

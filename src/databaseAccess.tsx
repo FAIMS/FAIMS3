@@ -33,6 +33,7 @@ import {ProjectID} from './datamodel/core';
 import {DEBUG_APP} from './buildconfig';
 import {ProjectInformation, ListingInformation} from './datamodel/ui';
 import {all_projects_updated, createdProjects} from './sync/state';
+import {projects_dbs} from './sync/databases';
 import {events} from './sync/events';
 import {
   getProject,
@@ -127,4 +128,12 @@ export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
     }
   }
   return syncable_listings;
+}
+
+export async function getNotebooksForListing(listing_id: ListingID): Promise<ListingNotebooksState> {
+    if (projects_dbs[listing_id] === undefined) {
+        // The listing has not been activated
+        return null;
+    }
+    const res = projects_dbs[listing_id].local.
 }

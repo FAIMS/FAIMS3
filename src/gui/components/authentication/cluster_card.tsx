@@ -47,6 +47,10 @@ type ClusterCardProps = {
   setToken?: any;
 };
 
+type ListingActivatorProps = {
+  listing_id: string;
+};
+
 const useStyles = makeStyles(() => ({
   cardHeader: {
     alignItems: 'flex-start',
@@ -118,4 +122,28 @@ export default function ClusterCard(props: ClusterCardProps) {
       <CardActions></CardActions>
     </MuiCard>
   );
+}
+
+function ListingDisplay(props: ListingDisplayProps) {
+  const listing_id = props.listing_id;
+  const [notebooks, setNotebooks] = useState(
+    undefined as undefined | null | ListingNotebooksState
+  );
+
+  useEffect(() => {
+    const getNotebooks = async () => {
+      setNotebooks(await getNotebooksForListing(listing_id));
+    };
+    getNotebooks();
+  }, [listing_id]);
+
+  if (projects === undefined) {
+    return (<CircularProgress color="primary" size="2rem" thickness={5} />);
+  } else if (projects === null) {
+    return (<ActivateListingButton listing_id=listing_id />);
+  } else {
+    return (
+      <ListingNotebooksDisplay listing_id=listing_id notebooks=notebooks />
+    );
+  }
 }

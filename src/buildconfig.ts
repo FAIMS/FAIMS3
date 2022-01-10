@@ -65,22 +65,6 @@ function prod_build(): boolean {
  */
 const PROD_BUILD = prod_build();
 
-function use_real_data(): boolean {
-  const userealdata = process.env.REACT_APP_USE_REAL_DATA;
-  if (userealdata === '' || userealdata === undefined) {
-    // By default we don't include dummy data now
-    return true;
-  }
-  if (FALSEY_STRINGS.includes(userealdata.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(userealdata.toLowerCase())) {
-    return true;
-  } else {
-    console.error('REACT_APP_USE_REAL_DATA badly defined, assuming false');
-    return false;
-  }
-}
-
 function include_pouchdb_debugging(): boolean {
   const debug_pouch = process.env.REACT_APP_DEBUG_POUCHDB;
   if (debug_pouch === '' || debug_pouch === undefined) {
@@ -209,7 +193,6 @@ function is_testing() {
   return jest_worker_is_running || jest_imported || test_node_env;
 }
 
-export const USE_REAL_DATA = PROD_BUILD || use_real_data();
 export const DEBUG_POUCHDB = !PROD_BUILD && include_pouchdb_debugging();
 export const DEBUG_APP = !PROD_BUILD && include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
@@ -220,4 +203,4 @@ export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
-export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
+export const AUTOACTIVATE_PROJECTS = false;
