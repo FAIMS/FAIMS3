@@ -30,15 +30,17 @@
  */
 
 import {ProjectID} from './datamodel/core';
-import {ProjectInformation} from './datamodel/ui';
-import {
-  createdProjects,
-  createdProjectsInterface,
-  projects_known,
-} from './sync/state';
+import {ProjectInformation, ListingInformation} from './datamodel/ui';
+import {all_projects_updated, createdProjects} from './sync/state';
 import {events} from './sync/events';
+import {
+  getProject,
+  listenProject,
+  waitForStateOnce,
+  getAllListings,
+} from './sync';
 
-export function getProjectList(): ProjectInformation[] {
+export async function getProjectList(): Promise<ProjectInformation[]> {
   /**
    * Return all active projects the user has access to, including the
    * top 30 most recently updated records.
@@ -47,6 +49,8 @@ export function getProjectList(): ProjectInformation[] {
   // TODO filter by active projects
   // TODO filter data by top 30 entries, sorted by most recently updated
   // TODO decode .data
+  waitForStateOnce(() => all_projects_updated);
+
   const output: ProjectInformation[] = [];
   for (const listing_id_project_id in createdProjects) {
     output.push({
@@ -62,32 +66,21 @@ export function getProjectList(): ProjectInformation[] {
 }
 
 export function listenProjectList(
-  listener: (project_list: ProjectInformation[]) => void
+  listener: () => void,
+  error: (err: any) => void
 ): () => void {
-  const callback = () => {
-    listener(getProjectList());
-  };
-
-  events.on('projects_known', callback);
-
-  if (projects_known !== null) {
-    // Projects already known by the time this function is called
-    callback();
-  }
-
+  events.on('project_update', listener);
+  console.debug(`${error} will never be called`);
   return () => {
     // Event remover
-    events.removeListener('projects_known', callback);
+    events.removeListener('project_update', listener);
   };
 }
 
-export function getProjectInfo(
+export async function getProjectInfo(
   project_id: ProjectID
-): ProjectInformation | null {
-  const proj = createdProjects[project_id];
-  if (proj === undefined) {
-    return null;
-  }
+): Promise<ProjectInformation> {
+  const proj = await getProject(project_id);
 
   return {
     project_id: project_id,
@@ -99,13 +92,39 @@ export function getProjectInfo(
   };
 }
 
-export function getProject(project_id: ProjectID): createdProjectsInterface {
-  /**
-   * Return entire project object (project, active, meta, data).
-   */
-  return createdProjects[project_id];
+export function listenProjectInfo(
+  project_id: ProjectID,
+  listener: () => unknown | Promise<void>,
+  error: (err: any) => void
+): () => void {
+  return listenProject(
+    project_id,
+    (value, throw_error) => {
+      const retval = listener();
+      if (typeof retval === 'object' && retval !== null && 'catch' in retval) {
+        (retval as {catch: (err: unknown) => unknown}).catch(throw_error);
+      }
+      return 'noop';
+    },
+    error
+  );
 }
 
 //export function updateProject(project_id: ProjectID) {}
 
 //export function removeProject(project_id: ProjectID) {}
+
+export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
+  const all_listings = await getAllListings();
+  const syncable_listings: ListingInformation[] = [];
+  for (const listing_object of all_listings) {
+    if (listing_object.local_only !== true) {
+      syncable_listings.push({
+        id: listing_object._id,
+        name: listing_object.name,
+        description: listing_object.description,
+      });
+    }
+  }
+  return syncable_listings;
+}

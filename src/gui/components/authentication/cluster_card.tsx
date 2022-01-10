@@ -33,6 +33,8 @@ import {getTokenForCluster} from '../../../users';
 
 type ClusterCardProps = {
   listing_id: string;
+  listing_name: string;
+  listing_description: string;
 };
 
 const useStyles = makeStyles(() => ({
@@ -51,11 +53,13 @@ export default function ClusterCard(props: ClusterCardProps) {
     };
     getToken();
   }, [props.listing_id]);
+  console.log('Token:', token);
 
   return (
     <MuiCard>
-      <CardHeader className={classes.cardHeader} title={props.listing_id} />
+      <CardHeader className={classes.cardHeader} title={props.listing_name} />
       <CardContent style={{paddingTop: 0}}>
+        <p>{props.listing_description}</p>
         {token === undefined ? (
           <LoginForm listing_id={props.listing_id} setToken={setToken} />
         ) : (

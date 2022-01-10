@@ -67,7 +67,7 @@ export async function updateHeads(
   base_revids: RevisionID[],
   new_revid: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const record = await getRecord(project_id, obsid);
 
   // Add new revision to heads, removing obsolete heads
@@ -132,7 +132,7 @@ export async function getLatestRevision(
   project_id: ProjectID,
   docid: string
 ): Promise<string | undefined> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   try {
     const doc = await datadb.get(docid);
     return doc._rev;
@@ -226,7 +226,7 @@ export async function getAttributeValuePairs(
   project_id: ProjectID,
   avp_ids: AttributeValuePairID[]
 ): Promise<AttributeValuePairMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     attachments: true,
@@ -248,7 +248,7 @@ export async function getRevisions(
   project_id: ProjectID,
   revision_ids: RevisionID[]
 ): Promise<RevisionMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     keys: revision_ids,
@@ -268,7 +268,7 @@ export async function getRecords(
   project_id: ProjectID,
   record_ids: RecordID[]
 ): Promise<RecordMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     keys: record_ids,
@@ -296,7 +296,7 @@ function recordToRecordMap(old_recs: RecordMap): EncodedRecordMap {
 export async function getAllRecords(
   project_id: ProjectID
 ): Promise<EncodedRecordMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.find({
     selector: {
       record_format_version: 1,
@@ -333,7 +333,7 @@ export async function addNewRevisionFromForm(
   record: Record,
   new_revision_id: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map = await addNewAttributeValuePairs(
     project_id,
     record,
@@ -358,7 +358,7 @@ async function addNewAttributeValuePairs(
   record: Record,
   new_revision_id: RevisionID
 ): Promise<AttributeValuePairIDMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   let revision;
   let data;
@@ -407,7 +407,7 @@ export async function createNewRecord(
   record: Record,
   revision_id: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const new_encoded_record = {
     _id: record.record_id,
     record_format_version: 1,

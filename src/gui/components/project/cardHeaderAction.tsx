@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import {Link as RouterLink, NavLink} from 'react-router-dom';
 
 import {
@@ -19,8 +19,9 @@ import MoreVertIcon from '@material-ui/icons/MoreVert';
 
 import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
-import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
+import {listenProjectDB} from '../../../sync';
+import {useEventedPromise} from '../../pouchHook';
 
 type ProjectCardActionProps = {
   project: ProjectInformation;
@@ -28,6 +29,7 @@ type ProjectCardActionProps = {
 
 export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
   const {project} = props;
+  const project_id = project.project_id;
 
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -56,30 +58,24 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
     setCreateAnchor(event.currentTarget);
   };
 
-  // viewsets and the list of visible views
-  const [viewSets, setViewSets] = React.useState<
-    null | [ProjectUIViewsets, string[]]
-  >(null);
+  const ui_spec = useEventedPromise(
+    getUiSpecForProject,
+    listenProjectDB.bind(null, project_id, {since: 'now'}),
+    true,
+    [project_id],
+    project_id
+  );
 
-  useEffect(() => {
-    getUiSpecForProject(project.project_id).then(uiSpec => {
-      if (
-        uiSpec.viewsets !== null ||
-        uiSpec.viewsets !== null ||
-        uiSpec.visible_types !== undefined ||
-        uiSpec.visible_types !== undefined
-      ) {
-        setViewSets([uiSpec.viewsets, uiSpec.visible_types]);
-      } else {
-        console.error('Viewsets or visable types not set up:', uiSpec);
-      }
-    }, console.error);
-  }, [project.project_id]);
+  if (ui_spec.error) {
+    console.error(`Error in gettings UISpec in ${project_id}`, ui_spec.error);
+  }
 
-  if (viewSets === null) {
-    console.info('Viewsets is null for:', project.project_id);
+  if (ui_spec.loading || ui_spec.value === undefined) {
+    console.warn('Ui spec for', project_id, ui_spec);
     return <CircularProgress thickness={2} size={12} />;
   }
+  const viewsets = ui_spec.value.viewsets;
+  const visible_types = ui_spec.value.visible_types;
 
   return (
     <React.Fragment>
@@ -93,14 +89,14 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               // If the list of views hasn't loaded yet
               // we can still show this button, except it will
               // redirect to the Record creation without known type
-              {...(viewSets[1].length === 1
+              {...(visible_types.length === 1
                 ? {
                     component: RouterLink,
                     to:
                       ROUTES.PROJECT +
-                      project.project_id +
+                      project_id +
                       ROUTES.RECORD_CREATE +
-                      viewSets[1],
+                      visible_types,
                   }
                 : {
                     onClick: handleCreateClick,
@@ -114,9 +110,9 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               open={Boolean(createAnchor)}
               onClose={handleCreateClose}
             >
-              {viewSets[1].map(
+              {visible_types.map(
                 viewset_name =>
-                  viewSets[0][viewset_name].is_visible !== false && (
+                  viewsets[viewset_name].is_visible !== false && (
                     <MenuItem
                       component={RouterLink}
                       to={
@@ -125,8 +121,9 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                         ROUTES.RECORD_CREATE +
                         viewset_name
                       }
+                      key={viewset_name}
                     >
-                      {viewSets[0][viewset_name].label || viewset_name}
+                      {viewsets[viewset_name].label || viewset_name}
                     </MenuItem>
                   )
               )}
@@ -140,7 +137,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
             </IconButton>
             <IconButton
               component={RouterLink}
-              to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SETTINGS}
+              to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_SETTINGS}
             >
               <SettingsIcon />
             </IconButton>
@@ -158,14 +155,14 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
             open={Boolean(actionAnchor)}
             onClose={handleActionClose}
           >
-            {viewSets[1].length === 1 ? (
+            {visible_types.length === 1 ? (
               <MenuItem
                 component={NavLink}
                 to={
                   ROUTES.PROJECT +
-                  project.project_id +
+                  project_id +
                   ROUTES.RECORD_CREATE +
-                  viewSets[1]
+                  visible_types
                 }
               >
                 <ListItemIcon>
@@ -175,9 +172,9 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
               </MenuItem>
             ) : (
               <React.Fragment>
-                {viewSets[1].map(
+                {visible_types.map(
                   viewset_name =>
-                    viewSets[0][viewset_name].is_visible !== false && (
+                    viewsets[viewset_name].is_visible !== false && (
                       <MenuItem
                         component={RouterLink}
                         to={
@@ -186,8 +183,9 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                           ROUTES.RECORD_CREATE +
                           viewset_name
                         }
+                        key={viewset_name}
                       >
-                        New {viewSets[0][viewset_name].label || viewset_name}
+                        New {viewsets[viewset_name].label || viewset_name}
                       </MenuItem>
                     )
                 )}
@@ -196,7 +194,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
 
             <MenuItem
               component={NavLink}
-              to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SETTINGS}
+              to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_SETTINGS}
             >
               <ListItemIcon>
                 <SettingsIcon fontSize="small" />

@@ -26,10 +26,17 @@ import {
   ProjectID,
   RecordID,
   RevisionID,
+  ListingID,
   FAIMSTypeName,
   Annotations,
 } from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
+
+export interface ListingInformation {
+  id: ListingID;
+  name: string;
+  description: string;
+}
 
 export interface ProjectInformation {
   project_id: ProjectID;

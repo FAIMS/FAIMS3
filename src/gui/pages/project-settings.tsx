@@ -19,8 +19,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {useParams, Redirect} from 'react-router-dom';
-import {Link as RouterLink} from 'react-router-dom';
+import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
 
 import {
   Box,
@@ -28,28 +27,50 @@ import {
   Container,
   Typography,
   Paper,
+  CircularProgress,
   TextareaAutosize,
 } from '@material-ui/core';
+import EditIcon from '@material-ui/icons/Edit';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
-import {getProjectInfo} from '../../databaseAccess';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
+import {ProjectInformation} from '../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
-import EditIcon from '@material-ui/icons/Edit';
 
 export default function ProjectSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  const project_info = getProjectInfo(project_id);
+
+  // TODO: remove these once we can send new project up
   const [loading, setLoading] = useState(true);
   const [metadbContents, setMetadbContents] = useState<object[]>([]);
+
+  let project_info: ProjectInformation | null;
+  try {
+    project_info = useEventedPromise(
+      getProjectInfo,
+      constantArgsShared(listenProjectInfo, project_id),
+      false,
+      [project_id],
+      project_id
+    ).expect();
+  } catch (err: any) {
+    if (err.message === 'missing') {
+      return <Redirect to="/404" />;
+    } else {
+      throw err;
+    }
+  }
+
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebook'},
     {
       link: ROUTES.PROJECT + project_id,
-      title: project_info !== null ? project_info.name : '',
+      title: project_info !== null ? project_info.name : '[loading]',
     },
     {title: 'Settings'},
   ];
@@ -71,11 +92,11 @@ export default function ProjectSettings() {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info !== null ? project_info.name : project_id} Settings
+          {project_info.name} Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Update the project settings for
-          {project_info !== null ? project_info.name : project_id}.
+          {project_info.name}.
         </Typography>
       </Box>
       <Paper square>
@@ -115,6 +136,6 @@ export default function ProjectSettings() {
       </Box>
     </Container>
   ) : (
-    <Redirect to="/404" />
+    <CircularProgress />
   );
 }

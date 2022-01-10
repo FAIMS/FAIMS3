@@ -18,13 +18,16 @@
  *   TODO
  */
 
-import React, {useContext} from 'react';
+import React, {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import {Container, Grid} from '@material-ui/core';
+import {Container, Grid, Typography} from '@material-ui/core';
+
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import * as ROUTES from '../../constants/routes';
 import ClusterCard from '../components/authentication/cluster_card';
-import {store} from '../../store';
+import * as ROUTES from '../../constants/routes';
+import {ListingInformation} from '../../datamodel/ui';
+import {getSyncableListingsInfo} from '../../databaseAccess';
+
 const useStyles = makeStyles(() => ({
   gridRoot: {
     flexGrow: 1,
@@ -35,22 +38,37 @@ const useStyles = makeStyles(() => ({
 
 export function SignIn(/* props: SignInProps */) {
   const classes = useStyles();
-  const globalState = useContext(store);
+  const [listings, setListings] = useState(null as null | ListingInformation[]);
 
   const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Sign In'}];
+
+  useEffect(() => {
+    getSyncableListingsInfo().then(setListings).catch(console.error);
+  }, []);
+
+  if (listings === null) {
+    return (
+      <Container maxWidth="lg">
+        <Typography>{'Looking for notebooks...'}</Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {Array.from(globalState.state.known_listings.values()).map(
-            listing_id => (
-              <Grid item xs={6}>
-                <ClusterCard key={listing_id} listing_id={listing_id} />
-              </Grid>
-            )
-          )}
+          {listings.map(listing_info => (
+            <Grid item xs={6}>
+              <ClusterCard
+                key={listing_info.id}
+                listing_id={listing_info.id}
+                listing_name={listing_info.name}
+                listing_description={listing_info.description}
+              />
+            </Grid>
+          ))}
         </Grid>
       </div>
     </Container>

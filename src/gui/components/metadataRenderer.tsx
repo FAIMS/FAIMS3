@@ -18,11 +18,13 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {CircularProgress, Chip} from '@material-ui/core';
 
 import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel/core';
+import {listenProjectDB} from '../../sync';
+import {useEventedPromise} from '../pouchHook';
 
 type MetadataProps = {
   project_id: ProjectID;
@@ -33,47 +35,46 @@ type MetadataProps = {
 
 export default function MetadataRenderer(props: MetadataProps) {
   const project_id = props.project_id;
+  const chips = props.chips ?? true;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
-  const chips = props.chips ?? true;
-  const [metadata_value, setMetadata] = useState(null as string | null);
-
-  useEffect(() => {
-    const getMeta = async () => {
-      try {
-        const meta = await getProjectMetadata(project_id, metadata_key);
-        setMetadata(meta);
-      } catch (err) {
-        setMetadata('');
-      }
-    };
-    getMeta();
-  }, [project_id]);
+  const metadata_value = useEventedPromise(
+    getProjectMetadata,
+    listenProjectDB.bind(null, project_id, {since: 'now'}),
+    true,
+    [project_id, metadata_key],
+    project_id,
+    metadata_key
+  );
+  console.debug('metadata_label', metadata_label);
+  console.debug('metadata_value', metadata_value);
 
   return chips ? (
-    metadata_value ? (
-      <Chip
-        size={'small'}
-        style={{marginRight: '5px', marginBottom: '5px'}}
-        label={
-          <React.Fragment>
-            {metadata_label ? (
-              <span>{metadata_label}: </span>
-            ) : (
-              <React.Fragment />
-            )}
-            {metadata_value ? (
-              <span>{metadata_value}</span>
-            ) : (
-              <CircularProgress size={12} thickness={4} />
-            )}
-          </React.Fragment>
-        }
-      />
-    ) : (
-      <> </>
-    )
+    <Chip
+      size={'small'}
+      style={{marginRight: '5px', marginBottom: '5px'}}
+      label={
+        <React.Fragment>
+          {metadata_label ? (
+            <span>{metadata_label}: </span>
+          ) : (
+            <React.Fragment />
+          )}
+          {metadata_value.loading ? (
+            <span>{metadata_value.value}</span>
+          ) : (
+            <CircularProgress size={12} thickness={4} />
+          )}
+        </React.Fragment>
+      }
+    />
   ) : (
-    <>{metadata_value}</>
+    <>
+      {metadata_value.loading ? (
+        <span>{metadata_value.value}</span>
+      ) : (
+        <CircularProgress size={12} thickness={4} />
+      )}
+    </>
   );
 }

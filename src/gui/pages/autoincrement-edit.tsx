@@ -25,10 +25,11 @@ import {Box, Container, Typography, Paper, Button} from '@material-ui/core';
 
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel/core';
-import {getProjectInfo} from '../../databaseAccess';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementEditForm from '../components/autoincrement/edit-form';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {useHistory} from 'react-router-dom';
 
 export default function AutoIncrementEdit() {
@@ -38,8 +39,16 @@ export default function AutoIncrementEdit() {
     field_id: string;
     label: string;
   }>();
-  const project_info = getProjectInfo(project_id);
+  const project_info = useEventedPromise(
+    getProjectInfo,
+    constantArgsShared(listenProjectInfo, project_id),
+    false,
+    [project_id],
+    project_id
+  ).expect();
+
   const history = useHistory();
+
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},

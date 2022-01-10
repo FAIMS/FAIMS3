@@ -39,7 +39,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockDataDB(project_id: ProjectID) {
+async function mockDataDB(project_id: ProjectID) {
   if (projdbs[project_id] === undefined) {
     const db = new PouchDB(project_id, {adapter: 'memory'});
     projdbs[project_id] = db;
@@ -115,7 +115,11 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanDataDBS();
+      try {
+        await cleanDataDBS();
+      } catch (err) {
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
@@ -174,7 +178,11 @@ describe('CRUD for data', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanDataDBS();
+      try {
+        await cleanDataDBS();
+      } catch (err) {
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
@@ -274,7 +282,11 @@ describe('listing revisions', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanDataDBS();
+      try {
+        await cleanDataDBS();
+      } catch (err) {
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;

@@ -26,7 +26,7 @@ import {
 import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
 
 import {directory_db, ensure_local_db, projects_dbs} from './databases';
-import {activate_project, process_listing} from './process-initialization';
+import {activate_project} from './process-initialization';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
   console.debug(`Requesting allocation for ${project_id}`);
@@ -70,20 +70,6 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
   );
   console.debug(`Activated new project ${new_project_id}`);
 
-  const all_project_ids_in_this_listing = (
-    await projects_db.local.allDocs()
-  ).rows
-    .map(row => row.id)
-    .filter(id => !id.startsWith('_design/'));
-  console.debug(
-    'All projects in local listing are',
-    all_project_ids_in_this_listing
-  );
-
-  // create the rest of the dbs
-  await process_listing(listing);
-  console.debug(`Reprocessing local listing for new project ${new_project_id}`);
-
   return active_id;
 }
 
@@ -106,8 +92,6 @@ async function ensure_locally_created_project_listing(): Promise<ListingsObject>
         auth_mechanisms: {}, // No auth needed, nor allowed
       };
       await directory_db.local.put(listing_object);
-      // setup the rest of the listing once
-      await process_listing(listing_object);
       return listing_object;
     } else {
       throw err;
