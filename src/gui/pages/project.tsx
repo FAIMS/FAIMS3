@@ -25,12 +25,31 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
-import {getProjectInfo} from '../../databaseAccess';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
+import {CircularProgress} from '@material-ui/core';
+import {ProjectInformation} from '../../datamodel/ui';
 
 export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  const project_info = getProjectInfo(project_id);
+  let project_info: ProjectInformation | null;
+  try {
+    project_info = useEventedPromise(
+      getProjectInfo,
+      constantArgsShared(listenProjectInfo, project_id),
+      false,
+      [project_id],
+      project_id
+    ).expect();
+  } catch (err: any) {
+    if (err.message !== 'missing') {
+      throw err;
+    } else {
+      return <Redirect to="/404" />;
+    }
+  }
+
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
@@ -43,6 +62,6 @@ export default function Project() {
       <ProjectCard project={project_info} showRecords={true} listView={false} />
     </Container>
   ) : (
-    <Redirect to="/404" />
+    <CircularProgress />
   );
 }

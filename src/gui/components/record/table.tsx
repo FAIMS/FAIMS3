@@ -18,8 +18,9 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
-import _ from 'lodash';
+import React from 'react';
+import {Link as RouterLink} from 'react-router-dom';
+
 import {
   DataGrid,
   GridColDef,
@@ -27,17 +28,18 @@ import {
   GridToolbar,
 } from '@material-ui/data-grid';
 import {Typography} from '@material-ui/core';
-import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-import {ProjectID} from '../../../datamodel/core';
-import {RecordMetadata} from '../../../datamodel/ui';
 import * as ROUTES from '../../../constants/routes';
-import {listenRecordsList} from '../../../data_storage/listeners';
-import {getAllRecordsWithRegex} from '../../../data_storage/queries';
+import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
+import {RecordMetadata} from '../../../datamodel/ui';
+import {getMetadataForAllRecords} from '../../../data_storage/index';
+import {getAllRecordsWithRegex} from '../../../data_storage/queries';
+import {useEventedPromise} from '../../pouchHook';
+import {listenDataDB} from '../../../sync';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -185,34 +187,24 @@ function RecordsTable(props: RecordsTableProps) {
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {project_id, maxRows, filter_deleted} = props;
-  const [rows, setRows] = useState<Array<RecordMetadata>>([]);
-  const [loading, setLoading] = useState(true);
-  console.debug('Browse Rows:', rows);
 
-  useEffect(() => {
-    //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the record list is updated, the callback should be fired
-    if (project_id === undefined) return; //dummy project
-    const destroyListener = listenRecordsList(
-      project_id,
-      newPouchRecordList => {
-        setLoading(false);
-        if (!_.isEqual(Object.values(newPouchRecordList), rows)) {
-          setRows(Object.values(newPouchRecordList));
-        }
-      },
-      filter_deleted
-    );
-    return destroyListener; // destroyListener called when this component unmounts.
-  }, [project_id, rows]);
+  const rows = useEventedPromise(
+    async (project_id: ProjectID) => {
+      return await getMetadataForAllRecords(project_id, filter_deleted);
+    },
+    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    false,
+    [project_id],
+    project_id
+  );
 
   console.debug('New records:', rows);
   return (
     <RecordsTable
       project_id={project_id}
       maxRows={maxRows}
-      rows={rows}
-      loading={loading}
+      rows={rows.value ?? []}
+      loading={rows.loading !== undefined}
       viewsets={props.viewsets}
     />
   );
@@ -224,28 +216,24 @@ RecordsBrowseTable.defaultProps = {
 
 export function RecordsSearchTable(props: RecordsSearchTableProps) {
   const {project_id, maxRows, query} = props;
-  const [rows, setRows] = useState<Array<RecordMetadata>>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the record list is updated, the callback should be fired
-    if (project_id === undefined) return; //dummy project
-    const getRecords = async () => {
-      const records = await getAllRecordsWithRegex(project_id, query);
-      setRows(Object.values(records));
-      setLoading(false);
-    };
-    getRecords();
-  }, [project_id, rows, query]);
+  const rows = useEventedPromise(
+    async (project_id: ProjectID, query: string) =>
+      Object.values(await getAllRecordsWithRegex(project_id, query)),
+    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    false,
+    [project_id, query],
+    project_id,
+    query
+  );
 
   console.debug('New records:', rows);
   return (
     <RecordsTable
       project_id={project_id}
       maxRows={maxRows}
-      rows={rows}
-      loading={loading}
+      rows={rows.value ?? []}
+      loading={rows.loading !== undefined}
       viewsets={props.viewsets}
     />
   );

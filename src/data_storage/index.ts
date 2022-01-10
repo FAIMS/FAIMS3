@@ -141,7 +141,7 @@ export async function listFAIMSRecordRevisions(
 export async function listFAIMSProjectRevisions(
   project_id: ProjectID
 ): Promise<ProjectRevisionListing> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   try {
     const result = await datadb.allDocs();
     const revmap: ProjectRevisionListing = {};
@@ -206,7 +206,7 @@ export async function setRecordAsDeleted(
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revid);
   const new_rev_id = generateFAIMSRevisionID();
@@ -232,7 +232,7 @@ export async function setRecordAsUndeleted(
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revid);
   const new_rev_id = generateFAIMSRevisionID();
@@ -322,5 +322,26 @@ export async function getRecordsByType(
     const records = await getAllRecordsOfType(project_id, type);
     console.error('error');
     return records;
+  }
+}
+
+export async function getMetadataForAllRecords(
+  project_id: ProjectID,
+  filter_deleted: boolean
+): Promise<RecordMetadata[]> {
+  const record_list = Object.values(await listRecordMetadata(project_id));
+  if (filter_deleted) {
+    const new_record_list: RecordMetadata[] = [];
+    for (const metadata of record_list) {
+      console.debug('Records', metadata);
+      if (!metadata.deleted) {
+        new_record_list.push(metadata);
+        console.debug('Not deleted Records', metadata);
+      }
+    }
+    console.debug('Reduced record list', new_record_list);
+    return new_record_list;
+  } else {
+    return record_list;
   }
 }

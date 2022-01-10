@@ -23,6 +23,7 @@
  *   This is used from the Record form component,
  *   and relies on the sync/draft-storage.ts file for actual Databases access
  */
+import stable_stringify from 'fast-json-stable-stringify';
 import {FormikValues} from 'formik';
 import {
   deleteStagedData,
@@ -37,7 +38,6 @@ import {
   Annotations,
   FAIMSTypeName,
 } from '../datamodel/core';
-import stable_stringify from 'fast-json-stable-stringify';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const DRAFT_SAVE_CYCLE = 5000;

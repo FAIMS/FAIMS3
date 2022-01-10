@@ -19,6 +19,8 @@
  */
 
 import React, {useContext, useState, useEffect} from 'react';
+import {Redirect, useHistory, useParams, useLocation} from 'react-router-dom';
+
 import {
   Box,
   Container,
@@ -26,22 +28,25 @@ import {
   Paper,
   CircularProgress,
 } from '@material-ui/core';
-import {Redirect, useHistory, useParams, useLocation} from 'react-router-dom';
 
+import {ActionType} from '../../actions';
 import * as ROUTES from '../../constants/routes';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import RecordForm from '../components/record/form';
-import {getProjectInfo} from '../../databaseAccess';
+import {store} from '../../store';
+
+import {generateFAIMSDataID} from '../../data_storage';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID, RecordID} from '../../datamodel/core';
-import {ProjectInformation, ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
 } from '../../uiSpecification';
-import {ActionType} from '../../actions';
-import {store} from '../../store';
 import {newStagedData} from '../../sync/draft-storage';
-import {generateFAIMSDataID} from '../../data_storage';
+
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import RecordForm from '../components/record/form';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
+
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -172,7 +177,23 @@ export default function RecordCreate() {
     draft_id?: string;
   }>();
 
-  const project_info = getProjectInfo(project_id);
+  let project_info: ProjectInformation | null;
+  try {
+    project_info = useEventedPromise(
+      getProjectInfo,
+      constantArgsShared(listenProjectInfo, project_id),
+      false,
+      [project_id],
+      project_id
+    ).expect();
+  } catch (err: any) {
+    if (err.message !== 'missing') {
+      throw err;
+    } else {
+      return <Redirect to="/404" />;
+    }
+  }
+
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},

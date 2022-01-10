@@ -30,7 +30,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockProjectDB(project_id: ProjectID) {
+async function mockProjectDB(project_id: ProjectID) {
   if (projdbs[project_id] === undefined) {
     const db = new PouchDB(project_id, {adapter: 'memory'});
     projdbs[project_id] = db;
@@ -61,14 +61,19 @@ jest.mock('./sync/index', () => ({
 
 describe('roundtrip reading and writing to db', () => {
   testProp(
-    'ui roundtrip',
+    'metadata roundtrip',
     [
       fc.fullUnicodeString(), // project name
       fc.fullUnicodeString(), // metadata_key
       fc.unicodeJsonObject(), // metadata
     ],
     async (project_id, metadata_key, metadata) => {
-      await cleanProjectDBS();
+      try {
+        await cleanProjectDBS();
+      } catch (err) {
+        console.error(err);
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       return setProjectMetadata(project_id, metadata_key, metadata)

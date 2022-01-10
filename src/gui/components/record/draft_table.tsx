@@ -35,7 +35,7 @@ import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {ProjectID} from '../../../datamodel/core';
 import {DraftMetadata} from '../../../datamodel/drafts';
 import * as ROUTES from '../../../constants/routes';
-import {listenDrafts} from '../../../data_storage/listeners';
+import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 
 type DraftsTableProps = {
