@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -32,7 +32,7 @@ export async function getProjectMetadata(
   project_id: ProjectID,
   metadata_key: string
 ): Promise<any> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = await projdb.get(
       PROJECT_METADATA_PREFIX + '-' + metadata_key,
@@ -62,7 +62,7 @@ export async function setProjectMetadata(
   metadata_key: string,
   metadata: any
 ) {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = {
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,
@@ -91,7 +91,7 @@ export async function setProjectMetadataFiles(
   metadata_key: string,
   files: File[]
 ) {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = {
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,

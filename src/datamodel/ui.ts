@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -26,10 +26,17 @@ import {
   ProjectID,
   RecordID,
   RevisionID,
+  ListingID,
   FAIMSTypeName,
   Annotations,
 } from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
+
+export interface ListingInformation {
+  id: ListingID;
+  name: string;
+  description: string;
+}
 
 export interface ProjectInformation {
   project_id: ProjectID;

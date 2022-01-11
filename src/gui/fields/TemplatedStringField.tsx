@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -126,6 +126,12 @@ export function TemplatedStringcomponentsetting(
         null
       );
       newfield['component-parameters']['ElementProps']['options'] = options;
+      newfield['component-parameters']['required'] = true;
+      newfield['validationSchema'] = [
+        ['yup.string'],
+        ['yup.required'],
+        ['yup.min', 1],
+      ];
       let inivalue = templatevalue.split('-');
       inivalue =
         inivalue.length > 0 && inivalue[i] !== undefined
@@ -137,6 +143,7 @@ export function TemplatedStringcomponentsetting(
       newfieldlist[i] = name;
       value = value + '{{' + name + '}}-';
     }
+    value = value.substring(0, value.length - 1);
     newvalues['views']['FormParamater']['fields'] = [
       'hrid' + props.fieldName,
       'helperText' + props.fieldName,
@@ -149,7 +156,7 @@ export function TemplatedStringcomponentsetting(
       : value;
     newini['numberfield' + props.fieldName] = fieldnum;
     // newini['template'+props.fieldName]=isinit?templatevalue:value
-    props.setinitialValues({...newini});
+    props.setinitialValues({...props.initialValues, ...newini});
     return newvalues;
   };
 
@@ -207,6 +214,14 @@ export function TemplatedStringcomponentsetting(
       newvalues = changeui(options, newvalues, num, true);
       setuiSetting({...newvalues});
     }
+
+    if (
+      props.uiSpec['fields'][props.fieldName]['component-parameters'][
+        'hrid'
+      ] === true
+    ) {
+      setuphrid();
+    }
   };
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
@@ -245,8 +260,6 @@ export function TemplatedStringcomponentsetting(
         }
       }
 
-      console.log(options);
-
       if (options.length > 0) {
         //get numbers of fields that not IDs
         let newuis: ProjectUIModel = uiSetting;
@@ -264,81 +277,40 @@ export function TemplatedStringcomponentsetting(
     }
 
     if (name.includes('fieldselect1')) {
+      let targetvalue = event.target.value;
+      if (event.target.value === '' || event.target.value === undefined) {
+        targetvalue = ' ';
+      }
+
       const newvalues = props.uiSpec;
-      const value = props.uiSpec['fields'][props.fieldName][
-        'component-parameters'
-      ]['template'].split('-');
+      const string =
+        props.uiSpec['fields'][props.fieldName]['component-parameters'][
+          'template'
+        ] + '-';
+      const value = string.split('-');
       console.log(value);
       const num = name.replace('fieldselect1', '');
-      if (event.target.value.indexOf('newfield') !== -1)
+      if (targetvalue.indexOf('newfield') !== -1)
         value[num] = '{{' + event.target.value + '}}';
       else value[num] = event.target.value;
       const subvalue = value.join('-');
       // if (!subvalue.includes('αβγ ')) subvalue = 'αβγ ' + subvalue;
       newvalues['fields'][props.fieldName]['component-parameters'][
         'template'
-      ] = subvalue;
-      console.log(
-        newvalues['fields'][props.fieldName]['component-parameters']['template']
-      );
+      ] = subvalue.substring(0, subvalue.length - 1);
+
       props.setuiSpec({...newvalues});
 
-      // const newini=props.initialValues
-      // newini['template'+props.fieldName]=subvalue
-      // props.setinitialValues({...newini})
       const newuis = uiSetting;
       newuis['fields']['template' + props.fieldName]['value'] = subvalue;
-      console.log('value false');
-      console.log(newuis['fields']);
+
       setuiSetting({...newuis});
     }
 
     if (name === 'hrid') {
       console.log('Change target name: ' + event.target.checked);
       if (event.target.checked === true) {
-        //check if there is hird
-        let ishird = false;
-        props.uiSpec['viewsets'][props.currentform]['views'].map(
-          (view: string) => {
-            if (
-              props.uiSpec['views'][view]['fields'].includes(
-                HRID_STRING + props.currentform
-              ) &&
-              props.uiSpec['fields'][props.fieldName][
-                'component-parameters'
-              ] !== true
-            )
-              ishird = true;
-          }
-        );
-        if (ishird) {
-          console.log('set hird twice');
-          //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
-        } else {
-          //change all name to hird
-          const newfieldname = HRID_STRING + props.currentform;
-          const newui = props.uiSpec;
-          newui['fields'][newfieldname] = JSON.parse(
-            JSON.stringify(newui['fields'][props.fieldName])
-          ); //change uifield name
-          newui['fields'][newfieldname]['component-parameters'][
-            'id'
-          ] = newfieldname;
-          newui['fields'][newfieldname]['component-parameters'][
-            'name'
-          ] = newfieldname;
-          newui['fields'][newfieldname]['component-parameters']['linked'] =
-            props.fieldName;
-          newui['views'][props.currentview]['fields'] = newui['views'][
-            props.currentview
-          ]['fields'].map((field: string) =>
-            field === props.fieldName ? (field = newfieldname) : field
-          );
-          newui['fields'][props.fieldName]['component-parameters']['hrid'] =
-            event.target.checked;
-          console.log(newui);
-          props.setuiSpec({...newui});
-        }
+        setuphrid();
       } else {
         const newfieldname = HRID_STRING + props.currentform;
         const newui = props.uiSpec;
@@ -352,7 +324,47 @@ export function TemplatedStringcomponentsetting(
         props.setuiSpec({...newui});
       }
     }
-    console.log(name);
+  };
+
+  const setuphrid = () => {
+    //check if there is hird
+    let ishird = false;
+    props.uiSpec['viewsets'][props.currentform]['views'].map((view: string) => {
+      if (
+        props.uiSpec['views'][view]['fields'].includes(
+          HRID_STRING + props.currentform
+        ) &&
+        props.uiSpec['fields'][props.fieldName]['component-parameters'] !== true
+      )
+        ishird = true;
+    });
+    if (ishird) {
+      console.log('set hird twice');
+      //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
+    } else {
+      //change all name to hird
+      const newfieldname = HRID_STRING + props.currentform;
+      const newui = props.uiSpec;
+      newui['fields'][newfieldname] = JSON.parse(
+        JSON.stringify(newui['fields'][props.fieldName])
+      ); //change uifield name
+      newui['fields'][newfieldname]['component-parameters'][
+        'id'
+      ] = newfieldname;
+      newui['fields'][newfieldname]['component-parameters'][
+        'name'
+      ] = newfieldname;
+      newui['fields'][newfieldname]['component-parameters']['linked'] =
+        props.fieldName;
+      newui['views'][props.currentview]['fields'] = newui['views'][
+        props.currentview
+      ]['fields'].map((field: string) =>
+        field === props.fieldName ? (field = newfieldname) : field
+      );
+      newui['fields'][props.fieldName]['component-parameters']['hrid'] = true;
+      console.log(newui);
+      props.setuiSpec({...newui});
+    }
   };
 
   return (
@@ -391,7 +403,7 @@ const uiSpec = {
     InputLabelProps: {
       label: 'Human Readable ID',
     },
-    hrid: false,
+    hrid: true,
   },
   validationSchema: [['yup.string'], ['yup.required']],
   initialValue: '',
@@ -407,7 +419,7 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText:
-        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component',
+        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component. And then select field or meta value from following dropdown list',
       variant: 'outlined',
       required: true,
       select: true,
@@ -425,7 +437,7 @@ function UISetting() {
         label: 'Number of Field',
       },
     },
-    validationSchema: [['yup.string']],
+    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '1',
   };
   newuiSetting['fields']['template'] = {

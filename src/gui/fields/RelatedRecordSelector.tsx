@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 import TextField from '@material-ui/core/TextField';
@@ -29,7 +29,7 @@ import {Autocomplete} from 'formik-material-ui-lab';
 import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName} from '../../datamodel/core';
 import {RecordReference} from '../../datamodel/ui';
-import {getAllRecordsOfType} from '../../data_storage/queries';
+import {getRecordsByType} from '../../data_storage';
 import {
   getDefaultuiSetting,
   Defaultcomponentsetting,
@@ -49,6 +49,8 @@ interface Props {
   relation_type: FAIMSTypeName;
   multiple?: boolean;
   id: string;
+  InputLabelProps: {label: string};
+  required: boolean;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -57,13 +59,24 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple =
     options.length > 0 && props.multiple !== undefined ? props.multiple : false;
-  React.useEffect(() => {
+  const location = useLocation();
+  let search = location.search.includes('link=')
+    ? location.search.replace('?', '')
+    : '';
+
+  const url_split = search.split('&');
+
+  if (
+    url_split.length > 1 &&
+    url_split[0].replace('field_id=', '') === props.id
+  )
+    search = search.replace(url_split[0] + '&' + url_split[1], '');
+  if (search !== '') search = '&' + search;
+
+  useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
-        const records = await getAllRecordsOfType(
-          project_id,
-          props.related_type
-        );
+        const records = await getRecordsByType(project_id, props.related_type);
         setOptions(records);
       })();
     }
@@ -89,7 +102,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         renderInput={(params: any) => (
           <TextField
             {...params}
-            label="Select Record "
+            label={props.InputLabelProps.label}
+            error={props.form.errors[props.id] === undefined ? false : true}
             variant="outlined"
             InputProps={{
               ...params.InputProps,
@@ -103,14 +117,16 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           color="primary"
           startIcon={<AddIcon />}
           component={Link}
-          to={
-            ROUTES.PROJECT +
-            project_id +
-            ROUTES.RECORD_CREATE +
-            props.related_type +
-            '?link=' +
-            useLocation().pathname
-          }
+          to={{
+            pathname:
+              ROUTES.PROJECT +
+              project_id +
+              ROUTES.RECORD_CREATE +
+              props.related_type,
+            state: location.state,
+            search:
+              '?field_id=' + props.id + '&link=' + location.pathname + search,
+          }}
         >
           New Record
         </Button>
@@ -136,23 +152,16 @@ const uiSpec = {
     multiple: false,
     SelectProps: {},
     InputLabelProps: {
-      label: 'Related Field',
+      label: 'Select Related',
     },
     FormHelperTextProps: {},
   },
   validationSchema: [['yup.string'], ['yup.required']],
-  initialValue: [],
+  initialValue: '',
 };
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  // console.log(generatenewfield('faims-custom','Select',null,null,null))
-  // newuiSetting['fields']['related_type']=
-  // newuiSetting['fields']['relation_type']=generatenewfield('faims-custom','Select',null,'related_type',null)
-  // newuiSetting['fields']['relation_type']['component-parameters']['ElementProps']=[{
-  //   value: 'faims-core::Child',
-  //   label: 'Contained',
-  // }]
   newuiSetting['fields']['multiple'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
     'component-name': 'Checkbox',
@@ -168,13 +177,8 @@ const uiSetting = () => {
       FormHelperTextProps: {
         children: 'Tick if user can add multiple record for this relateionship',
       },
-      // Label: {label: 'Terms and Conditions'},
     },
-    validationSchema: [
-      ['yup.bool'],
-      ['yup.oneOf', [true], 'You must accept the terms and conditions'],
-      ['yup.required'],
-    ],
+    validationSchema: [['yup.bool']],
     initialValue: false,
   };
   newuiSetting['fields']['relation_type'] = {
@@ -205,7 +209,7 @@ const uiSetting = () => {
         label: 'Select Relation Type',
       },
     },
-    validationSchema: [['yup.string']],
+    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: 'faims-core::Child',
   };
   newuiSetting['fields']['related_type'] = {
@@ -214,7 +218,7 @@ const uiSetting = () => {
     'type-returned': 'faims-core::String', // matches a type in the Project Model
     'component-parameters': {
       fullWidth: true,
-      helperText: 'Select Form ',
+      helperText: ' ',
       variant: 'outlined',
       required: true,
       select: true,
@@ -224,10 +228,10 @@ const uiSetting = () => {
         options: [],
       },
       InputLabelProps: {
-        label: 'Select ',
+        label: 'Select Related Form',
       },
     },
-    validationSchema: [['yup.string']],
+    validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
   };
 
@@ -238,7 +242,7 @@ const uiSetting = () => {
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['InputLabelProps', 'FormParamater'],
       label: 'settings',
     },
   };
@@ -255,7 +259,7 @@ export const LinkedSetting = [uiSetting(), uiSpec];
 export function Linkedcomponentsetting(props: componenentSettingprops) {
   const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setini();
   }, [props.uiSpec['visible_types']]);
 
@@ -299,6 +303,9 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
       const newvalues = props.uiSpec;
       newvalues['fields'][props.fieldName]['component-parameters']['multiple'] =
         event.target.checked;
+      if (event.target.checked === true)
+        newvalues['fields'][props.fieldName]['initialValue'] = [];
+      else newvalues['fields'][props.fieldName]['initialValue'] = '';
       props.setuiSpec({...newvalues});
     }
   };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,7 +18,9 @@
  *   TODO
  */
 
-import React, {useContext, useState} from 'react';
+import React, {useContext, useState, useEffect} from 'react';
+import {Redirect, useHistory, useParams, useLocation} from 'react-router-dom';
+
 import {
   Box,
   Container,
@@ -26,22 +28,25 @@ import {
   Paper,
   CircularProgress,
 } from '@material-ui/core';
-import {Redirect, useHistory, useParams} from 'react-router-dom';
+
+import {ActionType} from '../../actions';
 import * as ROUTES from '../../constants/routes';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import RecordForm from '../components/record/form';
-import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel/core';
-import {ProjectInformation, ProjectUIModel} from '../../datamodel/ui';
-import {useEffect} from 'react';
+import {store} from '../../store';
+
+import {generateFAIMSDataID} from '../../data_storage';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import {ProjectID, RecordID} from '../../datamodel/core';
+import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
 } from '../../uiSpecification';
-import {ActionType} from '../../actions';
-import {store} from '../../store';
 import {newStagedData} from '../../sync/draft-storage';
-import {useLocation} from 'react-router-dom';
+
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import RecordForm from '../components/record/form';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
+
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -108,10 +113,11 @@ interface DraftEditProps {
   type_name: string;
   draft_id: string;
   project_info: ProjectInformation | null;
+  record_id: RecordID;
 }
 
 function DraftEdit(props: DraftEditProps) {
-  const {project_id, type_name, draft_id, project_info} = props;
+  const {project_id, type_name, draft_id, project_info, record_id} = props;
   const {dispatch} = useContext(store);
   const history = useHistory();
 
@@ -155,6 +161,7 @@ function DraftEdit(props: DraftEditProps) {
               draft_id={draft_id}
               type={type_name}
               ui_specification={uiSpec}
+              record_id={record_id}
             />
           </Box>
         </Paper>
@@ -170,7 +177,23 @@ export default function RecordCreate() {
     draft_id?: string;
   }>();
 
-  const project_info = getProjectInfo(project_id);
+  let project_info: ProjectInformation | null;
+  try {
+    project_info = useEventedPromise(
+      getProjectInfo,
+      constantArgsShared(listenProjectInfo, project_id),
+      false,
+      [project_id],
+      project_id
+    ).expect();
+  } catch (err: any) {
+    if (err.message !== 'missing') {
+      throw err;
+    } else {
+      return <Redirect to="/404" />;
+    }
+  }
+
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
@@ -193,6 +216,7 @@ export default function RecordCreate() {
             project_id={project_id}
             type_name={type_name}
             draft_id={draft_id}
+            record_id={generateFAIMSDataID()}
           />
         )}
       </Container>

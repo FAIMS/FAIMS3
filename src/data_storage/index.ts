@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -21,9 +21,14 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {getDataDB} from '../sync';
-import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
+import {
+  RecordID,
+  ProjectID,
+  RevisionID,
+  FAIMSTypeName,
+} from '../datamodel/core';
 import {Revision} from '../datamodel/database';
-import {Record, RecordMetadata} from '../datamodel/ui';
+import {Record, RecordMetadata, RecordReference} from '../datamodel/ui';
 import {
   addNewRevisionFromForm,
   createNewRecord,
@@ -33,7 +38,9 @@ import {
   getFormDataFromRevision,
   updateHeads,
   getHRID,
+  listRecordMetadata,
 } from './internals';
+import {getAllRecordsOfType} from './queries';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
@@ -134,7 +141,7 @@ export async function listFAIMSRecordRevisions(
 export async function listFAIMSProjectRevisions(
   project_id: ProjectID
 ): Promise<ProjectRevisionListing> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   try {
     const result = await datadb.allDocs();
     const revmap: ProjectRevisionListing = {};
@@ -199,7 +206,7 @@ export async function setRecordAsDeleted(
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revid);
   const new_rev_id = generateFAIMSRevisionID();
@@ -225,7 +232,7 @@ export async function setRecordAsUndeleted(
   base_revid: RevisionID,
   user: string
 ): Promise<RevisionID> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const date = new Date();
   const base_revision = await getRevision(project_id, base_revid);
   const new_rev_id = generateFAIMSRevisionID();
@@ -270,5 +277,71 @@ export async function getRecordMetadata(
   } catch (err) {
     console.error(err);
     throw Error('failed to get metadata');
+  }
+}
+
+export async function getHRIDforRecordID(
+  project_id: ProjectID,
+  record_id: RecordID
+): Promise<string> {
+  try {
+    const record = await getRecord(project_id, record_id);
+    const revision_id = record.heads[0];
+    const revision = await getRevision(project_id, revision_id);
+    const hrid = (await getHRID(project_id, revision)) ?? record_id;
+    return hrid;
+  } catch (err) {
+    console.debug(err);
+    console.warn('Failed to get hrid');
+    return record_id;
+  }
+}
+
+export async function getRecordsByType(
+  project_id: ProjectID,
+  type: FAIMSTypeName
+): Promise<RecordReference[]> {
+  try {
+    const records: RecordReference[] = [];
+    await listRecordMetadata(project_id).then(record_list => {
+      for (const key in record_list) {
+        const metadata = record_list[key];
+        console.debug('Records', key, metadata);
+        if (!metadata.deleted && metadata.type === type) {
+          records.push({
+            project_id: project_id,
+            record_id: metadata.record_id,
+            record_label: metadata.hrid, // TODO: decide how we're getting HRIDs from db
+          });
+          console.debug('Not deleted Records', key, metadata);
+        }
+      }
+    });
+    return records;
+  } catch (error) {
+    const records = await getAllRecordsOfType(project_id, type);
+    console.error('error');
+    return records;
+  }
+}
+
+export async function getMetadataForAllRecords(
+  project_id: ProjectID,
+  filter_deleted: boolean
+): Promise<RecordMetadata[]> {
+  const record_list = Object.values(await listRecordMetadata(project_id));
+  if (filter_deleted) {
+    const new_record_list: RecordMetadata[] = [];
+    for (const metadata of record_list) {
+      console.debug('Records', metadata);
+      if (!metadata.deleted) {
+        new_record_list.push(metadata);
+        console.debug('Not deleted Records', metadata);
+      }
+    }
+    console.debug('Reduced record list', new_record_list);
+    return new_record_list;
+  } else {
+    return record_list;
   }
 }

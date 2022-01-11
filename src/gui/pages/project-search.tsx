@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,19 +18,39 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {useParams, Redirect} from 'react-router-dom';
-import {Container} from '@material-ui/core';
+import {Container, Typography} from '@material-ui/core';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {ProjectSearchCard} from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
+import {ProjectInformation} from '../../datamodel/ui';
 
 export default function ProjectSearch() {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  const project_info = getProjectInfo(project_id);
+  const [project_info, set_project_info] = useState(
+    null as null | ProjectInformation
+  );
+
+  useEffect(() => {
+    set_project_info(null);
+    if (project_id !== undefined) {
+      //only get UISpec when project is defined
+      getProjectInfo(project_id).then(set_project_info).catch(console.error);
+    }
+  }, [project_id]);
+
+  if (project_info === null) {
+    return (
+      <Container maxWidth="lg">
+        <Typography>{'Getting ready to search project...'}</Typography>
+      </Container>
+    );
+  }
+
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebook'},

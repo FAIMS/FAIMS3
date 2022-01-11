@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,8 +18,9 @@
  *   TODO
  */
 
-import {active_db, local_auth_db} from './sync/databases';
+import {active_db, directory_db, local_auth_db} from './sync/databases';
 import {ProjectID} from './datamodel/core';
+import {AuthInfo} from './datamodel/database';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
@@ -49,10 +50,24 @@ export async function getTokenForCluster(
   cluster_id: string
 ): Promise<string | undefined> {
   try {
-    return await local_auth_db.get(cluster_id);
+    const doc = await local_auth_db.get(cluster_id);
+    return doc.token;
   } catch (err) {
     console.debug(err);
     console.warn('Token not found for:', cluster_id);
     return undefined;
+  }
+}
+
+export async function getAuthMechianismsForListing(
+  listing_id: string
+): Promise<{[name: string]: AuthInfo} | null> {
+  try {
+    const doc = await directory_db.local.get(listing_id);
+    return doc.auth_mechanisms;
+  } catch (err) {
+    console.debug(err);
+    console.warn('AuthInfo not found for:', listing_id);
+    return null;
   }
 }

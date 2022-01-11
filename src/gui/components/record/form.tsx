@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -32,8 +32,9 @@ import {
   Step,
   Stepper,
   StepButton,
+  MobileStepper,
 } from '@material-ui/core';
-import Alert from '@material-ui/lab/Alert';
+
 import grey from '@material-ui/core/colors/grey';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
@@ -52,11 +53,7 @@ import {
   Annotations,
 } from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {
-  upsertFAIMSData,
-  getFullRecordData,
-  generateFAIMSDataID,
-} from '../../../data_storage';
+import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
 import RecordDraftState from '../../../sync/draft-state';
@@ -68,16 +65,17 @@ import {
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
+import {indexOf} from 'lodash';
 
 type RecordFormProps = {
   project_id: ProjectID;
+  record_id: RecordID;
   // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
-      record_id: RecordID;
       revision_id: RevisionID;
       // The user can view records without editing them, and to facilitate this,
       // having a draft id is optional.
@@ -99,7 +97,6 @@ type RecordFormProps = {
 
       // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
       // you get back undefined:
-      record_id?: undefined;
       revision_id?: undefined;
     }
 );
@@ -109,6 +106,7 @@ type RecordFormState = {
   // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
+  activeStep: number;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
   is_saving: boolean;
@@ -120,6 +118,7 @@ type RecordFormState = {
    * letting them redirect to the draft's URL
    */
   draft_created: string | null;
+  error_view: boolean;
 };
 
 class RecordForm extends React.Component<
@@ -134,7 +133,7 @@ class RecordForm extends React.Component<
   async componentDidUpdate(prevProps: RecordFormProps) {
     if (
       prevProps.project_id !== this.props.project_id ||
-      prevProps.record_id !== this.props.record_id ||
+      // prevProps.record_id !== this.props.record_id ||
       (prevProps.revision_id !== this.props.revision_id &&
         this.state.revision_cached !== this.props.revision_id) ||
       prevProps.draft_id !== this.props.draft_id //add this to reload the form when user jump back to previous record
@@ -144,8 +143,10 @@ class RecordForm extends React.Component<
         initialValues: null,
         type_cached: null,
         view_cached: null,
+        activeStep: 0,
         revision_cached: null,
         annotation: {},
+        error_view: false,
       });
       // Re-initialize basically everything.
       this.formChanged(true);
@@ -159,12 +160,14 @@ class RecordForm extends React.Component<
       draftError: null,
       type_cached: this.props.type ?? null,
       view_cached: null,
+      activeStep: 0,
       revision_cached: null,
       initialValues: null,
       is_saving: false,
       last_saved: new Date(),
       draft_created: null,
       annotation: {},
+      error_view: false,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -345,7 +348,7 @@ class RecordForm extends React.Component<
       staged_data,
       staged_annotations,
     ] = await this.draftState.getInitialValues();
-    console.error('Staged values', staged_data, staged_annotations);
+    console.debug('Staged values', staged_data, staged_annotations);
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
@@ -371,14 +374,41 @@ class RecordForm extends React.Component<
         database_annotations[fieldName],
         {annotation: '', uncertainty: false},
       ]);
-      // initialValues['uncertainty'][fieldName]=''
     });
 
+    const child_state: any = this.props.location.state;
+    if (child_state !== undefined && child_state.record_id !== undefined) {
+      //save the sub_record id into intitial value
+      const field_id = child_state.field_id.replace('?', '');
+      const sub_record_id = child_state.record_id;
+      const hrid = child_state.hrid ?? sub_record_id;
+      const new_record = {
+        project_id: this.props.project_id,
+        record_id: sub_record_id,
+        record_label: hrid,
+      };
+
+      if (
+        this.props.ui_specification['fields'][field_id]['component-parameters'][
+          'multiple'
+        ]
+      ) {
+        let isincluded = false;
+        initialValues[field_id].map((r: any) => {
+          if (r.record_id === new_record.record_id) {
+            isincluded = true;
+          }
+        });
+
+        if (isincluded === false) {
+          initialValues[field_id].push(new_record);
+        }
+      } else {
+        initialValues[field_id] = new_record;
+      }
+    }
+
     this.setState({initialValues: initialValues, annotation: annotations});
-    console.log(
-      this.props.ui_specification.viewsets[this.requireViewsetName()]
-        .submit_label
-    );
   }
 
   /**
@@ -423,7 +453,7 @@ class RecordForm extends React.Component<
   filterValues(values: object) {
     const new_values: any = {};
     for (const [k, v] of Object.entries(values)) {
-      if (k !== '_id' && k !== '_project_id') {
+      if (k !== '_id' && k !== '_project_id' && k !== '_current_revision_id') {
         new_values[k] = v;
         if (k[0] === '_') {
           console.error(`Including possibly bad key ${k} in record`);
@@ -436,11 +466,12 @@ class RecordForm extends React.Component<
   save(values: object) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
+
     getCurrentUserId(this.props.project_id)
       .then(userid => {
         const now = new Date();
         const doc = {
-          record_id: this.props.record_id ?? generateFAIMSDataID(),
+          record_id: this.props.record_id,
           revision_id: this.props.revision_id ?? null,
           type: this.state.type_cached!,
           data: this.filterValues(values),
@@ -456,9 +487,13 @@ class RecordForm extends React.Component<
         return doc;
       })
       .then(doc => {
-        return upsertFAIMSData(this.props.project_id, doc);
+        upsertFAIMSData(this.props.project_id, doc);
+        return (
+          doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
+        );
       })
       .then(result => {
+        console.log(result);
         console.debug(result);
         const message =
           this.props.revision_id === undefined
@@ -471,6 +506,8 @@ class RecordForm extends React.Component<
             severity: 'success',
           },
         });
+        console.error('SaveSave' + result);
+        return result;
       })
       .catch(err => {
         const message =
@@ -487,45 +524,76 @@ class RecordForm extends React.Component<
         console.warn(err);
         console.error('Failed to save data');
       })
-      // Clear the current draft area (Possibly after redirecting back to project page)
-      .then(() => this.draftState.clear())
-      .then(() => {
+      //Clear the current draft area (Possibly after redirecting back to project page)
+      .then(result => {
+        this.draftState.clear();
+        return result;
+      })
+      .then(result => {
         // if a new record, redirect to the new record page to allow
         // the user to rapidly add more records
+        let redirecturl = this.props.project_id;
+        let search = '';
+        let state_pa = {};
         if (this.props.revision_id === undefined) {
-          if (
-            this.props.ui_specification.viewsets[this.requireViewsetName()]
-              .submit_label === 'Jump to Upper Level'
-          ) {
-            let linkurl = window.location.search;
+          const ori_search = window.location.search;
+          const url_split = ori_search.split('&');
+          const pathname = window.location.pathname;
+          redirecturl =
+            this.props.project_id +
+            ROUTES.RECORD_CREATE +
+            this.state.type_cached;
 
-            if (linkurl.includes('?link=')) {
-              linkurl = linkurl.replace('?link=/projects/', '');
-              console.log(ROUTES.PROJECT + linkurl);
-              this.props.history.push(ROUTES.PROJECT + linkurl);
-              window.scrollTo(0, 0);
-            } else {
-              this.props.history.push(ROUTES.PROJECT + this.props.project_id);
-            }
-          } else {
-            console.log(
-              this.props.ui_specification.viewsets[this.requireViewsetName()]
-                .submit_label
+          if (url_split.length > 1 && ori_search.includes('link=')) {
+            const fieldid = url_split[0];
+
+            search = ori_search.replace(
+              url_split[0] + '&' + url_split[1] + '&',
+              ''
             );
-            this.props.history.push(
-              ROUTES.PROJECT +
-                this.props.project_id +
-                ROUTES.RECORD_CREATE +
-                this.state.type_cached
-            );
-            window.scrollTo(0, 0);
+            if (url_split.length > 3 && url_split[0] === url_split[2])
+              search = ori_search.replace(
+                url_split[2] + '&' + url_split[3],
+                ''
+              );
+            const url_split_re = search.split('&');
+            if (
+              url_split_re.length > 1 &&
+              url_split_re[1].replace(
+                'link=/projects/' + this.props.project_id,
+                ''
+              ) ===
+                pathname.replace(
+                  '/projects/' +
+                    pathname.replace('/projects/', '').split('/')[0],
+                  ''
+                )
+            )
+              search = search.replace(
+                url_split_re[0] + '&' + url_split_re[1],
+                ''
+              );
+            state_pa = {
+              field_id: fieldid.replace('?field_id=', ''),
+              record_id: this.props.record_id,
+              hrid: result,
+              parent_link: search,
+            };
+            if (search !== '')
+              redirecturl = url_split[1].replace('link=/projects/', '');
           }
-
           // scroll to top of page, seems to be needed on mobile devices
-        } else {
-          // otherwise, redirect to the project page listing all records
-          this.props.history.push(ROUTES.PROJECT + this.props.project_id);
         }
+        if (search === '') {
+          this.props.history.push(ROUTES.PROJECT + redirecturl);
+        } else {
+          this.props.history.push({
+            pathname: ROUTES.PROJECT + redirecturl,
+            search: search,
+            state: state_pa,
+          });
+        }
+        window.scrollTo(0, 0);
       });
   }
 
@@ -612,21 +680,82 @@ class RecordForm extends React.Component<
 
       return (
         <React.Fragment>
-          <Stepper nonLinear activeStep={view_index} alternativeLabel>
-            {ui_specification.viewsets[viewsetName].views.map(
-              (view_name: string) => (
-                <Step key={view_name}>
-                  <StepButton
-                    onClick={() => {
-                      this.setState({view_cached: view_name});
-                    }}
-                  >
-                    {ui_specification.views[view_name].label}
-                  </StepButton>
-                </Step>
-              )
-            )}
-          </Stepper>
+          <Box display={{xs: 'none', lg: 'block'}}>
+            <Stepper nonLinear activeStep={view_index} alternativeLabel>
+              {ui_specification.viewsets[viewsetName].views.map(
+                (view_name: string) => (
+                  <Step key={view_name}>
+                    <StepButton
+                      onClick={() => {
+                        this.setState({
+                          view_cached: view_name,
+                          activeStep: indexOf(
+                            ui_specification.viewsets[viewsetName].views,
+                            view_name
+                          ),
+                        });
+                      }}
+                    >
+                      {ui_specification.views[view_name].label}
+                    </StepButton>
+                  </Step>
+                )
+              )}
+            </Stepper>
+          </Box>
+          <Box display={{xs: 'block', lg: 'none'}}>
+            <MobileStepper
+              variant="text"
+              steps={ui_specification.viewsets[viewsetName].views.length}
+              position="static"
+              activeStep={this.state.activeStep}
+              nextButton={
+                <Button
+                  size="small"
+                  onClick={() => {
+                    const stepnum = this.state.activeStep + 1;
+                    this.setState({
+                      activeStep: stepnum,
+                      view_cached:
+                        ui_specification.viewsets[viewsetName].views[stepnum],
+                    });
+                  }}
+                  disabled={
+                    this.state.activeStep ===
+                    ui_specification.viewsets[viewsetName].views.length - 1
+                  }
+                >
+                  Next
+                </Button>
+              }
+              backButton={
+                <Button
+                  size="small"
+                  onClick={() => {
+                    const stepnum = this.state.activeStep - 1;
+                    this.setState({
+                      activeStep: stepnum,
+                      view_cached:
+                        ui_specification.viewsets[viewsetName].views[stepnum],
+                    });
+                  }}
+                  disabled={this.state.activeStep === 0}
+                >
+                  Back
+                </Button>
+              }
+            />
+            <Typography variant="h5" align="center">
+              {
+                ui_specification.views[
+                  ui_specification.viewsets[viewsetName].views[
+                    this.state.activeStep
+                  ]
+                ].label
+              }
+            </Typography>
+          </Box>
+
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
@@ -634,7 +763,7 @@ class RecordForm extends React.Component<
             onSubmit={(values, {setSubmitting}) => {
               this.setTimeout(() => {
                 setSubmitting(false);
-                console.log(JSON.stringify(values, null, 2));
+
                 this.save(values);
               }, 500);
             }}
@@ -664,14 +793,7 @@ class RecordForm extends React.Component<
                         handerannoattion={this.updateannotation}
                       />
                       <br />
-                      {formProps.isValid ? (
-                        ''
-                      ) : (
-                        <Alert severity="error">
-                          Form has errors, please scroll up and make changes
-                          before re-submitting.
-                        </Alert>
-                      )}
+
                       <br />
                       <ButtonGroup
                         color="primary"
@@ -684,7 +806,6 @@ class RecordForm extends React.Component<
                               formProps.isSubmitting ? 'default' : 'primary'
                             }
                             variant="contained"
-                            onClick={formProps.submitForm}
                             disableElevation
                             disabled={formProps.isSubmitting}
                           >
@@ -694,8 +815,12 @@ class RecordForm extends React.Component<
                                 : 'Working...'
                               : !(this.props.revision_id === undefined)
                               ? 'Update'
-                              : ui_specification.viewsets[viewsetName]
-                                  .submit_label ?? 'Save and new'}
+                              : window.location.search.includes('link=') &&
+                                ui_specification.viewsets[viewsetName]
+                                  .submit_label !== undefined
+                              ? ui_specification.viewsets[viewsetName]
+                                  .submit_label
+                              : 'Save and new'}
                             {formProps.isSubmitting && (
                               <CircularProgress
                                 size={24}
@@ -710,9 +835,37 @@ class RecordForm extends React.Component<
                             )}
                           </Button>
                         ) : (
-                          <p>Continue filling out form</p>
+                          ''
                         )}
                       </ButtonGroup>
+                      {this.state.activeStep <
+                        ui_specification.viewsets[viewsetName].views.length -
+                          1 && (
+                        <Button
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => {
+                            console.log(this.state.activeStep);
+                            const stepnum = this.state.activeStep + 1;
+                            console.log(
+                              ui_specification.viewsets[viewsetName].views[
+                                stepnum
+                              ]
+                            );
+
+                            this.setState({
+                              activeStep: stepnum,
+                              view_cached:
+                                ui_specification.viewsets[viewsetName].views[
+                                  stepnum
+                                ],
+                            });
+                          }}
+                        >
+                          {'  '}
+                          Continue{' '}
+                        </Button>
+                      )}
                     </Grid>
                     <Grid item sm={6} xs={12}>
                       <BoxTab title={'Developer tool: form state'} />

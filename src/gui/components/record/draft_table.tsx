@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -35,7 +35,7 @@ import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {ProjectID} from '../../../datamodel/core';
 import {DraftMetadata} from '../../../datamodel/drafts';
 import * as ROUTES from '../../../constants/routes';
-import {listenDrafts} from '../../../data_storage/listeners';
+import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 
 type DraftsTableProps = {
@@ -44,13 +44,27 @@ type DraftsTableProps = {
   viewsets?: ProjectUIViewsets | null;
 };
 
-export default function DraftsTable(props: DraftsTableProps) {
-  const {project_id, maxRows} = props;
-  const [loading, setLoading] = useState(true);
-  const theme = useTheme();
-  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+type DraftsRecordProps = {
+  project_id: ProjectID;
+  maxRows: number | null;
+  rows: any;
+  loading: boolean;
+  viewsets?: ProjectUIViewsets | null;
+  not_xs: boolean;
+};
+
+function DraftRecord(props: DraftsRecordProps) {
+  const {project_id, maxRows, rows, loading, not_xs} = props;
+  // const newrows: any = rows;
   const defaultMaxRowsMobile = 10;
-  const [rows, setRows] = useState<Array<DraftMetadata>>([]);
+
+  // newrows.map((r:any)=>
+  //   props.viewsets !== null &&
+  //   props.viewsets !== undefined &&
+  //   r.type !== null &&
+  //   r.type !== undefined &&
+  //   props.viewsets[r.type] !== undefined?r.type_label=props.viewsets[r.type].label ?? r.type:r.type)
+
   const columns: GridColDef[] = [
     {
       field: '_id',
@@ -82,7 +96,8 @@ export default function DraftsTable(props: DraftsTableProps) {
           {props.viewsets !== null &&
           props.viewsets !== undefined &&
           params.value !== null &&
-          params.value !== undefined
+          params.value !== undefined &&
+          props.viewsets[params.value.toString()] !== undefined
             ? props.viewsets[params.value.toString()].label ?? params.value
             : params.value}
         </>
@@ -91,6 +106,39 @@ export default function DraftsTable(props: DraftsTableProps) {
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
   ];
+  return (
+    <DataGrid
+      key={'drafttable'}
+      rows={rows}
+      loading={loading}
+      getRowId={r => r._id}
+      columns={columns}
+      autoHeight
+      pageSize={
+        maxRows !== null
+          ? not_xs
+            ? maxRows
+            : defaultMaxRowsMobile
+          : not_xs
+          ? 25
+          : defaultMaxRowsMobile
+      }
+      checkboxSelection
+      density={not_xs ? 'standard' : 'comfortable'}
+      components={{
+        Toolbar: GridToolbar,
+      }}
+      sortModel={[{field: 'updated', sort: 'desc'}]}
+    />
+  );
+}
+export default function DraftsTable(props: DraftsTableProps) {
+  const {project_id, maxRows} = props;
+  const [loading, setLoading] = useState(true);
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+
+  const [rows, setRows] = useState<Array<DraftMetadata>>([]);
 
   useEffect(() => {
     //  Dependency is only the project_id, ie., register one callback for this component
@@ -106,6 +154,7 @@ export default function DraftsTable(props: DraftsTableProps) {
         }
       }
     );
+
     return destroyListener; // destroyListener called when this component unmounts.
   }, [project_id, rows]);
 
@@ -118,28 +167,13 @@ export default function DraftsTable(props: DraftsTableProps) {
           marginBottom: not_xs ? '20px' : '40px',
         }}
       >
-        <DataGrid
-          key={'drafttable'}
+        <DraftRecord
+          project_id={project_id}
+          maxRows={maxRows}
           rows={rows}
           loading={loading}
-          getRowId={r => r._id}
-          columns={columns}
-          autoHeight
-          pageSize={
-            maxRows !== null
-              ? not_xs
-                ? maxRows
-                : defaultMaxRowsMobile
-              : not_xs
-              ? 25
-              : defaultMaxRowsMobile
-          }
-          checkboxSelection
-          density={not_xs ? 'standard' : 'comfortable'}
-          components={{
-            Toolbar: GridToolbar,
-          }}
-          sortModel={[{field: 'updated', sort: 'desc'}]}
+          viewsets={props.viewsets}
+          not_xs={not_xs}
         />
       </div>
     </div>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -66,11 +66,15 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
             (view: string) =>
               formuiSpec['views'][view]['fields'].length === 0 &&
               errors['formdesign'].push(
-                view + 'Section has no component yet,please add it'
+                formuiSpec['viewsets'][viewset]['label'] +
+                  ' Form > ' +
+                  formuiSpec['views'][view]['label'] +
+                  ' Section: Section has no component yet,please add it'
               )
           )
         : errors['formdesign'].push(
-            viewset + 'Form was defined, but setcion not added'
+            formuiSpec['viewsets'][viewset]['label'] +
+              ': Form was defined, but section not added'
           )
     );
     if (errors['formdesign'].length > 0) {

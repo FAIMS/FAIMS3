@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -32,6 +32,7 @@ import {
   ProjectDataObject,
   ProjectObject,
   LocalAuthDoc,
+  NonNullListingsObject,
 } from '../datamodel/database';
 import {
   ConnectionInfo_create_pouch,
@@ -39,9 +40,9 @@ import {
   materializeConnectionInfo,
 } from './connection';
 import {draft_db} from './draft-storage';
-import {SyncHandler} from './sync-handler';
 
-const DEFAULT_LISTING_ID = 'default';
+export const DB_TIMEOUT = 2000;
+export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
 export const directory_connection_info: ConnectionInfo = {
   proto: DIRECTORY_PROTOCOL,
@@ -55,6 +56,7 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
 
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
+  changes: PouchDB.Core.Changes<Content>;
   is_sync: boolean;
   remote: null | LocalDBRemote<Content>;
 }
@@ -67,10 +69,6 @@ export interface LocalDBRemote<Content extends {}> {
     | null;
   info: ConnectionInfo;
   options: DBReplicateOptions;
-  create_handler: (
-    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler<Content>;
-  handler: null | SyncHandler<Content>;
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -85,10 +83,32 @@ type DBReplicateOptions =
     };
 
 /**
+ * Each database has a changes stream.
+ * This is the template for which the changes stream is listened to
+ * Some databases might use options added to this like:
+ *  {...default_changes_opts, filter:'abc'}
+ * If they want to, for example, restrict to only listings in the active DB.
+ */
+export const default_changes_opts: PouchDB.Core.ChangesOptions &
+  PouchDB.Core.AllDocsOptions = {
+  live: true,
+  since: 'now',
+  timeout: DB_TIMEOUT,
+  include_docs: true,
+  conflicts: true,
+  attachments: true,
+};
+
+const directory_db_pouch = new PouchDB<ListingsObject>(
+  'directory',
+  local_pouch_options
+);
+/**
  * Directory: All (public, anyways) Faims instances
  */
 export const directory_db: LocalDB<ListingsObject> = {
-  local: new PouchDB('directory', local_pouch_options),
+  local: directory_db_pouch,
+  changes: directory_db_pouch.changes({...default_changes_opts, since: 'now'}),
   remote: null,
   is_sync: true,
 };
@@ -134,6 +154,27 @@ export const data_dbs: LocalDBList<ProjectDataObject> = {};
  * GUI Models, and a Prople database.
  */
 export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
+
+let default_instance: null | NonNullListingsObject = null; //Set to directory_db.get(DEFAULT_LISTING_ID) by get_default_instance
+
+export async function get_default_instance(): Promise<NonNullListingsObject> {
+  if (default_instance === null) {
+    const possibly_corrupted_instance = await directory_db.local.get(
+      DEFAULT_LISTING_ID
+    );
+    default_instance = {
+      _id: possibly_corrupted_instance._id,
+      name: possibly_corrupted_instance.name,
+      description: possibly_corrupted_instance.description,
+      projects_db: materializeConnectionInfo(
+        directory_connection_info,
+        possibly_corrupted_instance.projects_db
+      ),
+      auth_mechanisms: {},
+    };
+  }
+  return default_instance;
+}
 
 let default_projects_db: null | ConnectionInfo = null;
 
@@ -206,15 +247,18 @@ export function ensure_local_db<Content extends {}>(
   global_dbs: LocalDBList<Content>
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
+    global_dbs[local_db_id].is_sync = start_sync;
     return [false, global_dbs[local_db_id]];
   } else {
+    const db = new PouchDB<Content>(
+      prefix + POUCH_SEPARATOR + local_db_id,
+      local_pouch_options
+    );
     return [
       true,
       (global_dbs[local_db_id] = {
-        local: new PouchDB(
-          prefix + POUCH_SEPARATOR + local_db_id,
-          local_pouch_options
-        ),
+        local: db,
+        changes: db.changes(default_changes_opts),
         is_sync: start_sync,
         remote: null,
       }),
@@ -235,7 +279,6 @@ export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
   connection_info: ConnectionInfo | null,
   global_dbs: LocalDBList<Content>,
-  handler: (remote: LocalDB<Content>) => SyncHandler<Content>,
   options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id] === undefined) {
@@ -260,14 +303,7 @@ export function ensure_synced_db<Content extends {}>(
   }
 
   // Special case for local-only projects
-  // Synchandler is created to manage it, but since local only PouchDB's aren't
-  // reused, we're not worried about recovering/deleting the Synchandlers
-  // So they don't have to go into a global variable
   if (connection_info === null) {
-    const sync_handler = handler(global_dbs[local_db_id]);
-    sync_handler.listen_local(
-      global_dbs[local_db_id].local.changes({since: 'now', include_docs: true})
-    );
     return [false, global_dbs[local_db_id]];
   }
 
@@ -277,8 +313,6 @@ export function ensure_synced_db<Content extends {}>(
       db: ConnectionInfo_create_pouch(connection_info),
       connection: null, //Connection initialized in setLocalConnection
       info: connection_info,
-      create_handler: handler,
-      handler: null,
       options: options,
     },
   });
@@ -326,15 +360,8 @@ export function setLocalConnection<Content extends {}>(
     }
 
     db_info.remote.connection = connection;
-    db_info.remote.handler = db_info.remote.create_handler(db_info);
-    db_info.remote.handler.listen_remote(
-      connection,
-      db_info.local.changes({since: 'now', include_docs: true})
-    );
-    console.debug('Connected up sync for', db_info);
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
-    db_info.remote.handler!.detach(db_info.remote.connection);
     db_info.remote.connection.cancel();
     db_info.remote.connection = null;
     console.debug('Removed sync for', db_info);

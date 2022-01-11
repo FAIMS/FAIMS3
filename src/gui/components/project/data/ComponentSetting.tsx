@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -27,7 +27,11 @@
 import {v4 as uuidv4} from 'uuid';
 import {getcomponent} from './uiFieldsRegistry';
 import {getComponentPropertiesByName} from '../../../component_registry';
-import {setSetingInitialValues, generatenewfield} from './componenentSetting';
+import {
+  setSetingInitialValues,
+  generatenewfield,
+  regeneratesettinguiSpec,
+} from './componenentSetting';
 import {ProjevtValueList} from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {HRID_STRING} from '../../../../datamodel/core';
@@ -68,6 +72,8 @@ export const getconnections = (
       uiSpec['fields'][field]['component-name'] === 'RelatedRecordSelector'
         ? uiSpec['fields'][field]['component-parameters']['related_type'] !==
             '' &&
+          uiSpec['fields'][field]['component-parameters']['related_type'] !==
+            undefined &&
           conectiontabs.push({
             tab:
               uiSpec['viewsets'][
@@ -176,6 +182,12 @@ export const FieldSettings = (
     views: views,
     view_list: view_list,
     start_view: 'start-view',
+    viewsets: {
+      settings: {
+        views: ['settings'],
+        label: 'settings',
+      },
+    },
   };
 };
 
@@ -226,18 +238,6 @@ export const getprojectform = (
       multiline: true,
       multirows: 4,
     },
-    // {name:'sectiondeaccess',label:'Access',namespace:'formik-material-ui',componentName:'TextField',view:'section',multiline:true,multirows:4,helperText:'Now disbaled, Will be enabled after access field been defined.'},
-    // {
-    //   name: 'sectiondeaccessinherit',
-    //   label: 'Inherit Access from Form',
-    //   namespace: 'faims-custom',
-    //   componentName: 'Checkbox',
-    //   type_return: 'faims-core::Bool',
-    //   validationSchema: [['yup.bool']],
-    //   type: 'checkbox',
-    //   initialValue: false,
-    //   helperText: 'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
-    // },
   ];
   const sectionaccess = [
     {
@@ -250,7 +250,7 @@ export const getprojectform = (
       type: 'checkbox',
       initialValue: false,
       helperText:
-        'Check to inherit access for user roles from Form, You can change acess for each form component in Commponet > Access tab',
+        'Check to inherit access for user roles from Form, You can change access for each form component in Commponet > Access tab',
     },
   ];
   const formaccess = [
@@ -264,7 +264,7 @@ export const getprojectform = (
       type: 'checkbox',
       initialValue: false,
       helperText:
-        'Check to inherit access for user roles from Notebook, You can change acess for each form component in Section Definition > Info tab',
+        'Check to inherit access for user roles from Notebook, You can change access for each form component in Section Definition > Info tab',
     },
   ];
   const form_info_options: Array<optionType> = [
@@ -273,8 +273,8 @@ export const getprojectform = (
       label: 'Save and New',
     },
     {
-      value: 'Jump to Upper Level',
-      label: 'Jump to Upper Level',
+      value: 'Save and Return',
+      label: 'Save and Return',
     },
   ];
   const options = getacessoption(projectvalue.accesses);
@@ -313,17 +313,17 @@ export const getprojectform = (
       initialValue: false,
       helperText: 'Tick for enable Uncertainty for Form components',
     },
-    // {
-    //   name: 'visible',
-    //   label: 'Visible in Main menu',
-    //   namespace: 'faims-custom',
-    //   componentName: 'Checkbox',
-    //   type_return: 'faims-core::Bool',
-    //   validationSchema: [['yup.bool']],
-    //   type: 'checkbox',
-    //   initialValue: true,
-    //   helperText: 'Tick if user can see from Add New options',
-    // },
+    {
+      name: 'visible',
+      label: 'Visible in Top ',
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+      initialValue: true,
+      helperText: 'Tick if user can see from Add New options',
+    },
   ];
 
   const users = [
@@ -540,30 +540,15 @@ export const getprojectform = (
       const fieldname = field.name + props.formname;
       const newfield = {...field, name: fieldname};
       //TODO Maybe set pre-select value for user
-      if (
-        projectvalue['forms'] !== undefined &&
-        newfield['initialValue'] === undefined
-      )
+      if (projectvalue['forms'] !== undefined)
         if (projectvalue['forms'][props.formname] !== undefined)
           newfield['initialValue'] =
-            projectvalue['forms'][props.formname][fieldname];
-      // else if(newfield['initialValue']===undefined)
-      //   newfield['initialValue']='Save and New'
+            projectvalue['forms'][props.formname][fieldname] ??
+            newfield['initialValue'];
       fields[tab][index] = {...newfield};
     });
   }
-  // if (tab === 'form_setting') {
-  //   form_setting.map((field: any, index: number) => {
-  //     const fieldname = field.name + props.formname;
-  //     const newfield = {...field, name: fieldname};
-  //     //TODO Maybe set pre-select value for user
-  //     // if(projectvalue['forms']!==undefined&&newfield['initialValue']===undefined)
-  //     //   if(projectvalue['forms'][props.props.formname]!==undefined) newfield['initialValue']=['forms'][props.props.formname][fieldname]
-  //     // else if(newfield['initialValue']===undefined)
-  //     //   newfield['initialValue']='Save and New'
-  //     fields[tab][index] = {...newfield};
-  //   });
-  // }
+
   if (
     tab === 'project_meta' &&
     projectvalue.meta !== undefined &&
@@ -662,16 +647,14 @@ export function generateaddfieldui() {
 }
 
 function setmeta(meta: any) {
-  // if (meta.isannotation === false) return undefined;
-  // if (meta.isannotation)
   return {
     annotation_label: 'annotation',
+    annotation: meta.isannotation ?? true,
     uncertainty: {
-      include: meta.isuncertainty,
+      include: meta.isuncertainty ?? false,
       label: 'uncertainty',
     },
   };
-  // return undefined;
 }
 
 export const updateuiSpec = (type: string, props: any) => {
@@ -741,8 +724,33 @@ const newfromui = (
   initialfieldvalue: any,
   projectvalue: any
 ) => {
+  const formdesignuiSpec: any = {
+    viewsets: {
+      settings: {
+        views: ['settings'],
+        label: 'settings',
+      },
+    },
+    fields: {},
+    views: {
+      settings: {
+        fields: [],
+        uidesign: 'form',
+        label: 'settings',
+      },
+    },
+  };
   newuiSpec[VISIBLE_TYPE].map((variant: any, index: any) => {
     newuiSpec['viewsets'][variant]['views'].map((view: string) => {
+      formdesignuiSpec['viewsets'][view] = {
+        views: [view],
+        label: view,
+      };
+      formdesignuiSpec['views'][view] = {
+        fields: [],
+        uidesign: 'form',
+        label: 'settings',
+      };
       newformcom[view] = [];
       newuiSpec['views'][view]['fields'].map((fieldname: string) => {
         let field = newuiSpec['fields'][fieldname];
@@ -759,8 +767,6 @@ const newfromui = (
             field = newuiSpec['fields'][newnhirdname];
             gefieldname = newnhirdname;
           }
-
-          console.log(field);
         }
         if (field['meta'] === undefined)
           // if(setmeta({isannotation:true,isuncertainty:false})!==undefined)
@@ -786,6 +792,23 @@ const newfromui = (
             field['component-namespace'],
             field['component-name']
           ).settingsProps[0];
+          const newui = regeneratesettinguiSpec(newse, gefieldname, 'settings');
+          formdesignuiSpec['fields'] = {
+            ...formdesignuiSpec['fields'],
+            ...newui['fields'],
+          };
+          const viewfields: Array<string> = [];
+          newui['viewsets']['settings']['views'].map((view: string) =>
+            viewfields.push(...newui['views'][view]['fields'])
+          );
+          formdesignuiSpec['views']['settings']['fields'] = [
+            ...formdesignuiSpec['views']['settings']['fields'],
+            ...viewfields,
+          ];
+          formdesignuiSpec['views'][view]['fields'] = [
+            ...formdesignuiSpec['views'][view]['fields'],
+            ...viewfields,
+          ];
           initialfieldvalue = {
             ...initialfieldvalue,
             ...setSetingInitialValues(newse, field, gefieldname),
@@ -807,8 +830,8 @@ const newfromui = (
       });
     });
   });
-  console.log(newformcom);
-  return {newformcom, initialfieldvalue};
+  console.log(formdesignuiSpec);
+  return {newformcom, initialfieldvalue, formdesignuiSpec};
 };
 
 const swithField = (
@@ -839,7 +862,7 @@ const removefield = (
   formcomponents: any,
   formuiview: string
 ) => {
-  const name = NEWFIELDS + id;
+  const name = id;
   const components = formcomponents;
   components[formuiview] = components[formuiview].filter(
     (formcomponent: any) => formcomponent.id !== name
@@ -861,9 +884,11 @@ const addfield = (props: any) => {
     accessgroup,
     project_id,
     meta,
+    formdesignuiSpec,
   } = props;
   const settings = id;
   const name = NEWFIELDS + uuid;
+  const newformdesignuiSpec = formdesignuiSpec;
   const newfield: ProjectUIFields =
     settings.settingsProps !== undefined && settings.settingsProps.length > 1
       ? {
@@ -880,11 +905,47 @@ const addfield = (props: any) => {
           ...id.uiSpecProps,
         });
   newfield['meta'] = setmeta(meta);
+
   const newuiSpec = formuiSpec.fields;
   newuiSpec[name] = newfield;
   const newviews = formuiSpec.views;
   const fieldprops = {};
   const newuiSpeclist = FieldSettings(newfield, name, fieldprops, accessgroup);
+  const settingui = regeneratesettinguiSpec(
+    settings.settingsProps.length > 1
+      ? settings.settingsProps[0]
+      : newuiSpeclist,
+    name,
+    'settings'
+  );
+  newformdesignuiSpec['fields'] = {
+    ...newformdesignuiSpec['fields'],
+    ...settingui['fields'],
+  };
+  const viewfields: Array<string> = [];
+  settingui['viewsets']['settings']['views'].map((view: string) =>
+    viewfields.push(...settingui['views'][view]['fields'])
+  );
+  newformdesignuiSpec['views']['settings']['fields'] = [
+    ...newformdesignuiSpec['views']['settings']['fields'],
+    ...viewfields,
+  ];
+  if (newformdesignuiSpec['viewsets'][formuiview] === undefined)
+    newformdesignuiSpec['viewsets'][formuiview] = {
+      views: [formuiview],
+      label: formuiview,
+    };
+  if (newformdesignuiSpec['views'][formuiview] === undefined)
+    newformdesignuiSpec['views'][formuiview] = {
+      fields: [],
+      uidesign: 'form',
+      label: formuiview,
+    };
+  newformdesignuiSpec['views'][formuiview]['fields'] = [
+    ...formdesignuiSpec['views'][formuiview]['fields'],
+    ...viewfields,
+  ];
+
   const components = formcomponents;
   newviews[formuiview]['fields'] = [...newviews[formuiview]['fields'], name];
   components[formuiview] = [
@@ -903,7 +964,15 @@ const addfield = (props: any) => {
     name
   );
   console.log(initialfieldvalue);
-  return {newviews, components, newuiSpeclist, newuiSpec, initialfieldvalue};
+  console.log(newformdesignuiSpec);
+  return {
+    newviews,
+    components,
+    newuiSpeclist,
+    newuiSpec,
+    initialfieldvalue,
+    newformdesignuiSpec,
+  };
 };
 
 const changeuifield = (newfieldname: string, newfield: any, uiSpec: any) => {

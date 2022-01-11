@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,8 +18,9 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
-import _ from 'lodash';
+import React from 'react';
+import {Link as RouterLink} from 'react-router-dom';
+
 import {
   DataGrid,
   GridColDef,
@@ -27,17 +28,18 @@ import {
   GridToolbar,
 } from '@material-ui/data-grid';
 import {Typography} from '@material-ui/core';
-import {Link as RouterLink} from 'react-router-dom';
 import Link from '@material-ui/core/Link';
 import {useTheme} from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 
-import {ProjectID} from '../../../datamodel/core';
-import {RecordMetadata} from '../../../datamodel/ui';
 import * as ROUTES from '../../../constants/routes';
-import {listenRecordsList} from '../../../data_storage/listeners';
-import {getAllRecordsWithRegex} from '../../../data_storage/queries';
+import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
+import {RecordMetadata} from '../../../datamodel/ui';
+import {getMetadataForAllRecords} from '../../../data_storage/index';
+import {getAllRecordsWithRegex} from '../../../data_storage/queries';
+import {useEventedPromise} from '../../pouchHook';
+import {listenDataDB} from '../../../sync';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -66,11 +68,19 @@ function RecordsTable(props: RecordsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
+  // const newrows:any=[];
+  // rows.map((r:any,index:number)=>
+  //   props.viewsets !== null &&
+  //   props.viewsets !== undefined &&
+  //   r.type !== null &&
+  //   r.type !== undefined &&
+  //   props.viewsets[r.type] !== undefined? newrows[index]={...r,type_label:props.viewsets[r.type].label?? r.type }:newrows[index]={...r})
+
   const columns: GridColDef[] = [
     {
       field: 'hrid',
-      headerName: 'Obs ID',
-      description: 'Record ID',
+      headerName: 'HRID',
+      description: 'Human Readable Record ID',
       type: 'string',
       width: not_xs ? 300 : 100,
       renderCell: (params: GridCellParams) => (
@@ -99,7 +109,8 @@ function RecordsTable(props: RecordsTableProps) {
           {props.viewsets !== null &&
           props.viewsets !== undefined &&
           params.value !== null &&
-          params.value !== undefined
+          params.value !== undefined &&
+          props.viewsets[params.value.toString()] !== undefined
             ? props.viewsets[params.value.toString()].label ?? params.value
             : params.value}
         </>
@@ -116,6 +127,25 @@ function RecordsTable(props: RecordsTableProps) {
       headerName: 'Conflicts',
       type: 'boolean',
       width: 200,
+    },
+    {
+      field: 'record_id',
+      headerName: 'UUID',
+      description: 'UUID Record ID',
+      type: 'string',
+      width: not_xs ? 300 : 100,
+      renderCell: (params: GridCellParams) => (
+        <Link
+          component={RouterLink}
+          to={ROUTES.getRecordRoute(
+            project_id || 'dummy',
+            (params.getValue('record_id') || '').toString(),
+            (params.getValue('revision_id') || '').toString()
+          )}
+        >
+          {params.value}
+        </Link>
+      ),
     },
   ];
 
@@ -155,35 +185,26 @@ function RecordsTable(props: RecordsTableProps) {
   );
 }
 
-export default function RecordsBrowseTable(props: RecordsBrowseTableProps) {
+export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {project_id, maxRows, filter_deleted} = props;
-  const [rows, setRows] = useState<Array<RecordMetadata>>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the record list is updated, the callback should be fired
-    if (project_id === undefined) return; //dummy project
-    const destroyListener = listenRecordsList(
-      project_id,
-      newPouchRecordList => {
-        setLoading(false);
-        if (!_.isEqual(Object.values(newPouchRecordList), rows)) {
-          setRows(Object.values(newPouchRecordList));
-        }
-      },
-      filter_deleted
-    );
-    return destroyListener; // destroyListener called when this component unmounts.
-  }, [project_id, rows]);
+  const rows = useEventedPromise(
+    async (project_id: ProjectID) => {
+      return await getMetadataForAllRecords(project_id, filter_deleted);
+    },
+    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    false,
+    [project_id],
+    project_id
+  );
 
   console.debug('New records:', rows);
   return (
     <RecordsTable
       project_id={project_id}
       maxRows={maxRows}
-      rows={rows}
-      loading={loading}
+      rows={rows.value ?? []}
+      loading={rows.loading !== undefined}
       viewsets={props.viewsets}
     />
   );
@@ -195,28 +216,24 @@ RecordsBrowseTable.defaultProps = {
 
 export function RecordsSearchTable(props: RecordsSearchTableProps) {
   const {project_id, maxRows, query} = props;
-  const [rows, setRows] = useState<Array<RecordMetadata>>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    //  Dependency is only the project_id, ie., register one callback for this component
-    // on load - if the record list is updated, the callback should be fired
-    if (project_id === undefined) return; //dummy project
-    const getRecords = async () => {
-      const records = await getAllRecordsWithRegex(project_id, query);
-      setRows(Object.values(records));
-      setLoading(false);
-    };
-    getRecords();
-  }, [project_id, rows, query]);
+  const rows = useEventedPromise(
+    async (project_id: ProjectID, query: string) =>
+      Object.values(await getAllRecordsWithRegex(project_id, query)),
+    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    false,
+    [project_id, query],
+    project_id,
+    query
+  );
 
   console.debug('New records:', rows);
   return (
     <RecordsTable
       project_id={project_id}
       maxRows={maxRows}
-      rows={rows}
-      loading={loading}
+      rows={rows.value ?? []}
+      loading={rows.loading !== undefined}
       viewsets={props.viewsets}
     />
   );

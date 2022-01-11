@@ -5,6 +5,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {ProjectUIFields} from '../../datamodel/typesystem';
+import {Typography} from '@material-ui/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const getdvalue = (value: any) => {
@@ -23,13 +24,6 @@ const DefaultuiSpec = {
   'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
   'component-name': 'TextField',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     fullWidth: true,
     helperText: 'Helper Text',
@@ -54,13 +48,6 @@ const DefaultuiSetting: ProjectUIModel = {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      meta: {
-        annotation_label: 'annotation',
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
-      },
       access: ['admin'],
       'component-parameters': {
         name: 'textInput',
@@ -82,13 +69,6 @@ const DefaultuiSetting: ProjectUIModel = {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      meta: {
-        annotation_label: 'annotation',
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
-      },
       access: ['admin'],
       'component-parameters': {
         name: 'textInput',
@@ -110,13 +90,6 @@ const DefaultuiSetting: ProjectUIModel = {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
-      meta: {
-        annotation_label: 'annotation',
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
-      },
       access: ['admin'],
       'component-parameters': {
         variant: 'outlined',
@@ -186,13 +159,6 @@ export const MultiTextuiSpec = {
   'component-namespace': 'formik-material-ui', // this says what web component to use to render/acquire value from
   'component-name': 'MultipleTextField',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     fullWidth: true,
     helperText: 'Helper Text',
@@ -272,6 +238,7 @@ const getfieldNamesbyView = (
     return uiSetting['views'][view]['fields'] ?? [];
   if (view === 'access') return uiSetting['views'][view]['fields'] ?? [];
   if (view === 'FormParamater') return uiSetting['views'][view]['fields'] ?? [];
+  if (view === 'other') return uiSetting['views'][view]['fields'] ?? [];
   if (
     uiSetting['views'][view] !== undefined &&
     fieldui['component-parameters'][view] !== undefined
@@ -282,7 +249,6 @@ const getfieldNamesbyView = (
 
 export function Defaultcomponentsetting(props: componenentSettingprops) {
   const uiSetting = props.uiSetting;
-
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     if (props.handlerchanges !== undefined) {
       props.handlerchanges(event);
@@ -294,22 +260,50 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
     handlerchanges(event);
   };
 
+  const getfield = (
+    fieldName: string,
+    uiSetting: any,
+    formProps: any,
+    handlerchangewithview: any,
+    view: string
+  ) => {
+    return (
+      <>
+        {getComponentFromField(
+          uiSetting,
+          fieldName,
+          props.formProps,
+          (event: FAIMSEVENTTYPE) => {
+            handlerchangewithview(event, view);
+          }
+        )}
+        {'   '}
+        <Typography style={{color: 'red'}} variant="caption">
+          {formProps.errors[fieldName] !== undefined &&
+            formProps.errors[fieldName].replace(fieldName, '  It ')}
+        </Typography>
+      </>
+    );
+  };
+
   return (
     <>
       {uiSetting['viewsets'][props.designvalue]['views'] !== undefined &&
       uiSetting['viewsets'][props.designvalue]['views'].length === 0
-        ? 'next'
+        ? ''
         : uiSetting['viewsets'][props.designvalue]['views'].map((view: any) =>
-            getfieldNamesbyView(uiSetting, view, props.fieldui).map(
-              (fieldName: string) =>
-                getComponentFromField(
-                  uiSetting,
-                  fieldName,
-                  props.formProps,
-                  (event: FAIMSEVENTTYPE) => {
-                    handlerchangewithview(event, view);
-                  }
-                )
+            getfieldNamesbyView(
+              uiSetting,
+              view,
+              props.fieldui
+            ).map((fieldName: string) =>
+              getfield(
+                fieldName,
+                uiSetting,
+                props.formProps,
+                handlerchangewithview,
+                view
+              )
             )
           )}
     </>

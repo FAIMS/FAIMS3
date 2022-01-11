@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -29,7 +29,7 @@ import {Typography, Container, Paper, Box} from '@material-ui/core';
 import {ProjectID} from '../../datamodel/core';
 import {getProjectInfo} from '../../databaseAccess';
 import {getUiSpecForProject} from '../../uiSpecification';
-import {ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
 
 export default function ProjectCreate() {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -49,7 +49,7 @@ export default function ProjectCreate() {
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
             Design and preview your new notebook before inviting team members
-            and publising. You can follow the GO TO NEXT button in each tab or
+            and publishing. You can follow the GO TO NEXT button in each tab or
             select tabs to design your notebook.
           </Typography>
         </Box>
@@ -63,23 +63,39 @@ export default function ProjectCreate() {
       </Container>
     );
   } else {
-    const project_info = getProjectInfo(project_id);
     const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
-    const [error, setError] = useState(null as null | {});
+    const [project_info, set_project_info] = useState(
+      null as null | ProjectInformation
+    );
+
+    useEffect(() => {
+      set_project_info(null);
+      if (project_id !== undefined) {
+        //only get UISpec when project is defined
+        getProjectInfo(project_id).then(set_project_info).catch(console.error);
+      }
+    }, [project_id]);
+
+    if (project_info === null) {
+      return (
+        <Container maxWidth="lg">
+          <Typography>{'Preparing project for editing...'}</Typography>
+        </Container>
+      );
+    }
+
     const breadcrumbs = [
       {link: ROUTES.HOME, title: 'Home'},
-      {title: project_info !== null ? project_info.name : 'New Notebook'},
+      {title: project_info.name},
     ];
-    if (error !== null) {
-      console.error(error);
-    }
 
     useEffect(() => {
       setUISpec(null);
-      if (project_id !== undefined)
+      if (project_id !== undefined) {
         //only get UISpec when project is defined
-        getUiSpecForProject(project_id).then(setUISpec, setError);
-      console.log(uiSpec);
+        getUiSpecForProject(project_id).then(setUISpec).catch(console.error);
+      }
+      console.debug(uiSpec);
       console.log('project_id changed' + project_id);
     }, [project_id]);
 
@@ -95,7 +111,7 @@ export default function ProjectCreate() {
           <Typography variant={'subtitle1'} gutterBottom>
             {project_info !== null
               ? 'Design and preview your notebook'
-              : 'Design and preview your new notebook before inviting team members and publising.You can follow the GO TO NEXT button in each tab or select tabs to design your notebook.'}
+              : 'Design and preview your new notebook before inviting team members and publishing.You can follow the GO TO NEXT button in each tab or select tabs to design your notebook.'}
           </Typography>
         </Box>
         <Paper square>

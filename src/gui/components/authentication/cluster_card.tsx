@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -23,18 +23,18 @@ import {
   CardActions,
   CardContent,
   CardHeader,
-  CircularProgress,
 } from '@material-ui/core';
 
 import {makeStyles} from '@material-ui/core/styles';
-import {useEffect} from 'react';
-import {useState} from 'react';
-import {LocalAuthDoc} from '../../../datamodel/database';
-import {local_auth_db} from '../../../sync/databases';
+import {useEffect, useState} from 'react';
+
 import {LoginForm} from './login_form';
+import {getTokenForCluster} from '../../../users';
 
 type ClusterCardProps = {
   listing_id: string;
+  listing_name: string;
+  listing_description: string;
 };
 
 const useStyles = makeStyles(() => ({
@@ -43,70 +43,27 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-function mapFullState<T, S>(
-  fullState: null | T | {error: {}},
-  ok: (val: T) => S,
-  err: (err: {}) => S,
-  loading: () => S
-) {
-  if (fullState === null) {
-    return loading();
-  } else if ('error' in fullState) {
-    return err(fullState.error);
-  } else {
-    return ok(fullState);
-  }
-}
-
 export default function ClusterCard(props: ClusterCardProps) {
   const classes = useStyles();
-  const [authDBDoc, setAuthDBDoc] = useState(
-    null as null | LocalAuthDoc | {error: {}}
-  );
-  useEffect(() => {
-    local_auth_db.get(props.listing_id).then(setAuthDBDoc, (err: any) => {
-      setAuthDBDoc({error: err});
-    });
+  const [token, setToken] = useState(undefined as undefined | string);
 
-    const changes = local_auth_db.changes({include_docs: true, since: 'now'});
-    const change_listener = (
-      change: PouchDB.Core.ChangesResponseChange<LocalAuthDoc>
-    ) => {
-      setAuthDBDoc(change.doc!);
+  useEffect(() => {
+    const getToken = async () => {
+      setToken(await getTokenForCluster(props.listing_id));
     };
-    const error_listener = (err: any) => {
-      setAuthDBDoc({error: err});
-    };
-    changes.on('change', change_listener);
-    changes.on('error', error_listener);
-    return () => {
-      changes.removeListener('change', change_listener);
-      changes.removeListener('error', error_listener);
-    };
-  });
+    getToken();
+  }, [props.listing_id]);
+  console.log('Token:', token);
 
   return (
     <MuiCard>
-      <CardHeader className={classes.cardHeader} title={props.listing_id} />
+      <CardHeader className={classes.cardHeader} title={props.listing_name} />
       <CardContent style={{paddingTop: 0}}>
-        {mapFullState(
-          authDBDoc,
-          authDBDoc => (
-            <span>Logged in with: {JSON.stringify(authDBDoc)}</span>
-          ),
-          err => {
-            if (
-              'message' in err &&
-              (err as {message: any}).message === 'missing'
-            ) {
-              return <LoginForm listing_id={props.listing_id} />;
-            } else {
-              return <span>Error: {err.toString()}</span>;
-            }
-          },
-          () => (
-            <CircularProgress color="primary" size="2rem" thickness={5} />
-          )
+        <p>{props.listing_description}</p>
+        {token === undefined ? (
+          <LoginForm listing_id={props.listing_id} setToken={setToken} />
+        ) : (
+          <span>Logged in with: {token}</span>
         )}
       </CardContent>
       <CardActions></CardActions>

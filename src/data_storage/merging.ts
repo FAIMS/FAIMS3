@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -189,7 +189,7 @@ export async function do3WayMerge(
   us_id: RevisionID
 ): Promise<MergeResult> {
   console.debug(`merging ${us_id} and ${them_id}`);
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   const merge_result = new MergeResult();
   const them = await getCachedRevision(project_id, revision_cache, them_id);
@@ -220,7 +220,7 @@ export async function do3WayMerge(
     if (our_avp_id === undefined) {
       throw Error(`our_avp ${attr} is undefined`);
     }
-    console.error(base_avp_id, their_avp_id, our_avp_id);
+    console.debug('base, theirs, ours', base_avp_id, their_avp_id, our_avp_id);
     if (their_avp_id === our_avp_id) {
       // The avp is the same on both heads, the trivial case
       avp_map[attr] = our_avp_id;
@@ -275,16 +275,19 @@ export async function mergeHeads(
   initial_cache_size = 100
 ): Promise<boolean> {
   let fully_merged: boolean | undefined = undefined;
+  console.debug('Getting record');
   const record = await getRecord(project_id, record_id);
   const revision_ids_to_seed_cache = record.revisions.slice(
     0,
     initial_cache_size
   );
+  console.debug('Getting initial revisions');
   const revision_cache: RevisionCache = (await getRevisions(
     project_id,
     revision_ids_to_seed_cache
   )) as RevisionCache;
   const working_heads = record.heads.concat(); // make a clean copy
+  console.debug('Getting initial head revisions');
   const initial_head_revisions = await getRevisions(project_id, working_heads);
   for (const rev_id in working_heads) {
     revision_cache[rev_id] = initial_head_revisions[rev_id];
@@ -292,6 +295,7 @@ export async function mergeHeads(
 
   // we've now set up our environment to start doing pairwise merging of the
   // heads
+  console.debug('Starting merge');
   while (working_heads.length > 1) {
     let us_id = working_heads.shift();
     if (us_id === undefined) {

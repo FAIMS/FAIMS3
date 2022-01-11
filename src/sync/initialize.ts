@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -19,16 +19,16 @@
  */
 import PouchDB from 'pouchdb';
 
-import {setupExampleActive} from '../dummyData';
-import {USE_REAL_DATA, DEBUG_POUCHDB} from '../buildconfig';
+import {DEBUG_POUCHDB} from '../buildconfig';
+
+import {directory_connection_info} from './databases';
+import {events} from './events';
+import {update_directory} from './process-initialization';
 import {
-  process_listings,
-  process_projects,
-  process_directory,
-} from './process-initialization';
-import {active_db, directory_connection_info} from './databases';
-import {DirectoryEmitter, events} from './events';
-import {attach_all_listeners} from './event-handler-registration';
+  all_projects_updated,
+  register_basic_automerge_resolver,
+  register_sync_state,
+} from './state';
 
 /**
  * To prevent initialize() being called multiple times
@@ -55,43 +55,26 @@ export function initialize() {
 }
 
 async function initialize_nocheck() {
-  if (!USE_REAL_DATA) await setupExampleActive(active_db);
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
 
-  const initialized = new Promise(resolve => {
-    events.once('projects_created', resolve);
+  register_sync_state(events);
+  register_basic_automerge_resolver(events);
+
+  const initialized = new Promise<void>(resolve => {
+    // Resolve once only
+    let resolved = false;
+    events.on('all_state', () => {
+      if (all_projects_updated && !resolved) {
+        resolved = true;
+        resolve();
+      }
+    });
   });
-  console.log('sync/initialize: starting');
-  initialize_dbs();
-  await initialized;
-  console.log('sync/initialize: finished');
-}
-
-function initialize_dbs(): DirectoryEmitter {
-  // Main sync propagation downwards to individual projects:
-  events
-    .on('directory_local', listings => process_listings(listings, true))
-    .on('directory_paused', listings => process_listings(listings, false))
-    .on('listing_local', (...args) => process_projects(...args, false))
-    .on(
-      'listing_paused',
-      (listing, projects, projects_db, default_connection) =>
-        process_projects(
-          listing,
-          projects,
-          projects_db,
-          default_connection,
-          true
-        )
-    );
-
-  attach_all_listeners(events);
-
   // It all starts here, once the events are all registered
-  console.log('sync/initialize: listeners registered');
-  process_directory(directory_connection_info).catch(err =>
+  console.log('sync/initialize: starting');
+  update_directory(directory_connection_info).catch(err =>
     events.emit('directory_error', err)
   );
-  console.log('sync/initialize: processed directory');
-  return events;
+  await initialized;
+  console.log('sync/initialize: finished');
 }

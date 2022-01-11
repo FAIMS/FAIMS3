@@ -28,7 +28,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  pr-apk-no-deploy:
+  node-deb-android-job:
     # The type of runner that the job will run on
     # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
     runs-on: ubuntu-latest

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -53,7 +53,6 @@ import {ProjevtValueList} from '../../../datamodel/ui';
 import {ProjectUIFields} from '../../../datamodel/typesystem';
 import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
-import {metadata_dbs} from '../../../sync/databases';
 import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {
@@ -62,6 +61,7 @@ import {
   setProjectMetadataFiles,
 } from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
+import {HRID_STRING} from '../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -100,6 +100,7 @@ const ini_projectvalue = {
       annotationFORM1: true,
       uncertaintyFORM1: false,
       formaccessinheritFORM1: false,
+      visibleFORM1: true,
     },
   },
   sections: {},
@@ -183,8 +184,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     if (props.project_info !== undefined && props.uiSpec !== null) {
-      console.log('+++++++++++++++++get project value ++++++++' + project_id);
-
       const projectui = getprojectform(projectvalue, 'project');
       const ini = {
         ...setProjectInitialValues(projectui, 'start-view', {_id: project_id}),
@@ -209,7 +208,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       projectvalue.pre_description !== undefined &&
       projectvalue.pre_description !== ''
     ) {
-      console.log('+++++++++++++++++set initial project value ++++++++');
+      //this is the function to solve the issue for new record button not be dispalyed, need to update in the future---Kate
       handlerprojectsubmit_pounch();
     }
   }, [project_id]);
@@ -255,9 +254,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       //if create new notebook then set an empty formUI
       console.log('setup' + props.project_id + '---START');
       setinifornewproject();
-      console.log(project_id);
-      console.log(initialValues);
-      console.log(projectvalue);
     }
 
     if (props.project_id !== null && projectvalue.name !== '') {
@@ -274,8 +270,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           {_id: project_id}
         )
       );
-      console.log(initialValues);
+
       getprojectmeta();
+      console.log(get_autoincrement());
     }
 
     setProjecttabvalue(0);
@@ -284,14 +281,36 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const get_autoincrement = () => {
     const form_ids: Array<string> = [];
     const field_ids: Array<string> = [];
+    const labels: Array<string> = [];
 
     for (const [key, value] of Object.entries(formuiSpec['fields'])) {
       if (value['component-name'] === 'BasicAutoIncrementer') {
         form_ids.push(value['component-parameters']['form_id']);
         field_ids.push(key);
+        labels.push(value['component-parameters']['label']);
+      }
+      if (value['component-name'] === 'TemplatedStringField') {
+        if (key.includes(HRID_STRING)) {
+          if (
+            formuiSpec['fields'][value['component-parameters']['linked']] !==
+              undefined &&
+            value['component-parameters']['template'] !==
+              formuiSpec['fields'][value['component-parameters']['linked']][
+                'component-parameters'
+              ]['template']
+          ) {
+            const fields = formuiSpec['fields'];
+            fields[key]['component-parameters']['template'] =
+              formuiSpec['fields'][value['component-parameters']['linked']][
+                'component-parameters'
+              ]['template'];
+            setFormuiSpec({...formuiSpec, fields: fields});
+          }
+        }
       }
     }
-    return {form_id: form_ids, field_id: field_ids};
+    console.error({form_id: form_ids, field_id: field_ids, label: labels});
+    return {form_id: form_ids, field_id: field_ids, label: labels};
   };
 
   const add_autoince_refereence = async (autoince: any) => {
@@ -300,7 +319,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         await add_autoincrement_reference_for_project(
           project_id,
           autoince.form_id,
-          autoince.field_id
+          autoince.field_id,
+          autoince.label
         );
       } catch (error) {
         console.error(error);
@@ -310,18 +330,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const saveformuiSpec = async (res: any = undefined) => {
     try {
-      console.log(
-        await setUiSpecForProject(
-          metadata_dbs[res ?? project_id].local,
-          formuiSpec
-        )
-      );
+      await setUiSpecForProject(res ?? project_id, formuiSpec);
 
       const autoincrecs = get_autoincrement();
       add_autoince_refereence(autoincrecs);
-      //autoincrecs.map((autoince: any) => );
-
-      console.log('databases updated...' + res + project_id);
     } catch (err) {
       console.error(
         'databases needs cleaning value not saved...' + res + project_id
@@ -342,9 +354,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               _id: project_id,
             })
           );
-          console.log('++++++++++=get meta data');
-          console.log(res);
-          console.log(initialValues);
         }
       } catch (error) {
         console.error('DO not get the meta data...');
@@ -389,21 +398,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         }
       }
 
-      // for (const key in values) {
-      //   if (PROJECT_META.includes(key)) {
-      //     //TODO: check if name can editable or not
-      //     pvlues.projectvalue[key]=values[key]
-      //     try {
-      //       if(project_id!==null)
-      //         console.log(await setProjectMetadata(project_id, key,values[key] ));
-      //     } catch (err) {
-      //       console.error('databases needs cleaning for update error...');
-      //       console.debug(err);
-      //     }
-      //   }
-      //   //save attachement data??
-      //   //else if()
-      // }
       //save meta data
       try {
         if (project_id !== null)
@@ -511,7 +505,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   const isready = () => {
-    // return !(initialValues['name']===''&&project_id!==null)
     if (initialValues['name'] !== '' && props.project_id !== null) return true; //for edit project
     if (props.project_id === null && initialValues['name'] === '') return true; //for new project, create new project
     return false;

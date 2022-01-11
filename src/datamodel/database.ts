@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -21,6 +21,7 @@
 import PouchDB from 'pouchdb';
 import {
   NonUniqueProjectID,
+  ListingID,
   RecordID,
   RevisionID,
   AttributeValuePairID,
@@ -84,7 +85,7 @@ export type PossibleConnectionInfo =
     };
 
 export interface ListingsObject {
-  _id: string;
+  _id: ListingID;
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
@@ -98,7 +99,7 @@ export interface NonNullListingsObject extends ListingsObject {
 
 export interface ActiveDoc {
   _id: ProjectID;
-  listing_id: string;
+  listing_id: ListingID;
   project_id: NonUniqueProjectID;
   username: string | null;
   password: string | null;
@@ -117,7 +118,7 @@ export interface LocalAuthDoc {
  * Do not use with UI code; sync code only
  */
 export interface ProjectObject {
-  _id: string;
+  _id: NonUniqueProjectID;
   name: string;
   description?: string;
   data_db?: PossibleConnectionInfo;
@@ -234,9 +235,9 @@ export interface LocalAutoIncrementState {
 }
 
 export interface AutoIncrementReference {
-  project_id: ProjectID;
   form_id: string;
   field_id: string;
+  label?: string;
 }
 
 export interface AutoIncrementReferenceDoc {

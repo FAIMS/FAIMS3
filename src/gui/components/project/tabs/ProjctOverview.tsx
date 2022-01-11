@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -43,7 +43,7 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
     );
 
     let graph = 'digraph {';
-    tabs.map((tabs: string) => (graph = graph + tabs + ';'));
+    tabs.map((tabs: string) => (graph = graph + '"' + tabs + '"' + ';'));
 
     formuiSpec['visible_types'].map((tab: string) =>
       newconnections.push(...getconnections(tab, formuiSpec, tabs))
@@ -53,14 +53,28 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
       connection.link === 'Linked'
         ? (graph =
             graph +
+            '"' +
             connection.otab +
+            '"' +
             '->' +
+            '"' +
             connection.tab +
+            '"' +
             '[arrowhead = "forward"];')
-        : (graph = graph + connection.otab + '->' + connection.tab + ';')
+        : (graph =
+            graph +
+            '"' +
+            connection.otab +
+            '"' +
+            '->' +
+            '"' +
+            connection.tab +
+            '"' +
+            ';')
     );
 
     graph = graph + '}';
+    console.log(graph);
     setGraph(graph);
   };
 

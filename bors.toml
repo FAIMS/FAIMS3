@@ -2,8 +2,6 @@ status = [
   "build (lts/*, false)",
   "test (lts/*, false)",
   "license",
-  "pr-apk-no-deploy",
-  "pr-ios-no-deploy",
 #  "DCO",
 ]
 block_labels = [ "S-do-not-merge-yet" ]

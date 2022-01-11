@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -110,13 +110,6 @@ const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'Select',
   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  meta: {
-    annotation_label: 'annotation',
-    uncertainty: {
-      include: false,
-      label: 'uncertainty',
-    },
-  },
   'component-parameters': {
     fullWidth: true,
     helperText: 'Choose a field from the dropdown',

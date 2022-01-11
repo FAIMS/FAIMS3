@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -28,6 +28,7 @@ import {
   FAIMSTypeName,
 } from '../datamodel/core';
 import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
+import {local_pouch_options} from './connection';
 import {
   generate_file_name,
   attachment_to_file,
@@ -35,7 +36,10 @@ import {
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 
-export const draft_db: DraftDB = new PouchDB('draft-storage');
+export const draft_db: DraftDB = new PouchDB(
+  'draft-storage',
+  local_pouch_options
+);
 
 export async function getStagedData(
   draft_id: string

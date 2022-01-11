@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -35,7 +35,6 @@ import Drawer from '@material-ui/core/Drawer';
 import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
-//import BuildIcon from '@material-ui/icons/Build';
 import AddIcon from '@material-ui/icons/Add';
 import HomeIcon from '@material-ui/icons/Home';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
@@ -43,16 +42,16 @@ import DescriptionIcon from '@material-ui/icons/Description';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import SettingsIcon from '@material-ui/icons/Settings';
-//import MessageIcon from '@material-ui/icons/Message';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
 import ListItemText from '@material-ui/core/ListItemText';
 import * as ROUTES from '../../constants/routes';
-import {getProjectList} from '../../databaseAccess';
+import {getProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from './alert';
 import {ProjectInformation} from '../../datamodel/ui';
+import {useEventedPromise} from '../pouchHook';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -168,7 +167,12 @@ export default function Navbar() {
   // const [error, setError] = useState<string | null>(null);
   const toggle = () => setIsOpen(!isOpen);
 
-  const pouchProjectList = getProjectList();
+  const pouchProjectList = useEventedPromise(
+    getProjectList,
+    listenProjectList,
+    true,
+    []
+  ).expect();
 
   const topMenuItems: Array<MenuItemProps> = [
     {
@@ -177,7 +181,14 @@ export default function Navbar() {
       to: ROUTES.HOME,
       disabled: false,
     },
-    getNestedProjects(pouchProjectList),
+    pouchProjectList === null
+      ? {
+          title: '[loading]',
+          icon: <AccountTree />,
+          to: '/',
+          disabled: true,
+        }
+      : getNestedProjects(pouchProjectList),
     {
       title: 'New Notebook',
       icon: <AddIcon />,

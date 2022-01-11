@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -19,7 +19,7 @@
  */
 
 import React, {useContext, useEffect, useState} from 'react';
-import {useHistory, useParams} from 'react-router-dom';
+import {useHistory, useParams, Redirect} from 'react-router-dom';
 
 import {
   AppBar,
@@ -35,21 +35,22 @@ import TabList from '@material-ui/lab/TabList';
 import TabPanel from '@material-ui/lab/TabPanel';
 import grey from '@material-ui/core/colors/grey';
 
-import * as ROUTES from '../../constants/routes';
-import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
-import {getProjectInfo} from '../../databaseAccess';
-import {listFAIMSRecordRevisions} from '../../data_storage';
-
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import RecordForm from '../components/record/form';
-import InProgress from '../components/ui/inProgress';
-import BoxTab from '../components/ui/boxTab';
-import RecordMeta from '../components/record/meta';
-import RecordDelete from '../components/record/delete';
-import {ProjectUIModel} from '../../datamodel/ui';
 import {ActionType} from '../../actions';
+import * as ROUTES from '../../constants/routes';
+import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
+import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
+import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../store';
 import {getUiSpecForProject} from '../../uiSpecification';
+
+import RecordForm from '../components/record/form';
+import RecordMeta from '../components/record/meta';
+import RecordDelete from '../components/record/delete';
+import BoxTab from '../components/ui/boxTab';
+import Breadcrumbs from '../components/ui/breadcrumbs';
+import InProgress from '../components/ui/inProgress';
+import {useEventedPromise, constantArgsShared} from '../pouchHook';
 
 export default function Record() {
   const {project_id, record_id, revision_id, draft_id} = useParams<{
@@ -63,7 +64,23 @@ export default function Record() {
 
   const [value, setValue] = React.useState('1');
 
-  const project_info = getProjectInfo(project_id);
+  let project_info: ProjectInformation | null;
+  try {
+    project_info = useEventedPromise(
+      getProjectInfo,
+      constantArgsShared(listenProjectInfo, project_id),
+      false,
+      [project_id],
+      project_id
+    ).expect();
+  } catch (err: any) {
+    if (err.message !== 'missing') {
+      throw err;
+    } else {
+      return <Redirect to="/404" />;
+    }
+  }
+
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [revisions, setRevisions] = React.useState([] as string[]);
   const [error, setError] = useState(null as null | {});

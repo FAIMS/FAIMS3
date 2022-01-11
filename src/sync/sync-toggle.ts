@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -22,53 +22,40 @@ import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject} from '../datamodel/database';
 import {
   data_dbs,
+  ExistingActiveDoc,
   LocalDB,
   LocalDBRemote,
   setLocalConnection,
 } from './databases';
-import {add_initial_listener} from './event-handler-registration';
-
-const syncingProjectListeners: (
-  | [ProjectID, (syncing: boolean) => unknown]
-  | undefined
-)[] = [];
+import {events} from './events';
+import {createdListings, createdProjects} from './state';
 
 export function listenSyncingProject(
   active_id: ProjectID,
   callback: (syncing: boolean) => unknown
 ): () => void {
-  const my_index = syncingProjectListeners.length;
-  syncingProjectListeners.push([active_id, callback]);
-  return () => {
-    syncingProjectListeners[my_index] = undefined; // To disable this listener, set to undefined
+  const project_update_cb = (
+    _type: unknown,
+    _mc: unknown,
+    _dc: unknown,
+    _listing: unknown,
+    active: ExistingActiveDoc
+  ) => {
+    if (active._id === active_id) {
+      callback(active.is_sync);
+    }
   };
+  events.on('project_update', project_update_cb);
+  return events.removeListener.bind(
+    events,
+    'project_update',
+    project_update_cb
+  );
 }
 
 export function isSyncingProject(active_id: ProjectID) {
-  if (data_dbs[active_id] === undefined) {
-    // When the project starts syncing, it should trigger the listenSyncingProject
-    return false;
-  }
-
-  if (data_dbs[active_id].remote === null) {
-    // When the project starts syncing, it should trigger the listenSyncingProject
-    return false;
-  }
-
-  return data_dbs[active_id].is_sync;
+  return data_dbs[active_id]!.is_sync;
 }
-
-add_initial_listener(initializeEvents => {
-  // If isSyncingProject happens to return before project_local is emitted,
-  // (Which in practice never happens) this will ensure that the state change
-  // is propagated
-  initializeEvents.on('project_local', active => {
-    const is_syncing = isSyncingProject(active._id);
-    syncingProjectListeners
-      .filter(l => l !== undefined && l![0] === active._id)
-      .forEach(l => l![1](is_syncing));
-  });
-});
 
 export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
   if (syncing === isSyncingProject(active_id)) {
@@ -88,8 +75,25 @@ export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
   if (has_remote(data_db)) {
     setLocalConnection(data_db);
   }
-  // Trigger sync listeners
-  syncingProjectListeners
-    .filter(l => l !== undefined && l![0] === active_id)
-    .forEach(l => l![1](syncing));
+
+  const created = createdProjects[active_id];
+
+  events.emit(
+    'project_update',
+    [
+      'update',
+      {
+        ...created,
+        active: {
+          ...created.active,
+          is_sync: !syncing,
+        },
+      },
+    ],
+    false,
+    false,
+    createdListings[created.active.listing_id].listing,
+    created.active,
+    created.project
+  );
 }

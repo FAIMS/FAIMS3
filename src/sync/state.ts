@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,112 +18,20 @@
  *   TODO
  */
 
-import {NonUniqueProjectID, ProjectID} from '../datamodel/core';
+import {ProjectID} from '../datamodel/core';
 import {
   ProjectObject,
   ProjectMetaObject,
   ProjectDataObject,
   ActiveDoc,
   isRecord,
+  ListingsObject,
 } from '../datamodel/database';
 import {mergeHeads} from '../data_storage/merging';
+
 import {ExistingActiveDoc, LocalDB} from './databases';
-import {add_initial_listener} from './event-handler-registration';
 import {DirectoryEmitter} from './events';
 
-add_initial_listener(register_listings_known, 'listings_known');
-add_initial_listener(register_projects_known, 'projects_known');
-
-export let listings_known = false;
-export let listings: null | Set<string> = null;
-function register_listings_known(initializeEvents: DirectoryEmitter) {
-  initializeEvents.on('directory_paused', known_listings => {
-    listings_known = true;
-    listings = known_listings;
-    initializeEvents.emit('listings_known', known_listings);
-  });
-  initializeEvents.on('directory_active', () => {
-    // Wait for all listings to be re-synced before any 'completion events' trigger
-    listings_known = false;
-  });
-}
-
-/**
- * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
- * all listings have errored/paused), this is set to the set of known project active ids
- *
- * This is set to just before 'projects_known' event is emitted.
- */
-export let projects_known: null | Set<ProjectID> = null;
-/**
- * Adds event handlers to initializeEvents to:
- * Enable 'Propagation' of completion of all known projects meta & other databases.
- * Completion, here, means that the meta database has errored/paused syncing.
- *
- * Resulting from this function, initializeEvents adds the following behaviour:
- * Once all projects are reasonably 'known' (i.e. the directory has errored/paused AND
- * all listings have errored/paused), a 'projects_known' event is emitted
- *
- * Note: All of these events may emit more than once. Use .once('event_name', ...)
- * to only listen for the first trigger.
- */
-function register_projects_known(initializeEvents: DirectoryEmitter) {
-  // This is more complicated, as we have to first ensure that it's in a reasonable state to say
-  // that everything is known & created, before waiting for project meta downloads.
-  // (So that we don't accidentally trigger things if local DBs are empty but waiting)
-  // Mapping from listing_id: (boolean) if the listing has had its projects added to known_projects yet
-  const listing_statuses = new Map<string, boolean>();
-  const listing_statuses_complete = () =>
-    listings_known && Array.from(listing_statuses.values()).every(v => v);
-
-  // All projects accumulated here
-  const projects_known_acc = new Set<ProjectID>();
-
-  // Emits project_known if all listings have their projects added to known_projects.
-  const emit_if_complete = () => {
-    if (listing_statuses_complete()) {
-      projects_known = projects_known_acc;
-      initializeEvents.emit('projects_known', projects_known_acc);
-    }
-  };
-
-  initializeEvents.on('directory_paused', listings => {
-    // Make sure listing_statuses has the key for listing
-    // If it's already set to true, don't set it to false
-    listings.forEach(listing =>
-      listing_statuses.set(listing, listing_statuses.get(listing) || false)
-    );
-    for (const listing_id of Array.from(listing_statuses.keys())) {
-      if (!listings.has(listing_id)) listing_statuses.delete(listing_id);
-    }
-
-    emit_if_complete();
-  });
-
-  initializeEvents.on('listing_paused', (listing, active_projects) => {
-    active_projects.forEach(active => projects_known_acc.add(active._id));
-    listing_statuses.set(listing._id, true);
-
-    emit_if_complete();
-  });
-  initializeEvents.on('listing_error', listing_id => {
-    // Don't hold up other things waiting for it to not be an error:
-    listing_statuses.set(listing_id, true);
-
-    emit_if_complete();
-  });
-  initializeEvents.on('listing_active', listing => {
-    // Wait for listing to sync before everything is known.
-    listing_statuses.set(listing._id, false);
-  });
-}
-
-/**
- * This is appended to whenever a project has its
- * meta & data local dbs come into existance.
- *
- * This is essentially accumulating 'project_paused' events.
- */
 export type createdProjectsInterface = {
   project: ProjectObject;
   active: ExistingActiveDoc;
@@ -131,47 +39,173 @@ export type createdProjectsInterface = {
   data: LocalDB<ProjectDataObject>;
 };
 
-export const createdProjects: {
-  [key: string]: {
-    project: ProjectObject;
-    active: ExistingActiveDoc;
-    meta: LocalDB<ProjectMetaObject>;
-    data: LocalDB<ProjectDataObject>;
+/**
+ * This is appended to whenever a project has its
+ * meta & data local dbs come into existance.
+ *
+ * This is used by getProjectDB/getDataDB in index.ts, as the way to get
+ * ProjectObjects
+ *
+ * Created/Modified by update_project in process-initialization.ts
+ */
+export const createdProjects: {[key: string]: createdProjectsInterface} = {};
+
+export type createdListingsInterface = {
+  listing: ListingsObject;
+  projects: LocalDB<ProjectObject>;
+};
+
+/**
+ * This is appended to whenever a listing has its
+ * projects/people dbs come into existance. (Each individual project
+ * isn't guaranteed to be in the createdProjects object. Use the
+ * data_sync_state or project_update events to listen for such changes)
+ *
+ * This is the way to get ListingsObjects
+ *
+ * Created/Modified by update_listing in process-initialization.ts
+ */
+export const createdListings: {[key: string]: createdListingsInterface} = {};
+
+/**
+ * Value:  all listings are reasonably 'known' (i.e. the directory has
+ * errored/paused after the initial sync pull at app start, OR we're using dummy
+ * data)
+ *
+ * Created/Modified by register_sync_state in state.ts
+ */
+export let listings_updated = false;
+
+/**
+ * True when the listings_sync_state is true, AND all projects that are to be
+ * in createdProjects have been created. When this is true, createdProjects
+ * is not expected to change in a major way. (project_update events may
+ * still occur, but the purpose of this is so that we can exclude the possibilty
+ * that a project hasn't synced yet when trying to wait for a project.)
+ *
+ * This essentially accumulates all the projects_sync_state events, combined with
+ * the listings_sync_state. So only when they are all done syncing it is true.
+ *
+ * Created/Modified by register_sync_state in state.ts
+ */
+export let all_projects_updated = false;
+
+/**
+ * For each listing:
+ * When createdListings is updated (listing_update), this is set to false
+ * Then when the projects db stops syncing (projects_sync_state(false)),
+ * this is set to true
+ */
+export const listing_projects_synced = new Map<string, boolean>();
+
+/**
+ * True when all the metadata DBs have been created & have either:
+ *  * Pulled all changes from the remote, if this is the first connection OR
+ *  * Don't have a remote to pull from
+ * (Either case - the metadata DB is not expecting a lot of changes)
+ *
+ * This essentially accumulates meta_sync_state events, combined with
+ * the all_projects_updated flag. So only when we know what meta DBs there are,
+ * and they are all done syncing.
+ *
+ * Created/Modified by register_sync_state in state.ts
+ */
+export let all_meta_synced = false;
+export let all_data_synced = false;
+
+/**
+ * Similar to listing_projects_synced  but is only in the map when the
+ * project_update event is emitted, and only true when meta is synced
+ * And it's mapping from ProjectID instead of listing ID
+ */
+export const projects_meta_synced = new Map<ProjectID, boolean>();
+export const projects_data_synced = new Map<ProjectID, boolean>();
+
+export function register_sync_state(initializeEvents: DirectoryEmitter) {
+  // Emits project_known if all listings have their projects added to known_projects.
+  const common_check = () => {
+    all_projects_updated =
+      // All listings known
+      !listings_updated &&
+      // All listings have been put in createdListings
+      // All listings have fully synced up their projects dbs
+      Array.from(listing_projects_synced.values()).every(v => v);
+    // All projects have been put in createdProjects
+    // Guaranteed to happen if the above is true (projects_sync_state event
+    // triggering with 'false' is always after all project_update emitted)
+
+    all_meta_synced =
+      all_projects_updated &&
+      Array.from(projects_meta_synced.values()).every(v => v);
+
+    all_data_synced =
+      all_projects_updated &&
+      Array.from(projects_data_synced.values()).every(v => v);
+
+    initializeEvents.emit('all_state');
   };
-} = {};
 
-export let projects_created = false;
+  initializeEvents.on('listings_sync_state', syncing => {
+    listings_updated = syncing;
 
-add_initial_listener(register_metas_complete);
-
-function register_projects_created(initializeEvents: DirectoryEmitter) {
-  const project_statuses = new Map<string, boolean>();
-
-  const emit_if_complete = () => {
-    if (projects_known && Array.from(project_statuses.values()).every(v => v)) {
-      projects_created = true;
-      initializeEvents.emit('projects_created');
-    }
-  };
-
-  initializeEvents.on('project_local', (listing, active) => {
-    project_statuses.set(active._id, true);
-    emit_if_complete();
+    common_check();
   });
+  initializeEvents.on(
+    'listing_update',
+    (type, projects_changed, people_changed, listing_id) => {
+      // Now we know we have to wait for the projects DB of listing
+      // to fully sync by setting to false (But we don't have to wait if
+      // projects_changed == false, and no projects_sync_state triggers)
+      listing_projects_synced.set(
+        listing_id,
+        listing_projects_synced.get(listing_id) ?? !projects_changed
+      );
 
-  initializeEvents.on('projects_known', projects => {
-    projects.forEach(project_id => {
-      if (!project_statuses.has(project_id)) {
-        // Add a project that hasn't triggered its project_local yet
-        project_statuses.set(project_id, false);
-      }
-    });
-    emit_if_complete();
+      common_check();
+    }
+  );
+  initializeEvents.on('projects_sync_state', (syncing, listing) => {
+    listing_projects_synced.set(listing._id, !syncing);
+
+    common_check();
+  });
+  initializeEvents.on('listing_error', listing_id => {
+    // Don't hold up other things waiting for it to not be an error:
+    listing_projects_synced.set(listing_id, true);
+
+    common_check();
+  });
+  initializeEvents.on(
+    'project_update',
+    (type, data_changed, meta_changed, listing, active) => {
+      // Now we know we have to wait for the data/meta DB of a project
+      // to, if not fully sync, then at least be created (But not if
+      // *_changed == false, and no projects_sync_state triggers)
+      projects_meta_synced.set(active._id, false);
+      projects_data_synced.set(active._id, false);
+
+      common_check();
+    }
+  );
+  initializeEvents.on('project_error', (listing, active, err) => {
+    console.debug('project_error info', listing, 'active', active, 'err', err);
+    // Don't hold up other things waiting for it to not be an error:
+    projects_meta_synced.set(active._id, true);
+    projects_data_synced.set(active._id, true);
+
+    common_check();
+  });
+  initializeEvents.on('meta_sync_state', (syncing, listing, active) => {
+    projects_meta_synced.set(active._id, !syncing);
+
+    common_check();
+  });
+  initializeEvents.on('data_sync_state', (syncing, listing, active) => {
+    projects_data_synced.set(active._id, !syncing);
+
+    common_check();
   });
 }
-
-add_initial_listener(register_projects_created);
-
 export type MetasCompleteType = {
   [active_id in ProjectID]:
     | [ActiveDoc, ProjectObject, LocalDB<ProjectMetaObject>]
@@ -179,86 +213,34 @@ export type MetasCompleteType = {
     | [ActiveDoc, unknown];
 };
 
-/**
- * When all known projects have their project_meta_paused event triggered,
- * and when all projects are known (see register_projects_known)
- * This is filled with metadata dbs of all known projects
- */
-export let metas_complete: null | MetasCompleteType = null;
-/**
- * When all known projects have their project_meta_paused event triggered,
- * and when all projects are known (see register_projects_known)
- * metas_complete event is triggered with list of all projects.
- */
-function register_metas_complete(initializeEvents: DirectoryEmitter) {
-  const map_has_all_known_projects = (map_obj: {[key: string]: unknown}) =>
-    projects_known !== null &&
-    Array.from(projects_known.values()).every(v => v in map_obj);
-
-  // The following events essentially only trigger (possibly multiple times) once
-  // projects_known is true, AND once all project_meta_pauseds have been triggered.
-  const metas: MetasCompleteType = {};
-
-  const emit_if_metas_complete = () => {
-    if (map_has_all_known_projects(metas)) {
-      metas_complete = metas;
-      initializeEvents.emit('metas_complete', metas);
-    }
-  };
-
-  initializeEvents.on(
-    'project_meta_paused',
-    (listing, active, project, meta) => {
-      metas[active._id] = [active, project, meta];
-      emit_if_metas_complete();
-    }
-  );
-  initializeEvents.on('project_error', (listing, active, err) => {
-    metas[active._id] = [active, err];
-    emit_if_metas_complete();
-  });
-  initializeEvents.on('projects_known', () => {
-    emit_if_metas_complete();
-  });
-}
-
-add_initial_listener(register_basic_automerge_resolver);
 /*
  * Registers a handler to do automerge on new records
  */
-function register_basic_automerge_resolver(initializeEvents: DirectoryEmitter) {
-  const already_listening = new Set<string>();
-  initializeEvents.on(
-    'project_data_paused',
-    (listing, active, project, data) => {
-      if (!already_listening.has(project._id)) {
-        already_listening.add(project._id);
-        start_listening_for_changes(project._id, data);
-      }
-    }
-  );
+export function register_basic_automerge_resolver(
+  initializeEvents: DirectoryEmitter
+) {
+  initializeEvents.on('data_sync_state', (syncing, listing, active) => {
+    // Only when finished syncing
+    if (syncing) return;
+    // The data_sync_state event is only triggered on initial page load,
+    // and when the actual data DB changes: So .changes
+    // (as called in start_listening_for_changes) is called once per PouchDB)
+    start_listening_for_changes(active._id);
+  });
 }
 
-function start_listening_for_changes(
-  proj_id: NonUniqueProjectID,
-  data_db: LocalDB<ProjectDataObject>
-) {
-  data_db.local
-    .changes({
-      since: 'now',
-      live: true,
-      include_docs: true,
-    })
-    .on('change', doc => {
-      if (doc !== undefined) {
-        const pdoc = doc.doc;
+function start_listening_for_changes(proj_id: ProjectID) {
+  createdProjects[proj_id]!.data.local.changes({
+    since: 'now',
+    live: true,
+    include_docs: true,
+  }).on('change', doc => {
+    if (doc !== undefined) {
+      const pdoc = doc.doc;
 
-        if (pdoc !== undefined && isRecord(pdoc)) {
-          mergeHeads(proj_id, doc.id).catch(err => {
-            console.warn(err);
-            console.error('Merging failed');
-          });
-        }
+      if (pdoc !== undefined && isRecord(pdoc)) {
+        mergeHeads(proj_id, doc.id);
       }
-    });
+    }
+  });
 }

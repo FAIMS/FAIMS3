@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -152,7 +152,7 @@ async function getOrCreateSpecDoc(
   project_id: ProjectID,
   namespace: string
 ): Promise<ProjectSchema & PouchDB.Core.IdMeta> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const specdoc = (await projdb.get(
       PROJECT_SPECIFICATION_PREFIX + '-' + namespace
@@ -272,7 +272,7 @@ export async function upsertFAIMSType(
     throw Error('failed to get document');
   }
 
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     return projdb.put(specdoc);
   } catch (err) {
@@ -304,7 +304,7 @@ export async function upsertFAIMSConstant(
   const specdoc = await getOrCreateSpecDoc(project_id, parsedName['namespace']);
   specdoc.constants[parsedName['name']] = validatedInfo;
 
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     return projdb.put(specdoc);
   } catch (err) {

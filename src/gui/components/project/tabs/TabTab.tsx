@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -171,6 +171,8 @@ export function TabEditable(props: TabProps) {
             aria-label={tab_id}
             id={tab_id}
             orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
+            scrollButtons="on"
+            variant="scrollable"
           >
             {tablists.map((tab, index) => (
               <Tab

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -67,7 +67,7 @@ export async function updateHeads(
   base_revids: RevisionID[],
   new_revid: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const record = await getRecord(project_id, obsid);
 
   // Add new revision to heads, removing obsolete heads
@@ -132,7 +132,7 @@ export async function getLatestRevision(
   project_id: ProjectID,
   docid: string
 ): Promise<string | undefined> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   try {
     const doc = await datadb.get(docid);
     return doc._rev;
@@ -153,15 +153,20 @@ export async function getHRID(
       break;
     }
   }
+  console.debug('hrid_name:', hrid_name);
   if (hrid_name === null) {
+    console.warn('No HRID field found');
     return null;
   }
   const hrid_avp_id = revision.avps[hrid_name];
   if (hrid_avp_id === undefined) {
+    console.warn('No HRID field set for revision');
     return null;
   }
+  console.debug('hrid_avp_id:', hrid_avp_id);
   try {
     const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
+    console.debug('hrid_avp:', hrid_avp);
     return hrid_avp.data as string;
   } catch (err) {
     console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
@@ -190,10 +195,11 @@ export async function listRecordMetadata(
     const revisions = await getRevisions(project_id, revision_ids);
 
     const out: RecordMetadataList = {};
-    records.forEach(async (record, record_id) => {
+    for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
       const hrid = (await getHRID(project_id, revision)) ?? record_id;
+      console.debug('hrid:', hrid);
       out[record_id] = {
         project_id: project_id,
         record_id: record_id,
@@ -207,7 +213,8 @@ export async function listRecordMetadata(
         hrid: hrid,
         type: record.type,
       };
-    });
+    }
+    console.debug('Record metadata list', out);
     return out;
   } catch (err) {
     console.warn(err);
@@ -219,7 +226,7 @@ export async function getAttributeValuePairs(
   project_id: ProjectID,
   avp_ids: AttributeValuePairID[]
 ): Promise<AttributeValuePairMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     attachments: true,
@@ -241,7 +248,7 @@ export async function getRevisions(
   project_id: ProjectID,
   revision_ids: RevisionID[]
 ): Promise<RevisionMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     keys: revision_ids,
@@ -261,7 +268,7 @@ export async function getRecords(
   project_id: ProjectID,
   record_ids: RecordID[]
 ): Promise<RecordMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     keys: record_ids,
@@ -289,7 +296,7 @@ function recordToRecordMap(old_recs: RecordMap): EncodedRecordMap {
 export async function getAllRecords(
   project_id: ProjectID
 ): Promise<EncodedRecordMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.find({
     selector: {
       record_format_version: 1,
@@ -326,7 +333,7 @@ export async function addNewRevisionFromForm(
   record: Record,
   new_revision_id: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map = await addNewAttributeValuePairs(
     project_id,
     record,
@@ -351,7 +358,7 @@ async function addNewAttributeValuePairs(
   record: Record,
   new_revision_id: RevisionID
 ): Promise<AttributeValuePairIDMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   let revision;
   let data;
@@ -400,7 +407,7 @@ export async function createNewRecord(
   record: Record,
   revision_id: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const new_encoded_record = {
     _id: record.record_id,
     record_format_version: 1,

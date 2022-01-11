@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -31,7 +31,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockProjectDB(project_id: ProjectID) {
+async function mockProjectDB(project_id: ProjectID) {
   if (projdbs[project_id] === undefined) {
     const db = new PouchDB(project_id, {adapter: 'memory'});
     projdbs[project_id] = db;
@@ -85,7 +85,12 @@ describe('roundtrip reading and writing to db', () => {
       fc.array(fc.fullUnicodeString()), // visible_types
     ],
     async (project_id, fields, views, viewsets, visible_types) => {
-      await cleanProjectDBS();
+      try {
+        await cleanProjectDBS();
+      } catch (err) {
+        console.error(err);
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const uiInfo = {
@@ -96,10 +101,8 @@ describe('roundtrip reading and writing to db', () => {
         visible_types: visible_types,
       };
 
-      const meta_db = getProjectDB(project_id);
-
-      return setUiSpecForProject(meta_db, uiInfo)
-        .then(result => {
+      return setUiSpecForProject(project_id, uiInfo)
+        .then(_result => {
           return getUiSpecForProject(project_id);
         })
         .then(result => {

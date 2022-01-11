@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -27,13 +27,15 @@ export async function getAllRecordsOfType(
   project_id: ProjectID,
   type: FAIMSTypeName
 ): Promise<RecordReference[]> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.find({
     selector: {
       record_format_version: 1,
       type: type,
     },
   });
+  console.log(res);
+  // const hrid = (await getHRID(project_id, o.revision)) ;
   return res.docs.map(o => {
     return {
       project_id: project_id,
@@ -47,7 +49,7 @@ export async function getAllRecordsWithRegex(
   project_id: ProjectID,
   regex: string
 ): Promise<RecordMetadataList> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.find({
     selector: {
       avp_format_version: 1,

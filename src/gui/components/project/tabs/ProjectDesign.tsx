@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -57,6 +57,7 @@ import {
 } from './ProjectButton';
 import {ResetComponentProperties} from '../data/componenentSetting';
 import {HRID_STRING} from '../../../../datamodel/core';
+import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -84,7 +85,6 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const NEWFIELDS = 'newfield';
 const sections_default = ['SECTION1'];
 const variant_default = ['FORM1'];
 const form_defult = {FORM1SECTION1: []};
@@ -92,6 +92,7 @@ const VISIBLE_TYPE = 'visible_types';
 const variant_label = 'Form1';
 const DefaultAnnotation = {
   annotation_label: 'annotation',
+  annotation: true,
   uncertainty: {
     include: false,
     label: 'uncertainty',
@@ -111,8 +112,6 @@ type ProjectDesignProps = {
 type formcomponents = any;
 // eslint-disable-next-line
 export default function ProjectDesignTab(props: ProjectDesignProps) {
-  // if(props.project_id===undefined) console.log('New Project'+props.project_id)
-
   const theme = useTheme();
   const classes = useStyles(theme);
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
@@ -122,6 +121,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormuiSpec,
     accessgroup,
     projectvalue,
+    setProjectValue,
     ...others
   } = props;
   const ini = {_id: project_id ?? 'new_notbook'};
@@ -144,10 +144,28 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   const [sectiontabs, setsectiontabs] = useState<Array<string>>([]);
 
   const [projecttabvalue, setProjecttabvalue] = useState(0);
-  const [error, setError] = useState(null as null | {});
+  const [error, setError] = useState<any>(null);
   const [fieldvalue, setfieldValue] = useState(0); //field tab
   const [formvalue, setformvalue] = useState(0); //formtabs for each form
+  const [formnamevalue, setFormNameValue] = useState(0);
   const [formsectionvalue, setformsectionvalue] = useState(0);
+  const [designvalidate, setdesignvalidate] = useState<any>(null);
+  const [formdesignuiSpec, setformdesignuiSpec] = useState<any>({
+    viewsets: {
+      settings: {
+        views: ['settings'],
+        label: 'settings',
+      },
+    },
+    fields: {},
+    views: {
+      settings: {
+        fields: [],
+        uidesign: 'form',
+        label: 'settings',
+      },
+    },
+  });
 
   useEffect(() => {
     setinit();
@@ -164,35 +182,27 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     formui[VISIBLE_TYPE].map((tab: string) =>
       tabs.push(formuiSpec['viewsets'][tab]['label'] ?? tab)
     );
-    const {newformcom, initialfieldvalue} = updateuiSpec('newfromui', {
-      formuiSpec: formui,
-      formcomponents: formcomponents,
-      access: accessgroup,
-      initialfieldvalue: initialValues,
-      projectvalue: projectvalue,
-    });
+    const {newformcom, initialfieldvalue, formdesignuiSpec} = updateuiSpec(
+      'newfromui',
+      {
+        formuiSpec: formui,
+        formcomponents: formcomponents,
+        access: accessgroup,
+        initialfieldvalue: initialValues,
+        projectvalue: projectvalue,
+      }
+    );
 
     const newformvariants = formui[VISIBLE_TYPE][0];
-
+    setformdesignuiSpec({...formdesignuiSpec});
     setFormVariants(newformvariants);
     setformTabs(
       formui[VISIBLE_TYPE].map(
         (tab: string) => (tab = formuiSpec['viewsets'][tab]['label'] ?? tab)
       )
     );
-    // let newini = initialValues;
-    // for (const [key, value] of Object.entries(newformcom)) {
-    //   newformcom[key].map(
-    //     (fieldlist: any) =>
-    //       (newini = {
-    //         ...ini,
-    //         ...setProjectInitialValues(fieldlist['uiSpec'], formView, {}),
-    //       })
-    //   );
-    // }
+
     setinitialValues({...initialValues, ...initialfieldvalue});
-    // const stabs:Array<string>=[]
-    // formui['viewsets'][newformvariants]['views'].map((tab:string)=>tabs.push(formuiSpec['views'][tab]['label']))
     setsectiontabs(
       formui['viewsets'][newformvariants]['views'].map(
         (tab: string) => (tab = formuiSpec['views'][tab]['label'] ?? tab)
@@ -201,6 +211,13 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setFormComponents(newformcom);
     setFormuiSpec(formui);
     setformlabel(formtabs[0]);
+    try {
+      setdesignvalidate(
+        getValidationSchemaForViewset(formdesignuiSpec, formuiview)
+      );
+    } catch (error) {
+      console.error('not get validation');
+    }
 
     return true;
   };
@@ -219,7 +236,6 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       if (newvalue[view] === undefined) newvalue[view] = [];
       return newvalue;
     });
-    // console.log(formuiSpec)
     if (formuiSpec !== null) {
       generateunifromformui(formuiSpec);
     }
@@ -233,6 +249,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       newuiSpeclist,
       newuiSpec,
       initialfieldvalue,
+      newformdesignuiSpec,
     } = updateuiSpec('addfield', {
       uuid: uuid,
       id: id,
@@ -250,7 +267,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
             ? projectvalue['forms'][formvariants]['uncertainty' + formvariants]
             : false,
       },
+      formdesignuiSpec: formdesignuiSpec,
     });
+    setformdesignuiSpec({...newformdesignuiSpec});
+    setdesignvalidate(
+      getValidationSchemaForViewset(newformdesignuiSpec, formuiview)
+    );
     setinitialValues({
       ...initialValues,
       ...initialfieldvalue,
@@ -313,30 +335,31 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     });
 
     setFormComponents(formcomponent);
-    setDesignvalue(index);
+    setDesignvalue(index + getid());
   };
 
   const handelonChangeSection = (event: any, index: number) => {
-    console.log(index);
     const id = formuiSpec['viewsets'][formvariants]['views'][index];
     console.log(id);
     setCurrentView(sectiontabs[index - 1]);
     setformuiview(id);
     setfieldValue(0); //TODO: remove it
     setformsectionvalue(index);
+    if (formuiSpec['views'][id]['fields'].length > 0)
+      setdesignvalidate(getValidationSchemaForViewset(formdesignuiSpec, id));
   };
 
   const handelonChangeVariants = (event: any, index: number) => {
     const id = formuiSpec[VISIBLE_TYPE][index];
-    ChangeVariants(id);
+    ChangeVariants(index, id);
     setformlabel(formtabs[index]);
+    setFormNameValue(index);
   };
 
-  const ChangeVariants = (id: string) => {
+  const ChangeVariants = (index: number, id: string) => {
     setFormVariants(id);
-
+    setFormNameValue(index);
     if (formuiSpec['viewsets'][id]['views'].length > 0) {
-      console.log(formuiSpec['viewsets'][id]['views'][0]);
       const tabs: any = [];
       if (formuiSpec['viewsets'][id]['views'].length > 0) {
         formuiSpec['viewsets'][id]['views'].map(
@@ -349,13 +372,15 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setCurrentView(formuiSpec['viewsets'][id]['views'][0]); // this part seems not working, check it to fix the issue
       setformvalue(0);
       setfieldValue(0); //TODO: remove it
+      console.log(formvariants + formuiview);
     } else {
       setsectiontabs([]);
       setformuiview('');
       setCurrentView('');
       setformvalue(0);
-      setfieldValue(2); //TODO: remove it
+      setfieldValue(0); //TODO: remove it
     }
+    setDesignvalue(index + getid());
   };
 
   const handelonChangeLabel = (tabs: Array<string>, type: string) => {
@@ -372,8 +397,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     });
     if (type === 'add') {
       // To fix the misread of tab names
-      const tabname = tabs[tabs.length - 1];
-      ChangeVariants(tabname);
+      const tabnameindex: number = tabs.length - 1;
+      const tabname = tabs[tabnameindex];
+      ChangeVariants(tabnameindex, tabname);
       setformlabel(formtabs[tabs.length - 1]);
       //set default value as preselect value for formaction
       const newprojectvalue = props.projectvalue;
@@ -383,14 +409,18 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       newprojectvalue['forms'][tabname]['annotation' + tabname] = true;
       newprojectvalue['forms'][tabname]['uncertainty' + tabname] = false;
       newprojectvalue['forms'][tabname]['formaccessinherit' + tabname] = false;
+      newprojectvalue['forms'][tabname]['visible' + tabname] = true;
       newprojectvalue['access']['access' + tabname] = ['admin'];
-      props.setProjectValue({...newprojectvalue});
+      setProjectValue({...newprojectvalue});
     } else {
       //after tabname changes direct user to form1 section1
       const tabname = formuiSpec['visible_types'][0];
-      ChangeVariants(tabname);
+      console.error(tabname);
+      ChangeVariants(0, tabname);
       setformlabel(formtabs[0]);
     }
+    console.error(formvariants);
+    setformsectionvalue(0);
   };
 
   const handelonChangeLabelSection = (tabs: Array<string>, type: string) => {
@@ -413,8 +443,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       setformuiview(
         formuiSpec['viewsets'][formvariants]['views'][sectiontabs.length - 1]
       );
+    } else {
+      setCurrentView(sectiontabs[0]);
+      setformuiview(formuiSpec['viewsets'][formvariants]['views'][0]);
     }
     setfieldValue(0); //TODO: remove it
+    setDesignvalue('' + getid());
   };
 
   const handleChangetabfield = (event: any, index: number) => {
@@ -449,7 +483,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     } else
       newprojectvalue['sections'][formuiview][event.target.name] =
         event.target.value;
-    props.setProjectValue({
+    setProjectValue({
       ...props.projectvalue,
       sections: newprojectvalue.sections,
     });
@@ -461,24 +495,30 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     const newproject = props.projectvalue;
     if (newproject['forms'][formvariants] === undefined) {
       newproject['forms'][formvariants] = {};
-      console.log(event.target.checked);
     }
     if (
       event.target.name.includes('accessinherit') ||
       event.target.name.includes('annotation') ||
-      event.target.name.includes('uncertainty')
+      event.target.name.includes('uncertainty') ||
+      event.target.name.includes('visible')
     ) {
       newproject['forms'][formvariants][event.target.name] =
         event.target.checked;
     } else
       newproject['forms'][formvariants][event.target.name] = event.target.value;
 
-    props.setProjectValue({...newproject});
+    setProjectValue({...newproject});
 
     if (event.target.name === 'submitAction' + formvariants) {
       const newviews = formuiSpec;
       //update uiSpecf
       newviews['viewsets'][formvariants]['submit_label'] = event.target.value;
+      setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
+    }
+
+    if (event.target.name === 'visible' + formvariants) {
+      const newviews = formuiSpec;
+      newviews['viewsets'][formvariants]['is_visible'] = event.target.checked;
       setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
     }
 
@@ -495,37 +535,43 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
           (fields = [...fields, ...newviews['views'][view]['fields']])
       );
       //set undefined meta
-      if (
-        event.target.checked &&
-        event.target.name === 'annotation' + formvariants
-      ) {
+      if (event.target.name === 'annotation' + formvariants) {
         fields.map((field: string) => {
           if (newviews['fields'][field]['meta'] === undefined)
             newviews['fields'][field]['meta'] = DefaultAnnotation;
+          newviews['fields'][field]['meta']['annotation'] =
+            event.target.checked;
         });
-      }
-      if (
-        !event.target.checked &&
-        event.target.name === 'annotation' + formvariants
-      ) {
-        //remove all annotation??
+        const {newformcom, initialfieldvalue} = updateuiSpec('newfromui', {
+          formuiSpec: newviews,
+          formcomponents: formcomponents,
+          access: accessgroup,
+          initialfieldvalue: initialValues,
+          projectvalue: projectvalue,
+        });
+
+        setinitialValues({...initialValues, ...initialfieldvalue});
       }
 
-      if (
-        event.target.checked &&
-        event.target.name === 'uncertainty' + formvariants
-      ) {
+      if (event.target.name === 'uncertainty' + formvariants) {
         fields.map((field: string) => {
-          if (newviews['fields'][field]['meta'] === undefined) {
+          if (newviews['fields'][field]['meta'] === undefined)
             newviews['fields'][field]['meta'] = DefaultAnnotation;
-            newviews['fields'][field]['meta']['uncertainty']['include'] = true;
-          } else {
-            newviews['fields'][field]['meta']['uncertainty']['include'] = true;
-          }
+          newviews['fields'][field]['meta']['uncertainty']['include'] =
+            event.target.checked;
         });
+        const {newformcom, initialfieldvalue} = updateuiSpec('newfromui', {
+          formuiSpec: newviews,
+          formcomponents: formcomponents,
+          access: accessgroup,
+          initialfieldvalue: initialValues,
+          projectvalue: projectvalue,
+        });
+
+        setinitialValues({...initialValues, ...initialfieldvalue});
       }
 
-      setFormuiSpec({...formuiSpec, viewsets: newviews.viewsets});
+      setFormuiSpec({...formuiSpec, fields: newviews.fields});
     }
 
     setfieldValue(0); //TODO: remove it
@@ -545,10 +591,9 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       const newproj = props.projectvalue;
       if (newproj['access'] === undefined) newproj['access'] = {};
       newproj['access']['access' + id] = newvalue;
-      props.setProjectValue({...newproj});
+      setProjectValue({...newproj});
     } else if (type === 'uiS') {
       const newui = formuiSpec;
-      console.log(id);
       newui['fields'][id]['access'] = newvalue;
       //change for hird
       if (
@@ -557,13 +602,11 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
       ) {
         newui['fields'][HRID_STRING + formvariants]['access'] = newvalue;
       }
-      console.log(newui);
       setFormuiSpec({...formuiSpec, fields: newui.fields});
     }
   };
 
   const gotonext = () => {
-    console.log(formtabs.indexOf(formlabel));
     let indextab = formtabs.indexOf(formlabel);
     if (indextab < 0) indextab = 0;
     if (indextab === formtabs.length - 1) {
@@ -573,7 +616,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     } else {
       const index = formtabs.indexOf(formlabel) + 1;
       const id = formuiSpec[VISIBLE_TYPE][index];
-      ChangeVariants(id);
+      ChangeVariants(index, id);
       setformlabel(formtabs[index]);
     }
   };
@@ -591,7 +634,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               <Grid container spacing={1}>
                 <Grid item sm={4} xs={12}>
                   <Typography variant="subtitle2">
-                    {formuiSpec['fields'][formcomponent['id']][
+                    {formuiSpec['fields'][formcomponent['id']] !== undefined &&
+                    formuiSpec['fields'][formcomponent['id']][
                       'component-parameters'
                     ]['hrid'] === true
                       ? 'Unique Human Readable ID:' + HRID_STRING + formvariants
@@ -695,8 +739,10 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     return (
       <Formik
         // enableReinitialize
+        key={formuiview}
         initialValues={initialValues}
         validateOnMount={true}
+        validationSchema={designvalidate}
         onSubmit={(values, {setSubmitting}) => {
           setTimeout(() => {
             setSubmitting(false);
@@ -705,7 +751,17 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         }}
       >
         {formProps => {
-          return <Form>{fieldform(formProps)}</Form>;
+          return (
+            <Form>
+              {formProps.isValid === false && (
+                <Alert severity="error">
+                  Form has errors, please fill required field in settings for
+                  each component.
+                </Alert>
+              )}
+              {fieldform(formProps)}
+            </Form>
+          );
         }}
       </Formik>
     );
@@ -769,6 +825,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
               Select each new component, they will be automatically layout in
               the interface, then config each of them
             </Alert>
+
             {fieldvalue === 1 &&
             formuiview !== '' &&
             formcomponents[formuiview].length > 0
@@ -907,16 +964,12 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   //
 
   const FormPanel = () => {
-    const value =
-      formtabs.indexOf(formlabel) > 0 ? formtabs.indexOf(formlabel) : 0;
     return (
       <Grid container>
         <Grid item sm={12} xs={12}>
           <TabEditable
             tabs={formtabs}
-            value={
-              formtabs.indexOf(formlabel) > 0 ? formtabs.indexOf(formlabel) : 0
-            }
+            value={formnamevalue}
             handleChange={handelonChangeVariants}
             tab_id="formtab"
             handelonChangeLabel={handelonChangeLabel}
@@ -925,7 +978,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         <Grid item sm={not_xs && formtabs.length > 1 ? 10 : 12} xs={12}>
           {formtabs.map((formtab: string, index: number) => (
             <TabPanel
-              value={value}
+              value={formnamevalue}
               index={index}
               tabname="formtab"
               key={'formtab' + index}

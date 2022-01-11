@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -188,7 +188,7 @@ export class App extends React.Component<AppProps, AppState> {
                   ROUTES.PROJECT +
                   ':project_id' +
                   ROUTES.AUTOINCREMENT +
-                  ':form_id/:field_id'
+                  ':form_id/:field_id/:label'
                 }
                 component={AutoIncrementEdit}
               />

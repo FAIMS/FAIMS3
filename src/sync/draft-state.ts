@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -23,6 +23,7 @@
  *   This is used from the Record form component,
  *   and relies on the sync/draft-storage.ts file for actual Databases access
  */
+import stable_stringify from 'fast-json-stable-stringify';
 import {FormikValues} from 'formik';
 import {
   deleteStagedData,
@@ -37,17 +38,16 @@ import {
   Annotations,
   FAIMSTypeName,
 } from '../datamodel/core';
-import stable_stringify from 'fast-json-stable-stringify';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const DRAFT_SAVE_CYCLE = 5000;
 
 type RelevantProps = {
   project_id: ProjectID;
+  record_id: RecordID;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
-      record_id: RecordID;
       revision_id: RevisionID;
       // This draft state usually requires a draft to keep
       // track of, BUT if the user is viewing an existing record,
@@ -67,7 +67,6 @@ type RelevantProps = {
 
       // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
       // you get back undefined:
-      record_id?: undefined;
       revision_id?: undefined;
     }
 );

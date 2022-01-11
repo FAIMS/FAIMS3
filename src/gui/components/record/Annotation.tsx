@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,24 +18,76 @@
  *   TODO
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
+import {Field} from 'formik';
 import {IconButton} from '@material-ui/core';
 import NoteIcon from '@material-ui/icons/Note';
-import {generatenewfield} from '../project/data/componenentSetting';
+
 import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
-import {Field} from 'formik';
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export function Annotation(props: any) {
-  const {field, fieldName, handerannoattion} = props;
-  const [isclicked, setIsClick] = useState(false);
-  const fields = generatenewfield(
-    'formik-material-ui',
-    'TextField',
-    null,
-    fieldName + 'annotation',
-    null
-  ); //{'annotation':'','uncertainty':false}
+  const {field, isclicked, setIsClick} = props;
+  const [subisclicked, setIsclicks] = useState(false);
+
+  useEffect(() => {
+    setIsClick(false);
+  }, []);
+
+  return (field.meta !== undefined && field.meta.annotation !== false) ||
+    (field.meta !== undefined &&
+      field.meta.uncertainty !== undefined &&
+      field.meta.uncertainty.include !== false) ? (
+    <>
+      <IconButton
+        edge="end"
+        onClick={() => {
+          const isc = !subisclicked;
+          setIsClick(isc);
+          setIsclicks(isc);
+        }}
+      >
+        <NoteIcon fontSize="small" />
+      </IconButton>
+
+      {subisclicked ? (
+        <UpButton
+          onButtonClick={() => {
+            setIsClick(false);
+            setIsclicks(false);
+          }}
+          value={1}
+          id={1}
+        />
+      ) : (
+        <DownButton
+          onButtonClick={() => {
+            setIsClick(true);
+            setIsclicks(true);
+          }}
+          value={0}
+          id={0}
+        />
+      )}
+      <br />
+    </>
+  ) : (
+    <></>
+  );
+}
+
+type AnnotationFieldProp = {
+  isclicked: boolean;
+  fieldName: string;
+  field: any;
+  handerannoattion: any;
+  annotation: any;
+  // formProps:any
+};
+
+export function AnnotationField(props: AnnotationFieldProp) {
+  const {field, fieldName, handerannoattion, isclicked} = props;
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
       ? props.annotation[fieldName] !== undefined
@@ -71,33 +123,23 @@ export function Annotation(props: any) {
   };
   return (
     <>
-      {field.meta !== undefined && (
-        <IconButton edge="end" onClick={() => setIsClick(true)}>
-          <NoteIcon fontSize="small" />
-        </IconButton>
-      )}
-      {field.meta !== undefined && isclicked && (
-        <UpButton onButtonClick={() => setIsClick(false)} value={1} id={1} />
-      )}
-      {field.meta !== undefined && !isclicked && (
-        <DownButton onButtonClick={() => setIsClick(true)} value={2} id={3} />
-      )}
-      <br />
-      {field.meta !== undefined && isclicked && (
-        <Field
-          component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
-          name={props.fieldName + 'annotation'}
-          id={props.fieldName + 'annotation'}
-          value={annotation}
-          variant="outlined"
-          onChange={handlerchangesAnnotation}
-          InputProps={{type: 'text'}}
-          label={field['meta']['annotation_label']}
-        />
-      )}
+      {isclicked &&
+        field.meta !== undefined &&
+        field.meta.annotation !== false && (
+          <Field
+            component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
+            name={fieldName + 'annotation'}
+            id={props.fieldName + 'annotation'}
+            value={annotation}
+            variant="outlined"
+            onChange={handlerchangesAnnotation}
+            InputProps={{type: 'text'}}
+            label={field['meta']['annotation_label']}
+          />
+        )}
       {field.meta !== undefined &&
         field.meta['uncertainty'] !== undefined &&
-        !field['meta']['uncertainty']['include'] &&
+        field['meta']['uncertainty']['include'] &&
         isclicked && (
           <Field
             component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
@@ -112,8 +154,6 @@ export function Annotation(props: any) {
             onChange={handlerchangesUncertainty}
           />
         )}
-      <br />
-      <br />
     </>
   );
 }

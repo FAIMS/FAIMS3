@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -56,7 +56,9 @@ export function materializeConnectionInfo(
 export function ConnectionInfo_create_pouch<Content extends {}>(
   connection_info: ConnectionInfo
 ): PouchDB.Database<Content> {
-  const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
+  const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {
+    skip_setup: true,
+  };
 
   // Username & password auth is optional
   if ('auth' in connection_info && connection_info.auth !== undefined) {
@@ -67,15 +69,16 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
   }
   // TODO: Use a new enough pouchdb such that we don't need the fetch hook, see
   // https://github.com/pouchdb/pouchdb/issues/8387
-  if (
-    'jwt_token' in connection_info &&
-    connection_info.jwt_token !== undefined
-  ) {
-    pouch_options.fetch = function (url: any, opts: any) {
+  pouch_options.fetch = function (url: any, opts: any) {
+    if (
+      'jwt_token' in connection_info &&
+      connection_info.jwt_token !== undefined
+    ) {
       opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
-      return PouchDB.fetch(url, opts);
-    };
-  }
+    }
+    opts.keepalive = true;
+    return PouchDB.fetch(url, opts);
+  };
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +
