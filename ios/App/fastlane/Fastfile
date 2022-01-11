@@ -153,7 +153,7 @@ platform :ios do
     )
 
     gym(
-      configuration: "Debug",
+      configuration: "Release", #make sure this key matches xcode signing and capabilities.
       workspace: "App.xcworkspace",
       scheme: "App",
       export_method: "app-store",
