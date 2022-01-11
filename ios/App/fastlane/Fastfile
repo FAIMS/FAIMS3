@@ -65,11 +65,11 @@ platform :ios do
     gym(
       configuration: "Debug",
       workspace: "App.xcworkspace",
-      scheme: "FAIMS3",
+      scheme: "App",
       export_method: "development",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match Development #{DEVELOPER_APP_IDENTIFIER}"        
+            DEVELOPER_APP_ID => "match Development #{DEVELOPER_APP_IDENTIFIER}"
         }
       }
     )
@@ -107,7 +107,7 @@ platform :ios do
     gym(
       configuration: "Debug",
       workspace: "App.xcworkspace",
-      scheme: "FAIMS3",
+      scheme: "App",
       export_method: "development",
       export_options: {
         provisioningProfiles: {
@@ -155,7 +155,7 @@ platform :ios do
     gym(
       configuration: "Debug",
       workspace: "App.xcworkspace",
-      scheme: "FAIMS3",
+      scheme: "App",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
