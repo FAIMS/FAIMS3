@@ -18,54 +18,21 @@
  * TODO: add select to user list area
  */
 import React from 'react';
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {
-  Grid,
-  Typography,
-  Paper,
-  Card,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Button,
-} from '@material-ui/core';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {useTheme} from '@material-ui/core/styles';
+import {Grid} from '@material-ui/core';
+
 import Alert from '@material-ui/lab/Alert';
-import {Formik, Form} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard, FormConnectionCard} from './PSettingCard';
-import {
-  getComponentFromField,
-  FormForm,
-  AutocompleteForm,
-} from '../FormElement';
-import {TabTab, TabEditable} from './TabTab';
+
+import {FormForm, AutocompleteForm} from '../FormElement';
+import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
-import {
-  getid,
-  updateuiSpec,
-  getprojectform,
-  uiSpecType,
-  getacessoption,
-} from '../data/ComponentSetting';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-import {
-  CloseButton,
-  UpButton,
-  DownButton,
-  AddButton,
-  ProjectSubmit,
-  ProjectDelete,
-} from './ProjectButton';
-import {ResetComponentProperties} from '../data/componenentSetting';
-import {HRID_STRING} from '../../../../datamodel/core';
-import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
+import {getprojectform, getacessoption} from '../data/ComponentSetting';
+
+import {ProjectSubmit, ProjectDelete} from './ProjectButton';
+
 import ConfirmdeleteDisalog from './ConfirmdeleteDisalog';
 import SectionTabs from './PSections';
 /* eslint-disable @typescript-eslint/no-unused-vars */

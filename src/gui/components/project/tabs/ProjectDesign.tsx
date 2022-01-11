@@ -26,63 +26,27 @@ import {useState, useEffect} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 
-import {Grid, Typography, Paper, Card} from '@material-ui/core';
+import {Grid} from '@material-ui/core';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import {useTheme} from '@material-ui/core/styles';
 import Alert from '@material-ui/lab/Alert';
-import {Formik, Form} from 'formik';
-import FieldsListCard from './FieldsListCard';
-import {SettingCard, FormConnectionCard} from './PSettingCard';
-import {
-  getComponentFromField,
-  FormForm,
-  AutocompleteForm,
-} from '../FormElement';
-import {TabTab, TabEditable} from './TabTab';
+
+import {FormConnectionCard} from './PSettingCard';
+
+import {TabEditable} from './TabTab';
 import TabPanel from './TabPanel';
-import {
-  getid,
-  updateuiSpec,
-  getprojectform,
-  uiSpecType,
-  getacessoption,
-} from '../data/ComponentSetting';
+import {getid, updateuiSpec, uiSpecType} from '../data/ComponentSetting';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-import {
-  CloseButton,
-  UpButton,
-  DownButton,
-  AddButton,
-  ProjectSubmit,
-} from './ProjectButton';
-import {ResetComponentProperties} from '../data/componenentSetting';
+
 import {HRID_STRING} from '../../../../datamodel/core';
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
 import {FormTab} from './ProjectComponent';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
-  newfield: {
-    // backgroundColor:'#e1e4e8',
-    // borderTop:'1px solid #e1e4e8',
-  },
-  newfield_button: {
-    textAlign: 'right',
-  },
-  addfield: {
-    // border:'1px solid #e1e4e8',
-    flexGrow: 1,
-    padding: theme.spacing(1),
-  },
-  settingtab: {
-    backgroundColor: '#e1e4e8',
-  },
   formtabcard: {
     minHeight: 200,
     backgroundColor: grey[200],
-  },
-  FieldCard: {
-    width: '100%',
   },
 }));
 
