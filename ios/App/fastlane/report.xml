@@ -5,52 +5,32 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000294">
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000306">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="1: delete_keychain" time="0.029572">
+      <testcase classname="fastlane.lanes" name="1: create_keychain" time="0.111171">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="2: create_keychain" time="0.123463">
+      <testcase classname="fastlane.lanes" name="2: app_store_connect_api_key" time="0.005604">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="3: app_store_connect_api_key" time="0.005793">
+      <testcase classname="fastlane.lanes" name="3: cocoapods" time="2.563368">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="4: cocoapods" time="2.277517">
+      <testcase classname="fastlane.lanes" name="4: match" time="2.155222">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="5: match" time="2.097096">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="6: gym" time="45.560862">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="7: changelog_from_git_commits" time="0.071482">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="8: pilot" time="733.826108">
-        
-      </testcase>
-    
-      
-      <testcase classname="fastlane.lanes" name="9: delete_keychain" time="0.036032">
+      <testcase classname="fastlane.lanes" name="5: gym" time="90.99127">
         
       </testcase>
     
