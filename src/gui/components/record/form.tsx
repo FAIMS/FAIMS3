@@ -130,7 +130,7 @@ class RecordForm extends React.Component<
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
 
-  async componentDidUpdate(prevProps: RecordFormProps) {
+  async componentDidUpdate(prevProps: RecordFormProps, prevState: RecordFormState) {
     if (
       prevProps.project_id !== this.props.project_id ||
       // prevProps.record_id !== this.props.record_id ||
@@ -151,6 +151,11 @@ class RecordForm extends React.Component<
       // Re-initialize basically everything.
       this.formChanged(true);
     }
+    if(prevState.view_cached!== this.state.view_cached){
+      window.scrollTo(0, 0)
+    }
+    
+    
   }
 
   constructor(props: RecordFormProps & RouteComponentProps) {
