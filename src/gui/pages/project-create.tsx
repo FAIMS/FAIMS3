@@ -74,9 +74,16 @@ export default function ProjectCreate() {
         //only get UISpec when project is defined
         getProjectInfo(project_id).then(set_project_info).catch(console.error);
       }
+      setUISpec(null);
+      if (project_id !== undefined) {
+        //only get UISpec when project is defined
+        getUiSpecForProject(project_id).then(setUISpec).catch(console.error);
+      }
+      console.debug(uiSpec);
+      console.log('project_id changed' + project_id);
     }, [project_id]);
 
-    if (project_info === null) {
+    if (project_info === null || uiSpec === null) {
       return (
         <Container maxWidth="lg">
           <Typography>{'Preparing project for editing...'}</Typography>
@@ -89,29 +96,15 @@ export default function ProjectCreate() {
       {title: project_info.name},
     ];
 
-    useEffect(() => {
-      setUISpec(null);
-      if (project_id !== undefined) {
-        //only get UISpec when project is defined
-        getUiSpecForProject(project_id).then(setUISpec).catch(console.error);
-      }
-      console.debug(uiSpec);
-      console.log('project_id changed' + project_id);
-    }, [project_id]);
-
-    return (
+    return project_info !== null ? (
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
         <Box mb={2}>
           <Typography variant={'h2'} component={'h1'}>
-            {project_info !== null
-              ? 'Edit Notebook ' + project_info.name
-              : 'Create Notebook'}
+            {'Edit Notebook ' + project_info.name + ' (' + project_id + ')'}
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
-            {project_info !== null
-              ? 'Design and preview your notebook'
-              : 'Design and preview your new notebook before inviting team members and publishing.You can follow the GO TO NEXT button in each tab or select tabs to design your notebook.'}
+            Redesign and preview your notebook
           </Typography>
         </Box>
         <Paper square>
@@ -122,6 +115,8 @@ export default function ProjectCreate() {
           />
         </Paper>
       </Container>
+    ) : (
+      <></>
     );
   }
 }

@@ -532,7 +532,7 @@ const Componentsetting = (props: componenentSettingprops) => {
             props.setuiSpec({...newvalues});
             console.log('Not contain' + 'SHOULD');
           }
-
+        } else {
           if (
             isArrayInArray(
               newvalues['fields'][props.fieldName]['validationSchema'],
@@ -550,10 +550,9 @@ const Componentsetting = (props: componenentSettingprops) => {
             console.log('Contain' + 'SHould NOT');
           }
         }
-        console.log(newvalues['fields'][props.fieldName]['validationSchema']);
+        console.error(newvalues['fields'][props.fieldName]['validationSchema']);
       }
     }
-    console.log(event.target.name + view + event.target.checked);
     if (view === 'other') {
       const name = event.target.name.replace(props.fieldName, '');
       if (name === 'field_type') {
@@ -628,16 +627,17 @@ const Componentsetting = (props: componenentSettingprops) => {
         }
       }
     }
-    console.log(event.target.name + view + event.target.checked);
   };
   return (
-    <Defaultcomponentsetting
-      handlerchangewithview={handlerchangewithviewSpec}
-      handlerchanges={handlerchanges}
-      {...others}
-      fieldui={props.fieldui}
-      uiSetting={uiSetting}
-    />
+    <>
+      <Defaultcomponentsetting
+        handlerchangewithview={handlerchangewithviewSpec}
+        handlerchanges={handlerchanges}
+        {...others}
+        fieldui={props.fieldui}
+        uiSetting={uiSetting}
+      />
+    </>
   );
 };
 

@@ -50,7 +50,18 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
     );
 
     newconnections.map((connection: any) =>
-      connection.link === 'Linked'
+      connection.link === 'Linked' && connection.multiple === true
+        ? (graph =
+            graph +
+            '"' +
+            connection.otab +
+            '"' +
+            '->' +
+            '"' +
+            connection.tab +
+            '"' +
+            '[arrowhead = "forward" label="multiple"];')
+        : connection.link === 'Linked' && connection.multiple === false
         ? (graph =
             graph +
             '"' +
@@ -61,6 +72,17 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
             connection.tab +
             '"' +
             '[arrowhead = "forward"];')
+        : connection.link !== 'Linked' && connection.multiple === true
+        ? (graph =
+            graph +
+            '"' +
+            connection.otab +
+            '"' +
+            '->' +
+            '"' +
+            connection.tab +
+            '"' +
+            '[label = "multiple"];')
         : (graph =
             graph +
             '"' +
@@ -80,10 +102,12 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
 
   return (
     <Grid container>
-      <Grid item sm={6} xs={11}>
-        {graphs !== '' && <Graphviz dot={graphs} />}
+      <Grid item sm={8} xs={11}>
+        {graphs !== '' && (
+          <Graphviz options={{zoom: true, width: '100%'}} dot={graphs} />
+        )}
       </Grid>
-      <Grid item sm={6} xs={1}>
+      <Grid item sm={4} xs={1}>
         <br />
         <br />
         <br />
@@ -94,6 +118,8 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
           {' -----> Contained'}
           <br />
           ------ Linked
+          <br />
+          Graph can be zoomed in and out
         </Alert>
       </Grid>
     </Grid>

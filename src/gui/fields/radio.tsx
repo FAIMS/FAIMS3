@@ -185,7 +185,7 @@ const uiSetting = () => {
 
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormLabelProps', 'FormParamater', 'ElementProps'],
+      views: ['FormLabelProps', 'FormHelperTextProps', 'ElementProps'],
       label: 'settings',
     },
   };

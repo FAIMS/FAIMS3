@@ -56,6 +56,7 @@ type TabProps = {
   handleChange: any;
   handelonChangeLabel?: any;
   not_xs?: boolean;
+  tabmaxindex?: string;
 };
 
 export function TabTab(props: TabProps) {
@@ -69,6 +70,8 @@ export function TabTab(props: TabProps) {
       aria-label={tab_id}
       id={tab_id}
       orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
+      scrollButtons="on"
+      variant="scrollable"
     >
       {tabs.map((tab: any, index: number) => (
         <Tab
@@ -117,7 +120,10 @@ export function TabEditable(props: TabProps) {
     const length = tablists.length + 1;
     let name = 'SECTION';
     if (tab_id === 'formtab') name = 'FORM';
-    newtabs[tablists.length] = name + length;
+    let maxtab = length;
+    if (props.tabmaxindex !== undefined)
+      maxtab = parseInt(props.tabmaxindex) + 1;
+    newtabs[tablists.length] = name + maxtab;
     setTablist(newtabs);
     props.handelonChangeLabel(newtabs, 'add');
     setIsset(!isset);
