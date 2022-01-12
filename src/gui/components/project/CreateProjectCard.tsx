@@ -459,26 +459,29 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const handlerprojectsubmit_pounch = async () => {
     //save into local pounch
+    try {
+      if (project_id === null) {
+        await create_new_project_dbs(projectvalue.name).then(res => {
+          console.log('projectid' + res);
+          if (res !== '' && res !== null) {
+            setProjectID(res);
+            setProjectValue({...projectvalue, project_id: res});
+          }
 
-    if (project_id === null) {
-      await create_new_project_dbs(projectvalue.name).then(res => {
-        console.log('projectid' + res);
-        if (res !== '' && res !== null) {
-          setProjectID(res);
-          setProjectValue({...projectvalue, project_id: res});
-        }
-
-        if (
-          res !== '' &&
-          res !== null &&
-          Object.keys(formuiSpec['fields']).length !== 0
-        ) {
-          saveformuiSpec(res);
-        }
-      });
+          if (
+            res !== '' &&
+            res !== null &&
+            Object.keys(formuiSpec['fields']).length !== 0
+          ) {
+            saveformuiSpec(res);
+          }
+        });
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log(project_id);
+    } catch {
+      console.error('not saved meta data');
     }
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log(project_id);
 
     if (
       project_id !== '' &&
