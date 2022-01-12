@@ -62,9 +62,11 @@ export default function MetadataRenderer(props: MetadataProps) {
           )}
           {metadata_value.value ? (
             <span>{metadata_value.value}</span>
-          ) : (
+          ) : metadata_value.loading?
             <CircularProgress size={12} thickness={4} />
-          )}
+            :
+            <></>
+          }
         </React.Fragment>
       }
     />
@@ -72,9 +74,12 @@ export default function MetadataRenderer(props: MetadataProps) {
     <>
       {metadata_value.value ? (
         <span>{metadata_value.value}</span>
-      ) : (
+      ) : 
+        metadata_value.loading?
         <CircularProgress size={12} thickness={4} />
-      )}
+        :
+        <></>
+      }
     </>
   );
 }
