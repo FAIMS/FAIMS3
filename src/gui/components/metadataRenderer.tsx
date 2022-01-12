@@ -46,8 +46,8 @@ export default function MetadataRenderer(props: MetadataProps) {
     project_id,
     metadata_key
   );
-  console.error('metadata_label', metadata_label);
-  console.error('metadata_value', metadata_value);
+  console.debug('metadata_label', metadata_label);
+  console.debug('metadata_value', metadata_value);
 
   return chips ? (
     <Chip
@@ -60,26 +60,17 @@ export default function MetadataRenderer(props: MetadataProps) {
           ) : (
             <React.Fragment />
           )}
-          {metadata_value.value ? (
-            <span>{metadata_value.value}</span>
-          ) : metadata_value.loading?
+          {metadata_value.value && <span>{metadata_value.value}</span>}
+          {metadata_value.loading && (
             <CircularProgress size={12} thickness={4} />
-            :
-            <></>
-          }
+          )}
         </React.Fragment>
       }
     />
   ) : (
     <>
-      {metadata_value.value ? (
-        <span>{metadata_value.value}</span>
-      ) : 
-        metadata_value.loading?
-        <CircularProgress size={12} thickness={4} />
-        :
-        <></>
-      }
+      {metadata_value.value && <span>{metadata_value.value}</span>}
+      {metadata_value.loading && <CircularProgress size={12} thickness={4} />}
     </>
   );
 }

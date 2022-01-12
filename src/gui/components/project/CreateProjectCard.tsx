@@ -62,7 +62,6 @@ import {
 } from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {HRID_STRING} from '../../../datamodel/core';
-import {getProjectInfo} from '../../../databaseAccess';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -187,19 +186,18 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   }, [props.uiSpec]);
 
   useEffect(() => {
-    console.log('props.project_info+++++++++')
-    console.log(props.project_info )
-    console.log(props.uiSpec)
+    console.log('props.project_info+++++++++');
+    console.log(props.project_info);
+    console.log(props.uiSpec);
     if (props.project_info !== undefined && props.uiSpec !== null) {
-      resetprojectvalue(props.project_info)
+      resetprojectvalue(props.project_info);
     } else
       setProjectValue({
         ...ini_projectvalue,
         project_id: props.project_id,
       });
-    console.log(initialValues)
+    console.log(initialValues);
   }, [props.project_info]);
-
 
   useEffect(() => {
     if (
@@ -214,24 +212,24 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   }, [project_id]);
 
-  const resetprojectvalue = (newvalue:any) =>{
+  const resetprojectvalue = (newvalue: any) => {
     const projectui = getprojectform(projectvalue, 'project');
-    const newprovalue=projectvalue
-    newprovalue['name']= newvalue.name
+    const newprovalue = projectvalue;
+    newprovalue['name'] = newvalue.name;
     const ini = {
-        ...setProjectInitialValues(projectui, 'start-view', {_id: project_id}),
-        newprovalue,
-      };
-      
-      setProjectValue({...newprovalue});
-      setProjecttabvalue(0);
-      setinitialValues({...ini});
-      setvalidationSchema(getValidationSchemaForViewset(projectui, 'project'));
-      console.log('name+++++++++'+newvalue.name)
-      console.log(ini)
-      console.log(projectvalue)
-      console.log(initialValues)
-  }
+      ...setProjectInitialValues(projectui, 'start-view', {_id: project_id}),
+      newprovalue,
+    };
+
+    setProjectValue({...newprovalue});
+    setProjecttabvalue(0);
+    setinitialValues({...ini});
+    setvalidationSchema(getValidationSchemaForViewset(projectui, 'project'));
+    console.log('name+++++++++' + newvalue.name);
+    console.log(ini);
+    console.log(projectvalue);
+    console.log(initialValues);
+  };
 
   const setinifornewproject = () => {
     //if create new notebook then set an empty formUI
@@ -360,17 +358,17 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       try {
         if (project_id !== null) {
           const res = await getProjectMetadata(project_id, 'projectvalue');
-          const newvalue={...projectvalue, ...res}
+          const newvalue = {...projectvalue, ...res};
           setProjectValue({...projectvalue, ...res});
-          console.log('++++project value')
-          console.log(projectvalue)
+          console.log('++++project value');
+          console.log(projectvalue);
           const projectui = getprojectform(newvalue, 'project');
           setinitialValues(
             setProjectInitialValues(projectui, 'start-view', {
               _id: project_id,
             })
           );
-          console.log(initialValues)
+          console.log(initialValues);
         }
       } catch (error) {
         console.error('DO not get the meta data...');
@@ -522,7 +520,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   const isready = () => {
-    console.log('project information'+initialValues['name']+props.project_id)
+    console.log(
+      'project information' + initialValues['name'] + props.project_id
+    );
     if (initialValues['name'] !== '' && props.project_id !== null) return true; //for edit project
     if (props.project_id === null && initialValues['name'] === '') return true; //for new project, create new project
     return false;

@@ -81,7 +81,6 @@ export default function ProjectCreate() {
       }
       console.debug(uiSpec);
       console.log('project_id changed' + project_id);
-
     }, [project_id]);
 
     if (project_info === null || uiSpec === null) {
@@ -97,15 +96,15 @@ export default function ProjectCreate() {
       {title: project_info.name},
     ];
 
-    return project_info!==null?(
+    return project_info !== null ? (
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
         <Box mb={2}>
           <Typography variant={'h2'} component={'h1'}>
-          {'Edit Notebook ' + project_info.name + ' (' +project_id + ')'}
+            {'Edit Notebook ' + project_info.name + ' (' + project_id + ')'}
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
-          Redesign and preview your notebook
+            Redesign and preview your notebook
           </Typography>
         </Box>
         <Paper square>
@@ -116,6 +115,8 @@ export default function ProjectCreate() {
           />
         </Paper>
       </Container>
-    ):(<></>);
+    ) : (
+      <></>
+    );
   }
 }
