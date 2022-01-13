@@ -70,7 +70,7 @@ export function listenProjectList(
   error: (err: any) => void
 ): () => void {
   events.on('project_update', listener);
-  console.debug(`${error} will never be called`);
+  console.warn(`${error} will never be called`);
   return () => {
     // Event remover
     events.removeListener('project_update', listener);
@@ -109,10 +109,6 @@ export function listenProjectInfo(
     error
   );
 }
-
-//export function updateProject(project_id: ProjectID) {}
-
-//export function removeProject(project_id: ProjectID) {}
 
 export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
   const all_listings = await getAllListings();

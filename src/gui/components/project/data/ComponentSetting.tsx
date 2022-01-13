@@ -826,8 +826,7 @@ const newfromui = (
             },
           ];
         } catch (error) {
-          console.error(gefieldname + ' not set correctly');
-          console.error(error);
+          console.error(gefieldname + ' not set correctly', error);
         }
       });
     });

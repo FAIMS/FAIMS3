@@ -217,7 +217,7 @@ export async function listRecordMetadata(
     console.debug('Record metadata list', out);
     return out;
   } catch (err) {
-    console.warn(err);
+    console.warn('Failed to get metadata', err);
     throw Error('failed to get metadata');
   }
 }

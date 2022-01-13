@@ -104,7 +104,7 @@ export async function lookupFAIMSType(
     typeCache.set(faimsType, refVal);
     return refVal;
   } catch (err) {
-    console.warn(err);
+    console.warn('Failed to look up type', err);
     throw Error('failed to look up type');
   }
 }

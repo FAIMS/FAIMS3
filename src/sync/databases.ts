@@ -374,15 +374,13 @@ async function delete_synced_db(name: string, db: LocalDB<any>) {
   try {
     console.debug(await db.remote?.db.close());
   } catch (err) {
-    console.error('Failed to remove remote db', name);
-    console.error(err);
+    console.error('Failed to remove remote db', name, err);
   }
   try {
     console.debug(await db.local.destroy());
     console.debug('Removed local db', name);
   } catch (err) {
-    console.error('Failed to remove local db', name);
-    console.error(err);
+    console.error('Failed to remove local db', name, err);
   }
 }
 
@@ -409,7 +407,7 @@ export async function wipe_all_pouch_databases() {
     try {
       console.debug(await db.destroy());
     } catch (err) {
-      console.error(err);
+      console.error('Error wiping all pouch databases', err);
     }
   }
   // TODO: work out how best to recreate the databases, currently using a

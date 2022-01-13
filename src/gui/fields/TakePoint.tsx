@@ -88,7 +88,7 @@ export class TakePoint extends React.Component<
       console.debug('Take point coord', coordinates);
       this.props.form.setFieldValue(this.props.field.name, coordinates);
     } catch (err: any) {
-      console.error(err);
+      console.error('Failed to take point', err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }

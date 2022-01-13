@@ -61,7 +61,7 @@ export class TakePhoto extends React.Component<
       console.log(image);
       this.props.form.setFieldValue(this.props.field.name, [image]);
     } catch (err: any) {
-      console.error(err);
+      console.error('Failed to take photo', err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
