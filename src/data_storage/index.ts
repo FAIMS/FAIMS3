@@ -276,7 +276,9 @@ export async function getRecordMetadata(
     };
   } catch (err) {
     console.error(err);
-    throw Error('failed to get metadata');
+    throw Error(
+      'failed to get record metadata: {project_id} {record_id} {revision_id}'
+    );
   }
 }
 
@@ -318,9 +320,9 @@ export async function getRecordsByType(
       }
     });
     return records;
-  } catch (error) {
+  } catch (err) {
     const records = await getAllRecordsOfType(project_id, type);
-    console.error('error');
+    console.warn(err);
     return records;
   }
 }

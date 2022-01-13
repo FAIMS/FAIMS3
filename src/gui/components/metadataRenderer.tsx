@@ -39,7 +39,19 @@ export default function MetadataRenderer(props: MetadataProps) {
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
   const metadata_value = useEventedPromise(
-    getProjectMetadata,
+    async (project_id: ProjectID, metadata_key: string) => {
+      try {
+        return await getProjectMetadata(project_id, metadata_key);
+      } catch (err) {
+        console.warn(
+          'Failed to get project metadata with key',
+          project_id,
+          metadata_key,
+          err
+        );
+        return 'Not found';
+      }
+    },
     listenProjectDB.bind(null, project_id, {since: 'now'}),
     true,
     [project_id, metadata_key],
