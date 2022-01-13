@@ -469,7 +469,7 @@ class RecordForm extends React.Component<
     return new_values;
   }
 
-  save(values: object) {
+  save(values: object, is_final_view :boolean ) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
@@ -534,12 +534,12 @@ class RecordForm extends React.Component<
         return result;
       })
       .then(result => {
-        // if a new record, redirect to the new record page to allow
-        // the user to rapidly add more records
         let redirecturl = this.props.project_id;
         let search = '';
         let state_pa = {};
-        if (this.props.revision_id === undefined) {
+        
+        if (this.props.revision_id === undefined&& is_final_view) {
+        // check if last page and draft
           const ori_search = window.location.search;
           const url_split = ori_search.split('&');
           const pathname = window.location.pathname;
@@ -598,6 +598,7 @@ class RecordForm extends React.Component<
           });
         }
         window.scrollTo(0, 0);
+       
       });
   }
 
@@ -768,7 +769,7 @@ class RecordForm extends React.Component<
               this.setTimeout(() => {
                 setSubmitting(false);
 
-                this.save(values);
+                this.save(values,is_final_view);
               }, 500);
             }}
           >
@@ -845,6 +846,10 @@ class RecordForm extends React.Component<
                       {this.state.activeStep <
                         ui_specification.viewsets[viewsetName].views.length -
                           1 && (
+                            <ButtonGroup
+                         color="primary"
+                         aria-label="contained primary button group"
+                       >
                         <Button
                           variant="outlined"
                           color="primary"
@@ -869,6 +874,34 @@ class RecordForm extends React.Component<
                           {'  '}
                           Continue{' '}
                         </Button>
+                           <Button
+                             type="submit"
+                             color={
+                               formProps.isSubmitting ? 'default' : 'primary'
+                             }
+                             variant="contained"
+                             disableElevation
+                             disabled={formProps.isSubmitting}
+                           >
+                             {formProps.isSubmitting
+                               ? !(this.props.revision_id === undefined)
+                                 ? 'Working...'
+                                 : 'Working...'
+                               : 'Save and Close'}
+                             {formProps.isSubmitting && (
+                               <CircularProgress
+                                 size={24}
+                                 style={{
+                                   position: 'absolute',
+                                   top: '50%',
+                                   left: '50%',
+                                   marginTop: -12,
+                                   marginLeft: -12,
+                                 }}
+                               />
+                             )}
+                           </Button>
+                       </ButtonGroup>
                       )}
                     </Grid>
                     {String(process.env.REACT_APP_SERVER) !== 'production' && (
