@@ -101,6 +101,7 @@ export function listenProjectInfo(
     project_id,
     (value, throw_error) => {
       const retval = listener();
+      console.error('listenProjectInfo', value, throw_error, retval);
       if (typeof retval === 'object' && retval !== null && 'catch' in retval) {
         (retval as {catch: (err: unknown) => unknown}).catch(throw_error);
       }
