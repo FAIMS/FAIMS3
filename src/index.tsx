@@ -20,11 +20,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
+import * as Sentry from '@sentry/react';
+import {Integrations} from '@sentry/tracing';
 
 import './index.css';
 import App from './App';
-// import {EFooter} from './footer';
+import {SENTRY_TOKEN} from './buildconfig';
 //import reportWebVitals from './reportWebVitals';
+
+Sentry.init({
+  dsn: SENTRY_TOKEN,
+  integrations: [new Integrations.BrowserTracing()],
+
+  // We recommend adjusting this value in production, or using tracesSampler
+  // for finer control
+  tracesSampleRate: 1.0,
+});
 
 ReactDOM.render(
   <React.StrictMode>

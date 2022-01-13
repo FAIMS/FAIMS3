@@ -246,6 +246,10 @@ function cluster_admin_group_name(): string {
   return name;
 }
 
+function sentry_token() {
+  return process.env.REACT_APP_SENTRY_TOKEN;
+}
+
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
@@ -261,3 +265,4 @@ export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
 export const SHOW_MINIFAUXTON = show_minifauxton();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
+export const SENTRY_TOKEN = sentry_token();
