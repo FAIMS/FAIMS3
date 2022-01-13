@@ -70,7 +70,7 @@
     "fast-json-stable-stringify": "2.1.0",
     "formik": "2.2.9",
     "formik-material-ui": "3.0.1",
-    "formik-material-ui-lab": "1.0.0-alpha.1",
+    "formik-material-ui-lab": "1.0.0-alpha.2",
     "graphviz-react": "1.2.0",
     "json-stable-stringify": "1.0.1",
     "jsonpointer": "5.0.0",
