@@ -870,6 +870,7 @@ class RecordForm extends React.Component<
                         </Button>
                       )}
                     </Grid>
+                    {String(process.env.REACT_APP_SERVER)!=='production'&&
                     <Grid item sm={6} xs={12}>
                       <BoxTab title={'Developer tool: form state'} />
                       <Box
@@ -906,7 +907,7 @@ class RecordForm extends React.Component<
                           </p>
                         </Box>
                       </Box>
-                    </Grid>
+                    </Grid>}
                   </Grid>
                 </Form>
               );
