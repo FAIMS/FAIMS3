@@ -147,12 +147,18 @@ export async function getHRID(
   revision: Revision
 ): Promise<string | null> {
   let hrid_name: string | null = null;
-  for (const possible_name of Object.keys(revision.avps)) {
-    if (possible_name.startsWith(HRID_STRING)) {
-      hrid_name = possible_name;
-      break;
+  try{
+    for (const possible_name of Object.keys(revision.avps)) {
+      if (possible_name.startsWith(HRID_STRING)) {
+        hrid_name = possible_name;
+        break;
+      }
     }
+  }catch{
+    console.error('Error');
+    return null;
   }
+  
   console.debug('hrid_name:', hrid_name);
   if (hrid_name === null) {
     console.warn('No HRID field found');
@@ -193,7 +199,8 @@ export async function listRecordMetadata(
       revision_ids.push(o.heads[0]);
     });
     const revisions = await getRevisions(project_id, revision_ids);
-
+    console.log('revisions++++++++=')
+    console.log(revisions)
     const out: RecordMetadataList = {};
     for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
@@ -217,7 +224,7 @@ export async function listRecordMetadata(
     console.debug('Record metadata list', out);
     return out;
   } catch (err) {
-    console.warn(err);
+    console.error(err);
     throw Error('failed to get metadata');
   }
 }
