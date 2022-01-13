@@ -411,6 +411,12 @@ export function listenProjectDB(
   return listenProject(
     active_id,
     (project, throw_error, meta_changed) => {
+      console.info(
+        'listenProjectDB changed',
+        project,
+        throw_error,
+        meta_changed
+      );
       if (meta_changed) {
         const changes = project.meta.local.changes(change_opts);
         changes.on('change', change_listener);
