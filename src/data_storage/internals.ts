@@ -198,7 +198,10 @@ export async function listRecordMetadata(
     for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
-      const hrid = (await getHRID(project_id, revision)) ?? record_id;
+      const hrid =
+        revision === undefined
+          ? record_id
+          : (await getHRID(project_id, revision)) ?? record_id;
       console.debug('hrid:', hrid);
       out[record_id] = {
         project_id: project_id,
