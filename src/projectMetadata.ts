@@ -48,7 +48,11 @@ export async function getProjectMetadata(
       }
       return file_list;
     } else if (doc.is_attachment && doc._attachments === undefined) {
-      console.error('Unable to load metadata attachments');
+      console.error(
+        'Unable to load metadata attachments',
+        project_id,
+        metadata_key
+      );
     }
     return doc.metadata;
   } catch (err) {

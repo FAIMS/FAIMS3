@@ -76,7 +76,9 @@ export async function get_local_autoincrement_state_for_field(
       return doc;
     }
     console.error(err);
-    throw Error('Unable to get local increment state');
+    throw Error(
+      'Unable to get local increment state: {project_id} {form_id} {field_id}'
+    );
   }
 }
 
@@ -86,7 +88,7 @@ export async function set_local_autoincrement_state_for_field(
   try {
     return await local_state_db.put(new_state);
   } catch (err) {
-    console.error(err);
+    console.error(err, new_state);
     throw Error('Unable to set local increment state');
   }
 }
@@ -168,7 +170,9 @@ export async function get_autoincrement_references_for_project(
       return [];
     }
     console.error(err);
-    throw Error('Unable to get local autoincrement references');
+    throw Error(
+      'Unable to get local autoincrement references for {project_id}'
+    );
   }
 }
 
