@@ -345,6 +345,13 @@ export function listenDataDB(
   return listenProject(
     active_id,
     (project, throw_error, _meta_changed, data_changed) => {
+      console.info(
+        'listenDataDB changed',
+        project,
+        throw_error,
+        _meta_changed,
+        data_changed
+      );
       if (data_changed) {
         const changes = project.meta.local.changes(change_opts);
         changes.on('change', change_listener);
@@ -373,7 +380,7 @@ export async function getProjectDB(
 ): Promise<PouchDB.Database<ProjectMetaObject>> {
   // Wait for all_projects_updated to possibly change before returning
   // error/data DB if it's ready.
-  waitForStateOnce(() => all_projects_updated);
+  await waitForStateOnce(() => all_projects_updated);
   if (active_id in metadata_dbs) {
     return metadata_dbs[active_id].local;
   } else {

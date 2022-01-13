@@ -494,7 +494,6 @@ class RecordForm extends React.Component<
       })
       .then(result => {
         console.log(result);
-        console.debug(result);
         const message =
           this.props.revision_id === undefined
             ? 'Record successfully created'
@@ -521,8 +520,7 @@ class RecordForm extends React.Component<
             severity: 'error',
           },
         });
-        console.warn(err);
-        console.error('Failed to save data');
+        console.error('Failed to save data', err);
       })
       //Clear the current draft area (Possibly after redirecting back to project page)
       .then(result => {

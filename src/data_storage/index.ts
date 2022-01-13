@@ -52,22 +52,6 @@ export function generateFAIMSDataID(): RecordID {
   return uuidv4();
 }
 
-// Commented as this does not work with the find below for some unknown reason
-//async function ensureRecordIndex(project_id: ProjectID) {
-//  const datadb = getDataDB(project_id);
-//  try {
-//    return datadb.createIndex({
-//      index: {
-//        fields: ['format_version'],
-//        name: RECORD_INDEX_NAME,
-//      },
-//    });
-//  } catch (err) {
-//    console.error(err);
-//    throw Error('Failed to create record index');
-//  }
-//}
-
 export async function getFirstRecordHead(
   project_id: ProjectID,
   record_id: RecordID
@@ -133,7 +117,7 @@ export async function listFAIMSRecordRevisions(
     const record = await getRecord(project_id, record_id);
     return record.revisions;
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to list data for id', record_id, err);
     throw Error(`failed to list data for id ${record_id}`);
   }
 }
@@ -151,7 +135,7 @@ export async function listFAIMSProjectRevisions(
     }
     return revmap;
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to list data in project', project_id, err);
     throw Error('failed to list data in project');
   }
 }
@@ -173,7 +157,13 @@ export async function deleteFAIMSDataForID(
       userid
     );
   } catch (err) {
-    console.warn(err);
+    console.warn(
+      'failed to delete data with id',
+      project_id,
+      record_id,
+      userid,
+      err
+    );
     throw Error('failed to delete data with id');
   }
 }
@@ -195,7 +185,13 @@ export async function undeleteFAIMSDataForID(
       userid
     );
   } catch (err) {
-    console.warn(err);
+    console.warn(
+      'failed to undelete data with id',
+      project_id,
+      record_id,
+      userid,
+      err
+    );
     throw Error('failed to undelete data with id');
   }
 }
@@ -293,8 +289,7 @@ export async function getHRIDforRecordID(
     const hrid = (await getHRID(project_id, revision)) ?? record_id;
     return hrid;
   } catch (err) {
-    console.debug(err);
-    console.warn('Failed to get hrid');
+    console.warn('Failed to get hrid', err);
     return record_id;
   }
 }
@@ -321,6 +316,7 @@ export async function getRecordsByType(
     });
     return records;
   } catch (err) {
+    // TODO: What are we doing here, why would things error?
     const records = await getAllRecordsOfType(project_id, type);
     console.warn(err);
     return records;

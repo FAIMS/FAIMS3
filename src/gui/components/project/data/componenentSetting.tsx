@@ -356,8 +356,8 @@ const getvalue = (
       fieldui['component-parameters'][view][name] ??
       fieldui['component-parameters'][view]['children']
     );
-  } catch {
-    console.error('error to get value:' + view + name);
+  } catch (err) {
+    console.error('error to get value:', view, name, err);
     return 'not get value' + view + name;
   }
 };

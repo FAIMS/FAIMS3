@@ -257,7 +257,7 @@ export async function listDraftMetadata(
     });
     return out;
   } catch (err) {
-    console.warn(err);
+    console.warn('Failed to get metadata', err);
     throw Error('failed to get metadata');
   }
 }

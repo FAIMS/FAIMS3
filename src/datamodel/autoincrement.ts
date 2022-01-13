@@ -75,9 +75,15 @@ export async function get_local_autoincrement_state_for_field(
       };
       return doc;
     }
-    console.error(err);
+    console.error(
+      'Unable to get local increment state:',
+      project_id,
+      form_id,
+      field_id,
+      err
+    );
     throw Error(
-      'Unable to get local increment state: {project_id} {form_id} {field_id}'
+      `Unable to get local increment state: ${project_id} ${form_id} ${field_id}`
     );
   }
 }
@@ -169,9 +175,13 @@ export async function get_autoincrement_references_for_project(
       // No autoincrementers
       return [];
     }
-    console.error(err);
+    console.error(
+      'Unable to get local autoincrement references for',
+      project_id,
+      err
+    );
     throw Error(
-      'Unable to get local autoincrement references for {project_id}'
+      `Unable to get local autoincrement references for ${project_id}`
     );
   }
 }
@@ -218,7 +228,7 @@ export async function add_autoincrement_reference_for_project(
         references: refs,
       });
     } else {
-      console.error(err);
+      console.error('Unable to add local autoincrement reference', err);
       throw Error('Unable to add local autoincrement reference');
     }
   }
@@ -245,7 +255,7 @@ export async function remove_autoincrement_reference_for_project(
     doc.references = Array.from(ref_set.values());
     await projdb.put(doc);
   } catch (err) {
-    console.error(err);
+    console.error('Unable to remove local autoincrement reference', err);
     throw Error('Unable to remove local autoincrement reference');
   }
 }
@@ -294,7 +304,7 @@ export async function get_user_friendly_status_for_project(
       statuses.push(status);
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error getting user friendly status', err);
   }
   return statuses;
 }
