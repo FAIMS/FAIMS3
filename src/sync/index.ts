@@ -157,6 +157,7 @@ export function listenProject(
   ) => 'keep' | 'noop' | ((replaced: boolean) => void),
   error_listener: (value: unknown) => any
 ): () => void {
+  console.error('listenProject 1');
   // This is an array to allow it to be read/writeable from closures
   const destructor: ['deleted' | 'initial' | ((replaced: boolean) => void)] = [
     'initial',
@@ -168,6 +169,7 @@ export function listenProject(
   /* Called when errors occur. Propagates to error_listener
   but also runs cleanup */
   const self_destruct = (err: unknown, detach = true) => {
+    console.error('listenProject 2');
     // Only call error_listener once
     if (current_error[0] === null) {
       current_error[0] = (err as null | {}) ?? (Error('undefined error') as {});
@@ -193,6 +195,7 @@ export function listenProject(
     _listing: unknown,
     active: ExistingActiveDoc
   ) => {
+    console.error('listenProject 3');
     if (project_id === active._id) {
       if (type[0] === 'delete') {
         // Run destructor when the createdProjectsInterface object is deleted.
@@ -247,6 +250,7 @@ export function listenProject(
   a Data DB that doesn't exist.
   */
   const all_state_cb = () => {
+    console.error('listenProject 4');
     if (all_projects_updated && destructor[0] === 'initial') {
       self_destruct(Error(`Project ${project_id} is not known`));
     } else if (all_projects_updated && destructor[0] === 'deleted') {
@@ -282,6 +286,7 @@ export function listenProject(
   };
 
   const detach_cb = () => {
+    console.error('listenProject 5');
     events.removeListener('project_update', project_update_cb);
     events.removeListener('all_state', all_state_cb);
     if (destructor[0] !== null && typeof destructor[0] === 'function') {
@@ -292,9 +297,11 @@ export function listenProject(
       }
     }
   };
+  console.error('listenProject 6');
 
   events.on('project_update', project_update_cb);
   events.on('all_state', all_state_cb);
+  console.error('listenProject 7');
 
   return detach_cb;
 }
