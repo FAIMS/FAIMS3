@@ -686,21 +686,31 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             </TabPanel>
           </Grid>
         )}
-        {String(process.env.REACT_APP_SERVER)!=='production'&&
-        <Grid item sm={6} xs={12}>
-          <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
-            <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
-          </Box>
-        </Grid>}
-        {String(process.env.REACT_APP_SERVER)!=='production'&&
-        <Grid item sm={6} xs={12}>
-          <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
-            <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
-          </Box>
-        </Grid>
-        }
+        {String(process.env.REACT_APP_SERVER) !== 'production' && (
+          <Grid item sm={6} xs={12}>
+            <Box
+              bgcolor={grey[200]}
+              pl={2}
+              pr={2}
+              style={{overflowX: 'scroll'}}
+            >
+              <pre>{JSON.stringify(projectvalue, null, 2)}</pre>
+            </Box>
+          </Grid>
+        )}
+        {String(process.env.REACT_APP_SERVER) !== 'production' && (
+          <Grid item sm={6} xs={12}>
+            <Box
+              bgcolor={grey[200]}
+              pl={2}
+              pr={2}
+              style={{overflowX: 'scroll'}}
+            >
+              <pre>{JSON.stringify(formuiSpec, null, 2)}</pre>
+            </Box>
+          </Grid>
+        )}
       </Grid>
     </div>
   );
 }
-

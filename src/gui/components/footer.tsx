@@ -31,7 +31,6 @@ import BoxTab from './ui/boxTab';
 import Link from '@material-ui/core/Link';
 
 export default function Footer() {
-  
   // This is a MASSIVE hack because react-router is dumb and can't seem to work
   // out that shadowing a web API and doing it wrong is a bad idea...
   // What this does is cause the component to rerender when the location
@@ -39,98 +38,122 @@ export default function Footer() {
   // version and can do things with it
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const location = useLocation();
-  const production=String(process.env.REACT_APP_SERVER);
+  const production = String(process.env.REACT_APP_SERVER);
   return (
     <Box bgcolor={grey[200]} mt={4} p={4}>
-      {production!=='production'?<DevelopTool />:<FundingFooter />}
+      {production !== 'production' ? <DevelopTool /> : <FundingFooter />}
     </Box>
   );
 }
 
-function FundingFooter(){
-  return(
+function FundingFooter() {
+  return (
     <>
-    <Box >     
-    <Grid container spacing={2}>
-      <Grid item xs={12} sm={12}>
-      <Typography variant={'h5'}> Our Partners
-      </Typography>
-      <br/>
-      </Grid>
-      <Grid item xs={12} sm={4}>
-        <img src={process.env.REACT_APP_PARTNER_LEFT??'/static/logo/partners/ARDC_logo_RGB.png'} style={{maxWidth: '100%'}} />
-      </Grid>
-      <Grid item xs={12} sm={4}>
-        <Typography variant={'body2'}>
-          {process.env.REACT_APP_FUNDING??
-        'The FAIMS 3.0 Electronic Field Notebooks project received investment (doi: 10.47486/PL110) from the Australian Research Data Commons (ARDC). The ARDC is funded by the National Collaborative Research Infrastructure Strategy (NCRIS).'
-        }
-        </Typography>
-      </Grid>
-      {/* <Grid item xs={12} sm={1}>
-       
-      </Grid> */}
-      <Grid item xs={12} sm={4}>
+      <Box>
         <Grid container spacing={2}>
-          <Grid item xs={4} sm={4}>
-          <img src={process.env.REACT_APP_PARTNER_1??'/static/logo/partners/CSIRO_Solid_RGB.png'} style={{maxWidth: '100%'}} />
+          <Grid item xs={12} sm={12}>
+            <Typography variant={'h5'}> Our Partners</Typography>
+            <br />
           </Grid>
-          <Grid item xs={4} sm={4}>
-          <img src={process.env.REACT_APP_PARTNER_2??'/static/logo/partners/MQ_INT_VER_RGB_POS-nomargin.jpeg'} style={{maxWidth: '100%'}} />
+          <Grid item xs={12} sm={4}>
+            <img
+              src={
+                process.env.REACT_APP_PARTNER_LEFT ??
+                '/static/logo/partners/ARDC_logo_RGB.png'
+              }
+              style={{maxWidth: '100%'}}
+            />
           </Grid>
-          <Grid item xs={4} sm={12}>
-              <Link href={process.env.REACT_APP_PARTNERS_HREF??'https://faims.edu.au/partners/'} variant="body2" target="_blank" rel="noreferrer">
-              {process.env.REACT_APP_PARTNERS_TEXT??'All FAIMS partners'}
-            </Link>
+          <Grid item xs={12} sm={4}>
+            <Typography variant={'body2'}>
+              {process.env.REACT_APP_FUNDING ??
+                'The FAIMS 3.0 Electronic Field Notebooks project received investment (doi: 10.47486/PL110) from the Australian Research Data Commons (ARDC). The ARDC is funded by the National Collaborative Research Infrastructure Strategy (NCRIS).'}
+            </Typography>
+          </Grid>
+          {/* <Grid item xs={12} sm={1}>
+
+      </Grid> */}
+          <Grid item xs={12} sm={4}>
+            <Grid container spacing={2}>
+              <Grid item xs={4} sm={4}>
+                <img
+                  src={
+                    process.env.REACT_APP_PARTNER_1 ??
+                    '/static/logo/partners/CSIRO_Solid_RGB.png'
+                  }
+                  style={{maxWidth: '100%'}}
+                />
+              </Grid>
+              <Grid item xs={4} sm={4}>
+                <img
+                  src={
+                    process.env.REACT_APP_PARTNER_2 ??
+                    '/static/logo/partners/MQ_INT_VER_RGB_POS-nomargin.jpeg'
+                  }
+                  style={{maxWidth: '100%'}}
+                />
+              </Grid>
+              <Grid item xs={4} sm={12}>
+                <Link
+                  href={
+                    process.env.REACT_APP_PARTNERS_HREF ??
+                    'https://faims.edu.au/partners/'
+                  }
+                  variant="body2"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {process.env.REACT_APP_PARTNERS_TEXT ?? 'All FAIMS partners'}
+                </Link>
+              </Grid>
+            </Grid>
           </Grid>
         </Grid>
-      </Grid>
-    </Grid>
-    </Box>
+      </Box>
     </>
-  )
+  );
 }
 
-function DevelopTool(){
+function DevelopTool() {
   const globalState = useContext(store);
-  return(
+  return (
     <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <code>
-            Alpha: {packageJson.name} v{packageJson.version} ({COMMIT_VERSION})
-          </code>
-          {name}
-          <Box mt={2}>
-            <Typography variant={'h6'}>Key</Typography>
-            <InProgress />
-          </Box>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <BoxTab
-            title={'Developer tool: react GlobalState'}
-            bgcolor={grey[100]}
-          />
-          <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}}>
-            <pre>
-              {JSON.stringify(
-                {
-                  ...globalState.state,
-                  alerts: globalState.state.alerts.map(alert => {
-                    if ('element' in alert) {
-                      // Alerts made with custom elements aren't JSON-stringifiable
-                      return alert.toString();
-                    } else {
-                      return alert; //Regular alert
-                    }
-                  }),
-                },
-                null,
-                2
-              )}
-            </pre>
-            Current URL: <pre>{window.location.href}</pre>
-          </Box>
-        </Grid>
+      <Grid item xs={12} sm={6}>
+        <code>
+          Alpha: {packageJson.name} v{packageJson.version} ({COMMIT_VERSION})
+        </code>
+        {name}
+        <Box mt={2}>
+          <Typography variant={'h6'}>Key</Typography>
+          <InProgress />
+        </Box>
       </Grid>
-  )
+      <Grid item xs={12} sm={6}>
+        <BoxTab
+          title={'Developer tool: react GlobalState'}
+          bgcolor={grey[100]}
+        />
+        <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}}>
+          <pre>
+            {JSON.stringify(
+              {
+                ...globalState.state,
+                alerts: globalState.state.alerts.map(alert => {
+                  if ('element' in alert) {
+                    // Alerts made with custom elements aren't JSON-stringifiable
+                    return alert.toString();
+                  } else {
+                    return alert; //Regular alert
+                  }
+                }),
+              },
+              null,
+              2
+            )}
+          </pre>
+          Current URL: <pre>{window.location.href}</pre>
+        </Box>
+      </Grid>
+    </Grid>
+  );
 }

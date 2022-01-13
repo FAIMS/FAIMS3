@@ -309,11 +309,6 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  let subtitle=props.project.created!==''&&props.project.created!==undefined&&props.project.created!=='Unknown'?'Created' +props.project.created:''
-  if(props.project.last_updated!==''&&props.project.last_updated!==undefined&&props.project.last_updated!=='Unknown') 
-  subtitle=subtitle + ', last record updated ' +
-  props.project.last_updated + '\xa0\xa0\xa0\xa0\xa0\xa0\xa0'
-  
 
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
