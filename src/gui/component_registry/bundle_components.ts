@@ -78,8 +78,17 @@ import {
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
-import {MapFormField} from '@faims-project/faims3-map-input';
-import {MapFieldBuilderSettings} from '../fields/TmpMapSettings';
+import {
+  MapFormField,
+  MapFieldUISetting,
+  MapFieldUISpec,
+} from '@faims-project/faims3-map-input';
+import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
+
+const MapFieldBuilderSettings = [
+  MapFieldUISetting(getDefaultuiSetting()),
+  MapFieldUISpec,
+];
 
 import {
   setAttachmentLoaderForType,
@@ -89,6 +98,7 @@ import {
   file_data_to_attachments,
   file_attachments_to_data,
 } from '../../data_storage/attachments';
+
 /*
  * This should be enough to make typescript/the build system happy
  */
@@ -337,6 +347,7 @@ registerComponent(
   )
 );
 // Mapping Plugin registration
+
 registerComponent(
   'mapping-plugin',
   'MapFormField',
