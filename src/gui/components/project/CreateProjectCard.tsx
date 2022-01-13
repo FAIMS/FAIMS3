@@ -697,7 +697,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             </Box>
           </Grid>
         )}
-        {String(process.env.REACT_APP_SERVER) !== 'production' && (
+        {String(process.env.REACT_APP_SERVER) === 'production' && (
           <Grid item sm={6} xs={12}>
             <Box
               bgcolor={grey[200]}

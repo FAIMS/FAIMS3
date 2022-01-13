@@ -872,6 +872,18 @@ const removefield = (
   newviews['views'][formuiview]['fields'] = newviews['views'][formuiview][
     'fields'
   ].filter((field: any) => field !== name);
+  //check if hrid
+  let hridname=''
+  newviews['views'][formuiview]['fields'].map((field:string)=>
+    field.startsWith('hrid')?newviews.fields[field]['component-parameters']['linked']===name?hridname=field:field:field
+  )
+  if(hridname!==''){
+    delete newviews.fields[hridname]
+    newviews['views'][formuiview]['fields'] = newviews['views'][formuiview][
+      'fields'
+    ].filter((field: any) => field !== hridname);
+  }
+  delete newviews.fields[name];
   return {newviews, components};
 };
 
