@@ -84,6 +84,7 @@ import {
   MapFieldUISpec,
 } from '@faims-project/faims3-map-input';
 import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
+import {RandomStyle,RandomStyleSetting} from '../fields/RamdomStyle';
 
 const MapFieldBuilderSettings = [
   MapFieldUISetting(getDefaultuiSetting()),
@@ -396,6 +397,21 @@ registerComponent(
     FileuploadSetting,
     Defaultcomponentsetting,
     getFileuploadBuilderIcon()
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'RandomStyle',
+  setupComponentProperties(
+    'Title',
+    'A sub Title for part',
+    'Special',
+    RandomStyle,
+    RandomStyleSetting[1],
+    RandomStyleSetting,
+    Defaultcomponentsetting,
+    getAutoBuilderIcon()
   )
 );
 
