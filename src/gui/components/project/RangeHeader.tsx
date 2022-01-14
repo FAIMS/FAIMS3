@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -49,6 +49,8 @@ export default function RangeHeader(props: {project: any}) {
     get_user_friendly_status_for_project(props.project.project_id).then(res =>
       setStatus(res)
     );
+
+    console.debug('Updating ranges for', props.project.project_id);
   }, [props.project.project_id]);
 
   return (

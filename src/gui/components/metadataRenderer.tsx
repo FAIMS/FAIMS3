@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -39,7 +39,19 @@ export default function MetadataRenderer(props: MetadataProps) {
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
   const metadata_value = useEventedPromise(
-    getProjectMetadata,
+    async (project_id: ProjectID, metadata_key: string) => {
+      try {
+        return await getProjectMetadata(project_id, metadata_key);
+      } catch (err) {
+        console.warn(
+          'Failed to get project metadata with key',
+          project_id,
+          metadata_key,
+          err
+        );
+        return 'Not found';
+      }
+    },
     listenProjectDB.bind(null, project_id, {since: 'now'}),
     true,
     [project_id, metadata_key],

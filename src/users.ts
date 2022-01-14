@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -41,7 +41,7 @@ export async function setTokenForCluster(token: string, cluster_id: string) {
   try {
     await local_auth_db.put({_id: cluster_id, token: token});
   } catch (err) {
-    console.warn(err);
+    console.warn('Failed to set token for', cluster_id, err);
     throw Error(`Failed to set token for: ${cluster_id}`);
   }
 }
@@ -53,8 +53,7 @@ export async function getTokenForCluster(
     const doc = await local_auth_db.get(cluster_id);
     return doc.token;
   } catch (err) {
-    console.debug(err);
-    console.warn('Token not found for:', cluster_id);
+    console.warn('Token not found for:', cluster_id, err);
     return undefined;
   }
 }
@@ -66,8 +65,7 @@ export async function getAuthMechianismsForListing(
     const doc = await directory_db.local.get(listing_id);
     return doc.auth_mechanisms;
   } catch (err) {
-    console.debug(err);
-    console.warn('AuthInfo not found for:', listing_id);
+    console.warn('AuthInfo not found for:', listing_id, err);
     return null;
   }
 }

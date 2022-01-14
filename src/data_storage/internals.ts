@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -205,7 +205,10 @@ export async function listRecordMetadata(
     for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
-      const hrid = (await getHRID(project_id, revision)) ?? record_id;
+      const hrid =
+        revision === undefined
+          ? record_id
+          : (await getHRID(project_id, revision)) ?? record_id;
       console.debug('hrid:', hrid);
       out[record_id] = {
         project_id: project_id,
@@ -224,7 +227,7 @@ export async function listRecordMetadata(
     console.debug('Record metadata list', out);
     return out;
   } catch (err) {
-    console.error(err);
+    console.warn('Failed to get metadata', err);
     throw Error('failed to get metadata');
   }
 }

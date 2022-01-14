@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -356,8 +356,8 @@ const getvalue = (
       fieldui['component-parameters'][view][name] ??
       fieldui['component-parameters'][view]['children']
     );
-  } catch {
-    console.error('error to get value:' + view + name);
+  } catch (err) {
+    console.error('error to get value:', view, name, err);
     return 'not get value' + view + name;
   }
 };

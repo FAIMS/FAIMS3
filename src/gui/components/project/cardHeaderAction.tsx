@@ -71,7 +71,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
   }
 
   if (ui_spec.loading || ui_spec.value === undefined) {
-    console.warn('Ui spec for', project_id, ui_spec);
+    console.debug('Ui spec for', project_id, ui_spec);
     return <CircularProgress thickness={2} size={12} />;
   }
   const viewsets = ui_spec.value.viewsets;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -500,7 +500,6 @@ class RecordForm extends React.Component<
       })
       .then(result => {
         console.log(result);
-        console.debug(result);
         const message =
           this.props.revision_id === undefined
             ? 'Record successfully created'
@@ -527,8 +526,7 @@ class RecordForm extends React.Component<
             severity: 'error',
           },
         });
-        console.warn(err);
-        console.error('Failed to save data');
+        console.error('Failed to save data', err);
       })
       //Clear the current draft area (Possibly after redirecting back to project page)
       .then(result => {

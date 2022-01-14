@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -75,8 +75,16 @@ export async function get_local_autoincrement_state_for_field(
       };
       return doc;
     }
-    console.error(err);
-    throw Error('Unable to get local increment state');
+    console.error(
+      'Unable to get local increment state:',
+      project_id,
+      form_id,
+      field_id,
+      err
+    );
+    throw Error(
+      `Unable to get local increment state: ${project_id} ${form_id} ${field_id}`
+    );
   }
 }
 
@@ -86,7 +94,7 @@ export async function set_local_autoincrement_state_for_field(
   try {
     return await local_state_db.put(new_state);
   } catch (err) {
-    console.error(err);
+    console.error(err, new_state);
     throw Error('Unable to set local increment state');
   }
 }
@@ -167,8 +175,14 @@ export async function get_autoincrement_references_for_project(
       // No autoincrementers
       return [];
     }
-    console.error(err);
-    throw Error('Unable to get local autoincrement references');
+    console.error(
+      'Unable to get local autoincrement references for',
+      project_id,
+      err
+    );
+    throw Error(
+      `Unable to get local autoincrement references for ${project_id}`
+    );
   }
 }
 
@@ -214,7 +228,7 @@ export async function add_autoincrement_reference_for_project(
         references: refs,
       });
     } else {
-      console.error(err);
+      console.error('Unable to add local autoincrement reference', err);
       throw Error('Unable to add local autoincrement reference');
     }
   }
@@ -241,7 +255,7 @@ export async function remove_autoincrement_reference_for_project(
     doc.references = Array.from(ref_set.values());
     await projdb.put(doc);
   } catch (err) {
-    console.error(err);
+    console.error('Unable to remove local autoincrement reference', err);
     throw Error('Unable to remove local autoincrement reference');
   }
 }
@@ -290,7 +304,7 @@ export async function get_user_friendly_status_for_project(
       statuses.push(status);
     }
   } catch (err) {
-    console.error(err);
+    console.error('Error getting user friendly status', err);
   }
   return statuses;
 }

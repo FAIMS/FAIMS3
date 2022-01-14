@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -44,7 +44,7 @@ export function split_full_project_id(
     splitid[0].trim() === '' ||
     splitid[1].trim() === ''
   ) {
-    throw Error('Not a valid full project id');
+    throw Error('{full_proj_id} is not a valid full project id.');
   }
   const cleaned_listing_id = splitid[0].replace('\\|\\|', '||');
   const cleaned_project_id = splitid[1].replace('\\|\\|', '||');

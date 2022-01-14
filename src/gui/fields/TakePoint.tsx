@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -90,7 +90,7 @@ export class TakePoint extends React.Component<
       console.debug('Take point coord', coordinates);
       this.props.form.setFieldValue(this.props.field.name, coordinates);
     } catch (err: any) {
-      console.error(err);
+      console.error('Failed to take point', err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }

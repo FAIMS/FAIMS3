@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -133,8 +133,7 @@ function directory_port(): number {
   try {
     return parseInt(port);
   } catch (err) {
-    console.error(err);
-    console.error('Falling back to default port');
+    console.error('Falling back to default port', err);
     return 5984;
   }
 }

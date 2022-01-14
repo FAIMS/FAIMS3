@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -78,9 +78,19 @@ import {
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
-import {MapFormField} from '@faims-project/faims3-map-input';
-import {MapFieldBuilderSettings} from '../fields/TmpMapSettings';
 import {RandomStyle,RandomStyleSetting} from '../fields/RamdomStyle';
+import {
+  MapFormField,
+  MapFieldUISetting,
+  MapFieldUISpec,
+} from '@faims-project/faims3-map-input';
+import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
+
+const MapFieldBuilderSettings = [
+  MapFieldUISetting(getDefaultuiSetting()),
+  MapFieldUISpec,
+];
+
 
 import {
   setAttachmentLoaderForType,
@@ -90,6 +100,7 @@ import {
   file_data_to_attachments,
   file_attachments_to_data,
 } from '../../data_storage/attachments';
+
 /*
  * This should be enough to make typescript/the build system happy
  */
@@ -338,6 +349,7 @@ registerComponent(
   )
 );
 // Mapping Plugin registration
+
 registerComponent(
   'mapping-plugin',
   'MapFormField',

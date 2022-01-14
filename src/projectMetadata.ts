@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -48,11 +48,15 @@ export async function getProjectMetadata(
       }
       return file_list;
     } else if (doc.is_attachment && doc._attachments === undefined) {
-      console.error('Unable to load metadata attachments');
+      console.error(
+        'Unable to load metadata attachments',
+        project_id,
+        metadata_key
+      );
     }
     return doc.metadata;
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to find metadata', err);
     throw Error('failed to find metadata');
   }
 }
@@ -81,7 +85,7 @@ export async function setProjectMetadata(
 
     await projdb.put(doc);
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to set metadata', err);
     throw Error('failed to set metadata');
   }
 }
@@ -111,7 +115,7 @@ export async function setProjectMetadataFiles(
 
     await projdb.put(doc);
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to set metadata', err);
     throw Error('failed to set metadata');
   }
 }

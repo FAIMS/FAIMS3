@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -70,7 +70,7 @@ export function listenProjectList(
   error: (err: any) => void
 ): () => void {
   events.on('project_update', listener);
-  console.debug(`${error} will never be called`);
+  console.warn(`${error} will never be called`);
   return () => {
     // Event remover
     events.removeListener('project_update', listener);
@@ -101,6 +101,7 @@ export function listenProjectInfo(
     project_id,
     (value, throw_error) => {
       const retval = listener();
+      console.error('listenProjectInfo', value, throw_error, retval);
       if (typeof retval === 'object' && retval !== null && 'catch' in retval) {
         (retval as {catch: (err: unknown) => unknown}).catch(throw_error);
       }
@@ -109,10 +110,6 @@ export function listenProjectInfo(
     error
   );
 }
-
-//export function updateProject(project_id: ProjectID) {}
-
-//export function removeProject(project_id: ProjectID) {}
 
 export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
   const all_listings = await getAllListings();

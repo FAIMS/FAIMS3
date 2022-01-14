@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -347,9 +347,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       add_autoince_refereence(autoincrecs);
     } catch (err) {
       console.error(
-        'databases needs cleaning value not saved...' + res + project_id
+        'databases needs cleaning value not saved...',
+        res,
+        project_id,
+        err
       );
-      console.error(err);
     }
   };
 
@@ -371,12 +373,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           console.log(initialValues);
         }
       } catch (error) {
-        console.error('DO not get the meta data...');
-        console.debug(error);
+        console.error('DO not get the meta data...', error);
       }
     } catch (err) {
-      console.error('databases not created...');
-      console.log(err);
+      console.error('databases not created...', err);
     }
   };
 
@@ -389,8 +389,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           projectvalue.attachments
         );
     } catch (err) {
-      console.error('databases needs cleaning for save attachment error...');
-      console.debug(err);
+      console.error(
+        'databases needs cleaning for save attachment error...',
+        err
+      );
     }
   };
 
@@ -408,8 +410,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           if (project_id !== null)
             await setProjectMetadata(project_id, key, values[key]);
         } catch (err) {
-          console.error('databases needs cleaning for update error...');
-          console.debug(err);
+          console.error('databases needs cleaning for update error...', err);
         }
       }
 
@@ -422,14 +423,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             pvlues.projectvalue
           );
       } catch (err) {
-        console.error('databases needs cleaning for update error...');
-        console.debug(err);
+        console.error('databases needs cleaning for update error...', err);
       }
 
       saveattachement(projectvalue);
     } catch (err) {
-      console.error('databases not created...');
-      console.log(err);
+      console.error('databases not created...', err);
     }
   };
 
@@ -479,8 +478,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       }
       await new Promise(resolve => setTimeout(resolve, 2000));
       console.log(project_id);
-    } catch {
-      console.error('not saved meta data');
+    } catch (err) {
+      console.error('not saved meta data', err);
     }
 
     if (
@@ -492,8 +491,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
     try {
       updateproject(projectvalue, PROJECT_META);
-    } catch {
-      console.error('not saved meta data');
+    } catch (err) {
+      console.error('not saved meta data', err);
     }
   };
 
@@ -507,8 +506,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       newvalue['project_status'] = 'pending';
       setProjectValue({...newvalue});
       updateproject(newvalue, ['isrequest', 'project_status']);
-    } catch {
-      console.error('not saved meta data');
+    } catch (err) {
+      console.error('not saved meta data', err);
     }
     alert('Request Send!');
   };

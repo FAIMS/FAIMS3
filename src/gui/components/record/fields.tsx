@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -24,25 +24,19 @@ import {Field, FormikProps} from 'formik';
 import {Box} from '@material-ui/core';
 
 import {getComponentByName} from '../../component_registry';
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 export function getComponentFromFieldConfig(
   fieldConfig: any,
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>
 ) {
-  // console.log('getComponentFromFieldConfig');
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
   let Component: React.Component;
-  const handler = (event: any) => {
-    console.log(event);
-  };
   try {
     Component = getComponentByName(namespace, name);
   } catch (err) {
-    // console.debug(err);
-    // console.warn(`Failed to load component ${namespace}::${name}`);
+    console.warn(`Failed to load component ${namespace}::${name}`, err);
     return undefined;
   }
   return (
