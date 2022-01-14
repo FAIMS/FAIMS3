@@ -78,13 +78,14 @@ import {
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
+import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
+
 import {
   MapFormField,
   MapFieldUISetting,
   MapFieldUISpec,
 } from '@faims-project/faims3-map-input';
 import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
-import {RandomStyle,RandomStyleSetting} from '../fields/RamdomStyle';
 
 const MapFieldBuilderSettings = [
   MapFieldUISetting(getDefaultuiSetting()),

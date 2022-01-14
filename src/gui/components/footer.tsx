@@ -41,7 +41,8 @@ export default function Footer() {
   const production = String(process.env.REACT_APP_SERVER);
   return (
     <Box bgcolor={grey[200]} mt={4} p={4}>
-      {production !== 'production' ? <DevelopTool /> : <FundingFooter />}
+      <FundingFooter />
+      {production === 'developer' && <DevelopTool />}
     </Box>
   );
 }

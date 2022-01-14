@@ -42,12 +42,12 @@ function base64image_to_blob(image: CameraPhoto): Blob {
 }
 
 interface Props {
-  helperText?:string;
-  label?:string;
+  helperText?: string;
+  label?: string;
 }
 export class TakePhoto extends React.Component<
   FieldProps &
-  Props&
+    Props &
     ButtonProps & {
       ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
       ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
@@ -101,7 +101,9 @@ export class TakePhoto extends React.Component<
             await this.takePhoto();
           }}
         >
-          {this.props.label!==undefined&&this.props.label!==''?this.props.label:'Take Photo'}
+          {this.props.label !== undefined && this.props.label !== ''
+            ? this.props.label
+            : 'Take Photo'}
         </Button>
         {image_tag_list ? (
           <ul>
@@ -128,7 +130,7 @@ const uiSpec = {
     id: 'take-photo-field',
     helperText: 'Take a photo',
     variant: 'outlined',
-    label:'Take Photo'
+    label: 'Take Photo',
   },
   validationSchema: [['yup.object'], ['yup.nullable']],
   initialValue: null,
@@ -136,10 +138,7 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = [
-    'label',
-    'helperText',
-  ];
+  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
   newuiSetting['viewsets'] = {
     settings: {
       views: ['FormParamater'],

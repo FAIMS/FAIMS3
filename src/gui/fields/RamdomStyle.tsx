@@ -21,23 +21,24 @@
 import React from 'react';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
-import { Typography } from '@material-ui/core';
+import {Typography} from '@material-ui/core';
 
 interface Props {
-  helperText?:string;
-  label?:string;
-  variant_style:any;
-  html_tag:any;
+  helperText?: string;
+  label?: string;
+  variant_style: any;
+  html_tag: any;
 }
 
-export class RandomStyle extends React.Component<Props > {
-
+export class RandomStyle extends React.Component<Props> {
   render() {
     return (
       <div>
-      <Typography variant={this.props.variant_style}>{this.props.label}</Typography>
-      <Typography variant='caption'>{this.props.helperText}</Typography>
-      <div dangerouslySetInnerHTML={{__html: this.props.html_tag}} />
+        <Typography variant={this.props.variant_style}>
+          {this.props.label}
+        </Typography>
+        <Typography variant="caption">{this.props.helperText}</Typography>
+        <div dangerouslySetInnerHTML={{__html: this.props.html_tag}} />
       </div>
     );
   }
@@ -51,9 +52,9 @@ const uiSpec = {
     fullWidth: true,
     helperText: 'This is sub Title',
     variant: 'outlined',
-    label:'Core 1',
+    label: 'Core 1',
     variant_style: 'h5',
-    html_tag:'',
+    html_tag: '',
   },
   validationSchema: [['yup.string']],
   initialValue: '',
@@ -69,7 +70,7 @@ const uiSetting = () => {
       fullWidth: true,
       helperText: '',
       variant: 'outlined',
-      required: true,
+      required: false,
       select: true,
       InputProps: {},
       SelectProps: {},
@@ -117,10 +118,10 @@ const uiSetting = () => {
         label: 'Select Style of Title',
       },
     },
-    validationSchema: [['yup.string'], ['yup.required']],
+    validationSchema: [['yup.string']],
     initialValue: 'faims-core::Child',
   };
-  newuiSetting['fields']['html_tag']= {
+  newuiSetting['fields']['html_tag'] = {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::String',
@@ -128,7 +129,8 @@ const uiSetting = () => {
       variant: 'outlined',
       required: false,
       fullWidth: true,
-      helperText: 'if you want html tag ONLY, leave the label empty and input the html tag',
+      helperText:
+        'if you want html tag ONLY, leave the label empty and input the html tag',
       InputLabelProps: {
         label: 'html_tag',
       },
@@ -137,13 +139,13 @@ const uiSetting = () => {
     alert: false,
     validationSchema: [['yup.string']],
     initialValue: '',
-  }
+  };
 
   newuiSetting['views']['FormParamater']['fields'] = [
     'label',
     'helperText',
     'variant_style',
-    'html_tag'
+    'html_tag',
   ];
   newuiSetting['viewsets'] = {
     settings: {

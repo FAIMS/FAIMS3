@@ -56,8 +56,8 @@ interface Props {
   timeout?: number;
   maximumAge?: number;
   instruction_text?: string;
-  helperText?:string;
-  label?:string;
+  helperText?: string;
+  label?: string;
 }
 
 export class TakePoint extends React.Component<
@@ -119,7 +119,11 @@ export class TakePoint extends React.Component<
     }
     return (
       <div>
-        <p>{this.props.helperText!==undefined&&this.props.helperText!==''?this.props.helperText:instruction_text}</p>
+        <p>
+          {this.props.helperText !== undefined && this.props.helperText !== ''
+            ? this.props.helperText
+            : instruction_text}
+        </p>
         <Button
           variant="outlined"
           color={'primary'}
@@ -131,7 +135,9 @@ export class TakePoint extends React.Component<
             await this.takePoint();
           }}
         >
-          {this.props.label!==undefined&&this.props.label!==''?this.props.label:'Take Point'}
+          {this.props.label !== undefined && this.props.label !== ''
+            ? this.props.label
+            : 'Take Point'}
         </Button>
         {postext}
         {error_text}
@@ -150,7 +156,7 @@ const uiSpec = {
     id: 'take-point-field',
     helperText: 'Click to save current location',
     variant: 'outlined',
-    label:'Take point',
+    label: 'Take point',
   },
   validationSchema: [['yup.object'], ['yup.nullable']],
   initialValue: null,
@@ -158,10 +164,7 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = [
-    'label',
-    'helperText',
-  ];
+  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
   newuiSetting['viewsets'] = {
     settings: {
       views: ['FormParamater'],

@@ -24,30 +24,34 @@ import Button, {ButtonProps} from '@material-ui/core/Button';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 interface Props {
-  helperText?:string;
-  label?:string;
+  helperText?: string;
+  label?: string;
 }
 
-export class ActionButton extends React.Component<FieldProps & Props & ButtonProps> {
+export class ActionButton extends React.Component<
+  FieldProps & Props & ButtonProps
+> {
   clickThis() {
     this.props.form.setFieldValue(this.props.field.name, 'Change!');
   }
   render() {
     return (
       <div>
-      <p>{this.props.helperText}</p>
-      <Button
-        variant="outlined"
-        color={'primary'}
-        {...this.props}
-        // Props from the metadata db will overwrite the above
-        // style attributes, but not overwrite the below onclick.
-        onClick={() => {
-          this.clickThis();
-        }}
-      >
-        {this.props.label!==undefined&&this.props.label!==''?this.props.label:'Action!'}
-      </Button>
+        <p>{this.props.helperText}</p>
+        <Button
+          variant="outlined"
+          color={'primary'}
+          {...this.props}
+          // Props from the metadata db will overwrite the above
+          // style attributes, but not overwrite the below onclick.
+          onClick={() => {
+            this.clickThis();
+          }}
+        >
+          {this.props.label !== undefined && this.props.label !== ''
+            ? this.props.label
+            : 'Action!'}
+        </Button>
       </div>
     );
   }
@@ -61,7 +65,7 @@ const uiSpec = {
     fullWidth: true,
     helperText: 'Click To Take Action!',
     variant: 'outlined',
-    label:'Action!',
+    label: 'Action!',
   },
   validationSchema: [['yup.string']],
   initialValue: 'hello',
@@ -69,10 +73,7 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = [
-    'label',
-    'helperText',
-  ];
+  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
   newuiSetting['viewsets'] = {
     settings: {
       views: ['FormParamater'],
