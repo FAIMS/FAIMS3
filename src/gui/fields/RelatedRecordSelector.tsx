@@ -42,7 +42,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {useLocation, Link} from 'react-router-dom';
-import { Typography } from '@material-ui/core';
+import {Typography} from '@material-ui/core';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
@@ -52,7 +52,7 @@ interface Props {
   id: string;
   InputLabelProps: {label: string};
   required: boolean;
-  helperText?:string;
+  helperText?: string;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -133,7 +133,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           New Record
         </Button>
       )}
-      <Typography variant='caption'>{props.helperText}</Typography>
+      <Typography variant="caption">{props.helperText}</Typography>
     </div>
   );
 }

@@ -469,7 +469,7 @@ class RecordForm extends React.Component<
     return new_values;
   }
 
-  save(values: object, is_final_view :boolean ) {
+  save(values: object, is_final_view: boolean) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
@@ -537,9 +537,9 @@ class RecordForm extends React.Component<
         let redirecturl = this.props.project_id;
         let search = '';
         let state_pa = {};
-        
-        if (this.props.revision_id === undefined&& is_final_view) {
-        // check if last page and draft
+
+        if (this.props.revision_id === undefined && is_final_view) {
+          // check if last page and draft
           const ori_search = window.location.search;
           const url_split = ori_search.split('&');
           const pathname = window.location.pathname;
@@ -598,7 +598,6 @@ class RecordForm extends React.Component<
           });
         }
         window.scrollTo(0, 0);
-       
       });
   }
 
@@ -769,7 +768,7 @@ class RecordForm extends React.Component<
               this.setTimeout(() => {
                 setSubmitting(false);
 
-                this.save(values,is_final_view);
+                this.save(values, is_final_view);
               }, 500);
             }}
           >
@@ -846,65 +845,65 @@ class RecordForm extends React.Component<
                       {this.state.activeStep <
                         ui_specification.viewsets[viewsetName].views.length -
                           1 && (
-                            <ButtonGroup
-                         color="primary"
-                         aria-label="contained primary button group"
-                       >
-                        <Button
-                          variant="outlined"
+                        <ButtonGroup
                           color="primary"
-                          onClick={() => {
-                            console.log(this.state.activeStep);
-                            const stepnum = this.state.activeStep + 1;
-                            console.log(
-                              ui_specification.viewsets[viewsetName].views[
-                                stepnum
-                              ]
-                            );
-
-                            this.setState({
-                              activeStep: stepnum,
-                              view_cached:
+                          aria-label="contained primary button group"
+                        >
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => {
+                              console.log(this.state.activeStep);
+                              const stepnum = this.state.activeStep + 1;
+                              console.log(
                                 ui_specification.viewsets[viewsetName].views[
                                   stepnum
-                                ],
-                            });
-                          }}
-                        >
-                          {'  '}
-                          Continue{' '}
-                        </Button>
-                           <Button
-                             type="submit"
-                             color={
-                               formProps.isSubmitting ? 'default' : 'primary'
-                             }
-                             variant="contained"
-                             disableElevation
-                             disabled={formProps.isSubmitting}
-                           >
-                             {formProps.isSubmitting
-                               ? !(this.props.revision_id === undefined)
-                                 ? 'Working...'
-                                 : 'Working...'
-                               : 'Save and Close'}
-                             {formProps.isSubmitting && (
-                               <CircularProgress
-                                 size={24}
-                                 style={{
-                                   position: 'absolute',
-                                   top: '50%',
-                                   left: '50%',
-                                   marginTop: -12,
-                                   marginLeft: -12,
-                                 }}
-                               />
-                             )}
-                           </Button>
-                       </ButtonGroup>
+                                ]
+                              );
+
+                              this.setState({
+                                activeStep: stepnum,
+                                view_cached:
+                                  ui_specification.viewsets[viewsetName].views[
+                                    stepnum
+                                  ],
+                              });
+                            }}
+                          >
+                            {'  '}
+                            Continue{' '}
+                          </Button>
+                          <Button
+                            type="submit"
+                            color={
+                              formProps.isSubmitting ? 'default' : 'primary'
+                            }
+                            variant="contained"
+                            disableElevation
+                            disabled={formProps.isSubmitting}
+                          >
+                            {formProps.isSubmitting
+                              ? !(this.props.revision_id === undefined)
+                                ? 'Working...'
+                                : 'Working...'
+                              : 'Save and Close'}
+                            {formProps.isSubmitting && (
+                              <CircularProgress
+                                size={24}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  marginTop: -12,
+                                  marginLeft: -12,
+                                }}
+                              />
+                            )}
+                          </Button>
+                        </ButtonGroup>
                       )}
                     </Grid>
-                    {String(process.env.REACT_APP_SERVER) === 'production' && (
+                    {String(process.env.REACT_APP_SERVER) === 'developer' && (
                       <Grid item sm={6} xs={12}>
                         <BoxTab title={'Developer tool: form state'} />
                         <Box
