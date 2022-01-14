@@ -906,7 +906,7 @@ class RecordForm extends React.Component<
                        </ButtonGroup>
                       )}
                     </Grid>
-                    {String(process.env.REACT_APP_SERVER) !== 'production' && (
+                    {String(process.env.REACT_APP_SERVER) === 'production' && (
                       <Grid item sm={6} xs={12}>
                         <BoxTab title={'Developer tool: form state'} />
                         <Box

@@ -42,6 +42,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {useLocation, Link} from 'react-router-dom';
+import { Typography } from '@material-ui/core';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
@@ -51,6 +52,7 @@ interface Props {
   id: string;
   InputLabelProps: {label: string};
   required: boolean;
+  helperText?:string;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -131,6 +133,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           New Record
         </Button>
       )}
+      <Typography variant='caption'>{props.helperText}</Typography>
     </div>
   );
 }
@@ -141,7 +144,7 @@ const uiSpec = {
   'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
   'component-parameters': {
     fullWidth: true,
-    helperText: 'Select a Form or Field',
+    helperText: 'Select or Add new related record',
     variant: 'outlined',
     required: true,
     related_type: '',
@@ -236,6 +239,7 @@ const uiSetting = () => {
   };
 
   newuiSetting['views']['FormParamater']['fields'] = [
+    'helperText',
     'related_type',
     'relation_type',
     'multiple',

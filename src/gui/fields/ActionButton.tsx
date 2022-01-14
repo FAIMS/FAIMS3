@@ -23,12 +23,19 @@ import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@material-ui/core/Button';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
-export class ActionButton extends React.Component<FieldProps & ButtonProps> {
+interface Props {
+  helperText?:string;
+  label?:string;
+}
+
+export class ActionButton extends React.Component<FieldProps & Props & ButtonProps> {
   clickThis() {
     this.props.form.setFieldValue(this.props.field.name, 'Change!');
   }
   render() {
     return (
+      <div>
+      <p>{this.props.helperText}</p>
       <Button
         variant="outlined"
         color={'primary'}
@@ -39,8 +46,9 @@ export class ActionButton extends React.Component<FieldProps & ButtonProps> {
           this.clickThis();
         }}
       >
-        Action!
+        {this.props.label!==undefined&&this.props.label!==''?this.props.label:'Action!'}
       </Button>
+      </div>
     );
   }
 }
@@ -51,8 +59,9 @@ const uiSpec = {
   'type-returned': 'faims-core::String', // matches a type in the Project Model
   'component-parameters': {
     fullWidth: true,
-    helperText: 'Take Action!',
+    helperText: 'Click To Take Action!',
     variant: 'outlined',
+    label:'Action!',
   },
   validationSchema: [['yup.string']],
   initialValue: 'hello',
@@ -60,9 +69,13 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['views']['FormParamater']['fields'] = [
+    'label',
+    'helperText',
+  ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: [],
+      views: ['FormParamater'],
       label: 'settings',
     },
   };
