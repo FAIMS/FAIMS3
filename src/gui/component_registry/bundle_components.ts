@@ -80,6 +80,7 @@ import {
 // Mapping plugin imports
 import {MapFormField} from '@faims-project/faims3-map-input';
 import {MapFieldBuilderSettings} from '../fields/TmpMapSettings';
+import {RandomStyle,RandomStyleSetting} from '../fields/RamdomStyle';
 
 import {
   setAttachmentLoaderForType,
@@ -385,6 +386,21 @@ registerComponent(
     FileuploadSetting,
     Defaultcomponentsetting,
     getFileuploadBuilderIcon()
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'RandomStyle',
+  setupComponentProperties(
+    'Title',
+    'A sub Title for part',
+    'Special',
+    RandomStyle,
+    RandomStyleSetting[1],
+    RandomStyleSetting,
+    Defaultcomponentsetting,
+    getAutoBuilderIcon()
   )
 );
 
