@@ -30,7 +30,7 @@ export class DebugEmitter extends EventEmitter {
     super(opts);
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
-    console.debug(event, ...args);
+    console.debug('FAIMS EventEmitter event', event, ...args);
     return super.emit(event, ...args);
   }
 }
@@ -68,10 +68,10 @@ export interface DirectoryEmitter extends EventEmitter {
     listener: (syncing: boolean, ...args: ProjectEventInfo) => unknown
   ): this;
   /**
-   * Tracks cahnges to createdProjects from state.ts
+   * Tracks changes to createdProjects from state.ts
    * Guaranteed to trigger for each project in a listing before the listing's
    * projects_sync_state event is triggered with syncing: false,
-   * and before any changes might start occuring (so you can attach to .changes
+   * and before any changes might start occurring (so you can attach to .changes
    * and not miss anything)
    *
    * Also, if the data db in createdProjects[active._id] is new (i.e.
@@ -113,7 +113,7 @@ export interface DirectoryEmitter extends EventEmitter {
   /**
    * Tracks changes to createdListings from state.ts
    * Guaranteed to trigger before listings_sync_state is set to syncing: false,
-   * and before any changes might start occuring (so you can attach to .changes
+   * and before any changes might start occurring (so you can attach to .changes
    * and not miss anything)
    *
    * Also, if the projects db in createdListings[listing._id] is new (i.e.

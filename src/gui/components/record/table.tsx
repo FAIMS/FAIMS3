@@ -190,6 +190,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
 
   const rows = useEventedPromise(
     async (project_id: ProjectID) => {
+      console.debug('RecordsBrowseTable updating', project_id);
       return await getMetadataForAllRecords(project_id, filter_deleted);
     },
     listenDataDB.bind(null, project_id, {since: 'now', live: true}),

@@ -147,16 +147,11 @@ export async function getHRID(
   revision: Revision
 ): Promise<string | null> {
   let hrid_name: string | null = null;
-  try {
-    for (const possible_name of Object.keys(revision.avps)) {
-      if (possible_name.startsWith(HRID_STRING)) {
-        hrid_name = possible_name;
-        break;
-      }
+  for (const possible_name of Object.keys(revision.avps)) {
+    if (possible_name.startsWith(HRID_STRING)) {
+      hrid_name = possible_name;
+      break;
     }
-  } catch {
-    console.error('Error');
-    return null;
   }
 
   console.debug('hrid_name:', hrid_name);
@@ -190,6 +185,7 @@ export async function listRecordMetadata(
   record_ids: RecordID[] | null = null
 ): Promise<RecordMetadataList> {
   try {
+    const out: RecordMetadataList = {};
     const records =
       record_ids === null
         ? await getAllRecords(project_id)
@@ -198,13 +194,25 @@ export async function listRecordMetadata(
     records.forEach(o => {
       revision_ids.push(o.heads[0]);
     });
+    if (revision_ids.length === 0) {
+      // No records, so return early
+      return out;
+    }
     const revisions = await getRevisions(project_id, revision_ids);
-    console.log('revisions++++++++=');
-    console.log(revisions);
-    const out: RecordMetadataList = {};
+
     for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
+      if (revision === undefined) {
+        // We don't have that revision, so skip
+        console.warn(
+          'Unable to find revision',
+          project_id,
+          record_id,
+          revision_id
+        );
+        continue;
+      }
       const hrid =
         revision === undefined
           ? record_id
