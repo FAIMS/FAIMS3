@@ -56,6 +56,8 @@ interface Props {
   timeout?: number;
   maximumAge?: number;
   instruction_text?: string;
+  helperText?: string;
+  label?: string;
 }
 
 export class TakePoint extends React.Component<
@@ -88,7 +90,7 @@ export class TakePoint extends React.Component<
       console.debug('Take point coord', coordinates);
       this.props.form.setFieldValue(this.props.field.name, coordinates);
     } catch (err: any) {
-      console.error(err);
+      console.error('Failed to take point', err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
@@ -117,7 +119,11 @@ export class TakePoint extends React.Component<
     }
     return (
       <div>
-        <p>{instruction_text}</p>
+        <p>
+          {this.props.helperText !== undefined && this.props.helperText !== ''
+            ? this.props.helperText
+            : instruction_text}
+        </p>
         <Button
           variant="outlined"
           color={'primary'}
@@ -129,7 +135,9 @@ export class TakePoint extends React.Component<
             await this.takePoint();
           }}
         >
-          Take Point
+          {this.props.label !== undefined && this.props.label !== ''
+            ? this.props.label
+            : 'Take Point'}
         </Button>
         {postext}
         {error_text}
@@ -146,8 +154,9 @@ const uiSpec = {
     fullWidth: true,
     name: 'take-point-field',
     id: 'take-point-field',
-    helperText: 'Get position',
+    helperText: 'Click to save current location',
     variant: 'outlined',
+    label: 'Take point',
   },
   validationSchema: [['yup.object'], ['yup.nullable']],
   initialValue: null,
@@ -155,9 +164,10 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
   newuiSetting['viewsets'] = {
     settings: {
-      views: [],
+      views: ['FormParamater'],
       label: 'settings',
     },
   };

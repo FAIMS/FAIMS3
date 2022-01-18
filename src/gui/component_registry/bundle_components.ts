@@ -78,6 +78,8 @@ import {
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
+import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
+
 import {
   MapFormField,
   MapFieldUISetting,
@@ -396,6 +398,21 @@ registerComponent(
     FileuploadSetting,
     Defaultcomponentsetting,
     getFileuploadBuilderIcon()
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'RandomStyle',
+  setupComponentProperties(
+    'Title',
+    'A sub Title for part',
+    'Special',
+    RandomStyle,
+    RandomStyleSetting[1],
+    RandomStyleSetting,
+    Defaultcomponentsetting,
+    getAutoBuilderIcon()
   )
 );
 

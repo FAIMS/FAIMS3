@@ -81,7 +81,12 @@ export default function DashboardActions(props: DashboardActionProps) {
       const project_list_detach = listenProjectList(trig, err);
       const individual_project_detachs = pouchProjectList.map(project_info => {
         const project_id = project_info.project_id;
-        return listenProjectDB(project_id, {since: 'now'}, trig, err);
+        return listenProjectDB(
+          project_id,
+          {since: 'now', live: true},
+          trig,
+          err
+        );
       });
       return () => {
         project_list_detach();

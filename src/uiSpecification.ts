@@ -43,7 +43,7 @@ export async function getUiSpecForProject(
       visible_types: encUIInfo.visible_types,
     };
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to find ui specification for', project_id, err);
     throw Error(`failed to find ui specification for ${project_id}`);
   }
 }
@@ -66,14 +66,14 @@ export async function setUiSpecForProject(
   } catch (err: any) {
     // Probably no existing UI info
     if (err?.status !== 404) {
-      console.debug(err);
+      console.debug('Failed to set UI specification for', project_id, err);
     }
   }
 
   try {
     return await projdb.put(encUIInfo);
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to set ui specification', err);
     throw Error('failed to set ui specification');
   }
 }
@@ -126,7 +126,7 @@ export async function dumpMetadataDBContents(
     }
     return docs;
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to dump meta db for', project_id, err);
     throw Error(`failed to dump meta db for ${project_id}`);
   }
 }

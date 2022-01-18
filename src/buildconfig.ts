@@ -133,8 +133,7 @@ function directory_port(): number {
   try {
     return parseInt(port);
   } catch (err) {
-    console.error(err);
-    console.error('Falling back to default port');
+    console.error('Falling back to default port', err);
     return 5984;
   }
 }

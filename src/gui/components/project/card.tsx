@@ -343,12 +343,7 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
                 </div>
               </React.Fragment>
             }
-            subheader={
-              'Created' +
-              project.created +
-              ', last record updated ' +
-              project.last_updated
-            }
+            subheader={<RangeHeader project={project} />}
           />
           <CardContent style={{paddingTop: 0}}>
             <Box mb={2}>

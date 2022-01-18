@@ -189,7 +189,7 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
 export function useEventedPromise<A extends Array<unknown>, V>(
   startGetting: (...args: A) => Promise<V>,
   startListening: (
-    trigger_callback: () => void,
+    trigger_callback: (...args: any) => void,
     error_callback: (error: {}) => void
   ) => void | (() => void), //<- Destructor to detach
   stopAtError: boolean,
@@ -247,7 +247,8 @@ export function useEventedPromise<A extends Array<unknown>, V>(
     }
   };
 
-  const start_waiting_safe = () => {
+  const start_waiting_safe = (...waiter_args: any[]) => {
+    console.debug('start_waiting_safe args', waiter_args);
     // Don't do anything if we stopped for an error
     if (state.error !== undefined && stopAtError) {
       return;
@@ -262,6 +263,7 @@ export function useEventedPromise<A extends Array<unknown>, V>(
         promise_error_callback(triggerCount.current)
       );
     } catch (err: any) {
+      console.debug('useEventedPromise start_waiting_safe error', err);
       promise_value_callback(triggerCount.current)(err);
     }
   };

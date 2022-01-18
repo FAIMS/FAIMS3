@@ -130,7 +130,10 @@ class RecordForm extends React.Component<
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
 
-  async componentDidUpdate(prevProps: RecordFormProps) {
+  async componentDidUpdate(
+    prevProps: RecordFormProps,
+    prevState: RecordFormState
+  ) {
     if (
       prevProps.project_id !== this.props.project_id ||
       // prevProps.record_id !== this.props.record_id ||
@@ -150,6 +153,9 @@ class RecordForm extends React.Component<
       });
       // Re-initialize basically everything.
       this.formChanged(true);
+    }
+    if (prevState.view_cached !== this.state.view_cached) {
+      window.scrollTo(0, 0);
     }
   }
 
@@ -463,7 +469,7 @@ class RecordForm extends React.Component<
     return new_values;
   }
 
-  save(values: object) {
+  save(values: object, is_final_view: boolean) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
@@ -494,7 +500,6 @@ class RecordForm extends React.Component<
       })
       .then(result => {
         console.log(result);
-        console.debug(result);
         const message =
           this.props.revision_id === undefined
             ? 'Record successfully created'
@@ -521,8 +526,7 @@ class RecordForm extends React.Component<
             severity: 'error',
           },
         });
-        console.warn(err);
-        console.error('Failed to save data');
+        console.error('Failed to save data', err);
       })
       //Clear the current draft area (Possibly after redirecting back to project page)
       .then(result => {
@@ -530,12 +534,12 @@ class RecordForm extends React.Component<
         return result;
       })
       .then(result => {
-        // if a new record, redirect to the new record page to allow
-        // the user to rapidly add more records
         let redirecturl = this.props.project_id;
         let search = '';
         let state_pa = {};
-        if (this.props.revision_id === undefined) {
+
+        if (this.props.revision_id === undefined && is_final_view) {
+          // check if last page and draft
           const ori_search = window.location.search;
           const url_split = ori_search.split('&');
           const pathname = window.location.pathname;
@@ -764,7 +768,7 @@ class RecordForm extends React.Component<
               this.setTimeout(() => {
                 setSubmitting(false);
 
-                this.save(values);
+                this.save(values, is_final_view);
               }, 500);
             }}
           >
@@ -841,69 +845,106 @@ class RecordForm extends React.Component<
                       {this.state.activeStep <
                         ui_specification.viewsets[viewsetName].views.length -
                           1 && (
-                        <Button
-                          variant="outlined"
+                        <ButtonGroup
                           color="primary"
-                          onClick={() => {
-                            console.log(this.state.activeStep);
-                            const stepnum = this.state.activeStep + 1;
-                            console.log(
-                              ui_specification.viewsets[viewsetName].views[
-                                stepnum
-                              ]
-                            );
-
-                            this.setState({
-                              activeStep: stepnum,
-                              view_cached:
+                          aria-label="contained primary button group"
+                        >
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => {
+                              console.log(this.state.activeStep);
+                              const stepnum = this.state.activeStep + 1;
+                              console.log(
                                 ui_specification.viewsets[viewsetName].views[
                                   stepnum
-                                ],
-                            });
-                          }}
-                        >
-                          {'  '}
-                          Continue{' '}
-                        </Button>
+                                ]
+                              );
+
+                              this.setState({
+                                activeStep: stepnum,
+                                view_cached:
+                                  ui_specification.viewsets[viewsetName].views[
+                                    stepnum
+                                  ],
+                              });
+                            }}
+                          >
+                            {'  '}
+                            Continue{' '}
+                          </Button>
+                          <Button
+                            type="submit"
+                            color={
+                              formProps.isSubmitting ? 'default' : 'primary'
+                            }
+                            variant="contained"
+                            disableElevation
+                            disabled={formProps.isSubmitting}
+                          >
+                            {formProps.isSubmitting
+                              ? !(this.props.revision_id === undefined)
+                                ? 'Working...'
+                                : 'Working...'
+                              : 'Save and Close'}
+                            {formProps.isSubmitting && (
+                              <CircularProgress
+                                size={24}
+                                style={{
+                                  position: 'absolute',
+                                  top: '50%',
+                                  left: '50%',
+                                  marginTop: -12,
+                                  marginLeft: -12,
+                                }}
+                              />
+                            )}
+                          </Button>
+                        </ButtonGroup>
                       )}
                     </Grid>
-                    <Grid item sm={6} xs={12}>
-                      <BoxTab title={'Developer tool: form state'} />
-                      <Box
-                        bgcolor={grey[200]}
-                        pl={2}
-                        pr={2}
-                        style={{overflowX: 'scroll'}}
-                      >
-                        <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                        <pre>{JSON.stringify(this.state, null, 2)}</pre>
-                      </Box>
-                      <Box mt={3}>
-                        <BoxTab
-                          title={'Alpha info: Autosave, validation and syncing'}
-                        />
-                        <Box bgcolor={grey[200]} p={2}>
-                          <p>
-                            The data in this form are auto-saved locally within
-                            the app every 5 seconds. The data do not need to be
-                            valid, and you can return to this page to complete
-                            this record on this device at any time.
-                          </p>
-                          <p>
-                            Once you are ready, click the{' '}
-                            <Typography variant="button">
-                              <b>
-                                {this.props.revision_id === undefined
-                                  ? 'save and new'
-                                  : 'update'}
-                              </b>
-                            </Typography>{' '}
-                            button. This will firstly validate the data, and if
-                            valid, sync the record to the remote server.
-                          </p>
+                    {String(process.env.REACT_APP_SERVER) === 'developer' && (
+                      <Grid item sm={6} xs={12}>
+                        <BoxTab title={'Developer tool: form state'} />
+                        <Box
+                          bgcolor={grey[200]}
+                          pl={2}
+                          pr={2}
+                          style={{overflowX: 'scroll'}}
+                        >
+                          <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                          <pre>{JSON.stringify(this.state, null, 2)}</pre>
                         </Box>
-                      </Box>
-                    </Grid>
+                        <Box mt={3}>
+                          <BoxTab
+                            title={
+                              'Alpha info: Autosave, validation and syncing'
+                            }
+                          />
+                          <Box bgcolor={grey[200]} p={2}>
+                            <p>
+                              The data in this form are auto-saved locally
+                              within the app every 5 seconds. The data do not
+                              need to be valid, and you can return to this page
+                              to complete this record on this device at any
+                              time.
+                            </p>
+                            <p>
+                              Once you are ready, click the{' '}
+                              <Typography variant="button">
+                                <b>
+                                  {this.props.revision_id === undefined
+                                    ? 'save and new'
+                                    : 'update'}
+                                </b>
+                              </Typography>{' '}
+                              button. This will firstly validate the data, and
+                              if valid, sync the record to the remote server.
+                            </p>
+                          </Box>
+                        </Box>
+                      </Grid>
+                    )}
                   </Grid>
                 </Form>
               );

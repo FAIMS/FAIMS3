@@ -79,7 +79,7 @@ function RecordsTable(props: RecordsTableProps) {
   const columns: GridColDef[] = [
     {
       field: 'hrid',
-      headerName: 'HRID',
+      headerName: 'HRID/UUID',
       description: 'Human Readable Record ID',
       type: 'string',
       width: not_xs ? 300 : 100,
@@ -97,7 +97,7 @@ function RecordsTable(props: RecordsTableProps) {
       ),
     },
     {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-    {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
+    // {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
     {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
     {
       field: 'type',
@@ -116,12 +116,12 @@ function RecordsTable(props: RecordsTableProps) {
         </>
       ),
     },
-    {
-      field: 'updated_by',
-      headerName: 'Last updated by',
-      type: 'string',
-      width: 200,
-    },
+    // {
+    //   field: 'updated_by',
+    //   headerName: 'Last updated by',
+    //   type: 'string',
+    //   width: 200,
+    // },
     {
       field: 'conflicts',
       headerName: 'Conflicts',
@@ -190,6 +190,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
 
   const rows = useEventedPromise(
     async (project_id: ProjectID) => {
+      console.debug('RecordsBrowseTable updating', project_id);
       return await getMetadataForAllRecords(project_id, filter_deleted);
     },
     listenDataDB.bind(null, project_id, {since: 'now', live: true}),
