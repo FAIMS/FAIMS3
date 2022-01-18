@@ -52,7 +52,7 @@ export default function MetadataRenderer(props: MetadataProps) {
         return 'Not found';
       }
     },
-    listenProjectDB.bind(null, project_id, {since: 'now'}),
+    listenProjectDB.bind(null, project_id, {since: 'now', live: true}),
     true,
     [project_id, metadata_key],
     project_id,
