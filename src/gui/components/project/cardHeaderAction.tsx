@@ -60,7 +60,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
 
   const ui_spec = useEventedPromise(
     getUiSpecForProject,
-    listenProjectDB.bind(null, project_id, {since: 'now'}),
+    listenProjectDB.bind(null, project_id, {since: 'now', live: true}),
     true,
     [project_id],
     project_id
