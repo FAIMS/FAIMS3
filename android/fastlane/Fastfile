@@ -19,9 +19,9 @@ JAVA_KEYSTORE = ENV["JAVA_KEYSTORE"]
 JAVA_KEYSTORE_PASSWORD = ENV["JAVA_KEYSTORE_PASSWORD"]
 JAVA_KEY = ENV["JAVA_KEY"]
 JAVA_KEY_PASSWORD = ENV["JAVA_KEY_PASSWORD"]
-
+FIP_CLOSED_LANE = ENV["FIP_LANE"]
 platform :android do  
-  desc "Deploy a new version to the Google Play"
+  desc "Deploy a new version to Google Play"
   lane :deploy_alpha do
     gradle(task: "clean")
     gradle(task: "bundle",
@@ -37,6 +37,23 @@ platform :android do
            )
     upload_to_play_store(track: 'internal',
                          release_status: 'completed',
+                        )
+  end
+  lane :deploy_fip do
+    gradle(task: "clean")
+    gradle(task: "bundle",
+           build_type: "Release",
+           properties: {
+              "android.injected.version.code" => `echo "$(($(date +%s)/60))" | tr -d "\n"`,
+              "android.injected.version.name" => "0.3.0-FIP-"+FIP_CLOSED_LANE,
+              "android.injected.signing.store.file" => JAVA_KEYSTORE,
+              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
+              "android.injected.signing.key.alias" => JAVA_KEY,
+              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+           }
+           )
+    upload_to_play_store(track: FIP_CLOSED_LANE,
+                         release_status: 'draft',
                         )
   end
 end

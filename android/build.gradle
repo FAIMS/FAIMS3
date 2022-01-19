@@ -17,6 +17,10 @@ buildscript {
 
 apply from: "variables.gradle"
 
+ext {
+    APP_NAME = "FAIMS3: FieldNote"
+}
+
 allprojects {
     repositories {
         google()

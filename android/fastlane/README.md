@@ -21,7 +21,15 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane android deploy_alpha
 ```
 
-Deploy a new version to the Google Play
+Deploy a new version to Google Play
+
+### android deploy_fip
+
+```sh
+[bundle exec] fastlane android deploy_fip
+```
+
+
 
 ----
 
