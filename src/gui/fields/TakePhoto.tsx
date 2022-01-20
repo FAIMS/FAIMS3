@@ -24,6 +24,10 @@ import Button, {ButtonProps} from '@material-ui/core/Button';
 import {Plugins, CameraResultType, CameraPhoto} from '@capacitor/core';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
+
+import ImageList from '@material-ui/core/ImageList';
+import ImageListItem from '@material-ui/core/ImageListItem';
+
 const {Camera} = Plugins;
 
 function base64image_to_blob(image: CameraPhoto): Blob {
@@ -105,12 +109,13 @@ export class TakePhoto extends React.Component<
             ? this.props.label
             : 'Take Photo'}
         </Button>
+
         {image_tag_list ? (
-          <ul>
+          <ImageList rowHeight={164}>
             {image_tag_list.map((image_tag, index) => (
-              <li key={index}>{image_tag}</li>
+              <ImageListItem key={index}>{image_tag}</ImageListItem>
             ))}
-          </ul>
+          </ImageList>
         ) : (
           <span>No photo taken.</span>
         )}

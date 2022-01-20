@@ -787,7 +787,7 @@ class RecordForm extends React.Component<
                         error={this.state.draftError}
                       />
                     </Grid>
-                    <Grid item sm={6} xs={12}>
+                    <Grid item sm={String(process.env.REACT_APP_SERVER) === 'developer'?6:12} xs={12}>
                       <ViewComponent
                         viewName={viewName}
                         ui_specification={ui_specification}
@@ -878,7 +878,7 @@ class RecordForm extends React.Component<
                             color={
                               formProps.isSubmitting ? 'default' : 'primary'
                             }
-                            variant="contained"
+                            variant="outlined"
                             disableElevation
                             disabled={formProps.isSubmitting}
                           >

@@ -49,7 +49,7 @@ export default function MetadataRenderer(props: MetadataProps) {
           metadata_key,
           err
         );
-        return 'Not found';
+        return '';
       }
     },
     listenProjectDB.bind(null, project_id, {since: 'now', live: true}),
@@ -61,7 +61,7 @@ export default function MetadataRenderer(props: MetadataProps) {
   console.debug('metadata_label', metadata_label);
   console.debug('metadata_value', metadata_value);
 
-  return chips ? (
+  return chips && metadata_value.value !== '' ? (
     <Chip
       size={'small'}
       style={{marginRight: '5px', marginBottom: '5px'}}

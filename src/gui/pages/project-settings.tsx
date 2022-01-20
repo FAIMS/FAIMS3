@@ -122,7 +122,7 @@ export default function ProjectSettings() {
       </Paper>
       <Box mb={1}>
         <Typography variant={'subtitle1'}>
-          The metadata database contents of
+          The metadata database contents of{' '}
           {project_info !== null ? project_info.name : project_id}.
         </Typography>
         {loading ? (
@@ -131,6 +131,9 @@ export default function ProjectSettings() {
           <TextareaAutosize
             defaultValue={JSON.stringify(metadbContents)}
             disabled={true}
+            maxRows={4}
+            minRows={3}
+            style={{width: 200}}
           />
         )}
       </Box>

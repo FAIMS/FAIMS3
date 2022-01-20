@@ -33,6 +33,7 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
+// import TextField from '@material-ui/core/TextField';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // interface option {
 //   key: string;
@@ -46,23 +47,37 @@ interface ElementProps {
 
 interface Props {
   ElementProps: ElementProps;
+  select_others?: string;
 }
 
 export class Select extends React.Component<TextFieldProps & Props> {
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
     return (
-      <MuiTextField {...fieldToTextField(textFieldProps)} select={true}>
-        {children}
-        {ElementProps.options.map(option => (
-          <MenuItem
-            key={option.key ? option.key : option.value}
-            value={option.value}
-          >
-            {option.label}
-          </MenuItem>
-        ))}
-      </MuiTextField>
+      <>
+        <MuiTextField {...fieldToTextField(textFieldProps)} select={true}>
+          {children}
+          {ElementProps.options.map(option => (
+            <MenuItem
+              key={option.key ? option.key : option.value}
+              value={option.value}
+            >
+              {option.label}
+            </MenuItem>
+          ))}
+        </MuiTextField>
+        {/* {this.props.form.values[this.props.field.name].includes('Others')&&this.props.select_others==='otherswith'&&
+      <TextField
+      label='Others'
+      id={this.props.field.name+'others'}
+      variant="outlined"
+      onChange={(event: any) => {
+        this.props.form.setFieldValue(this.props.field.name+'others', event.target.value);
+
+      }}
+      />
+      }*/}
+      </>
     );
   }
 }
@@ -89,6 +104,40 @@ export function Selectcomponentsetting(props: componenentSettingprops) {
             label: o,
           })
       );
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'ElementProps'
+      ]['options'] = options;
+      props.setuiSpec({...newvalues});
+    }
+
+    if (
+      view === 'FormParamater' &&
+      event.target.name.replace(props.fieldName, '') === 'select_others'
+    ) {
+      const newvalues = props.uiSpec;
+      let isothers = false;
+      let options: Array<option> =
+        newvalues['fields'][props.fieldName]['component-parameters'][
+          'ElementProps'
+        ]['options'];
+
+      options.map((o: option) =>
+        o.value === 'Others' ? (isothers = true) : o
+      );
+      if (event.target.value === 'no') {
+        options = options.filter((o: option) => o.value !== 'Others');
+      } else {
+        if (isothers === false) {
+          options = [
+            ...options,
+            {
+              value: 'Others',
+              label: 'Others',
+            },
+          ];
+        }
+      }
+
       newvalues['fields'][props.fieldName]['component-parameters'][
         'ElementProps'
       ]['options'] = options;
@@ -121,6 +170,7 @@ const uiSpec = {
     ElementProps: {
       options: [],
     },
+    // select_others:'otherswith',
     InputLabelProps: {
       label: 'Select Field',
     },
@@ -131,6 +181,48 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['fields']['select_others'] = {
+    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+    'component-name': 'Select',
+    'type-returned': 'faims-core::String', // matches a type in the Project Model
+    'component-parameters': {
+      fullWidth: true,
+      helperText: '',
+      variant: 'outlined',
+      required: true,
+      select: true,
+      InputProps: {},
+      SelectProps: {},
+      ElementProps: {
+        options: [
+          {
+            value: 'otherswith',
+            label:
+              'Select Option with Others(with Spectify)-with input when user select others',
+          },
+          {
+            value: 'othersno',
+            label:
+              'Select Optiob with Others- no input when user select others',
+          },
+          {
+            value: 'no',
+            label: 'Select Optiob No Others',
+          },
+        ],
+      },
+      InputLabelProps: {
+        label: 'Select option with or No Others',
+      },
+    },
+    validationSchema: [['yup.string']],
+    initialValue: 'otherswith',
+  };
+  newuiSetting['views']['FormParamater']['fields'] = [
+    'helperText',
+    // 'select_others',
+  ];
+
   newuiSetting['viewsets'] = {
     settings: {
       views: ['InputLabelProps', 'FormParamater', 'ElementProps'],
