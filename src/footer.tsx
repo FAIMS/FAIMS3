@@ -21,7 +21,7 @@ import React from 'react';
 // Brian,please replace below html here and in envrionmnet file REACT_APP_SERVICES=XXX
 const html = `
 <div>
-  <p style="text-align: center ">©FAIMS</p>
+  <p style="text-align: center "></p>
 </div>
 `;
 
