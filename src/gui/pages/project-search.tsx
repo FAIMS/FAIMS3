@@ -28,13 +28,22 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {ProjectInformation} from '../../datamodel/ui';
+import {makeStyles} from '@material-ui/core/styles';
 
+const useStyles = makeStyles(theme => ({
+  NoPaddding: {
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+  },
+}));
 export default function ProjectSearch() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [project_info, set_project_info] = useState(
     null as null | ProjectInformation
   );
-
+  const classes = useStyles();
   useEffect(() => {
     set_project_info(null);
     if (project_id !== undefined) {
@@ -57,7 +66,7 @@ export default function ProjectSearch() {
     {title: project_info !== null ? project_info.name : ''},
   ];
   return project_info ? (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} />
       <ProjectSearchCard project={project_info} />
     </Container>

@@ -54,6 +54,8 @@ import ProjectSync from './sync';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import RangeHeader from './RangeHeader';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import {useTheme} from '@material-ui/core/styles';
 
 type ProjectSearchCardProps = {
   project: ProjectInformation;
@@ -104,6 +106,18 @@ const useStyles = makeStyles(theme => ({
     display: 'inline',
     // fontSize: '0.8rem',
   },
+  NoPaddding: {
+    paddingTop: 0,
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+  },
+  LeftPaddding: {
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 10,
+    },
+  },
 }));
 
 export default function Card(props: ProjectCardProps) {
@@ -112,7 +126,8 @@ export default function Card(props: ProjectCardProps) {
   const [loading, setLoading] = useState(true);
   const project_url = ROUTES.PROJECT + project.project_id;
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
-
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   // const webShare = 'share' in navigator; // Detect whether webshare api is available in browser
 
   // const getShare = async () => {
@@ -125,6 +140,7 @@ export default function Card(props: ProjectCardProps) {
   //   });
   // };
   console.log(project);
+
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       setLoading(false);
@@ -185,7 +201,7 @@ export default function Card(props: ProjectCardProps) {
           </ListItem>
         </List>
       ) : (
-        <MuiCard>
+        <MuiCard className={classes.NoPaddding}>
           <CardHeader
             className={classes.cardHeader}
             avatar={
@@ -195,7 +211,7 @@ export default function Card(props: ProjectCardProps) {
                   : 'P'}
               </Avatar>
             }
-            action={<ProjectCardHeaderAction project={project} />}
+            action={not_xs ? <ProjectCardHeaderAction project={project} /> : ''}
             title={
               <React.Fragment>
                 <div
@@ -212,8 +228,8 @@ export default function Card(props: ProjectCardProps) {
             subheader={<RangeHeader project={project} />}
           />
 
-          <CardContent style={{paddingTop: 0}}>
-            <Box mb={2}>
+          <CardContent className={classes.NoPaddding}>
+            <Box mb={2} className={classes.LeftPaddding}>
               <MetadataRenderer
                 project_id={project.project_id}
                 metadata_key={'project_status'}
@@ -229,16 +245,25 @@ export default function Card(props: ProjectCardProps) {
                 metadata_key={'lead_institution'}
                 metadata_label={'Lead Institution'}
               />
+              <Typography variant="body2" color="textPrimary" component="div">
+                <MetadataRenderer
+                  project_id={project.project_id}
+                  metadata_key={'pre_description'}
+                  chips={false}
+                />
+                <br />
+              </Typography>
             </Box>
 
-            <Typography variant="body2" color="textPrimary" component="div">
-              <MetadataRenderer
-                project_id={project.project_id}
-                metadata_key={'pre_description'}
-                chips={false}
-              />
-              <br />
-            </Typography>
+            {not_xs ? (
+              ''
+            ) : (
+              <Box mt={1}>
+                <CardActions style={{width: '100%'}}>
+                  <ProjectCardHeaderAction project={project} />
+                </CardActions>
+              </Box>
+            )}
 
             {showDrafts ? (
               <Box mt={1}>
@@ -309,6 +334,8 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
@@ -321,7 +348,7 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
       {loading ? (
         <CircularProgress size={12} thickness={4} />
       ) : (
-        <MuiCard>
+        <MuiCard className={classes.NoPaddding}>
           <CardHeader
             className={classes.cardHeader}
             avatar={
@@ -329,7 +356,7 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
                 {project.name.charAt(0)}
               </Avatar>
             }
-            action={<ProjectCardHeaderAction project={project} />}
+            action={not_xs ? <ProjectCardHeaderAction project={project} /> : ''}
             title={
               <React.Fragment>
                 <div
@@ -345,8 +372,9 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
             }
             subheader={<RangeHeader project={project} />}
           />
-          <CardContent style={{paddingTop: 0}}>
-            <Box mb={2}>
+
+          <CardContent style={{paddingTop: 0}} className={classes.NoPaddding}>
+            <Box mb={2} className={classes.LeftPaddding}>
               <MetadataRenderer
                 project_id={project.project_id}
                 metadata_key={'project_status'}
@@ -368,6 +396,16 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
               {project.description}&nbsp;
               <br />
             </Typography>
+
+            {not_xs ? (
+              ''
+            ) : (
+              <Box mt={1}>
+                <CardActions style={{width: '100%'}}>
+                  <ProjectCardHeaderAction project={project} />
+                </CardActions>
+              </Box>
+            )}
 
             <Typography variant="body2" color="textPrimary" component="div">
               Search the data within the records (does not search record

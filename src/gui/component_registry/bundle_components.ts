@@ -79,7 +79,6 @@ import {
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
 import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
-
 import {
   MapFormField,
   MapFieldUISetting,
