@@ -19,6 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
+import fetch from 'node-fetch';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
