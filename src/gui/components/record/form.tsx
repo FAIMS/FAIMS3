@@ -787,7 +787,15 @@ class RecordForm extends React.Component<
                         error={this.state.draftError}
                       />
                     </Grid>
-                    <Grid item sm={String(process.env.REACT_APP_SERVER) === 'developer'?6:12} xs={12}>
+                    <Grid
+                      item
+                      sm={
+                        String(process.env.REACT_APP_SERVER) === 'developer'
+                          ? 6
+                          : 12
+                      }
+                      xs={12}
+                    >
                       <ViewComponent
                         viewName={viewName}
                         ui_specification={ui_specification}
