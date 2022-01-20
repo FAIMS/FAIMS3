@@ -17,29 +17,64 @@
  * Description:
  *   TODO
  */
+import {jwtVerify, importSPKI} from 'jose';
+import type {KeyLike} from 'jose';
 
 import {active_db, directory_db, local_auth_db} from './sync/databases';
-import {ProjectID} from './datamodel/core';
+import {
+  ProjectID,
+  split_full_project_id,
+  TokenInfo,
+  TokenContents,
+} from './datamodel/core';
 import {AuthInfo} from './datamodel/database';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
 ): Promise<string> {
   const doc = await active_db.get(project_id);
-  if (doc.friendly_name === undefined) {
-    return doc.username || 'Dummy User';
+  if (doc.friendly_name !== undefined) {
+    return doc.friendly_name;
   }
-  return doc.friendly_name;
+  if (doc.username !== undefined && doc.username !== null) {
+    return doc.username;
+  }
+  const token_contents = await getTokenContentsForCluster(
+    split_full_project_id(project_id).listing_id
+  );
+  if (token_contents === undefined) {
+    return 'Anonymous User';
+  }
+  return token_contents.name ?? token_contents.username;
 }
 
 export async function getCurrentUserId(project_id: ProjectID): Promise<string> {
   const doc = await active_db.get(project_id);
-  return doc.username || 'Dummy User';
+  if (doc.username !== undefined && doc.username !== null) {
+    return doc.username;
+  }
+  const token_contents = await getTokenContentsForCluster(
+    split_full_project_id(project_id).listing_id
+  );
+  if (token_contents === undefined) {
+    return 'Anonymous User';
+  }
+  return token_contents.username;
 }
 
-export async function setTokenForCluster(token: string, cluster_id: string) {
+export async function setTokenForCluster(
+  token: string,
+  pubkey: string,
+  pubalg: string,
+  cluster_id: string
+) {
   try {
-    await local_auth_db.put({_id: cluster_id, token: token});
+    await local_auth_db.put({
+      _id: cluster_id,
+      token: token,
+      pubkey: pubkey,
+      pubalg: pubalg,
+    });
   } catch (err) {
     console.warn('Failed to set token for', cluster_id, err);
     throw Error(`Failed to set token for: ${cluster_id}`);
@@ -58,6 +93,32 @@ export async function getTokenForCluster(
   }
 }
 
+export async function getTokenInfoForCluster(
+  cluster_id: string
+): Promise<TokenInfo | undefined> {
+  try {
+    const doc = await local_auth_db.get(cluster_id);
+    const pubkey = await importSPKI(doc.pubkey, doc.pubalg);
+    return {
+      token: doc.token,
+      pubkey: pubkey,
+    };
+  } catch (err) {
+    console.warn('Token not found for:', cluster_id, err);
+    return undefined;
+  }
+}
+
+export async function getTokenContentsForCluster(
+  cluster_id: string
+): Promise<TokenContents | undefined> {
+  const token_info = await getTokenInfoForCluster(cluster_id);
+  if (token_info === undefined) {
+    return undefined;
+  }
+  return await parseToken(token_info.token, token_info.pubkey);
+}
+
 export async function getAuthMechianismsForListing(
   listing_id: string
 ): Promise<{[name: string]: AuthInfo} | null> {
@@ -68,4 +129,23 @@ export async function getAuthMechianismsForListing(
     console.warn('AuthInfo not found for:', listing_id, err);
     return null;
   }
+}
+
+export async function parseToken(
+  token: string,
+  pubkey: KeyLike
+): Promise<TokenContents | undefined> {
+  const res = await jwtVerify(token, pubkey);
+  const payload = res.payload;
+  const username = payload.sub ?? undefined;
+  if (username === undefined) {
+    return undefined;
+  }
+  const roles = (payload['_couchdb.roles'] as string[]) ?? [];
+  const name = (payload['name'] as string) ?? undefined;
+  return {
+    username: username,
+    roles: roles,
+    name: name,
+  };
 }

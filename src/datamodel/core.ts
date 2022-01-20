@@ -23,6 +23,8 @@
 // database it came from, for a FAIMS listing
 // (It is this way because the list of projects is decentralised and so we
 // cannot enforce system-wide unique project IDs without a 'namespace' listing id)
+import type {KeyLike} from 'jose';
+
 export type ProjectID = string;
 export type NonUniqueProjectID = string;
 export type ListingID = string;
@@ -100,3 +102,14 @@ export type FAIMSTypeName = string;
 export type Annotations = any;
 
 export const HRID_STRING = 'hrid';
+
+export interface TokenInfo {
+  token: string;
+  pubkey: KeyLike;
+}
+
+export interface TokenContents {
+  username: string;
+  roles: string[];
+  name?: string;
+}
