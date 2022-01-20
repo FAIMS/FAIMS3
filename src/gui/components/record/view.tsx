@@ -53,7 +53,8 @@ function SingleComponent(props: any) {
         {props.annotation !== undefined &&
           fields[fieldName].meta !== undefined &&
           fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-          fields[fieldName]['component-name'] !== 'TemplatedStringField' && (
+          fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
+          fields[fieldName]['component-name'] !== 'RandomStyle' && (
             <Annotation
               key={'annotation' + fieldName + 'box'}
               setIsClick={setIsClick}
@@ -65,7 +66,8 @@ function SingleComponent(props: any) {
       {props.annotation !== undefined &&
         fields[fieldName].meta !== undefined &&
         fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-        fields[fieldName]['component-name'] !== 'TemplatedStringField' && (
+        fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
+        fields[fieldName]['component-name'] !== 'RandomStyle' && (
           <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
             <AnnotationField
               key={'annotation' + fieldName + 'box'}

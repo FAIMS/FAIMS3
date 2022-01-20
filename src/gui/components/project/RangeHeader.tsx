@@ -28,6 +28,23 @@ import {
 
 export default function RangeHeader(props: {project: any}) {
   const [status, setStatus] = useState<UserFriendlyAutoincrementStatus[]>();
+  let subtitle =
+    props.project.created !== '' &&
+    props.project.created !== undefined &&
+    props.project.created !== 'Unknown'
+      ? 'Created' + props.project.created
+      : '';
+  if (
+    props.project.last_updated !== '' &&
+    props.project.last_updated !== undefined &&
+    props.project.last_updated !== 'Unknown'
+  )
+    subtitle =
+      subtitle +
+      ', last record updated ' +
+      props.project.last_updated +
+      '\xa0\xa0\xa0\xa0\xa0\xa0\xa0';
+
   useEffect(() => {
     get_user_friendly_status_for_project(props.project.project_id).then(res =>
       setStatus(res)
@@ -37,14 +54,8 @@ export default function RangeHeader(props: {project: any}) {
 
   return (
     <>
-      {props.project.created === 'Unknown'
-        ? 'Created ' + '\xa0\xa0\xa0\xa0\xa0\xa0\xa0' + 'last record updated'
-        : 'Created' +
-          props.project.created +
-          ', last record updated ' +
-          props.project.last_updated}
-      {'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'}
-      Range Index:{' '}
+      {subtitle}
+      {status !== undefined && status.length > 0 ? 'Range Index: ' : ''}
       {status?.map(sta => (
         <>
           {sta.label}:{sta.last_used}/{sta.end}
