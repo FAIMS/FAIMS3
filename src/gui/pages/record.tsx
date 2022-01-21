@@ -49,8 +49,23 @@ import RecordMeta from '../components/record/meta';
 import RecordDelete from '../components/record/delete';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import InProgress from '../components/ui/inProgress';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
+
+import {makeStyles} from '@material-ui/core/styles';
+
+const useStyles = makeStyles(theme => ({
+  NoPaddding: {
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+  },
+  LeftPaddding: {
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 10,
+    },
+  },
+}));
 
 export default function Record() {
   const {project_id, record_id, revision_id, draft_id} = useParams<{
@@ -84,6 +99,7 @@ export default function Record() {
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [revisions, setRevisions] = React.useState([] as string[]);
   const [error, setError] = useState(null as null | {});
+  const classes = useStyles();
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -114,18 +130,22 @@ export default function Record() {
   };
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} />
-      <Box mb={2}>
+      <Box mb={2} className={classes.LeftPaddding}>
         <Typography variant={'h2'} component={'h1'}>
-          Update Record
+          Update{' '}
+          {uiSpec !== null && uiSpec['visible_types'][0] !== ''
+            ? uiSpec['viewsets'][uiSpec['visible_types'][0]]['label']
+            : ''}{' '}
+          Record
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Edit data for this record. If you need to, you can also revisit
           previous revisions.
         </Typography>
       </Box>
-      <Paper square>
+      <Paper square className={classes.NoPaddding}>
         <TabContext value={value}>
           <AppBar position="static" color={'primary'}>
             <TabList onChange={handleChange} aria-label="simple tabs example">
@@ -163,9 +183,8 @@ export default function Record() {
             })()}
           </TabPanel>
           <TabPanel value="2">
-            <InProgress />
             <Box p={2} />
-            <BoxTab title={'Developer tool: record revisions'} />
+            <BoxTab title={'record revisions'} />
             <Box
               bgcolor={grey[200]}
               pl={2}

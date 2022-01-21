@@ -52,7 +52,7 @@ const uiSpec = {
     fullWidth: true,
     helperText: 'This is sub Title',
     variant: 'outlined',
-    label: 'Core 1',
+    label: 'Title',
     variant_style: 'h5',
     html_tag: '',
   },

@@ -30,10 +30,21 @@ import {ProjectID} from '../../datamodel/core';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@material-ui/core';
 import {ProjectInformation} from '../../datamodel/ui';
+import {makeStyles} from '@material-ui/core/styles';
+
+const useStyles = makeStyles(theme => ({
+  NoPaddding: {
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+  },
+}));
 
 export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   let project_info: ProjectInformation | null;
+  const classes = useStyles();
   try {
     project_info = useEventedPromise(
       getProjectInfo,
@@ -57,7 +68,7 @@ export default function Project() {
   ];
 
   return project_info ? (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} />
       <ProjectCard project={project_info} showRecords={true} listView={false} />
     </Container>

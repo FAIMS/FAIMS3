@@ -46,7 +46,21 @@ import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
+import {makeStyles} from '@material-ui/core/styles';
 
+const useStyles = makeStyles(theme => ({
+  NoPaddding: {
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 0,
+      paddingRight: 0,
+    },
+  },
+  LeftPaddding: {
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: 10,
+    },
+  },
+}));
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -123,7 +137,7 @@ function DraftEdit(props: DraftEditProps) {
 
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
-
+  const classes = useStyles();
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
   }, [project_id]);
@@ -145,9 +159,9 @@ function DraftEdit(props: DraftEditProps) {
     // Loaded, variant picked, show form:
     return (
       <React.Fragment>
-        <Box mb={2}>
+        <Box mb={2} className={classes.LeftPaddding}>
           <Typography variant={'h2'} component={'h1'}>
-            Record Record
+            Record {uiSpec['viewsets'][type_name]['label'] ?? type_name}
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
             Add an record for the{' '}
@@ -204,9 +218,11 @@ export default function RecordCreate() {
     {title: 'Edit Draft'},
   ];
 
+  const classes = useStyles();
+
   return (
     <React.Fragment>
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" className={classes.NoPaddding}>
         <Breadcrumbs data={breadcrumbs} />
         {draft_id === undefined ? (
           <DraftCreate project_id={project_id} type_name={type_name} />

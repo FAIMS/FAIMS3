@@ -20,7 +20,7 @@
 
 import React, {useContext} from 'react';
 import {useLocation} from 'react-router-dom';
-import {Box, Grid, Typography} from '@material-ui/core';
+import {Box, Grid, Typography, Paper} from '@material-ui/core';
 import grey from '@material-ui/core/colors/grey';
 
 import packageJson from '../../../package.json';
@@ -29,6 +29,11 @@ import {store} from '../../store';
 import InProgress from './ui/inProgress';
 import BoxTab from './ui/boxTab';
 import Link from '@material-ui/core/Link';
+import {Container} from '@material-ui/core';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import {useTheme} from '@material-ui/core/styles';
+
+import * as ROUTES from '../../constants/routes';
 
 export default function Footer() {
   // This is a MASSIVE hack because react-router is dumb and can't seem to work
@@ -37,21 +42,38 @@ export default function Footer() {
   // changes, which means when we lookup window.location we get the latest
   // version and can do things with it
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  const location = useLocation();
-  const production = String(process.env.REACT_APP_SERVER);
+  const location = useLocation().pathname;
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const ispadding = [ROUTES.HOME, ROUTES.WORKSPACE, ROUTES.SIGN_IN].includes(
+    location
+  )
+    ? true
+    : false;
   return (
-    <Box bgcolor={grey[200]} mt={4} p={4}>
-      <FundingFooter />
-      {production === 'developer' && <DevelopTool />}
-    </Box>
+    <Container
+      maxWidth="lg"
+      style={not_xs || ispadding ? {} : {paddingLeft: 0, paddingRight: 0}}
+    >
+      <br />
+      {process.env.REACT_APP_SERVICES === 'FAIMS' && (
+        <FundingFooter not_xs={not_xs} />
+      )}
+      {process.env.REACT_APP_SERVER !== 'developer' && <DevelopTool />}
+    </Container>
   );
 }
 
-function FundingFooter() {
+function FundingFooter(props: {not_xs: boolean}) {
   return (
     <>
-      <Box>
-        <Grid container spacing={2}>
+      <Paper
+        style={props.not_xs ? {} : {paddingLeft: '10px', paddingRight: '10px'}}
+      >
+        {/* <Grid item xs={12} sm={12}>
+          <hr/>
+          </Grid>  */}
+        <Grid container spacing={4} style={{margin: '4px 0px 2px 2px'}}>
           <Grid item xs={12} sm={12}>
             <Typography variant={'h5'}> Our Partners</Typography>
             <br />
@@ -62,10 +84,10 @@ function FundingFooter() {
                 process.env.REACT_APP_PARTNER_LEFT ??
                 '/static/logo/partners/ARDC_logo_RGB.png'
               }
-              style={{maxWidth: '100%'}}
+              style={{maxWidth: '90%'}}
             />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={4} style={{maxWidth: '90%'}}>
             <Typography variant={'body2'}>
               {process.env.REACT_APP_FUNDING ??
                 'The FAIMS 3.0 Electronic Field Notebooks project received investment (doi: 10.47486/PL110) from the Australian Research Data Commons (ARDC). The ARDC is funded by the National Collaborative Research Infrastructure Strategy (NCRIS).'}
@@ -74,7 +96,7 @@ function FundingFooter() {
           {/* <Grid item xs={12} sm={1}>
 
       </Grid> */}
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={4} style={{maxWidth: '90%'}}>
             <Grid container spacing={2}>
               <Grid item xs={4} sm={4}>
                 <img
@@ -110,7 +132,7 @@ function FundingFooter() {
             </Grid>
           </Grid>
         </Grid>
-      </Box>
+      </Paper>
     </>
   );
 }
@@ -119,9 +141,13 @@ function DevelopTool() {
   const globalState = useContext(store);
   return (
     <Grid container spacing={2}>
+      <Grid item xs={12} sm={12}>
+        <hr />
+      </Grid>
       <Grid item xs={12} sm={6}>
         <code>
-          Alpha: {packageJson.name} v{packageJson.version} ({COMMIT_VERSION})
+          {process.env.REACT_APP_TAG}: {packageJson.name} v{packageJson.version}{' '}
+          ({COMMIT_VERSION})
         </code>
         {name}
         <Box mt={2}>

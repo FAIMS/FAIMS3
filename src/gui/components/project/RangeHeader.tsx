@@ -49,6 +49,7 @@ export default function RangeHeader(props: {project: any}) {
     get_user_friendly_status_for_project(props.project.project_id).then(res =>
       setStatus(res)
     );
+
     console.debug('Updating ranges for', props.project.project_id);
   }, [props.project.project_id]);
 

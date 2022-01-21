@@ -76,82 +76,150 @@ function RecordsTable(props: RecordsTableProps) {
   //   r.type !== undefined &&
   //   props.viewsets[r.type] !== undefined? newrows[index]={...r,type_label:props.viewsets[r.type].label?? r.type }:newrows[index]={...r})
 
-  const columns: GridColDef[] = [
-    {
-      field: 'hrid',
-      headerName: 'HRID/UUID',
-      description: 'Human Readable Record ID',
-      type: 'string',
-      width: not_xs ? 300 : 100,
-      renderCell: (params: GridCellParams) => (
-        <Link
-          component={RouterLink}
-          to={ROUTES.getRecordRoute(
-            project_id || 'dummy',
-            (params.getValue('record_id') || '').toString(),
-            (params.getValue('revision_id') || '').toString()
-          )}
-        >
-          {params.value}
-        </Link>
-      ),
-    },
-    {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-    // {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
-    {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
-    {
-      field: 'type',
-      headerName: 'Kind',
-      type: 'string',
-      width: 200,
-      renderCell: (params: GridCellParams) => (
-        <>
-          {props.viewsets !== null &&
-          props.viewsets !== undefined &&
-          params.value !== null &&
-          params.value !== undefined &&
-          props.viewsets[params.value.toString()] !== undefined
-            ? props.viewsets[params.value.toString()].label ?? params.value
-            : params.value}
-        </>
-      ),
-    },
-    // {
-    //   field: 'updated_by',
-    //   headerName: 'Last updated by',
-    //   type: 'string',
-    //   width: 200,
-    // },
-    {
-      field: 'conflicts',
-      headerName: 'Conflicts',
-      type: 'boolean',
-      width: 200,
-    },
-    {
-      field: 'record_id',
-      headerName: 'UUID',
-      description: 'UUID Record ID',
-      type: 'string',
-      width: not_xs ? 300 : 100,
-      renderCell: (params: GridCellParams) => (
-        <Link
-          component={RouterLink}
-          to={ROUTES.getRecordRoute(
-            project_id || 'dummy',
-            (params.getValue('record_id') || '').toString(),
-            (params.getValue('revision_id') || '').toString()
-          )}
-        >
-          {params.value}
-        </Link>
-      ),
-    },
-  ];
+  const columns: GridColDef[] = not_xs
+    ? [
+        {
+          field: 'hrid',
+          headerName: 'HRID/UUID',
+          description: 'Human Readable Record ID',
+          type: 'string',
+          width: not_xs ? 300 : 100,
+          renderCell: (params: GridCellParams) => (
+            <Link
+              component={RouterLink}
+              to={ROUTES.getRecordRoute(
+                project_id || 'dummy',
+                (params.getValue('record_id') || '').toString(),
+                (params.getValue('revision_id') || '').toString()
+              )}
+            >
+              {params.value}
+            </Link>
+          ),
+        },
+        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+        // {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
+        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+        {
+          field: 'type',
+          headerName: 'Kind',
+          type: 'string',
+          width: 200,
+          renderCell: (params: GridCellParams) => (
+            <>
+              {props.viewsets !== null &&
+              props.viewsets !== undefined &&
+              params.value !== null &&
+              params.value !== undefined &&
+              props.viewsets[params.value.toString()] !== undefined
+                ? props.viewsets[params.value.toString()].label ?? params.value
+                : params.value}
+            </>
+          ),
+        },
+        // {
+        //   field: 'updated_by',
+        //   headerName: 'Last updated by',
+        //   type: 'string',
+        //   width: 200,
+        // },
+        {
+          field: 'conflicts',
+          headerName: 'Conflicts',
+          type: 'boolean',
+          width: 200,
+        },
+        {
+          field: 'record_id',
+          headerName: 'UUID',
+          description: 'UUID Record ID',
+          type: 'string',
+          width: not_xs ? 300 : 100,
+          renderCell: (params: GridCellParams) => (
+            <Link
+              component={RouterLink}
+              to={ROUTES.getRecordRoute(
+                project_id || 'dummy',
+                (params.getValue('record_id') || '').toString(),
+                (params.getValue('revision_id') || '').toString()
+              )}
+            >
+              {params.value}
+            </Link>
+          ),
+          hide: true,
+        },
+      ]
+    : [
+        {
+          field: 'hrid',
+          headerName: 'Record',
+          description: 'Human Readable Record ID',
+          type: 'string',
+          width: 300,
+          renderCell: (params: GridCellParams) => (
+            <div>
+              <Typography>
+                {' '}
+                <Link
+                  component={RouterLink}
+                  to={ROUTES.getRecordRoute(
+                    project_id || 'dummy',
+                    (params.getValue('record_id') || '').toString(),
+                    (params.getValue('revision_id') || '').toString()
+                  )}
+                >
+                  {params.value}
+                </Link>
+              </Typography>
+              <Typography color="textSecondary">
+                {' '}
+                Kind:{' '}
+                {props.viewsets !== null &&
+                props.viewsets !== undefined &&
+                params.getValue('type') !== null &&
+                params.value !== undefined &&
+                props.viewsets[(params.getValue('type') || '').toString()] !==
+                  undefined
+                  ? props.viewsets[(params.getValue('type') || '').toString()]
+                      .label ?? params.getValue('type')
+                  : params.getValue('type')}
+              </Typography>
+              <Typography
+                color="textSecondary"
+                variant="subtitle2"
+                gutterBottom
+                component="div"
+              >
+                Created: {(params.getValue('created') || '').toString()}
+              </Typography>
+
+              <Typography
+                color="error"
+                variant="subtitle2"
+                gutterBottom
+                component="div"
+              >
+                {params.getValue('conflicts') === true ? 'Conflict' : ''}
+              </Typography>
+
+              <Typography>
+                <br />{' '}
+              </Typography>
+            </div>
+          ),
+        },
+        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+      ];
 
   return (
     <div>
-      <Typography variant="overline">Recent Records</Typography>
+      <Typography
+        variant="overline"
+        style={not_xs ? {} : {paddingLeft: '10px'}}
+      >
+        Recent Record
+      </Typography>
       <div
         style={{
           width: '100%',
@@ -164,6 +232,7 @@ function RecordsTable(props: RecordsTableProps) {
           getRowId={r => r.record_id}
           columns={columns}
           autoHeight
+          rowHeight={not_xs ? 52 : 100}
           pageSize={
             maxRows !== null
               ? not_xs

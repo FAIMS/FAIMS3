@@ -2,18 +2,23 @@
 import React, {useState, useEffect} from 'react';
 import {Box, Button, CircularProgress} from '@material-ui/core';
 
+import {TokenContents} from '../../../datamodel/core';
 import {AuthInfo} from '../../../datamodel/database';
-import {setTokenForCluster, getAuthMechianismsForListing} from '../../../users';
+import {
+  setTokenForCluster,
+  getTokenContentsForCluster,
+  getAuthMechianismsForListing,
+} from '../../../users';
 
 export type LoginFormProps = {
   listing_id: string;
-  setToken: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
 };
 
 export type LoginButtonProps = {
   listing_id: string;
   auth_info: AuthInfo; // User-visible name
-  setToken: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
 };
 
 function LoginButton(props: LoginButtonProps) {
@@ -30,8 +35,13 @@ function LoginButton(props: LoginButtonProps) {
               console.error('Bad message:', event);
             }
             console.log('Received token for:', props.listing_id);
-            await setTokenForCluster(event.data.token, props.listing_id);
-            props.setToken(event.data.token);
+            await setTokenForCluster(
+              event.data.token,
+              event.data.pubkey,
+              event.data.pubalg,
+              props.listing_id
+            );
+            props.setToken(await getTokenContentsForCluster(props.listing_id));
           },
           false
         );

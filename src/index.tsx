@@ -23,6 +23,7 @@ import {defineCustomElements} from '@ionic/pwa-elements/loader';
 
 import './index.css';
 import App from './App';
+import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
@@ -31,6 +32,8 @@ ReactDOM.render(
   </React.StrictMode>,
   document.getElementById('root')
 );
+
+ReactDOM.render(EFooter, document.getElementById('footer'));
 
 // Call the element loader after the app has been rendered the first time
 defineCustomElements(window);

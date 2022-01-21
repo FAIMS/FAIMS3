@@ -21,8 +21,6 @@
 import React from 'react';
 import {Field, FormikProps} from 'formik';
 
-import {Box} from '@material-ui/core';
-
 import {getComponentByName} from '../../component_registry';
 
 export function getComponentFromFieldConfig(
@@ -40,17 +38,15 @@ export function getComponentFromFieldConfig(
     return undefined;
   }
   return (
-    <Box mb={3} key={fieldName}>
-      <Field
-        component={Component} //e.g, TextField (default <input>)
-        name={fieldName}
-        value={formProps.values[fieldName]}
-        {...fieldConfig['component-parameters']}
-        {...fieldConfig['component-parameters']['InputProps']}
-        {...fieldConfig['component-parameters']['SelectProps']}
-        {...fieldConfig['component-parameters']['InputLabelProps']}
-        {...fieldConfig['component-parameters']['FormHelperTextProps']}
-      />
-    </Box>
+    <Field
+      component={Component} //e.g, TextField (default <input>)
+      name={fieldName}
+      value={formProps.values[fieldName]}
+      {...fieldConfig['component-parameters']}
+      {...fieldConfig['component-parameters']['InputProps']}
+      {...fieldConfig['component-parameters']['SelectProps']}
+      {...fieldConfig['component-parameters']['InputLabelProps']}
+      {...fieldConfig['component-parameters']['FormHelperTextProps']}
+    />
   );
 }

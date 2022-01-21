@@ -29,7 +29,8 @@ import {makeStyles} from '@material-ui/core/styles';
 import {useEffect, useState} from 'react';
 
 import {LoginForm} from './login_form';
-import {getTokenForCluster} from '../../../users';
+import {getTokenContentsForCluster} from '../../../users';
+import {TokenContents} from '../../../datamodel/core';
 
 type ClusterCardProps = {
   listing_id: string;
@@ -45,11 +46,11 @@ const useStyles = makeStyles(() => ({
 
 export default function ClusterCard(props: ClusterCardProps) {
   const classes = useStyles();
-  const [token, setToken] = useState(undefined as undefined | string);
+  const [token, setToken] = useState(undefined as undefined | TokenContents);
 
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenForCluster(props.listing_id));
+      setToken(await getTokenContentsForCluster(props.listing_id));
     };
     getToken();
   }, [props.listing_id]);
@@ -63,7 +64,17 @@ export default function ClusterCard(props: ClusterCardProps) {
         {token === undefined ? (
           <LoginForm listing_id={props.listing_id} setToken={setToken} />
         ) : (
-          <span>Logged in with: {token}</span>
+          <>
+            <p>Logged in as: {token.username}</p>
+            <p>
+              Roles are
+              <ul>
+                {token.roles.map(group => {
+                  return <li>{group}</li>;
+                })}
+              </ul>
+            </p>
+          </>
         )}
       </CardContent>
       <CardActions></CardActions>

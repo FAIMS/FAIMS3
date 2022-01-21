@@ -24,6 +24,9 @@ import Dropzone from 'react-dropzone';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
+import {Typography} from '@material-ui/core';
+import {List, ListItem, ListItemText} from '@material-ui/core';
+import DeleteIcon from '@material-ui/icons/Delete';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   accepted_filetypes?: string | string[];
@@ -32,6 +35,7 @@ interface Props {
   maximum_number_of_files?: number;
   maximum_file_size?: number; // this is in bytes
   minimum_file_size?: number; // this is in bytes
+  helperText?: string;
 }
 
 export function FileUploader(props: FieldProps & Props) {
@@ -42,34 +46,81 @@ export function FileUploader(props: FieldProps & Props) {
   const maximum_file_size = props.maximum_file_size ?? Infinity;
   const minimum_file_size = props.minimum_file_size ?? 0;
 
-  const current_files: File[] = props.form.values[props.field.name] ?? [];
+  const [current_files, setfiles] = React.useState(
+    props.form.values[props.field.name] ?? []
+  );
 
   // TODO: work out correct typing for getRootProps and getInputProps
+  const baseStyle = {
+    // color: '#bdbdbd',
+    backgroundColor: '#fafafa',
+    padding: '20px',
+    transition: 'border .24s ease-in-out',
+    border: '2px #eeeeee dashed',
+    borderRadius: 2,
+  };
+
+  const handelonClick = (index: number) => {
+    if (current_files.length > index) {
+      const newfiles = current_files.filter(
+        (file: File, i: number) => i !== index
+      );
+      setfiles(newfiles);
+      console.log(current_files);
+      props.form.setFieldValue(props.field.name, newfiles);
+    }
+  };
+
   return (
-    <Dropzone
-      // accept={accepted_filetypes}
-      disabled={disabled}
-      multiple={multiple}
-      maxFiles={maximum_number_of_files}
-      maxSize={maximum_file_size}
-      minSize={minimum_file_size}
-      onDrop={files => {
-        props.form.setFieldValue(props.field.name, current_files.concat(files));
-      }}
-    >
-      {({getRootProps, getInputProps}) => (
-        <div {...getRootProps()}>
-          <input {...getInputProps()} />
-          <p>Drag 'n' drop some files here, or click to select files</p>
-          <p>File uploaded:</p>
-          <ul>
-            {current_files.map((file: File, index: number) => (
-              <li key={index}>{file.name}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </Dropzone>
+    <div>
+      <Dropzone
+        // accept={accepted_filetypes}
+        disabled={disabled}
+        multiple={multiple}
+        maxFiles={maximum_number_of_files}
+        maxSize={maximum_file_size}
+        minSize={minimum_file_size}
+        onDrop={files => {
+          const newfiles = current_files.concat(files);
+          setfiles(newfiles);
+          props.form.setFieldValue(props.field.name, newfiles);
+        }}
+      >
+        {({getRootProps, getInputProps}) => (
+          <div {...getRootProps()}>
+            <div style={baseStyle}>
+              <input {...getInputProps()} />
+              <p>Drag 'n' drop some files here, or click to select files</p>
+            </div>
+          </div>
+        )}
+      </Dropzone>
+      <p>File uploaded:</p>
+      <List>
+        {current_files.map((file: File, index: number) => (
+          <ListItem
+            key={index}
+            id={index + 'file'}
+            button
+            onClick={() => handelonClick(index)}
+          >
+            <ListItemText primary={file.name} secondary={file.type} />
+            {file.type.includes('image') ? (
+              <img
+                style={{maxHeight: 300, maxWidth: 200}}
+                src={URL.createObjectURL(file)}
+              />
+            ) : (
+              ''
+            )}
+            <DeleteIcon />
+          </ListItem>
+        ))}
+      </List>
+      <Typography variant="caption" color="textSecondary">
+        {props.helperText}
+      </Typography>
+    </div>
   );
 }
 
@@ -80,6 +131,7 @@ const uiSpec = {
   'component-parameters': {
     name: 'file-upload-field',
     id: 'file-upload-field',
+    helperText: 'Choose a file',
   },
   validationSchema: [['yup.mixed']],
   initialValue: null,
@@ -89,7 +141,7 @@ const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
   newuiSetting['viewsets'] = {
     settings: {
-      views: [],
+      views: ['FormParamater'],
       label: 'settings',
     },
   };

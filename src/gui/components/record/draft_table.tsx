@@ -65,47 +65,105 @@ function DraftRecord(props: DraftsRecordProps) {
   //   r.type !== undefined &&
   //   props.viewsets[r.type] !== undefined?r.type_label=props.viewsets[r.type].label ?? r.type:r.type)
 
-  const columns: GridColDef[] = [
-    {
-      field: '_id',
-      headerName: 'ID',
-      description: 'Draft ID',
-      type: 'string',
-      width: not_xs ? 300 : 100,
-      renderCell: (params: GridCellParams) => (
-        <Link
-          component={RouterLink}
-          to={ROUTES.getDraftRoute(
-            project_id ?? 'dummy',
-            params.getValue('_id') as DraftMetadata['_id'],
-            params.getValue('existing')! as DraftMetadata['existing'],
-            params.getValue('type')! as DraftMetadata['type']
-          )}
-        >
-          {params.value}
-        </Link>
-      ),
-    },
-    {
-      field: 'type',
-      headerName: 'Kind',
-      type: 'string',
-      width: 200,
-      renderCell: (params: GridCellParams) => (
-        <>
-          {props.viewsets !== null &&
-          props.viewsets !== undefined &&
-          params.value !== null &&
-          params.value !== undefined &&
-          props.viewsets[params.value.toString()] !== undefined
-            ? props.viewsets[params.value.toString()].label ?? params.value
-            : params.value}
-        </>
-      ),
-    },
-    {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-    {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
-  ];
+  const columns: GridColDef[] = not_xs
+    ? [
+        {
+          field: '_id',
+          headerName: 'ID',
+          description: 'Draft ID',
+          type: 'string',
+          width: not_xs ? 300 : 100,
+          renderCell: (params: GridCellParams) => (
+            <Link
+              component={RouterLink}
+              to={ROUTES.getDraftRoute(
+                project_id ?? 'dummy',
+                params.getValue('_id') as DraftMetadata['_id'],
+                params.getValue('existing')! as DraftMetadata['existing'],
+                params.getValue('type')! as DraftMetadata['type']
+              )}
+            >
+              {params.value}
+            </Link>
+          ),
+        },
+        {
+          field: 'type',
+          headerName: 'Kind',
+          type: 'string',
+          width: 200,
+          renderCell: (params: GridCellParams) => (
+            <>
+              {props.viewsets !== null &&
+              props.viewsets !== undefined &&
+              params.value !== null &&
+              params.value !== undefined &&
+              props.viewsets[params.value.toString()] !== undefined
+                ? props.viewsets[params.value.toString()].label ?? params.value
+                : params.value}
+            </>
+          ),
+        },
+        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+      ]
+    : [
+        {
+          field: '_id',
+          headerName: 'Draft',
+          description: 'Draft ID',
+          type: 'string',
+          width: 300,
+          renderCell: (params: GridCellParams) => (
+            <div>
+              <Typography>
+                <br />{' '}
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom component="div">
+                {' '}
+                <Link
+                  component={RouterLink}
+                  to={ROUTES.getDraftRoute(
+                    project_id ?? 'dummy',
+                    params.getValue('_id') as DraftMetadata['_id'],
+                    params.getValue('existing')! as DraftMetadata['existing'],
+                    params.getValue('type')! as DraftMetadata['type']
+                  )}
+                >
+                  {params.value}
+                </Link>
+              </Typography>
+
+              <Typography color="textSecondary">
+                Kind:{' '}
+                {props.viewsets !== null &&
+                props.viewsets !== undefined &&
+                params.getValue('type') !== null &&
+                params.getValue('type') !== undefined &&
+                props.viewsets[(params.getValue('type') || '').toString()] !==
+                  undefined
+                  ? props.viewsets[(params.getValue('type') || '').toString()]
+                      .label ?? params.getValue('type')
+                  : params.getValue('type')}
+              </Typography>
+              <Typography
+                color="textSecondary"
+                variant="subtitle2"
+                gutterBottom
+                component="div"
+              >
+                Created: {(params.getValue('created') || '').toString()}
+              </Typography>
+
+              <Typography>
+                <br />{' '}
+              </Typography>
+            </div>
+          ),
+        },
+        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+      ];
+
   return (
     <DataGrid
       key={'drafttable'}
@@ -114,6 +172,7 @@ function DraftRecord(props: DraftsRecordProps) {
       getRowId={r => r._id}
       columns={columns}
       autoHeight
+      rowHeight={not_xs ? 52 : 100}
       pageSize={
         maxRows !== null
           ? not_xs
@@ -160,7 +219,12 @@ export default function DraftsTable(props: DraftsTableProps) {
 
   return (
     <div>
-      <Typography variant="overline">New Draft</Typography>
+      <Typography
+        variant="overline"
+        style={not_xs ? {} : {paddingLeft: '10px'}}
+      >
+        New Draft
+      </Typography>
       <div
         style={{
           width: '100%',
