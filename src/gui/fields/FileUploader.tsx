@@ -49,7 +49,7 @@ export function FileUploader(props: FieldProps & Props) {
   const [current_files, setfiles] = React.useState(
     props.form.values[props.field.name] ?? []
   );
-
+  console.log(current_files);
   // TODO: work out correct typing for getRootProps and getInputProps
   const baseStyle = {
     // color: '#bdbdbd',
@@ -105,7 +105,7 @@ export function FileUploader(props: FieldProps & Props) {
             onClick={() => handelonClick(index)}
           >
             <ListItemText primary={file.name} secondary={file.type} />
-            {file.type.includes('image') ? (
+            {file.type !== undefined && file.type.includes('image') ? (
               <img
                 style={{maxHeight: 300, maxWidth: 200}}
                 src={URL.createObjectURL(file)}
