@@ -56,10 +56,12 @@ export default function Footer() {
       style={not_xs || ispadding ? {} : {paddingLeft: 0, paddingRight: 0}}
     >
       <br />
-      {process.env.REACT_APP_SERVICES === 'FAIMS' && (
+      {process.env.REACT_APP_SERVICES !== 'FAIMS' ? (
+        ''
+      ) : (
         <FundingFooter not_xs={not_xs} />
       )}
-      {process.env.REACT_APP_SERVER !== 'developer' && <DevelopTool />}
+      {process.env.REACT_APP_SERVER === 'developer' && <DevelopTool />}
     </Container>
   );
 }
