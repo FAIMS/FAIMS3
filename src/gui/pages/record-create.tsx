@@ -36,7 +36,11 @@ import {store} from '../../store';
 import {generateFAIMSDataID} from '../../data_storage';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID, RecordID} from '../../datamodel/core';
-import {ProjectUIModel, ProjectInformation,SectionMeta} from '../../datamodel/ui';
+import {
+  ProjectUIModel,
+  ProjectInformation,
+  SectionMeta,
+} from '../../datamodel/ui';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
@@ -76,11 +80,9 @@ function DraftCreate(props: DraftCreateProps) {
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
-  
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
-    
   }, [project_id]);
 
   useEffect(() => {
@@ -141,13 +143,14 @@ function DraftEdit(props: DraftEditProps) {
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
   const classes = useStyles();
-  const [metaSection,setMetaSection]=useState(null as null | SectionMeta)
-  
+  const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
+
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
-    if(project_id!==null){
-      getProjectMetadata(project_id, 'sections').then(
-        res=>setMetaSection(res))
+    if (project_id !== null) {
+      getProjectMetadata(project_id, 'sections').then(res =>
+        setMetaSection(res)
+      );
     }
   }, [project_id]);
 

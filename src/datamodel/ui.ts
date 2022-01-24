@@ -181,4 +181,4 @@ export type resetprops = {
   projectvalue: any;
 };
 
-export type SectionMeta=any;
+export type SectionMeta = any;
