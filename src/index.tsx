@@ -23,7 +23,7 @@ import {defineCustomElements} from '@ionic/pwa-elements/loader';
 
 import './index.css';
 import App from './App';
-import {EFooter} from './footer';
+// import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
@@ -33,7 +33,10 @@ ReactDOM.render(
   document.getElementById('root')
 );
 
-ReactDOM.render(EFooter, document.getElementById('footer'));
+//ReactDOM.render(EFooter, document.getElementById('footer')); The footer is
+//already being toggeled between in footer, we don't need to call it twice.
+//Keeping this here though because it'd be super useful to have a different
+//front page.
 
 // Call the element loader after the app has been rendered the first time
 defineCustomElements(window);

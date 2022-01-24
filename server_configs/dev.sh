@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# invoke dev mode with environment vairables:
+# source server_configs/dev.sh; npm start
+
 export REACT_APP_DIRECTORY_HOST=dev.db.faims.edu.au
 export REACT_APP_DIRECTORY_PORT=443
 export REACT_APP_USE_HTTPS=true
