@@ -180,3 +180,5 @@ export type resetprops = {
   setinitialValues: FAIMShandlerType;
   projectvalue: any;
 };
+
+export type SectionMeta=any;
