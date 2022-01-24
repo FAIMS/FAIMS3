@@ -52,6 +52,7 @@ export default function Footer() {
   )
     ? true
     : false;
+
   return (
     <Container
       maxWidth="lg"
@@ -61,7 +62,9 @@ export default function Footer() {
       {process.env.REACT_APP_SERVICES === 'FAIMSBIGLOGOS' && (
         <FundingFooter not_xs={not_xs} />
       )}
-      {process.env.REACT_APP_SERVICES === 'FAIMSTEXT' && <EHTML />}
+      {process.env.REACT_APP_SERVICES === 'FAIMSTEXT' && (
+        <EHTML not_xs={not_xs} />
+      )}
       {process.env.REACT_APP_SERVER === 'developer' && <DevelopTool />}
     </Container>
   );

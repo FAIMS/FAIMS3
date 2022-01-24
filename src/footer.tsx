@@ -19,27 +19,62 @@
  */
 import React from 'react';
 // Brian,please replace below html here and in envrionmnet file REACT_APP_SERVICES=XXX
-const html = `
-<hr/>
-<div style="margin-left:20%; margin-right:20%; font-size:60%">
+import {Container, Paper} from '@material-ui/core';
 
-The <a href="https://faims.edu.au/">FAIMS 3.0 Electronic Field Notebooks
-project</a> received investment
-(<a href="https://dx.doi.org/10.47486/PL110">doi: 10.47486/PL110</a>) from
-the <a href="https://ardc.edu.au/">Australian Research Data Commons(ARDC)</a>, <a
-href="https://www.mq.edu.au/">Macquarie University</a>, <a
-href="https://www.csiro.au/en/about/people/business-units/mineral-resources">CSIRO</a>,
-<a href="https://www.unsw.edu.au/">UNSW Sydney</a>, <a
-href="https://www.latrobe.edu.au/">La Trobe University</a> and <a
-href="https://international.au.dk/">Aarhus University</a>. We are proud to
-collaborate with more than a dozen other <a
-href="https://faims.edu.au/partners/">partners</a>. Contribute to this <a href="https://github.com/FAIMS/FAIMS3">project on GitHub!</a>
-</div>
-`;
+// const html = `
+// <hr/>
+// <div style="font-size:60%">
 
-export function EHTML() {
-  const _html = {__html: html};
-  return <div dangerouslySetInnerHTML={_html} />;
+// The <a href="https://faims.edu.au/">FAIMS 3.0 Electronic Field Notebooks
+// project</a> received investment
+// (<a href="https://dx.doi.org/10.47486/PL110">doi: 10.47486/PL110</a>) from
+// the <a href="https://ardc.edu.au/">Australian Research Data Commons(ARDC)</a>, <a
+// href="https://www.mq.edu.au/">Macquarie University</a>, <a
+// href="https://www.csiro.au/en/about/people/business-units/mineral-resources">CSIRO</a>,
+// <a href="https://www.unsw.edu.au/">UNSW Sydney</a>, <a
+// href="https://www.latrobe.edu.au/">La Trobe University</a> and <a
+// href="https://international.au.dk/">Aarhus University</a>. We are proud to
+// collaborate with more than a dozen other <a
+// href="https://faims.edu.au/partners/">partners</a>. Contribute to this <a href="https://github.com/FAIMS/FAIMS3">project on GitHub!</a>
+// </div>
+// `;
+
+export function EHTML(props: {not_xs: boolean}) {
+  return (
+    <>
+      <hr />
+      <Paper
+        style={
+          props.not_xs
+            ? {fontSize: '75%'}
+            : {fontSize: '75%', paddingLeft: '20%', paddingRight: '20%'}
+        }
+      >
+        <Container>
+          The{' '}
+          <a href="https://faims.edu.au/">
+            FAIMS 3.0 Electronic Field Notebooks project
+          </a>{' '}
+          received investment (
+          <a href="https://dx.doi.org/10.47486/PL110">doi: 10.47486/PL110</a>)
+          from the{' '}
+          <a href="https://ardc.edu.au/">
+            Australian Research Data Commons (ARDC)
+          </a>
+          , <a href="https://www.mq.edu.au/">Macquarie University</a>,{' '}
+          <a href="https://www.csiro.au/en/about/people/business-units/mineral-resources">
+            CSIRO
+          </a>
+          , <a href="https://www.unsw.edu.au/">UNSW Sydney</a>,{' '}
+          <a href="https://www.latrobe.edu.au/">La Trobe University</a>, and{' '}
+          <a href="https://international.au.dk/">Aarhus University</a>. We are
+          proud to collaborate with more than a dozen other{' '}
+          <a href="https://faims.edu.au/partners/">partners</a>. Contribute to
+          this <a href="https://github.com/FAIMS/FAIMS3">project on GitHub!</a>
+        </Container>
+      </Paper>
+    </>
+  );
 }
 
-export const EFooter = <EHTML />;
+// export const EFooter = <EHTML />;
