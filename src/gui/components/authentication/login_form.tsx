@@ -40,8 +40,22 @@ function LoginButton(props: LoginButtonProps) {
               event.data.pubkey,
               event.data.pubalg,
               props.listing_id
-            );
-            props.setToken(await getTokenContentsForCluster(props.listing_id));
+            )
+              .then(async () => {
+                const token = await getTokenContentsForCluster(
+                  props.listing_id
+                );
+                console.error('token is', token);
+                props.setToken(token);
+              })
+              .catch(err => {
+                console.warn(
+                  'Failed to get token for: ',
+                  props.listing_id,
+                  err
+                );
+                props.setToken(undefined);
+              });
           },
           false
         );
