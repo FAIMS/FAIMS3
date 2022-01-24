@@ -168,7 +168,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   useEffect(() => {
     setinit();
     setProjectID(props.project_id);
-
   }, [props.project_id]);
 
   useEffect(() => {
@@ -182,7 +181,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   }, [props.uiSpec]);
 
   useEffect(() => {
-
     if (props.project_info !== undefined && props.uiSpec !== null) {
       resetprojectvalue(props.project_info);
     } else
@@ -219,7 +217,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     setProjecttabvalue(0);
     setinitialValues({...ini});
     setvalidationSchema(getValidationSchemaForViewset(projectui, 'project'));
-
   };
 
   const setinifornewproject = () => {
@@ -511,7 +508,6 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   const isready = () => {
-
     if (initialValues['name'] !== '' && props.project_id !== null) return true; //for edit project
     if (props.project_id === null && initialValues['name'] === '') return true; //for new project, create new project
     return false;
@@ -570,7 +566,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                         type="submit"
                         isSubmitting={false}
                         text="Save and Next"
-                        onButtonClick={() => handlerprojectsubmit_pounch ()}
+                        onButtonClick={() => handlerprojectsubmit_pounch()}
                       />
                     </TabPanel>
                     <TabPanel
