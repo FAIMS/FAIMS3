@@ -48,8 +48,11 @@ export async function request_allocation_for_project(project_id: ProjectID) {
  */
 export async function create_new_project_dbs(name: string): Promise<ProjectID> {
   // Get the local-only listing
+  console.debug('Creating new project', name);
   const listing = await ensure_locally_created_project_listing();
+  console.debug('Checked locally created listing');
   const projects_db = ensure_locally_created_projects_db(listing._id);
+  console.debug('Got locally created projects_db');
 
   // create the new project
   const new_project_id = generate_non_unique_project_id();
@@ -59,7 +62,7 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
     status: 'new', // TODO: work out proper status
   };
   await projects_db.local.put(project_object);
-  console.debug(`Created new project ${new_project_id}`);
+  console.debug('Created new project', new_project_id);
 
   const active_id = await activate_project(
     listing._id,
@@ -68,7 +71,7 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
     null,
     false
   );
-  console.debug(`Activated new project ${new_project_id}`);
+  console.debug('Activated new project', new_project_id);
 
   return active_id;
 }
@@ -94,6 +97,7 @@ async function ensure_locally_created_project_listing(): Promise<ListingsObject>
       await directory_db.local.put(listing_object);
       return listing_object;
     } else {
+      console.error('Failed to create locally created projects listing');
       throw err;
     }
   }

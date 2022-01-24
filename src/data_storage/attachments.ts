@@ -27,6 +27,7 @@ interface FullAttachments {
 }
 
 export function generate_file_name(): string {
+  console.debug('Generating a uuid-filename');
   return uuidv4();
 }
 
@@ -34,6 +35,7 @@ export function file_data_to_attachments(
   avp: AttributeValuePair
 ): AttributeValuePair {
   if (avp.data === null) {
+    console.debug('No data in', avp);
     return avp;
   }
   avp._attachments = {};
@@ -45,6 +47,7 @@ export function file_data_to_attachments(
       data: file,
     };
   }
+  console.debug('Encoded attachments in avp', avp);
   avp.data = null;
   return avp;
 }
@@ -58,6 +61,7 @@ export function files_to_attachments(files: File[]): FullAttachments {
       data: file,
     };
   }
+  console.debug('Converted files to attachments', files, attachments);
   return attachments;
 }
 
@@ -79,6 +83,7 @@ export function attachments_to_files(
   for (const [name, attach] of Object.entries(attachments)) {
     attach_list.push(attachment_to_file(name, attach));
   }
+  console.debug('Converted attachments to files', attachments, attach_list);
   return attach_list;
 }
 

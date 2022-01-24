@@ -98,7 +98,12 @@ function RecordsTable(props: RecordsTableProps) {
           ),
         },
         {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-        // {field: 'created_by', headerName: 'Created by', type: 'string', width: 200},
+        {
+          field: 'created_by',
+          headerName: 'Created by',
+          type: 'string',
+          width: 200,
+        },
         {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
         {
           field: 'type',
@@ -117,12 +122,12 @@ function RecordsTable(props: RecordsTableProps) {
             </>
           ),
         },
-        // {
-        //   field: 'updated_by',
-        //   headerName: 'Last updated by',
-        //   type: 'string',
-        //   width: 200,
-        // },
+        {
+          field: 'updated_by',
+          headerName: 'Last updated by',
+          type: 'string',
+          width: 200,
+        },
         {
           field: 'conflicts',
           headerName: 'Conflicts',
