@@ -73,6 +73,7 @@ type RecordFormProps = {
   // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
+  metaSection?: any;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -119,6 +120,7 @@ type RecordFormState = {
    */
   draft_created: string | null;
   error_view: boolean;
+  description: string | null;
 };
 
 class RecordForm extends React.Component<
@@ -150,6 +152,7 @@ class RecordForm extends React.Component<
         revision_cached: null,
         annotation: {},
         error_view: false,
+        description: null,
       });
       // Re-initialize basically everything.
       this.formChanged(true);
@@ -174,6 +177,7 @@ class RecordForm extends React.Component<
       draft_created: null,
       annotation: {},
       error_view: false,
+      description: null,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -257,10 +261,13 @@ class RecordForm extends React.Component<
         throw Error(`Viewset for type '${this_type}' has no views`);
       }
 
+      // this.get_view_description(this.props.ui_specification.viewsets[this_type].views[0])
+
       await this.setState({
         type_cached: this_type,
         view_cached: this.props.ui_specification.viewsets[this_type].views[0],
         revision_cached: this.props.revision_id || null,
+        // description:this.requireDescription(this.props.ui_specification.viewsets[this_type].views[0])
       });
     } catch (err: any) {
       console.error('setUISpec/setLastRev error', err);
@@ -454,6 +461,24 @@ class RecordForm extends React.Component<
       throw Error('The initial values have not been determined yet');
     }
     return this.state.initialValues;
+  }
+
+  requireDescription(viewName: string) {
+    if (viewName === null && this.props.metaSection === null) {
+      console.error('The description has not been determined yet');
+      return '';
+    }
+    console.log('+++++++++++' + viewName);
+    console.log(this.props.metaSection);
+    if (
+      viewName !== null &&
+      this.props.metaSection !== undefined &&
+      this.props.metaSection[viewName] !== undefined &&
+      this.props.metaSection[viewName]['sectiondescription' + viewName] !==
+        undefined
+    )
+      return this.props.metaSection[viewName]['sectiondescription' + viewName];
+    return '';
   }
 
   filterValues(values: object) {
@@ -681,6 +706,7 @@ class RecordForm extends React.Component<
       const is_final_view =
         view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
       // this expression checks if we have the last element in the viewset array
+      const description = this.requireDescription(viewName);
 
       return (
         <React.Fragment>
@@ -759,7 +785,10 @@ class RecordForm extends React.Component<
               }
             </Typography>
           </Box>
-
+          <Box bgcolor={'#fafafa'} p={2} style={{border: '1px #eeeeee dashed'}}>
+            <Typography>{description}</Typography>
+          </Box>
+          <br />
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
@@ -790,7 +819,7 @@ class RecordForm extends React.Component<
                     <Grid
                       item
                       sm={
-                        String(process.env.REACT_APP_SERVER) === 'developer'
+                        String(process.env.REACT_APP_SERVER) === 'developers'
                           ? 6
                           : 12
                       }
@@ -911,7 +940,7 @@ class RecordForm extends React.Component<
                         </ButtonGroup>
                       )}
                     </Grid>
-                    {String(process.env.REACT_APP_SERVER) === 'developer' && (
+                    {String(process.env.REACT_APP_SERVER) === 'developers' && (
                       <Grid item sm={6} xs={12}>
                         <BoxTab title={'Developer tool: form state'} />
                         <Box

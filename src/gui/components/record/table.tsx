@@ -198,15 +198,33 @@ function RecordsTable(props: RecordsTableProps) {
               >
                 Created: {(params.getValue('created') || '').toString()}
               </Typography>
-
               <Typography
-                color="error"
+                color="textSecondary"
                 variant="subtitle2"
                 gutterBottom
                 component="div"
               >
-                {params.getValue('conflicts') === true ? 'Conflict' : ''}
+                Created By {params.getValue('created_by')}
               </Typography>
+              <Typography
+                color="textSecondary"
+                variant="subtitle2"
+                gutterBottom
+                component="div"
+              >
+                Updated By {params.getValue('updated_by')}
+              </Typography>
+
+              {params.getValue('conflicts') === true && (
+                <Typography
+                  color="error"
+                  variant="subtitle2"
+                  gutterBottom
+                  component="div"
+                >
+                  Conflict
+                </Typography>
+              )}
 
               <Typography>
                 <br />{' '}
@@ -237,7 +255,7 @@ function RecordsTable(props: RecordsTableProps) {
           getRowId={r => r.record_id}
           columns={columns}
           autoHeight
-          rowHeight={not_xs ? 52 : 100}
+          rowHeight={not_xs ? 52 : 130}
           pageSize={
             maxRows !== null
               ? not_xs

@@ -547,7 +547,6 @@ class RecordDraftState {
     this.touched_fields.clear();
 
     this.props = newProps;
-
     this._fetchData(loadedProps);
   }
 

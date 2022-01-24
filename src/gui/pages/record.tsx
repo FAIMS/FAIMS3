@@ -39,7 +39,11 @@ import {ActionType} from '../../actions';
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
-import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
+import {
+  ProjectUIModel,
+  ProjectInformation,
+  SectionMeta,
+} from '../../datamodel/ui';
 import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../store';
 import {getUiSpecForProject} from '../../uiSpecification';
@@ -52,6 +56,8 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 
 import {makeStyles} from '@material-ui/core/styles';
+
+import {getProjectMetadata} from '../../projectMetadata';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -100,6 +106,7 @@ export default function Record() {
   const [revisions, setRevisions] = React.useState([] as string[]);
   const [error, setError] = useState(null as null | {});
   const classes = useStyles();
+  const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -114,6 +121,11 @@ export default function Record() {
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
+    if (project_id !== null) {
+      getProjectMetadata(project_id, 'sections').then(res =>
+        setMetaSection(res)
+      );
+    }
   }, [project_id]);
 
   useEffect(() => {
@@ -128,7 +140,8 @@ export default function Record() {
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
-
+  console.log('--------Meta Section');
+  console.log(metaSection);
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} />
@@ -177,6 +190,7 @@ export default function Record() {
                     revision_id={revision_id}
                     ui_specification={uiSpec}
                     draft_id={draft_id}
+                    metaSection={metaSection}
                   />
                 );
               }
