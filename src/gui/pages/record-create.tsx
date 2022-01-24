@@ -36,7 +36,11 @@ import {store} from '../../store';
 import {generateFAIMSDataID} from '../../data_storage';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID, RecordID} from '../../datamodel/core';
-import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
+import {
+  ProjectUIModel,
+  ProjectInformation,
+  SectionMeta,
+} from '../../datamodel/ui';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
@@ -47,6 +51,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {makeStyles} from '@material-ui/core/styles';
+import {getProjectMetadata} from '../../projectMetadata';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -138,8 +143,15 @@ function DraftEdit(props: DraftEditProps) {
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
   const classes = useStyles();
+  const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
+
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
+    if (project_id !== null) {
+      getProjectMetadata(project_id, 'sections').then(res =>
+        setMetaSection(res)
+      );
+    }
   }, [project_id]);
 
   if (error !== null) {
@@ -176,6 +188,7 @@ function DraftEdit(props: DraftEditProps) {
               type={type_name}
               ui_specification={uiSpec}
               record_id={record_id}
+              metaSection={metaSection}
             />
           </Box>
         </Paper>
