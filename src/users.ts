@@ -69,15 +69,37 @@ export async function setTokenForCluster(
   cluster_id: string
 ) {
   try {
-    await local_auth_db.put({
+    const doc = {
       _id: cluster_id,
       token: token,
       pubkey: pubkey,
       pubalg: pubalg,
-    });
-  } catch (err) {
-    console.warn('Failed to set token for', cluster_id, err);
-    throw Error(`Failed to set token for: ${cluster_id}`);
+    };
+    console.error('Token info is:', doc);
+    await local_auth_db.put(doc);
+  } catch (err: any) {
+    if (err.status === 409) {
+      try {
+        const _rev = (await local_auth_db.get(cluster_id))._rev;
+        await local_auth_db.put({
+          _id: cluster_id,
+          _rev: _rev,
+          token: token,
+          pubkey: pubkey,
+          pubalg: pubalg,
+        });
+      } catch (err_conflict) {
+        console.warn(
+          'Failed to set token when conflicting for',
+          cluster_id,
+          err_conflict
+        );
+        throw Error(`Failed to set token when conflicting for: ${cluster_id}`);
+      }
+    } else {
+      console.warn('Failed to set token for', cluster_id, err);
+      throw Error(`Failed to set token for: ${cluster_id}`);
+    }
   }
 }
 
@@ -137,6 +159,7 @@ export async function parseToken(
 ): Promise<TokenContents | undefined> {
   const res = await jwtVerify(token, pubkey);
   const payload = res.payload;
+  console.error('Token payload is:', payload);
   const username = payload.sub ?? undefined;
   if (username === undefined) {
     return undefined;
