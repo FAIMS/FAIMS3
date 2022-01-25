@@ -63,7 +63,7 @@ export class TakePhoto extends React.Component<
       const image = base64image_to_blob(
         await Camera.getPhoto({
           quality: 90,
-          allowEditing: true,
+          allowEditing: false,
           resultType: CameraResultType.Base64,
         })
       );

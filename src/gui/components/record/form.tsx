@@ -785,9 +785,10 @@ class RecordForm extends React.Component<
               }
             </Typography>
           </Box>
+          {description!==''&&
           <Box bgcolor={'#fafafa'} p={2} style={{border: '1px #eeeeee dashed'}}>
             <Typography>{description}</Typography>
-          </Box>
+          </Box>}
           <br />
           <Formik
             initialValues={initialValues}

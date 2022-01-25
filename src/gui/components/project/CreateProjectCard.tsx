@@ -561,13 +561,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                       ) : (
                         ''
                       )}
-                      <ProjectSubmit
+                      {/* <ProjectSubmit
                         id="gotonextbehaviour"
                         type="submit"
                         isSubmitting={false}
                         text="Save and Next"
                         onButtonClick={() => handlerprojectsubmit_pounch()}
-                      />
+                      /> */}
                     </TabPanel>
                     <TabPanel
                       value={projecttabvalue}
