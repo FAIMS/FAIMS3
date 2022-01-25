@@ -74,6 +74,7 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
       'jwt_token' in connection_info &&
       connection_info.jwt_token !== undefined
     ) {
+      console.debug('Using JWT for connection', connection_info);
       opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
     }
     opts.keepalive = true;
