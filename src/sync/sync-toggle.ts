@@ -53,7 +53,7 @@ export function listenSyncingProject(
   );
 }
 
-export function isSyncingProject(active_id: ProjectID) {
+export function isSyncingProject(active_id: ProjectID): boolean {
   return data_dbs[active_id]!.is_sync;
 }
 

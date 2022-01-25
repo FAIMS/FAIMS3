@@ -28,6 +28,7 @@ import {
 } from '../datamodel/core';
 import {
   ConnectionInfo,
+  PossibleConnectionInfo,
   ListingsObject,
   ProjectObject,
 } from '../datamodel/database';
@@ -161,6 +162,28 @@ export async function update_directory(
 }
 
 /**
+ * Reprocess a listing, usually causing the connections to be recreated.
+ *
+ * This purpose of this is to be a hook when a user on the devices changes
+ * something that would require the reprocessing of the listing (rather than a
+ * change in couchdb).
+ *
+ * @param listing_id string: the id of the listing to reprocess
+ */
+export function reprocess_listing(listing_id: string) {
+  console.log('Reprocessing', listing_id);
+  directory_db.local
+    .get(listing_id)
+    // If get succeeds, undelete/create:
+    .then(
+      existing_listing => process_listing(false, existing_listing),
+      // Even for 404 errors, since the listing is active, it should exist
+      // so it's an error if it doesn't exist.
+      err => events.emit('listing_error', listing_id, err)
+    );
+}
+
+/**
  * Deletes or updates a listing: If the listing is newly synced (needs a local
  * PouchDB to be created) or has been removed
  *
@@ -218,10 +241,14 @@ export async function update_listing(
   console.debug(`Processing listing id ${listing_id}`);
 
   const jwt_token = await getTokenForCluster(listing_id);
+  let jwt_conn: PossibleConnectionInfo = {};
   if (jwt_token === undefined) {
     console.debug('No JWT token for:', listing_id);
   } else {
     console.debug('Using JWT token for:', listing_id);
+    jwt_conn = {
+      jwt_token: jwt_token,
+    };
   }
 
   //const people_local_id = listing_object['people_db']
@@ -234,7 +261,8 @@ export async function update_listing(
 
   const projects_connection = materializeConnectionInfo(
     (await get_default_instance())['projects_db'],
-    listing_object['projects_db']
+    listing_object['projects_db'],
+    jwt_conn
   );
 
   //const people_connection = materializeConnectionInfo(
