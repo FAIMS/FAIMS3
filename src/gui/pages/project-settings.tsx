@@ -85,6 +85,7 @@ export default function ProjectSettings() {
   }, []);
 
   console.debug('MetaDB contents', metadbContents);
+  console.log(project_info)
 
   return project_info ? (
     <Container maxWidth="lg">
@@ -100,6 +101,7 @@ export default function ProjectSettings() {
         </Typography>
       </Box>
       <Paper square>
+        {project_info.status!=='live'&&
         <Button
           color="primary"
           size="large"
@@ -109,6 +111,7 @@ export default function ProjectSettings() {
         >
           Edit Notebook Design
         </Button>
+        }
         <br />
         <Button
           color="primary"
