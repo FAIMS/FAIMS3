@@ -77,8 +77,7 @@ export class TakePhoto extends React.Component<
   }
   render() {
     const images = this.props.field.value;
-    const error = this.props.form.errors[this.props.field.name];
-    console.log(images);
+    const error = this.props.form.errors[this.props.field.name];    
     const image_tag_list = [];
     if (images !== null && images !== undefined) {
       for (const image of images) {
