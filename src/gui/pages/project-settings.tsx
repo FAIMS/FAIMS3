@@ -85,7 +85,7 @@ export default function ProjectSettings() {
   }, []);
 
   console.debug('MetaDB contents', metadbContents);
-  console.log(project_info)
+  console.log(project_info);
 
   return project_info ? (
     <Container maxWidth="lg">
@@ -101,17 +101,17 @@ export default function ProjectSettings() {
         </Typography>
       </Box>
       <Paper square>
-        {project_info.status!=='live'&&
-        <Button
-          color="primary"
-          size="large"
-          startIcon={<EditIcon />}
-          component={RouterLink}
-          to={ROUTES.PROJECT_DESIGN + project_id}
-        >
-          Edit Notebook Design
-        </Button>
-        }
+        {project_info.status !== 'live' && (
+          <Button
+            color="primary"
+            size="large"
+            startIcon={<EditIcon />}
+            component={RouterLink}
+            to={ROUTES.PROJECT_DESIGN + project_id}
+          >
+            Edit Notebook Design
+          </Button>
+        )}
         <br />
         <Button
           color="primary"
