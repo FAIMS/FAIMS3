@@ -9,6 +9,7 @@ import {
   getTokenContentsForCluster,
   getAuthMechianismsForListing,
 } from '../../../users';
+import {reprocess_listing} from '../../../sync/process-initialization';
 
 export type LoginFormProps = {
   listing_id: string;
@@ -47,6 +48,7 @@ function LoginButton(props: LoginButtonProps) {
                 );
                 console.error('token is', token);
                 props.setToken(token);
+                reprocess_listing(props.listing_id);
               })
               .catch(err => {
                 console.warn(
