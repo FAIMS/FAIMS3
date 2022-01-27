@@ -188,7 +188,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         ...ini_projectvalue,
         project_id: props.project_id,
       });
-    console.log(initialValues);
+    console.log('initialValues', initialValues);
   }, [props.project_info]);
 
   useEffect(() => {
@@ -240,7 +240,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       {...ini_projectvalue, project_id: props.project_id},
       'project'
     );
-    console.log(projectui);
+    console.log('projectui', projectui);
     const inivalue = setProjectInitialValues(projectui, 'start-view', {
       _id: props.project_id,
     });
@@ -255,7 +255,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     setvalidationSchema(getValidationSchemaForViewset(projectui, 'project'));
   };
 
-  const setinit = () => {
+  const setinit = async () => {
     if (props.project_id === null || props.project_id === undefined) {
       //if create new notebook then set an empty formUI
       setinifornewproject();
@@ -269,8 +269,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       );
       setvalidationSchema(getValidationSchemaForViewset(projectui, 'project'));
 
-      getprojectmeta();
-      console.log(get_autoincrement());
+      await getprojectmeta();
+      console.log('get_autoincrement', get_autoincrement());
     }
 
     setProjecttabvalue(0);
@@ -320,7 +320,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           autoince.label
         );
       } catch (error) {
-        console.error(error);
+        console.error('Failed to add autoincrement reference', error);
       }
     }
   };
@@ -330,10 +330,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       await setUiSpecForProject(res ?? project_id, formuiSpec);
 
       const autoincrecs = get_autoincrement();
-      add_autoince_refereence(autoincrecs);
+      await add_autoince_refereence(autoincrecs);
     } catch (err) {
       console.error(
-        'databases needs cleaning value not saved...',
+        'Failed to set UI spec and autoinc reference',
         res,
         project_id,
         err
@@ -356,7 +356,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
               _id: project_id,
             })
           );
-          console.log(initialValues);
+          console.log('initialValues', initialValues);
         }
       } catch (error) {
         console.error('DO not get the meta data...', error);
@@ -396,7 +396,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           if (project_id !== null)
             await setProjectMetadata(project_id, key, values[key]);
         } catch (err) {
-          console.error('databases needs cleaning for update error...', err);
+          console.error(
+            'Failed to set project metadata',
+            project_id,
+            key,
+            values[key],
+            err
+          );
         }
       }
 
@@ -409,12 +415,17 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             pvlues.projectvalue
           );
       } catch (err) {
-        console.error('databases needs cleaning for update error...', err);
+        console.error(
+          'Failed to set project value',
+          project_id,
+          pvlues.projectvalue,
+          err
+        );
       }
 
-      saveattachement(projectvalue);
+      await saveattachement(projectvalue);
     } catch (err) {
-      console.error('databases not created...', err);
+      console.error('Failed to update project', project_id, err);
     }
   };
 
@@ -428,13 +439,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     setProjectValue(newproject);
   };
 
-  const handleSaveUiSpec = () => {
+  const handleSaveUiSpec = async () => {
     if (
       project_id !== '' &&
       project_id !== null &&
       Object.keys(formuiSpec['fields']).length !== 0
     ) {
-      saveformuiSpec();
+      await saveformuiSpec();
     }
   };
 
@@ -446,7 +457,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     //save into local pounch
     try {
       if (project_id === null) {
-        await create_new_project_dbs(projectvalue.name).then(res => {
+        await create_new_project_dbs(projectvalue.name).then(async res => {
           console.log('projectid' + res);
           if (res !== '' && res !== null) {
             setProjectID(res);
@@ -458,7 +469,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             res !== null &&
             Object.keys(formuiSpec['fields']).length !== 0
           ) {
-            saveformuiSpec(res);
+            await saveformuiSpec(res);
           }
         });
       }
@@ -473,16 +484,16 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       project_id !== null &&
       Object.keys(formuiSpec['fields']).length !== 0
     ) {
-      saveformuiSpec();
+      await saveformuiSpec();
     }
     try {
-      updateproject(projectvalue, PROJECT_META);
+      await updateproject(projectvalue, PROJECT_META);
     } catch (err) {
       console.error('not saved meta data', err);
     }
   };
 
-  const handlerprojectsubmit_counch = () => {
+  const handlerprojectsubmit_counch = async () => {
     //if project online save it
     //else if project local, submit request in Beta
 
@@ -491,7 +502,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       newvalue['isrequest'] = true;
       newvalue['project_status'] = 'pending';
       setProjectValue({...newvalue});
-      updateproject(newvalue, ['isrequest', 'project_status']);
+      await updateproject(newvalue, ['isrequest', 'project_status']);
     } catch (err) {
       console.error('not saved meta data', err);
     }
