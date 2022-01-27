@@ -65,6 +65,7 @@ export class TakePhoto extends React.Component<
           quality: 90,
           allowEditing: false,
           resultType: CameraResultType.Base64,
+          correctOrientation: true,
         })
       );
       console.log(image);
@@ -82,8 +83,11 @@ export class TakePhoto extends React.Component<
       for (const image of images) {
         const image_ref = URL.createObjectURL(image);
         const image_tag = (
-          <img className="faims-take-photo-img" src={image_ref} />
-        );
+          <img
+            style={{height: '200px', width: '100%', objectFit: 'cover'}}
+            src={image_ref}
+          />
+        ); // faims-take-photo-img"
         image_tag_list.push(image_tag);
       }
     }
@@ -91,6 +95,15 @@ export class TakePhoto extends React.Component<
     if (error) {
       error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
     }
+
+    // https://mui.com/components/image-list/#masonry-image-list
+    // Masonry image lists use dynamically sized container heights
+    // that reflect the aspect ratio of each image. This image list
+    // is best used for browsing uncropped peer content.
+    // But it doesn't look like we support masonry right now.
+    //
+    // It also looks like we don't have multiple photos being returned...
+
     return (
       <div>
         {this.props.helperText}
@@ -109,17 +122,18 @@ export class TakePhoto extends React.Component<
             ? this.props.label
             : 'Take Photo'}
         </Button>
-
         {image_tag_list ? (
-          <ImageList rowHeight={164}>
+          <ImageList cols={1} gap={8}>
             {image_tag_list.map((image_tag, index) => (
-              <ImageListItem key={index}>{image_tag}</ImageListItem>
-            ))}
+              <ImageListItem style={{width: '300', margin: '5px'}} key={index}>
+                {image_tag}
+              </ImageListItem>
+            ))}{' '}
           </ImageList>
         ) : (
           <span>No photo taken.</span>
         )}
-        {error_text}
+        {error_text}{' '}
       </div>
     );
   }
