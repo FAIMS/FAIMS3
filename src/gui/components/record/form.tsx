@@ -464,7 +464,7 @@ class RecordForm extends React.Component<
   }
 
   requireDescription(viewName: string) {
-    if (viewName === null && this.props.metaSection === null) {
+    if (viewName === null || this.props.metaSection === null) {
       console.error('The description has not been determined yet');
       return '';
     }
