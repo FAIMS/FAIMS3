@@ -52,6 +52,7 @@ export interface DraftMetadata {
   created: Date;
   updated: Date;
   type: string;
+  hrid: string | null;
 }
 
 export type DraftMetadataList = {

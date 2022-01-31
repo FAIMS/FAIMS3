@@ -147,16 +147,11 @@ export async function getHRID(
   revision: Revision
 ): Promise<string | null> {
   let hrid_name: string | null = null;
-  try {
-    for (const possible_name of Object.keys(revision.avps)) {
-      if (possible_name.startsWith(HRID_STRING)) {
-        hrid_name = possible_name;
-        break;
-      }
+  for (const possible_name of Object.keys(revision.avps)) {
+    if (possible_name.startsWith(HRID_STRING)) {
+      hrid_name = possible_name;
+      break;
     }
-  } catch {
-    console.error('Error');
-    return null;
   }
 
   console.debug('hrid_name:', hrid_name);
