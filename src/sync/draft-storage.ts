@@ -26,6 +26,7 @@ import {
   ProjectID,
   RevisionID,
   FAIMSTypeName,
+  HRID_STRING
 } from '../datamodel/core';
 import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
 import {local_pouch_options} from './connection';
@@ -41,6 +42,8 @@ export const draft_db: DraftDB = new PouchDB(
   local_pouch_options
 );
 
+
+
 export async function getStagedData(
   draft_id: string
 ): Promise<EncodedDraft & PouchDB.Core.GetMeta> {
@@ -48,6 +51,7 @@ export async function getStagedData(
     attachments: true,
     binary: true,
   });
+
   for (const [field_name, attachment_list] of Object.entries(
     draft.attachments
   )) {
