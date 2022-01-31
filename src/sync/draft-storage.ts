@@ -26,6 +26,7 @@ import {
   ProjectID,
   RevisionID,
   FAIMSTypeName,
+  HRID_STRING,
 } from '../datamodel/core';
 import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
 import {local_pouch_options} from './connection';
@@ -253,6 +254,7 @@ export async function listDraftMetadata(
         existing: record.existing,
         updated: new Date(record.updated),
         type: record.type,
+        hrid: getDraftHRID(record),
       };
     });
     return out;
@@ -260,4 +262,27 @@ export async function listDraftMetadata(
     console.warn('Failed to get metadata', err);
     throw Error('failed to get metadata');
   }
+}
+
+function getDraftHRID(record: EncodedDraft): string | null {
+  let hrid_name: string | null = null;
+  for (const possible_name of Object.keys(record.fields)) {
+    if (possible_name.startsWith(HRID_STRING)) {
+      hrid_name = possible_name;
+      break;
+    }
+  }
+
+  console.debug('hrid_name:', hrid_name);
+  if (hrid_name === null) {
+    console.warn('No HRID field found');
+    return null;
+  }
+
+  const hrid_id = record.fields[hrid_name] as string | undefined | null;
+  if (hrid_id === undefined || hrid_id === null) {
+    console.warn('No HRID field set for revision');
+    return null;
+  }
+  return hrid_id;
 }
