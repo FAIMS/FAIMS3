@@ -9,5 +9,8 @@
       "launchShowDuration": 0
     }
   },
+  "server": {
+    "allowNavigation": ["*.faims.edu.au"]
+  },
   "cordova": {}
 }
