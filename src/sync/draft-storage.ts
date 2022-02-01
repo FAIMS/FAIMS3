@@ -42,8 +42,6 @@ export const draft_db: DraftDB = new PouchDB(
   local_pouch_options
 );
 
-
-
 export async function getStagedData(
   draft_id: string
 ): Promise<EncodedDraft & PouchDB.Core.GetMeta> {
