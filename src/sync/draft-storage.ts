@@ -49,6 +49,7 @@ export async function getStagedData(
     attachments: true,
     binary: true,
   });
+
   for (const [field_name, attachment_list] of Object.entries(
     draft.attachments
   )) {
