@@ -29,13 +29,9 @@ function LoginButton(props: LoginButtonProps) {
       variant="contained"
       color="primary"
       onClick={() => {
-        let oauth_window: any = null;
         window.addEventListener(
           'message',
           async event => {
-            if (event.source !== oauth_window) {
-              console.error('Bad message:', event);
-            }
             console.log('Received token for:', props.listing_id);
             await setTokenForCluster(
               event.data.token,
@@ -62,10 +58,29 @@ function LoginButton(props: LoginButtonProps) {
           },
           false
         );
-        oauth_window = InAppBrowser.create(props.auth_info.portal);
+        const oauth_window = InAppBrowser.create(props.auth_info.portal);
         if (oauth_window === null) {
           console.error('Failed to open oauth window');
         }
+        oauth_window.on('message').subscribe(async event => {
+          console.log('Received token for:', props.listing_id);
+          await setTokenForCluster(
+            event.data.token,
+            event.data.pubkey,
+            event.data.pubalg,
+            props.listing_id
+          )
+            .then(async () => {
+              const token = await getTokenContentsForCluster(props.listing_id);
+              console.error('token is', token);
+              props.setToken(token);
+              reprocess_listing(props.listing_id);
+            })
+            .catch(err => {
+              console.warn('Failed to get token for: ', props.listing_id, err);
+              props.setToken(undefined);
+            });
+        });
       }}
     >
       Sign-in with {props.auth_info.name}
