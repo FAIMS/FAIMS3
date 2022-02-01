@@ -48,7 +48,7 @@
     "@awesome-cordova-plugins/core": "^5.38.0",
     "@awesome-cordova-plugins/in-app-browser": "^5.38.0",
     "@capacitor/android": "2.4.9",
-    "@capacitor/cli": "2.5.0",
+    "@capacitor/cli": "3.4.0",
     "@capacitor/core": "2.4.9",
     "@capacitor/ios": "2.4.9",
     "@demvsystems/yup-ast": "1.2.2",
