@@ -68,7 +68,7 @@ function DraftRecord(props: DraftsRecordProps) {
   const columns: GridColDef[] = not_xs
     ? [
         {
-          field: '_id',
+          field: 'hrid',
           headerName: 'ID',
           description: 'Draft ID',
           type: 'string',
@@ -106,10 +106,30 @@ function DraftRecord(props: DraftsRecordProps) {
         },
         {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
         {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+        {
+          field: '_id',
+          headerName: 'UUID',
+          description: 'Draft ID',
+          type: 'string',
+          width: not_xs ? 300 : 100,
+          renderCell: (params: GridCellParams) => (
+            <Link
+              component={RouterLink}
+              to={ROUTES.getDraftRoute(
+                project_id ?? 'dummy',
+                params.getValue('_id') as DraftMetadata['_id'],
+                params.getValue('existing')! as DraftMetadata['existing'],
+                params.getValue('type')! as DraftMetadata['type']
+              )}
+            >
+              {params.value}
+            </Link>
+          ),
+        },
       ]
     : [
         {
-          field: '_id',
+          field: 'hrid',
           headerName: 'Draft',
           description: 'Draft ID',
           type: 'string',
@@ -154,7 +174,6 @@ function DraftRecord(props: DraftsRecordProps) {
               >
                 Created: {(params.getValue('created') || '').toString()}
               </Typography>
-
               <Typography>
                 <br />{' '}
               </Typography>
