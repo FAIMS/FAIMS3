@@ -1,6 +1,7 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
 import React, {useState, useEffect} from 'react';
 import {Box, Button, CircularProgress} from '@material-ui/core';
+import {InAppBrowser} from '@awesome-cordova-plugins/in-app-browser';
 
 import {TokenContents} from '../../../datamodel/core';
 import {AuthInfo} from '../../../datamodel/database';
@@ -28,7 +29,7 @@ function LoginButton(props: LoginButtonProps) {
       variant="contained"
       color="primary"
       onClick={() => {
-        let oauth_window: Window | null = null;
+        let oauth_window: any = null;
         window.addEventListener(
           'message',
           async event => {
@@ -61,7 +62,7 @@ function LoginButton(props: LoginButtonProps) {
           },
           false
         );
-        oauth_window = window.open(props.auth_info.portal);
+        oauth_window = InAppBrowser.create(props.auth_info.portal);
         if (oauth_window === null) {
           console.error('Failed to open oauth window');
         }
