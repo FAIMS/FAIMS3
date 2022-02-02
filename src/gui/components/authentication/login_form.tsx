@@ -75,6 +75,7 @@ function LoginButton(props: LoginButtonProps) {
               console.error('token is', token);
               props.setToken(token);
               reprocess_listing(props.listing_id);
+              oauth_window.close(); // We cannot close the iab inside the iab
             })
             .catch(err => {
               console.warn('Failed to get token for: ', props.listing_id, err);
