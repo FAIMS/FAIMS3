@@ -8,4 +8,6 @@ else
 	platform="$1";
 fi
 
-git describe --long 2>/dev/null || git describe --all --long --always | sed "s#heads/#${platform}.#"
+descstring=$(git describe --long 2>/dev/null || git describe --all --long --always) 
+#echo "$descstring"
+echo "$descstring" | sed -E "s#heads/[A-Za-z0-9]+-0-g#${platform}.#"
