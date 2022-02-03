@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=utf-8">
@@ -462,7 +463,7 @@ input[type="text"]:focus, textarea:focus {
                 } catch(err) {
                     error_message(err.message);
                 }
-                
+
                 var db_index = Object.keys(created_dbs).length - 1;
 
                 var table_elem = document.getElementById('table');
@@ -485,7 +486,7 @@ input[type="text"]:focus, textarea:focus {
                 var replicate_placeholder = document.createElement('span');
                 var start_button = document.createElement('input');
                 this.replicate_log = document.createElement('div');
-                
+
                 title_cell.appendChild(left_button);
                 title_cell.appendChild(title);
                 title_cell.appendChild(load_button);
@@ -503,7 +504,7 @@ input[type="text"]:focus, textarea:focus {
                 this.add_cell.appendChild(add_buttons);
                 this.column.appendChild(this.add_cell);
                 table_elem.insertBefore(this.column, add_db_elem);
-                
+
                 this.column.className='column';
                 this.add_cell.className='db_add_item db_item linked_horizontal';
                 title.className = 'title';
@@ -574,6 +575,7 @@ input[type="text"]:focus, textarea:focus {
                     this.db.allDocs({
                         include_docs: true,
                         conflicts: true,
+                        attachments: true,
                         binary: true,
                     }).then(all_docs => {
                         for(var cell_id in this.cells) {
@@ -583,13 +585,14 @@ input[type="text"]:focus, textarea:focus {
                         }
 
                         all_docs.rows.forEach(doc => {
-                            var first_run = this.cells[doc.id] == null;
-                            var cell_data = this.cells[doc.id] = this.cells[doc.id] || {};
-                            var cell      = cell_data.cell     = cell_data.cell     || document.createElement('form');
-                            var buttons   = cell_data.buttons  = cell_data.buttons  || document.createElement('div');
-                            var pre       = cell_data.pre      = cell_data.pre      || document.createElement('textarea');
-                            var del       = cell_data.del      = cell_data.del      || document.createElement('input');
-                            var mod       = cell_data.mod      = cell_data.mod      || document.createElement('input');
+                            var first_run  = this.cells[doc.id] == null;
+                            var cell_data  = this.cells[doc.id] = this.cells[doc.id] || {};
+                            var cell       = cell_data.cell     = cell_data.cell     || document.createElement('form');
+                            var buttons    = cell_data.buttons  = cell_data.buttons  || document.createElement('div');
+                            var pre        = cell_data.pre      = cell_data.pre      || document.createElement('textarea');
+                            var del        = cell_data.del      = cell_data.del      || document.createElement('input');
+                            var mod        = cell_data.mod      = cell_data.mod      || document.createElement('input');
+                            var attach     = cell_data.attach   = cell_data.attach   || document.createElement('p');
 
                             if(cell_data.cell.parentElement != this.column)
                                 this.column.insertBefore(cell, this.add_cell);
@@ -599,6 +602,7 @@ input[type="text"]:focus, textarea:focus {
                                 buttons.appendChild(mod);
                                 cell.appendChild(pre);
                                 cell.appendChild(buttons);
+                                cell.appendChild(attach);
 
                                 cell.className = 'cell';
                                 pre.className = 'db_data';
@@ -606,8 +610,10 @@ input[type="text"]:focus, textarea:focus {
                                 buttons.className = 'linked_vertical buttons';
                                 del.type='button';
                                 del.value='×';
+                                del.title='Delete document';
                                 mod.type = 'submit';
                                 mod.value = '⏎';
+                                mod.title='Update document';
                             }
 
                             const new_value = JSON.stringify(doc.doc, null, '    ');
@@ -618,6 +624,18 @@ input[type="text"]:focus, textarea:focus {
                                 pre.style.height = '0px';
                                 pre.style.width = Math.min(MAX_WIDTH, pre.offsetWidth + pre.scrollWidth) + 'px';
                                 pre.style.height = Math.min(MAX_HEIGHT, pre.offsetHeight + pre.scrollHeight) + 'px';
+                            }
+                            if (doc.doc._attachments !== undefined) {
+                                for (const [name, pouch_attach] of Object.entries(doc.doc._attachments)) {
+                                    const attach_link = document.createElement('a');
+                                    attach_link.href = URL.createObjectURL(
+                                        new File([pouch_attach.data], pouch_attach.content_type)
+                                    );
+                                    attach_link.innerText = name;
+                                    attach_link.download = name;
+                                    attach_link.type = pouch_attach.content_type;
+                                    attach.appendChild(attach_link);
+                                }
                             }
 
                             // Event handlers change based on doc._rev
