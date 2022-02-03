@@ -710,7 +710,7 @@ class RecordForm extends React.Component<
 
       return (
         <React.Fragment>
-          <Box display={{xs: 'none', lg: 'block'}}>
+          <Box display={{xs: 'none', sm: 'block'}} style={{padding:0,overflow:'auto'}}>
             <Stepper nonLinear activeStep={view_index} alternativeLabel>
               {ui_specification.viewsets[viewsetName].views.map(
                 (view_name: string) => (
@@ -733,7 +733,7 @@ class RecordForm extends React.Component<
               )}
             </Stepper>
           </Box>
-          <Box display={{xs: 'block', lg: 'none'}}>
+          <Box display={{xs: 'block', sm: 'none'}} >
             <MobileStepper
               variant="text"
               steps={ui_specification.viewsets[viewsetName].views.length}
