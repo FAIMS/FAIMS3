@@ -379,7 +379,6 @@ export const getprojectform = (
         validationSchema: [
           ['yup.string'],
           ['yup.min', 1, 'Too Short!'],
-          ['yup.max', 100, 'Too Long!'],
           ['yup.required'],
         ],
       },
