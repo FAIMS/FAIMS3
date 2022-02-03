@@ -99,6 +99,16 @@ export default function AboutBuild() {
       >
         Refresh the app (like in a browser)!
       </Button>
+      <Button
+        variant="outlined"
+        color={'secondary'}
+        onClick={() => {
+          window.location.pathname = '/minifauxton.html';
+        }}
+        style={{marginRight: '10px'}}
+      >
+        Open MiniFauxton
+      </Button>
     </Container>
   );
 }
