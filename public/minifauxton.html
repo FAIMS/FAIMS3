@@ -569,9 +569,13 @@ input[type="text"]:focus, textarea:focus {
                 add_data.addEventListener('keypress', update_clear);
 
                 this.cells = {};
-                
+
                 var update = () => 
-                    this.db.allDocs({include_docs:true}).then(all_docs => {
+                    this.db.allDocs({
+                        include_docs: true,
+                        conflicts: true,
+                        binary: true,
+                    }).then(all_docs => {
                         for(var cell_id in this.cells) {
                             if(!all_docs.rows.includes(doc => doc.id == cell_id)) {
                                 this.cells[cell_id].cell.parentElement.removeChild(this.cells[cell_id].cell);
@@ -589,13 +593,13 @@ input[type="text"]:focus, textarea:focus {
 
                             if(cell_data.cell.parentElement != this.column)
                                 this.column.insertBefore(cell, this.add_cell);
-                            
+
                             if(first_run) {
                                 buttons.appendChild(del);
                                 buttons.appendChild(mod);
                                 cell.appendChild(pre);
                                 cell.appendChild(buttons);
-                                
+
                                 cell.className = 'cell';
                                 pre.className = 'db_data';
                                 cell.className = 'db_item linked_horizontal';
@@ -605,7 +609,7 @@ input[type="text"]:focus, textarea:focus {
                                 mod.type = 'submit';
                                 mod.value = '⏎';
                             }
-                            
+
                             const new_value = JSON.stringify(doc.doc, null, '    ');
                             const reset_size = pre.value === '';
                             pre.value = new_value;
@@ -645,7 +649,7 @@ input[type="text"]:focus, textarea:focus {
                     }).catch(err => {
                         error_message(err);
                     })
-                
+
                 left_button.addEventListener('click', (event) => {
                     var pins = getPins();
                     var db_index = pins.indexOf(db_name);
@@ -676,7 +680,7 @@ input[type="text"]:focus, textarea:focus {
                         this.update_arrows();
                     }, 60);
                 });
-                
+
                 right_button.addEventListener('click', (event) => {
                     var pins = getPins();
                     var db_index = pins.indexOf(db_name);
@@ -708,7 +712,7 @@ input[type="text"]:focus, textarea:focus {
                         this.update_arrows();
                     }, 60);
                 })
-                
+
                 del_button.addEventListener('click', (event) => {
                     this.column.className += ' column_disappear';
 
@@ -722,7 +726,7 @@ input[type="text"]:focus, textarea:focus {
                         column.className += ' column_shuffle';
                         column.style.transform = 'translateX(-'+my_width+'px)';
                     });
-                    
+
                     add_shuffle(-my_width);
 
                     setTimeout(() => {
@@ -782,7 +786,7 @@ input[type="text"]:focus, textarea:focus {
                 replicate_target.addEventListener('focus', placeholder_event);
                 replicate_target.addEventListener('blur', placeholder_event);
                 placeholder_event();
-                
+
                 this.add_cell.addEventListener('submit', (event) => {
                     event.preventDefault();
                     // Handle add button
@@ -796,7 +800,7 @@ input[type="text"]:focus, textarea:focus {
                     }
                     try {
                         data = JSON.parse(add_data.value);
-                        
+
                         if(data._id !== undefined ) { //Resolve conflicts
                             this.db.get(data._id)
                                 .then(existing => {
@@ -816,7 +820,7 @@ input[type="text"]:focus, textarea:focus {
                     update();
                     return false;
                 });
-                
+
                 update();
             }
         </script>
