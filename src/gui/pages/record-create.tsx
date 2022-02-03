@@ -176,7 +176,7 @@ function DraftEdit(props: DraftEditProps) {
             Record {uiSpec['viewsets'][type_name]['label'] ?? type_name}
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
-            Add an record for the{' '}
+            Add a record for the{' '}
             {project_info !== null ? project_info.name : project_id} project.
           </Typography>
         </Box>
