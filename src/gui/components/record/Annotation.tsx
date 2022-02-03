@@ -135,7 +135,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
             onChange={handlerchangesAnnotation}
             InputProps={{type: 'text'}}
             label={field['meta']['annotation_label']}
-            InputLabelProps={{ shrink: true }}
+            InputLabelProps={{shrink: true}}
           />
         )}
       {field.meta !== undefined &&
@@ -155,7 +155,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
             onChange={handlerchangesUncertainty}
           />
         )}
-        <br/>
+      <br />
     </>
   );
 }
