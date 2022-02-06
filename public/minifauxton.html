@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=utf-8">
@@ -346,7 +347,7 @@ input[type="text"]:focus, textarea:focus {
     content: 'Sync target';
 }
         </style>
-        <script src="http://cdn.jsdelivr.net/npm/pouchdb@7.2.1/dist/pouchdb.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/pouchdb@7.2.1/dist/pouchdb.min.js"></script>
         <script>
             var MAX_WIDTH=600;
             var MAX_HEIGHT=1200;
@@ -462,7 +463,7 @@ input[type="text"]:focus, textarea:focus {
                 } catch(err) {
                     error_message(err.message);
                 }
-                
+
                 var db_index = Object.keys(created_dbs).length - 1;
 
                 var table_elem = document.getElementById('table');
@@ -485,7 +486,7 @@ input[type="text"]:focus, textarea:focus {
                 var replicate_placeholder = document.createElement('span');
                 var start_button = document.createElement('input');
                 this.replicate_log = document.createElement('div');
-                
+
                 title_cell.appendChild(left_button);
                 title_cell.appendChild(title);
                 title_cell.appendChild(load_button);
@@ -503,7 +504,7 @@ input[type="text"]:focus, textarea:focus {
                 this.add_cell.appendChild(add_buttons);
                 this.column.appendChild(this.add_cell);
                 table_elem.insertBefore(this.column, add_db_elem);
-                
+
                 this.column.className='column';
                 this.add_cell.className='db_add_item db_item linked_horizontal';
                 title.className = 'title';
@@ -569,9 +570,14 @@ input[type="text"]:focus, textarea:focus {
                 add_data.addEventListener('keypress', update_clear);
 
                 this.cells = {};
-                
+
                 var update = () => 
-                    this.db.allDocs({include_docs:true}).then(all_docs => {
+                    this.db.allDocs({
+                        include_docs: true,
+                        conflicts: true,
+                        attachments: true,
+                        binary: true,
+                    }).then(all_docs => {
                         for(var cell_id in this.cells) {
                             if(!all_docs.rows.includes(doc => doc.id == cell_id)) {
                                 this.cells[cell_id].cell.parentElement.removeChild(this.cells[cell_id].cell);
@@ -579,33 +585,37 @@ input[type="text"]:focus, textarea:focus {
                         }
 
                         all_docs.rows.forEach(doc => {
-                            var first_run = this.cells[doc.id] == null;
-                            var cell_data = this.cells[doc.id] = this.cells[doc.id] || {};
-                            var cell      = cell_data.cell     = cell_data.cell     || document.createElement('form');
-                            var buttons   = cell_data.buttons  = cell_data.buttons  || document.createElement('div');
-                            var pre       = cell_data.pre      = cell_data.pre      || document.createElement('textarea');
-                            var del       = cell_data.del      = cell_data.del      || document.createElement('input');
-                            var mod       = cell_data.mod      = cell_data.mod      || document.createElement('input');
+                            var first_run  = this.cells[doc.id] == null;
+                            var cell_data  = this.cells[doc.id] = this.cells[doc.id] || {};
+                            var cell       = cell_data.cell     = cell_data.cell     || document.createElement('form');
+                            var buttons    = cell_data.buttons  = cell_data.buttons  || document.createElement('div');
+                            var pre        = cell_data.pre      = cell_data.pre      || document.createElement('textarea');
+                            var del        = cell_data.del      = cell_data.del      || document.createElement('input');
+                            var mod        = cell_data.mod      = cell_data.mod      || document.createElement('input');
+                            var attach     = cell_data.attach   = cell_data.attach   || document.createElement('p');
 
                             if(cell_data.cell.parentElement != this.column)
                                 this.column.insertBefore(cell, this.add_cell);
-                            
+
                             if(first_run) {
                                 buttons.appendChild(del);
                                 buttons.appendChild(mod);
                                 cell.appendChild(pre);
                                 cell.appendChild(buttons);
-                                
+                                cell.appendChild(attach);
+
                                 cell.className = 'cell';
                                 pre.className = 'db_data';
                                 cell.className = 'db_item linked_horizontal';
                                 buttons.className = 'linked_vertical buttons';
                                 del.type='button';
                                 del.value='×';
+                                del.title='Delete document';
                                 mod.type = 'submit';
                                 mod.value = '⏎';
+                                mod.title='Update document';
                             }
-                            
+
                             const new_value = JSON.stringify(doc.doc, null, '    ');
                             const reset_size = pre.value === '';
                             pre.value = new_value;
@@ -614,6 +624,18 @@ input[type="text"]:focus, textarea:focus {
                                 pre.style.height = '0px';
                                 pre.style.width = Math.min(MAX_WIDTH, pre.offsetWidth + pre.scrollWidth) + 'px';
                                 pre.style.height = Math.min(MAX_HEIGHT, pre.offsetHeight + pre.scrollHeight) + 'px';
+                            }
+                            if (doc.doc._attachments !== undefined) {
+                                for (const [name, pouch_attach] of Object.entries(doc.doc._attachments)) {
+                                    const attach_link = document.createElement('a');
+                                    attach_link.href = URL.createObjectURL(
+                                        new File([pouch_attach.data], pouch_attach.content_type)
+                                    );
+                                    attach_link.innerText = name;
+                                    attach_link.download = name;
+                                    attach_link.type = pouch_attach.content_type;
+                                    attach.appendChild(attach_link);
+                                }
                             }
 
                             // Event handlers change based on doc._rev
@@ -645,7 +667,7 @@ input[type="text"]:focus, textarea:focus {
                     }).catch(err => {
                         error_message(err);
                     })
-                
+
                 left_button.addEventListener('click', (event) => {
                     var pins = getPins();
                     var db_index = pins.indexOf(db_name);
@@ -676,7 +698,7 @@ input[type="text"]:focus, textarea:focus {
                         this.update_arrows();
                     }, 60);
                 });
-                
+
                 right_button.addEventListener('click', (event) => {
                     var pins = getPins();
                     var db_index = pins.indexOf(db_name);
@@ -708,7 +730,7 @@ input[type="text"]:focus, textarea:focus {
                         this.update_arrows();
                     }, 60);
                 })
-                
+
                 del_button.addEventListener('click', (event) => {
                     this.column.className += ' column_disappear';
 
@@ -722,7 +744,7 @@ input[type="text"]:focus, textarea:focus {
                         column.className += ' column_shuffle';
                         column.style.transform = 'translateX(-'+my_width+'px)';
                     });
-                    
+
                     add_shuffle(-my_width);
 
                     setTimeout(() => {
@@ -782,7 +804,7 @@ input[type="text"]:focus, textarea:focus {
                 replicate_target.addEventListener('focus', placeholder_event);
                 replicate_target.addEventListener('blur', placeholder_event);
                 placeholder_event();
-                
+
                 this.add_cell.addEventListener('submit', (event) => {
                     event.preventDefault();
                     // Handle add button
@@ -796,7 +818,7 @@ input[type="text"]:focus, textarea:focus {
                     }
                     try {
                         data = JSON.parse(add_data.value);
-                        
+
                         if(data._id !== undefined ) { //Resolve conflicts
                             this.db.get(data._id)
                                 .then(existing => {
@@ -816,7 +838,7 @@ input[type="text"]:focus, textarea:focus {
                     update();
                     return false;
                 });
-                
+
                 update();
             }
         </script>

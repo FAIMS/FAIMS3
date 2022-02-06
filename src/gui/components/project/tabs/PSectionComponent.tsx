@@ -186,7 +186,7 @@ export default function SectionComponent(props: SectionComponent) {
           <Grid item sm={10} xs={12}>
             <Grid container spacing={1}>
               <Grid item sm={4} xs={12}>
-                <Typography variant="subtitle2">
+                <Typography variant="subtitle2" style={{overflow: 'auto'}}>
                   {formuiSpec['fields'][fieldName] !== undefined &&
                   formuiSpec['fields'][fieldName]['component-parameters'][
                     'hrid'
