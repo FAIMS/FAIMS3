@@ -41,7 +41,7 @@ function base64image_to_blob(image: CameraPhoto): Blob {
     bytes[x] = rawData.charCodeAt(x);
   }
   const arr = new Uint8Array(bytes);
-  const blob = new Blob([arr], {type: image.format});
+  const blob = new Blob([arr], {type: 'image/' + image.format});
   return blob;
 }
 

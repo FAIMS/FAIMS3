@@ -77,7 +77,9 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
       console.debug('Using JWT for connection', connection_info);
       opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
     }
-    opts.keepalive = true;
+    // Commented out as it seems this may break sending attachments on
+    // chrome/safari
+    //opts.keepalive = true;
     return PouchDB.fetch(url, opts);
   };
   return new PouchDB(
