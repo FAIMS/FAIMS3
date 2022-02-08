@@ -21,12 +21,11 @@ JAVA_KEY = ENV["JAVA_KEY"]
 JAVA_KEY_PASSWORD = ENV["JAVA_KEY_PASSWORD"]
 FIP_CLOSED_LANE = ENV["FIP_LANE"]
 VERSION= `echo "$(($(date +%s)/60))" | tr -d "\n"`
-VERSION_NAME=`$(../../bin/getDescribeString.sh)"`
+VERSION_NAME=`echo -n "${serverprefix}.$(../../bin/getDescribeString.sh)" | tr -d "\n"`
 platform :android do  
   desc "Deploy a new version to Google Play"
   lane :deploy_alpha do
-    gradle(task: "clean")
-    sh("pwd")
+    gradle(task: "clean")    
     sh("echo", VERSION_NAME)
     sh("../bin/changelog.sh", VERSION)
     gradle(task: "bundle",
