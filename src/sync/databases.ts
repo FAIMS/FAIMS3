@@ -23,6 +23,8 @@ import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
+  POUCH_BATCH_SIZE,
+  POUCH_BATCHES_LIMIT,
 } from '../buildconfig';
 import {
   ActiveDoc,
@@ -348,8 +350,20 @@ export function setLocalConnection<Content extends {}>(
     if (push_too) {
       const options_sync = options as PouchDB.Replication.SyncOptions;
       connection = PouchDB.sync(db_info.remote.db, db_info.local, {
-        push: {live: true, retry: true, ...options_sync.push},
-        pull: {live: true, retry: true, ...(options_sync.pull || {})},
+        push: {
+          live: true,
+          retry: true,
+          batch_size: POUCH_BATCH_SIZE,
+          batches_limit: POUCH_BATCHES_LIMIT,
+          ...options_sync.push,
+        },
+        pull: {
+          live: true,
+          retry: true,
+          batch_size: POUCH_BATCH_SIZE,
+          batches_limit: POUCH_BATCHES_LIMIT,
+          ...(options_sync.pull || {}),
+        },
       });
     } else {
       connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
