@@ -91,7 +91,7 @@ export async function newStagedData(
   type: string,
   field_types: {[field_name: string]: FAIMSTypeName}
 ): Promise<PouchDB.Core.DocumentId> {
-  const _id = uuidv4();
+  const _id = 'drf-' + uuidv4();
   const date = new Date();
 
   return (
