@@ -49,7 +49,7 @@ export interface ProjectRevisionListing {
 export type RecordRevisionListing = RevisionID[];
 
 export function generateFAIMSDataID(): RecordID {
-  return uuidv4();
+  return 'rec-' + uuidv4();
 }
 
 export async function getFirstRecordHead(

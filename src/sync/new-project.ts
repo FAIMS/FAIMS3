@@ -77,7 +77,7 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
 }
 
 function generate_non_unique_project_id(): NonUniqueProjectID {
-  return uuidv4();
+  return 'proj-' + uuidv4();
 }
 
 async function ensure_locally_created_project_listing(): Promise<ListingsObject> {

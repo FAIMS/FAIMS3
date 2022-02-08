@@ -54,11 +54,11 @@ interface FormData {
 }
 
 export function generateFAIMSRevisionID(): RevisionID {
-  return uuidv4();
+  return 'frev-' + uuidv4();
 }
 
 function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
-  return uuidv4();
+  return 'avp-' + uuidv4();
 }
 
 export async function updateHeads(
