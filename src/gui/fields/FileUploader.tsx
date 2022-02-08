@@ -127,7 +127,7 @@ export function FileUploader(props: FieldProps & Props) {
 const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
   'component-name': 'FileUploader',
-  'type-returned': 'faims-core::File', // matches a type in the Project Model
+  'type-returned': 'faims-attachment::Files', // matches a type in the Project Model
   'component-parameters': {
     name: 'file-upload-field',
     id: 'file-upload-field',
