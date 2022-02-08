@@ -416,7 +416,7 @@ registerComponent(
 );
 
 /*
- * For saving and loading attachment with type faims-core::File
+ * For saving and loading attachment with type faims-attachment::Files
  */
 
 setAttachmentLoaderForType('faims-attachment::Files', file_attachments_to_data);
