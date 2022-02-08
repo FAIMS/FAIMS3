@@ -138,6 +138,38 @@ function directory_port(): number {
   }
 }
 
+/*
+ * See batch_size in https://pouchdb.com/api.html#replication
+ */
+function pouch_batch_size(): number {
+  const pouch_batch_size = process.env.REACT_APP_POUCH_BATCH_SIZE;
+  if (pouch_batch_size === '' || pouch_batch_size === undefined) {
+    return 1000;
+  }
+  try {
+    return parseInt(pouch_batch_size);
+  } catch (err) {
+    console.error('Falling back to default pouch_batch_size', err);
+    return 1000;
+  }
+}
+
+/*
+ * See batches_limit in https://pouchdb.com/api.html#replication
+ */
+function pouch_batches_limit(): number {
+  const pouch_batches_limit = process.env.REACT_APP_POUCH_BATCHES_LIMIT;
+  if (pouch_batches_limit === '' || pouch_batches_limit === undefined) {
+    return 10;
+  }
+  try {
+    return parseInt(pouch_batches_limit);
+  } catch (err) {
+    console.error('Falling back to default pouch_batches_limit', err);
+    return 10;
+  }
+}
+
 function directory_auth(): undefined | {username: string; password: string} {
   // Used in the server, as opposed to COUCHDB_USER and PASSWORD for testing.
   const username = process.env.REACT_APP_DIRECTORY_USERNAME;
@@ -170,4 +202,6 @@ export const DIRECTORY_PORT = directory_port();
 export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
+export const POUCH_BATCH_SIZE = pouch_batch_size();
+export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
 export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
