@@ -28,7 +28,7 @@ interface FullAttachments {
 
 export function generate_file_name(): string {
   console.debug('Generating a uuid-filename');
-  return uuidv4();
+  return 'att-' + uuidv4();
 }
 
 export function file_data_to_attachments(
