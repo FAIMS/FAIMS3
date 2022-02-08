@@ -20,15 +20,20 @@ JAVA_KEYSTORE_PASSWORD = ENV["JAVA_KEYSTORE_PASSWORD"]
 JAVA_KEY = ENV["JAVA_KEY"]
 JAVA_KEY_PASSWORD = ENV["JAVA_KEY_PASSWORD"]
 FIP_CLOSED_LANE = ENV["FIP_LANE"]
+VERSION= `echo "$(($(date +%s)/60))" | tr -d "\n"`
+VERSION_NAME=`$(../../bin/getDescribeString.sh)"`
 platform :android do  
   desc "Deploy a new version to Google Play"
   lane :deploy_alpha do
     gradle(task: "clean")
+    sh("pwd")
+    sh("echo", VERSION_NAME)
+    sh("../bin/changelog.sh", VERSION)
     gradle(task: "bundle",
            build_type: "Release",
            properties: {
-              "android.injected.version.code" => `echo "$(($(date +%s)/60))" | tr -d "\n"`,
-              "android.injected.version.name" => "0.3.0",
+              "android.injected.version.code" => VERSION,
+              "android.injected.version.name" => VERSION_NAME,
               "android.injected.signing.store.file" => JAVA_KEYSTORE,
               "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
               "android.injected.signing.key.alias" => JAVA_KEY,
@@ -44,8 +49,8 @@ platform :android do
     gradle(task: "bundle",
            build_type: "Release",
            properties: {
-              "android.injected.version.code" => `echo "$(($(date +%s)/60))" | tr -d "\n"`,
-              "android.injected.version.name" => "0.3.0-FIP-"+FIP_CLOSED_LANE,
+              "android.injected.version.code" => VERSION,
+              "android.injected.version.name" => VERSION_NAME,
               "android.injected.signing.store.file" => JAVA_KEYSTORE,
               "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
               "android.injected.signing.key.alias" => JAVA_KEY,
