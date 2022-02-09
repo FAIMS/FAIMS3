@@ -226,9 +226,9 @@ function RecordsTable(props: RecordsTableProps) {
                 </Typography>
               )}
 
-              <Typography>
+              {/* <Typography>
                 <br />{' '}
-              </Typography>
+              </Typography> */}
             </div>
           ),
         },

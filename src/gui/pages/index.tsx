@@ -54,7 +54,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={6} lg={4}>
             <Paper>
               <MenuList>
                 <MenuItem component={NavLink} to={ROUTES.SIGN_IN}>
@@ -66,7 +66,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
               </MenuList>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={6} lg={4}>
             <Paper>
               <MenuList>
                 <MenuItem component={NavLink} to={ROUTES.WORKSPACE}>
