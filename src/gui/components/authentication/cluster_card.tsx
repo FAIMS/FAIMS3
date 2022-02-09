@@ -77,16 +77,18 @@ export default function ClusterCard(props: ClusterCardProps) {
                 })}
               </ul>
             </p>
+            <br/>
+            <Button
+            color="primary"
+            variant="contained"
+            size="large"
+            onClick={() => history.push(ROUTES.WORKSPACE)}
+            >
+            Go Back To WorkSpace
+          </Button>
           </>
         )}
-        <Button
-          color="primary"
-          variant="contained"
-          size="large"
-          onClick={() => history.push(ROUTES.WORKSPACE)}
-        >
-          Go Back To WorkSpace
-        </Button>
+        
       </CardContent>
 
       <CardActions></CardActions>

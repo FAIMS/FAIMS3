@@ -18,12 +18,13 @@ export const PrivateRoute = (props: PrivateRouteProps) => {
         token !== undefined ? (
           <Component {...routeProps} />
         ) : (
-          <Redirect
-              to={{
-                  pathname: ROUTES.SIGN_IN,
-                  state: { from: routeProps.location }
-              }}
-          />
+        //   <Redirect
+        //       to={{
+        //           pathname: ROUTES.SIGN_IN,
+        //           state: { from: routeProps.location }
+        //       }}
+        //   />
+        <Component {...routeProps} />
         )
       }
     />
