@@ -59,9 +59,9 @@ function LoginButton(props: LoginButtonProps) {
           false
         );
         const oauth_window = InAppBrowser.create(props.auth_info.portal);
-        if (oauth_window === null) {
+        if (oauth_window === null||oauth_window.on('message')===undefined) {
           console.error('Failed to open oauth window');
-        }
+        }else{
         oauth_window.on('message').subscribe(async event => {
           console.log('Received token for:', props.listing_id);
           await setTokenForCluster(
@@ -81,7 +81,7 @@ function LoginButton(props: LoginButtonProps) {
               console.warn('Failed to get token for: ', props.listing_id, err);
               props.setToken(undefined);
             });
-        });
+        });}
       }}
     >
       Sign-in with {props.auth_info.name}

@@ -80,7 +80,10 @@ export default function App(props: AppProps) {
       setToken(await getTokenContentsForCluster('default'));
     };
     getToken();
+    console.error('Initial token+++++++++++++')
+    console.error(token)
   }, []);
+
 
   return (
     <StateProvider>
@@ -88,7 +91,7 @@ export default function App(props: AppProps) {
         <Router>
           <NavBar />
           <Switch>
-            <Route exact path={ROUTES.SIGN_IN} component={SignIn} />
+            <PrivateRoute exact path={ROUTES.SIGN_IN} component={SignIn} is_sign={true} extraProps={{setToken: setToken}}/>
             <Route
               exact
               path={ROUTES.SIGN_IN_RETURN}

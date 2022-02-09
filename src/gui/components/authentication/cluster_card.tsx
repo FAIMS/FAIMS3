@@ -39,6 +39,7 @@ type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
   listing_description: string;
+  setToken?:any;
 };
 
 const useStyles = makeStyles(() => ({
@@ -55,9 +56,16 @@ export default function ClusterCard(props: ClusterCardProps) {
   useEffect(() => {
     const getToken = async () => {
       setToken(await getTokenContentsForCluster(props.listing_id));
+      console.log(token)
     };
     getToken();
   }, [props.listing_id]);
+
+  useEffect(() => {
+    if(token!==undefined){
+      props.setToken(token)
+    }
+  }, [token]);
 
   return (
     <MuiCard>

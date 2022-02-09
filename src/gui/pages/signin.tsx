@@ -34,9 +34,11 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-/* type SignInProps = {}; */
+ type SignInProps = {
+  setToken?:any;
+ }; 
 
-export function SignIn(/* props: SignInProps */) {
+export function SignIn( props: SignInProps ) {
   const classes = useStyles();
   const [listings, setListings] = useState(null as null | ListingInformation[]);
 
@@ -66,6 +68,7 @@ export function SignIn(/* props: SignInProps */) {
                 listing_id={listing_info.id}
                 listing_name={listing_info.name}
                 listing_description={listing_info.description}
+                setToken={props.setToken}
               />
             </Grid>
           ))}
