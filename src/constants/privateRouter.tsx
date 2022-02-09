@@ -1,6 +1,6 @@
 import {Route, Redirect, RouteProps} from 'react-router-dom';
 
-// import * as ROUTES from './routes';
+import * as ROUTES from './routes';
 
 import {TokenContents} from '../datamodel/core';
 interface PrivateRouteProps extends RouteProps {
@@ -18,13 +18,12 @@ export const PrivateRoute = (props: PrivateRouteProps) => {
         token !== undefined ? (
           <Component {...routeProps} />
         ) : (
-          // <Redirect
-          //     to={{
-          //         pathname: ROUTES.SIGN_IN,
-          //         state: { from: routeProps.location }
-          //     }}
-          // />
-          <Component {...routeProps} />
+          <Redirect
+              to={{
+                  pathname: ROUTES.SIGN_IN,
+                  state: { from: routeProps.location }
+              }}
+          />
         )
       }
     />
