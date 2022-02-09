@@ -34,11 +34,11 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
- type SignInProps = {
-  setToken?:any;
- }; 
+type SignInProps = {
+  setToken?: any;
+};
 
-export function SignIn( props: SignInProps ) {
+export function SignIn(props: SignInProps) {
   const classes = useStyles();
   const [listings, setListings] = useState(null as null | ListingInformation[]);
 

@@ -59,29 +59,36 @@ function LoginButton(props: LoginButtonProps) {
           false
         );
         const oauth_window = InAppBrowser.create(props.auth_info.portal);
-        if (oauth_window === null||oauth_window.on('message')===undefined) {
+        if (oauth_window === null || oauth_window.on('message') === undefined) {
           console.error('Failed to open oauth window');
-        }else{
-        oauth_window.on('message').subscribe(async event => {
-          console.log('Received token for:', props.listing_id);
-          await setTokenForCluster(
-            event.data.token,
-            event.data.pubkey,
-            event.data.pubalg,
-            props.listing_id
-          )
-            .then(async () => {
-              const token = await getTokenContentsForCluster(props.listing_id);
-              console.error('token is', token);
-              props.setToken(token);
-              reprocess_listing(props.listing_id);
-              oauth_window.close(); // We cannot close the iab inside the iab
-            })
-            .catch(err => {
-              console.warn('Failed to get token for: ', props.listing_id, err);
-              props.setToken(undefined);
-            });
-        });}
+        } else {
+          oauth_window.on('message').subscribe(async event => {
+            console.log('Received token for:', props.listing_id);
+            await setTokenForCluster(
+              event.data.token,
+              event.data.pubkey,
+              event.data.pubalg,
+              props.listing_id
+            )
+              .then(async () => {
+                const token = await getTokenContentsForCluster(
+                  props.listing_id
+                );
+                console.error('token is', token);
+                props.setToken(token);
+                reprocess_listing(props.listing_id);
+                oauth_window.close(); // We cannot close the iab inside the iab
+              })
+              .catch(err => {
+                console.warn(
+                  'Failed to get token for: ',
+                  props.listing_id,
+                  err
+                );
+                props.setToken(undefined);
+              });
+          });
+        }
       }}
     >
       Sign-in with {props.auth_info.name}

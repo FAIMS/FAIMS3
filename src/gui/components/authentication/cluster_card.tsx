@@ -39,7 +39,7 @@ type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
   listing_description: string;
-  setToken?:any;
+  setToken?: any;
 };
 
 const useStyles = makeStyles(() => ({
@@ -56,14 +56,14 @@ export default function ClusterCard(props: ClusterCardProps) {
   useEffect(() => {
     const getToken = async () => {
       setToken(await getTokenContentsForCluster(props.listing_id));
-      console.log(token)
+      console.log(token);
     };
     getToken();
   }, [props.listing_id]);
 
   useEffect(() => {
-    if(token!==undefined){
-      props.setToken(token)
+    if (token !== undefined) {
+      props.setToken(token);
     }
   }, [token]);
 
@@ -85,18 +85,17 @@ export default function ClusterCard(props: ClusterCardProps) {
                 })}
               </ul>
             </p>
-            <br/>
+            <br />
             <Button
-            color="primary"
-            variant="contained"
-            size="large"
-            onClick={() => history.push(ROUTES.WORKSPACE)}
+              color="primary"
+              variant="contained"
+              size="large"
+              onClick={() => history.push(ROUTES.WORKSPACE)}
             >
-            Go Back To WorkSpace
-          </Button>
+              Go Back To WorkSpace
+            </Button>
           </>
         )}
-        
       </CardContent>
 
       <CardActions></CardActions>
