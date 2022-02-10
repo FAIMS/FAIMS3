@@ -25,7 +25,12 @@ import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
 import {Typography} from '@material-ui/core';
-import {List, ListItem, ListItemText,ListItemSecondaryAction} from '@material-ui/core';
+import {
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+} from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import {IconButton} from '@material-ui/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -97,12 +102,9 @@ export function FileUploader(props: FieldProps & Props) {
         )}
       </Dropzone>
       <p>File uploaded:</p>
-      <List >
+      <List>
         {current_files.map((file: File, index: number) => (
-          <ListItem
-            key={index}
-            id={index + 'file'}
-          >
+          <ListItem key={index} id={index + 'file'}>
             <ListItemText primary={file.name} secondary={file.type} />
             {file.type !== undefined && file.type.includes('image') ? (
               <img
@@ -112,12 +114,15 @@ export function FileUploader(props: FieldProps & Props) {
             ) : (
               ''
             )}
-            <ListItemSecondaryAction >
-              <IconButton style={{color:'#000'}} aria-label="Delete this Attachment" onClick={() => handelonClick(index)}>
+            <ListItemSecondaryAction>
+              <IconButton
+                style={{color: '#000'}}
+                aria-label="Delete this Attachment"
+                onClick={() => handelonClick(index)}
+              >
                 <DeleteIcon />
               </IconButton>
             </ListItemSecondaryAction>
-           
           </ListItem>
         ))}
       </List>
