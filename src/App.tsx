@@ -73,7 +73,7 @@ export default function App() {
     projects[active_id] = createdProjects[active_id].project;
   }
 
-  const [token, setToken] = useState(undefined as undefined | TokenContents);
+  const [token, setToken] = useState(null as  null|undefined | TokenContents);
 
   useEffect(() => {
     const getToken = async () => {
@@ -84,7 +84,7 @@ export default function App() {
     console.error(token);
   }, []);
 
-  return (
+  return token===null?(<></>):(
     <StateProvider>
       <MuiThemeProvider theme={theme}>
         <Router>
