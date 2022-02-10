@@ -283,6 +283,7 @@ export default function Card(props: ProjectCardProps) {
                   project_id={project.project_id}
                   maxRows={listView ? 10 : 25}
                   viewsets={viewsets}
+                  filter_deleted={true}
                 />
               </Box>
             ) : (
