@@ -94,6 +94,13 @@ export default function ClusterCard(props: ClusterCardProps) {
             >
               Go Back To WorkSpace
             </Button>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => setToken(undefined)}
+            >
+              Logout
+            </Button>
           </>
         )}
       </CardContent>
