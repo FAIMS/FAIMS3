@@ -17,7 +17,6 @@
  * Description:
  *   TODO
  */
-
 import {AUTOACTIVATE_PROJECTS} from '../buildconfig';
 import {
   ProjectID,
@@ -75,41 +74,46 @@ export async function update_directory(
   // and this function running, the changes are missed.
   // So that's why active_db.changes is set to 'now' and everything needing
   // all docs + listening for docs usees its own changes object
-  active_db.changes({...default_changes_opts, since: 0}).on('change', info => {
-    console.debug('ActiveDB Info', info);
-    if (info.doc === undefined) {
-      console.error('Active doc changes has doc undefined');
-      return undefined;
-    }
-    const listing_id = split_full_project_id(info.doc._id).listing_id;
+  active_db
+    .changes({...default_changes_opts, since: 0})
+    .on('change', info => {
+      console.debug('ActiveDB Info', info);
+      if (info.doc === undefined) {
+        console.error('Active doc changes has doc undefined');
+        return undefined;
+      }
+      const listing_id = split_full_project_id(info.doc._id).listing_id;
 
-    if (info.deleted) {
-      to_sync[listing_id] -= 1;
-      if (to_sync[listing_id] === 0) {
-        // Some listing no longer used by anything: delete
-        delete to_sync[listing_id];
-        delete_listing_by_id(listing_id);
-      }
-    } else {
-      // Some listing activated
-      if (listing_id in to_sync) {
-        to_sync[listing_id]++;
+      if (info.deleted) {
+        to_sync[listing_id] -= 1;
+        if (to_sync[listing_id] === 0) {
+          // Some listing no longer used by anything: delete
+          delete to_sync[listing_id];
+          delete_listing_by_id(listing_id);
+        }
       } else {
-        to_sync[listing_id] = 1;
-        // Need to fetch it first though.
-        directory_db.local
-          .get(listing_id)
-          // If get succeeds, undelete/create:
-          .then(
-            existing_listing => process_listing(false, existing_listing),
-            // Even for 404 errors, since the listing is active, it should exist
-            // so it's an error if it doesn't exist.
-            err => events.emit('listing_error', listing_id, err)
-          );
+        // Some listing activated
+        if (listing_id in to_sync) {
+          to_sync[listing_id]++;
+        } else {
+          to_sync[listing_id] = 1;
+          // Need to fetch it first though.
+          directory_db.local
+            .get(listing_id)
+            // If get succeeds, undelete/create:
+            .then(
+              existing_listing => process_listing(false, existing_listing),
+              // Even for 404 errors, since the listing is active, it should exist
+              // so it's an error if it doesn't exist.
+              err => events.emit('listing_error', listing_id, err)
+            );
+        }
       }
-    }
-    return undefined;
-  });
+      return undefined;
+    })
+    .on('error', err => {
+      console.error('ActiveDB error', err);
+    });
 
   // We just use the 1 events object
   directory_db.changes.cancel();
@@ -144,6 +148,22 @@ export async function update_directory(
     events.emit('listings_sync_state', false);
   };
 
+  const directory_active = () => {
+    console.debug('Directory sync started up again');
+  };
+  const directory_denied = (err: any) => {
+    console.debug('Directory sync denied', err);
+  };
+  const directory_error = (err: any) => {
+    console.debug('Directory sync error', err);
+  };
+  //const directory_complete = (info: any) => {
+  //  console.debug('Directory sync complete', info);
+  //};
+  //const directory_change = (info: any) => {
+  //  console.debug('Directory sync change', info);
+  //};
+
   const directory_paused = ConnectionInfo_create_pouch<ListingsObject>(
     directory_connection_info
   );
@@ -159,6 +179,12 @@ export async function update_directory(
   setLocalConnection({...directory_db, remote: directory_db.remote!});
 
   directory_db.remote!.connection!.once('paused', directory_pause('Sync'));
+  directory_db
+    .remote!.connection!.on('active', directory_active)
+    .on('denied', directory_denied)
+    .on('error', directory_error);
+  //.on('complete', directory_complete)
+  //.on('change', directory_change);
 }
 
 /**
@@ -419,6 +445,22 @@ export async function update_listing(
     projects_remote.remote.connection !== null
   ) {
     projects_remote.remote.connection!.once('paused', projects_pause('Sync'));
+    projects_remote.remote
+      .connection!.on('active', () => {
+        console.debug('Projects sync started up again', listing_id);
+      })
+      .on('denied', err => {
+        console.debug('Projects sync denied', listing_id, err);
+      })
+      //.on('complete', info => {
+      //  console.debug('Projects sync complete', listing_id, info);
+      //})
+      //.on('change', info => {
+      //  console.debug('Projects sync change', listing_id, info);
+      //})
+      .on('error', err => {
+        console.debug('Projects sync error', listing_id, err);
+      });
   } else {
     projects_pause('No Sync')();
   }
@@ -658,6 +700,22 @@ export async function update_project(
 
     if (meta_remote.remote !== null && meta_remote.remote.connection !== null) {
       meta_remote.remote.connection!.once('paused', meta_pause('Sync'));
+      meta_remote.remote
+        .connection!.on('active', () => {
+          console.debug('Meta sync started up again', active_id);
+        })
+        .on('denied', err => {
+          console.debug('Meta sync denied', active_id, err);
+        })
+        //.on('change', info => {
+        //  console.debug('Meta sync change', active_id, info);
+        //})
+        //.on('complete', info => {
+        //  console.debug('Meta sync complete', active_id, info);
+        //})
+        .on('error', err => {
+          console.debug('Meta sync error', active_id, err);
+        });
     } else {
       meta_pause('No Sync')();
     }
@@ -671,6 +729,22 @@ export async function update_project(
 
     if (data_remote.remote !== null && data_remote.remote.connection !== null) {
       data_remote.remote.connection!.once('paused', data_pause('Sync'));
+      data_remote.remote
+        .connection!.on('active', () => {
+          console.debug('Data sync started up again', active_id);
+        })
+        .on('denied', err => {
+          console.debug('Data sync denied', active_id, err);
+        })
+        //.on('change', info => {
+        //  console.debug('Data sync change', active_id, info);
+        //})
+        //.on('complete', info => {
+        //  console.debug('Data sync complete', active_id, info);
+        //})
+        .on('error', err => {
+          console.debug('Data sync error', active_id, err);
+        });
     } else {
       data_pause('No Sync')();
     }
