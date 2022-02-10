@@ -280,6 +280,7 @@ function RecordsTable(props: RecordsTableProps) {
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {project_id, maxRows, filter_deleted} = props;
 
+  console.debug('Filter deleted:', filter_deleted);
   const rows = useEventedPromise(
     async (project_id: ProjectID) => {
       console.debug('RecordsBrowseTable updating', project_id);
