@@ -22,6 +22,7 @@ import React from 'react';
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
+import {PrivateRoute} from './constants/privateRouter';
 import NavBar from './gui/components/navbar';
 import Footer from './gui/components/footer';
 import {Index} from './gui/pages';
@@ -51,157 +52,191 @@ import {MuiThemeProvider} from '@material-ui/core/styles';
 import {createdProjects} from './sync/state';
 import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
+import {getTokenContentsForCluster} from './users';
 
-type AppProps = {};
+import {useEffect, useState} from 'react';
 
-type AppState = {
-  projects: ProjectsList;
-  global_error: null | {};
-};
+import {TokenContents} from './datamodel/core';
 
-export class App extends React.Component<AppProps, AppState> {
-  constructor(props: AppProps) {
-    super(props);
-    const projects: ProjectsList = {};
+// type AppProps = {};
 
-    this.state = {
-      projects: projects,
-      global_error: null,
+// type AppState = {
+//   projects: ProjectsList;
+//   global_error: null | {};
+//   token: boolean;
+// };
+
+export default function App() {
+  const projects: ProjectsList = {};
+
+  for (const active_id in createdProjects) {
+    projects[active_id] = createdProjects[active_id].project;
+  }
+
+  const [token, setToken] = useState(undefined as undefined | TokenContents);
+
+  useEffect(() => {
+    const getToken = async () => {
+      setToken(await getTokenContentsForCluster('default'));
     };
+    getToken();
+    console.error('Initial token+++++++++++++');
+    console.error(token);
+  }, []);
 
-    for (const active_id in createdProjects) {
-      projects[active_id] = createdProjects[active_id].project;
-    }
-  }
-
-  render() {
-    return (
-      <StateProvider>
-        <MuiThemeProvider theme={theme}>
-          <Router>
-            <NavBar />
-            <Switch>
-              <Route exact path={ROUTES.SIGN_IN} component={SignIn} />
-              <Route
-                exact
-                path={ROUTES.SIGN_IN_RETURN}
-                component={SignInReturnLoader}
-              />
-              <Route exact path={ROUTES.WORKSPACE} component={Home} />
-              <Route exact path={ROUTES.RECORD_LIST} component={RecordList} />
-              <Route exact path={ROUTES.PROJECT_LIST} component={ProjectList} />
-              <Route
-                exact
-                path={ROUTES.PROJECT_CREATE}
-                component={ProjectCreate}
-              />
-              <Route
-                exact
-                path={ROUTES.PROJECT_DESIGN + ':project_id'}
-                component={ProjectCreate}
-              />
-              <Route
-                exact
-                path={ROUTES.PROJECT + ':project_id'}
-                component={Project}
-              />
-              <Route
-                exact
-                path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SEARCH}
-                component={ProjectSearch}
-              />
-              <Route
-                exact
-                path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS}
-                component={ProjectSettings}
-              />
-              /* Draft creation happens by redirecting to a freshy minted UUID
-              This is to keep it stable until the user navigates away. So the
-              draft_id is optional, and when RecordCreate is instantiated
-              without one, it immediately mints a UUID and redirects to it */
-              <Route
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_CREATE +
-                  ':type_name' +
-                  ROUTES.RECORD_DRAFT + //
-                  ':draft_id'
-                }
-                component={RecordCreate}
-              />
-              <Route
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_CREATE +
-                  ':type_name'
-                }
-                component={RecordCreate}
-              />
-              /* Record editing and viewing is a seprate affair, separated by
-              the presence/absence of draft_id prop OR draft_id being in the
-              state of the Record component. So if the user clicks a draft to
-              make continued changes, the draft_id is in the URL here.
-              Otherwise, they can make changes to a record they view (Which
-              should at some point, TODO, redirect to the same Record form but
-              with the newly minted draft_id attached. BUt this TODO is in the
-              record/form.tsx */
-              <Route
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_EXISTING +
-                  ':record_id' +
-                  ROUTES.REVISION +
-                  ':revision_id'
-                }
-                component={Record}
-              />
-              <Route
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_EXISTING +
-                  ':record_id' +
-                  ROUTES.REVISION +
-                  ':revision_id' +
-                  ROUTES.RECORD_DRAFT +
-                  ':draft_id'
-                }
-                component={Record}
-              />
-              <Route
-                exact
-                path={
-                  ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST
-                }
-                component={AutoIncrementBrowse}
-              />
-              <Route
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.AUTOINCREMENT +
-                  ':form_id/:field_id/:label'
-                }
-                component={AutoIncrementEdit}
-              />
-              <Route exact path="/" component={Index} />
-              <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
-              <Route component={NotFound404} />
-            </Switch>
-            <Footer />
-          </Router>
-        </MuiThemeProvider>
-      </StateProvider>
-    );
-  }
+  return (
+    <StateProvider>
+      <MuiThemeProvider theme={theme}>
+        <Router>
+          <NavBar />
+          <Switch>
+            <PrivateRoute
+              exact
+              path={ROUTES.SIGN_IN}
+              component={SignIn}
+              is_sign={true}
+              extraProps={{setToken: setToken}}
+            />
+            <Route
+              exact
+              path={ROUTES.SIGN_IN_RETURN}
+              component={SignInReturnLoader}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.WORKSPACE}
+              component={Home}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.RECORD_LIST}
+              component={RecordList}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.PROJECT_LIST}
+              component={ProjectList}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.PROJECT_CREATE}
+              component={ProjectCreate}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.PROJECT_DESIGN + ':project_id'}
+              component={ProjectCreate}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.PROJECT + ':project_id'}
+              component={Project}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SEARCH}
+              component={ProjectSearch}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS}
+              component={ProjectSettings}
+              token={token}
+            />
+            /* Draft creation happens by redirecting to a freshy minted UUID
+            This is to keep it stable until the user navigates away. So the
+            draft_id is optional, and when RecordCreate is instantiated without
+            one, it immediately mints a UUID and redirects to it */
+            <PrivateRoute
+              exact
+              path={
+                ROUTES.PROJECT +
+                ':project_id' +
+                ROUTES.RECORD_CREATE +
+                ':type_name' +
+                ROUTES.RECORD_DRAFT + //
+                ':draft_id'
+              }
+              component={RecordCreate}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={
+                ROUTES.PROJECT +
+                ':project_id' +
+                ROUTES.RECORD_CREATE +
+                ':type_name'
+              }
+              component={RecordCreate}
+              token={token}
+            />
+            /* Record editing and viewing is a seprate affair, separated by the
+            presence/absence of draft_id prop OR draft_id being in the state of
+            the Record component. So if the user clicks a draft to make
+            continued changes, the draft_id is in the URL here. Otherwise, they
+            can make changes to a record they view (Which should at some point,
+            TODO, redirect to the same Record form but with the newly minted
+            draft_id attached. BUt this TODO is in the record/form.tsx */
+            <PrivateRoute
+              exact
+              path={
+                ROUTES.PROJECT +
+                ':project_id' +
+                ROUTES.RECORD_EXISTING +
+                ':record_id' +
+                ROUTES.REVISION +
+                ':revision_id'
+              }
+              component={Record}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={
+                ROUTES.PROJECT +
+                ':project_id' +
+                ROUTES.RECORD_EXISTING +
+                ':record_id' +
+                ROUTES.REVISION +
+                ':revision_id' +
+                ROUTES.RECORD_DRAFT +
+                ':draft_id'
+              }
+              component={Record}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST}
+              component={AutoIncrementBrowse}
+              token={token}
+            />
+            <PrivateRoute
+              exact
+              path={
+                ROUTES.PROJECT +
+                ':project_id' +
+                ROUTES.AUTOINCREMENT +
+                ':form_id/:field_id/:label'
+              }
+              component={AutoIncrementEdit}
+              token={token}
+            />
+            <Route exact path="/" component={Index} />
+            <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
+            <Route component={NotFound404} />
+          </Switch>
+          <Footer />
+        </Router>
+      </MuiThemeProvider>
+    </StateProvider>
+  );
 }
-
-export default App;

@@ -31,11 +31,15 @@ import {useEffect, useState} from 'react';
 import {LoginForm} from './login_form';
 import {getTokenContentsForCluster} from '../../../users';
 import {TokenContents} from '../../../datamodel/core';
+import {useHistory} from 'react-router-dom';
+import {Button} from '@material-ui/core';
+import * as ROUTES from '../../../constants/routes';
 
 type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
   listing_description: string;
+  setToken?: any;
 };
 
 const useStyles = makeStyles(() => ({
@@ -47,14 +51,21 @@ const useStyles = makeStyles(() => ({
 export default function ClusterCard(props: ClusterCardProps) {
   const classes = useStyles();
   const [token, setToken] = useState(undefined as undefined | TokenContents);
+  const history = useHistory();
 
   useEffect(() => {
     const getToken = async () => {
       setToken(await getTokenContentsForCluster(props.listing_id));
+      console.log(token);
     };
     getToken();
   }, [props.listing_id]);
-  console.log('Token:', token);
+
+  useEffect(() => {
+    if (token !== undefined) {
+      props.setToken(token);
+    }
+  }, [token]);
 
   return (
     <MuiCard>
@@ -74,9 +85,19 @@ export default function ClusterCard(props: ClusterCardProps) {
                 })}
               </ul>
             </p>
+            <br />
+            <Button
+              color="primary"
+              variant="contained"
+              size="large"
+              onClick={() => history.push(ROUTES.WORKSPACE)}
+            >
+              Go Back To WorkSpace
+            </Button>
           </>
         )}
       </CardContent>
+
       <CardActions></CardActions>
     </MuiCard>
   );

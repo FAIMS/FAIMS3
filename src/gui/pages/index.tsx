@@ -29,7 +29,7 @@ import {
   MenuItem,
   ListItemIcon,
 } from '@material-ui/core';
-import AccountTree from '@material-ui/icons/AccountTree';
+// import AccountTree from '@material-ui/icons/AccountTree';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import WorkSharpIcon from '@material-ui/icons/WorkSharp';
 import * as ROUTES from '../../constants/routes';
@@ -54,7 +54,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
       <Container maxWidth="lg">
         <Breadcrumbs data={breadcrumbs} />
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={6} lg={4}>
             <Paper>
               <MenuList>
                 <MenuItem component={NavLink} to={ROUTES.SIGN_IN}>
@@ -66,7 +66,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
               </MenuList>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} sm={6} lg={4}>
             <Paper>
               <MenuList>
                 <MenuItem component={NavLink} to={ROUTES.WORKSPACE}>
@@ -75,12 +75,12 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   </ListItemIcon>
                   Workspace
                 </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
+                {/* <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
                   <ListItemIcon>
                     <AccountTree fontSize="small" />
                   </ListItemIcon>
                   Notebooks
-                </MenuItem>
+                </MenuItem>*/}
               </MenuList>
             </Paper>
           </Grid>
