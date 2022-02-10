@@ -58,15 +58,15 @@ import {useEffect, useState} from 'react';
 
 import {TokenContents} from './datamodel/core';
 
-type AppProps = {};
+// type AppProps = {};
 
-type AppState = {
-  projects: ProjectsList;
-  global_error: null | {};
-  token: boolean;
-};
+// type AppState = {
+//   projects: ProjectsList;
+//   global_error: null | {};
+//   token: boolean;
+// };
 
-export default function App(props: AppProps) {
+export default function App() {
   const projects: ProjectsList = {};
 
   for (const active_id in createdProjects) {

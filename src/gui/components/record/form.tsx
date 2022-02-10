@@ -614,7 +614,7 @@ class RecordForm extends React.Component<
           // scroll to top of page, seems to be needed on mobile devices
         }
         if (search === '') {
-          this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button 
+          this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button
         } else {
           this.props.history.push({
             pathname: ROUTES.PROJECT + redirecturl,
@@ -864,15 +864,15 @@ class RecordForm extends React.Component<
                                 ? 'Working...'
                                 : 'Working...'
                               : !(this.props.revision_id === undefined)
-                              ? 'Update'
-                              : window.location.search.includes('link=') 
-                              // &&
-                              //   ui_specification.viewsets[viewsetName]
-                              //     .submit_label !== undefined
                               ? 'Save and Close'
-                              // ui_specification.viewsets[viewsetName]
-                              //     .submit_label
-                              : 'Save and Close'}
+                              : window.location.search.includes('link=')
+                              ? // &&
+                                //   ui_specification.viewsets[viewsetName]
+                                //     .submit_label !== undefined
+                                'Save and Close'
+                              : // ui_specification.viewsets[viewsetName]
+                                //     .submit_label
+                                'Save and Close'}
                             {formProps.isSubmitting && (
                               <CircularProgress
                                 size={24}

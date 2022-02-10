@@ -29,7 +29,7 @@ import {
   MenuItem,
   ListItemIcon,
 } from '@material-ui/core';
-import AccountTree from '@material-ui/icons/AccountTree';
+// import AccountTree from '@material-ui/icons/AccountTree';
 import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import WorkSharpIcon from '@material-ui/icons/WorkSharp';
 import * as ROUTES from '../../constants/routes';
@@ -81,7 +81,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   </ListItemIcon>
                   Notebooks
                 </MenuItem>*/}
-              </MenuList> 
+              </MenuList>
             </Paper>
           </Grid>
         </Grid>
