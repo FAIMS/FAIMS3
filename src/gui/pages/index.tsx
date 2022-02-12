@@ -34,9 +34,10 @@ import AccountBoxIcon from '@material-ui/icons/AccountBox';
 import WorkSharpIcon from '@material-ui/icons/WorkSharp';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {TokenContents} from '../../datamodel/core';
 
 type IndexProps = {
-  // project: string;
+  token?: null | undefined | TokenContents;
 };
 
 type IndexState = {};
@@ -52,7 +53,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
     const breadcrumbs = [{title: 'Home'}];
     return (
       <Container maxWidth="lg">
-        <Breadcrumbs data={breadcrumbs} />
+        <Breadcrumbs data={breadcrumbs} token={this.props.token} />
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} lg={4}>
             <Paper>
@@ -61,7 +62,9 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   <ListItemIcon>
                     <AccountBoxIcon fontSize="small" />
                   </ListItemIcon>
-                  Sign In To NoteBooks
+                  {this.props.token !== null && this.props.token !== undefined
+                    ? 'Account Information'
+                    : 'Sign In To NoteBooks'}
                 </MenuItem>
               </MenuList>
             </Paper>

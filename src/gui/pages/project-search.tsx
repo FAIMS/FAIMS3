@@ -29,6 +29,7 @@ import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {ProjectInformation} from '../../datamodel/ui';
 import {makeStyles} from '@material-ui/core/styles';
+import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -38,7 +39,12 @@ const useStyles = makeStyles(theme => ({
     },
   },
 }));
-export default function ProjectSearch() {
+
+type ProjectProps = {
+  token?: null | undefined | TokenContents;
+};
+
+export default function ProjectSearch(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [project_info, set_project_info] = useState(
     null as null | ProjectInformation
@@ -67,7 +73,7 @@ export default function ProjectSearch() {
   ];
   return project_info ? (
     <Container maxWidth="lg" className={classes.NoPaddding}>
-      <Breadcrumbs data={breadcrumbs} />
+      <Breadcrumbs data={breadcrumbs} token={props.token} />
       <ProjectSearchCard project={project_info} />
     </Container>
   ) : (

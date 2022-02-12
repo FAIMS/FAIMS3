@@ -31,6 +31,7 @@ import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@material-ui/core';
 import {ProjectInformation} from '../../datamodel/ui';
 import {makeStyles} from '@material-ui/core/styles';
+import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -41,7 +42,11 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export default function Project() {
+type ProjectProps = {
+  token?: null | undefined | TokenContents;
+};
+
+export default function Project(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
   let project_info: ProjectInformation | null;
   const classes = useStyles();
@@ -69,7 +74,7 @@ export default function Project() {
 
   return project_info ? (
     <Container maxWidth="lg" className={classes.NoPaddding}>
-      <Breadcrumbs data={breadcrumbs} />
+      <Breadcrumbs data={breadcrumbs} token={props.token} />
       <ProjectCard project={project_info} showRecords={true} listView={false} />
     </Container>
   ) : (
