@@ -37,6 +37,7 @@ import {getProjectList, listenProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import DashboardActions from '../components/dashboard/actions';
 import {useEventedPromise} from '../pouchHook';
+import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   gridRoot: {
@@ -70,8 +71,10 @@ const useStyles = makeStyles(theme => ({
     backgroundColor: theme.palette.secondary.light,
   },
 }));
-
-export default function Home() {
+type HomeProps = {
+  token?: null | undefined | TokenContents;
+};
+export default function Home(props: HomeProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = useEventedPromise(
@@ -88,7 +91,7 @@ export default function Home() {
 
   return (
     <Container maxWidth="lg">
-      <Breadcrumbs data={breadcrumbs} />
+      <Breadcrumbs data={breadcrumbs} token={props.token} />
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Typography variant="overline">Add new Record</Typography>

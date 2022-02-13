@@ -35,14 +35,14 @@ import Drawer from '@material-ui/core/Drawer';
 import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
-import AddIcon from '@material-ui/icons/Add';
+// import AddIcon from '@material-ui/icons/Add';
 import HomeIcon from '@material-ui/icons/Home';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import DescriptionIcon from '@material-ui/icons/Description';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import SettingsIcon from '@material-ui/icons/Settings';
-import NotificationsIcon from '@material-ui/icons/Notifications';
+// import NotificationsIcon from '@material-ui/icons/Notifications';
 import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
 import AccountTree from '@material-ui/icons/AccountTree';
@@ -52,7 +52,7 @@ import {getProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from './alert';
 import {ProjectInformation} from '../../datamodel/ui';
 import {useEventedPromise} from '../pouchHook';
-
+import {TokenContents} from '../../datamodel/core';
 // type NavBarState = {
 //   topMenuItems: any;
 //   bottomMenuItems: any;
@@ -156,7 +156,10 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   };
 }
 
-export default function Navbar() {
+type NavbarProps = {
+  token?: null | undefined | TokenContents;
+};
+export default function Navbar(props: NavbarProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
 
@@ -188,25 +191,38 @@ export default function Navbar() {
           to: '/',
           disabled: true,
         }
-      : getNestedProjects(pouchProjectList),
-    {
-      title: 'New Notebook',
-      icon: <AddIcon />,
-      to: ROUTES.PROJECT_CREATE,
-      disabled: false,
-    },
+      : props.token !== undefined && props.token !== null
+      ? getNestedProjects(pouchProjectList)
+      : {
+          title: 'Notebooks',
+          icon: <AccountTree />,
+          to: '/',
+          disabled: true,
+        },
+    //   props.token !== undefined && props.token !== null
+    // ?{
+    //   title: 'New Notebook',
+    //   icon: <AddIcon />,
+    //   to: ROUTES.PROJECT_CREATE,
+    //   disabled: false,
+    // }:{
+    //   title: 'New Notebook',
+    //   icon: <AddIcon />,
+    //   to: ROUTES.PROJECT_CREATE,
+    //   disabled: true,
+    // },
     // {
     //   title: 'Tools',
     //   icon: <BuildIcon />,
     //   to: '/',
     //   disabled: true,
     // },
-    {
-      title: 'Notifications',
-      icon: <NotificationsIcon />,
-      to: '/',
-      disabled: true,
-    },
+    // {
+    //   title: 'Notifications',
+    //   icon: <NotificationsIcon />,
+    //   to: '/',
+    //   disabled: true,
+    // },
     {
       title: 'About Build',
       icon: <SettingsIcon />,
@@ -215,24 +231,38 @@ export default function Navbar() {
     },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
-    {
-      title: 'Profile',
-      icon: <AccountCircleIcon />,
-      to: '/',
-      disabled: true,
-    },
+    props.token !== undefined && props.token !== null
+      ? {
+          title: 'Profile',
+          icon: <AccountCircleIcon />,
+          to: ROUTES.SIGN_IN,
+          disabled: false,
+        }
+      : {
+          title: 'Profile',
+          icon: <AccountCircleIcon />,
+          to: '/',
+          disabled: true,
+        },
     // {
     //   title: 'Messages',
     //   icon: <MessageIcon />,
     //   to: '/',
     //   disabled: true,
     // },
-    {
-      title: 'Settings',
-      icon: <SettingsIcon />,
-      to: '/',
-      disabled: true,
-    },
+    props.token !== undefined && props.token !== null
+      ? {
+          title: 'Settings',
+          icon: <SettingsIcon />,
+          to: ROUTES.SIGN_IN,
+          disabled: false,
+        }
+      : {
+          title: 'Settings',
+          icon: <SettingsIcon />,
+          to: ROUTES.SIGN_IN,
+          disabled: true,
+        },
   ];
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
@@ -367,8 +397,15 @@ export default function Navbar() {
                 title: string;
                 icon: React.ReactChild | undefined;
                 disabled: boolean;
+                to: any;
               }) => (
-                <ListItem button key={item.title} disabled={item.disabled}>
+                <ListItem
+                  button
+                  key={item.title}
+                  disabled={item.disabled}
+                  to={item.to}
+                  component={RouterLink}
+                >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.title} />
                 </ListItem>

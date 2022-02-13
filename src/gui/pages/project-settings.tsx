@@ -40,8 +40,12 @@ import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {ProjectInformation} from '../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
+import {TokenContents} from '../../datamodel/core';
+type ProjectProps = {
+  token?: null | undefined | TokenContents;
+};
 
-export default function ProjectSettings() {
+export default function ProjectSettings(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   // TODO: remove these once we can send new project up
@@ -89,7 +93,7 @@ export default function ProjectSettings() {
 
   return project_info ? (
     <Container maxWidth="lg">
-      <Breadcrumbs data={breadcrumbs} />
+      <Breadcrumbs data={breadcrumbs} token={props.token} />
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
