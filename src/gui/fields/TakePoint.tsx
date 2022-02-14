@@ -21,13 +21,11 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
-import {Plugins, GeolocationPosition} from '@capacitor/core';
+import {Geolocation, GeolocationPosition} from '@capacitor/geolocation';
 
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 import {FAIMSPosition} from '../../datamodel/geo';
-
-const {Geolocation} = Plugins;
 
 function capacitor_coordindates_to_faims_pos(
   coordinates: GeolocationPosition

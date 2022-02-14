@@ -21,14 +21,12 @@
 import React from 'react';
 import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
-import {Plugins, CameraResultType, CameraPhoto} from '@capacitor/core';
+import {Camera, CameraResultType, CameraPhoto} from '@capacitor/camera';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 
 import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
-
-const {Camera} = Plugins;
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
