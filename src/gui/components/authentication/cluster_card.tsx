@@ -18,7 +18,11 @@
  *   TODO
  */
 
+import {useEffect, useState} from 'react';
+import {useHistory} from 'react-router-dom';
+
 import {
+  Button,
   Card as MuiCard,
   CardActions,
   CardContent,
@@ -26,13 +30,14 @@ import {
 } from '@material-ui/core';
 
 import {makeStyles} from '@material-ui/core/styles';
-import {useEffect, useState} from 'react';
 
 import {LoginForm} from './login_form';
-import {getTokenContentsForCluster} from '../../../users';
+import {
+  getTokenContentsForCluster,
+  deleteTokenForCluster,
+} from '../../../users';
+import {reprocess_listing} from '../../../sync/process-initialization';
 import {TokenContents} from '../../../datamodel/core';
-import {useHistory} from 'react-router-dom';
-import {Button} from '@material-ui/core';
 import * as ROUTES from '../../../constants/routes';
 
 type ClusterCardProps = {
@@ -97,7 +102,12 @@ export default function ClusterCard(props: ClusterCardProps) {
             <Button
               variant="contained"
               size="large"
-              onClick={() => setToken(undefined)}
+              onClick={() =>
+                deleteTokenForCluster(props.listing_id).then(() => {
+                  setToken(undefined);
+                  reprocess_listing(props.listing_id);
+                })
+              }
             >
               Logout
             </Button>

@@ -115,6 +115,15 @@ export async function getTokenForCluster(
   }
 }
 
+export async function deleteTokenForCluster(cluster_id: string) {
+  try {
+    const doc = await local_auth_db.get(cluster_id);
+    await local_auth_db.remove(doc);
+  } catch (err) {
+    console.warn('Token not deleted for:', cluster_id, err);
+  }
+}
+
 export async function getTokenInfoForCluster(
   cluster_id: string
 ): Promise<TokenInfo | undefined> {
