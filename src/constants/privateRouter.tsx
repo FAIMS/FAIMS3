@@ -28,7 +28,6 @@ export const PrivateRoute = (props: PrivateRouteProps) => {
               state: {from: routeProps.location},
             }}
           />
-          // <Component {...routeProps} />
         )
       }
     />

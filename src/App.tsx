@@ -90,7 +90,7 @@ export default function App() {
     <StateProvider>
       <MuiThemeProvider theme={theme}>
         <Router>
-          <NavBar />
+          <NavBar token={token} />
           <Switch>
             <PrivateRoute
               exact
@@ -109,48 +109,56 @@ export default function App() {
               path={ROUTES.WORKSPACE}
               component={Home}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.RECORD_LIST}
               component={RecordList}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.PROJECT_LIST}
               component={ProjectList}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.PROJECT_CREATE}
               component={ProjectCreate}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.PROJECT_DESIGN + ':project_id'}
               component={ProjectCreate}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.PROJECT + ':project_id'}
               component={Project}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SEARCH}
               component={ProjectSearch}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS}
               component={ProjectSettings}
               token={token}
+              extraProps={{token: token}}
             />
             /* Draft creation happens by redirecting to a freshy minted UUID
             This is to keep it stable until the user navigates away. So the
@@ -168,6 +176,7 @@ export default function App() {
               }
               component={RecordCreate}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
@@ -179,6 +188,7 @@ export default function App() {
               }
               component={RecordCreate}
               token={token}
+              extraProps={{token: token}}
             />
             /* Record editing and viewing is a seprate affair, separated by the
             presence/absence of draft_id prop OR draft_id being in the state of
@@ -199,6 +209,7 @@ export default function App() {
               }
               component={Record}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
@@ -214,12 +225,14 @@ export default function App() {
               }
               component={Record}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
               path={ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST}
               component={AutoIncrementBrowse}
               token={token}
+              extraProps={{token: token}}
             />
             <PrivateRoute
               exact
@@ -231,8 +244,15 @@ export default function App() {
               }
               component={AutoIncrementEdit}
               token={token}
+              extraProps={{token: token}}
             />
-            <Route exact path="/" component={Index} />
+            <PrivateRoute
+              exact
+              path="/"
+              component={Index}
+              extraProps={{token: token}}
+              is_sign={true}
+            />
             <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
             <Route component={NotFound404} />
           </Switch>

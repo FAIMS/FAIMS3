@@ -28,6 +28,8 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import {CircularProgress} from '@material-ui/core';
 import {useEventedPromise} from '../pouchHook';
+import {TokenContents} from '../../datamodel/core';
+
 const useStyles = makeStyles(theme => ({
   gridRoot: {
     flexGrow: 1,
@@ -65,7 +67,11 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export default function ProjectList() {
+type ProjectProps = {
+  token?: null | undefined | TokenContents;
+};
+
+export default function ProjectList(props: ProjectProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
   const pouchProjectList = useEventedPromise(
@@ -81,7 +87,7 @@ export default function ProjectList() {
 
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
-      <Breadcrumbs data={breadcrumbs} />
+      <Breadcrumbs data={breadcrumbs} token={props.token} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
           {pouchProjectList === null ? (

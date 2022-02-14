@@ -58,6 +58,7 @@ import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {makeStyles} from '@material-ui/core/styles';
 
 import {getProjectMetadata} from '../../projectMetadata';
+import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -73,7 +74,11 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export default function Record() {
+type RecordeProps = {
+  token?: null | undefined | TokenContents;
+};
+
+export default function Record(props: RecordeProps) {
   const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
@@ -144,7 +149,7 @@ export default function Record() {
   console.log(metaSection);
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
-      <Breadcrumbs data={breadcrumbs} />
+      <Breadcrumbs data={breadcrumbs} token={props.token} />
       <Box mb={2} className={classes.LeftPaddding}>
         <Typography variant={'h2'} component={'h1'}>
           Update{' '}

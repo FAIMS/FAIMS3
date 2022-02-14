@@ -52,7 +52,7 @@ import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {makeStyles} from '@material-ui/core/styles';
 import {getProjectMetadata} from '../../projectMetadata';
-
+import {TokenContents} from '../../datamodel/core';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('sm')]: {
@@ -196,8 +196,11 @@ function DraftEdit(props: DraftEditProps) {
     );
   }
 }
+type RecordCreateProps = {
+  token?: null | undefined | TokenContents;
+};
 
-export default function RecordCreate() {
+export default function RecordCreate(props: RecordCreateProps) {
   const {project_id, type_name, draft_id} = useParams<{
     project_id: ProjectID;
     type_name: string;
@@ -236,7 +239,7 @@ export default function RecordCreate() {
   return (
     <React.Fragment>
       <Container maxWidth="lg" className={classes.NoPaddding}>
-        <Breadcrumbs data={breadcrumbs} />
+        <Breadcrumbs data={breadcrumbs} token={props.token} />
         {draft_id === undefined ? (
           <DraftCreate project_id={project_id} type_name={type_name} />
         ) : (
