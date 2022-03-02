@@ -160,7 +160,7 @@ export function TemplatedStringcomponentsetting(
         'InputLabelProps'
       ]['label'];
     // newini['template'+props.fieldName]=isinit?templatevalue:value
-    console.error(newini);
+    console.log(newini);
     props.setinitialValues({...props.initialValues, ...newini});
     return newvalues;
   };

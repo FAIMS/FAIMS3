@@ -40,6 +40,7 @@ import {getMetadataForAllRecords} from '../../../data_storage/index';
 import {getAllRecordsWithRegex} from '../../../data_storage/queries';
 import {useEventedPromise} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
+import {DEBUG_APP} from '../../../buildconfig';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -280,10 +281,12 @@ function RecordsTable(props: RecordsTableProps) {
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {project_id, maxRows, filter_deleted} = props;
 
-  console.debug('Filter deleted:', filter_deleted);
+  if (DEBUG_APP) {
+    console.debug('Filter deleted:', filter_deleted);
+  }
   const rows = useEventedPromise(
     async (project_id: ProjectID) => {
-      console.debug('RecordsBrowseTable updating', project_id);
+      console.log('RecordsBrowseTable updating', project_id);
       return await getMetadataForAllRecords(project_id, filter_deleted);
     },
     listenDataDB.bind(null, project_id, {since: 'now', live: true}),
@@ -292,7 +295,9 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
     project_id
   );
 
-  console.debug('New records:', rows);
+  if (DEBUG_APP) {
+    console.debug('New records:', rows);
+  }
   return (
     <RecordsTable
       project_id={project_id}
@@ -321,7 +326,9 @@ export function RecordsSearchTable(props: RecordsSearchTableProps) {
     query
   );
 
-  console.debug('New records:', rows);
+  if (DEBUG_APP) {
+    console.debug('New records:', rows);
+  }
   return (
     <RecordsTable
       project_id={project_id}

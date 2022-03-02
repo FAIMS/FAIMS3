@@ -19,7 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
-import {RUNNING_UNDER_TEST} from '../buildconfig';
+import {RUNNING_UNDER_TEST, DEBUG_APP} from '../buildconfig';
 import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel/database';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 
@@ -74,7 +74,9 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
       'jwt_token' in connection_info &&
       connection_info.jwt_token !== undefined
     ) {
-      console.debug('Using JWT for connection', connection_info);
+      if (DEBUG_APP) {
+        console.debug('Using JWT for connection', connection_info);
+      }
       opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
     }
     // Commented out as it seems this may break sending attachments on

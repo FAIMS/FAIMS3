@@ -28,6 +28,7 @@ import {
   getRevisions,
   updateHeads,
 } from './internals';
+import {DEBUG_APP} from '../buildconfig';
 
 type RevisionCache = {[revision_id: string]: Revision};
 
@@ -117,8 +118,10 @@ async function getBaseRevision(
   const to_check = [them];
   let current_revision: Revision | undefined = us;
   while (true) {
-    console.debug('To check', to_check);
-    console.debug('Current revision', current_revision);
+    if (DEBUG_APP) {
+      console.debug('To check', to_check);
+      console.debug('Current revision', current_revision);
+    }
     if (current_revision === undefined) {
       break;
     }
@@ -126,7 +129,9 @@ async function getBaseRevision(
       return current_revision;
     }
     revisions_seen.add(current_revision._id);
-    console.debug('Seen', revisions_seen);
+    if (DEBUG_APP) {
+      console.debug('Seen', revisions_seen);
+    }
     for (const parent_id of current_revision.parents) {
       const parent = await getCachedRevision(
         project_id,
@@ -188,7 +193,9 @@ export async function do3WayMerge(
   them_id: RevisionID,
   us_id: RevisionID
 ): Promise<MergeResult> {
-  console.debug(`merging ${us_id} and ${them_id}`);
+  if (DEBUG_APP) {
+    console.debug(`merging ${us_id} and ${them_id}`);
+  }
   const datadb = await getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   const merge_result = new MergeResult();
@@ -196,7 +203,9 @@ export async function do3WayMerge(
   const us = await getCachedRevision(project_id, revision_cache, us_id);
 
   const base = await getBaseRevision(project_id, revision_cache, them, us);
-  console.debug('Base revision:', base);
+  if (DEBUG_APP) {
+    console.debug('Base revision:', base);
+  }
   if (canFastForward(base, them, us)) {
     return await doFastForward(project_id, merge_result, base, them, us);
   }
@@ -220,7 +229,14 @@ export async function do3WayMerge(
     if (our_avp_id === undefined) {
       throw Error(`our_avp ${attr} is undefined`);
     }
-    console.debug('base, theirs, ours', base_avp_id, their_avp_id, our_avp_id);
+    if (DEBUG_APP) {
+      console.debug(
+        'base, theirs, ours',
+        base_avp_id,
+        their_avp_id,
+        our_avp_id
+      );
+    }
     if (their_avp_id === our_avp_id) {
       // The avp is the same on both heads, the trivial case
       avp_map[attr] = our_avp_id;
@@ -275,24 +291,30 @@ export async function mergeHeads(
   initial_cache_size = 100
 ): Promise<boolean> {
   let fully_merged: boolean | undefined = undefined;
-  console.debug('Getting record', project_id, record_id);
+  if (DEBUG_APP) {
+    console.debug('Getting record', project_id, record_id);
+  }
   const record = await getRecord(project_id, record_id);
   const revision_ids_to_seed_cache = record.revisions.slice(
     0,
     initial_cache_size
   );
-  console.debug(
-    'Getting initial revisions',
-    project_id,
-    record_id,
-    revision_ids_to_seed_cache
-  );
+  if (DEBUG_APP) {
+    console.debug(
+      'Getting initial revisions',
+      project_id,
+      record_id,
+      revision_ids_to_seed_cache
+    );
+  }
   const revision_cache: RevisionCache = (await getRevisions(
     project_id,
     revision_ids_to_seed_cache
   )) as RevisionCache;
   const working_heads = record.heads.concat(); // make a clean copy
-  console.debug('Getting initial head revisions', project_id, record_id);
+  if (DEBUG_APP) {
+    console.debug('Getting initial head revisions', project_id, record_id);
+  }
   const initial_head_revisions = await getRevisions(project_id, working_heads);
   for (const rev_id in working_heads) {
     revision_cache[rev_id] = initial_head_revisions[rev_id];
@@ -300,14 +322,18 @@ export async function mergeHeads(
 
   // we've now set up our environment to start doing pairwise merging of the
   // heads
-  console.debug('Starting merge', project_id, record_id);
+  if (DEBUG_APP) {
+    console.debug('Starting merge', project_id, record_id);
+  }
   while (working_heads.length > 1) {
     let us_id = working_heads.shift();
     if (us_id === undefined) {
       // we've emptied working_heads, no more merging
       break;
     }
-    console.debug(`merging ${us_id}`);
+    if (DEBUG_APP) {
+      console.debug(`merging ${us_id}`);
+    }
     const to_merge_heads = working_heads.concat();
     for (const them_index in to_merge_heads) {
       const pairwise_merge_result: MergeResult = await do3WayMerge(
@@ -319,7 +345,9 @@ export async function mergeHeads(
       if (pairwise_merge_result.is_successful()) {
         working_heads.splice(Number(them_index), 1);
         us_id = pairwise_merge_result.get_new_revision_id() as RevisionID;
-        console.debug(`merged ${to_merge_heads[them_index]} as ${us_id}`);
+        if (DEBUG_APP) {
+          console.debug(`merged ${to_merge_heads[them_index]} as ${us_id}`);
+        }
       } else {
         fully_merged = false;
       }
@@ -329,6 +357,8 @@ export async function mergeHeads(
   if (fully_merged === undefined) {
     fully_merged = true;
   }
-  console.debug('Finished merge', project_id, record_id);
+  if (DEBUG_APP) {
+    console.debug('Finished merge', project_id, record_id);
+  }
   return fully_merged;
 }
