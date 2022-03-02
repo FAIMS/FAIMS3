@@ -524,7 +524,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   };
 
   const deleteform = (sectionid: string, type: string) => {
-    console.error(type);
+    console.debug(type);
     if (type === 'SECTION') {
       //for section delete section will empty the fields but the field will be saved
       const newui = props.formuiSpec;

@@ -62,6 +62,7 @@ import {
   getFieldNamesFromFields,
   getReturnedTypesForViewSet,
 } from '../../../uiSpecification';
+import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@material-ui/core';
 import {Link as RouterLink} from 'react-router-dom';
@@ -205,7 +206,9 @@ class RecordForm extends React.Component<
       // Heuristically determine a nice user-facing error
       const error_message =
         (val as {message?: string}).message || val.toString();
-      console.error('saveListener', val);
+      if (DEBUG_APP) {
+        console.log('saveListener', val);
+      }
 
       this.setState({is_saving: false, draftError: error_message});
       this.context.dispatch({
@@ -270,7 +273,7 @@ class RecordForm extends React.Component<
         // description:this.requireDescription(this.props.ui_specification.viewsets[this_type].views[0])
       });
     } catch (err: any) {
-      console.error('setUISpec/setLastRev error', err);
+      console.warn('setUISpec/setLastRev error', err);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -361,7 +364,9 @@ class RecordForm extends React.Component<
       staged_data,
       staged_annotations,
     ] = await this.draftState.getInitialValues();
-    console.debug('Staged values', staged_data, staged_annotations);
+    if (DEBUG_APP) {
+      console.debug('Staged values', staged_data, staged_annotations);
+    }
 
     const fields = getFieldsForViewSet(
       this.props.ui_specification,
@@ -465,11 +470,13 @@ class RecordForm extends React.Component<
 
   requireDescription(viewName: string) {
     if (viewName === null || this.props.metaSection === null) {
-      console.error('The description has not been determined yet');
+      console.warn('The description has not been determined yet');
       return '';
     }
-    console.log('+++++++++++' + viewName);
-    console.log(this.props.metaSection);
+    if (DEBUG_APP) {
+      console.log('+++++++++++' + viewName);
+      console.log(this.props.metaSection);
+    }
     if (
       viewName !== null &&
       this.props.metaSection !== undefined &&
@@ -514,7 +521,9 @@ class RecordForm extends React.Component<
             viewsetName
           ),
         };
-        console.log(doc);
+        if (DEBUG_APP) {
+          console.log(doc);
+        }
         return doc;
       })
       .then(doc => {
@@ -524,7 +533,9 @@ class RecordForm extends React.Component<
         );
       })
       .then(result => {
-        console.log(result);
+        if (DEBUG_APP) {
+          console.log(result);
+        }
         const message =
           this.props.revision_id === undefined
             ? 'Record successfully created'
@@ -536,7 +547,7 @@ class RecordForm extends React.Component<
             severity: 'success',
           },
         });
-        console.error('SaveSave' + result);
+        console.log('Saved record', result);
         return result;
       })
       .catch(err => {
@@ -654,7 +665,11 @@ class RecordForm extends React.Component<
         annotation[name] = {annotation: '', uncertainty: false};
         annotation[name][type] = value;
       }
-    } else console.log(name + value);
+    } else {
+      if (DEBUG_APP) {
+        console.log(name + value);
+      }
+    }
     this.setState({...this.state, annotation: annotation});
   }
 
@@ -901,13 +916,17 @@ class RecordForm extends React.Component<
                             variant="outlined"
                             color="primary"
                             onClick={() => {
-                              console.log(this.state.activeStep);
+                              if (DEBUG_APP) {
+                                console.log(this.state.activeStep);
+                              }
                               const stepnum = this.state.activeStep + 1;
-                              console.log(
-                                ui_specification.viewsets[viewsetName].views[
-                                  stepnum
-                                ]
-                              );
+                              if (DEBUG_APP) {
+                                console.log(
+                                  ui_specification.viewsets[viewsetName].views[
+                                    stepnum
+                                  ]
+                                );
+                              }
 
                               this.setState({
                                 activeStep: stepnum,

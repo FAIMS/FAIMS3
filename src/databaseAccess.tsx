@@ -30,6 +30,7 @@
  */
 
 import {ProjectID} from './datamodel/core';
+import {DEBUG_APP} from './buildconfig';
 import {ProjectInformation, ListingInformation} from './datamodel/ui';
 import {all_projects_updated, createdProjects} from './sync/state';
 import {events} from './sync/events';
@@ -101,7 +102,9 @@ export function listenProjectInfo(
     project_id,
     (value, throw_error) => {
       const retval = listener();
-      console.error('listenProjectInfo', value, throw_error, retval);
+      if (DEBUG_APP) {
+        console.log('listenProjectInfo', value, throw_error, retval);
+      }
       if (typeof retval === 'object' && retval !== null && 'catch' in retval) {
         (retval as {catch: (err: unknown) => unknown}).catch(throw_error);
       }

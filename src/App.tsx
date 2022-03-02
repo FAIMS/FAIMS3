@@ -80,8 +80,6 @@ export default function App() {
       setToken(await getTokenContentsForCluster('default'));
     };
     getToken();
-    console.error('Initial token+++++++++++++');
-    console.error(token);
   }, []);
 
   return token === null ? (

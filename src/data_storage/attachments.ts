@@ -21,13 +21,16 @@ import PouchDB from 'pouchdb';
 import {v4 as uuidv4} from 'uuid';
 
 import {AttributeValuePair} from '../datamodel/database';
+import {DEBUG_APP} from '../buildconfig';
 
 interface FullAttachments {
   [attachmentId: string]: PouchDB.Core.FullAttachment;
 }
 
 export function generate_file_name(): string {
-  console.debug('Generating a uuid-filename');
+  if (DEBUG_APP) {
+    console.debug('Generating a uuid-filename');
+  }
   return 'att-' + uuidv4();
 }
 
@@ -35,7 +38,9 @@ export function file_data_to_attachments(
   avp: AttributeValuePair
 ): AttributeValuePair {
   if (avp.data === null) {
-    console.debug('No data in', avp);
+    if (DEBUG_APP) {
+      console.debug('No data in', avp);
+    }
     return avp;
   }
   avp._attachments = {};
@@ -47,7 +52,9 @@ export function file_data_to_attachments(
       data: file,
     };
   }
-  console.debug('Encoded attachments in avp', avp);
+  if (DEBUG_APP) {
+    console.debug('Encoded attachments in avp', avp);
+  }
   avp.data = null;
   return avp;
 }
@@ -61,7 +68,9 @@ export function files_to_attachments(files: File[]): FullAttachments {
       data: file,
     };
   }
-  console.debug('Converted files to attachments', files, attachments);
+  if (DEBUG_APP) {
+    console.debug('Converted files to attachments', files, attachments);
+  }
   return attachments;
 }
 
@@ -69,10 +78,14 @@ export function attachment_to_file(
   name: string,
   attachment: PouchDB.Core.Attachment
 ): File {
-  console.debug('attachment?', attachment);
+  if (DEBUG_APP) {
+    console.debug('attachment?', attachment);
+  }
   const content_type = attachment.content_type;
   const data = (attachment as PouchDB.Core.FullAttachment).data;
-  console.debug('blob?', data);
+  if (DEBUG_APP) {
+    console.debug('blob?', data);
+  }
   return new File([data], name, {type: content_type});
 }
 
@@ -83,7 +96,9 @@ export function attachments_to_files(
   for (const [name, attach] of Object.entries(attachments)) {
     attach_list.push(attachment_to_file(name, attach));
   }
-  console.debug('Converted attachments to files', attachments, attach_list);
+  if (DEBUG_APP) {
+    console.debug('Converted attachments to files', attachments, attach_list);
+  }
   return attach_list;
 }
 
@@ -95,7 +110,9 @@ export function file_attachments_to_data(
   for (const [pname, attach] of Object.entries(attachments)) {
     attach_list.push(attachment_to_file(pname, attach));
   }
-  console.debug('files?', attach_list);
+  if (DEBUG_APP) {
+    console.debug('files?', attach_list);
+  }
   avp.data = attach_list;
   return avp;
 }

@@ -139,13 +139,11 @@ export default function Card(props: ProjectCardProps) {
   //     dialogTitle: 'Share ' + project.name,
   //   });
   // };
-  console.log(project);
 
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       setLoading(false);
     }
-    console.log(project.project_id);
   }, [project]);
 
   useEffect(() => {

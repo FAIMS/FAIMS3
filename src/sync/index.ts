@@ -23,6 +23,7 @@ import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
 import {ProjectID} from '../datamodel/core';
+import {DEBUG_APP} from '../buildconfig';
 import {
   ProjectDataObject,
   ProjectMetaObject,
@@ -157,7 +158,9 @@ export function listenProject(
   ) => 'keep' | 'noop' | ((replaced: boolean) => void),
   error_listener: (value: unknown) => any
 ): () => void {
-  console.debug('listenProject starting');
+  if (DEBUG_APP) {
+    console.debug('listenProject starting');
+  }
   // This is an array to allow it to be read/writeable from closures
   const destructor: ['deleted' | 'initial' | ((replaced: boolean) => void)] = [
     'initial',
@@ -169,7 +172,9 @@ export function listenProject(
   /* Called when errors occur. Propagates to error_listener
   but also runs cleanup */
   const self_destruct = (err: unknown, detach = true) => {
-    console.debug('listenProject running self_destruct');
+    if (DEBUG_APP) {
+      console.debug('listenProject running self_destruct');
+    }
     // Only call error_listener once
     if (current_error[0] === null) {
       current_error[0] = (err as null | {}) ?? (Error('undefined error') as {});
@@ -195,7 +200,9 @@ export function listenProject(
     _listing: unknown,
     active: ExistingActiveDoc
   ) => {
-    console.debug('listenProject running project_update hook');
+    if (DEBUG_APP) {
+      console.debug('listenProject running project_update hook');
+    }
     if (project_id === active._id) {
       if (type[0] === 'delete') {
         // Run destructor when the createdProjectsInterface object is deleted.
@@ -250,7 +257,9 @@ export function listenProject(
   a Data DB that doesn't exist.
   */
   const all_state_cb = () => {
-    console.debug('listenProject running all_state hook');
+    if (DEBUG_APP) {
+      console.debug('listenProject running all_state hook');
+    }
     if (all_projects_updated && destructor[0] === 'initial') {
       self_destruct(Error(`Project ${project_id} is not known`));
     } else if (all_projects_updated && destructor[0] === 'deleted') {
@@ -286,7 +295,9 @@ export function listenProject(
   };
 
   const detach_cb = () => {
-    console.debug('listenProject running detach hook');
+    if (DEBUG_APP) {
+      console.debug('listenProject running detach hook');
+    }
     events.removeListener('project_update', project_update_cb);
     events.removeListener('all_state', all_state_cb);
     if (destructor[0] !== null && typeof destructor[0] === 'function') {
@@ -297,14 +308,18 @@ export function listenProject(
       }
     }
   };
-  console.debug('listenProject created hooks');
+  if (DEBUG_APP) {
+    console.debug('listenProject created hooks');
+  }
 
   // It's possible we'll never receive 'project_update' whilst listening (as it
   // only gets called when the project information itself is changed, so invoke
   // the callback if the project exists
   const proj_info = createdProjects[project_id];
   if (proj_info !== undefined) {
-    console.debug('listenProject running initial callback');
+    if (DEBUG_APP) {
+      console.debug('listenProject running initial callback');
+    }
     try {
       const returned = listener(proj_info, self_destruct, true, true);
       if (returned !== 'keep') {
@@ -322,7 +337,9 @@ export function listenProject(
 
   events.on('project_update', project_update_cb);
   events.on('all_state', all_state_cb);
-  console.debug('listenProject finished setting up');
+  if (DEBUG_APP) {
+    console.debug('listenProject finished setting up');
+  }
 
   return detach_cb;
 }
@@ -373,25 +390,31 @@ export function listenDataDB(
   return listenProject(
     active_id,
     (project, throw_error, _meta_changed, data_changed) => {
-      console.info(
-        'listenDataDB changed',
-        project,
-        throw_error,
-        _meta_changed,
-        data_changed
-      );
+      if (DEBUG_APP) {
+        console.info(
+          'listenDataDB changed',
+          project,
+          throw_error,
+          _meta_changed,
+          data_changed
+        );
+      }
       if (data_changed) {
         const changes = project.data.local.changes(change_opts);
         changes.on(
           'change',
           (value: PouchDB.Core.ChangesResponseChange<ProjectDataObject>) => {
-            console.debug('listenDataDB changes', value);
+            if (DEBUG_APP) {
+              console.debug('listenDataDB changes', value);
+            }
             return change_listener(value);
           }
         );
         changes.on('error', throw_error);
         return () => {
-          console.info('listenDataDB cleanup called');
+          if (DEBUG_APP) {
+            console.info('listenDataDB cleanup called');
+          }
           changes.cancel.bind(changes);
         };
       } else {
@@ -448,12 +471,14 @@ export function listenProjectDB(
   return listenProject(
     active_id,
     (project, throw_error, meta_changed) => {
-      console.info(
-        'listenProjectDB changed',
-        project,
-        throw_error,
-        meta_changed
-      );
+      if (DEBUG_APP) {
+        console.info(
+          'listenProjectDB changed',
+          project,
+          throw_error,
+          meta_changed
+        );
+      }
       if (meta_changed) {
         const changes = project.meta.local.changes(change_opts);
         changes.on('change', change_listener);

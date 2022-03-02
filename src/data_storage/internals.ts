@@ -20,6 +20,7 @@
 
 import {v4 as uuidv4} from 'uuid';
 
+import {DEBUG_APP} from '../buildconfig';
 import {getDataDB} from '../sync';
 import {
   AttributeValuePairID,
@@ -137,7 +138,9 @@ export async function getLatestRevision(
     const doc = await datadb.get(docid);
     return doc._rev;
   } catch (err) {
-    console.debug(err);
+    if (DEBUG_APP) {
+      console.debug(err);
+    }
     return undefined;
   }
 }
@@ -154,7 +157,9 @@ export async function getHRID(
     }
   }
 
-  console.debug('hrid_name:', hrid_name);
+  if (DEBUG_APP) {
+    console.debug('hrid_name:', hrid_name);
+  }
   if (hrid_name === null) {
     console.warn('No HRID field found');
     return null;
@@ -164,10 +169,14 @@ export async function getHRID(
     console.warn('No HRID field set for revision');
     return null;
   }
-  console.debug('hrid_avp_id:', hrid_avp_id);
+  if (DEBUG_APP) {
+    console.debug('hrid_avp_id:', hrid_avp_id);
+  }
   try {
     const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
-    console.debug('hrid_avp:', hrid_avp);
+    if (DEBUG_APP) {
+      console.debug('hrid_avp:', hrid_avp);
+    }
     return hrid_avp.data as string;
   } catch (err) {
     console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
@@ -217,7 +226,9 @@ export async function listRecordMetadata(
         revision === undefined
           ? record_id
           : (await getHRID(project_id, revision)) ?? record_id;
-      console.debug('hrid:', hrid);
+      if (DEBUG_APP) {
+        console.debug('hrid:', hrid);
+      }
       out[record_id] = {
         project_id: project_id,
         record_id: record_id,
@@ -232,7 +243,9 @@ export async function listRecordMetadata(
         type: record.type,
       };
     }
-    console.debug('Record metadata list', out);
+    if (DEBUG_APP) {
+      console.debug('Record metadata list', out);
+    }
     return out;
   } catch (err) {
     console.warn('Failed to get metadata', err);

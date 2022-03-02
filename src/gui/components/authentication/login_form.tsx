@@ -43,7 +43,7 @@ function LoginButton(props: LoginButtonProps) {
                 const token = await getTokenContentsForCluster(
                   props.listing_id
                 );
-                console.error('token is', token);
+                console.debug('token is', token);
                 props.setToken(token);
                 reprocess_listing(props.listing_id);
               })
@@ -74,7 +74,7 @@ function LoginButton(props: LoginButtonProps) {
                 const token = await getTokenContentsForCluster(
                   props.listing_id
                 );
-                console.error('token is', token);
+                console.debug('token is', token);
                 props.setToken(token);
                 reprocess_listing(props.listing_id);
                 oauth_window.close(); // We cannot close the iab inside the iab

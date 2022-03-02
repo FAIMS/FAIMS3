@@ -397,7 +397,7 @@ export const setSetingInitialValues = (
       )
     )
   );
-  console.error(initialValues);
+  console.debug(initialValues);
   return initialValues;
 };
 
@@ -550,7 +550,7 @@ const Componentsetting = (props: componenentSettingprops) => {
             console.log('Contain' + 'SHould NOT');
           }
         }
-        console.error(newvalues['fields'][props.fieldName]['validationSchema']);
+        console.debug(newvalues['fields'][props.fieldName]['validationSchema']);
       }
     }
     if (view === 'other') {

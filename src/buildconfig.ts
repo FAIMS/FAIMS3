@@ -96,6 +96,21 @@ function include_pouchdb_debugging(): boolean {
   }
 }
 
+function include_app_debugging(): boolean {
+  const debug_app = process.env.REACT_APP_DEBUG_APP;
+  if (debug_app === '' || debug_app === undefined) {
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
+    return true;
+  } else {
+    console.error('REACT_APP_DEBUG_APP badly defined, assuming true');
+    return true;
+  }
+}
+
 function directory_protocol(): string {
   const usehttps = process.env.REACT_APP_USE_HTTPS;
   if (PROD_BUILD) {
@@ -196,6 +211,7 @@ function is_testing() {
 
 export const USE_REAL_DATA = PROD_BUILD || use_real_data();
 export const DEBUG_POUCHDB = !PROD_BUILD && include_pouchdb_debugging();
+export const DEBUG_APP = !PROD_BUILD && include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
