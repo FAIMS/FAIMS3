@@ -67,6 +67,7 @@ export async function upsertFAIMSData(
   if (record.record_id === undefined) {
     throw Error('record_id required to save record');
   }
+  console.error('Starting record');
   const revision_id = generateFAIMSRevisionID();
   if (record.revision_id === null) {
     await createNewRecord(project_id, record, revision_id);
@@ -80,6 +81,7 @@ export async function upsertFAIMSData(
       revision_id
     );
   }
+  console.error('Ending record');
   return revision_id;
 }
 
