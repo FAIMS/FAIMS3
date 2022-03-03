@@ -364,7 +364,6 @@ export async function addNewRevisionFromForm(
   record: Record,
   new_revision_id: RevisionID
 ) {
-  console.error('Starting revision');
   const datadb = await getDataDB(project_id);
   const avp_map = await addNewAttributeValuePairs(
     project_id,
@@ -382,10 +381,7 @@ export async function addNewRevisionFromForm(
     created_by: record.updated_by,
     type: record.type,
   };
-  console.error('Starting revision write');
   await datadb.put(new_revision);
-  console.error('Ending revision write');
-  console.error('Ending revision');
 }
 
 async function addNewAttributeValuePairs(
@@ -435,9 +431,7 @@ async function addNewAttributeValuePairs(
       }
     }
   }
-  console.error('Starting dump');
   await datadb.bulkDocs(avps_to_dump);
-  console.error('Ending dump');
   return avp_map;
 }
 

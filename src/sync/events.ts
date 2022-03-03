@@ -20,6 +20,7 @@
 
 import {EventEmitter} from 'events';
 
+import {DEBUG_APP} from '../buildconfig';
 import {ListingID} from '../datamodel/core';
 import {ListingsObject, ProjectObject} from '../datamodel/database';
 import {ExistingActiveDoc} from './databases';
@@ -30,7 +31,9 @@ export class DebugEmitter extends EventEmitter {
     super(opts);
   }
   emit(event: string | symbol, ...args: unknown[]): boolean {
-    console.debug('FAIMS EventEmitter event', event, ...args);
+    if (DEBUG_APP) {
+      console.debug('FAIMS EventEmitter event', event, ...args);
+    }
     return super.emit(event, ...args);
   }
 }
