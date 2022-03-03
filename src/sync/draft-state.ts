@@ -38,6 +38,7 @@ import {
   Annotations,
   FAIMSTypeName,
 } from '../datamodel/core';
+import {DEBUG_APP} from '../buildconfig';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const DRAFT_SAVE_CYCLE = 5000;
@@ -242,7 +243,9 @@ class RecordDraftState {
     values: FormikValues,
     annotations: {[field_name: string]: Annotations}
   ) {
-    console.debug('Render hook', values, annotations);
+    if (DEBUG_APP) {
+      console.debug('Render hook', values, annotations);
+    }
     if (this.fetch_error === null && this.data.state !== 'uninitialized') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being

@@ -25,6 +25,7 @@ import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel/core';
 import {listenProjectDB} from '../../sync';
 import {useEventedPromise} from '../pouchHook';
+import {DEBUG_APP} from '../../buildconfig';
 
 type MetadataProps = {
   project_id: ProjectID;
@@ -58,8 +59,10 @@ export default function MetadataRenderer(props: MetadataProps) {
     project_id,
     metadata_key
   );
-  console.debug('metadata_label', metadata_label);
-  console.debug('metadata_value', metadata_value);
+  if (DEBUG_APP) {
+    console.debug('metadata_label', metadata_label);
+    console.debug('metadata_value', metadata_value);
+  }
 
   return chips && metadata_value.value !== '' ? (
     <Chip

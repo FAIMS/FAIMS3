@@ -200,6 +200,8 @@ export function useEventedPromise<A extends Array<unknown>, V>(
   const [state, setState] = useState(
     new PromiseState<V, A>({loading: undefined})
   );
+  const refreshLock = useRef(false);
+  const refreshLockHit = useRef(false);
 
   /**
    * To ensure that Promises triggered earlier don't overwrite values returned
@@ -271,12 +273,47 @@ export function useEventedPromise<A extends Array<unknown>, V>(
     }
   };
 
+  const start_waiting_locked = (...waiter_args: any[]) => {
+    // Don't try to do anything if we're locked
+    if (refreshLock.current) {
+      if (DEBUG_APP) {
+        console.debug('Still locked!');
+      }
+      if (!refreshLockHit.current) {
+        refreshLockHit.current = true;
+        if (DEBUG_APP) {
+          console.debug('Starting lock wait!');
+        }
+        setTimeout(() => {
+          if (DEBUG_APP) {
+            console.debug('Running lock wait!');
+          }
+          start_waiting_safe(...waiter_args);
+        }, 5000);
+      }
+      return;
+    }
+    // Activate lock and set timeout to release
+    refreshLock.current = true;
+    if (DEBUG_APP) {
+      console.debug('Locked now!');
+    }
+    setTimeout(() => {
+      refreshLock.current = false;
+      refreshLockHit.current = false;
+      if (DEBUG_APP) {
+        console.debug('Unlocked now!');
+      }
+    }, 5000);
+    start_waiting_safe(...waiter_args);
+  };
+
   // Starting loading as well as start listening for further events.
   useEffect(() => {
-    start_waiting_safe();
+    start_waiting_locked();
     let destruct: (() => void) | undefined = undefined;
     try {
-      const val = startListening(start_waiting_safe, set_error);
+      const val = startListening(start_waiting_locked, set_error);
       if (typeof val === 'function') {
         // It's either val or void,
         destruct = val;
