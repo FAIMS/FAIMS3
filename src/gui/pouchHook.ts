@@ -276,12 +276,18 @@ export function useEventedPromise<A extends Array<unknown>, V>(
   const start_waiting_locked = (...waiter_args: any[]) => {
     // Don't try to do anything if we're locked
     if (refreshLock.current) {
-      console.error('Still locked!');
+      if (DEBUG_APP) {
+        console.debug('Still locked!');
+      }
       if (!refreshLockHit.current) {
         refreshLockHit.current = true;
-        console.error('Starting lock wait!');
+        if (DEBUG_APP) {
+          console.debug('Starting lock wait!');
+        }
         setTimeout(() => {
-          console.error('Running lock wait!');
+          if (DEBUG_APP) {
+            console.debug('Running lock wait!');
+          }
           start_waiting_safe(...waiter_args);
         }, 5000);
       }
@@ -289,11 +295,15 @@ export function useEventedPromise<A extends Array<unknown>, V>(
     }
     // Activate lock and set timeout to release
     refreshLock.current = true;
-    console.error('Locked now!');
+    if (DEBUG_APP) {
+      console.debug('Locked now!');
+    }
     setTimeout(() => {
       refreshLock.current = false;
       refreshLockHit.current = false;
-      console.error('Unlocked now!');
+      if (DEBUG_APP) {
+        console.debug('Unlocked now!');
+      }
     }, 5000);
     start_waiting_safe(...waiter_args);
   };
