@@ -61,7 +61,7 @@ platform :android do
            }
            )
     upload_to_play_store(track: FIP_CLOSED_LANE,
-                         release_status: 'draft',
+                         release_status: 'completed',
                         )
   end
 end
