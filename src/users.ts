@@ -75,7 +75,7 @@ export async function setTokenForCluster(
       pubkey: pubkey,
       pubalg: pubalg,
     };
-    console.error('Token info is:', doc);
+    console.debug('Token info is:', doc);
     await local_auth_db.put(doc);
   } catch (err: any) {
     if (err.status === 409) {
@@ -168,7 +168,7 @@ export async function parseToken(
 ): Promise<TokenContents | undefined> {
   const res = await jwtVerify(token, pubkey);
   const payload = res.payload;
-  console.error('Token payload is:', payload);
+  console.debug('Token payload is:', payload);
   const username = payload.sub ?? undefined;
   if (username === undefined) {
     return undefined;

@@ -28,6 +28,7 @@ import {
   FAIMSTypeName,
   HRID_STRING,
 } from '../datamodel/core';
+import {DEBUG_APP} from '../buildconfig';
 import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
 import {local_pouch_options} from './connection';
 import {
@@ -56,7 +57,9 @@ export async function getStagedData(
     const files = [];
     for (const file_name of attachment_list) {
       if (draft._attachments !== undefined) {
-        console.debug('Loading draft file:', file_name);
+        if (DEBUG_APP) {
+          console.debug('Loading draft file:', file_name);
+        }
         files.push(
           attachment_to_file(file_name, draft._attachments[file_name])
         );
@@ -124,7 +127,9 @@ export async function setStagedData(
   field_types: {[field_name: string]: FAIMSTypeName}
 ): Promise<PouchDB.Core.Response> {
   const existing = await draft_db.get(draft_id);
-  console.debug('Saving draft values:', new_data, new_annotations);
+  if (DEBUG_APP) {
+    console.debug('Saving draft values:', new_data, new_annotations);
+  }
 
   const encoded_info = encodeStagedData(new_data, new_annotations, field_types);
 
@@ -163,7 +168,9 @@ function encodeStagedData(
             content_type: file.type,
             data: file,
           };
-          console.debug('Saving draft file:', file_name);
+          if (DEBUG_APP) {
+            console.debug('Saving draft file:', file_name);
+          }
           attachment_metadata[field_name].push(file_name);
         }
       } else {
@@ -274,7 +281,9 @@ function getDraftHRID(record: EncodedDraft): string | null {
     }
   }
 
-  console.debug('hrid_name:', hrid_name);
+  if (DEBUG_APP) {
+    console.debug('hrid_name:', hrid_name);
+  }
   if (hrid_name === null) {
     console.warn('No HRID field found');
     return null;

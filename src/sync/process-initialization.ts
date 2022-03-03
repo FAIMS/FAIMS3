@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import {AUTOACTIVATE_PROJECTS} from '../buildconfig';
+import {AUTOACTIVATE_PROJECTS, DEBUG_APP} from '../buildconfig';
 import {
   ProjectID,
   ListingID,
@@ -77,7 +77,9 @@ export async function update_directory(
   active_db
     .changes({...default_changes_opts, since: 0})
     .on('change', info => {
-      console.debug('ActiveDB Info', info);
+      if (DEBUG_APP) {
+        console.debug('ActiveDB Info', info);
+      }
       if (info.doc === undefined) {
         console.error('Active doc changes has doc undefined');
         return undefined;
@@ -124,7 +126,9 @@ export async function update_directory(
   directory_db.changes = directory_db.local
     .changes({...default_changes_opts, since: 0})
     .on('change', info => {
-      console.debug('DirectoryDB Info', info);
+      if (DEBUG_APP) {
+        console.debug('DirectoryDB Info', info);
+      }
       if (info.id in to_sync || AUTOACTIVATE_PROJECTS) {
         // Only active listings
         // This can delete for deletion changes
@@ -144,18 +148,31 @@ export async function update_directory(
     // This code runs at a point where the directory is pretty stable
     // it should have had all changes already done, any more are from remote.
     // So that's why we put the debugging here:
-    console.debug('Active listing IDs are:', to_sync, 'with message', message);
+    if (DEBUG_APP) {
+      console.debug(
+        'Active listing IDs are:',
+        to_sync,
+        'with message',
+        message
+      );
+    }
     events.emit('listings_sync_state', false);
   };
 
   const directory_active = () => {
-    console.debug('Directory sync started up again');
+    if (DEBUG_APP) {
+      console.debug('Directory sync started up again');
+    }
   };
   const directory_denied = (err: any) => {
-    console.debug('Directory sync denied', err);
+    if (DEBUG_APP) {
+      console.debug('Directory sync denied', err);
+    }
   };
   const directory_error = (err: any) => {
-    console.debug('Directory sync error', err);
+    if (DEBUG_APP) {
+      console.debug('Directory sync error', err);
+    }
   };
   //const directory_complete = (info: any) => {
   //  console.debug('Directory sync complete', info);
@@ -271,9 +288,13 @@ export async function update_listing(
   const jwt_token = await getTokenForCluster(listing_id);
   let jwt_conn: PossibleConnectionInfo = {};
   if (jwt_token === undefined) {
-    console.debug('No JWT token for:', listing_id);
+    if (DEBUG_APP) {
+      console.debug('No JWT token for:', listing_id);
+    }
   } else {
-    console.debug('Using JWT token for:', listing_id);
+    if (DEBUG_APP) {
+      console.debug('Using JWT token for:', listing_id);
+    }
     jwt_conn = {
       jwt_token: jwt_token,
     };

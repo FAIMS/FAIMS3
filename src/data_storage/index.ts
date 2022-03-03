@@ -20,6 +20,7 @@
 
 import {v4 as uuidv4} from 'uuid';
 
+import {DEBUG_APP} from '../buildconfig';
 import {getDataDB} from '../sync';
 import {
   RecordID,
@@ -67,6 +68,7 @@ export async function upsertFAIMSData(
   if (record.record_id === undefined) {
     throw Error('record_id required to save record');
   }
+  console.error('Starting record');
   const revision_id = generateFAIMSRevisionID();
   if (record.revision_id === null) {
     await createNewRecord(project_id, record, revision_id);
@@ -80,6 +82,7 @@ export async function upsertFAIMSData(
       revision_id
     );
   }
+  console.error('Ending record');
   return revision_id;
 }
 
@@ -303,14 +306,18 @@ export async function getRecordsByType(
     await listRecordMetadata(project_id).then(record_list => {
       for (const key in record_list) {
         const metadata = record_list[key];
-        console.debug('Records', key, metadata);
+        if (DEBUG_APP) {
+          console.debug('Records', key, metadata);
+        }
         if (!metadata.deleted && metadata.type === type) {
           records.push({
             project_id: project_id,
             record_id: metadata.record_id,
             record_label: metadata.hrid, // TODO: decide how we're getting HRIDs from db
           });
-          console.debug('Not deleted Records', key, metadata);
+          if (DEBUG_APP) {
+            console.debug('Not deleted Records', key, metadata);
+          }
         }
       }
     });
@@ -331,13 +338,19 @@ export async function getMetadataForAllRecords(
   if (filter_deleted) {
     const new_record_list: RecordMetadata[] = [];
     for (const metadata of record_list) {
-      console.debug('Records', metadata);
+      if (DEBUG_APP) {
+        console.debug('Records', metadata);
+      }
       if (!metadata.deleted) {
         new_record_list.push(metadata);
-        console.debug('Not deleted Records', metadata);
+        if (DEBUG_APP) {
+          console.debug('Not deleted Records', metadata);
+        }
       }
     }
-    console.debug('Reduced record list', new_record_list);
+    if (DEBUG_APP) {
+      console.debug('Reduced record list', new_record_list);
+    }
     return new_record_list;
   } else {
     return record_list;

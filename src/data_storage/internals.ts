@@ -20,6 +20,7 @@
 
 import {v4 as uuidv4} from 'uuid';
 
+import {DEBUG_APP} from '../buildconfig';
 import {getDataDB} from '../sync';
 import {
   AttributeValuePairID,
@@ -137,7 +138,9 @@ export async function getLatestRevision(
     const doc = await datadb.get(docid);
     return doc._rev;
   } catch (err) {
-    console.debug(err);
+    if (DEBUG_APP) {
+      console.debug(err);
+    }
     return undefined;
   }
 }
@@ -154,7 +157,9 @@ export async function getHRID(
     }
   }
 
-  console.debug('hrid_name:', hrid_name);
+  if (DEBUG_APP) {
+    console.debug('hrid_name:', hrid_name);
+  }
   if (hrid_name === null) {
     console.warn('No HRID field found');
     return null;
@@ -164,10 +169,14 @@ export async function getHRID(
     console.warn('No HRID field set for revision');
     return null;
   }
-  console.debug('hrid_avp_id:', hrid_avp_id);
+  if (DEBUG_APP) {
+    console.debug('hrid_avp_id:', hrid_avp_id);
+  }
   try {
     const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
-    console.debug('hrid_avp:', hrid_avp);
+    if (DEBUG_APP) {
+      console.debug('hrid_avp:', hrid_avp);
+    }
     return hrid_avp.data as string;
   } catch (err) {
     console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
@@ -217,7 +226,9 @@ export async function listRecordMetadata(
         revision === undefined
           ? record_id
           : (await getHRID(project_id, revision)) ?? record_id;
-      console.debug('hrid:', hrid);
+      if (DEBUG_APP) {
+        console.debug('hrid:', hrid);
+      }
       out[record_id] = {
         project_id: project_id,
         record_id: record_id,
@@ -232,7 +243,9 @@ export async function listRecordMetadata(
         type: record.type,
       };
     }
-    console.debug('Record metadata list', out);
+    if (DEBUG_APP) {
+      console.debug('Record metadata list', out);
+    }
     return out;
   } catch (err) {
     console.warn('Failed to get metadata', err);
@@ -351,6 +364,7 @@ export async function addNewRevisionFromForm(
   record: Record,
   new_revision_id: RevisionID
 ) {
+  console.error('Starting revision');
   const datadb = await getDataDB(project_id);
   const avp_map = await addNewAttributeValuePairs(
     project_id,
@@ -368,7 +382,10 @@ export async function addNewRevisionFromForm(
     created_by: record.updated_by,
     type: record.type,
   };
+  console.error('Starting revision write');
   await datadb.put(new_revision);
+  console.error('Ending revision write');
+  console.error('Ending revision');
 }
 
 async function addNewAttributeValuePairs(
@@ -391,6 +408,7 @@ async function addNewAttributeValuePairs(
       types: {},
     };
   }
+  const avps_to_dump: AttributeValuePair[] = [];
   for (const [field_name, field_value] of Object.entries(record.data)) {
     const stored_data = data.data[field_name];
     if (stored_data === undefined || stored_data !== field_value) {
@@ -404,7 +422,7 @@ async function addNewAttributeValuePairs(
         record_id: record.record_id,
         annotations: record.annotations[field_name],
       };
-      await datadb.put(dumpAttributeValuePair(new_avp));
+      avps_to_dump.push(dumpAttributeValuePair(new_avp));
       avp_map[field_name] = new_avp_id;
     } else {
       if (revision.avps !== undefined) {
@@ -417,6 +435,9 @@ async function addNewAttributeValuePairs(
       }
     }
   }
+  console.error('Starting dump');
+  await datadb.bulkDocs(avps_to_dump);
+  console.error('Ending dump');
   return avp_map;
 }
 

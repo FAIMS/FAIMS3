@@ -19,6 +19,7 @@
  */
 
 import React, {useEffect, useRef, useState} from 'react';
+import {DEBUG_APP} from '../buildconfig';
 
 export class PromiseState<S, L extends null | {}> {
   // Only one of these 3 is defined at a time
@@ -248,7 +249,9 @@ export function useEventedPromise<A extends Array<unknown>, V>(
   };
 
   const start_waiting_safe = (...waiter_args: any[]) => {
-    console.debug('start_waiting_safe args', waiter_args);
+    if (DEBUG_APP) {
+      console.debug('start_waiting_safe args', waiter_args);
+    }
     // Don't do anything if we stopped for an error
     if (state.error !== undefined && stopAtError) {
       return;
