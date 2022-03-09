@@ -35,7 +35,7 @@ import Drawer from '@mui/material/Drawer';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
-// import AddIcon from '@mui/icons-material/Add';
+import AddIcon from '@mui/icons-material/Add';
 import HomeIcon from '@mui/icons-material/Home';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -199,18 +199,18 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         },
-    //   props.token !== undefined && props.token !== null
-    // ?{
-    //   title: 'New Notebook',
-    //   icon: <AddIcon />,
-    //   to: ROUTES.PROJECT_CREATE,
-    //   disabled: false,
-    // }:{
-    //   title: 'New Notebook',
-    //   icon: <AddIcon />,
-    //   to: ROUTES.PROJECT_CREATE,
-    //   disabled: true,
-    // },
+      props.token !== undefined && props.token !== null
+    ?{
+      title: 'New Notebook',
+      icon: <AddIcon />,
+      to: ROUTES.PROJECT_CREATE,
+      disabled: false,
+    }:{
+      title: 'New Notebook',
+      icon: <AddIcon />,
+      to: ROUTES.PROJECT_CREATE,
+      disabled: true,
+    },
     // {
     //   title: 'Tools',
     //   icon: <BuildIcon />,
