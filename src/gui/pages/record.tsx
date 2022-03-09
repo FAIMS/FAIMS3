@@ -166,10 +166,10 @@ export default function Record(props: RecordeProps) {
       <Paper square className={classes.NoPaddding}>
         <TabContext value={value}>
           <AppBar position="static" color="primary" >
-            <TabList onChange={handleChange} aria-label="simple tabs example"  >
-              <Tab label="Edit" value="1" />
-              <Tab label="Revisions" value="2" />
-              <Tab label="Meta" value="3" />
+            <TabList onChange={handleChange} aria-label="simple tabs example"  indicatorColor={'secondary'} textColor="secondary">
+              <Tab label="Edit" value="1" sx={{color:'#c2c2c2'}}/>
+              <Tab label="Revisions" value="2" sx={{color:'#c2c2c2'}} />
+              <Tab label="Meta" value="3" sx={{color:'#c2c2c2'}}/>
             </TabList>
           </AppBar>
           <TabPanel value="1">

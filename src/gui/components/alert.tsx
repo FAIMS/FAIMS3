@@ -26,7 +26,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import {store} from '../../store';
 import {ActionType} from '../../actions';
 
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles(theme => ({
   root: {
     width: '100%',
     '& > * + *': {
@@ -50,6 +50,8 @@ export default function SystemAlert() {
 
   const alerts = globalState.state.alerts;
   const oldest_alert = alerts[0];
+  if(alerts.length > 0)
+    console.log(oldest_alert.severity)
   return (
     <div className={classes.root}>
       {alerts.length > 0 ? (
@@ -60,7 +62,7 @@ export default function SystemAlert() {
         >
           <Alert
             onClose={() => handleClose(oldest_alert.key)}
-            severity={oldest_alert.severity==='error'?"error":"info"}
+            severity={oldest_alert.severity==='error'?'error':oldest_alert.severity==='warnings'?'warning':'success'}
           >
             {'message' in oldest_alert
               ? oldest_alert.message

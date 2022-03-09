@@ -354,18 +354,18 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
           tabs={['general', 'Meta', 'User Role', 'Attachment']}
           value={infotabvalue}
           handleChange={handleChangetab}
-          tab_id="primarytab"
+          tab_id="projectinfo"
         />
-        <TabPanel value={infotabvalue} index={0} tabname="primarytab">
+        <TabPanel value={infotabvalue} index={0} tabname="projectinfo">
           {infoTab()}
         </TabPanel>
-        <TabPanel value={infotabvalue} index={2} tabname="primarytab">
+        <TabPanel value={infotabvalue} index={2} tabname="projectinfo">
           {accessTab()}
         </TabPanel>
-        <TabPanel value={infotabvalue} index={1} tabname="primarytab">
+        <TabPanel value={infotabvalue} index={1} tabname="projectinfo">
           {metaTab()}
         </TabPanel>
-        <TabPanel value={infotabvalue} index={3} tabname="primarytab">
+        <TabPanel value={infotabvalue} index={3} tabname="projectinfo">
           Add File as Attachment
           <Paper>{AttachmentTab()}</Paper>
           {/* <AddUserButton

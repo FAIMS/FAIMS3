@@ -526,7 +526,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   return (
     <div className={classes.root}>
-      <AppBar position="static" color="primary">
+      <AppBar position="static" color="primary" >
         <TabTab
           not_xs={not_xs}
           tabs={projecttabs}

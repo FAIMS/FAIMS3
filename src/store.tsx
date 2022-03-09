@@ -178,7 +178,7 @@ const StateProvider = (props: any) => {
         console.log('Could not initialize: ', err);
         dispatch({
           type: ActionType.ADD_ALERT,
-          payload: {message: err.message, severity: "error"},
+          payload: {message: err.message, severity: "error" },
         });
       });
   }, []);

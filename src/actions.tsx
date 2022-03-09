@@ -97,7 +97,7 @@ export interface ADD_CUSTOM_ALERT {
   type: ActionType.ADD_CUSTOM_ALERT;
   payload: {
     element: JSX.Element[];
-    severity:  string;
+    severity: string;
   };
 }
 

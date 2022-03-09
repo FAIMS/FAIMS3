@@ -27,25 +27,28 @@ import { Theme } from '@mui/material/styles';
 declare module '@mui/styles/defaultTheme' {
   interface DefaultTheme extends Theme {}
 }
+
 const theme = createTheme({
   spacing:2,
   palette: {
     primary: {
       main: '#1B3E93',
-      contrastText: colors.blueGrey[900]
+      light: '#42a5f5',
+      dark: '#1565c0',
+      contrastText: '#fff'
     },
     secondary: {
       // main: '#F68E1E',
-      main: "#1B3E93",
-      contrastText: "#fff"
+      main: "#fff",
+      contrastText: "#1b7993",
     },
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
     },
-    error: {
-      main: colors.red[500],
-    },
+    // error: {
+    //   main: colors.red[500],
+    // },
   },
   
   // shadows: shadows as Shadows,
@@ -60,6 +63,9 @@ const theme = createTheme({
           contrastText: "#fff",
           textColor:'#fff',
           indicatorColor:'#fff',
+          text:{
+            primary:'#fff'
+          }
         },
       }
     }
