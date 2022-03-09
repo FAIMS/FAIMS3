@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
-import {Container} from '@material-ui/core';
+import {Container} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
@@ -28,14 +28,14 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {CircularProgress} from '@material-ui/core';
+import {CircularProgress} from '@mui/material';
 import {ProjectInformation} from '../../datamodel/ui';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 0,
       paddingRight: 0,
     },

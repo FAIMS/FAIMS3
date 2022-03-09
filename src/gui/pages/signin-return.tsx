@@ -25,7 +25,7 @@ import {RouteComponentProps} from 'react-router';
 import {local_auth_db} from '../../sync/databases';
 import * as ROUTES from '../../constants/routes';
 import {ActionType} from '../../actions';
-import {CircularProgress} from '@material-ui/core';
+import {CircularProgress} from '@mui/material';
 import {Redirect} from 'react-router-dom';
 
 function tryParseStateFromQueryValue(

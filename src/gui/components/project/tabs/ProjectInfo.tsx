@@ -19,9 +19,9 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import {Grid, Box, Paper} from '@material-ui/core';
+import {Grid, Box, Paper} from '@mui/material';
 import {getComponentFromField} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
@@ -30,7 +30,7 @@ import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import {AddUserButton, ProjectSubmit} from './ProjectButton';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
-import Alert from '@material-ui/lab/Alert';
+import Alert from '@mui/material/Alert';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({}));
 

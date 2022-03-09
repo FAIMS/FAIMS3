@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import Input from '@material-ui/core/Input';
+import Input from '@mui/material/Input';
 import {FieldProps} from 'formik';
 
 import {ActionType} from '../../actions';
@@ -29,10 +29,10 @@ import {
   set_local_autoincrement_state_for_field,
 } from '../../datamodel/autoincrement';
 import {getDefaultuiSetting} from './BasicFieldSettings';
-import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
+import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {ProjectUIModel} from '../../datamodel/ui';
 import {Link as RouterLink} from 'react-router-dom';
-import Link from '@material-ui/core/Link';
+import Link from '@mui/material/Link';
 import * as ROUTES from '../../constants/routes';
 interface Props {
   num_digits: number;

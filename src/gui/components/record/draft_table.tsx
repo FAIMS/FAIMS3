@@ -25,12 +25,12 @@ import {
   GridColDef,
   GridCellParams,
   GridToolbar,
-} from '@material-ui/data-grid';
-import {Typography} from '@material-ui/core';
+} from '@mui/x-data-grid';
+import {Typography} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
-import Link from '@material-ui/core/Link';
-import {useTheme} from '@material-ui/core/styles';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
+import Link from '@mui/material/Link';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 import {ProjectID} from '../../../datamodel/core';
 import {DraftMetadata} from '../../../datamodel/drafts';
@@ -78,9 +78,9 @@ function DraftRecord(props: DraftsRecordProps) {
               component={RouterLink}
               to={ROUTES.getDraftRoute(
                 project_id ?? 'dummy',
-                params.getValue('_id') as DraftMetadata['_id'],
-                params.getValue('existing')! as DraftMetadata['existing'],
-                params.getValue('type')! as DraftMetadata['type']
+                params.row.id as DraftMetadata['_id'],
+                params.row.existing! as DraftMetadata['existing'],
+                params.row.type! as DraftMetadata['type']
               )}
             >
               {params.value}
@@ -117,9 +117,9 @@ function DraftRecord(props: DraftsRecordProps) {
               component={RouterLink}
               to={ROUTES.getDraftRoute(
                 project_id ?? 'dummy',
-                params.getValue('_id') as DraftMetadata['_id'],
-                params.getValue('existing')! as DraftMetadata['existing'],
-                params.getValue('type')! as DraftMetadata['type']
+                params.row.id as DraftMetadata['_id'],
+                params.row.existing! as DraftMetadata['existing'],
+                params.row.type! as DraftMetadata['type']
               )}
             >
               {params.value}
@@ -145,9 +145,9 @@ function DraftRecord(props: DraftsRecordProps) {
                   component={RouterLink}
                   to={ROUTES.getDraftRoute(
                     project_id ?? 'dummy',
-                    params.getValue('_id') as DraftMetadata['_id'],
-                    params.getValue('existing')! as DraftMetadata['existing'],
-                    params.getValue('type')! as DraftMetadata['type']
+                    params.row.id as DraftMetadata['_id'],
+                    params.row.existing! as DraftMetadata['existing'],
+                    params.row.type! as DraftMetadata['type']
                   )}
                 >
                   {params.value}
@@ -158,13 +158,13 @@ function DraftRecord(props: DraftsRecordProps) {
                 Kind:{' '}
                 {props.viewsets !== null &&
                 props.viewsets !== undefined &&
-                params.getValue('type') !== null &&
-                params.getValue('type') !== undefined &&
-                props.viewsets[(params.getValue('type') || '').toString()] !==
+                params.row.type !== null &&
+                params.row.type !== undefined &&
+                props.viewsets[(params.row.type || '').toString()] !==
                   undefined
-                  ? props.viewsets[(params.getValue('type') || '').toString()]
-                      .label ?? params.getValue('type')
-                  : params.getValue('type')}
+                  ? props.viewsets[(params.row.type || '').toString()]
+                      .label ?? params.row.type
+                  : params.row.type}
               </Typography>
               <Typography
                 color="textSecondary"
@@ -172,7 +172,7 @@ function DraftRecord(props: DraftsRecordProps) {
                 gutterBottom
                 component="div"
               >
-                Created: {(params.getValue('created') || '').toString()}
+                Created: {(params.row.created || '').toString()}
               </Typography>
               <Typography>
                 <br />{' '}

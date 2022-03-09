@@ -19,11 +19,11 @@
  */
 
 import React from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import {Box, Container, Grid} from '@material-ui/core';
+import makeStyles from '@mui/styles/makeStyles';
+import {Box, Container, Grid} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import Skeleton from '@material-ui/lab/Skeleton';
+import Skeleton from '@mui/material/Skeleton';
 import InProgress from '../components/ui/inProgress';
 
 const useStyles = makeStyles(theme => ({
@@ -71,7 +71,7 @@ export default function RecordList() {
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
           <Grid item xs={12} key={'skeleton-record-list-grid'}>
-            <Skeleton animation="wave" variant="rect" height={100} />
+            <Skeleton animation="wave" variant="rectangular" height={100} />
           </Grid>
           <InProgress />
           <p>

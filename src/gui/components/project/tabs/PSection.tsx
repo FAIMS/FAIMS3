@@ -19,12 +19,12 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import {Grid, Paper} from '@material-ui/core';
+import {Grid, Paper} from '@mui/material';
 
-import {useTheme} from '@material-ui/core/styles';
-import Alert from '@material-ui/lab/Alert';
+import {useTheme} from '@mui/material/styles';
+import Alert from '@mui/material/Alert';
 import FieldsListCard from './FieldsListCard';
 import {FormForm, AutocompleteForm} from '../FormElement';
 import {TabTab} from './TabTab';

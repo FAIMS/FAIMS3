@@ -19,16 +19,16 @@
  */
 
 import React from 'react';
-import MuiCheckbox from '@material-ui/core/Checkbox';
-import FormControl from '@material-ui/core/FormControl';
+import MuiCheckbox from '@mui/material/Checkbox';
+import FormControl from '@mui/material/FormControl';
 import {
   FormControlLabel,
   FormHelperText,
   FormHelperTextProps,
   FormControlLabelProps,
-} from '@material-ui/core';
-import {fieldToCheckbox, CheckboxProps} from 'formik-material-ui';
-import BookmarksIcon from '@material-ui/icons/Bookmarks';
+} from '@mui/material';
+import {fieldToCheckbox, CheckboxProps} from 'formik-mui';
+import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 interface Props {

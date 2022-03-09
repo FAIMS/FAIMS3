@@ -19,22 +19,22 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
+import makeStyles from '@mui/styles/makeStyles';
+import {Grid} from '@mui/material';
 
-import {Grid} from '@material-ui/core';
-
-import Alert from '@material-ui/lab/Alert';
+import Alert from '@mui/material/Alert';
 
 import {FormForm, AutocompleteForm} from '../FormElement';
+
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {getprojectform, getacessoption} from '../data/ComponentSetting';
-
 import {ProjectSubmit, ProjectDelete} from './ProjectButton';
 
 import ConfirmdeleteDisalog from './ConfirmdeleteDisalog';
+
 import SectionTabs from './PSections';
+import { grey } from '@mui/material/colors';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({

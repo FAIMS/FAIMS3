@@ -20,8 +20,8 @@
 
 import React from 'react';
 import {Formik, Form, Field, yupToFormErrors} from 'formik';
-import {Button, LinearProgress, Grid} from '@material-ui/core';
-import {TextField} from 'formik-material-ui';
+import {Button, LinearProgress, Grid} from '@mui/material';
+import {TextField} from 'formik-mui';
 import * as yup from 'yup';
 
 import {ProjectID} from '../../../datamodel/core';

@@ -19,8 +19,8 @@
  */
 
 import React from 'react';
-import {Tab, Tabs, Grid} from '@material-ui/core';
-import {makeStyles} from '@material-ui/core/styles';
+import {Tab, Tabs, Grid} from '@mui/material';
+import makeStyles from '@mui/styles/makeStyles';
 import {useState, useEffect} from 'react';
 import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
@@ -70,9 +70,9 @@ export function TabTab(props: TabProps) {
       aria-label={tab_id}
       id={tab_id}
       orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
-      scrollButtons="on"
+      scrollButtons
       variant="scrollable"
-    >
+      allowScrollButtonsMobile>
       {tabs.map((tab: any, index: number) => (
         <Tab
           className={tab_id === 'primarytab' ? classes.root : classes.fieldtab}
@@ -177,9 +177,9 @@ export function TabEditable(props: TabProps) {
             aria-label={tab_id}
             id={tab_id}
             orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
-            scrollButtons="on"
+            scrollButtons
             variant="scrollable"
-          >
+            allowScrollButtonsMobile>
             {tablists.map((tab, index) => (
               <Tab
                 className={

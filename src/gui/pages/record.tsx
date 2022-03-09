@@ -29,13 +29,12 @@ import {
   Paper,
   Tab,
   CircularProgress,
-} from '@material-ui/core';
-import TabContext from '@material-ui/lab/TabContext';
-import TabList from '@material-ui/lab/TabList';
-import TabPanel from '@material-ui/lab/TabPanel';
-import grey from '@material-ui/core/colors/grey';
-
+} from '@mui/material';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
 import {ActionType} from '../../actions';
+
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
@@ -47,28 +46,29 @@ import {
 import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../store';
 import {getUiSpecForProject} from '../../uiSpecification';
-
 import RecordForm from '../components/record/form';
+
 import RecordMeta from '../components/record/meta';
 import RecordDelete from '../components/record/delete';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
 import {getProjectMetadata} from '../../projectMetadata';
+
 import {TokenContents} from '../../datamodel/core';
+import { grey } from '@mui/material/colors';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 0,
       paddingRight: 0,
     },
   },
   LeftPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 10,
     },
   },
@@ -165,8 +165,8 @@ export default function Record(props: RecordeProps) {
       </Box>
       <Paper square className={classes.NoPaddding}>
         <TabContext value={value}>
-          <AppBar position="static" color={'primary'}>
-            <TabList onChange={handleChange} aria-label="simple tabs example">
+          <AppBar position="static" color="primary" >
+            <TabList onChange={handleChange} aria-label="simple tabs example"  >
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
               <Tab label="Meta" value="3" />

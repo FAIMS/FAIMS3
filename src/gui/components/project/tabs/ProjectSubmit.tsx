@@ -21,12 +21,12 @@ import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {useState, useEffect} from 'react';
 import * as ROUTES from '../../../../constants/routes';
-import grey from '@material-ui/core/colors/grey';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import {Grid, Typography, Box, Button} from '@material-ui/core';
+import CircularProgress from '@mui/material/CircularProgress';
+import {Grid, Typography, Box, Button} from '@mui/material';
 import {ProjectSubmit} from './ProjectButton';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-import Alert from '@material-ui/lab/Alert';
+import Alert from '@mui/material/Alert';
+import { grey } from '@mui/material/colors';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 type ProjectSubmitProps = {

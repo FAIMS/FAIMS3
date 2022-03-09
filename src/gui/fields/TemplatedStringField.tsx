@@ -19,15 +19,15 @@
  */
 
 import React from 'react';
-import MuiTextField from '@material-ui/core/TextField';
-import {fieldToTextField, TextFieldProps} from 'formik-material-ui';
+import MuiTextField from '@mui/material/TextField';
+import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import Mustache from 'mustache';
 import {
   Defaultcomponentsetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 import {generatenewfield} from '../components/project/data/componenentSetting';
-import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
+import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {option} from '../../datamodel/typesystem';
 import {
   ProjectUIModel,
@@ -88,8 +88,8 @@ export class TemplatedStringField extends React.Component<
       text_props.InputProps = {};
     }
     text_props.InputProps.readOnly = true;
-
-    return <MuiTextField {...text_props}>{children}</MuiTextField>;
+    text_props.variant="outlined"
+    return <MuiTextField  {...text_props}  >{children}</MuiTextField>;
   }
 }
 

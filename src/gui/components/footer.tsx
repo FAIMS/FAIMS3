@@ -20,22 +20,22 @@
 
 import React, {useContext} from 'react';
 import {useLocation} from 'react-router-dom';
-import {Box, Grid, Typography, Paper} from '@material-ui/core';
-import grey from '@material-ui/core/colors/grey';
-
+import {Box, Grid, Typography, Paper} from '@mui/material';
 import packageJson from '../../../package.json';
+
 import {COMMIT_VERSION} from '../../buildconfig';
 import {store} from '../../store';
 import InProgress from './ui/inProgress';
 import BoxTab from './ui/boxTab';
-import Link from '@material-ui/core/Link';
-import {Container} from '@material-ui/core';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {useTheme} from '@material-ui/core/styles';
-
+import Link from '@mui/material/Link';
+import {Container} from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
 import {EHTML} from '../../footer';
 
 import * as ROUTES from '../../constants/routes';
+
+import { grey } from '@mui/material/colors';
 
 export default function Footer() {
   // This is a MASSIVE hack because react-router is dumb and can't seem to work

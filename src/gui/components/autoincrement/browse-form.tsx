@@ -19,7 +19,7 @@
  */
 
 import {Link as RouterLink} from 'react-router-dom';
-import {Button} from '@material-ui/core';
+import {Button} from '@mui/material';
 
 import * as ROUTES from '../../../constants/routes';
 import {ProjectID} from '../../../datamodel/core';

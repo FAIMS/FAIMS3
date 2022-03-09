@@ -20,7 +20,7 @@
 import React from 'react';
 import {useState} from 'react';
 
-import {Grid, Typography, Box} from '@material-ui/core';
+import {Grid, Typography, Box} from '@mui/material';
 import {Formik, Form} from 'formik';
 import {getComponentFromField} from '../FormElement';
 import {ProjectSubmit} from './ProjectButton';

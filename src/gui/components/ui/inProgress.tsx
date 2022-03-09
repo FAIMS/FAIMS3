@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import TimelapseIcon from '@material-ui/icons/Timelapse';
+import TimelapseIcon from '@mui/icons-material/Timelapse';
 import React from 'react';
 
 export default function InProgress() {

@@ -25,7 +25,7 @@ import {
   Table,
   TableBody,
   TableRow,
-} from '@material-ui/core';
+} from '@mui/material';
 
 import {getRecordMetadata} from '../../../data_storage';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';

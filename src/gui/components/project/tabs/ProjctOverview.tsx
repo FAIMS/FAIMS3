@@ -20,10 +20,10 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 
-import {Grid} from '@material-ui/core';
+import {Grid} from '@mui/material';
 import {Graphviz} from 'graphviz-react';
 import {getconnections} from '../data/ComponentSetting';
-import Alert from '@material-ui/lab/Alert';
+import Alert from '@mui/material/Alert';
 
 type ProjectOverviewProps = any;
 

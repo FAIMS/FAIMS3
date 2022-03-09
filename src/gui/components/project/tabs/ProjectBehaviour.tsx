@@ -18,10 +18,10 @@
  *   TODO:
  */
 
-import {Grid, Typography} from '@material-ui/core';
+import {Grid, Typography} from '@mui/material';
 import {FAIMShandlerType, BehaviourProperties} from '../../../../datamodel/ui';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 type ProjectBehaviourProps = any;
 
 export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {

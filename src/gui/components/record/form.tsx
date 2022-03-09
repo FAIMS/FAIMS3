@@ -33,18 +33,17 @@ import {
   Stepper,
   StepButton,
   MobileStepper,
-} from '@material-ui/core';
+} from '@mui/material';
 
-import grey from '@material-ui/core/colors/grey';
-import CircularProgress from '@material-ui/core/CircularProgress';
-
+import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
+
 import AutoSave from './autosave';
 import {ViewComponent} from './view';
-
 import BoxTab from '../ui/boxTab';
 
 import {ActionType} from '../../../actions';
+
 import * as ROUTES from '../../../constants/routes';
 import {
   ProjectID,
@@ -64,9 +63,10 @@ import {
 } from '../../../uiSpecification';
 import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
-import {Link} from '@material-ui/core';
+import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import {indexOf} from 'lodash';
+import { grey } from '@mui/material/colors';
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -868,7 +868,7 @@ class RecordForm extends React.Component<
                           <Button
                             type="submit"
                             color={
-                              formProps.isSubmitting ? 'default' : 'primary'
+                              formProps.isSubmitting ? undefined : 'primary'
                             }
                             variant="contained"
                             disableElevation
@@ -943,7 +943,7 @@ class RecordForm extends React.Component<
                           <Button
                             type="submit"
                             color={
-                              formProps.isSubmitting ? 'default' : 'primary'
+                              formProps.isSubmitting ? undefined : 'primary'
                             }
                             variant="outlined"
                             disableElevation

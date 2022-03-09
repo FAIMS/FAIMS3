@@ -27,7 +27,7 @@ import {
   Typography,
   Paper,
   CircularProgress,
-} from '@material-ui/core';
+} from '@mui/material';
 
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel/core';

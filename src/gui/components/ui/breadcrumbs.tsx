@@ -5,11 +5,11 @@ import {
   Typography,
   Breadcrumbs as MuiBreadcrumbs,
   Grid,
-} from '@material-ui/core';
+} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 
-import {useTheme} from '@material-ui/core/styles';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {TokenContents} from '../../../datamodel/core';
 type BreadcrumbProps = {
   data: Array<{title: string; link?: string}>;

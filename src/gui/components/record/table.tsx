@@ -26,11 +26,11 @@ import {
   GridColDef,
   GridCellParams,
   GridToolbar,
-} from '@material-ui/data-grid';
-import {Typography} from '@material-ui/core';
-import Link from '@material-ui/core/Link';
-import {useTheme} from '@material-ui/core/styles';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
+} from '@mui/x-data-grid';
+import {Typography} from '@mui/material';
+import Link from '@mui/material/Link';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 import * as ROUTES from '../../../constants/routes';
 import {ProjectID} from '../../../datamodel/core';
@@ -90,14 +90,15 @@ function RecordsTable(props: RecordsTableProps) {
               component={RouterLink}
               to={ROUTES.getRecordRoute(
                 project_id || 'dummy',
-                (params.getValue('record_id') || '').toString(),
-                (params.getValue('revision_id') || '').toString()
+                (params.row.record_id || '').toString(),
+                (params.row.revision_id || '').toString()
               )}
             >
               {params.value}
             </Link>
           ),
         },
+        // {field: 'hrid', headerName: 'HRID/UUID', type: 'string', width: 200},
         {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
         {
           field: 'created_by',
@@ -146,11 +147,11 @@ function RecordsTable(props: RecordsTableProps) {
               component={RouterLink}
               to={ROUTES.getRecordRoute(
                 project_id || 'dummy',
-                (params.getValue('record_id') || '').toString(),
-                (params.getValue('revision_id') || '').toString()
+                (params.row.record_id || '').toString(),
+                (params.row.revision_id || '').toString()
               )}
             >
-              {params.value}
+              {params.row.hrid}
             </Link>
           ),
           hide: true,
@@ -171,8 +172,8 @@ function RecordsTable(props: RecordsTableProps) {
                   component={RouterLink}
                   to={ROUTES.getRecordRoute(
                     project_id || 'dummy',
-                    (params.getValue('record_id') || '').toString(),
-                    (params.getValue('revision_id') || '').toString()
+                    (params.row.record_id || '').toString(),
+                    (params.row.revision_id || '').toString()
                   )}
                 >
                   {params.value}
@@ -183,13 +184,13 @@ function RecordsTable(props: RecordsTableProps) {
                 Kind:{' '}
                 {props.viewsets !== null &&
                 props.viewsets !== undefined &&
-                params.getValue('type') !== null &&
-                params.value !== undefined &&
-                props.viewsets[(params.getValue('type') || '').toString()] !==
+                params.row.type !== null &&
+                params.row.type !== undefined &&
+                props.viewsets[(params.row.type || '').toString()] !==
                   undefined
-                  ? props.viewsets[(params.getValue('type') || '').toString()]
-                      .label ?? params.getValue('type')
-                  : params.getValue('type')}
+                  ? props.viewsets[(params.row.type || '').toString()]
+                      .label ?? params.row.type
+                  : params.row.type}
               </Typography>
               <Typography
                 color="textSecondary"
@@ -197,7 +198,7 @@ function RecordsTable(props: RecordsTableProps) {
                 gutterBottom
                 component="div"
               >
-                Created: {(params.getValue('created') || '').toString()}
+                Created: {(params.row.created || '').toString()}
               </Typography>
               <Typography
                 color="textSecondary"
@@ -205,7 +206,7 @@ function RecordsTable(props: RecordsTableProps) {
                 gutterBottom
                 component="div"
               >
-                Created By {params.getValue('created_by')}
+                Created By {params.row.created_by}
               </Typography>
               <Typography
                 color="textSecondary"
@@ -213,10 +214,10 @@ function RecordsTable(props: RecordsTableProps) {
                 gutterBottom
                 component="div"
               >
-                Updated By {params.getValue('updated_by')}
+                Updated By {params.row.updated_by}
               </Typography>
 
-              {params.getValue('conflicts') === true && (
+              {params.row.conflicts === true && (
                 <Typography
                   color="error"
                   variant="subtitle2"

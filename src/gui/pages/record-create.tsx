@@ -27,7 +27,7 @@ import {
   Typography,
   Paper,
   CircularProgress,
-} from '@material-ui/core';
+} from '@mui/material';
 
 import {ActionType} from '../../actions';
 import * as ROUTES from '../../constants/routes';
@@ -50,18 +50,18 @@ import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
 import {TokenContents} from '../../datamodel/core';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 0,
       paddingRight: 0,
     },
   },
   LeftPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 10,
     },
   },

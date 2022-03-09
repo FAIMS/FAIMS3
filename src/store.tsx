@@ -19,7 +19,7 @@
  */
 
 import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
-import {Color} from '@material-ui/lab/Alert';
+import AlertColor from '@mui/material/Alert';
 
 import {v4 as uuidv4} from 'uuid';
 
@@ -43,7 +43,7 @@ interface InitialStateProps {
   active_record: Record | null;
   alerts: Array<
     {
-      severity: Color;
+      severity:   string;
       key: string;
     } & ({message: string} | {element: JSX.Element[]})
   >;
@@ -178,7 +178,7 @@ const StateProvider = (props: any) => {
         console.log('Could not initialize: ', err);
         dispatch({
           type: ActionType.ADD_ALERT,
-          payload: {message: err.message, severity: 'error'},
+          payload: {message: err.message, severity: "error"},
         });
       });
   }, []);

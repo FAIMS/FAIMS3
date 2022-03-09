@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import BrokenImageIcon from '@material-ui/icons/BrokenImage';
+import BrokenImageIcon from '@mui/icons-material/BrokenImage';
 import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
 
 export function getDefaultBuilderComponent() {

@@ -28,10 +28,10 @@ import {
   MenuList,
   MenuItem,
   ListItemIcon,
-} from '@material-ui/core';
-// import AccountTree from '@material-ui/icons/AccountTree';
-import AccountBoxIcon from '@material-ui/icons/AccountBox';
-import WorkSharpIcon from '@material-ui/icons/WorkSharp';
+} from '@mui/material';
+// import AccountTree from '@mui/icons-material/AccountTree';
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
+import WorkSharpIcon from '@mui/icons-material/WorkSharp';
 import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {TokenContents} from '../../datamodel/core';

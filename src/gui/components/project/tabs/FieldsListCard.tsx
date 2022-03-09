@@ -27,8 +27,8 @@ import {
   CardContent,
   Typography,
   Card,
-} from '@material-ui/core';
-import {makeStyles} from '@material-ui/core/styles';
+} from '@mui/material';
+import makeStyles from '@mui/styles/makeStyles';
 import {getfields} from '../data/uiFieldsRegistry';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -36,14 +36,14 @@ const useStyles = makeStyles(theme => ({
   content: {
     minHeight: 100,
     minWidth: 200,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       width: '100%',
     },
   },
   inputfieldscard: {
     backgroundColor: '#353b40',
     textAlign: 'right',
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       marginBottom: 15,
       marginTop: 10,
     },

@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {CircularProgress, Chip} from '@material-ui/core';
+import {CircularProgress, Chip} from '@mui/material';
 
 import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel/core';

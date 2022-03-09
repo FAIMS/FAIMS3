@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-// import {makeStyles} from '@material-ui/core/styles';
+// import {makeStyles} from '@mui/material/styles';
 import {
   Box,
   Breadcrumbs,
@@ -27,8 +27,8 @@ import {
   Typography,
   Grid,
   Container,
-} from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+} from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import {Link as RouterLink, NavLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 
@@ -54,7 +54,7 @@ export default function NotFound404() {
         spacing={0}
         direction="column"
         alignItems="center"
-        justify="center"
+        justifyContent="center"
         style={{minHeight: '80vh'}}
       >
         <Grid item xs={12}>

@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {FieldProps} from 'formik';
-import Button, {ButtonProps} from '@material-ui/core/Button';
+import Button, {ButtonProps} from '@mui/material/Button';
 import {Plugins, GeolocationPosition} from '@capacitor/core';
 
 import {getDefaultuiSetting} from './BasicFieldSettings';

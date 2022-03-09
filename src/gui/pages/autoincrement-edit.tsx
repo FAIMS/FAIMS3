@@ -21,7 +21,7 @@
 import React from 'react';
 import {useParams} from 'react-router-dom';
 
-import {Box, Container, Typography, Paper, Button} from '@material-ui/core';
+import {Box, Container, Typography, Paper, Button} from '@mui/material';
 
 import * as ROUTES from '../../constants/routes';
 import {ProjectID} from '../../datamodel/core';

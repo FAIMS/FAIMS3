@@ -20,8 +20,8 @@
 
 import React, {useEffect, useState} from 'react';
 import {Field} from 'formik';
-import {IconButton} from '@material-ui/core';
-import NoteIcon from '@material-ui/icons/Note';
+import {IconButton} from '@mui/material';
+import NoteIcon from '@mui/icons-material/Note';
 
 import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
@@ -47,7 +47,7 @@ export function Annotation(props: any) {
           setIsClick(isc);
           setIsclicks(isc);
         }}
-      >
+        size="large">
         <NoteIcon fontSize="small" />
       </IconButton>
 

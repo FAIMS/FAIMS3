@@ -28,9 +28,9 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-} from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
-import {Alert} from '@material-ui/lab';
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { Alert } from '@mui/material';
 
 import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';

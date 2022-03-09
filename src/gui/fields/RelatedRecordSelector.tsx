@@ -19,12 +19,12 @@
  */
 
 import React, {useEffect} from 'react';
-import Button from '@material-ui/core/Button';
-import AddIcon from '@material-ui/icons/Add';
-import TextField from '@material-ui/core/TextField';
+import Button from '@mui/material/Button';
+import AddIcon from '@mui/icons-material/Add';
+import TextField from '@mui/material/TextField';
 
 import {Field, FieldProps} from 'formik';
-import {Autocomplete} from 'formik-material-ui-lab';
+import {Autocomplete} from 'formik-mui';
 
 import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName} from '../../datamodel/core';
@@ -34,7 +34,7 @@ import {
   getDefaultuiSetting,
   Defaultcomponentsetting,
 } from './BasicFieldSettings';
-import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
+import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {option} from '../../datamodel/typesystem';
 import {
   ProjectUIModel,
@@ -42,7 +42,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {useLocation, Link} from 'react-router-dom';
-import {Typography} from '@material-ui/core';
+import {Typography} from '@mui/material';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {

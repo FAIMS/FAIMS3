@@ -24,7 +24,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import CreateProjectCard from '../components/project/CreateProjectCard';
 import * as ROUTES from '../../constants/routes';
 
-import {Typography, Container, Paper, Box} from '@material-ui/core';
+import {Typography, Container, Paper, Box} from '@mui/material';
 
 import {ProjectID} from '../../datamodel/core';
 import {getProjectInfo} from '../../databaseAccess';

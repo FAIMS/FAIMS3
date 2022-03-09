@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import Input from '@material-ui/core/Input';
+import Input from '@mui/material/Input';
 
 import {getComponentByName} from './index';
 

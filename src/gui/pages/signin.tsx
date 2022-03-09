@@ -19,8 +19,8 @@
  */
 
 import React, {useState, useEffect} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import {Container, Grid, Typography} from '@material-ui/core';
+import makeStyles from '@mui/styles/makeStyles';
+import {Container, Grid, Typography} from '@mui/material';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ClusterCard from '../components/authentication/cluster_card';
