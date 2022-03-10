@@ -169,7 +169,7 @@ export function TickButton(props: ButtonProps) {
 export function AddUserButton(props: ButtonProps) {
   return (
     <Button
-      color="secondary"
+      color="primary"
       startIcon={<AddCircleIcon />}
       variant="outlined"
       type={props.type}

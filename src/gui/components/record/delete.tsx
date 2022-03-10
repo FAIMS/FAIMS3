@@ -90,7 +90,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
     <div>
       <Button
         variant="outlined"
-        color="secondary"
+        color="primary"
         onClick={handleClickOpen}
         startIcon={<DeleteIcon />}
       >

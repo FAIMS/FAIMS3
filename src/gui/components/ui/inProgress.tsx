@@ -30,7 +30,7 @@ export default function InProgress() {
         flexWrap: 'wrap',
       }}
     >
-      <TimelapseIcon color={'secondary'} />
+      <TimelapseIcon color={'primary'} />
       &nbsp;&nbsp;<span>Feature in progress</span>
     </div>
   );
