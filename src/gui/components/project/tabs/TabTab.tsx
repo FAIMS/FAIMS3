@@ -46,7 +46,7 @@ const useStyles = makeStyles(theme => ({
   },
   root: {
     minWidth: 55,
-    color:'#c2c2c2'
+    color: '#c2c2c2',
   },
 }));
 
@@ -74,9 +74,9 @@ export function TabTab(props: TabProps) {
       scrollButtons
       variant="scrollable"
       allowScrollButtonsMobile
-      indicatorColor={tab_id === 'primarytab' ?'secondary' :'primary'} 
-      textColor={tab_id === 'primarytab' ?'secondary' :'primary'}
-      >
+      indicatorColor={tab_id === 'primarytab' ? 'secondary' : 'primary'}
+      textColor={tab_id === 'primarytab' ? 'secondary' : 'primary'}
+    >
       {tabs.map((tab: any, index: number) => (
         <Tab
           className={tab_id === 'primarytab' ? classes.root : classes.fieldtab}
@@ -183,7 +183,8 @@ export function TabEditable(props: TabProps) {
             orientation={tab_id === 'fieldtab' ? 'vertical' : 'horizontal'}
             scrollButtons
             variant="scrollable"
-            allowScrollButtonsMobile>
+            allowScrollButtonsMobile
+          >
             {tablists.map((tab, index) => (
               <Tab
                 className={

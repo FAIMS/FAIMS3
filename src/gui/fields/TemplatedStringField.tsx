@@ -88,8 +88,8 @@ export class TemplatedStringField extends React.Component<
       text_props.InputProps = {};
     }
     text_props.InputProps.readOnly = true;
-    text_props.variant="outlined"
-    return <MuiTextField  {...text_props}  >{children}</MuiTextField>;
+    text_props.variant = 'outlined';
+    return <MuiTextField {...text_props}>{children}</MuiTextField>;
   }
 }
 

@@ -96,7 +96,8 @@ export function CloseButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
-      size="large">
+      size="large"
+    >
       <CancelIcon fontSize="small" />
     </IconButton>
   );
@@ -109,7 +110,8 @@ export function UpButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
-      size="large">
+      size="large"
+    >
       <ExpandLessIcon fontSize="small" />
     </IconButton>
   );
@@ -122,7 +124,8 @@ export function DownButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
-      size="large">
+      size="large"
+    >
       <ExpandMoreIcon fontSize="small" />
     </IconButton>
   );
@@ -135,7 +138,8 @@ export function AddSectionButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
-      size="large">
+      size="large"
+    >
       <AddCircleIcon fontSize="large" color="primary" />
     </IconButton>
   );
@@ -148,7 +152,8 @@ export function EditButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
-      size="large">
+      size="large"
+    >
       <EditIcon fontSize="large" color="primary" />
     </IconButton>
   );
@@ -202,7 +207,8 @@ export function DeleteuserButton(props: ButtonProps) {
       aria-label="delete"
       onClick={() => props.onButtonClick(props.value)}
       value={props.value}
-      size="large">
+      size="large"
+    >
       <DeleteIcon />
     </IconButton>
   );
@@ -216,7 +222,8 @@ export function Addusersassign(props: ButtonProps) {
       aria-label="add"
       onClick={() => props.onButtonClick(props.value)}
       value={props.value}
-      size="large">
+      size="large"
+    >
       <ArrowForwardIosOutlinedIcon fontSize="large" />
     </IconButton>
   );

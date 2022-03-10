@@ -1,6 +1,6 @@
 import {Box} from '@mui/material';
 import React from 'react';
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 
 type BoxTabProps = {
   title: string;

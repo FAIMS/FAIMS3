@@ -18,29 +18,29 @@
  *   TODO
  */
 
-import { createTheme, colors, adaptV4Theme } from '@mui/material';
+import {createTheme, colors, adaptV4Theme} from '@mui/material';
 // import { Shadows } from '@mui/material/styles';
 import typography from './typography';
-import shadows from './shadows';
-import { Theme } from '@mui/material/styles';
+// import shadows from './shadows';
+import {Theme} from '@mui/material/styles';
 
 declare module '@mui/styles/defaultTheme' {
   interface DefaultTheme extends Theme {}
 }
 
 const theme = createTheme({
-  spacing:2,
+  spacing: 2,
   palette: {
     primary: {
       main: '#1B3E93',
       light: '#42a5f5',
       dark: '#1565c0',
-      contrastText: '#fff'
+      contrastText: '#fff',
     },
     secondary: {
       // main: '#F68E1E',
-      main: "#fff",
-      contrastText: "#1b7993",
+      main: '#fff',
+      contrastText: '#1b7993',
     },
     text: {
       primary: colors.blueGrey[900],
@@ -50,7 +50,7 @@ const theme = createTheme({
     //   main: colors.red[500],
     // },
   },
-  
+
   // shadows: shadows as Shadows,
   typography,
   // shadows: Array(25).fill('none') as Shadows,
@@ -58,17 +58,17 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         colorPrimary: {
-          backgroundColor: "#1B3E93",
-          color:'#fff',
-          contrastText: "#fff",
-          textColor:'#fff',
-          indicatorColor:'#fff',
-          text:{
-            primary:'#fff'
-          }
+          backgroundColor: '#1B3E93',
+          color: '#fff',
+          contrastText: '#fff',
+          textColor: '#fff',
+          indicatorColor: '#fff',
+          text: {
+            primary: '#fff',
+          },
         },
-      }
-    }
+      },
+    },
   },
 });
 

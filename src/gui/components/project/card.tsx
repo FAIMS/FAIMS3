@@ -190,7 +190,7 @@ export default function Card(props: ProjectCardProps) {
                     className={classes.status}
                     color="textPrimary"
                   >
-                    { }
+                    {}
                   </Typography>
                   <Typography
                     component="span"

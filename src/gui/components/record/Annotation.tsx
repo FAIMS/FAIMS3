@@ -47,7 +47,8 @@ export function Annotation(props: any) {
           setIsClick(isc);
           setIsclicks(isc);
         }}
-        size="large">
+        size="large"
+      >
         <NoteIcon fontSize="small" />
       </IconButton>
 

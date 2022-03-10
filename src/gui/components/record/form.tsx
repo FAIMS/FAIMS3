@@ -66,7 +66,7 @@ import {getCurrentUserId} from '../../../users';
 import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import {indexOf} from 'lodash';
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 
 type RecordFormProps = {
   project_id: ProjectID;

@@ -57,7 +57,7 @@ export class Select extends React.Component<TextFieldProps & Props> {
       <>
         <MuiTextField {...fieldToTextField(textFieldProps)} select={true}>
           {children}
-          {ElementProps.options.map((option:any) => (
+          {ElementProps.options.map((option: any) => (
             <MenuItem
               key={option.key ? option.key : option.value}
               value={option.value}

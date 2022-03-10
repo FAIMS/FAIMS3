@@ -232,13 +232,15 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
         <IconButton
           component={RouterLink}
           to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SEARCH}
-          size="large">
+          size="large"
+        >
           <SearchIcon />
         </IconButton>
         <IconButton
           component={RouterLink}
           to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_SETTINGS}
-          size="large">
+          size="large"
+        >
           <SettingsIcon />
         </IconButton>
       </Box>

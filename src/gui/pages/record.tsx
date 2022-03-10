@@ -58,7 +58,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
 
 import {TokenContents} from '../../datamodel/core';
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -165,11 +165,16 @@ export default function Record(props: RecordeProps) {
       </Box>
       <Paper square className={classes.NoPaddding}>
         <TabContext value={value}>
-          <AppBar position="static" color="primary" >
-            <TabList onChange={handleChange} aria-label="simple tabs example"  indicatorColor={'secondary'} textColor="secondary">
-              <Tab label="Edit" value="1" sx={{color:'#c2c2c2'}}/>
-              <Tab label="Revisions" value="2" sx={{color:'#c2c2c2'}} />
-              <Tab label="Meta" value="3" sx={{color:'#c2c2c2'}}/>
+          <AppBar position="static" color="primary">
+            <TabList
+              onChange={handleChange}
+              aria-label="simple tabs example"
+              indicatorColor={'secondary'}
+              textColor="secondary"
+            >
+              <Tab label="Edit" value="1" sx={{color: '#c2c2c2'}} />
+              <Tab label="Revisions" value="2" sx={{color: '#c2c2c2'}} />
+              <Tab label="Meta" value="3" sx={{color: '#c2c2c2'}} />
             </TabList>
           </AppBar>
           <TabPanel value="1">

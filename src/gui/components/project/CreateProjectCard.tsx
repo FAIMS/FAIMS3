@@ -61,7 +61,7 @@ import {
 } from '../../../projectMetadata';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {HRID_STRING} from '../../../datamodel/core';
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -526,7 +526,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   return (
     <div className={classes.root}>
-      <AppBar position="static" color="primary" >
+      <AppBar position="static" color="primary">
         <TabTab
           not_xs={not_xs}
           tabs={projecttabs}

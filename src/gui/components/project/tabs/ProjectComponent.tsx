@@ -34,7 +34,7 @@ import {ProjectSubmit, ProjectDelete} from './ProjectButton';
 import ConfirmdeleteDisalog from './ConfirmdeleteDisalog';
 
 import SectionTabs from './PSections';
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({

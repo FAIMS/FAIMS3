@@ -43,7 +43,7 @@ import AutoIncrementEdit from './gui/pages/autoincrement-edit';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './store';
 
-import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material/styles';
+import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
@@ -161,8 +161,8 @@ export default function App() {
               />
               /* Draft creation happens by redirecting to a freshy minted UUID
               This is to keep it stable until the user navigates away. So the
-              draft_id is optional, and when RecordCreate is instantiated without
-              one, it immediately mints a UUID and redirects to it */
+              draft_id is optional, and when RecordCreate is instantiated
+              without one, it immediately mints a UUID and redirects to it */
               <PrivateRoute
                 exact
                 path={
@@ -189,13 +189,14 @@ export default function App() {
                 token={token}
                 extraProps={{token: token}}
               />
-              /* Record editing and viewing is a seprate affair, separated by the
-              presence/absence of draft_id prop OR draft_id being in the state of
-              the Record component. So if the user clicks a draft to make
-              continued changes, the draft_id is in the URL here. Otherwise, they
-              can make changes to a record they view (Which should at some point,
-              TODO, redirect to the same Record form but with the newly minted
-              draft_id attached. BUt this TODO is in the record/form.tsx */
+              /* Record editing and viewing is a seprate affair, separated by
+              the presence/absence of draft_id prop OR draft_id being in the
+              state of the Record component. So if the user clicks a draft to
+              make continued changes, the draft_id is in the URL here.
+              Otherwise, they can make changes to a record they view (Which
+              should at some point, TODO, redirect to the same Record form but
+              with the newly minted draft_id attached. BUt this TODO is in the
+              record/form.tsx */
               <PrivateRoute
                 exact
                 path={
@@ -228,7 +229,9 @@ export default function App() {
               />
               <PrivateRoute
                 exact
-                path={ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST}
+                path={
+                  ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST
+                }
                 component={AutoIncrementBrowse}
                 token={token}
                 extraProps={{token: token}}

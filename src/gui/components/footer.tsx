@@ -35,7 +35,7 @@ import {EHTML} from '../../footer';
 
 import * as ROUTES from '../../constants/routes';
 
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 
 export default function Footer() {
   // This is a MASSIVE hack because react-router is dumb and can't seem to work

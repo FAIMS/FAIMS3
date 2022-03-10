@@ -119,7 +119,8 @@ export function FileUploader(props: FieldProps & Props) {
                 style={{color: '#000'}}
                 aria-label="Delete this Attachment"
                 onClick={() => handelonClick(index)}
-                size="large">
+                size="large"
+              >
                 <DeleteIcon />
               </IconButton>
             </ListItemSecondaryAction>

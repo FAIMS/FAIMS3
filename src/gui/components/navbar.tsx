@@ -199,18 +199,19 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         },
-      props.token !== undefined && props.token !== null
-    ?{
-      title: 'New Notebook',
-      icon: <AddIcon />,
-      to: ROUTES.PROJECT_CREATE,
-      disabled: false,
-    }:{
-      title: 'New Notebook',
-      icon: <AddIcon />,
-      to: ROUTES.PROJECT_CREATE,
-      disabled: true,
-    },
+    props.token !== undefined && props.token !== null
+      ? {
+          title: 'New Notebook',
+          icon: <AddIcon />,
+          to: ROUTES.PROJECT_CREATE,
+          disabled: false,
+        }
+      : {
+          title: 'New Notebook',
+          icon: <AddIcon />,
+          to: ROUTES.PROJECT_CREATE,
+          disabled: true,
+        },
     // {
     //   title: 'Tools',
     //   icon: <BuildIcon />,
@@ -286,7 +287,8 @@ export default function Navbar(props: NavbarProps) {
               onClick={toggle}
               edge="start"
               className={clsx(classes.menuButton, isOpen && classes.hide)}
-              size="large">
+              size="large"
+            >
               <MenuIcon />
             </IconButton>
             <img

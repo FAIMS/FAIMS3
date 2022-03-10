@@ -30,7 +30,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Alert } from '@mui/material';
+import {Alert} from '@mui/material';
 
 import {ActionType} from '../../../actions';
 import * as ROUTES from '../../../constants/routes';

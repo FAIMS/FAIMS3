@@ -34,7 +34,7 @@ import {
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 
 export default function AboutBuild() {
   const breadcrumbs = [

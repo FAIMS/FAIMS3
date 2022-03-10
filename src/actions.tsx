@@ -20,7 +20,6 @@
 
 import {ProjectObject} from './datamodel/database';
 import {Record} from './datamodel/ui';
-import AlertColor from '@mui/material/Alert';
 
 export enum ActionType {
   IS_SYNCING,

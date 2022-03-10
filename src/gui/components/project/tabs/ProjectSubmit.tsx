@@ -26,7 +26,7 @@ import {Grid, Typography, Box, Button} from '@mui/material';
 import {ProjectSubmit} from './ProjectButton';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import Alert from '@mui/material/Alert';
-import { grey } from '@mui/material/colors';
+import {grey} from '@mui/material/colors';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 type ProjectSubmitProps = {
