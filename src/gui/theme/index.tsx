@@ -19,7 +19,7 @@
  */
 
 import {createTheme, colors, adaptV4Theme} from '@mui/material';
-// import { Shadows } from '@mui/material/styles';
+import  Shadows  from '@mui/material/styles';
 import typography from './typography';
 // import shadows from './shadows';
 import {Theme} from '@mui/material/styles';
@@ -50,8 +50,7 @@ const theme = createTheme({
     //   main: colors.red[500],
     // },
   },
-
-  // shadows: shadows as Shadows,
+  // shadows: Shadows,
   typography,
   // shadows: Array(25).fill('none') as Shadows,
   components: {

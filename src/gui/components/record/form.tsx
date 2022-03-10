@@ -727,9 +727,9 @@ class RecordForm extends React.Component<
         <React.Fragment>
           <Box
             display={{xs: 'none', sm: 'block'}}
-            style={{padding: 0, overflow: 'auto'}}
+            style={{padding: '3px'}}
           >
-            <Stepper nonLinear activeStep={view_index} alternativeLabel>
+            <Stepper nonLinear activeStep={view_index} alternativeLabel style={{overflowY: 'hidden'}} >
               {ui_specification.viewsets[viewsetName].views.map(
                 (view_name: string) => (
                   <Step key={view_name}>
@@ -806,7 +806,7 @@ class RecordForm extends React.Component<
           {description !== '' && (
             <Box
               bgcolor={'#fafafa'}
-              p={2}
+              p={3}
               style={{border: '1px #eeeeee dashed'}}
             >
               <Typography>{description}</Typography>
