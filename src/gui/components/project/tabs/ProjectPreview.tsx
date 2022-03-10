@@ -172,7 +172,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
           formtabs.indexOf(formlabel) > 0 ? formtabs.indexOf(formlabel) : 0
         }
         handleChange={handelonChangeVariants}
-        tab_id="primarytab"
+        tab_id="projectreview"
       />
       {formtabs.map((tab: string, index: number) => (
         <TabPanel
@@ -180,7 +180,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
             formtabs.indexOf(formlabel) > 0 ? formtabs.indexOf(formlabel) : 0
           }
           index={index}
-          tabname="primarytab"
+          tabname="projectreview"
         >
           <Grid container>
             <Grid item sm={3} xs={12}>
@@ -194,7 +194,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
               />
             </Grid>
             <Grid item sm={1} xs={12}></Grid>
-            <Grid item sm={8} xs={12} className={classes.steepscorller}>
+            <Grid item sm={8} xs={12} className={classes.steepscorller} style={{overflow:'hidden'}}>
               {not_xs ? (
                 <Stepper
                   nonLinear
@@ -202,6 +202,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                     formvariants + view_name
                   )}
                   alternativeLabel
+                  
                 >
                   {formuiSpec.viewsets[formvariants].views.map(
                     (view_name: string) => (
