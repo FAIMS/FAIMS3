@@ -19,6 +19,7 @@
  */
 
 import {v4 as uuidv4} from 'uuid';
+import {isEqual} from 'lodash';
 
 import {DEBUG_APP} from '../buildconfig';
 import {getDataDB} from '../sync';
@@ -407,7 +408,7 @@ async function addNewAttributeValuePairs(
   const avps_to_dump: AttributeValuePair[] = [];
   for (const [field_name, field_value] of Object.entries(record.data)) {
     const stored_data = data.data[field_name];
-    if (stored_data === undefined || stored_data !== field_value) {
+    if (stored_data === undefined || !isEqual(stored_data, field_value)) {
       const new_avp_id = generateFAIMSAttributeValuePairID();
       const new_avp = {
         _id: new_avp_id,
