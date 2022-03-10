@@ -77,7 +77,7 @@ export default function AboutBuild() {
       </Box>
       <Button
         variant="outlined"
-        color={'secondary'}
+        color={'primary'}
         onClick={() => {
           wipe_all_pouch_databases().then(() => {
             console.log('User cleaned database');
@@ -90,7 +90,7 @@ export default function AboutBuild() {
       </Button>
       <Button
         variant="outlined"
-        color={'secondary'}
+        color={'primary'}
         onClick={() => {
           console.log('User refreshed page');
           window.location.reload();
@@ -101,7 +101,7 @@ export default function AboutBuild() {
       </Button>
       <Button
         variant="outlined"
-        color={'secondary'}
+        color={'primary'}
         onClick={() => {
           window.location.pathname = '/minifauxton.html';
         }}
