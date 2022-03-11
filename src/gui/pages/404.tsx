@@ -66,7 +66,7 @@ export default function NotFound404() {
                   color={'textSecondary'}
                   align={'center'}
                 >
-                  Image TBD
+                  
                 </Typography>
               </Box>
             </Grid>
