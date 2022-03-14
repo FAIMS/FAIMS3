@@ -52,6 +52,8 @@
     "@capacitor/core": "2.4.9",
     "@capacitor/ios": "2.4.9",
     "@demvsystems/yup-ast": "1.2.2",
+    "@emotion/react": "^11.8.2",
+    "@emotion/styled": "^11.8.1",
     "@faims-project/faims3-map-input": "1.0.5",
     "@ionic/pwa-elements": "3.0.2",
     "@mui/icons-material": "^5.4.4",
