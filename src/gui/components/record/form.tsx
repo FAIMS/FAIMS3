@@ -527,10 +527,11 @@ class RecordForm extends React.Component<
         return doc;
       })
       .then(doc => {
-        upsertFAIMSData(this.props.project_id, doc);
-        return (
-          doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
-        );
+        return upsertFAIMSData(this.props.project_id, doc).then(() => {
+          return (
+            doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
+          );
+        });
       })
       .then(result => {
         if (DEBUG_APP) {
