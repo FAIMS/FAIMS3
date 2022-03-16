@@ -80,7 +80,7 @@ function generate_non_unique_project_id(): NonUniqueProjectID {
   return 'proj-' + uuidv4();
 }
 
-async function ensure_locally_created_project_listing(): Promise<ListingsObject> {
+export async function ensure_locally_created_project_listing(): Promise<ListingsObject> {
   try {
     return await directory_db.local.get(LOCALLY_CREATED_PROJECT_PREFIX);
   } catch (err: any) {
