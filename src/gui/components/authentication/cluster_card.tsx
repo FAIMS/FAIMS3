@@ -27,9 +27,9 @@ import {
   CardActions,
   CardContent,
   CardHeader,
-} from '@material-ui/core';
+} from '@mui/material';
 
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
 import {LoginForm} from './login_form';
 import {

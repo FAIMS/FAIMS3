@@ -18,13 +18,13 @@
  *   TODO
  */
 
-import Input from '@material-ui/core/Input';
-import Checkbox from '@material-ui/core/Checkbox';
-import TextField from '@material-ui/core/TextField';
-import {TextField as FormikTextField} from 'formik-material-ui';
-import {Select as FormikSelect} from 'formik-material-ui';
-import {RadioGroup as FormikRadioGroup} from 'formik-material-ui';
-// import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-material-ui';
+import Input from '@mui/material/Input';
+import Checkbox from '@mui/material/Checkbox';
+import TextField from '@mui/material/TextField';
+import {TextField as FormikTextField} from 'formik-mui';
+import {Select as FormikSelect} from 'formik-mui';
+import {RadioGroup as FormikRadioGroup} from 'formik-mui';
+// import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-mui';
 
 import {
   Select as FAIMSSelect,

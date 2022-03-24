@@ -19,7 +19,7 @@
  */
 import React from 'react';
 // Brian,please replace below html here and in envrionmnet file REACT_APP_SERVICES=XXX
-import {Container, Paper} from '@material-ui/core';
+import {Container, Paper} from '@mui/material';
 
 // const html = `
 // <hr/>

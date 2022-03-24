@@ -18,7 +18,7 @@
  * TODO: add select to user list area
  */
 import React from 'react';
-import Alert from '@material-ui/lab/Alert';
+import Alert from '@mui/material/Alert';
 import {Formik, Form} from 'formik';
 import SectionComponent from './PSectionComponent';
 /* eslint-disable @typescript-eslint/no-unused-vars */

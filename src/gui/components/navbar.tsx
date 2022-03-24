@@ -25,28 +25,28 @@ import {
   CircularProgress,
   IconButton,
   Toolbar,
-} from '@material-ui/core';
-import MenuIcon from '@material-ui/icons/Menu';
-import {makeStyles} from '@material-ui/core/styles';
-import CssBaseline from '@material-ui/core/CssBaseline';
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import makeStyles from '@mui/styles/makeStyles';
+import CssBaseline from '@mui/material/CssBaseline';
 import clsx from 'clsx';
-import Collapse from '@material-ui/core/Collapse';
-import Drawer from '@material-ui/core/Drawer';
-import Divider from '@material-ui/core/Divider';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-// import AddIcon from '@material-ui/icons/Add';
-import HomeIcon from '@material-ui/icons/Home';
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import DescriptionIcon from '@material-ui/icons/Description';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import SettingsIcon from '@material-ui/icons/Settings';
-// import NotificationsIcon from '@material-ui/icons/Notifications';
-import ExpandLess from '@material-ui/icons/ExpandLess';
-import ExpandMore from '@material-ui/icons/ExpandMore';
-import AccountTree from '@material-ui/icons/AccountTree';
-import ListItemText from '@material-ui/core/ListItemText';
+import Collapse from '@mui/material/Collapse';
+import Drawer from '@mui/material/Drawer';
+import Divider from '@mui/material/Divider';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import AddIcon from '@mui/icons-material/Add';
+import HomeIcon from '@mui/icons-material/Home';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import SettingsIcon from '@mui/icons-material/Settings';
+// import NotificationsIcon from '@mui/icons-material/Notifications';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import AccountTree from '@mui/icons-material/AccountTree';
+import ListItemText from '@mui/material/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from './alert';
@@ -199,18 +199,19 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         },
-    //   props.token !== undefined && props.token !== null
-    // ?{
-    //   title: 'New Notebook',
-    //   icon: <AddIcon />,
-    //   to: ROUTES.PROJECT_CREATE,
-    //   disabled: false,
-    // }:{
-    //   title: 'New Notebook',
-    //   icon: <AddIcon />,
-    //   to: ROUTES.PROJECT_CREATE,
-    //   disabled: true,
-    // },
+    props.token !== undefined && props.token !== null
+      ? {
+          title: 'New Notebook',
+          icon: <AddIcon />,
+          to: ROUTES.PROJECT_CREATE,
+          disabled: false,
+        }
+      : {
+          title: 'New Notebook',
+          icon: <AddIcon />,
+          to: ROUTES.PROJECT_CREATE,
+          disabled: true,
+        },
     // {
     //   title: 'Tools',
     //   icon: <BuildIcon />,
@@ -286,6 +287,7 @@ export default function Navbar(props: NavbarProps) {
               onClick={toggle}
               edge="start"
               className={clsx(classes.menuButton, isOpen && classes.hide)}
+              size="large"
             >
               <MenuIcon />
             </IconButton>
@@ -315,7 +317,7 @@ export default function Navbar(props: NavbarProps) {
           }}
         >
           <div className={classes.drawerHeader}>
-            <IconButton onClick={toggle}>
+            <IconButton onClick={toggle} size="large">
               <ChevronLeftIcon />
             </IconButton>
           </div>

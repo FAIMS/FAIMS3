@@ -20,7 +20,7 @@
 import React from 'react';
 import {useState} from 'react';
 
-import {Grid, Typography, Box} from '@material-ui/core';
+import {Grid, Typography, Box} from '@mui/material';
 import {Formik, Form} from 'formik';
 import {getComponentFromField} from '../FormElement';
 import {ProjectSubmit} from './ProjectButton';
@@ -228,12 +228,12 @@ export default function ProjectUserTab(props: ProjectUserProps) {
         tabs={['add', 'User Role']}
         value={tabvalue}
         handleChange={handleChangetab}
-        tab_id="primarytab"
+        tab_id="projectuser"
       />
-      <TabPanel value={tabvalue} index={0} tabname="primarytab">
+      <TabPanel value={tabvalue} index={0} tabname="projectuser">
         {addtab(uiSpec, addusers, handleChange)}
       </TabPanel>
-      <TabPanel value={tabvalue} index={1} tabname="primarytab">
+      <TabPanel value={tabvalue} index={1} tabname="projectuser">
         {tabvalue === 1 && projectvalue.users !== undefined ? (
           <Formik
             initialValues={initialValuesassign}

@@ -19,7 +19,6 @@
  */
 
 import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
-import {Color} from '@material-ui/lab/Alert';
 
 import {v4 as uuidv4} from 'uuid';
 
@@ -43,7 +42,7 @@ interface InitialStateProps {
   active_record: Record | null;
   alerts: Array<
     {
-      severity: Color;
+      severity: string;
       key: string;
     } & ({message: string} | {element: JSX.Element[]})
   >;

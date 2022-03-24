@@ -19,10 +19,10 @@
  */
 
 import React from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import {Grid, Button, TextField} from '@material-ui/core';
-import Autocomplete from '@material-ui/lab/Autocomplete';
-// import Skeleton from '@material-ui/lab/Skeleton';
+import makeStyles from '@mui/styles/makeStyles';
+import {Grid, Button, TextField} from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
+// import Skeleton from '@mui/lab/Skeleton';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';

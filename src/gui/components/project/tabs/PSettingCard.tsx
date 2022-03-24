@@ -29,20 +29,19 @@ import {
   ListItemSecondaryAction,
   Paper,
   Divider,
-  MenuItem,
-} from '@material-ui/core';
-import SettingsIcon from '@material-ui/icons/Settings';
-import PlaylistAddCheckIcon from '@material-ui/icons/PlaylistAddCheck';
-import GroupIcon from '@material-ui/icons/Group';
-import NoteIcon from '@material-ui/icons/Note';
-import AccountTree from '@material-ui/icons/AccountTree';
-import {makeStyles} from '@material-ui/core/styles';
+} from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
+import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
+import GroupIcon from '@mui/icons-material/Group';
+import NoteIcon from '@mui/icons-material/Note';
+import AccountTree from '@mui/icons-material/AccountTree';
+import makeStyles from '@mui/styles/makeStyles';
 import {getconnections} from '../data/ComponentSetting';
-// import NoteIcon from '@material-ui/icons/NoteIcon';
+// import NoteIcon from '@mui/icons-material/NoteIcon';
 import {DeleteuserButton} from './ProjectButton';
-import NextWeekIcon from '@material-ui/icons/NextWeek';
-import AddIcon from '@material-ui/icons/Add';
-import DeleteIcon from '@material-ui/icons/Delete';
+import NextWeekIcon from '@mui/icons-material/NextWeek';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({
   settiglist: {
@@ -79,38 +78,38 @@ export function SettingCard(props: SettingCard) {
       aria-label="settings bar"
       className={classes.settiglist}
     >
-      <MenuItem
+      <ListItem
         button
         onClick={() => handelonClick('settings', key_id)}
         key="list1"
         selected={selected === 'settings'}
       >
         <SettingsIcon />
-      </MenuItem>
-      <MenuItem
+      </ListItem>
+      <ListItem
         button
         onClick={() => handelonClick('valid', key_id)}
         key="list2"
         selected={selected === 'valid'}
       >
         <PlaylistAddCheckIcon />
-      </MenuItem>
-      <MenuItem
+      </ListItem>
+      <ListItem
         button
         onClick={() => handelonClick('access', key_id)}
         key="list3"
         selected={selected === 'access'}
       >
         <GroupIcon />
-      </MenuItem>
-      <MenuItem
+      </ListItem>
+      <ListItem
         button
         onClick={() => handelonClick('notes', key_id)}
         key="list4"
         selected={selected === 'notes'}
       >
         <NoteIcon />
-      </MenuItem>
+      </ListItem>
     </List>
   );
 }

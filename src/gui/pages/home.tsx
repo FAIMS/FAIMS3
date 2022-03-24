@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import {Link as RouterLink} from 'react-router-dom';
 import {
   Container,
@@ -29,7 +29,7 @@ import {
   Paper,
   Link,
   CircularProgress,
-} from '@material-ui/core';
+} from '@mui/material';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';

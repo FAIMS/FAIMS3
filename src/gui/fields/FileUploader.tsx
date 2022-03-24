@@ -23,16 +23,16 @@ import {FieldProps} from 'formik';
 import Dropzone from 'react-dropzone';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
-import LibraryBooksIcon from '@material-ui/icons/Bookmarks';
-import {Typography} from '@material-ui/core';
+import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
+import {Typography} from '@mui/material';
 import {
   List,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-} from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
-import {IconButton} from '@material-ui/core';
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import {IconButton} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   accepted_filetypes?: string | string[];
@@ -119,6 +119,7 @@ export function FileUploader(props: FieldProps & Props) {
                 style={{color: '#000'}}
                 aria-label="Delete this Attachment"
                 onClick={() => handelonClick(index)}
+                size="large"
               >
                 <DeleteIcon />
               </IconButton>

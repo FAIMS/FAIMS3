@@ -18,16 +18,16 @@
  *   TODO any type
  *   TODO clean the buttons
  */
-import AddCircleIcon from '@material-ui/icons/AddCircle';
-import {Button, IconButton} from '@material-ui/core';
-import CancelIcon from '@material-ui/icons/Cancel';
-import ExpandLessIcon from '@material-ui/icons/ExpandLess';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import AddIcon from '@material-ui/icons/Add';
-import EditIcon from '@material-ui/icons/Edit';
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
-import DeleteIcon from '@material-ui/icons/Delete';
-import ArrowForwardIosOutlinedIcon from '@material-ui/icons/ArrowForwardIosOutlined';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import {Button, IconButton} from '@mui/material';
+import CancelIcon from '@mui/icons-material/Cancel';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowForwardIosOutlinedIcon from '@mui/icons-material/ArrowForwardIosOutlined';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 type ButtonProps = any;
 
@@ -96,6 +96,7 @@ export function CloseButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
+      size="large"
     >
       <CancelIcon fontSize="small" />
     </IconButton>
@@ -109,6 +110,7 @@ export function UpButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
+      size="large"
     >
       <ExpandLessIcon fontSize="small" />
     </IconButton>
@@ -122,6 +124,7 @@ export function DownButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
+      size="large"
     >
       <ExpandMoreIcon fontSize="small" />
     </IconButton>
@@ -135,6 +138,7 @@ export function AddSectionButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
+      size="large"
     >
       <AddCircleIcon fontSize="large" color="primary" />
     </IconButton>
@@ -148,6 +152,7 @@ export function EditButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
+      size="large"
     >
       <EditIcon fontSize="large" color="primary" />
     </IconButton>
@@ -155,7 +160,7 @@ export function EditButton(props: ButtonProps) {
 }
 export function TickButton(props: ButtonProps) {
   return (
-    <IconButton edge="end" type={props.type} id={props.id}>
+    <IconButton edge="end" type={props.type} id={props.id} size="large">
       <CheckCircleIcon fontSize="large" color="primary" />
     </IconButton>
   );
@@ -164,7 +169,7 @@ export function TickButton(props: ButtonProps) {
 export function AddUserButton(props: ButtonProps) {
   return (
     <Button
-      color="secondary"
+      color="primary"
       startIcon={<AddCircleIcon />}
       variant="outlined"
       type={props.type}
@@ -202,6 +207,7 @@ export function DeleteuserButton(props: ButtonProps) {
       aria-label="delete"
       onClick={() => props.onButtonClick(props.value)}
       value={props.value}
+      size="large"
     >
       <DeleteIcon />
     </IconButton>
@@ -216,6 +222,7 @@ export function Addusersassign(props: ButtonProps) {
       aria-label="add"
       onClick={() => props.onButtonClick(props.value)}
       value={props.value}
+      size="large"
     >
       <ArrowForwardIosOutlinedIcon fontSize="large" />
     </IconButton>

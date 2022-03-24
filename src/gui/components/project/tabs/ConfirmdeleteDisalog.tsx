@@ -24,7 +24,7 @@ import {
   DialogContentText,
   DialogTitle,
   Button,
-} from '@material-ui/core';
+} from '@mui/material';
 
 import {ProjectDelete} from './ProjectButton';
 

@@ -19,10 +19,10 @@
  */
 
 import React from 'react';
-import {Box, CircularProgress} from '@material-ui/core';
-import MuiAlert from '@material-ui/lab/Alert';
+import {Box, CircularProgress} from '@mui/material';
+import MuiAlert from '@mui/material/Alert';
 import moment from 'moment';
-import CheckIcon from '@material-ui/icons/Check';
+import CheckIcon from '@mui/icons-material/Check';
 
 type AutosaveProps = {
   last_saved: Date;

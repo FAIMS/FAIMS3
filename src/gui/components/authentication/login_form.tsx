@@ -1,6 +1,6 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
 import React, {useState, useEffect} from 'react';
-import {Box, Button, CircularProgress} from '@material-ui/core';
+import {Box, Button, CircularProgress} from '@mui/material';
 import {InAppBrowser} from '@awesome-cordova-plugins/in-app-browser';
 
 import {TokenContents} from '../../../datamodel/core';

@@ -20,7 +20,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {useParams, Redirect} from 'react-router-dom';
-import {Container, Typography} from '@material-ui/core';
+import {Container, Typography} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {ProjectSearchCard} from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
@@ -28,12 +28,12 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {ProjectInformation} from '../../datamodel/ui';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 0,
       paddingRight: 0,
     },

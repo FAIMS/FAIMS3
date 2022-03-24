@@ -19,9 +19,9 @@
  */
 
 import React from 'react';
-import MuiRadioGroup from '@material-ui/core/RadioGroup';
-import MuiRadio, {RadioProps} from '@material-ui/core/Radio';
-import FormControl from '@material-ui/core/FormControl';
+import MuiRadioGroup from '@mui/material/RadioGroup';
+import MuiRadio, {RadioProps} from '@mui/material/Radio';
+import FormControl from '@mui/material/FormControl';
 import {
   FormLabel,
   FormControlLabel,
@@ -29,9 +29,9 @@ import {
   FormLabelProps,
   FormHelperTextProps,
   FormControlLabelProps,
-} from '@material-ui/core';
-import {fieldToRadioGroup, RadioGroupProps} from 'formik-material-ui';
-import BookmarksIcon from '@material-ui/icons/Bookmarks';
+} from '@mui/material';
+import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
+import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {
   ProjectUIModel,
   componenentSettingprops,

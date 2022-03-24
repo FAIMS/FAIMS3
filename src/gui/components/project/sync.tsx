@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Switch, FormControlLabel, Typography} from '@material-ui/core';
+import {Box, Switch, FormControlLabel, Typography} from '@mui/material';
 
 import {ProjectInformation} from '../../../datamodel/ui';
 import {

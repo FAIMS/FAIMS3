@@ -8,11 +8,11 @@ import {
   Menu,
   MenuItem,
   CircularProgress,
-} from '@material-ui/core';
+} from '@mui/material';
 
-import AddIcon from '@material-ui/icons/Add';
-import SearchIcon from '@material-ui/icons/Search';
-import SettingsIcon from '@material-ui/icons/Settings';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
@@ -232,12 +232,14 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
         <IconButton
           component={RouterLink}
           to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SEARCH}
+          size="large"
         >
           <SearchIcon />
         </IconButton>
         <IconButton
           component={RouterLink}
           to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_SETTINGS}
+          size="large"
         >
           <SettingsIcon />
         </IconButton>

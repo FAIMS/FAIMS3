@@ -23,7 +23,7 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import {
   Grid,
   Step,
@@ -32,17 +32,17 @@ import {
   MobileStepper,
   Button,
   Box,
-} from '@material-ui/core';
+} from '@mui/material';
 import {Formik, Form} from 'formik';
 import {getComponentFromField, FormForm} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {getprojectform, uiSpecType} from '../data/ComponentSetting';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {useTheme} from '@material-ui/core/styles';
-import KeyboardArrowLeft from '@material-ui/icons/KeyboardArrowLeft';
-import KeyboardArrowRight from '@material-ui/icons/KeyboardArrowRight';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
+import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -172,7 +172,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
           formtabs.indexOf(formlabel) > 0 ? formtabs.indexOf(formlabel) : 0
         }
         handleChange={handelonChangeVariants}
-        tab_id="primarytab"
+        tab_id="projectreview"
       />
       {formtabs.map((tab: string, index: number) => (
         <TabPanel
@@ -180,7 +180,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
             formtabs.indexOf(formlabel) > 0 ? formtabs.indexOf(formlabel) : 0
           }
           index={index}
-          tabname="primarytab"
+          tabname="projectreview"
         >
           <Grid container>
             <Grid item sm={3} xs={12}>
@@ -194,7 +194,13 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
               />
             </Grid>
             <Grid item sm={1} xs={12}></Grid>
-            <Grid item sm={8} xs={12} className={classes.steepscorller}>
+            <Grid
+              item
+              sm={8}
+              xs={12}
+              className={classes.steepscorller}
+              style={{overflow: 'hidden'}}
+            >
               {not_xs ? (
                 <Stepper
                   nonLinear

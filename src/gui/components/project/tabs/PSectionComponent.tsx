@@ -19,10 +19,10 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 
-import {Grid, Typography, Card} from '@material-ui/core';
-import {useTheme} from '@material-ui/core/styles';
+import {Grid, Typography, Card} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
 import {SettingCard} from './PSettingCard';
 import {getComponentFromField, AutocompleteForm} from '../FormElement';
 import {updateuiSpec, getacessoption} from '../data/ComponentSetting';

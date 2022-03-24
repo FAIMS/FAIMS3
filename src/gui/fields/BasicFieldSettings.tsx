@@ -5,7 +5,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {ProjectUIFields} from '../../datamodel/typesystem';
-import {Typography} from '@material-ui/core';
+import {Typography} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const getdvalue = (value: any) => {

@@ -19,10 +19,10 @@
  */
 
 import React from 'react';
-import MuiTextField from '@material-ui/core/TextField';
-import {fieldToTextField, TextFieldProps} from 'formik-material-ui';
-import {MenuItem} from '@material-ui/core';
-import BookmarksIcon from '@material-ui/icons/Bookmarks';
+import MuiTextField from '@mui/material/TextField';
+import {fieldToTextField, TextFieldProps} from 'formik-mui';
+import {MenuItem} from '@mui/material';
+import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {
   Defaultcomponentsetting,
   getDefaultuiSetting,
@@ -33,7 +33,7 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
-// import TextField from '@material-ui/core/TextField';
+// import TextField from '@mui/material/TextField';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // interface option {
 //   key: string;
@@ -57,7 +57,7 @@ export class Select extends React.Component<TextFieldProps & Props> {
       <>
         <MuiTextField {...fieldToTextField(textFieldProps)} select={true}>
           {children}
-          {ElementProps.options.map(option => (
+          {ElementProps.options.map((option: any) => (
             <MenuItem
               key={option.key ? option.key : option.value}
               value={option.value}

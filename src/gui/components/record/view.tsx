@@ -20,13 +20,13 @@
 
 import React, {useEffect, useState} from 'react';
 import {FormikProps} from 'formik';
-import Alert from '@material-ui/lab/Alert';
+import Alert from '@mui/material/Alert';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import RecordDraftState from '../../../sync/draft-state';
 import {getComponentFromFieldConfig} from './fields';
 import {Annotation, AnnotationField} from './Annotation';
-import {Grid} from '@material-ui/core';
-import {Box} from '@material-ui/core';
+import {Grid} from '@mui/material';
+import {Box} from '@mui/material';
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;

@@ -19,14 +19,14 @@
  */
 
 import React from 'react';
-import {Box, Typography} from '@material-ui/core';
-import {makeStyles} from '@material-ui/core/styles';
+import {Box, Typography} from '@mui/material';
+import makeStyles from '@mui/styles/makeStyles';
 
 const useStyles = makeStyles(theme => ({
   TabPanel_F: {
     paddingTop: 5,
 
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 5,
       paddingRight: 5,
     },
@@ -34,7 +34,7 @@ const useStyles = makeStyles(theme => ({
       paddingTop: 10,
       paddingLeft: 5,
       paddingRight: 0,
-      [theme.breakpoints.down('sm')]: {
+      [theme.breakpoints.down('md')]: {
         paddingLeft: 5,
         paddingRight: 5,
       },

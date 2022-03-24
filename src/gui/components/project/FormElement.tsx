@@ -23,8 +23,8 @@ import React from 'react';
 
 import {useState, useEffect} from 'react';
 import {Formik, Form, Field} from 'formik';
-import {Grid, Box, Chip, TextField} from '@material-ui/core';
-import Autocomplete from '@material-ui/lab/Autocomplete';
+import {Grid, Box, Chip, TextField} from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
 import {getComponentByName} from '../../component_registry';
 import {setProjectInitialValues} from './data/ComponentSetting';
 import {TickButton} from './tabs/ProjectButton';

@@ -19,8 +19,8 @@
  */
 
 import React from 'react';
-import {Box, Container} from '@material-ui/core';
-import Button from '@material-ui/core/Button';
+import {Box, Container} from '@mui/material';
+import Button from '@mui/material/Button';
 import * as ROUTES from '../../constants/routes';
 import {
   USE_REAL_DATA,
@@ -33,8 +33,8 @@ import {
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
-import grey from '@material-ui/core/colors/grey';
 import BoxTab from '../components/ui/boxTab';
+import {grey} from '@mui/material/colors';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -77,7 +77,7 @@ export default function AboutBuild() {
       </Box>
       <Button
         variant="outlined"
-        color={'secondary'}
+        color={'primary'}
         onClick={() => {
           wipe_all_pouch_databases().then(() => {
             console.log('User cleaned database');
@@ -90,7 +90,7 @@ export default function AboutBuild() {
       </Button>
       <Button
         variant="outlined"
-        color={'secondary'}
+        color={'primary'}
         onClick={() => {
           console.log('User refreshed page');
           window.location.reload();
@@ -101,7 +101,7 @@ export default function AboutBuild() {
       </Button>
       <Button
         variant="outlined"
-        color={'secondary'}
+        color={'primary'}
         onClick={() => {
           window.location.pathname = '/minifauxton.html';
         }}

@@ -21,7 +21,7 @@
 import React from 'react';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
-import {Typography} from '@material-ui/core';
+import {Typography} from '@mui/material';
 
 interface Props {
   helperText?: string;

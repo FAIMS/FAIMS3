@@ -19,14 +19,14 @@
  */
 
 import React from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import {Container, Grid} from '@material-ui/core';
+import makeStyles from '@mui/styles/makeStyles';
+import {Container, Grid} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
-import {CircularProgress} from '@material-ui/core';
+import {CircularProgress} from '@mui/material';
 import {useEventedPromise} from '../pouchHook';
 import {TokenContents} from '../../datamodel/core';
 
@@ -60,7 +60,7 @@ const useStyles = makeStyles(theme => ({
     fontWeight: 500,
   },
   NoPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 0,
       paddingRight: 0,
     },

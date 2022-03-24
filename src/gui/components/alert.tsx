@@ -19,17 +19,18 @@
  */
 
 import React, {useContext} from 'react';
-import Snackbar from '@material-ui/core/Snackbar';
-import MuiAlert from '@material-ui/lab/Alert';
-import {makeStyles, Theme} from '@material-ui/core/styles';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import makeStyles from '@mui/styles/makeStyles';
 import {store} from '../../store';
 import {ActionType} from '../../actions';
 
-const useStyles = makeStyles((theme: Theme) => ({
+/* eslint-disable @typescript-eslint/no-unused-vars */
+const useStyles = makeStyles(theme => ({
   root: {
     width: '100%',
     '& > * + *': {
-      marginTop: theme.spacing(2),
+      marginTop: '16px',
     },
   },
 }));
@@ -49,6 +50,7 @@ export default function SystemAlert() {
 
   const alerts = globalState.state.alerts;
   const oldest_alert = alerts[0];
+  if (alerts.length > 0) console.log(oldest_alert.severity);
   return (
     <div className={classes.root}>
       {alerts.length > 0 ? (
@@ -57,14 +59,20 @@ export default function SystemAlert() {
           autoHideDuration={6000}
           anchorOrigin={{vertical: 'top', horizontal: 'right'}}
         >
-          <MuiAlert
+          <Alert
             onClose={() => handleClose(oldest_alert.key)}
-            severity={oldest_alert.severity}
+            severity={
+              oldest_alert.severity === 'error'
+                ? 'error'
+                : oldest_alert.severity === 'warnings'
+                ? 'warning'
+                : 'success'
+            }
           >
             {'message' in oldest_alert
               ? oldest_alert.message
               : oldest_alert.element}
-          </MuiAlert>
+          </Alert>
         </Snackbar>
       ) : (
         ''

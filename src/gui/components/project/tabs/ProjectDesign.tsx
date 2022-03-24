@@ -23,24 +23,24 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import {makeStyles} from '@material-ui/core/styles';
-import grey from '@material-ui/core/colors/grey';
+import makeStyles from '@mui/styles/makeStyles';
+import {Grid} from '@mui/material';
 
-import {Grid} from '@material-ui/core';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {useTheme} from '@material-ui/core/styles';
-import Alert from '@material-ui/lab/Alert';
-
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
+import Alert from '@mui/material/Alert';
 import {FormConnectionCard} from './PSettingCard';
 
 import {TabEditable} from './TabTab';
+
 import TabPanel from './TabPanel';
 import {getid, updateuiSpec, uiSpecType} from '../data/ComponentSetting';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-
 import {HRID_STRING} from '../../../../datamodel/core';
+
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
 import {FormTab} from './ProjectComponent';
+import {grey} from '@mui/material/colors';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({

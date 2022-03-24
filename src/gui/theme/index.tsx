@@ -18,31 +18,55 @@
  *   TODO
  */
 
-import {createMuiTheme, colors} from '@material-ui/core';
-import {Shadows} from '@material-ui/core/styles/shadows';
+import {createTheme, colors} from '@mui/material';
 import typography from './typography';
-import shadows from './shadows';
+import {Theme} from '@mui/material/styles';
 
-const theme = createMuiTheme({
+declare module '@mui/styles/defaultTheme' {
+  interface DefaultTheme extends Theme {}
+}
+
+const theme = createTheme({
+  spacing: 2,
   palette: {
     primary: {
       main: '#1B3E93',
+      light: '#42a5f5',
+      dark: '#1565c0',
+      contrastText: '#fff',
     },
     secondary: {
       // main: '#F68E1E',
-      main: colors.indigo[500],
+      main: '#fff',
+      contrastText: '#1b7993',
     },
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
     },
-    error: {
-      main: colors.red[500],
-    },
+    // error: {
+    //   main: colors.red[500],
+    // },
   },
-  shadows: shadows as Shadows,
+  // shadows: Shadows,
   typography,
   // shadows: Array(25).fill('none') as Shadows,
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        colorPrimary: {
+          backgroundColor: '#1B3E93',
+          color: '#fff',
+          contrastText: '#fff',
+          textColor: '#fff',
+          indicatorColor: '#fff',
+          text: {
+            primary: '#fff',
+          },
+        },
+      },
+    },
+  },
 });
 
 export default theme;

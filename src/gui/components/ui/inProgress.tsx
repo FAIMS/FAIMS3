@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import TimelapseIcon from '@material-ui/icons/Timelapse';
+import TimelapseIcon from '@mui/icons-material/Timelapse';
 import React from 'react';
 
 export default function InProgress() {
@@ -30,7 +30,7 @@ export default function InProgress() {
         flexWrap: 'wrap',
       }}
     >
-      <TimelapseIcon color={'secondary'} />
+      <TimelapseIcon color={'primary'} />
       &nbsp;&nbsp;<span>Feature in progress</span>
     </div>
   );

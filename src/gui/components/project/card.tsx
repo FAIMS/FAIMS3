@@ -35,27 +35,27 @@ import {
   ListItemText,
   Grid,
   TextField,
-} from '@material-ui/core';
+} from '@mui/material';
 
 // import {EmailShareButton} from 'react-share';
-// import MailOutlineIcon from '@material-ui/icons/MailOutline';
+// import MailOutlineIcon from '@mui/icons-material/MailOutline';
 // import {Plugins} from '@capacitor/core';
 // const {Share} = Plugins;
 import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {makeStyles} from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
 import {ProjectInformation} from '../../../datamodel/ui';
 import DraftsTable from '../record/draft_table';
 import {RecordsBrowseTable, RecordsSearchTable} from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ProjectCardHeaderAction from './cardHeaderAction';
 import ProjectSync from './sync';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import RangeHeader from './RangeHeader';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {useTheme} from '@material-ui/core/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
 
 type ProjectSearchCardProps = {
   project: ProjectInformation;
@@ -108,13 +108,13 @@ const useStyles = makeStyles(theme => ({
   },
   NoPaddding: {
     paddingTop: 0,
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 0,
       paddingRight: 0,
     },
   },
   LeftPaddding: {
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingLeft: 10,
     },
   },
@@ -184,7 +184,14 @@ export default function Card(props: ProjectCardProps) {
                   >
                     Last updated {project.last_updated}
                   </Typography>
-                  <br />
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    className={classes.status}
+                    color="textPrimary"
+                  >
+                    {}
+                  </Typography>
                   <Typography
                     component="span"
                     variant="body2"
