@@ -47,10 +47,10 @@
   "dependencies": {
     "@awesome-cordova-plugins/core": "5.38.0",
     "@awesome-cordova-plugins/in-app-browser": "5.38.0",
-    "@capacitor/android": "2.4.9",
+    "@capacitor/android": "3.4.3",
     "@capacitor/cli": "2.5.0",
-    "@capacitor/core": "2.4.9",
-    "@capacitor/ios": "2.4.9",
+    "@capacitor/core": "3.4.3",
+    "@capacitor/ios": "3.4.3",
     "@demvsystems/yup-ast": "1.2.2",
     "@emotion/react": "11.8.2",
     "@emotion/styled": "11.8.1",
