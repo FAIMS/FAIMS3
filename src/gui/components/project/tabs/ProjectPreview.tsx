@@ -194,7 +194,13 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
               />
             </Grid>
             <Grid item sm={1} xs={12}></Grid>
-            <Grid item sm={8} xs={12} className={classes.steepscorller} style={{overflow:'hidden'}}>
+            <Grid
+              item
+              sm={8}
+              xs={12}
+              className={classes.steepscorller}
+              style={{overflow: 'hidden'}}
+            >
               {not_xs ? (
                 <Stepper
                   nonLinear
@@ -202,7 +208,6 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                     formvariants + view_name
                   )}
                   alternativeLabel
-                  
                 >
                   {formuiSpec.viewsets[formvariants].views.map(
                     (view_name: string) => (

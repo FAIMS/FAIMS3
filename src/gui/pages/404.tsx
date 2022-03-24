@@ -65,9 +65,7 @@ export default function NotFound404() {
                   variant={'overline'}
                   color={'textSecondary'}
                   align={'center'}
-                >
-                  
-                </Typography>
+                ></Typography>
               </Box>
             </Grid>
             <Grid item xs={6}>

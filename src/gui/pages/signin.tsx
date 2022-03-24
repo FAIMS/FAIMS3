@@ -27,7 +27,7 @@ import ClusterCard from '../components/authentication/cluster_card';
 import * as ROUTES from '../../constants/routes';
 import {ListingInformation} from '../../datamodel/ui';
 import {getSyncableListingsInfo} from '../../databaseAccess';
-import {ensure_locally_created_project_listing} from '../../sync/new-project'
+import {ensure_locally_created_project_listing} from '../../sync/new-project';
 
 const useStyles = makeStyles(() => ({
   gridRoot: {
@@ -46,13 +46,11 @@ export function SignIn(props: SignInProps) {
   const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Sign In'}];
 
   useEffect(() => {
-    
     const getlocalist = async () => {
       await ensure_locally_created_project_listing();
     };
     getlocalist();
     getSyncableListingsInfo().then(setListings).catch(console.error);
-    
   }, []);
 
   if (listings === null) {
