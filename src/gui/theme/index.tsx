@@ -18,10 +18,8 @@
  *   TODO
  */
 
-import {createTheme, colors, adaptV4Theme} from '@mui/material';
-import Shadows from '@mui/material/styles';
+import {createTheme, colors} from '@mui/material';
 import typography from './typography';
-// import shadows from './shadows';
 import {Theme} from '@mui/material/styles';
 
 declare module '@mui/styles/defaultTheme' {

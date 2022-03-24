@@ -25,6 +25,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import {store} from '../../store';
 import {ActionType} from '../../actions';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({
   root: {
     width: '100%',
