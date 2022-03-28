@@ -356,6 +356,8 @@ class RecordForm extends React.Component<
             this.props.record_id,
             this.props.revision_id
           )) || {};
+    console.log('++++get intial db');
+    console.log(fromdb);
 
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
@@ -727,32 +729,34 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           <Box display={{xs: 'none', sm: 'block'}} style={{padding: '3px'}}>
-            <Stepper
-              nonLinear
-              activeStep={view_index}
-              alternativeLabel
-              style={{overflowY: 'hidden'}}
-            >
-              {ui_specification.viewsets[viewsetName].views.map(
-                (view_name: string) => (
-                  <Step key={view_name}>
-                    <StepButton
-                      onClick={() => {
-                        this.setState({
-                          view_cached: view_name,
-                          activeStep: indexOf(
-                            ui_specification.viewsets[viewsetName].views,
-                            view_name
-                          ),
-                        });
-                      }}
-                    >
-                      {ui_specification.views[view_name].label}
-                    </StepButton>
-                  </Step>
-                )
-              )}
-            </Stepper>
+            <div style={{overflowX: 'hidden'}}>
+              <Stepper
+                nonLinear
+                activeStep={view_index}
+                alternativeLabel
+                style={{overflowY: 'hidden', overflowX: 'auto'}}
+              >
+                {ui_specification.viewsets[viewsetName].views.map(
+                  (view_name: string) => (
+                    <Step key={view_name}>
+                      <StepButton
+                        onClick={() => {
+                          this.setState({
+                            view_cached: view_name,
+                            activeStep: indexOf(
+                              ui_specification.viewsets[viewsetName].views,
+                              view_name
+                            ),
+                          });
+                        }}
+                      >
+                        {ui_specification.views[view_name].label}
+                      </StepButton>
+                    </Step>
+                  )
+                )}
+              </Stepper>
+            </div>
           </Box>
           <Box display={{xs: 'block', sm: 'none'}}>
             <MobileStepper
