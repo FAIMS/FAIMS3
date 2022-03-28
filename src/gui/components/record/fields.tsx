@@ -47,6 +47,7 @@ export function getComponentFromFieldConfig(
       {...fieldConfig['component-parameters']['SelectProps']}
       {...fieldConfig['component-parameters']['InputLabelProps']}
       {...fieldConfig['component-parameters']['FormHelperTextProps']}
+      onWheel={(event: any) => event.target.blur()}
     />
   );
 }
