@@ -155,7 +155,7 @@ function DraftRecord(props: DraftsRecordProps) {
               </Typography>
 
               <Typography color="textSecondary">
-                Kind:{' '}
+                Kind:{'  '}
                 {props.viewsets !== null &&
                 props.viewsets !== undefined &&
                 params.row.type !== null &&
