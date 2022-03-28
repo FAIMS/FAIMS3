@@ -145,7 +145,7 @@ function DraftRecord(props: DraftsRecordProps) {
                   component={RouterLink}
                   to={ROUTES.getDraftRoute(
                     project_id ?? 'dummy',
-                    params.row.id as DraftMetadata['_id'],
+                    params.row._id as DraftMetadata['_id'],
                     params.row.existing! as DraftMetadata['existing'],
                     params.row.type! as DraftMetadata['type']
                   )}
