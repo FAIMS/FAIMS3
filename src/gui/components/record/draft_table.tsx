@@ -78,7 +78,7 @@ function DraftRecord(props: DraftsRecordProps) {
               component={RouterLink}
               to={ROUTES.getDraftRoute(
                 project_id ?? 'dummy',
-                params.row.id as DraftMetadata['_id'],
+                params.row._id as DraftMetadata['_id'],
                 params.row.existing! as DraftMetadata['existing'],
                 params.row.type! as DraftMetadata['type']
               )}
@@ -117,7 +117,7 @@ function DraftRecord(props: DraftsRecordProps) {
               component={RouterLink}
               to={ROUTES.getDraftRoute(
                 project_id ?? 'dummy',
-                params.row.id as DraftMetadata['_id'],
+                params.row._id as DraftMetadata['_id'],
                 params.row.existing! as DraftMetadata['existing'],
                 params.row.type! as DraftMetadata['type']
               )}
@@ -145,7 +145,7 @@ function DraftRecord(props: DraftsRecordProps) {
                   component={RouterLink}
                   to={ROUTES.getDraftRoute(
                     project_id ?? 'dummy',
-                    params.row.id as DraftMetadata['_id'],
+                    params.row._id as DraftMetadata['_id'],
                     params.row.existing! as DraftMetadata['existing'],
                     params.row.type! as DraftMetadata['type']
                   )}
@@ -155,7 +155,7 @@ function DraftRecord(props: DraftsRecordProps) {
               </Typography>
 
               <Typography color="textSecondary">
-                Kind:{' '}
+                Kind:{'  '}
                 {props.viewsets !== null &&
                 props.viewsets !== undefined &&
                 params.row.type !== null &&
