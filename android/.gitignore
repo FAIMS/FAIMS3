@@ -18,7 +18,7 @@ changelog
 *.class
 
 # Generated files
-bin/
+#bin/
 gen/
 out/
 release/
