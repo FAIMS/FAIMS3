@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
+git pull
+git commit -sam "prebuild commit"
 
-git checkout main
+#git checkout main
 git fetch --all
 #git pull
 
