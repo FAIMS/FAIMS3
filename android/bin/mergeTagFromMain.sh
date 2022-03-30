@@ -3,7 +3,7 @@
 set -euo pipefail
 
 
-#git checkout main
+git checkout main
 git fetch --all
 #git pull
 
