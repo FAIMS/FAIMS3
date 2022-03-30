@@ -1,7 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-
+// https://riptutorial.com/android-gradle/example/25628/define-signing-configuration-in-a-separate-gradle-file
 buildscript {
-    
     repositories {
         google()
         jcenter()
