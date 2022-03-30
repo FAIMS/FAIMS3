@@ -3,7 +3,7 @@
 set -euo pipefail
 
 git pull
-git commit -sam "prebuild commit"
+git commit -sam "prebuild commit" || echo "Nothing to commit, continuing."
 
 #git checkout main
 git fetch --all
