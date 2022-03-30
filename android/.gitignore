@@ -2,6 +2,8 @@
 # In order to prevent that, we remove the initial "."
 # And the CLI then renames it
 
+changelog
+
 # Using Android gitignore template: https://github.com/github/gitignore/blob/master/Android.gitignore
 
 # Built application files
@@ -16,7 +18,7 @@
 *.class
 
 # Generated files
-bin/
+#bin/
 gen/
 out/
 release/

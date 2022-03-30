@@ -1,0 +1,85 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+JAVA_KEYSTORE = ENV["JAVA_KEYSTORE"]
+JAVA_KEYSTORE_PASSWORD = ENV["JAVA_KEYSTORE_PASSWORD"]
+JAVA_KEY = ENV["JAVA_KEY"]
+JAVA_KEY_PASSWORD = ENV["JAVA_KEY_PASSWORD"]
+FIP_CLOSED_LANE = ENV["FIP_LANE"]
+VERSION= `echo "$(($(date +%s)/60))" | tr -d "\n"`
+VERSION_NAME=`echo -n "${serverprefix}.$(../../bin/getDescribeString.sh play)" | tr -d "\n"`
+
+platform :android do  
+  desc "Deploy a new version to Google Play"
+  lane :compile_special do
+    gradle(task: "clean")
+    sh("echo", VERSION_NAME)
+    sh("echo", FIP_CLOSED_LANE)
+    sh("../bin/changelog.sh", VERSION)
+    gradle(task: "assemble",
+           build_type: "Release",
+           properties: {
+              "android.injected.version.code" => VERSION,
+              "android.injected.version.name" => VERSION_NAME,
+              "android.injected.signing.store.file" => JAVA_KEYSTORE,
+              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
+              "android.injected.signing.key.alias" => JAVA_KEY,
+              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+           }
+           )
+  end
+
+  lane :deploy_alpha do
+    gradle(task: "clean")    
+    sh("echo", VERSION_NAME)
+    sh("../bin/changelog.sh", VERSION)
+    gradle(task: "bundle",
+           build_type: "Release",
+           properties: {
+              "android.injected.version.code" => VERSION,
+              "android.injected.version.name" => VERSION_NAME,
+              "android.injected.signing.store.file" => JAVA_KEYSTORE,
+              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
+              "android.injected.signing.key.alias" => JAVA_KEY,
+              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+           }
+           )
+    upload_to_play_store(track: 'internal',
+                         release_status: 'completed',
+                        )
+  end
+  lane :deploy_fip do
+    gradle(task: "clean")
+    sh("echo", VERSION_NAME)
+    sh("echo", FIP_CLOSED_LANE)
+    sh("../bin/changelog.sh", VERSION)
+    gradle(task: "bundle",
+           build_type: "Release",
+           properties: {
+              "android.injected.version.code" => VERSION,
+              "android.injected.version.name" => VERSION_NAME,
+              "android.injected.signing.store.file" => JAVA_KEYSTORE,
+              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
+              "android.injected.signing.key.alias" => JAVA_KEY,
+              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+           }
+           )
+    upload_to_play_store(track: FIP_CLOSED_LANE,
+                         release_status: 'completed',
+                        )
+  end
+end
