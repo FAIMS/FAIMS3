@@ -28,7 +28,7 @@ export server=yearning
 	# else
 	# fi
 	echo $APP_NAME $server $FIP_LANE
-	sed -i "s/FAIMS3/$APP_NAME/g" /home/brian/people/FAIMS/3/FAIMS3/android/app/src/main/res/values/strings.xml 
+	sed -i "s/FAIMS3/$APP_NAME/g" $GITROOT/android/app/src/main/res/values/strings.xml 
 
 	npm run build
 	npx cap sync --deployment android
@@ -39,7 +39,7 @@ export server=yearning
 	bundle exec fastlane compile_special
 
 	# /home/brian/people/FAIMS/3/FAIMS3/android/app/src/main/res/values
-	git checkout /home/brian/people/FAIMS/3/FAIMS3/android/app/src/main/res/values/strings.xml 
+	git checkout $GITROOT/android/app/src/main/res/values/strings.xml 
 	#break
 #done
 

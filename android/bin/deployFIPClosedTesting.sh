@@ -9,7 +9,7 @@ bash android/bin/mergeTagFromMain.sh
 npm ci
 
 #for server in $(cat android/fipnamelist); do
-grep -v '^#' $GITROOT/../FIP/namelist | grep -v "Server" | while IFS=, read -r server SPID DB_PORT
+grep -v '^#' android/fipnamelist | grep -v "Server" | while IFS=, read -r server SPID DB_PORT
 do
 	cd $GITROOT
 	export DB_PORT=$(echo -n "$DB_PORT" | xargs)
@@ -32,7 +32,7 @@ do
 	# else
 	# fi
 	echo "$APP_NAME ${server}.fipapp.ansis.net Lane: $FIP_LANE"
-	sed -i "s/FAIMS3/$APP_NAME/g" /home/brian/people/FAIMS/3/FAIMS3/android/app/src/main/res/values/strings.xml 
+	sed -i "s/FAIMS3/$APP_NAME/g" $GITROOT/android/app/src/main/res/values/strings.xml 
 
 	npm run build
 	npx cap sync --deployment android
@@ -43,7 +43,7 @@ do
 	bundle exec fastlane deploy_fip
 
 	# /home/brian/people/FAIMS/3/FAIMS3/android/app/src/main/res/values
-	git checkout /home/brian/people/FAIMS/3/FAIMS3/android/app/src/main/res/values/strings.xml 
+	git checkout $GITROOT/android/app/src/main/res/values/strings.xml 
 	#break
 done
 
