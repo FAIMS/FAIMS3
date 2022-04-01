@@ -75,19 +75,26 @@ export class TakePhoto extends React.Component<
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
+  // 20220401 BBS https://mui.com/components/modal/#basic-modal
+  //              Didn't get it to work in time, but looks straightforward to include the blob in a modal
   render() {
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
     const image_tag_list = [];
+
     if (images !== null && images !== undefined) {
       for (const image of images) {
         const image_ref = URL.createObjectURL(image);
         const image_tag = (
           <img
-            style={{height: '200px', width: '100%', objectFit: 'cover'}}
-            src={image_ref}
+            //style={{height: '200px', width: '100%', objectFit: 'cover'}}
+            //20220401 BBS removed style, above
+            //             prior was pulled from https://mui.com/components/image-list/
+            //             trying to get basic fitting to work
+            src={`${image_ref}`} // ?w=164&h=164&fit=crop&auto=format -- these were part of the example, but because
+            srcSet={`${image_ref}`} //?w=164&h=164&fit=crop&auto=format&dpr=2 2x
           />
-        ); // faims-take-photo-img"
+        );
         image_tag_list.push(image_tag);
       }
     }
@@ -103,7 +110,7 @@ export class TakePhoto extends React.Component<
     // But it doesn't look like we support masonry right now.
     //
     // It also looks like we don't have multiple photos being returned...
-
+    // 20220401 BBS - Ok, looks like the MUI update means that I can spec cols=4 without specific height stuff
     return (
       <div>
         {this.props.helperText}
@@ -123,10 +130,11 @@ export class TakePhoto extends React.Component<
             : 'Take Photo'}
         </Button>
         {image_tag_list ? (
-          <ImageList cols={1} gap={8}>
+          <ImageList cols={4} gap={8}>
             {image_tag_list.map((image_tag, index) => (
-              <ImageListItem style={{width: '300', margin: '5px'}} key={index}>
+              <ImageListItem key={index}>
                 {image_tag}
+                BasicModal()
               </ImageListItem>
             ))}{' '}
           </ImageList>
