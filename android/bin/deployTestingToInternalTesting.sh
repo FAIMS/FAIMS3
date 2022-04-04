@@ -5,14 +5,11 @@ set -euo pipefail
 GITROOT=$(git rev-parse --show-toplevel)
 cd $GITROOT
 
-#!/usr/bin/env bash
-
-set -euo pipefail
-
 git pull
-git commit -sam "prebuild commit" || echo "Nothing to commit, continuing."
 
-#git checkout main
+git checkout main
+git pull
+
 git checkout android-fastlane
 git fetch --all
 #git pull
