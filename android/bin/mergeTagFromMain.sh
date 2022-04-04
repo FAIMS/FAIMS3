@@ -9,6 +9,7 @@ git commit -sam "prebuild commit" || echo "Nothing to commit, continuing."
 git fetch --all
 #git pull
 
+git switch --detach
 faims_tag=$(git describe --tags `git rev-list --tags=v* --max-count=1`)    
 git merge $faims_tag --no-edit
 #git checkout $faims_tag
@@ -21,3 +22,4 @@ git merge $faims_tag --no-edit
 #git merge tagged_to_android
 #git branch -D tagged_to_android
 #git branch
+git switch android-fastlane --discard-changes

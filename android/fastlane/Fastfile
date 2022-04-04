@@ -43,6 +43,27 @@ platform :android do
            )
   end
 
+
+  lane :deploy_testing do
+    gradle(task: "clean")    
+    sh("echo", VERSION_NAME)
+    sh("../bin/changelog.sh", VERSION)
+    gradle(task: "bundle",
+           build_type: "Release",
+           properties: {
+              "android.injected.version.code" => VERSION,
+              "android.injected.version.name" => VERSION_NAME,
+              "android.injected.signing.store.file" => JAVA_KEYSTORE,
+              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
+              "android.injected.signing.key.alias" => JAVA_KEY,
+              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+           }
+           )
+    upload_to_play_store(track: 'internal',
+                         release_status: 'completed',
+                        )
+  end
+
   lane :deploy_alpha do
     gradle(task: "clean")    
     sh("echo", VERSION_NAME)
