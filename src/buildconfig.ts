@@ -209,6 +209,14 @@ function is_testing() {
   return jest_worker_is_running || jest_imported || test_node_env;
 }
 
+function cluster_admin_group_name(): string {
+  const name = process.env.REACT_APP_CLUSTER_ADMIN_GROUP_NAME;
+  if (name === '' || name === undefined) {
+    return 'cluster-admin';
+  }
+  return name;
+}
+
 export const USE_REAL_DATA = PROD_BUILD || use_real_data();
 export const DEBUG_POUCHDB = !PROD_BUILD && include_pouchdb_debugging();
 export const DEBUG_APP = !PROD_BUILD && include_app_debugging();
@@ -220,4 +228,5 @@ export const RUNNING_UNDER_TEST = is_testing();
 export const COMMIT_VERSION = commit_version();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
+export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
 export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this

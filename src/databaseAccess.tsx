@@ -29,8 +29,8 @@
  *   (Sync refactor)
  */
 
-import {ProjectID} from './datamodel/core';
 import {DEBUG_APP} from './buildconfig';
+import {ProjectID} from './datamodel/core';
 import {ProjectInformation, ListingInformation} from './datamodel/ui';
 import {all_projects_updated, createdProjects} from './sync/state';
 import {events} from './sync/events';
@@ -40,6 +40,7 @@ import {
   waitForStateOnce,
   getAllListings,
 } from './sync';
+import {shouldDisplayProject} from './users';
 
 export async function getProjectList(): Promise<ProjectInformation[]> {
   /**
@@ -54,14 +55,17 @@ export async function getProjectList(): Promise<ProjectInformation[]> {
 
   const output: ProjectInformation[] = [];
   for (const listing_id_project_id in createdProjects) {
-    output.push({
-      name: createdProjects[listing_id_project_id].project.name,
-      description: createdProjects[listing_id_project_id].project.description,
-      last_updated: createdProjects[listing_id_project_id].project.last_updated,
-      created: createdProjects[listing_id_project_id].project.created,
-      status: createdProjects[listing_id_project_id].project.status,
-      project_id: listing_id_project_id,
-    });
+    if (await shouldDisplayProject(listing_id_project_id)) {
+      output.push({
+        name: createdProjects[listing_id_project_id].project.name,
+        description: createdProjects[listing_id_project_id].project.description,
+        last_updated:
+          createdProjects[listing_id_project_id].project.last_updated,
+        created: createdProjects[listing_id_project_id].project.created,
+        status: createdProjects[listing_id_project_id].project.status,
+        project_id: listing_id_project_id,
+      });
+    }
   }
   return output;
 }

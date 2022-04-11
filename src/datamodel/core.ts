@@ -15,7 +15,10 @@
  *
  * Filename: core.ts
  * Description:
- *   TODO
+ *   Core types/interfaces that are used throughout the codebase.
+ *   Types/interfaces that are only used within the GUI, or are what the GUI
+ *   sees should go in the gui file, whilst those types only used within the
+ *   databases should go in the database file.
  */
 
 // There are two internal IDs for projects, the former is unique to the system
@@ -112,4 +115,10 @@ export interface TokenContents {
   username: string;
   roles: string[];
   name?: string;
+}
+
+export type ProjectRole = string;
+
+export interface ClusterProjectRoles {
+  [key: string]: Array<ProjectRole>;
 }
