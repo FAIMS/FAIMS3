@@ -34,7 +34,7 @@
     "postintegration": "npm run lint",
     "eject": "react-scripts eject",
     "preserve": "npm run build",
-    "serve": "npx cap serve",
+    "serve": "npx serve build",
     "prewebapp-build": "npm run build",
     "webapp-build": "cap copy",
     "app-update": "cap update",
@@ -100,6 +100,7 @@
     "react-router-dom": "5.2.0",
     "react-share": "4.4.0",
     "readline": "1.3.0",
+    "serve": "^13.0.2",
     "uuid": "8.3.2",
     "web-vitals": "2.1.4",
     "yup": "0.32.11"
