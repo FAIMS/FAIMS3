@@ -34,7 +34,7 @@ import {
   TokenInfo,
   TokenContents,
 } from './datamodel/core';
-import {AuthInfo} from './datamodel/database';
+import {AuthInfo, LOCALLY_CREATED_PROJECT_PREFIX} from './datamodel/database';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
@@ -250,6 +250,9 @@ export async function shouldDisplayProject(
   full_proj_id: ProjectID
 ): Promise<boolean> {
   const split_id = split_full_project_id(full_proj_id);
+  if (split_id.listing_id === LOCALLY_CREATED_PROJECT_PREFIX) {
+    return true;
+  }
   const is_admin = await isClusterAdmin(split_id.listing_id);
   if (is_admin) {
     return true;
