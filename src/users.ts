@@ -35,11 +35,14 @@ import {
   TokenContents,
 } from './datamodel/core';
 import {AuthInfo, LOCALLY_CREATED_PROJECT_PREFIX} from './datamodel/database';
+import {RecordMetadata} from './datamodel/ui';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
   project_role: ProjectRole;
 }
+
+const ADMIN_ROLE = 'admin';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
@@ -263,6 +266,34 @@ export async function shouldDisplayProject(
   }
   for (const role in roles) {
     if (role === split_id.project_id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export async function shouldDisplayRecord(
+  full_proj_id: ProjectID,
+  record_metadata: RecordMetadata
+): Promise<boolean> {
+  const split_id = split_full_project_id(full_proj_id);
+  const user_id = await getCurrentUserId(full_proj_id);
+  if (split_id.listing_id === LOCALLY_CREATED_PROJECT_PREFIX) {
+    return true;
+  }
+  if (record_metadata.created_by === user_id) {
+    return true;
+  }
+  const is_admin = await isClusterAdmin(split_id.listing_id);
+  if (is_admin) {
+    return true;
+  }
+  const roles = await getUserProjectRolesForCluster(split_id.listing_id);
+  if (roles === undefined) {
+    return false;
+  }
+  for (const role in roles) {
+    if (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) {
       return true;
     }
   }

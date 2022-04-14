@@ -15,7 +15,7 @@
  *
  * Filename: queries.ts
  * Description:
- *   TODO
+ *   Functions to query specific information from pouchdb
  */
 import {getDataDB} from '../sync';
 import {ProjectID, FAIMSTypeName, RecordID} from '../datamodel/core';
