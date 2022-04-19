@@ -15,7 +15,7 @@
  *
  * Filename: internals.ts
  * Description:
- *   TODO
+ *   Helper functions to handle converting data between the GUI and pouchdb.
  */
 
 import {v4 as uuidv4} from 'uuid';

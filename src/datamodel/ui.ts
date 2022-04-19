@@ -15,13 +15,10 @@
  *
  * Filename: ui.ts
  * Description:
- *   TODO
+ *   Types/interfaces for the UI code.
+ *   Do not use with sync code; UI code only.
  */
 
-/**
- * User readable information about a project
- * Do not use with sync code; UI code only
- */
 import {
   ProjectID,
   RecordID,

@@ -15,19 +15,34 @@
  *
  * Filename: users.ts
  * Description:
- *   TODO
+ *   This contains the user/visibility control subsystem, and management/storage
+ *   of access tokens. This does not do access control (as that must be handled
+ *   by couchdb).but instead tries to avoid exposing information to keep users
+ *   on the happy path of not seeing access denied, or at least in ways the GUI
+ *   can meaningfully handle.
  */
 import {jwtVerify, importSPKI} from 'jose';
 import type {KeyLike} from 'jose';
 
+import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
 import {active_db, directory_db, local_auth_db} from './sync/databases';
 import {
+  ClusterProjectRoles,
   ProjectID,
+  ProjectRole,
   split_full_project_id,
   TokenInfo,
   TokenContents,
 } from './datamodel/core';
-import {AuthInfo} from './datamodel/database';
+import {AuthInfo, LOCALLY_CREATED_PROJECT_PREFIX} from './datamodel/database';
+import {RecordMetadata} from './datamodel/ui';
+
+interface SplitCouchDBRole {
+  project_id: ProjectID;
+  project_role: ProjectRole;
+}
+
+const ADMIN_ROLE = 'admin';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
@@ -180,4 +195,107 @@ export async function parseToken(
     roles: roles,
     name: name,
   };
+}
+
+export async function getUserProjectRolesForCluster(
+  cluster_id: string
+): Promise<ClusterProjectRoles | undefined> {
+  const token_contents = await getTokenContentsForCluster(cluster_id);
+  if (token_contents === undefined) {
+    return undefined;
+  }
+
+  const couch_roles = token_contents.roles;
+  const cluster_project_roles: ClusterProjectRoles = {};
+
+  for (const couch_role of couch_roles) {
+    const split_role = splitCouchDBRole(couch_role);
+    if (split_role === undefined) {
+      continue;
+    }
+    if (cluster_project_roles[split_role.project_id] === undefined) {
+      cluster_project_roles[split_role.project_id] = [];
+    }
+    cluster_project_roles[split_role.project_id].push(split_role.project_role);
+  }
+  return cluster_project_roles;
+}
+
+function splitCouchDBRole(couch_role: string): SplitCouchDBRole | undefined {
+  const split_role = couch_role.split('||');
+  if (
+    split_role.length !== 2 ||
+    split_role[0].trim() === '' ||
+    split_role[1].trim() === ''
+  ) {
+    // This is likely a role like admin that couchdb handles, or at least is not
+    // for access control within a project, so ignore it
+    return undefined;
+  }
+  const cleaned_project_id = split_role[0].replace('\\|\\|', '||');
+  return {
+    project_id: cleaned_project_id,
+    project_role: split_role[1],
+  };
+}
+
+export async function isClusterAdmin(cluster_id: string): Promise<boolean> {
+  const token_contents = await getTokenContentsForCluster(cluster_id);
+  if (token_contents === undefined) {
+    return false;
+  }
+
+  const couch_roles = token_contents.roles;
+  return couch_roles.includes(CLUSTER_ADMIN_GROUP_NAME);
+}
+
+export async function shouldDisplayProject(
+  full_proj_id: ProjectID
+): Promise<boolean> {
+  const split_id = split_full_project_id(full_proj_id);
+  if (split_id.listing_id === LOCALLY_CREATED_PROJECT_PREFIX) {
+    return true;
+  }
+  const is_admin = await isClusterAdmin(split_id.listing_id);
+  if (is_admin) {
+    return true;
+  }
+  const roles = await getUserProjectRolesForCluster(split_id.listing_id);
+  if (roles === undefined) {
+    return false;
+  }
+  for (const role in roles) {
+    if (role === split_id.project_id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export async function shouldDisplayRecord(
+  full_proj_id: ProjectID,
+  record_metadata: RecordMetadata
+): Promise<boolean> {
+  const split_id = split_full_project_id(full_proj_id);
+  const user_id = await getCurrentUserId(full_proj_id);
+  if (split_id.listing_id === LOCALLY_CREATED_PROJECT_PREFIX) {
+    return true;
+  }
+  if (record_metadata.created_by === user_id) {
+    return true;
+  }
+  const is_admin = await isClusterAdmin(split_id.listing_id);
+  if (is_admin) {
+    return true;
+  }
+  const roles = await getUserProjectRolesForCluster(split_id.listing_id);
+  if (roles === undefined) {
+    return false;
+  }
+  for (const role in roles) {
+    if (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) {
+      return true;
+    }
+  }
+  return false;
 }

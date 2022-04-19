@@ -15,7 +15,8 @@
  *
  * Filename: index.ts
  * Description:
- *   TODO
+ *   API for accessing data from the GUI. The GUI should not use internals.ts,
+ *   instead wrapper functions should be provided here.
  */
 
 import {v4 as uuidv4} from 'uuid';
@@ -30,6 +31,7 @@ import {
 } from '../datamodel/core';
 import {Revision} from '../datamodel/database';
 import {Record, RecordMetadata, RecordReference} from '../datamodel/ui';
+import {shouldDisplayRecord} from '../users';
 import {
   addNewRevisionFromForm,
   createNewRecord,
@@ -41,7 +43,7 @@ import {
   getHRID,
   listRecordMetadata,
 } from './internals';
-import {getAllRecordsOfType} from './queries';
+import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
@@ -334,29 +336,47 @@ export async function getRecordsByType(
   }
 }
 
+function filterRecordMetadata(
+  project_id: ProjectID,
+  record_list: RecordMetadata[],
+  filter_deleted: boolean
+): RecordMetadata[] {
+  const new_record_list: RecordMetadata[] = [];
+  for (const metadata of record_list) {
+    if (DEBUG_APP) {
+      console.debug('Records', metadata);
+    }
+    if (
+      !(metadata.deleted && filter_deleted) &&
+      shouldDisplayRecord(project_id, metadata)
+    ) {
+      new_record_list.push(metadata);
+      if (DEBUG_APP) {
+        console.debug('Not deleted Records', metadata);
+      }
+    }
+  }
+  if (DEBUG_APP) {
+    console.debug('Reduced record list', new_record_list);
+  }
+  return new_record_list;
+}
+
 export async function getMetadataForAllRecords(
   project_id: ProjectID,
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
   const record_list = Object.values(await listRecordMetadata(project_id));
-  if (filter_deleted) {
-    const new_record_list: RecordMetadata[] = [];
-    for (const metadata of record_list) {
-      if (DEBUG_APP) {
-        console.debug('Records', metadata);
-      }
-      if (!metadata.deleted) {
-        new_record_list.push(metadata);
-        if (DEBUG_APP) {
-          console.debug('Not deleted Records', metadata);
-        }
-      }
-    }
-    if (DEBUG_APP) {
-      console.debug('Reduced record list', new_record_list);
-    }
-    return new_record_list;
-  } else {
-    return record_list;
-  }
+  return filterRecordMetadata(project_id, record_list, filter_deleted);
+}
+
+export async function getRecordsWithRegex(
+  project_id: ProjectID,
+  regex: string,
+  filter_deleted: boolean
+): Promise<RecordMetadata[]> {
+  const record_list = Object.values(
+    await getAllRecordsWithRegex(project_id, regex)
+  );
+  return filterRecordMetadata(project_id, record_list, filter_deleted);
 }
