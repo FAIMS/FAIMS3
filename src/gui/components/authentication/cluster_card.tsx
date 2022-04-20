@@ -82,14 +82,14 @@ export default function ClusterCard(props: ClusterCardProps) {
         ) : (
           <>
             <p>Logged in as: {token.username}</p>
-            <p>
+            
               Roles are
               <ul>
-                {token.roles.map(group => {
-                  return <li>{group}</li>;
+                {token.roles.map((group,index) => {
+                  return <li key={index} >{group}</li>;
                 })}
               </ul>
-            </p>
+            
             <br />
             <Button
               color="primary"
