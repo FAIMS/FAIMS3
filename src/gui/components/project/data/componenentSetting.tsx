@@ -416,7 +416,13 @@ const Componentsetting = (props: componenentSettingprops) => {
 
   useEffect(() => {
     //this function should be used to get new project ui when project_id changes??
-    setini();
+    
+    let isactive = true;
+    if(isactive) {
+      setini();
+    }
+    return () => { isactive=false }
+    
   }, [
     props.projectvalue['forms'][props.currentform][
       'uncertainty' + props.currentform

@@ -126,6 +126,16 @@ export default function ProjectSettings(props: ProjectProps) {
         >
           Edit AutoIncrement Allocations
         </Button>
+        <br />
+        <Button
+          color="primary"
+          size="large"
+          component={RouterLink}
+          startIcon={<EditIcon />}
+          to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
+        >
+          Download Attachement
+        </Button>
       </Paper>
       <Box mb={1}>
         <Typography variant={'subtitle1'}>

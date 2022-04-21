@@ -165,8 +165,14 @@ export function AutocompleteForm(props: any) {
   const [ischecked, setIschecked] = useState(false);
 
   useEffect(() => {
-    if (props.labels !== undefined) setlabels(props.labels);
+    let isactive = true;
+    if(isactive) {
+      if (props.labels !== undefined) setlabels(props.labels);
+    }
+    return () => { isactive=false }
+    
   }, [props.labels]);
+
   const handleDelete = (index: string) => {
     const newlabels = labels.filter((label: string) => label !== index);
     setlabels(newlabels);

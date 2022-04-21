@@ -59,17 +59,20 @@ export default function ClusterCard(props: ClusterCardProps) {
   const history = useHistory();
 
   useEffect(() => {
+    let isactive = true;
     const getToken = async () => {
-      setToken(await getTokenContentsForCluster(props.listing_id));
-      console.log(token);
+      if(isactive) setToken(await getTokenContentsForCluster(props.listing_id));
     };
     getToken();
+    return () => {isactive=false } // cleanup toggles value, 
   }, [props.listing_id]);
 
   useEffect(() => {
+    let isactive = true;
     if (token !== undefined) {
-      props.setToken(token);
+      if(isactive) props.setToken(token);
     }
+    return () => {isactive=false } // cleanup toggles value, 
   }, [token]);
 
   return (

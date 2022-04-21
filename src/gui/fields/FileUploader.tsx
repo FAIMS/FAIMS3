@@ -30,9 +30,14 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  ListItemButton,
+  ListItemIcon
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {IconButton} from '@mui/material';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import ImageIcon from '@mui/icons-material/Image';
+import FaimsDialog from '../components/ui/Dialog'
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   accepted_filetypes?: string | string[];
@@ -51,11 +56,12 @@ export function FileUploader(props: FieldProps & Props) {
   const maximum_number_of_files = props.maximum_number_of_files ?? 0;
   const maximum_file_size = props.maximum_file_size ?? Infinity;
   const minimum_file_size = props.minimum_file_size ?? 0;
+  const [open,setopen]=React.useState(false)
 
   const [current_files, setfiles] = React.useState(
     props.form.values[props.field.name] ?? []
   );
-  console.log(current_files);
+
   // TODO: work out correct typing for getRootProps and getInputProps
   const baseStyle = {
     // color: '#bdbdbd',
@@ -76,6 +82,7 @@ export function FileUploader(props: FieldProps & Props) {
       props.form.setFieldValue(props.field.name, newfiles);
     }
   };
+
 
   return (
     <div>
@@ -105,7 +112,14 @@ export function FileUploader(props: FieldProps & Props) {
       <List>
         {current_files.map((file: File, index: number) => (
           <ListItem key={index} id={index + 'file'}>
-            <ListItemText primary={file.name} secondary={file.type} />
+            <ListItemButton onClick={()=>setopen(true)}>
+              <ListItemIcon>
+                {file.type !== undefined && file.type.includes('image') ? <ImageIcon />:<AttachFileIcon />}
+              </ListItemIcon>
+              <ListItemText primary={file.name} secondary={file.type} />
+            </ListItemButton>
+
+            {/* <ListItemText primary={file.name} secondary={file.type} />
             {file.type !== undefined && file.type.includes('image') ? (
               <img
                 style={{maxHeight: 300, maxWidth: 200}}
@@ -113,7 +127,7 @@ export function FileUploader(props: FieldProps & Props) {
               />
             ) : (
               ''
-            )}
+            )} */}
             <ListItemSecondaryAction>
               <IconButton
                 style={{color: '#000'}}
@@ -130,6 +144,7 @@ export function FileUploader(props: FieldProps & Props) {
       <Typography variant="caption" color="textSecondary">
         {props.helperText}
       </Typography>
+      <FaimsDialog project_id={props.form.values['_project_id']} open={open} setopen={()=>setopen(false)} />
     </div>
   );
 }

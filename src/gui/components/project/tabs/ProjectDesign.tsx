@@ -131,13 +131,20 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   });
 
   useEffect(() => {
-    setinit();
+    let isactive = true;
+    if(isactive) {
+      setinit();
+    }
+    return () => { isactive=false }
   }, []);
 
   useEffect(() => {
     //this function should be used to get new project ui when project_id changes??
-
-    setinit();
+    let isactive = true;
+    if(isactive) {
+      setinit();
+    }
+    return () => { isactive=false }
   }, [project_id]);
 
   const generateunifromformui = (formui: uiSpecType) => {

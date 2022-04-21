@@ -46,11 +46,16 @@ export default function RangeHeader(props: {project: any}) {
       '\xa0\xa0\xa0\xa0\xa0\xa0\xa0';
 
   useEffect(() => {
-    get_user_friendly_status_for_project(props.project.project_id).then(res =>
-      setStatus(res)
-    );
-
-    console.debug('Updating ranges for', props.project.project_id);
+    let isactive = true;
+    if(isactive) {
+      get_user_friendly_status_for_project(props.project.project_id).then(res =>
+        setStatus(res)
+      );
+  
+      console.debug('Updating ranges for', props.project.project_id);
+    }
+    return () => { isactive=false }
+    
   }, [props.project.project_id]);
 
   return (

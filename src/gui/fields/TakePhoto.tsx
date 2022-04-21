@@ -15,7 +15,7 @@
  *
  * Filename: TakePhoto.tsx
  * Description:
- *   TODO
+ *   TODO : to add function check if photoes be downloaded
  */
 
 import React from 'react';
@@ -26,7 +26,11 @@ import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 
 import ImageList from '@mui/material/ImageList';
-import ImageListItem from '@mui/material/ImageListItem';
+import ImageListItem,{imageListItemClasses} from '@mui/material/ImageListItem';
+import IconButton from '@mui/material/IconButton';
+import ImageIcon from '@mui/icons-material/Image';
+import FaimsDialog from '../components/ui/Dialog'
+import {Typography} from '@mui/material';
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
@@ -44,8 +48,47 @@ function base64image_to_blob(image: CameraPhoto): Blob {
 }
 
 interface Props {
-  helperText?: string;
+  helpertext?: string;
   label?: string;
+}
+type ImgeProps = {
+  image_ref?:string;
+  setOpen?:any
+}
+// const FAIMESImage = (props:ImgeProps) =>{
+//   const {image_ref,setOpen}=props
+//   return image_ref!==undefined ?(
+//     <img
+//       // style={{height: '100%', width: '300px', objectFit: 'none'}}
+//       src={image_ref}
+//       srcSet={`${image_ref}`}
+//     />):
+//     (image)
+// }
+type ImgeListProps = {
+  image_tag_list:Array<any>;
+  setopen:any
+}
+const FAIMESImageList = (props:ImgeListProps) =>{
+  const {image_tag_list,setopen}=props
+  return image_tag_list ? (
+   
+    <ImageList cols={4} >
+      {image_tag_list.map((image_tag, index) => (
+        <ImageListItem  key={index}>
+          <IconButton aria-label="image"  onClick={setopen}>
+            <ImageIcon />
+          </IconButton>
+        </ImageListItem>
+      ))}{' '}
+    </ImageList>
+    
+  ) : (
+    <span>No photo taken.</span>
+  )
+}
+interface State {
+  open: boolean;
 }
 export class TakePhoto extends React.Component<
   FieldProps &
@@ -54,8 +97,19 @@ export class TakePhoto extends React.Component<
       ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
       ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
       NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-    }
+    },State
 > {
+
+  constructor(props: FieldProps & Props & ButtonProps & {
+    ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
+    ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+    NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+  }) {
+    super(props);
+    this.state = {
+      open: false,
+    };
+  }
   async takePhoto() {
     try {
       const image = base64image_to_blob(
@@ -80,12 +134,7 @@ export class TakePhoto extends React.Component<
     if (images !== null && images !== undefined) {
       for (const image of images) {
         const image_ref = URL.createObjectURL(image);
-        const image_tag = (
-          <img
-            style={{height: '200px', width: '100%', objectFit: 'cover'}}
-            src={image_ref}
-          />
-        ); // faims-take-photo-img"
+        const image_tag = image_ref
         image_tag_list.push(image_tag);
       }
     }
@@ -104,7 +153,7 @@ export class TakePhoto extends React.Component<
 
     return (
       <div>
-        {this.props.helperText}
+        {this.props.helpertext}
         <Button
           variant="outlined"
           color={'primary'}
@@ -120,18 +169,11 @@ export class TakePhoto extends React.Component<
             ? this.props.label
             : 'Take Photo'}
         </Button>
-        {image_tag_list ? (
-          <ImageList cols={1} gap={8}>
-            {image_tag_list.map((image_tag, index) => (
-              <ImageListItem style={{width: '300', margin: '5px'}} key={index}>
-                {image_tag}
-              </ImageListItem>
-            ))}{' '}
-          </ImageList>
-        ) : (
-          <span>No photo taken.</span>
-        )}
+        <FAIMESImageList image_tag_list={image_tag_list} setopen={()=>this.setState({open:true})} />
+        <Typography variant="caption" color="textSecondary">
         {error_text}{' '}
+        </Typography>
+        <FaimsDialog project_id={'XXXX'} open={this.state.open} setopen={()=>this.setState({open:false})}/>
       </div>
     );
   }
@@ -145,7 +187,7 @@ const uiSpec = {
     fullWidth: true,
     name: 'take-photo-field',
     id: 'take-photo-field',
-    helperText: 'Take a photo',
+    helpertext: 'Take a photo', 
     variant: 'outlined',
     label: 'Take Photo',
   },
@@ -155,7 +197,7 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
+  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helpertext'];
   newuiSetting['viewsets'] = {
     settings: {
       views: ['FormParamater'],

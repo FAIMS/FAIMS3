@@ -107,11 +107,19 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   const [activeStep, setActiveStep] = React.useState(0);
 
   useEffect(() => {
-    setinit();
+    let isactive = true;
+    if(isactive) {
+      setinit();
+    }
+    return () => { isactive=false }
   }, []);
 
   useEffect(() => {
-    setinit();
+    let isactive = true;
+    if(isactive) {
+      setinit();
+    }
+    return () => { isactive=false }
   }, [view_name]);
 
   const getfieldNames = (fieldNames: Array<string>, rolename: string) => {

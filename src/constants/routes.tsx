@@ -41,7 +41,7 @@ export const AUTOINCREMENT_LIST = '/autoincrements';
 export const AUTOINCREMENT = '/autoincrements/';
 export const PROJECT_CREATE = '/new-notebook';
 export const PROJECT_DESIGN = '/notebook/';
-
+export const PROJECT_ATTACHMENT = '/attachment/';
 export function getRecordRoute(
   project_id: ProjectID,
   record_id: RecordID,

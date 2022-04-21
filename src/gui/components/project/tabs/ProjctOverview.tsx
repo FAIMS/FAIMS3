@@ -32,7 +32,11 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
   const [graphs, setGraph] = useState<string>('');
 
   useEffect(() => {
-    setinit();
+    let isactive = true;
+    if(isactive) {
+      setinit();
+    }
+    return () => { isactive=false }
   }, []);
 
   const setinit = () => {

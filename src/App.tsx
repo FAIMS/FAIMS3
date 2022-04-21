@@ -40,6 +40,7 @@ import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
 import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
 import AutoIncrementEdit from './gui/pages/autoincrement-edit';
+import PROJECTATTACHMENT from './gui/pages/project-settingattch';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './store';
 
@@ -76,10 +77,12 @@ export default function App() {
   const [token, setToken] = useState(null as null | undefined | TokenContents);
 
   useEffect(() => {
+    let isactive = true;
     const getToken = async () => {
-      setToken(await getTokenContentsForCluster('default'));
+      if(isactive) setToken(await getTokenContentsForCluster('default'));
     };
     getToken();
+    return () => {isactive=false } // cleanup toggles value, 
   }, []);
 
   return token === null ? (
@@ -233,6 +236,15 @@ export default function App() {
                   ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST
                 }
                 component={AutoIncrementBrowse}
+                token={token}
+                extraProps={{token: token}}
+              />
+              <PrivateRoute
+                exact
+                path={
+                  ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_ATTACHMENT
+                }
+                component={PROJECTATTACHMENT}
                 token={token}
                 extraProps={{token: token}}
               />

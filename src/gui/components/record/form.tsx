@@ -132,6 +132,7 @@ class RecordForm extends React.Component<
 
   // List of timeouts that unmount must cancel
   timeouts: typeof setTimeout[] = [];
+  _isMounted = false;
 
   async componentDidUpdate(
     prevProps: RecordFormProps,
@@ -187,7 +188,8 @@ class RecordForm extends React.Component<
 
   componentDidMount() {
     // On mount, draftState.start() must be called, so give this false:
-    this.formChanged(false);
+    this._isMounted = true;
+    if (this._isMounted) this.formChanged(false);
   }
 
   newDraftListener(draft_id: string) {
@@ -335,6 +337,7 @@ class RecordForm extends React.Component<
   }
 
   componentWillUnmount() {
+    this._isMounted = false;
     for (const timeout_id of this.timeouts) {
       clearTimeout(
         (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]

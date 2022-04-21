@@ -262,7 +262,7 @@ export async function listDraftMetadata(
         existing: record.existing,
         updated: new Date(record.updated),
         type: record.type,
-        hrid: getDraftHRID(record),
+        hrid: getDraftHRID(record) ?? record._id,
       };
     });
     return out;
