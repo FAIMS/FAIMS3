@@ -15,7 +15,7 @@
  *
  * Filename: Diaglog.tsx
  * Description:
- *   TODO
+ *   TODO: download single file 
  */
 
 import React from 'react';
@@ -29,45 +29,47 @@ import * as ROUTES from '../../../constants/routes';
 import {Link as RouterLink} from 'react-router-dom';
 
 type DiagProps = {
-    open?:boolean;
-    project_id: string;
-    setopen:any;
+  open?: boolean;
+  project_id: string;
+  setopen: any;
+  filedId?:string;
 };
-export default function FaimsDialog(props:DiagProps) {
-//   const [open, setOpen] = React.useState(props.open??false);
-  const {open,setopen,project_id}=props
-  
+export default function FaimsDialog(props: DiagProps) {
+  //   const [open, setOpen] = React.useState(props.open??false);
+  const {open, setopen, project_id} = props;
 
   return (
-      <Dialog
-        open={open??false}
-        onClose={setopen}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">
-          {"Download attachment and Photoes"}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            To Download attachments and photoes, go to settings page <br/>
-            To enable auto sync attachments, go to settings
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-          color="primary"
-          size="large"
-          onClick={setopen}>Close</Button>
-          <Button
+    <Dialog
+      open={open ?? false}
+      onClose={setopen}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogTitle id="alert-dialog-title">
+        {'Download attachment and Photoes'}
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description">
+          To Download attachments and photoes, go to settings page <br />
+          To enable auto sync attachments, go to settings
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button color="primary" size="large" onClick={setopen}>
+          Close
+        </Button>
+        {/* <Button color="primary" size="large" onClick={()=>console.log('function to download'+ props.filedId)}>
+          Download
+        </Button> */}
+        <Button
           color="primary"
           size="large"
           component={RouterLink}
-          to={ROUTES.PROJECT + props.project_id + ROUTES.PROJECT_ATTACHMENT}
+          to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
         >
-          Go to download
+          Go to change setting
         </Button>
-        </DialogActions>
-      </Dialog>
+      </DialogActions>
+    </Dialog>
   );
 }

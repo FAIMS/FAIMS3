@@ -78,31 +78,36 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
 
   useEffect(() => {
     let isactive = true;
-    if(isactive) {
+    if (isactive) {
       setinit();
     }
-    return () => { isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, []);
 
   useEffect(() => {
     let isactive = true;
-    if(isactive) {
+    if (isactive) {
       setUISpecA(getprojectform(projectvalue, 'info_group'));
     }
-    return () => { isactive=false }
-    
+    return () => {
+      isactive = false;
+    }
   }, [accessgroup]);
 
   useEffect(() => {
-    
+
     let isactive = true;
-    if(isactive) {
+    if (isactive) {
       if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {
         setUISpecG(getprojectform(projectvalue, 'info_general'));
         console.debug('update');
       }
     }
-    return () => { isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, [projectvalue['name']]);
 
   const setinit = () => {

@@ -53,12 +53,13 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
   const [ischecked, setischecked] = useState(false);
 
   useEffect(() => {
-    
     let isactive = true;
-    if(isactive) {
+    if (isactive) {
       checkvalidate();
     }
-    return () => { isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, []);
 
   const checkvalidate = () => {

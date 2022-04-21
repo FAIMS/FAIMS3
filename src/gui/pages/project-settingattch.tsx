@@ -16,7 +16,7 @@
  * Filename: projectsetting attachment.tsx
  * Description:
  *   This file is for user to setup the syncing for attachment/photoes and download the attachement files and photoes
- * TODO: 
+ * TODO:
  *   add the sync attahcment function and download files function
  */
 
@@ -30,7 +30,8 @@ import {
   Paper,
   CircularProgress,
   TextareaAutosize,
-  Switch, FormControlLabel,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -43,20 +44,20 @@ import {ProjectInformation} from '../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
 import {TokenContents} from '../../datamodel/core';
+import {useHistory} from 'react-router-dom';
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
 
 export default function PROJECTATTACHMENT(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
+  // TODO: check sync
+  const [isSyncing, setIsSync] = useState(false);
 
-  // TODO: remove these once we can send new project up
-  const [loading, setLoading] = useState(true);
-  const [metadbContents, setMetadbContents] = useState<object[]>([]);
-  const [isSyncing,setIsSync]=useState(false);
-  const [donloadedattachment,setdonloadedattachment]=useState<object[]>([{key:1}]);
 
   let project_info: ProjectInformation | null;
+  const history = useHistory();
+
   try {
     project_info = useEventedPromise(
       getProjectInfo,
@@ -83,16 +84,6 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
     {title: 'Attachment'},
   ];
 
-  useEffect(() => {
-    if (project_id === null) return;
-    const getDB = async () => {
-      setMetadbContents(await dumpMetadataDBContents(project_id));
-      setLoading(false);
-    };
-    getDB();
-  }, []);
-
-
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} token={props.token} />
@@ -102,44 +93,32 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
           {project_info.name} Attachment Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the project Attachment settings for{' '}
-          {project_info.name}.
+          Update the project Attachment settings for {project_info.name}.
         </Typography>
       </Box>
       <Paper square>
-        <span>Attachment is auto Sync(Attachment and photoes will be auto downloaded if enabled)</span>
+        <span>
+          Attachment is auto Sync(Attachment and photoes will be auto downloaded
+          if enabled)
+        </span>
         <FormControlLabel
           control={
             <Switch
-              disabled={loading}
               checked={isSyncing}
-              onChange={(event) =>
-                {setIsSync(!isSyncing)
-                console.log(isSyncing)}
-              }
+              onChange={event => {
+                setIsSync(!isSyncing);
+                console.log(isSyncing);
+              }}
             />
           }
           label={<Typography variant={'button'}>Sync</Typography>}
         />
-        <br/>
-         <Button
-          color="primary"
-          size="large"
-          variant="contained"
-          onClick={(event) =>
-            {alert('downloading')}
-          }
-        >
-          Donwload all Attachment and Images
-        </Button>
-        <br/>
-        <br/>
-        Downloaded Attachments: 
-        <ul>
-        {donloadedattachment.map((attach,index)=>(<li key={index} >{index}</li>))}
-        </ul>
+        <br />
+     
       </Paper>
-      
+      <Button color="primary" size="large" onClick={() => history.goBack()}>
+        Go Back
+      </Button>
     </Container>
   ) : (
     <CircularProgress />

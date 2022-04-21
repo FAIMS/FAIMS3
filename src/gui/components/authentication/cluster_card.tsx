@@ -59,20 +59,23 @@ export default function ClusterCard(props: ClusterCardProps) {
   const history = useHistory();
 
   useEffect(() => {
-    let isactive = true;
+
     const getToken = async () => {
-      if(isactive) setToken(await getTokenContentsForCluster(props.listing_id));
+     
+        setToken(await getTokenContentsForCluster(props.listing_id));
     };
     getToken();
-    return () => {isactive=false } // cleanup toggles value, 
+
   }, [props.listing_id]);
 
   useEffect(() => {
     let isactive = true;
     if (token !== undefined) {
-      if(isactive) props.setToken(token);
+      if (isactive) props.setToken(token);
     }
-    return () => {isactive=false } // cleanup toggles value, 
+    return () => {
+      isactive = false;
+    }; // cleanup toggles value,
   }, [token]);
 
   return (
@@ -85,14 +88,12 @@ export default function ClusterCard(props: ClusterCardProps) {
         ) : (
           <>
             <p>Logged in as: {token.username}</p>
-            
-              Roles are
-              <ul>
-                {token.roles.map((group,index) => {
-                  return <li key={index} >{group}</li>;
-                })}
-              </ul>
-            
+            Roles are
+            <ul>
+              {token.roles.map((group, index) => {
+                return <li key={index}>{group}</li>;
+              })}
+            </ul>
             <br />
             <Button
               color="primary"

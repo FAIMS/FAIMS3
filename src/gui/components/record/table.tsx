@@ -260,7 +260,7 @@ function RecordsTable(props: RecordsTableProps) {
           columns={columns}
           autoHeight
           rowHeight={not_xs ? 52 : 130}
-          rowsPerPageOptions = {[10, 25, 50, 100]}
+          rowsPerPageOptions={[10, 25, 50, 100]}
           pageSize={
             maxRows !== null
               ? not_xs

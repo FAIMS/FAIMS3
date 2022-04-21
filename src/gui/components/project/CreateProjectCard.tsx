@@ -167,18 +167,20 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     let isactive = true;
-     // cleanup toggles value, 
-    if(isactive) {
+    // cleanup toggles value,
+    if (isactive) {
       setinit();
       setProjectID(props.project_id);
     }
-    return () => {isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, [props.project_id]);
 
   useEffect(() => {
     let isactive = true;
-     // cleanup toggles value, 
-    if(isactive) {
+    // cleanup toggles value,
+    if (isactive) {
       if (props.uiSpec !== null) {
         setFormuiSpec(props.uiSpec);
         console.debug('change project_ui for edit');
@@ -187,13 +189,15 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         console.debug('change project_ui for add');
       }
     }
-    return () => {isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, [props.uiSpec]);
 
   useEffect(() => {
     let isactive = true;
-     // cleanup toggles value, 
-    if(isactive) {
+    // cleanup toggles value,
+    if (isactive) {
       if (props.project_info !== undefined && props.uiSpec !== null) {
         resetprojectvalue(props.project_info);
       } else
@@ -203,26 +207,28 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         });
       console.log('initialValues', initialValues);
     }
-    return () => {isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, [props.project_info]);
 
-  // useEffect(() => {
-  //   let isactive = true;
-  //    // cleanup toggles value, 
-  //   if(isactive) {
-  //     if (
-  //       project_id !== null &&
-  //       project_id !== null &&
-  //       project_id !== undefined &&
-  //       projectvalue.pre_description !== undefined &&
-  //       projectvalue.pre_description !== ''
-  //     ) {
-  //       //this is the function to solve the issue for new record button not be dispalyed, need to update in the future---Kate
-  //       handlerprojectsubmit_pounch();
-  //     }
-  //   }
-  //   return () => {isactive=false }
-  // }, [project_id]);
+  useEffect(() => {
+    let isactive = true;
+     // cleanup toggles value,
+    if(isactive) {
+      if (
+        project_id !== null &&
+        project_id !== null &&
+        project_id !== undefined &&
+        projectvalue.pre_description !== undefined &&
+        projectvalue.pre_description !== ''
+      ) {
+        //this is the function to solve the issue for new record button not be dispalyed, need to update in the future---Kate
+        handlerprojectsubmit_pounch();
+      }
+    }
+    return () => {isactive=false }
+  }, [project_id]);
 
   const resetprojectvalue = (newvalue: any) => {
     const projectui = getprojectform(projectvalue, 'project');

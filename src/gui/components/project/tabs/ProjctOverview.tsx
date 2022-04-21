@@ -33,10 +33,12 @@ export default function ProjectOverviewTab(props: ProjectOverviewProps) {
 
   useEffect(() => {
     let isactive = true;
-    if(isactive) {
+    if (isactive) {
       setinit();
     }
-    return () => { isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, []);
 
   const setinit = () => {

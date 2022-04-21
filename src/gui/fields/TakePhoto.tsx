@@ -26,10 +26,10 @@ import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 
 import ImageList from '@mui/material/ImageList';
-import ImageListItem,{imageListItemClasses} from '@mui/material/ImageListItem';
+import ImageListItem, {imageListItemClasses} from '@mui/material/ImageListItem';
 import IconButton from '@mui/material/IconButton';
 import ImageIcon from '@mui/icons-material/Image';
-import FaimsDialog from '../components/ui/Dialog'
+import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
 
 function base64image_to_blob(image: CameraPhoto): Blob {
@@ -52,9 +52,9 @@ interface Props {
   label?: string;
 }
 type ImgeProps = {
-  image_ref?:string;
-  setOpen?:any
-}
+  image_ref?: string;
+  setOpen?: any;
+};
 // const FAIMESImage = (props:ImgeProps) =>{
 //   const {image_ref,setOpen}=props
 //   return image_ref!==undefined ?(
@@ -66,27 +66,25 @@ type ImgeProps = {
 //     (image)
 // }
 type ImgeListProps = {
-  image_tag_list:Array<any>;
-  setopen:any
-}
-const FAIMESImageList = (props:ImgeListProps) =>{
-  const {image_tag_list,setopen}=props
+  image_tag_list: Array<any>;
+  setopen: any;
+};
+const FAIMESImageList = (props: ImgeListProps) => {
+  const {image_tag_list, setopen} = props;
   return image_tag_list ? (
-   
-    <ImageList cols={4} >
+    <ImageList cols={4}>
       {image_tag_list.map((image_tag, index) => (
-        <ImageListItem  key={index}>
-          <IconButton aria-label="image"  onClick={setopen}>
+        <ImageListItem key={index}>
+          <IconButton aria-label="image" onClick={setopen}>
             <ImageIcon />
           </IconButton>
         </ImageListItem>
       ))}{' '}
     </ImageList>
-    
   ) : (
     <span>No photo taken.</span>
-  )
-}
+  );
+};
 interface State {
   open: boolean;
 }
@@ -97,14 +95,18 @@ export class TakePhoto extends React.Component<
       ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
       ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
       NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-    },State
+    },
+  State
 > {
-
-  constructor(props: FieldProps & Props & ButtonProps & {
-    ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
-    ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-    NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-  }) {
+  constructor(
+    props: FieldProps &
+      Props &
+      ButtonProps & {
+        ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
+        ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+        NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+      }
+  ) {
     super(props);
     this.state = {
       open: false,
@@ -134,7 +136,7 @@ export class TakePhoto extends React.Component<
     if (images !== null && images !== undefined) {
       for (const image of images) {
         const image_ref = URL.createObjectURL(image);
-        const image_tag = image_ref
+        const image_tag = image_ref;
         image_tag_list.push(image_tag);
       }
     }
@@ -150,7 +152,6 @@ export class TakePhoto extends React.Component<
     // But it doesn't look like we support masonry right now.
     //
     // It also looks like we don't have multiple photos being returned...
-
     return (
       <div>
         {this.props.helpertext}
@@ -169,11 +170,19 @@ export class TakePhoto extends React.Component<
             ? this.props.label
             : 'Take Photo'}
         </Button>
-        <FAIMESImageList image_tag_list={image_tag_list} setopen={()=>this.setState({open:true})} />
+        <FAIMESImageList
+          image_tag_list={image_tag_list}
+          setopen={() => this.setState({open: true})}
+        />
         <Typography variant="caption" color="textSecondary">
-        {error_text}{' '}
+          {error_text}{' '}
         </Typography>
-        <FaimsDialog project_id={'XXXX'} open={this.state.open} setopen={()=>this.setState({open:false})}/>
+        <FaimsDialog
+          project_id={this.props.form.values['_project_id']}
+          open={this.state.open}
+          setopen={() => this.setState({open: false})}
+          filedId={this.props.id}
+        />
       </div>
     );
   }
@@ -187,7 +196,7 @@ const uiSpec = {
     fullWidth: true,
     name: 'take-photo-field',
     id: 'take-photo-field',
-    helpertext: 'Take a photo', 
+    helpertext: 'Take a photo',
     variant: 'outlined',
     label: 'Take Photo',
   },

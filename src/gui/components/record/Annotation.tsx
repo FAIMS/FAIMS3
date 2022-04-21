@@ -32,12 +32,13 @@ export function Annotation(props: any) {
   const [subisclicked, setIsclicks] = useState(false);
 
   useEffect(() => {
-    
     let isactive = true;
-    if(isactive) {
-       setIsClick(false);
+    if (isactive) {
+      setIsClick(false);
     }
-    return () => { isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, []);
 
   return (field.meta !== undefined && field.meta.annotation !== false) ||

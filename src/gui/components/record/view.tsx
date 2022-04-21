@@ -42,7 +42,7 @@ function SingleComponent(props: any) {
   const [isclicked, setIsClick] = useState(false);
 
   return (
-    <Box mb={3} key={fieldName+props.index}>
+    <Box mb={3} key={fieldName + props.index}>
       <Grid container>
         <Grid item sm={10} xs={12}>
           {getComponentFromFieldConfig(
@@ -95,21 +95,23 @@ export function ViewComponent(props: ViewProps) {
   const [error, setError] = useState(true);
 
   useEffect(() => {
-    let isactive=true;
-    if(isactive){
+    let isactive = true;
+    if (isactive) {
       let iserror = false;
       fieldNames.map(field =>
         props.formProps.errors[field] !== undefined ? (iserror = true) : field
       );
       setError(iserror);
     }
-    
-    return () => {isactive=false } // cleanup toggles value, 
+
+    return () => {
+      isactive = false;
+    }; // cleanup toggles value,
   }, [props.formProps]);
 
   return (
     <React.Fragment>
-      {fieldNames.map((fieldName,index) => (
+      {fieldNames.map((fieldName, index) => (
         <SingleComponent
           fieldName={fieldName}
           fields={fields}

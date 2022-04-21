@@ -143,21 +143,25 @@ export default function Card(props: ProjectCardProps) {
   useEffect(() => {
     let isactive = true;
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
-      if(isactive) setLoading(false);
+      if (isactive) setLoading(false);
     }
-    return () => {isactive=false } // cleanup toggles value, 
+    return () => {
+      isactive = false;
+    }; // cleanup toggles value,
   }, [project]);
 
   useEffect(() => {
     let isactive = true;
-    if(isactive)
+    if (isactive)
       getUiSpecForProject(project.project_id).then(
         uiSpec => {
           setViewsets(uiSpec.viewsets);
         },
         () => {}
       );
-    return () => {isactive=false } // cleanup toggles value, 
+    return () => {
+      isactive = false;
+    }; // cleanup toggles value,
   }, [project.project_id]);
 
   return (
@@ -351,9 +355,11 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
   useEffect(() => {
     let isactive = true;
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
-      if(isactive) setLoading(false);
+      if (isactive) setLoading(false);
     }
-    return () => {isactive=false } // cleanup toggles value, 
+    return () => {
+      isactive = false;
+    }; // cleanup toggles value,
   }, [project]);
 
   return (
