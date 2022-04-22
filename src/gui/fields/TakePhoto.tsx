@@ -31,6 +31,7 @@ import IconButton from '@mui/material/IconButton';
 import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
+import { Url } from 'url';
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
@@ -55,31 +56,32 @@ type ImgeProps = {
   image_ref?: string;
   setOpen?: any;
 };
-// const FAIMESImage = (props:ImgeProps) =>{
-//   const {image_ref,setOpen}=props
-//   return image_ref!==undefined ?(
-//     <img
-//       // style={{height: '100%', width: '300px', objectFit: 'none'}}
-//       src={image_ref}
-//       srcSet={`${image_ref}`}
-//     />):
-//     (image)
-// }
+
 type ImgeListProps = {
-  image_tag_list: Array<any>;
+  images: Array<any>;
   setopen: any;
 };
 const FAIMESImageList = (props: ImgeListProps) => {
-  const {image_tag_list, setopen} = props;
-  return image_tag_list ? (
+  const {images, setopen} = props;
+  return images !== null && images !== undefined ? (
     <ImageList cols={4}>
-      {image_tag_list.map((image_tag, index) => (
+      {images.map((image, index) => image['attachment_id']===undefined ? (
         <ImageListItem key={index}>
-          <IconButton aria-label="image" onClick={setopen}>
+          <img
+              style={{height: '100%', width: '300px', objectFit: 'none',cursor: 'allowed'}}
+              src={URL.createObjectURL(image)}
+              onClick={()=>setopen(URL.createObjectURL(image))}
+          />
+         
+        </ImageListItem>
+      ):(
+        <ImageListItem key={index}>
+          <IconButton aria-label="image" onClick={()=>setopen(null)} >
             <ImageIcon />
           </IconButton>
         </ImageListItem>
-      ))}{' '}
+      )
+      )}{' '}
     </ImageList>
   ) : (
     <span>No photo taken.</span>
@@ -87,6 +89,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
 };
 interface State {
   open: boolean;
+  photopath:string | null;
 }
 export class TakePhoto extends React.Component<
   FieldProps &
@@ -110,6 +113,7 @@ export class TakePhoto extends React.Component<
     super(props);
     this.state = {
       open: false,
+      photopath:null
     };
   }
   async takePhoto() {
@@ -132,14 +136,7 @@ export class TakePhoto extends React.Component<
   render() {
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    const image_tag_list = [];
-    if (images !== null && images !== undefined) {
-      for (const image of images) {
-        const image_ref = URL.createObjectURL(image);
-        const image_tag = image_ref;
-        image_tag_list.push(image_tag);
-      }
-    }
+    
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
       error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
@@ -171,8 +168,9 @@ export class TakePhoto extends React.Component<
             : 'Take Photo'}
         </Button>
         <FAIMESImageList
-          image_tag_list={image_tag_list}
-          setopen={() => this.setState({open: true})}
+          images={images}
+          setopen={(path:string) => this.setState({open: true, photopath:path
+          })}
         />
         <Typography variant="caption" color="textSecondary">
           {error_text}{' '}
@@ -182,6 +180,7 @@ export class TakePhoto extends React.Component<
           open={this.state.open}
           setopen={() => this.setState({open: false})}
           filedId={this.props.id}
+          path={this.state.photopath}
         />
       </div>
     );

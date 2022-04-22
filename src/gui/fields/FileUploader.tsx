@@ -38,6 +38,8 @@ import {IconButton} from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
+import {FAIMSAttachmentReference} from '../../datamodel/database'
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   accepted_filetypes?: string | string[];
@@ -57,6 +59,7 @@ export function FileUploader(props: FieldProps & Props) {
   const maximum_file_size = props.maximum_file_size ?? Infinity;
   const minimum_file_size = props.minimum_file_size ?? 0;
   const [open, setopen] = React.useState(false);
+  const [path,setpath] = React.useState<string|null>(null)
 
   const [current_files, setfiles] = React.useState(
     props.form.values[props.field.name] ?? []
@@ -108,18 +111,38 @@ export function FileUploader(props: FieldProps & Props) {
       </Dropzone>
       <p>File uploaded:</p>
       <List>
-        {current_files.map((file: File, index: number) => (
+        {current_files.map((file: any, index: number) => (
           <ListItem key={index} id={index + 'file'}>
-            <ListItemButton onClick={() => setopen(true)}>
-              <ListItemIcon>
-                {file.type !== undefined && file.type.includes('image') ? (
-                  <ImageIcon />
-                ) : (
-                  <AttachFileIcon />
+            
+                {file.file_type!==undefined&& file.file_type !== 'image'?
+                (
+                  <ListItemButton onClick={() => setopen(true)}>
+                  <ListItemIcon >
+                    <AttachFileIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={file.name} secondary={file.type} />
+                  </ListItemButton>
+                  ):
+                file.file_type!==undefined?(
+                  <ListItemButton onClick={() => setopen(true)}>
+                  <ListItemIcon >
+                    <ImageIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={file.name} secondary={file.type} />
+                  </ListItemButton>
+                ):
+                file.type !== undefined && file.type.includes('image')?
+                (<img
+                style={{maxHeight: 300, maxWidth: 200}}
+                src={URL.createObjectURL(file)}
+                onClick={() => {setopen(true); setpath(URL.createObjectURL(file))}}
+                />): (
+                  
+                  <ListItemText primary={file.name} secondary={file.type} />
+                  
                 )}
-              </ListItemIcon>
-              <ListItemText primary={file.name} secondary={file.type} />
-            </ListItemButton>
+              
+              
 
             {/* <ListItemText primary={file.name} secondary={file.type} />
             {file.type !== undefined && file.type.includes('image') ? (
@@ -151,6 +174,7 @@ export function FileUploader(props: FieldProps & Props) {
         open={open}
         setopen={() => setopen(false)}
         filedId={props['field']['name']}
+        path={path}
       />
     </div>
   );
