@@ -19,7 +19,6 @@
  */
 
 import {v4 as uuidv4} from 'uuid';
-import {isEqual} from 'lodash';
 
 import {DEBUG_APP} from '../buildconfig';
 import {getDataDB} from '../sync';
@@ -37,6 +36,7 @@ import {
   AttributeValuePairMap,
   AttributeValuePairIDMap,
   EncodedRecord,
+  FAIMSAttachment,
   RecordMap,
   Revision,
   RevisionMap,
@@ -45,6 +45,7 @@ import {Record, RecordMetadataList} from '../datamodel/ui';
 import {
   getAttachmentLoaderForType,
   getAttachmentDumperForType,
+  getEqualityFunctionForType,
 } from '../datamodel/typesystem';
 
 type EncodedRecordMap = Map<RecordID, EncodedRecord>;
@@ -267,10 +268,10 @@ export async function getAttributeValuePairs(
   });
   const rows = res.rows;
   const mapping: AttributeValuePairMap = {};
-  rows.forEach(e => {
+  rows.forEach(async e => {
     if (e.doc !== undefined) {
       const doc = e.doc as AttributeValuePair;
-      mapping[doc._id] = loadAttributeValuePair(doc);
+      mapping[doc._id] = await loadAttributeValuePair(project_id, doc);
     }
   });
   return mapping;
@@ -405,10 +406,16 @@ async function addNewAttributeValuePairs(
       types: {},
     };
   }
-  const avps_to_dump: AttributeValuePair[] = [];
+  const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
   for (const [field_name, field_value] of Object.entries(record.data)) {
     const stored_data = data.data[field_name];
-    if (stored_data === undefined || !isEqual(stored_data, field_value)) {
+    if (
+      stored_data === undefined ||
+      getEqualityFunctionForType(record.field_types[field_name])(
+        stored_data,
+        field_value
+      )
+    ) {
       const new_avp_id = generateFAIMSAttributeValuePairID();
       const new_avp = {
         _id: new_avp_id,
@@ -418,8 +425,10 @@ async function addNewAttributeValuePairs(
         revision_id: new_revision_id,
         record_id: record.record_id,
         annotations: record.annotations[field_name],
+        created: record.updated.toISOString(),
+        created_by: record.updated_by,
       };
-      avps_to_dump.push(dumpAttributeValuePair(new_avp));
+      docs_to_dump.push(...dumpAttributeValuePair(new_avp));
       avp_map[field_name] = new_avp_id;
     } else {
       if (revision.avps !== undefined) {
@@ -432,7 +441,7 @@ async function addNewAttributeValuePairs(
       }
     }
   }
-  await datadb.bulkDocs(avps_to_dump);
+  await datadb.bulkDocs(docs_to_dump);
   return avp_map;
 }
 
@@ -463,9 +472,12 @@ export async function createNewRecord(
 /*
  * This handles converting attachments to data
  */
-function loadAttributeValuePair(avp: AttributeValuePair): AttributeValuePair {
-  const attachments = avp._attachments;
-  if (attachments === null || attachments === undefined) {
+async function loadAttributeValuePair(
+  project_id: ProjectID,
+  avp: AttributeValuePair
+): Promise<AttributeValuePair> {
+  const attach_refs = avp.faims_attachments;
+  if (attach_refs === null || attach_refs === undefined) {
     // No attachments
     return avp;
   }
@@ -473,16 +485,34 @@ function loadAttributeValuePair(avp: AttributeValuePair): AttributeValuePair {
   if (loader === null) {
     return avp;
   }
-  return loader(avp);
+  const ids_to_get = attach_refs.map(ref => ref.attachment_id);
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.allDocs({
+    include_docs: true,
+    attachments: true,
+    binary: true,
+    keys: ids_to_get,
+  });
+  const rows = res.rows;
+  const attach_docs: FAIMSAttachment[] = [];
+  rows.forEach(e => {
+    if (e.doc !== undefined) {
+      const doc = e.doc as FAIMSAttachment;
+      attach_docs.push(doc);
+    }
+  });
+  return loader(avp, attach_docs);
 }
 
 /*
  * This handles converting data to attachments
  */
-function dumpAttributeValuePair(avp: AttributeValuePair): AttributeValuePair {
+function dumpAttributeValuePair(
+  avp: AttributeValuePair
+): Array<AttributeValuePair | FAIMSAttachment> {
   const dumper = getAttachmentDumperForType(avp.type);
   if (dumper === null) {
-    return avp;
+    return [avp];
   }
   return dumper(avp);
 }

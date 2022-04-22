@@ -17,8 +17,10 @@
  * Description:
  *   TODO
  */
+import {isEqual} from 'lodash';
+
 import {FAIMSTypeName} from './core';
-import {AttributeValuePair} from './database';
+import {AttributeValuePair, FAIMSAttachment} from './database';
 
 export interface FAIMSType {
   [key: string]: any; // any for now until we lock down the json
@@ -64,20 +66,30 @@ export interface option {
   key?: string;
 }
 
-type AttributeValuePairConverter = (
+type AttributeValuePairDumper = (
   avp: AttributeValuePair
+) => Array<AttributeValuePair | FAIMSAttachment>;
+
+type AttributeValuePairLoader = (
+  avp: AttributeValuePair,
+  attach_docs: FAIMSAttachment[]
 ) => AttributeValuePair;
 
+type EqualityForFAIMSTypeFunction = (first: any, second: any) => boolean;
+
 const attachment_dumpers: {
-  [typename: string]: AttributeValuePairConverter;
+  [typename: string]: AttributeValuePairDumper;
 } = {};
 const attachment_loaders: {
-  [typename: string]: AttributeValuePairConverter;
+  [typename: string]: AttributeValuePairLoader;
+} = {};
+const equality_functions: {
+  [typename: string]: EqualityForFAIMSTypeFunction;
 } = {};
 
 export function getAttachmentLoaderForType(
   type: FAIMSTypeName
-): AttributeValuePairConverter | null {
+): AttributeValuePairLoader | null {
   const loader = attachment_loaders[type];
   if (loader === null || loader === undefined) {
     return null;
@@ -87,7 +99,7 @@ export function getAttachmentLoaderForType(
 
 export function getAttachmentDumperForType(
   type: FAIMSTypeName
-): AttributeValuePairConverter | null {
+): AttributeValuePairDumper | null {
   const dumper = attachment_dumpers[type];
   if (dumper === null || dumper === undefined) {
     return null;
@@ -97,14 +109,31 @@ export function getAttachmentDumperForType(
 
 export function setAttachmentLoaderForType(
   type: FAIMSTypeName,
-  loader: AttributeValuePairConverter
+  loader: AttributeValuePairLoader
 ) {
   attachment_loaders[type] = loader;
 }
 
 export function setAttachmentDumperForType(
   type: FAIMSTypeName,
-  dumper: AttributeValuePairConverter
+  dumper: AttributeValuePairDumper
 ) {
   attachment_dumpers[type] = dumper;
+}
+
+export function getEqualityFunctionForType(
+  type: FAIMSTypeName
+): EqualityForFAIMSTypeFunction {
+  const loader = equality_functions[type];
+  if (loader === null || loader === undefined) {
+    return isEqual;
+  }
+  return loader;
+}
+
+export function setEqualityFunctionForType(
+  type: FAIMSTypeName,
+  loader: EqualityForFAIMSTypeFunction
+) {
+  equality_functions[type] = loader;
 }

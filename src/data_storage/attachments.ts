@@ -20,7 +20,12 @@
 import PouchDB from 'pouchdb';
 import {v4 as uuidv4} from 'uuid';
 
-import {AttributeValuePair} from '../datamodel/database';
+import {FAIMSAttachmentID} from '../datamodel/core';
+import {
+  AttributeValuePair,
+  FAIMSAttachment,
+  FAIMSAttachmentReference,
+} from '../datamodel/database';
 import {DEBUG_APP} from '../buildconfig';
 
 interface FullAttachments {
@@ -31,32 +36,57 @@ export function generate_file_name(): string {
   if (DEBUG_APP) {
     console.debug('Generating a uuid-filename');
   }
+  return 'file-' + uuidv4();
+}
+
+export function generateFAIMSAttachmentID(): FAIMSAttachmentID {
   return 'att-' + uuidv4();
 }
 
 export function file_data_to_attachments(
   avp: AttributeValuePair
-): AttributeValuePair {
+): Array<AttributeValuePair | FAIMSAttachment> {
   if (avp.data === null) {
     if (DEBUG_APP) {
       console.debug('No data in', avp);
     }
-    return avp;
+    return [avp];
   }
-  avp._attachments = {};
+  const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
+  const attach_refs: FAIMSAttachmentReference[] = [];
   for (const tmp_file of avp.data) {
     const file = tmp_file as File;
     const file_name = file.name ?? generate_file_name();
-    avp._attachments[file_name] = {
+    const attach_id = generateFAIMSAttachmentID();
+    const attach_doc: FAIMSAttachment = {
+      _id: attach_id,
+      attach_format_version: 1,
+      avp_id: avp._id,
+      revision_id: avp.revision_id,
+      record_id: avp.record_id,
+      created: avp.created,
+      created_by: avp.created_by,
+      filename: file_name,
+      _attachments: {},
+    };
+    attach_doc._attachments![attach_id] = {
       content_type: file.type,
       data: file,
     };
+    attach_refs.push({
+      attachment_id: attach_id,
+      filename: file_name,
+      file_type: file.type,
+    });
+    docs_to_dump.push(attach_doc);
   }
   if (DEBUG_APP) {
     console.debug('Encoded attachments in avp', avp);
   }
   avp.data = null;
-  return avp;
+  avp.faims_attachments = attach_refs;
+  docs_to_dump.push(avp);
+  return docs_to_dump;
 }
 
 export function files_to_attachments(files: File[]): FullAttachments {
@@ -103,12 +133,25 @@ export function attachments_to_files(
 }
 
 export function file_attachments_to_data(
-  avp: AttributeValuePair
+  avp: AttributeValuePair,
+  attach_docs: FAIMSAttachment[]
 ): AttributeValuePair {
-  const attachments = avp._attachments as FullAttachments;
+  const available_file_map: {[att_id: string]: File} = {};
+  for (const attach_doc of attach_docs) {
+    const attachments = attach_doc._attachments as FullAttachments;
+    available_file_map[attach_doc._id] = attachment_to_file(
+      attach_doc.filename,
+      attachments[attach_doc._id]
+    );
+  }
   const attach_list = [];
-  for (const [pname, attach] of Object.entries(attachments)) {
-    attach_list.push(attachment_to_file(pname, attach));
+  for (const attach_ref of avp.faims_attachments ?? []) {
+    const possible_file = available_file_map[attach_ref.attachment_id];
+    if (possible_file === undefined) {
+      attach_list.push(attach_ref);
+    } else {
+      attach_list.push(possible_file);
+    }
   }
   if (DEBUG_APP) {
     console.debug('files?', attach_list);
