@@ -7,7 +7,6 @@ import {
   setSyncingProject,
   listenSyncingProject,
 } from '../../../sync/sync-toggle';
-import {USE_REAL_DATA} from '../../../buildconfig';
 
 type ProjectSyncProps = {
   project: ProjectInformation;
@@ -29,7 +28,6 @@ export default function ProjectSync(props: ProjectSyncProps) {
         <FormControlLabel
           control={
             <Switch
-              disabled={!USE_REAL_DATA}
               checked={isSyncing}
               onChange={(event, checked) =>
                 setSyncingProject(project.project_id, checked)
