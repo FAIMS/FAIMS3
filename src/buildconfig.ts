@@ -125,6 +125,21 @@ function show_wipe(): boolean {
   }
 }
 
+function show_new_notebook(): boolean {
+  const debug_app = process.env.REACT_APP_SHOW_NEW_NOTEBOOK;
+  if (debug_app === '' || debug_app === undefined) {
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
+    return true;
+  } else {
+    console.error('REACT_APP_SHOW_NEW_NOTEBOOK badly defined, assuming true');
+    return true;
+  }
+}
+
 function directory_protocol(): string {
   const usehttps = process.env.REACT_APP_USE_HTTPS;
   if (PROD_BUILD) {
@@ -245,3 +260,4 @@ export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
 export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
 export const SHOW_MINIFAUXTON = show_minifauxton();
 export const SHOW_WIPE = show_wipe();
+export const SHOW_NEW_NOTEBOOK = show_new_notebook();
