@@ -15,7 +15,8 @@
  *
  * Filename: navbar.tsx
  * Description:
- *   TODO
+ *   This contains the navbar React component, which allows users to navigate
+ *   throughout the app.
  */
 
 import React, {useState} from 'react';
@@ -47,7 +48,9 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import AccountTree from '@mui/icons-material/AccountTree';
 import ListItemText from '@mui/material/ListItemText';
+
 import * as ROUTES from '../../constants/routes';
+import {SHOW_NEW_NOTEBOOK} from '../../buildconfig';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from './alert';
 import {ProjectInformation} from '../../datamodel/ui';
@@ -199,19 +202,12 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         },
-    props.token !== undefined && props.token !== null
-      ? {
-          title: 'New Notebook',
-          icon: <AddIcon />,
-          to: ROUTES.PROJECT_CREATE,
-          disabled: false,
-        }
-      : {
-          title: 'New Notebook',
-          icon: <AddIcon />,
-          to: ROUTES.PROJECT_CREATE,
-          disabled: true,
-        },
+    {
+      title: 'New Notebook',
+      icon: <AddIcon />,
+      to: ROUTES.PROJECT_CREATE,
+      disabled: !SHOW_NEW_NOTEBOOK,
+    },
     // {
     //   title: 'Tools',
     //   icon: <BuildIcon />,
