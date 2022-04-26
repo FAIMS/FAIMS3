@@ -23,13 +23,14 @@ import {Box, Container} from '@mui/material';
 import Button from '@mui/material/Button';
 import * as ROUTES from '../../constants/routes';
 import {
-  USE_REAL_DATA,
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
   RUNNING_UNDER_TEST,
   COMMIT_VERSION,
   AUTOACTIVATE_PROJECTS,
+  SHOW_MINIFAUXTON,
+  SHOW_WIPE,
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
@@ -60,10 +61,6 @@ export default function AboutBuild() {
                 <td>{COMMIT_VERSION}</td>
               </tr>
               <tr>
-                <td>Using real data</td>
-                <td>{USE_REAL_DATA ? 'True' : 'False'}</td>
-              </tr>
-              <tr>
                 <td>Running under test</td>
                 <td>{RUNNING_UNDER_TEST ? 'True' : 'False'}</td>
               </tr>
@@ -75,19 +72,21 @@ export default function AboutBuild() {
           </table>
         </pre>
       </Box>
-      <Button
-        variant="outlined"
-        color={'primary'}
-        onClick={() => {
-          wipe_all_pouch_databases().then(() => {
-            console.log('User cleaned database');
-            window.location.reload();
-          });
-        }}
-        style={{marginRight: '10px'}}
-      >
-        Wipe and reset everything!
-      </Button>
+      {SHOW_WIPE && (
+        <Button
+          variant="outlined"
+          color={'primary'}
+          onClick={() => {
+            wipe_all_pouch_databases().then(() => {
+              console.log('User cleaned database');
+              window.location.reload();
+            });
+          }}
+          style={{marginRight: '10px'}}
+        >
+          Wipe and reset everything!
+        </Button>
+      )}
       <Button
         variant="outlined"
         color={'primary'}
@@ -99,16 +98,18 @@ export default function AboutBuild() {
       >
         Refresh the app (like in a browser)!
       </Button>
-      <Button
-        variant="outlined"
-        color={'primary'}
-        onClick={() => {
-          window.location.pathname = '/minifauxton.html';
-        }}
-        style={{marginRight: '10px'}}
-      >
-        Open MiniFauxton
-      </Button>
+      {SHOW_MINIFAUXTON && (
+        <Button
+          variant="outlined"
+          color={'primary'}
+          onClick={() => {
+            window.location.pathname = '/minifauxton.html';
+          }}
+          style={{marginRight: '10px'}}
+        >
+          Open MiniFauxton
+        </Button>
+      )}
     </Container>
   );
 }

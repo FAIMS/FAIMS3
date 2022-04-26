@@ -65,26 +65,10 @@ function prod_build(): boolean {
  */
 const PROD_BUILD = prod_build();
 
-function use_real_data(): boolean {
-  const userealdata = process.env.REACT_APP_USE_REAL_DATA;
-  if (userealdata === '' || userealdata === undefined) {
-    // By default we don't include dummy data now
-    return true;
-  }
-  if (FALSEY_STRINGS.includes(userealdata.toLowerCase())) {
-    return false;
-  } else if (TRUTHY_STRINGS.includes(userealdata.toLowerCase())) {
-    return true;
-  } else {
-    console.error('REACT_APP_USE_REAL_DATA badly defined, assuming false');
-    return false;
-  }
-}
-
 function include_pouchdb_debugging(): boolean {
   const debug_pouch = process.env.REACT_APP_DEBUG_POUCHDB;
   if (debug_pouch === '' || debug_pouch === undefined) {
-    return true;
+    return false;
   }
   if (FALSEY_STRINGS.includes(debug_pouch.toLowerCase())) {
     return false;
@@ -99,7 +83,7 @@ function include_pouchdb_debugging(): boolean {
 function include_app_debugging(): boolean {
   const debug_app = process.env.REACT_APP_DEBUG_APP;
   if (debug_app === '' || debug_app === undefined) {
-    return true;
+    return false;
   }
   if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
     return false;
@@ -107,6 +91,36 @@ function include_app_debugging(): boolean {
     return true;
   } else {
     console.error('REACT_APP_DEBUG_APP badly defined, assuming true');
+    return true;
+  }
+}
+
+function show_minifauxton(): boolean {
+  const debug_app = process.env.REACT_APP_SHOW_MINIFAUXTON;
+  if (debug_app === '' || debug_app === undefined) {
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
+    return true;
+  } else {
+    console.error('REACT_APP_SHOW_MINIFAUXTON badly defined, assuming true');
+    return true;
+  }
+}
+
+function show_wipe(): boolean {
+  const debug_app = process.env.REACT_APP_SHOW_WIPE;
+  if (debug_app === '' || debug_app === undefined) {
+    return true;
+  }
+  if (FALSEY_STRINGS.includes(debug_app.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
+    return true;
+  } else {
+    console.error('REACT_APP_SHOW_WIPE badly defined, assuming true');
     return true;
   }
 }
@@ -217,9 +231,8 @@ function cluster_admin_group_name(): string {
   return name;
 }
 
-export const USE_REAL_DATA = PROD_BUILD || use_real_data();
-export const DEBUG_POUCHDB = !PROD_BUILD && include_pouchdb_debugging();
-export const DEBUG_APP = !PROD_BUILD && include_app_debugging();
+export const DEBUG_POUCHDB = include_pouchdb_debugging();
+export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
 export const DIRECTORY_HOST = directory_host();
 export const DIRECTORY_PORT = directory_port();
@@ -230,3 +243,5 @@ export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
 export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
+export const SHOW_MINIFAUXTON = show_minifauxton();
+export const SHOW_WIPE = show_wipe();
