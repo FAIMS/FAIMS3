@@ -268,12 +268,14 @@ export async function getAttributeValuePairs(
   });
   const rows = res.rows;
   const mapping: AttributeValuePairMap = {};
-  rows.forEach(async e => {
+  for (const e of rows) {
     if (e.doc !== undefined) {
       const doc = e.doc as AttributeValuePair;
       mapping[doc._id] = await loadAttributeValuePair(project_id, doc);
+      console.error("AVP map", mapping);
+      console.error("AVP json map", JSON.stringify(mapping));
     }
-  });
+  }
   return mapping;
 }
 
@@ -353,6 +355,7 @@ export async function getFormDataFromRevision(
   };
   const avp_ids = Object.values(revision.avps);
   const avps = await getAttributeValuePairs(project_id, avp_ids);
+
   for (const [name, avp_id] of Object.entries(revision.avps)) {
     form_data.data[name] = avps[avp_id].data;
     form_data.annotations[name] = avps[avp_id].annotations;
