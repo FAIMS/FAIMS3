@@ -23,10 +23,26 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Deploy a new version to Google Play
 
+### android deploy_testing
+
+```sh
+[bundle exec] fastlane android deploy_testing
+```
+
+
+
 ### android deploy_alpha
 
 ```sh
 [bundle exec] fastlane android deploy_alpha
+```
+
+
+
+### android deploy_demo
+
+```sh
+[bundle exec] fastlane android deploy_demo
 ```
 
 

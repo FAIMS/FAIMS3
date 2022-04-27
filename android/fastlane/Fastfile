@@ -98,8 +98,8 @@ platform :android do
               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
            }
            )
-    upload_to_play_store(track: 'demo',
-                         release_status: 'draft',
+    upload_to_play_store(track: 'Demo',
+                         release_status: 'completed',
                         )
   end
   lane :deploy_fip do
