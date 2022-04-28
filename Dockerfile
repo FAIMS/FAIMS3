@@ -1,6 +1,6 @@
 #https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
 
-FROM node:lts-alpine3.14@sha256:131c9f58255a7d9c38f194664c4c63a4c5ca4deff644e9be142b8ab4903d48de as build
+FROM node:lts-alpine3.14@sha256:53a5c087654e75f8b12475fe143c5ab8b5f33254a37dc87743d066a57e67b4de as build
 ARG REACT_APP_COMMIT_VERSION
 ARG REACT_APP_DIRECTORY_HOST
 ARG REACT_APP_SERVICES
