@@ -747,7 +747,7 @@ export async function update_project(
       active_id,
       data_connection_info,
       data_dbs,
-      {push: {}}
+      {push: {}, pull: {filter: "_view", view: "filter_attachments/filter_attachments"}}
     );
 
     if (data_remote.remote !== null && data_remote.remote.connection !== null) {
