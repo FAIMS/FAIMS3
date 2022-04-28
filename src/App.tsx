@@ -36,6 +36,7 @@ import ProjectSettings from './gui/pages/project-settings';
 import ProjectSearch from './gui/pages/project-search';
 import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
+import RecordMerge from './gui/pages/record-merge';
 import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
 import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
@@ -198,6 +199,18 @@ export default function App() {
               should at some point, TODO, redirect to the same Record form but
               with the newly minted draft_id attached. BUt this TODO is in the
               record/form.tsx */
+              <PrivateRoute
+                exact
+                path={
+                  ROUTES.PROJECT +
+                  ':project_id' +
+                  ROUTES.RECORD_EXISTING +
+                  ':record_id'
+                }
+                component={RecordMerge}
+                token={token}
+                extraProps={{token: token}}
+              />
               <PrivateRoute
                 exact
                 path={

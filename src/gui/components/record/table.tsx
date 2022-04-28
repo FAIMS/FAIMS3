@@ -94,7 +94,9 @@ function RecordsTable(props: RecordsTableProps) {
               to={ROUTES.getRecordRoute(
                 project_id || 'dummy',
                 (params.row.record_id || '').toString(),
-                (params.row.revision_id || '').toString()
+                params.row.conflicts
+                  ? ''
+                  : (params.row.revision_id || '').toString()
               )}
             >
               {params.value}
@@ -151,7 +153,9 @@ function RecordsTable(props: RecordsTableProps) {
               to={ROUTES.getRecordRoute(
                 project_id || 'dummy',
                 (params.row.record_id || '').toString(),
-                (params.row.revision_id || '').toString()
+                params.row.conflicts
+                  ? ''
+                  : (params.row.revision_id || '').toString()
               )}
             >
               {params.row.hrid}
@@ -176,7 +180,9 @@ function RecordsTable(props: RecordsTableProps) {
                   to={ROUTES.getRecordRoute(
                     project_id || 'dummy',
                     (params.row.record_id || '').toString(),
-                    (params.row.revision_id || '').toString()
+                    params.row.conflicts
+                      ? ''
+                      : (params.row.revision_id || '').toString()
                   )}
                 >
                   {params.value}
