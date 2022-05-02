@@ -27,11 +27,20 @@ import {ProjectUIModel} from '../../datamodel/ui';
 
 import ImageList from '@mui/material/ImageList';
 import ImageListItem, {imageListItemClasses} from '@mui/material/ImageListItem';
+import ImageListItemBar from '@mui/material/ImageListItemBar';
 import IconButton from '@mui/material/IconButton';
 import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
-import { Url } from 'url';
+import DeleteIcon from '@mui/icons-material/Delete';
+import {
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  ListItemButton,
+  ListItemIcon,
+} from '@mui/material';
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
@@ -60,29 +69,59 @@ type ImgeProps = {
 type ImgeListProps = {
   images: Array<any>;
   setopen: any;
+  setimage:any;
 };
 const FAIMESImageList = (props: ImgeListProps) => {
-  const {images, setopen} = props;
+  const {images, setopen,setimage} = props;
+  const handelonClick = (index: number) => {
+    if (images.length > index) {
+      const newimages = images.filter(
+        (image: any, i: number) => i !== index
+      );
+      setimage(newimages)
+      
+    }
+  };
   return images !== null && images !== undefined ? (
-    <ImageList cols={4}>
+    <List>
       {images.map((image, index) => image['attachment_id']===undefined ? (
-        <ImageListItem key={index}>
+        <ListItem key={index} id={index + 'image'}>
           <img
               style={{height: '100%', width: '300px', objectFit: 'none',cursor: 'allowed'}}
               src={URL.createObjectURL(image)}
               onClick={()=>setopen(URL.createObjectURL(image))}
           />
-         
-        </ImageListItem>
+          <ListItemSecondaryAction>
+            <IconButton
+              style={{color: '#000'}}
+              aria-label="Delete this Attachment"
+              onClick={() => handelonClick(index)}
+              size="large"
+            >
+              <DeleteIcon />
+            </IconButton>
+          </ListItemSecondaryAction>
+        </ListItem>
+        
       ):(
-        <ImageListItem key={index}>
+        <ListItem key={index} id={index + 'image'}>
           <IconButton aria-label="image" onClick={()=>setopen(null)} >
-            <ImageIcon />
-          </IconButton>
-        </ImageListItem>
+                <ImageIcon />
+              </IconButton>
+          <ListItemSecondaryAction>
+          <IconButton
+                style={{color: '#000'}}
+                aria-label="Delete this Attachment"
+                onClick={() => handelonClick(index)}
+                size="large"
+          >
+                <DeleteIcon />
+            </IconButton>
+          </ListItemSecondaryAction>
+        </ListItem>
       )
       )}{' '}
-    </ImageList>
+    </List>
   ) : (
     <span>No photo taken.</span>
   );
@@ -127,7 +166,8 @@ export class TakePhoto extends React.Component<
         })
       );
       console.log(image);
-      this.props.form.setFieldValue(this.props.field.name, [image]);
+      const newimages = this.props.field.value!==null?this.props.field.value.concat(image):[image];
+      this.props.form.setFieldValue(this.props.field.name, newimages);
     } catch (err: any) {
       console.error('Failed to take photo', err);
       this.props.form.setFieldError(this.props.field.name, err.message);
@@ -136,6 +176,7 @@ export class TakePhoto extends React.Component<
   render() {
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
+    console.log(images)
     
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
@@ -171,6 +212,7 @@ export class TakePhoto extends React.Component<
           images={images}
           setopen={(path:string) => this.setState({open: true, photopath:path
           })}
+          setimage={(newfiles:Array<any>) => this.props.form.setFieldValue(this.props.field.name, newfiles)}
         />
         <Typography variant="caption" color="textSecondary">
           {error_text}{' '}
