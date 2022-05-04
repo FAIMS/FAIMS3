@@ -139,12 +139,12 @@ function isAttachment(a: any): boolean {
 export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
   if (Array.isArray(a) !== Array.isArray(b)) {
     // only one of a or b is an array, so not equal
-    console.info("Not both arrays", a, b);
+    console.info('Not both arrays', a, b);
     return false;
   } else if (Array.isArray(a) && Array.isArray(b)) {
-    console.info("Checking arrays", a, b);
+    console.info('Checking arrays', a, b);
     if (a.length !== b.length) {
-      console.info("arrays different length", a, b);
+      console.info('arrays different length', a, b);
       return false;
     }
     for (let i = 0; i < a.length; i++) {
@@ -154,7 +154,7 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
     }
     return true;
   } else if (isAttachment(a) && isAttachment(b)) {
-    console.info("Checking blobs", a, b);
+    console.info('Checking blobs', a, b);
     if (a.size !== b.size || a.type !== b.type) {
       return false;
     }
@@ -173,7 +173,7 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
         return false;
       });
   } else {
-    console.info("Using lodash", a, b);
+    console.info('Using lodash', a, b);
     return isEqual(a, b);
   }
 }

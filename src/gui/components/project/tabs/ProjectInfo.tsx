@@ -93,11 +93,10 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
     }
     return () => {
       isactive = false;
-    }
+    };
   }, [accessgroup]);
 
   useEffect(() => {
-
     let isactive = true;
     if (isactive) {
       if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {

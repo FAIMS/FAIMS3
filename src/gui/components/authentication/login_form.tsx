@@ -106,15 +106,10 @@ export function LoginForm(props: LoginFormProps) {
   );
 
   useEffect(() => {
-
     const getMech = async () => {
-      
-        setAuth_mechanisms(
-          await getAuthMechianismsForListing(props.listing_id)
-        );
+      setAuth_mechanisms(await getAuthMechianismsForListing(props.listing_id));
     };
     getMech();
-    
   }, [props.listing_id]);
 
   if (auth_mechanisms === null) {

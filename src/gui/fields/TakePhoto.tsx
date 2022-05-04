@@ -69,57 +69,59 @@ type ImgeProps = {
 type ImgeListProps = {
   images: Array<any>;
   setopen: any;
-  setimage:any;
+  setimage: any;
 };
 const FAIMESImageList = (props: ImgeListProps) => {
-  const {images, setopen,setimage} = props;
+  const {images, setopen, setimage} = props;
   const handelonClick = (index: number) => {
     if (images.length > index) {
-      const newimages = images.filter(
-        (image: any, i: number) => i !== index
-      );
-      setimage(newimages)
-      
+      const newimages = images.filter((image: any, i: number) => i !== index);
+      setimage(newimages);
     }
   };
   return images !== null && images !== undefined ? (
     <List>
-      {images.map((image, index) => image['attachment_id']===undefined ? (
-        <ListItem key={index} id={index + 'image'}>
-          <img
-              style={{height: '100%', width: '300px', objectFit: 'none',cursor: 'allowed'}}
+      {images.map((image, index) =>
+        image['attachment_id'] === undefined ? (
+          <ListItem key={index} id={index + 'image'}>
+            <img
+              style={{
+                height: '100%',
+                width: '300px',
+                objectFit: 'none',
+                cursor: 'allowed',
+              }}
               src={URL.createObjectURL(image)}
-              onClick={()=>setopen(URL.createObjectURL(image))}
-          />
-          <ListItemSecondaryAction>
-            <IconButton
-              style={{color: '#000'}}
-              aria-label="Delete this Attachment"
-              onClick={() => handelonClick(index)}
-              size="large"
-            >
-              <DeleteIcon />
-            </IconButton>
-          </ListItemSecondaryAction>
-        </ListItem>
-        
-      ):(
-        <ListItem key={index} id={index + 'image'}>
-          <IconButton aria-label="image" onClick={()=>setopen(null)} >
-                <ImageIcon />
-              </IconButton>
-          <ListItemSecondaryAction>
-          <IconButton
+              onClick={() => setopen(URL.createObjectURL(image))}
+            />
+            <ListItemSecondaryAction>
+              <IconButton
                 style={{color: '#000'}}
                 aria-label="Delete this Attachment"
                 onClick={() => handelonClick(index)}
                 size="large"
-          >
+              >
                 <DeleteIcon />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </ListItem>
+        ) : (
+          <ListItem key={index} id={index + 'image'}>
+            <IconButton aria-label="image" onClick={() => setopen(null)}>
+              <ImageIcon />
             </IconButton>
-          </ListItemSecondaryAction>
-        </ListItem>
-      )
+            <ListItemSecondaryAction>
+              <IconButton
+                style={{color: '#000'}}
+                aria-label="Delete this Attachment"
+                onClick={() => handelonClick(index)}
+                size="large"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </ListItemSecondaryAction>
+          </ListItem>
+        )
       )}{' '}
     </List>
   ) : (
@@ -128,7 +130,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
 };
 interface State {
   open: boolean;
-  photopath:string | null;
+  photopath: string | null;
 }
 export class TakePhoto extends React.Component<
   FieldProps &
@@ -152,7 +154,7 @@ export class TakePhoto extends React.Component<
     super(props);
     this.state = {
       open: false,
-      photopath:null
+      photopath: null,
     };
   }
   async takePhoto() {
@@ -166,7 +168,10 @@ export class TakePhoto extends React.Component<
         })
       );
       console.log(image);
-      const newimages = this.props.field.value!==null?this.props.field.value.concat(image):[image];
+      const newimages =
+        this.props.field.value !== null
+          ? this.props.field.value.concat(image)
+          : [image];
       this.props.form.setFieldValue(this.props.field.name, newimages);
     } catch (err: any) {
       console.error('Failed to take photo', err);
@@ -176,8 +181,8 @@ export class TakePhoto extends React.Component<
   render() {
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    console.log(images)
-    
+    console.log(images);
+
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
       error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
@@ -210,9 +215,12 @@ export class TakePhoto extends React.Component<
         </Button>
         <FAIMESImageList
           images={images}
-          setopen={(path:string) => this.setState({open: true, photopath:path
-          })}
-          setimage={(newfiles:Array<any>) => this.props.form.setFieldValue(this.props.field.name, newfiles)}
+          setopen={(path: string) =>
+            this.setState({open: true, photopath: path})
+          }
+          setimage={(newfiles: Array<any>) =>
+            this.props.form.setFieldValue(this.props.field.name, newfiles)
+          }
         />
         <Typography variant="caption" color="textSecondary">
           {error_text}{' '}

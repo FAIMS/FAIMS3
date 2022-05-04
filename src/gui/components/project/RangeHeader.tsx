@@ -56,7 +56,7 @@ export default function RangeHeader(props: {project: any}) {
     }
     return () => {
       isactive = false;
-    }
+    };
   }, [props.project.project_id]);
 
   return (

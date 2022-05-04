@@ -171,8 +171,7 @@ export function AutocompleteForm(props: any) {
     }
     return () => {
       isactive = false;
-    }
-
+    };
   }, [props.labels]);
 
   const handleDelete = (index: string) => {

@@ -214,8 +214,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   useEffect(() => {
     let isactive = true;
-     // cleanup toggles value,
-    if(isactive) {
+    // cleanup toggles value,
+    if (isactive) {
       if (
         project_id !== null &&
         project_id !== null &&
@@ -227,7 +227,9 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         handlerprojectsubmit_pounch();
       }
     }
-    return () => {isactive=false }
+    return () => {
+      isactive = false;
+    };
   }, [project_id]);
 
   const resetprojectvalue = (newvalue: any) => {

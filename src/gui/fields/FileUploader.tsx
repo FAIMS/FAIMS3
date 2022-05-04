@@ -38,7 +38,7 @@ import {IconButton} from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
-import {FAIMSAttachmentReference} from '../../datamodel/database'
+import {FAIMSAttachmentReference} from '../../datamodel/database';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
@@ -59,7 +59,7 @@ export function FileUploader(props: FieldProps & Props) {
   const maximum_file_size = props.maximum_file_size ?? Infinity;
   const minimum_file_size = props.minimum_file_size ?? 0;
   const [open, setopen] = React.useState(false);
-  const [path,setpath] = React.useState<string|null>(null)
+  const [path, setpath] = React.useState<string | null>(null);
 
   const [current_files, setfiles] = React.useState(
     props.form.values[props.field.name] ?? []
@@ -113,37 +113,32 @@ export function FileUploader(props: FieldProps & Props) {
       <List>
         {current_files.map((file: any, index: number) => (
           <ListItem key={index} id={index + 'file'}>
-            
-                {file.file_type!==undefined&& file.file_type !== 'image'?
-                (
-                  <ListItemButton onClick={() => setopen(true)}>
-                  <ListItemIcon >
-                    <AttachFileIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={file.name} secondary={file.type} />
-                  </ListItemButton>
-                  ):
-                file.file_type!==undefined?(
-                  <ListItemButton onClick={() => setopen(true)}>
-                  <ListItemIcon >
-                    <ImageIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={file.name} secondary={file.type} />
-                  </ListItemButton>
-                ):
-                file.type !== undefined && file.type.includes('image')?
-                (<img
+            {file.file_type !== undefined && file.file_type !== 'image' ? (
+              <ListItemButton onClick={() => setopen(true)}>
+                <ListItemIcon>
+                  <AttachFileIcon />
+                </ListItemIcon>
+                <ListItemText primary={file.name} secondary={file.type} />
+              </ListItemButton>
+            ) : file.file_type !== undefined ? (
+              <ListItemButton onClick={() => setopen(true)}>
+                <ListItemIcon>
+                  <ImageIcon />
+                </ListItemIcon>
+                <ListItemText primary={file.name} secondary={file.type} />
+              </ListItemButton>
+            ) : file.type !== undefined && file.type.includes('image') ? (
+              <img
                 style={{maxHeight: 300, maxWidth: 200}}
                 src={URL.createObjectURL(file)}
-                onClick={() => {setopen(true); setpath(URL.createObjectURL(file))}}
-                />): (
-                  
-                  <ListItemText primary={file.name} secondary={file.type} />
-                  
-                )}
-              
-              
-
+                onClick={() => {
+                  setopen(true);
+                  setpath(URL.createObjectURL(file));
+                }}
+              />
+            ) : (
+              <ListItemText primary={file.name} secondary={file.type} />
+            )}
             {/* <ListItemText primary={file.name} secondary={file.type} />
             {file.type !== undefined && file.type.includes('image') ? (
               <img

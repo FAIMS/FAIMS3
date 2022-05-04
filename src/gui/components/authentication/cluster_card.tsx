@@ -59,13 +59,10 @@ export default function ClusterCard(props: ClusterCardProps) {
   const history = useHistory();
 
   useEffect(() => {
-
     const getToken = async () => {
-     
-        setToken(await getTokenContentsForCluster(props.listing_id));
+      setToken(await getTokenContentsForCluster(props.listing_id));
     };
     getToken();
-
   }, [props.listing_id]);
 
   useEffect(() => {

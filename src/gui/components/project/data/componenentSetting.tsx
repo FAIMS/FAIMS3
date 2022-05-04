@@ -423,8 +423,7 @@ const Componentsetting = (props: componenentSettingprops) => {
     }
     return () => {
       isactive = false;
-    }
-
+    };
   }, [
     props.projectvalue['forms'][props.currentform][
       'uncertainty' + props.currentform

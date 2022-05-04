@@ -15,7 +15,7 @@
  *
  * Filename: Diaglog.tsx
  * Description:
- *   TODO: download single file 
+ *   TODO: download single file
  */
 
 import React from 'react';
@@ -25,22 +25,22 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import { IconButton } from '@mui/material';
+import {IconButton} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import * as ROUTES from '../../../constants/routes';
 import {Link as RouterLink} from 'react-router-dom';
-import { Url } from 'url';
+import {Url} from 'url';
 
 type DiagProps = {
   open?: boolean;
   project_id: string;
   setopen: any;
-  filedId?:string;
+  filedId?: string;
   path?: string | null;
 };
 export default function FaimsDialog(props: DiagProps) {
   //   const [open, setOpen] = React.useState(props.open??false);
-  const {open, setopen, project_id,path} = props;
+  const {open, setopen, project_id, path} = props;
 
   return (
     <Dialog
@@ -50,7 +50,7 @@ export default function FaimsDialog(props: DiagProps) {
       aria-describedby="alert-dialog-description"
     >
       <DialogTitle id="alert-dialog-title">
-        {path!==null ? '':'Download attachment and Photoes'}
+        {path !== null ? '' : 'Download attachment and Photoes'}
         <IconButton
           aria-label="close"
           onClick={setopen}
@@ -58,41 +58,45 @@ export default function FaimsDialog(props: DiagProps) {
             position: 'absolute',
             right: 8,
             top: 8,
-            
           }}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
       <DialogContent>
-          {path!==null ? 
+        {path !== null ? (
           <img
-          style={{height: '100%', width: '100%', objectFit: 'none'}}
-          src={path}
-          />:
-        <DialogContentText id="alert-dialog-description">
-          To Download attachments and photoes, go to settings page <br />
-          To enable auto sync attachments, go to settings
-        </DialogContentText> }
+            style={{height: '100%', width: '100%', objectFit: 'none'}}
+            src={path}
+          />
+        ) : (
+          <DialogContentText id="alert-dialog-description">
+            To Download attachments and photoes, go to settings page <br />
+            To enable auto sync attachments, go to settings
+          </DialogContentText>
+        )}
       </DialogContent>
-      {path!==null ?'':
-      <DialogActions>
-        <Button color="primary" size="large" onClick={setopen}>
-          Close
-        </Button>
-        {/* <Button color="primary" size="large" onClick={()=>console.log('function to download'+ props.filedId)}>
+      {path !== null ? (
+        ''
+      ) : (
+        <DialogActions>
+          <Button color="primary" size="large" onClick={setopen}>
+            Close
+          </Button>
+          {/* <Button color="primary" size="large" onClick={()=>console.log('function to download'+ props.filedId)}>
           Download
         </Button> */}
-        
-        <Button
-          color="primary"
-          size="large"
-          component={RouterLink}
-          to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
-        >
-          Go to change setting
-        </Button>
-      </DialogActions>}
+
+          <Button
+            color="primary"
+            size="large"
+            component={RouterLink}
+            to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
+          >
+            Go to change setting
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 }

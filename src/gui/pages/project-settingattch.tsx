@@ -54,7 +54,6 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
   // TODO: check sync
   const [isSyncing, setIsSync] = useState(false);
 
-
   let project_info: ProjectInformation | null;
   const history = useHistory();
 
@@ -114,7 +113,6 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
           label={<Typography variant={'button'}>Sync</Typography>}
         />
         <br />
-     
       </Paper>
       <Button color="primary" size="large" onClick={() => history.goBack()}>
         Go Back
