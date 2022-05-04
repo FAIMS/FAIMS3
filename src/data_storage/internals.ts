@@ -272,8 +272,8 @@ export async function getAttributeValuePairs(
     if (e.doc !== undefined) {
       const doc = e.doc as AttributeValuePair;
       mapping[doc._id] = await loadAttributeValuePair(project_id, doc);
-      console.error("AVP map", mapping);
-      console.error("AVP json map", JSON.stringify(mapping));
+      console.error('AVP map', mapping);
+      console.error('AVP json map', JSON.stringify(mapping));
     }
   }
   return mapping;
@@ -412,13 +412,11 @@ async function addNewAttributeValuePairs(
   const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
   for (const [field_name, field_value] of Object.entries(record.data)) {
     const stored_data = data.data[field_name];
-    if (
+    const eqfunc = getEqualityFunctionForType(record.field_types[field_name]);
+    const has_data_changed =
       stored_data === undefined ||
-      getEqualityFunctionForType(record.field_types[field_name])(
-        stored_data,
-        field_value
-      )
-    ) {
+      !(await eqfunc(stored_data, field_value));
+    if (has_data_changed) {
       const new_avp_id = generateFAIMSAttributeValuePairID();
       const new_avp = {
         _id: new_avp_id,
@@ -434,6 +432,13 @@ async function addNewAttributeValuePairs(
       docs_to_dump.push(...dumpAttributeValuePair(new_avp));
       avp_map[field_name] = new_avp_id;
     } else {
+      if (DEBUG_APP) {
+        console.info(
+          'Using existing AVP, the following are equal',
+          stored_data,
+          field_value
+        );
+      }
       if (revision.avps !== undefined) {
         avp_map[field_name] = revision.avps[field_name];
       } else {

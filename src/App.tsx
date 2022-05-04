@@ -77,12 +77,10 @@ export default function App() {
   const [token, setToken] = useState(null as null | undefined | TokenContents);
 
   useEffect(() => {
-
     const getToken = async () => {
-       setToken(await getTokenContentsForCluster('default'));
+      setToken(await getTokenContentsForCluster('default'));
     };
     getToken();
-
   }, []);
 
   return token === null ? (

@@ -75,7 +75,10 @@ type AttributeValuePairLoader = (
   attach_docs: FAIMSAttachment[]
 ) => AttributeValuePair;
 
-type EqualityForFAIMSTypeFunction = (first: any, second: any) => boolean;
+type EqualityForFAIMSTypeFunction = (
+  first: any,
+  second: any
+) => Promise<boolean>;
 
 const attachment_dumpers: {
   [typename: string]: AttributeValuePairDumper;
@@ -121,12 +124,66 @@ export function setAttachmentDumperForType(
   attachment_dumpers[type] = dumper;
 }
 
+function isAttachment(a: any): boolean {
+  if (a instanceof Blob) {
+    return true;
+  }
+  return false;
+}
+
+/*
+ * This wraps the isEqual from lodash to add support for blobs which is needed
+ * for attachments. It would be nice to replace this with a easier to use option
+ * (e.g. without async), but this will have to do for now...
+ */
+export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    // only one of a or b is an array, so not equal
+    console.info("Not both arrays", a, b);
+    return false;
+  } else if (Array.isArray(a) && Array.isArray(b)) {
+    console.info("Checking arrays", a, b);
+    if (a.length !== b.length) {
+      console.info("arrays different length", a, b);
+      return false;
+    }
+    for (let i = 0; i < a.length; i++) {
+      if (!isEqualFAIMS(a[i], b[i])) {
+        return false;
+      }
+    }
+    return true;
+  } else if (isAttachment(a) && isAttachment(b)) {
+    console.info("Checking blobs", a, b);
+    if (a.size !== b.size || a.type !== b.type) {
+      return false;
+    }
+    return Promise.all([a.arrayBuffer(), b.arrayBuffer()])
+      .then((res: [any, any]) => {
+        const buf_a = res[0] as ArrayBuffer;
+        const buf_b = res[1] as ArrayBuffer;
+        const arr_a = new BigUint64Array(buf_a);
+        const arr_b = new BigUint64Array(buf_b);
+        return arr_a.every((element, index) => {
+          return element === arr_b[index];
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        return false;
+      });
+  } else {
+    console.info("Using lodash", a, b);
+    return isEqual(a, b);
+  }
+}
+
 export function getEqualityFunctionForType(
   type: FAIMSTypeName
 ): EqualityForFAIMSTypeFunction {
   const loader = equality_functions[type];
   if (loader === null || loader === undefined) {
-    return isEqual;
+    return isEqualFAIMS;
   }
   return loader;
 }

@@ -52,6 +52,9 @@ export function file_data_to_attachments(
     }
     return [avp];
   }
+  if (DEBUG_APP) {
+    console.debug('Attachments in avp', avp);
+  }
   const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
   const attach_refs: FAIMSAttachmentReference[] = [];
   for (const tmp_file of avp.data) {
