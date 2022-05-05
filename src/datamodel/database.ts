@@ -106,6 +106,7 @@ export interface ActiveDoc {
   password: string | null;
   friendly_name?: string;
   is_sync: boolean;
+  is_sync_attachments: boolean;
 }
 
 export interface LocalAuthDoc {

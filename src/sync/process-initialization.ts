@@ -531,6 +531,7 @@ export async function activate_project(
         username: username,
         password: password,
         is_sync: is_sync,
+        is_sync_attachments: false,
       });
       return active_id;
     } else {
@@ -749,7 +750,7 @@ export async function update_project(
       data_dbs,
       {
         push: {},
-        pull: {filter: '_view', view: 'filter_attachments/filter_attachments'},
+        pull: {},
       }
     );
 

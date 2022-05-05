@@ -97,3 +97,74 @@ export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
     created.project
   );
 }
+
+export function listenSyncingProjectAttachments(
+  active_id: ProjectID,
+  callback: (syncing: boolean) => unknown
+): () => void {
+  const project_update_cb = (
+    _type: unknown,
+    _mc: unknown,
+    _dc: unknown,
+    _listing: unknown,
+    active: ExistingActiveDoc
+  ) => {
+    if (active._id === active_id) {
+      callback(active.is_sync_attachments);
+    }
+  };
+  events.on('project_update', project_update_cb);
+  return events.removeListener.bind(
+    events,
+    'project_update',
+    project_update_cb
+  );
+}
+
+export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
+  return data_dbs[active_id]!.is_sync_attachments;
+}
+
+export function setSyncingProjectAttachments(
+  active_id: ProjectID,
+  syncing: boolean
+) {
+  if (syncing === isSyncingProjectAttachments(active_id)) {
+    return; //Nothing to do, already same value
+  }
+  const data_db = data_dbs[active_id];
+  data_db.is_sync_attachments = syncing;
+
+  const has_remote = (
+    db: typeof data_db
+  ): db is LocalDB<ProjectDataObject> & {
+    remote: LocalDBRemote<ProjectDataObject>;
+  } => {
+    return db.remote !== null;
+  };
+
+  if (has_remote(data_db)) {
+    setLocalConnection(data_db);
+  }
+
+  const created = createdProjects[active_id];
+
+  events.emit(
+    'project_update',
+    [
+      'update',
+      {
+        ...created,
+        active: {
+          ...created.active,
+          is_sync: !syncing,
+        },
+      },
+    ],
+    false,
+    false,
+    createdListings[created.active.listing_id].listing,
+    created.active,
+    created.project
+  );
+}

@@ -21,7 +21,12 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
+import {
+  useParams,
+  Redirect,
+  Link as RouterLink,
+  useHistory,
+} from 'react-router-dom';
 import {
   Box,
   Button,
@@ -41,18 +46,26 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {ProjectInformation} from '../../datamodel/ui';
-import {dumpMetadataDBContents} from '../../uiSpecification';
-import {ProjectID} from '../../datamodel/core';
-import {TokenContents} from '../../datamodel/core';
-import {useHistory} from 'react-router-dom';
+import {ProjectID, TokenContents} from '../../datamodel/core';
+import {
+  isSyncingProjectAttachments,
+  setSyncingProjectAttachments,
+  listenSyncingProjectAttachments,
+} from '../../sync/sync-toggle';
+
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
 
 export default function PROJECTATTACHMENT(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  // TODO: check sync
-  const [isSyncing, setIsSync] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(
+    isSyncingProjectAttachments(project_id)
+  );
+
+  useEffect(() => {
+    return listenSyncingProjectAttachments(project_id, setIsSyncing);
+  }, [project_id]);
 
   let project_info: ProjectInformation | null;
   const history = useHistory();
@@ -104,10 +117,9 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
           control={
             <Switch
               checked={isSyncing}
-              onChange={event => {
-                setIsSync(!isSyncing);
-                console.log(isSyncing);
-              }}
+              onChange={(event, checked) =>
+                setSyncingProjectAttachments(project_id, checked)
+              }
             />
           }
           label={<Typography variant={'button'}>Sync</Typography>}
