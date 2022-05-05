@@ -63,11 +63,11 @@ export default function RangeHeader(props: {project: any}) {
     <>
       {subtitle}
       {status !== undefined && status.length > 0 ? 'Range Index: ' : ''}
-      {status?.map(sta => (
-        <>
+      {status?.map((sta,index) => (
+        <span key={index}>
           {sta.label}:{sta.last_used}/{sta.end}
           {'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'}
-        </>
+        </span>
       ))}
     </>
   );
