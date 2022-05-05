@@ -79,6 +79,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
       setimage(newimages);
     }
   };
+  console.log(images)
   return images !== null && images !== undefined ? (
     <List>
       {images.map((image, index) =>
