@@ -163,17 +163,18 @@ export default function Record(props: RecordeProps) {
   };
   console.log('--------Meta Section');
   console.log(metaSection);
-  console.log(type);
+
+  if(uiSpec === null || type === null) return (<CircularProgress size={12} thickness={4} />)
+
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
       <Box mb={2} className={classes.LeftPaddding}>
-        <Typography variant={'h2'} component={'h1'}>
-          Update{' '}
+
+        <Typography variant={'h2'} component={'h1'}> 
           {uiSpec !== null && type !== null&& uiSpec['visible_types'][0] !== ''
-            ? uiSpec.viewsets[type]['label']
+            ? "Update " +uiSpec.viewsets[type]['label'] +" Record"
             : ''}{' '}
-          Record
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Edit data for this record. If you need to, you can also revisit

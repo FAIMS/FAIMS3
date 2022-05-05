@@ -33,14 +33,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  ListItemButton,
-  ListItemIcon,
-} from '@mui/material';
+
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
@@ -81,50 +74,49 @@ const FAIMESImageList = (props: ImgeListProps) => {
   };
   console.log(images)
   return images !== null && images !== undefined ? (
-    <List>
+    <ImageList cols={2}>
       {images.map((image, index) =>
         image['attachment_id'] === undefined ? (
-          <ListItem key={index} id={index + 'image'}>
+          <ImageListItem key={index}>
             <img
               style={{
-                height: '100%',
-                width: '300px',
+                
                 objectFit: 'none',
                 cursor: 'allowed',
               }}
               src={URL.createObjectURL(image)}
               onClick={() => setopen(URL.createObjectURL(image))}
             />
-            <ListItemSecondaryAction>
-              <IconButton
-                style={{color: '#000'}}
-                aria-label="Delete this Attachment"
-                onClick={() => handelonClick(index)}
-                size="large"
-              >
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
+            <ImageListItemBar
+              sx={{
+                background:
+                  'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, ' +
+                  'rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)',
+              }}
+              title={''}
+              position="top"
+              actionIcon={
+                <IconButton
+                  sx={{ color: 'white' }}
+                  aria-label={`star ${index}`}
+                  onClick={() => handelonClick(index)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              }
+              actionPosition="left"
+            />
+            </ImageListItem>
         ) : (
-          <ListItem key={index} id={index + 'image'}>
-            <IconButton aria-label="image" onClick={() => setopen(null)}>
+          // ?? not allow user to delete image if the image is not download yet
+          <ImageListItem key={index}>
+            <IconButton aria-label="image" onClick={()=>setopen(null)} >
               <ImageIcon />
             </IconButton>
-            <ListItemSecondaryAction>
-              <IconButton
-                style={{color: '#000'}}
-                aria-label="Delete this Attachment"
-                onClick={() => handelonClick(index)}
-                size="large"
-              >
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
+          </ImageListItem>
         )
       )}{' '}
-    </List>
+    </ImageList>
   ) : (
     <span>No photo taken.</span>
   );
