@@ -148,22 +148,25 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
       return false;
     }
     for (let i = 0; i < a.length; i++) {
-      if (!isEqualFAIMS(a[i], b[i])) {
+      const same = await isEqualFAIMS(a[i], b[i]);
+      if (!same) {
         return false;
       }
     }
     return true;
   } else if (isAttachment(a) && isAttachment(b)) {
     console.info('Checking blobs', a, b);
-    if (a.size !== b.size || a.type !== b.type) {
+    if (a.size !== b.size || a.type !== b.type || a.name !== b.name) {
       return false;
     }
-    return Promise.all([a.arrayBuffer(), b.arrayBuffer()])
+    console.info('Checking blob contents', a, b);
+    return await Promise.all([a.arrayBuffer(), b.arrayBuffer()])
       .then((res: [any, any]) => {
         const buf_a = res[0] as ArrayBuffer;
         const buf_b = res[1] as ArrayBuffer;
         const arr_a = new BigUint64Array(buf_a);
         const arr_b = new BigUint64Array(buf_b);
+        console.info("Checking array buffers", arr_a, arr_b);
         return arr_a.every((element, index) => {
           return element === arr_b[index];
         });
