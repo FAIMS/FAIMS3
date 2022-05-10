@@ -336,11 +336,11 @@ export async function getRecordsByType(
   }
 }
 
-function filterRecordMetadata(
+async function filterRecordMetadata(
   project_id: ProjectID,
   record_list: RecordMetadata[],
   filter_deleted: boolean
-): RecordMetadata[] {
+): Promise<RecordMetadata[]> {
   const new_record_list: RecordMetadata[] = [];
   for (const metadata of record_list) {
     if (DEBUG_APP) {
@@ -348,7 +348,7 @@ function filterRecordMetadata(
     }
     if (
       !(metadata.deleted && filter_deleted) &&
-      shouldDisplayRecord(project_id, metadata)
+      (await shouldDisplayRecord(project_id, metadata))
     ) {
       new_record_list.push(metadata);
       if (DEBUG_APP) {
@@ -367,7 +367,7 @@ export async function getMetadataForAllRecords(
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
   const record_list = Object.values(await listRecordMetadata(project_id));
-  return filterRecordMetadata(project_id, record_list, filter_deleted);
+  return await filterRecordMetadata(project_id, record_list, filter_deleted);
 }
 
 export async function getRecordsWithRegex(
@@ -378,5 +378,5 @@ export async function getRecordsWithRegex(
   const record_list = Object.values(
     await getAllRecordsWithRegex(project_id, regex)
   );
-  return filterRecordMetadata(project_id, record_list, filter_deleted);
+  return await filterRecordMetadata(project_id, record_list, filter_deleted);
 }
