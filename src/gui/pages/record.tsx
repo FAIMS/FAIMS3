@@ -164,7 +164,6 @@ export default function Record(props: RecordeProps) {
 
   if (uiSpec === null || type === null)
     return <CircularProgress size={12} thickness={4} />;
-
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
