@@ -13,14 +13,20 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: project.tsx
+ * Filename: projectsetting attachment.tsx
  * Description:
- *   TODO
+ *   This file is for user to setup the syncing for attachment/photoes and download the attachement files and photoes
+ * TODO:
+ *   add the sync attahcment function and download files function
  */
 
 import React, {useEffect, useState} from 'react';
-import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
-
+import {
+  useParams,
+  Redirect,
+  Link as RouterLink,
+  useHistory,
+} from 'react-router-dom';
 import {
   Box,
   Button,
@@ -29,6 +35,8 @@ import {
   Paper,
   CircularProgress,
   TextareaAutosize,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -38,21 +46,30 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {ProjectInformation} from '../../datamodel/ui';
-import {dumpMetadataDBContents} from '../../uiSpecification';
-import {ProjectID} from '../../datamodel/core';
-import {TokenContents} from '../../datamodel/core';
+import {ProjectID, TokenContents} from '../../datamodel/core';
+import {
+  isSyncingProjectAttachments,
+  setSyncingProjectAttachments,
+  listenSyncingProjectAttachments,
+} from '../../sync/sync-toggle';
+
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
 
-export default function ProjectSettings(props: ProjectProps) {
+export default function PROJECTATTACHMENT(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
+  const [isSyncing, setIsSyncing] = useState(
+    isSyncingProjectAttachments(project_id)
+  );
 
-  // TODO: remove these once we can send new project up
-  const [loading, setLoading] = useState(true);
-  const [metadbContents, setMetadbContents] = useState<object[]>([]);
+  useEffect(() => {
+    return listenSyncingProjectAttachments(project_id, setIsSyncing);
+  }, [project_id]);
 
   let project_info: ProjectInformation | null;
+  const history = useHistory();
+
   try {
     project_info = useEventedPromise(
       getProjectInfo,
@@ -76,20 +93,8 @@ export default function ProjectSettings(props: ProjectProps) {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : '[loading]',
     },
-    {title: 'Settings'},
+    {title: 'Attachment'},
   ];
-
-  useEffect(() => {
-    if (project_id === null) return;
-    const getDB = async () => {
-      setMetadbContents(await dumpMetadataDBContents(project_id));
-      setLoading(false);
-    };
-    getDB();
-  }, []);
-
-  console.debug('MetaDB contents', metadbContents);
-  console.log(project_info);
 
   return project_info ? (
     <Container maxWidth="lg">
@@ -97,63 +102,33 @@ export default function ProjectSettings(props: ProjectProps) {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info.name} Settings
+          {project_info.name} Attachment Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the project settings for
-          {project_info.name}.
+          Update the project Attachment settings for {project_info.name}.
         </Typography>
       </Box>
       <Paper square>
-        {project_info.status !== 'live' && (
-          <Button
-            color="primary"
-            size="large"
-            startIcon={<EditIcon />}
-            component={RouterLink}
-            to={ROUTES.PROJECT_DESIGN + project_id}
-          >
-            Edit Notebook Design
-          </Button>
-        )}
+        <span>
+          Attachment is auto Sync(Attachment and photoes will be auto downloaded
+          if enabled)
+        </span>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={isSyncing}
+              onChange={(event, checked) =>
+                setSyncingProjectAttachments(project_id, checked)
+              }
+            />
+          }
+          label={<Typography variant={'button'}>Sync</Typography>}
+        />
         <br />
-        <Button
-          color="primary"
-          size="large"
-          component={RouterLink}
-          startIcon={<EditIcon />}
-          to={ROUTES.PROJECT + project_id + ROUTES.AUTOINCREMENT_LIST}
-        >
-          Edit AutoIncrement Allocations
-        </Button>
-        <br />
-        <Button
-          color="primary"
-          size="large"
-          component={RouterLink}
-          startIcon={<EditIcon />}
-          to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
-        >
-          Download Attachement
-        </Button>
       </Paper>
-      <Box mb={1}>
-        <Typography variant={'subtitle1'}>
-          The metadata database contents of{' '}
-          {project_info !== null ? project_info.name : project_id}.
-        </Typography>
-        {loading ? (
-          'Loading...'
-        ) : (
-          <TextareaAutosize
-            defaultValue={JSON.stringify(metadbContents)}
-            disabled={true}
-            maxRows={4}
-            minRows={3}
-            style={{width: 200}}
-          />
-        )}
-      </Box>
+      <Button color="primary" size="large" onClick={() => history.goBack()}>
+        Go Back
+      </Button>
     </Container>
   ) : (
     <CircularProgress />

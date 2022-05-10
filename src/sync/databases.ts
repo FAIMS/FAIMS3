@@ -60,6 +60,7 @@ export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   changes: PouchDB.Core.Changes<Content>;
   is_sync: boolean;
+  is_sync_attachments: boolean;
   remote: null | LocalDBRemote<Content>;
 }
 
@@ -113,6 +114,7 @@ export const directory_db: LocalDB<ListingsObject> = {
   changes: directory_db_pouch.changes({...default_changes_opts, since: 'now'}),
   remote: null,
   is_sync: true,
+  is_sync_attachments: true,
 };
 
 /**
@@ -246,7 +248,8 @@ export function ensure_local_db<Content extends {}>(
   prefix: string,
   local_db_id: string,
   start_sync: boolean,
-  global_dbs: LocalDBList<Content>
+  global_dbs: LocalDBList<Content>,
+  start_sync_attachments = true
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
     global_dbs[local_db_id].is_sync = start_sync;
@@ -262,6 +265,7 @@ export function ensure_local_db<Content extends {}>(
         local: db,
         changes: db.changes(default_changes_opts),
         is_sync: start_sync,
+        is_sync_attachments: start_sync_attachments,
         remote: null,
       }),
     ];
@@ -340,12 +344,22 @@ export function setLocalConnection<Content extends {}>(
   const options = db_info.remote.options;
   console.debug('Setting local connection:', db_info);
 
-  if (db_info.is_sync && db_info.remote.connection === null) {
+  if (db_info.is_sync) {
+    if (db_info.remote.connection !== null) {
+      // Stop an existing connection
+      db_info.remote.connection.cancel();
+      db_info.remote.connection = null;
+      console.debug('Removed sync for', db_info);
+    }
     // Start a new connection
     const push_too = (options as {push?: unknown}).push !== undefined;
     let connection:
       | PouchDB.Replication.Replication<Content>
       | PouchDB.Replication.Sync<Content>;
+
+    const pull_filter = db_info.is_sync_attachments
+      ? {}
+      : {filter: '_view', view: 'filter_attachments/filter_attachments'};
 
     if (push_too) {
       const options_sync = options as PouchDB.Replication.SyncOptions;
@@ -362,6 +376,7 @@ export function setLocalConnection<Content extends {}>(
           retry: true,
           batch_size: POUCH_BATCH_SIZE,
           batches_limit: POUCH_BATCHES_LIMIT,
+          ...pull_filter,
           ...(options_sync.pull || {}),
         },
       });

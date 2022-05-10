@@ -66,8 +66,8 @@ export function SignIn(props: SignInProps) {
       <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
-          {listings.map(listing_info => (
-            <Grid item sm={6} xs={12}>
+          {listings.map((listing_info, index) => (
+            <Grid item sm={6} xs={12} key={index}>
               <ClusterCard
                 key={listing_info.id}
                 listing_id={listing_info.id}

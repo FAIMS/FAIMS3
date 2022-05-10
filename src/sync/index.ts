@@ -505,3 +505,8 @@ export async function getAllListings(): Promise<ListingsObject[]> {
   });
   return listings;
 }
+
+export async function checkattachement(): Promise<Object[]> {
+  const files = [{filename: 'new'}];
+  return files;
+}

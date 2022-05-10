@@ -59,7 +59,7 @@ import {getProjectMetadata} from '../../projectMetadata';
 
 import {TokenContents} from '../../datamodel/core';
 import {grey} from '@mui/material/colors';
-
+import {getFullRecordData} from '../../data_storage';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
@@ -113,6 +113,7 @@ export default function Record(props: RecordeProps) {
   const [error, setError] = useState(null as null | {});
   const classes = useStyles();
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
+  const [type, setType] = useState(null as null | string);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -143,21 +144,35 @@ export default function Record(props: RecordeProps) {
       .catch(console.error /*TODO*/);
   }, [project_id, record_id]);
 
+  useEffect(() => {
+    const getType = async () => {
+      const latest_record = await getFullRecordData(
+        project_id,
+        record_id,
+        revision_id
+      );
+      if (latest_record !== null) setType(latest_record.type);
+    };
+    getType();
+  }, [project_id, record_id, revision_id]);
+
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
   console.log('--------Meta Section');
   console.log(metaSection);
+
+  if (uiSpec === null || type === null)
+    return <CircularProgress size={12} thickness={4} />;
+
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
       <Box mb={2} className={classes.LeftPaddding}>
         <Typography variant={'h2'} component={'h1'}>
-          Update{' '}
-          {uiSpec !== null && uiSpec['visible_types'][0] !== ''
-            ? uiSpec['viewsets'][uiSpec['visible_types'][0]]['label']
+          {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
+            ? 'Update ' + uiSpec.viewsets[type]['label'] + ' Record'
             : ''}{' '}
-          Record
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Edit data for this record. If you need to, you can also revisit
@@ -190,7 +205,7 @@ export default function Record(props: RecordeProps) {
                 });
                 history.goBack();
                 return <React.Fragment />;
-              } else if (uiSpec === null) {
+              } else if (uiSpec === null || type === null) {
                 // Loading
                 return <CircularProgress size={12} thickness={4} />;
               } else {
