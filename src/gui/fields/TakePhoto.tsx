@@ -33,7 +33,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { styled } from '@mui/material/styles';
+import {styled} from '@mui/material/styles';
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
@@ -66,19 +66,19 @@ type ImgeListProps = {
 };
 
 /******** create own Image List for dynamic loading images TODO: need to test if it's working on browsers and phone *** Kate */
-const ImageGalleryList = styled('ul')(({ theme }) => ({
+const ImageGalleryList = styled('ul')(({theme}) => ({
   display: 'grid',
   padding: 0,
   margin: theme.spacing(0, 4),
   gap: 8,
   [theme.breakpoints.up('sm')]: {
-      gridTemplateColumns: 'repeat(2, 1fr)'
+    gridTemplateColumns: 'repeat(2, 1fr)',
   },
   [theme.breakpoints.up('md')]: {
-      gridTemplateColumns: 'repeat(4, 1fr)'
+    gridTemplateColumns: 'repeat(4, 1fr)',
   },
   [theme.breakpoints.up('lg')]: {
-      gridTemplateColumns: 'repeat(5, 1fr)'
+    gridTemplateColumns: 'repeat(5, 1fr)',
   },
 }));
 
@@ -90,7 +90,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
       setimage(newimages);
     }
   };
-  console.log(images)
+  console.log(images);
   return images !== null && images !== undefined ? (
     <ImageGalleryList>
       {images.map((image, index) =>
@@ -98,10 +98,8 @@ const FAIMESImageList = (props: ImgeListProps) => {
           <ImageListItem key={index}>
             <img
               style={{
-                
                 objectFit: 'none',
                 cursor: 'allowed',
-                
               }}
               src={URL.createObjectURL(image)}
               onClick={() => setopen(URL.createObjectURL(image))}
@@ -116,7 +114,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
               position="top"
               actionIcon={
                 <IconButton
-                  sx={{ color: 'white' }}
+                  sx={{color: 'white'}}
                   aria-label={`star ${index}`}
                   onClick={() => handelonClick(index)}
                 >
@@ -125,11 +123,11 @@ const FAIMESImageList = (props: ImgeListProps) => {
               }
               actionPosition="left"
             />
-            </ImageListItem>
+          </ImageListItem>
         ) : (
           // ?? not allow user to delete image if the image is not download yet
           <ImageListItem key={index}>
-            <IconButton aria-label="image" onClick={()=>setopen(null)} >
+            <IconButton aria-label="image" onClick={() => setopen(null)}>
               <ImageIcon />
             </IconButton>
           </ImageListItem>

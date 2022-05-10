@@ -65,7 +65,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   let search = location.search.includes('link=')
     ? location.search.replace('?', '')
     : '';
-  const [isactive,setIsactive] =React.useState(false);
+  const [isactive, setIsactive] = React.useState(false);
 
   const url_split = search.split('&');
 
@@ -78,7 +78,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
 
   useEffect(() => {
     if (project_id !== undefined) {
-      
       (async () => {
         const records = await getRecordsByType(project_id, props.related_type);
         setOptions(records);
@@ -89,7 +88,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
-  if (!isactive) return (<></>)
+  if (!isactive) return <></>;
   return (
     <div>
       <Field
@@ -97,7 +96,10 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         id={props.id ?? 'asynchronous-demo'}
         name={field_name}
         component={Autocomplete}
-        isOptionEqualToValue={(option: RecordReference, value: RecordReference) =>
+        isOptionEqualToValue={(
+          option: RecordReference,
+          value: RecordReference
+        ) =>
           option.project_id === value.project_id &&
           option.record_id === value.record_id
         }
