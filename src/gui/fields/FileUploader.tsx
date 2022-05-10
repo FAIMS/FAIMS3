@@ -38,7 +38,7 @@ import {IconButton} from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
-import {FAIMSAttachmentReference} from '../../datamodel/database';
+// import {FAIMSAttachmentReference} from '../../datamodel/database';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {

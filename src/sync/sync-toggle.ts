@@ -130,6 +130,7 @@ export function setSyncingProjectAttachments(
   syncing: boolean
 ) {
   if (syncing === isSyncingProjectAttachments(active_id)) {
+    console.error('did not change sync for project');
     return; //Nothing to do, already same value
   }
   const data_db = data_dbs[active_id];
@@ -140,6 +141,7 @@ export function setSyncingProjectAttachments(
   ): db is LocalDB<ProjectDataObject> & {
     remote: LocalDBRemote<ProjectDataObject>;
   } => {
+    console.error('project is local');
     return db.remote !== null;
   };
 
