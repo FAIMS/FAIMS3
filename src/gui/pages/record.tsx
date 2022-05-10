@@ -113,7 +113,7 @@ export default function Record(props: RecordeProps) {
   const [error, setError] = useState(null as null | {});
   const classes = useStyles();
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
-  const [type,setType] = useState(null as null|string)
+  const [type, setType] = useState(null as null | string);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -144,19 +144,17 @@ export default function Record(props: RecordeProps) {
       .catch(console.error /*TODO*/);
   }, [project_id, record_id]);
 
-  useEffect(()=>{
+  useEffect(() => {
     const getToken = async () => {
       const latest_record = await getFullRecordData(
         project_id,
         record_id,
         revision_id
       );
-      if(latest_record !== null) 
-        setType(latest_record.type)
+      if (latest_record !== null) setType(latest_record.type);
     };
     getToken();
-    
-  },[project_id,record_id,revision_id])
+  }, [project_id, record_id, revision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
@@ -164,15 +162,15 @@ export default function Record(props: RecordeProps) {
   console.log('--------Meta Section');
   console.log(metaSection);
 
-
-  if(uiSpec === null || type === null) return (<CircularProgress size={12} thickness={4} />)
+  if (uiSpec === null || type === null)
+    return <CircularProgress size={12} thickness={4} />;
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
       <Box mb={2} className={classes.LeftPaddding}>
-        <Typography variant={'h2'} component={'h1'}> 
-          {uiSpec !== null && type !== null&& uiSpec['visible_types'][0] !== ''
-            ? "Update " +uiSpec.viewsets[type]['label'] +" Record"
+        <Typography variant={'h2'} component={'h1'}>
+          {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
+            ? 'Update ' + uiSpec.viewsets[type]['label'] + ' Record'
             : ''}{' '}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
