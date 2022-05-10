@@ -25,8 +25,8 @@ import {Camera, CameraResultType, CameraPhoto} from '@capacitor/camera';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 
-import ImageList from '@mui/material/ImageList';
-import ImageListItem, {imageListItemClasses} from '@mui/material/ImageListItem';
+// import ImageList from '@mui/material/ImageList';
+import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import IconButton from '@mui/material/IconButton';
 import ImageIcon from '@mui/icons-material/Image';
@@ -54,10 +54,6 @@ interface Props {
   helpertext?: string;
   label?: string;
 }
-type ImgeProps = {
-  image_ref?: string;
-  setOpen?: any;
-};
 
 type ImgeListProps = {
   images: Array<any>;

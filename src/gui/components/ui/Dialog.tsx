@@ -29,7 +29,6 @@ import {IconButton} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import * as ROUTES from '../../../constants/routes';
 import {Link as RouterLink} from 'react-router-dom';
-import {Url} from 'url';
 
 type DiagProps = {
   open?: boolean;

@@ -21,12 +21,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {
-  useParams,
-  Redirect,
-  Link as RouterLink,
-  useHistory,
-} from 'react-router-dom';
+import {useParams, Redirect, useHistory} from 'react-router-dom';
 import {
   Box,
   Button,
@@ -34,11 +29,9 @@ import {
   Typography,
   Paper,
   CircularProgress,
-  TextareaAutosize,
   Switch,
   FormControlLabel,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
