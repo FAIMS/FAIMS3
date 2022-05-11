@@ -32,7 +32,7 @@ import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 export const local_pouch_options: any = {};
 if (RUNNING_UNDER_TEST) {
   // enable memory adapter for testing
-  console.error('Using memory store');
+  console.warn('Using memory store');
   PouchDB.plugin(PouchDBAdaptorMemory);
   local_pouch_options['adapter'] = 'memory';
 }
