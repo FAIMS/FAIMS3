@@ -531,6 +531,7 @@ export async function activate_project(
         username: username,
         password: password,
         is_sync: is_sync,
+        is_sync_attachments: false,
       });
       return active_id;
     } else {
@@ -747,7 +748,10 @@ export async function update_project(
       active_id,
       data_connection_info,
       data_dbs,
-      {push: {}}
+      {
+        push: {},
+        pull: {},
+      }
     );
 
     if (data_remote.remote !== null && data_remote.remote.connection !== null) {

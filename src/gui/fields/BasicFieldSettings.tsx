@@ -105,6 +105,25 @@ const DefaultuiSetting: ProjectUIModel = {
       validationSchema: [['yup.string']],
       initialValue: 'helperText',
     },
+    helpertext: {
+      'component-namespace': 'formik-material-ui',
+      'component-name': 'TextField',
+      'type-returned': 'faims-core::String',
+      access: ['admin'],
+      'component-parameters': {
+        variant: 'outlined',
+        required: false,
+        fullWidth: true,
+        helperText: '',
+        InputLabelProps: {
+          label: 'Helper Text',
+        },
+        type: 'text',
+      },
+      alert: false,
+      validationSchema: [['yup.string']],
+      initialValue: 'helperText',
+    },
   },
   views: {
     InputProps: {

@@ -113,7 +113,13 @@ export function TabEditable(props: TabProps) {
   const [isedited, setisedited] = useState(false);
   const [isset, setIsset] = useState(false);
   useEffect(() => {
-    setTablist(tabs);
+    let isactive = true;
+    if (isactive) {
+      setTablist(tabs);
+    }
+    return () => {
+      isactive = false;
+    };
   }, [tabs]);
 
   const handleEdit = (event: any) => {

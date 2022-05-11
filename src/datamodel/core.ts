@@ -98,6 +98,7 @@ export function split_full_record_id(
 
 export type RevisionID = string;
 export type AttributeValuePairID = string;
+export type FAIMSAttachmentID = string;
 
 export type FAIMSTypeName = string;
 

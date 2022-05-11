@@ -77,21 +77,39 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   });
 
   useEffect(() => {
-    setini();
+    let isactive = true;
+    if (isactive) {
+      setinit();
+    }
+    return () => {
+      isactive = false;
+    };
   }, []);
 
   useEffect(() => {
-    setUISpecA(getprojectform(projectvalue, 'info_group'));
+    let isactive = true;
+    if (isactive) {
+      setUISpecA(getprojectform(projectvalue, 'info_group'));
+    }
+    return () => {
+      isactive = false;
+    };
   }, [accessgroup]);
 
   useEffect(() => {
-    if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {
-      setUISpecG(getprojectform(projectvalue, 'info_general'));
-      console.debug('update');
+    let isactive = true;
+    if (isactive) {
+      if (projectvalue['name'] !== undefined && projectvalue['name'] !== '') {
+        setUISpecG(getprojectform(projectvalue, 'info_general'));
+        console.debug('update');
+      }
     }
+    return () => {
+      isactive = false;
+    };
   }, [projectvalue['name']]);
 
-  const setini = () => {
+  const setinit = () => {
     setUISpecA(getprojectform(projectvalue, 'info_group'));
     setUISpecG({...getprojectform(projectvalue, 'info_general')});
     setUISpecM({...getprojectform(projectvalue, 'project_meta')});

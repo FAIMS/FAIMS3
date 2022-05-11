@@ -125,6 +125,7 @@ export function LoginForm(props: LoginFormProps) {
       <Box>
         {Object.keys(auth_mechanisms).map(auth_id => (
           <LoginButton
+            key={props.listing_id}
             listing_id={props.listing_id}
             auth_info={auth_mechanisms[auth_id]}
             setToken={props.setToken}

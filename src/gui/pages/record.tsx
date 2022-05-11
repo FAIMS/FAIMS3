@@ -145,7 +145,7 @@ export default function Record(props: RecordeProps) {
   }, [project_id, record_id]);
 
   useEffect(() => {
-    const getToken = async () => {
+    const getType = async () => {
       const latest_record = await getFullRecordData(
         project_id,
         record_id,
@@ -153,7 +153,7 @@ export default function Record(props: RecordeProps) {
       );
       if (latest_record !== null) setType(latest_record.type);
     };
-    getToken();
+    getType();
   }, [project_id, record_id, revision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
@@ -204,7 +204,7 @@ export default function Record(props: RecordeProps) {
                 });
                 history.goBack();
                 return <React.Fragment />;
-              } else if (uiSpec === null) {
+              } else if (uiSpec === null || type === null) {
                 // Loading
                 return <CircularProgress size={12} thickness={4} />;
               } else {

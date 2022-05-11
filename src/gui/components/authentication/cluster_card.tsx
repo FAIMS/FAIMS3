@@ -61,15 +61,18 @@ export default function ClusterCard(props: ClusterCardProps) {
   useEffect(() => {
     const getToken = async () => {
       setToken(await getTokenContentsForCluster(props.listing_id));
-      console.log(token);
     };
     getToken();
   }, [props.listing_id]);
 
   useEffect(() => {
+    let isactive = true;
     if (token !== undefined) {
-      props.setToken(token);
+      if (isactive) props.setToken(token);
     }
+    return () => {
+      isactive = false;
+    }; // cleanup toggles value,
   }, [token]);
 
   return (
@@ -86,14 +89,12 @@ export default function ClusterCard(props: ClusterCardProps) {
         ) : (
           <>
             <p>Logged in as: {token.username}</p>
-            <p>
-              Roles are
-              <ul>
-                {token.roles.map(group => {
-                  return <li>{group}</li>;
-                })}
-              </ul>
-            </p>
+            Roles are
+            <ul>
+              {token.roles.map((group, index) => {
+                return <li key={index}>{group}</li>;
+              })}
+            </ul>
             <br />
             <Button
               color="primary"
