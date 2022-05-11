@@ -395,7 +395,7 @@ export function setLocalConnection<Content extends {}>(
     db_info.remote.connection = null;
     console.debug('Removed sync for', db_info);
   } else {
-    console.error('This is an odd state', db_info);
+    console.error('Sync is still off', db_info);
   }
 }
 
