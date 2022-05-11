@@ -249,7 +249,7 @@ export function ensure_local_db<Content extends {}>(
   local_db_id: string,
   start_sync: boolean,
   global_dbs: LocalDBList<Content>,
-  start_sync_attachments = true
+  start_sync_attachments: boolean
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
     global_dbs[local_db_id].is_sync = start_sync;
