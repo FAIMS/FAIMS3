@@ -141,7 +141,6 @@ export function setSyncingProjectAttachments(
   ): db is LocalDB<ProjectDataObject> & {
     remote: LocalDBRemote<ProjectDataObject>;
   } => {
-    
     return db.remote !== null;
   };
 
@@ -151,7 +150,7 @@ export function setSyncingProjectAttachments(
   }
 
   const created = createdProjects[active_id];
-  console.error(created)
+  console.error(created);
   events.emit(
     'project_update',
     [

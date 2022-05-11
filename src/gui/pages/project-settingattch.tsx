@@ -52,15 +52,16 @@ type ProjectProps = {
 
 export default function PROJECTATTACHMENT(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
-  const [isSyncing, setIsSyncing] = useState<null|boolean>(null);
+  const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
 
   useEffect(() => {
-    try{
-      if(project_id!==null) setIsSyncing(isSyncingProjectAttachments(project_id))
-    }catch(err: any) {
-      console.error('error to get sync')
+    try {
+      if (project_id !== null)
+        setIsSyncing(isSyncingProjectAttachments(project_id));
+    } catch (err: any) {
+      console.error('error to get sync');
     }
-    
+
     return listenSyncingProjectAttachments(project_id, setIsSyncing);
   }, [project_id]);
 
@@ -92,8 +93,8 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
     },
     {title: 'Attachment'},
   ];
-  console.log(isSyncing)
-  if(isSyncing === null ) return (<></>)
+  console.log(isSyncing);
+  if (isSyncing === null) return <></>;
   return project_info ? (
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} token={props.token} />
