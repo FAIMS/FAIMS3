@@ -272,8 +272,6 @@ export async function getAttributeValuePairs(
     if (e.doc !== undefined) {
       const doc = e.doc as AttributeValuePair;
       mapping[doc._id] = await loadAttributeValuePair(project_id, doc);
-      console.error('AVP map', mapping);
-      console.error('AVP json map', JSON.stringify(mapping));
     }
   }
   return mapping;
