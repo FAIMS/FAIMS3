@@ -617,7 +617,7 @@ export async function update_project(
    * metadata/data databases.
    */
   const active_id = active_project._id;
-  console.debug('Processing project', active_id);
+  console.debug('Processing project', active_id, active_project);
 
   const [meta_did_change, meta_local] = ensure_local_db(
     'metadata',

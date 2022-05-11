@@ -59,6 +59,7 @@ export function isSyncingProject(active_id: ProjectID): boolean {
 
 export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
   if (syncing === isSyncingProject(active_id)) {
+    console.error('Did not change sync for project', active_id);
     return; //Nothing to do, already same value
   }
   const data_db = data_dbs[active_id];
@@ -130,7 +131,7 @@ export function setSyncingProjectAttachments(
   syncing: boolean
 ) {
   if (syncing === isSyncingProjectAttachments(active_id)) {
-    console.error('did not change sync for project');
+    console.error('Did not change attachment sync for project', active_id);
     return; //Nothing to do, already same value
   }
   const data_db = data_dbs[active_id];
