@@ -160,7 +160,7 @@ export function setSyncingProjectAttachments(
         ...created,
         active: {
           ...created.active,
-          is_sync: !syncing,
+          is_sync_attachments: !syncing,
         },
       },
     ],
