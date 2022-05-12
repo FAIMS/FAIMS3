@@ -330,7 +330,8 @@ export async function update_listing(
     'projects',
     listing_id,
     true,
-    projects_dbs
+    projects_dbs,
+    true
   );
 
   // These createdListings objects are created as soon as possible
@@ -623,13 +624,15 @@ export async function update_project(
     'metadata',
     active_id,
     active_project.is_sync,
-    metadata_dbs
+    metadata_dbs,
+    true
   );
   const [data_did_change, data_local] = ensure_local_db(
     'data',
     active_id,
     active_project.is_sync,
-    data_dbs
+    data_dbs,
+    false
   );
 
   // These createdProjects objects are created as soon as possible

@@ -108,7 +108,8 @@ function ensure_locally_created_projects_db(projects_db_id: string) {
     'projects',
     projects_db_id,
     true,
-    projects_dbs
+    projects_dbs,
+    true
   );
   return local_projects_db;
 }
