@@ -15,9 +15,10 @@
  *
  * Filename: projectsetting attachment.tsx
  * Description:
- *   This file is for user to setup the syncing for attachment/photoes and download the attachement files and photoes
+ *   This file is for user to set up the syncing for attachment/photos and
+ *   download the attachment files and photos
  * TODO:
- *   add the sync attahcment function and download files function
+ *   add the sync attachment function and download files function
  */
 
 import React, {useEffect, useState} from 'react';
@@ -116,9 +117,9 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
           control={
             <Switch
               checked={isSyncing}
-              onChange={(event, checked) =>
-                setSyncingProjectAttachments(project_id, checked)
-              }
+              onChange={async (event, checked) => {
+                await setSyncingProjectAttachments(project_id, checked);
+              }}
             />
           }
           label={<Typography variant={'button'}>Sync</Typography>}

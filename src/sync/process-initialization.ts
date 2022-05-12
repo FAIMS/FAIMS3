@@ -224,7 +224,7 @@ export function reprocess_listing(listing_id: string) {
       // so it's an error if it doesn't exist.
       err => events.emit('listing_error', listing_id, err)
     );
-  // This is a workaround until we add notebook-level activation
+  // FIXME: This is a workaround until we add notebook-level activation
   window.location.reload();
 }
 
