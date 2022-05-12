@@ -111,15 +111,15 @@ jobs:
           name: apks
           path: |
             ./*.apk
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest-android"
-          prerelease: true
-          title: "Android APK Development Build"
-          files: |
-            LICENSE
-            *.apk
+      # - uses: "marvinpinto/action-automatic-releases@latest"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     automatic_release_tag: "latest-android"
+      #     prerelease: true
+      #     title: "Android APK Development Build"
+      #     files: |
+      #       LICENSE
+      #       *.apk
   node-deb-android-job-for-testing:
     # The type of runner that the job will run on
     # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
@@ -196,15 +196,15 @@ jobs:
           name: apks
           path: |
             ./*.apk
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest-android"
-          prerelease: true
-          title: "Android APK Development Build"
-          files: |
-            LICENSE
-            *.apk            
+      # - uses: "marvinpinto/action-automatic-releases@latest"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     automatic_release_tag: "latest-android"
+      #     prerelease: true
+      #     title: "Android APK Development Build"
+      #     files: |
+      #       LICENSE
+      #       *.apk            
   ios-deploy:
     name: Deploying to Testflight
     runs-on: macOS-latest
