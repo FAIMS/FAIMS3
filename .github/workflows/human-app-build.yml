@@ -109,7 +109,7 @@ jobs:
       - name: Archive apks
         uses: actions/upload-artifact@v2
         with:
-          name: apks
+          name: dev-apk
           path: |
             ./*.apk
       # - uses: "marvinpinto/action-automatic-releases@latest"
@@ -195,7 +195,7 @@ jobs:
       - name: Archive apks
         uses: actions/upload-artifact@v2
         with:
-          name: apks
+          name: testing-apk
           path: |
             ./*.apk
       # - uses: "marvinpinto/action-automatic-releases@latest"
