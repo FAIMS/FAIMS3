@@ -11,13 +11,15 @@ interface PrivateRouteProps extends RouteProps {
   is_sign?: boolean;
 }
 
+const DISABLE_SIGNIN_REDIRECT = true;
+
 export const PrivateRoute = (props: PrivateRouteProps) => {
   const {component: Component, is_sign, token, extraProps, ...rest} = props;
   return (
     <Route
       {...rest}
       render={routeProps =>
-        is_sign === true ? (
+        is_sign === true || DISABLE_SIGNIN_REDIRECT ? (
           <Component {...extraProps} {...routeProps} />
         ) : token !== undefined ? (
           <Component {...extraProps} {...routeProps} />
