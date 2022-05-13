@@ -629,7 +629,8 @@ export async function update_project(
     'data',
     active_id,
     active_project.is_sync,
-    data_dbs
+    data_dbs,
+    active_project.is_sync_attachments,
   );
 
   // These createdProjects objects are created as soon as possible

@@ -102,17 +102,19 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info.name} Attachment Settings
+          {project_info.name} Attachment Setting
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the project Attachment settings for {project_info.name}.
+          Update the Sync Attachment setting for {project_info.name}
+        </Typography>
+        <Typography variant={'subtitle1'} gutterBottom>
+          <br/>
         </Typography>
       </Box>
       <Paper square>
-        <span>
-          Attachment is auto Sync(Attachment and photoes will be auto downloaded
-          if enabled)
-        </span>
+        
+        <Typography variant={'body1'} style={{marginLeft:"1em"}}>
+        {'      '} Auto Sync Attachment {'  '}
         <FormControlLabel
           control={
             <Switch
@@ -125,7 +127,9 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
           label={<Typography variant={'button'}>Sync</Typography>}
         />
         <br />
+        </Typography>
       </Paper>
+      <br/>
       <Button color="primary" size="large" onClick={() => history.goBack()}>
         Go Back
       </Button>

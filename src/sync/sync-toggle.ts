@@ -137,6 +137,8 @@ export function listenSyncingProjectAttachments(
 }
 
 export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
+  console.error(data_dbs)
+  console.error(active_db)
   return data_dbs[active_id]!.is_sync_attachments;
 }
 
@@ -166,7 +168,7 @@ export async function setSyncingProjectAttachments(
 
   try {
     const active_doc = await active_db.get(active_id);
-    active_doc.is_sync = syncing;
+    active_doc.is_sync_attachments = syncing;
     await active_db.put(active_doc);
   } catch (err) {
     console.error('Failed to update active_db with attachment sync state', err);
