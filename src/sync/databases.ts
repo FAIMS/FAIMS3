@@ -114,7 +114,7 @@ export const directory_db: LocalDB<ListingsObject> = {
   changes: directory_db_pouch.changes({...default_changes_opts, since: 'now'}),
   remote: null,
   is_sync: true,
-  is_sync_attachments: true,
+  is_sync_attachments: false,
 };
 
 /**

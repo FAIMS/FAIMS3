@@ -224,7 +224,7 @@ export function reprocess_listing(listing_id: string) {
       // so it's an error if it doesn't exist.
       err => events.emit('listing_error', listing_id, err)
     );
-  // This is a workaround until we add notebook-level activation
+  // FIXME: This is a workaround until we add notebook-level activation
   window.location.reload();
 }
 
@@ -632,7 +632,7 @@ export async function update_project(
     active_id,
     active_project.is_sync,
     data_dbs,
-    false
+    active_project.is_sync_attachments
   );
 
   // These createdProjects objects are created as soon as possible

@@ -15,12 +15,15 @@
  *
  * Filename: index.ts
  * Description:
- *   TODO
+ *   GUI level functions and listeners for the syncing state of the datadbs
+ *   (currently), including attachments. Further syncing control (e.g. for
+ *   projects) at the GUI level should probably go here also.
  */
 
 import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject} from '../datamodel/database';
 import {
+  active_db,
   data_dbs,
   ExistingActiveDoc,
   LocalDB,
@@ -57,7 +60,10 @@ export function isSyncingProject(active_id: ProjectID): boolean {
   return data_dbs[active_id]!.is_sync;
 }
 
-export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
+export async function setSyncingProject(
+  active_id: ProjectID,
+  syncing: boolean
+) {
   if (syncing === isSyncingProject(active_id)) {
     console.error('Did not change sync for project', active_id);
     return; //Nothing to do, already same value
@@ -75,6 +81,14 @@ export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
 
   if (has_remote(data_db)) {
     setLocalConnection(data_db);
+  }
+
+  try {
+    const active_doc = await active_db.get(active_id);
+    active_doc.is_sync = syncing;
+    await active_db.put(active_doc);
+  } catch (err) {
+    console.error('Failed to update active_db with sync state', err);
   }
 
   const created = createdProjects[active_id];
@@ -123,10 +137,12 @@ export function listenSyncingProjectAttachments(
 }
 
 export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
+  console.error(data_dbs);
+  console.error(active_db);
   return data_dbs[active_id]!.is_sync_attachments;
 }
 
-export function setSyncingProjectAttachments(
+export async function setSyncingProjectAttachments(
   active_id: ProjectID,
   syncing: boolean
 ) {
@@ -150,8 +166,15 @@ export function setSyncingProjectAttachments(
     setLocalConnection(data_db);
   }
 
+  try {
+    const active_doc = await active_db.get(active_id);
+    active_doc.is_sync_attachments = syncing;
+    await active_db.put(active_doc);
+  } catch (err) {
+    console.error('Failed to update active_db with attachment sync state', err);
+  }
+
   const created = createdProjects[active_id];
-  console.error(created);
   events.emit(
     'project_update',
     [
@@ -160,7 +183,7 @@ export function setSyncingProjectAttachments(
         ...created,
         active: {
           ...created.active,
-          is_sync: !syncing,
+          is_sync_attachments: !syncing,
         },
       },
     ],

@@ -15,9 +15,10 @@
  *
  * Filename: projectsetting attachment.tsx
  * Description:
- *   This file is for user to setup the syncing for attachment/photoes and download the attachement files and photoes
+ *   This file is for user to set up the syncing for attachment/photos and
+ *   download the attachment files and photos
  * TODO:
- *   add the sync attahcment function and download files function
+ *   add the sync attachment function and download files function
  */
 
 import React, {useEffect, useState} from 'react';
@@ -101,30 +102,33 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info.name} Attachment Settings
+          {project_info.name} Attachment Setting
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the project Attachment settings for {project_info.name}.
+          Update the Sync Attachment setting for {project_info.name}
+        </Typography>
+        <Typography variant={'subtitle1'} gutterBottom>
+          <br />
         </Typography>
       </Box>
       <Paper square>
-        <span>
-          Attachment is auto Sync(Attachment and photoes will be auto downloaded
-          if enabled)
-        </span>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isSyncing}
-              onChange={(event, checked) =>
-                setSyncingProjectAttachments(project_id, checked)
-              }
-            />
-          }
-          label={<Typography variant={'button'}>Sync</Typography>}
-        />
-        <br />
+        <Typography variant={'body1'} style={{marginLeft: '1em'}}>
+          {'      '} Auto Sync Attachment {'  '}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isSyncing}
+                onChange={async (event, checked) => {
+                  await setSyncingProjectAttachments(project_id, checked);
+                }}
+              />
+            }
+            label={<Typography variant={'button'}>Sync</Typography>}
+          />
+          <br />
+        </Typography>
       </Paper>
+      <br />
       <Button color="primary" size="large" onClick={() => history.goBack()}>
         Go Back
       </Button>

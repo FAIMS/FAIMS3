@@ -134,7 +134,7 @@ export default function ProjectSettings(props: ProjectProps) {
           startIcon={<EditIcon />}
           to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
         >
-          Download Attachement
+          Setting for Sync Attachment
         </Button>
       </Paper>
       <Box mb={1}>
