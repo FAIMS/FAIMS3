@@ -108,28 +108,27 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
           Update the Sync Attachment setting for {project_info.name}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          <br/>
+          <br />
         </Typography>
       </Box>
       <Paper square>
-        
-        <Typography variant={'body1'} style={{marginLeft:"1em"}}>
-        {'      '} Auto Sync Attachment {'  '}
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isSyncing}
-              onChange={async (event, checked) => {
-                await setSyncingProjectAttachments(project_id, checked);
-              }}
-            />
-          }
-          label={<Typography variant={'button'}>Sync</Typography>}
-        />
-        <br />
+        <Typography variant={'body1'} style={{marginLeft: '1em'}}>
+          {'      '} Auto Sync Attachment {'  '}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isSyncing}
+                onChange={async (event, checked) => {
+                  await setSyncingProjectAttachments(project_id, checked);
+                }}
+              />
+            }
+            label={<Typography variant={'button'}>Sync</Typography>}
+          />
+          <br />
         </Typography>
       </Paper>
-      <br/>
+      <br />
       <Button color="primary" size="large" onClick={() => history.goBack()}>
         Go Back
       </Button>
