@@ -15,12 +15,20 @@
  *
  * Filename: merging.ts
  * Description:
- *   TODO
+ *   Merging logic and helpers. There is a single function `mergeHeads` which
+ *   performs the automerge on a single record. The remaining exports are for
+ *   merging by humans.
  */
 
 import {getDataDB} from '../sync';
 import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
-import {AttributeValuePairIDMap, Revision} from '../datamodel/database';
+import {
+  AttributeValuePairIDMap,
+  Revision,
+  RevisionMap,
+} from '../datamodel/database';
+import {Record} from '../datamodel/ui';
+import {getFullRecordData} from './index';
 import {
   generateFAIMSRevisionID,
   getRecord,
@@ -29,6 +37,12 @@ import {
   updateHeads,
 } from './internals';
 import {DEBUG_APP} from '../buildconfig';
+
+export interface InitialMergeDetails {
+  available_heads: RevisionID[];
+  initial_head: RevisionID;
+  initial_head_data: Record;
+}
 
 type RevisionCache = {[revision_id: string]: Revision};
 
@@ -361,4 +375,40 @@ export async function mergeHeads(
     console.debug('Finished merge', project_id, record_id);
   }
   return fully_merged;
+}
+
+// TODO: Work out preferred sort order
+function sortRevisionsForInitialMerge(revisions: RevisionMap): RevisionMap {
+  return revisions;
+}
+
+// TODO: Work out what contextual revision data is required by the UI
+async function findInitialMergeDetails(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revisions: RevisionMap
+): Promise<InitialMergeDetails | null> {
+  for (const rev_id in revisions) {
+    const full_record = await getFullRecordData(project_id, record_id, rev_id);
+    if (full_record === null) {
+      continue;
+    }
+    return {
+      available_heads: Object.keys(revisions),
+      initial_head: rev_id,
+      initial_head_data: full_record,
+    };
+  }
+  // Unable to load any revisions
+  return null;
+}
+
+export async function getInitialMergeDetails(
+  project_id: ProjectID,
+  record_id: RecordID
+): Promise<InitialMergeDetails | null> {
+  const record = await getRecord(project_id, record_id);
+  const available_revisons = await getRevisions(project_id, record.heads);
+  const sorted_revisions = sortRevisionsForInitialMerge(available_revisons);
+  return await findInitialMergeDetails(project_id, record_id, sorted_revisions);
 }
