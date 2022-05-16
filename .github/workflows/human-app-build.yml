@@ -97,6 +97,7 @@ jobs:
           export REACT_APP_SERVICES=FAIMSTEXT
           export REACT_APP_TAG=testingAndroid          
           export REACT_APP_PROD_BUILD=true
+          export NODE_OPTIONS=--max-old-space-size=8192
           export platform="github-actions-android"
           export serverprefix="dev"
           git clean -xfd
@@ -236,6 +237,7 @@ jobs:
           export REACT_APP_TAG=testingAndroid
           export REACT_APP_USE_REAL_DATA=true
           export REACT_APP_PROD_BUILD=true
+          export NODE_OPTIONS=--max-old-space-size=8192
           export platform="github-actions-ios"
           export serverprefix="dev"
           git clean -xfd
