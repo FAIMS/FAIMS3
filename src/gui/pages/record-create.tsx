@@ -150,7 +150,7 @@ function DraftEdit(props: DraftEditProps) {
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [value, setValue] = React.useState('1');
 
-  useEffect(() => {
+  useEffect((): void => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
     if (project_id !== null) {
       getProjectMetadata(project_id, 'sections').then(res =>

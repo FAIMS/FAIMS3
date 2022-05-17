@@ -77,7 +77,7 @@ export default function App() {
   const [token, setToken] = useState(null as null | undefined | TokenContents);
 
   useEffect(() => {
-    const getToken = async () => {
+    const getToken = async (): void => {
       setToken(await getTokenContentsForCluster('default'));
     };
     getToken();

@@ -33,9 +33,9 @@ function LoginButton(props: LoginButtonProps) {
       onClick={() => {
         window.addEventListener(
           'message',
-          async event => {
+          (event: any): void => {
             console.log('Received token for:', props.listing_id);
-            await setTokenForCluster(
+            return setTokenForCluster(
               event.data.token,
               event.data.pubkey,
               event.data.pubalg,
@@ -64,9 +64,9 @@ function LoginButton(props: LoginButtonProps) {
         if (oauth_window === null || oauth_window.on('message') === undefined) {
           console.error('Failed to open oauth window');
         } else {
-          oauth_window.on('message').subscribe(async event => {
+          oauth_window.on('message').subscribe((event: any): void => {
             console.log('Received token for:', props.listing_id);
-            await setTokenForCluster(
+            return setTokenForCluster(
               event.data.token,
               event.data.pubkey,
               event.data.pubalg,
@@ -112,7 +112,7 @@ export function LoginForm(props: LoginFormProps) {
   );
 
   useEffect(() => {
-    const getMech = async () => {
+    const getMech = async (): void => {
       setAuth_mechanisms(await getAuthMechianismsForListing(props.listing_id));
     };
     getMech();

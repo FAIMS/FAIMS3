@@ -226,8 +226,8 @@ export default class BasicAutoIncrementer extends React.Component<
         <Button
           variant="outlined"
           color={'primary'}
-          onClick={async () => {
-            this.add_new_range();
+          onClick={(): void => {
+            return this.add_new_range();
           }}
         >
           Add new range!

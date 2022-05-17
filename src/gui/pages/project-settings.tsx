@@ -81,7 +81,7 @@ export default function ProjectSettings(props: ProjectProps) {
 
   useEffect(() => {
     if (project_id === null) return;
-    const getDB = async () => {
+    const getDB = async (): void => {
       setMetadbContents(await dumpMetadataDBContents(project_id));
       setLoading(false);
     };

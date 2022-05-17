@@ -59,7 +59,7 @@ export default function ClusterCard(props: ClusterCardProps) {
   const history = useHistory();
 
   useEffect(() => {
-    const getToken = async () => {
+    const getToken = async (): void => {
       setToken(await getTokenContentsForCluster(props.listing_id));
     };
     getToken();

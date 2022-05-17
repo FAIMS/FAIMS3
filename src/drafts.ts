@@ -27,7 +27,7 @@ export function listenDrafts(
   filter: 'updates' | 'created' | 'all',
   callback: (draftList: DraftMetadataList) => unknown
 ): () => void {
-  const runCallback = () =>
+  const runCallback = (): void =>
     listDraftMetadata(project_id, filter)
       .then(callback)
       .catch(err => console.error('Uncaught draft list error', err));

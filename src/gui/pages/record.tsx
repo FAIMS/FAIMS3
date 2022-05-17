@@ -147,7 +147,7 @@ export default function Record(props: RecordeProps) {
   }, [project_id, record_id]);
 
   useEffect(() => {
-    const getType = async () => {
+    const getType = async (): void => {
       const latest_record = await getFullRecordData(
         project_id,
         record_id,
@@ -158,7 +158,10 @@ export default function Record(props: RecordeProps) {
     getType();
   }, [project_id, record_id, revision_id]);
 
-  const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
+  const handleChange = (
+    event: React.ChangeEvent<{}>,
+    newValue: string
+  ): void => {
     setValue(newValue);
   };
   console.log('--------Meta Section');

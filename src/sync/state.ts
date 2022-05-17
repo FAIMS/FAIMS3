@@ -229,7 +229,7 @@ export function register_basic_automerge_resolver(
   });
 }
 
-function start_listening_for_changes(proj_id: ProjectID) {
+function start_listening_for_changes(proj_id: ProjectID): void {
   createdProjects[proj_id]!.data.local.changes({
     since: 'now',
     live: true,

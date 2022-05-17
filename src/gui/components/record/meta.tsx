@@ -41,7 +41,7 @@ export default function RecordMeta(props: RecordMetaProps) {
   const [meta, setMeta] = React.useState<{[key: string]: any}>({});
 
   useEffect(() => {
-    async function fetchRecordMeta() {
+    async function fetchRecordMeta(): void {
       const record = await getRecordMetadata(
         project_id,
         record_id,

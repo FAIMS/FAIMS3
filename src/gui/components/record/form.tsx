@@ -225,7 +225,7 @@ class RecordForm extends React.Component<
     console.log('is_saving value called' + val + new Date());
   }
 
-  async formChanged(draft_saving_started_already: boolean) {
+  async formChanged(draft_saving_started_already: boolean): void {
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -833,10 +833,10 @@ class RecordForm extends React.Component<
             validationSchema={validationSchema}
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
-              this.setTimeout(() => {
+              this.setTimeout((): void => {
                 console.log('is saving submiting called');
                 setSubmitting(false);
-                this.save(values, is_final_view);
+                return this.save(values, is_final_view);
               }, 500);
             }}
           >

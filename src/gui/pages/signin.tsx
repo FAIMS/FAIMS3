@@ -46,7 +46,7 @@ export function SignIn(props: SignInProps) {
   const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Sign In'}];
 
   useEffect(() => {
-    const getlocalist = async () => {
+    const getlocalist = async (): void => {
       await ensure_locally_created_project_listing();
     };
     getlocalist();

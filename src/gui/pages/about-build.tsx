@@ -76,8 +76,8 @@ export default function AboutBuild() {
         <Button
           variant="outlined"
           color={'primary'}
-          onClick={() => {
-            wipe_all_pouch_databases().then(() => {
+          onClick={(): void => {
+            return wipe_all_pouch_databases().then(() => {
               console.log('User cleaned database');
               window.location.reload();
             });

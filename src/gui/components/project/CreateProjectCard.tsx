@@ -283,7 +283,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     setvalidationSchema(getValidationSchemaForViewset(projectui, 'project'));
   };
 
-  const setinit = async () => {
+  const setinit = async (): void => {
     if (props.project_id === null || props.project_id === undefined) {
       //if create new notebook then set an empty formUI
       setinifornewproject();
@@ -481,7 +481,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     console.log('run');
   };
 
-  const handlerprojectsubmit_pounch = async () => {
+  const handlerprojectsubmit_pounch = async (): void => {
     //save into local pounch
     try {
       if (project_id === null) {

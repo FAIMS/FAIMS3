@@ -39,7 +39,10 @@ ReactDOM.render(
 //front page.
 
 // Call the element loader after the app has been rendered the first time
-defineCustomElements(window);
+const setupConductorPWA = (): void => {
+  return defineCustomElements(window);
+};
+setupConductorPWA();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

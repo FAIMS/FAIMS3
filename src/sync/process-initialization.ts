@@ -411,7 +411,7 @@ export async function update_listing(
 
     projects_local.local
       .changes({...default_changes_opts, since: 0})
-      .on('change', async info => {
+      .on('change', async (info: any): void => {
         if (info.doc === undefined) {
           console.error('projects_local doc changes has doc undefined');
           return undefined;

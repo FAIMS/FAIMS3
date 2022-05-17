@@ -378,7 +378,7 @@ class RecordDraftState {
    * So if the project changes, this _fetchData() should be run.
    * This should also be run at construction of this class.
    */
-  async _fetchData(loadedprops: LoadableProps): Promise<void> {
+  async _fetchData(loadedprops: LoadableProps): void {
     const uninterrupted_fetch_sequence = this.fetch_sequence;
     this.data = {state: 'uninitialized'};
 
@@ -468,7 +468,7 @@ class RecordDraftState {
    *
    * This is awaitable as a normal async function
    */
-  async _saveData(): Promise<void> {
+  async _saveData(): void {
     if (this.is_saving) {
       console.warn('Last stage save took longer than ', DRAFT_SAVE_CYCLE);
       // Leave thes existing running _saveData function to finish its work
