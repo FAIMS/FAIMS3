@@ -171,6 +171,7 @@ export class TakePhoto extends React.Component<
           allowEditing: false,
           resultType: CameraResultType.Base64,
           correctOrientation: true,
+          promptLabelHeader: 'Take/Select a photo (drag to view more)',
         })
       );
       console.log(image);
