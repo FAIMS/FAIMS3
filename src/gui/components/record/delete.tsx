@@ -38,11 +38,12 @@ import {store} from '../../../store';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setRecordAsDeleted} from '../../../data_storage';
+import {deleteStagedData} from '../../../sync/draft-storage';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
   record_id: RecordID;
-  revision_id: RevisionID;
+  revision_id: RevisionID | null;
 };
 
 export default function RecordDelete(props: RecordDeleteProps) {
@@ -59,11 +60,25 @@ export default function RecordDelete(props: RecordDeleteProps) {
     setOpen(false);
   };
 
+  const handleDeletefunction = (userid: string) => {
+    if (revision_id !== null)
+      return setRecordAsDeleted(
+        project_id,
+        record_id,
+        revision_id,
+        userid
+      ).then(() => {
+        return record_id;
+      });
+    else
+      return deleteStagedData(record_id, revision_id).then(() => {
+        return record_id;
+      });
+  };
+
   const handleDelete = () => {
     getCurrentUserId(project_id)
-      .then(userid =>
-        setRecordAsDeleted(project_id, record_id, revision_id, userid)
-      )
+      .then(userid => handleDeletefunction(userid))
       .then(() => {
         dispatch({
           type: ActionType.ADD_ALERT,
