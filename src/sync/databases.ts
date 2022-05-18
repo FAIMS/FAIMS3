@@ -363,6 +363,13 @@ export function setLocalConnection<Content extends {}>(
 
     if (push_too) {
       const options_sync = options as PouchDB.Replication.SyncOptions;
+      console.debug(
+        'Pushing and pulling from',
+        db_info,
+        options_sync.push,
+        options_sync.pull,
+        pull_filter
+      );
       connection = PouchDB.sync(db_info.remote.db, db_info.local, {
         push: {
           live: true,
@@ -381,6 +388,7 @@ export function setLocalConnection<Content extends {}>(
         },
       });
     } else {
+      console.debug('Pulling only from', db_info, options);
       connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
         live: true,
         retry: true,
@@ -389,6 +397,7 @@ export function setLocalConnection<Content extends {}>(
     }
 
     db_info.remote.connection = connection;
+    console.debug('Added sync for', db_info);
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
     db_info.remote.connection.cancel();

@@ -68,6 +68,7 @@ export async function setSyncingProject(
     console.error('Did not change sync for project', active_id);
     return; //Nothing to do, already same value
   }
+  console.info('Change sync for project', active_id, syncing);
   const data_db = data_dbs[active_id];
   data_db.is_sync = syncing;
 
@@ -150,6 +151,7 @@ export async function setSyncingProjectAttachments(
     console.error('Did not change attachment sync for project', active_id);
     return; //Nothing to do, already same value
   }
+  console.info('Change attachment sync for project', active_id, syncing);
   const data_db = data_dbs[active_id];
   data_db.is_sync_attachments = syncing;
 
