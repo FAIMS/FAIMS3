@@ -171,7 +171,11 @@ export async function update_directory(
   };
   const directory_error = (err: any) => {
     if (DEBUG_APP) {
-      console.debug('Directory sync error', err);
+      if (err.status === 401) {
+        console.debug('Directory sync waiting on auth');
+      } else {
+        console.debug('Directory sync error', err);
+      }
     }
   };
   //const directory_complete = (info: any) => {
@@ -482,8 +486,12 @@ export async function update_listing(
       //.on('change', info => {
       //  console.debug('Projects sync change', listing_id, info);
       //})
-      .on('error', err => {
-        console.debug('Projects sync error', listing_id, err);
+      .on('error', (err: any) => {
+        if (err.status === 401) {
+          console.debug('Projects sync waiting on auth', listing_id);
+        } else {
+          console.debug('Projects sync error', listing_id, err);
+        }
       });
   } else {
     projects_pause('No Sync')();
@@ -740,8 +748,12 @@ export async function update_project(
         //.on('complete', info => {
         //  console.debug('Meta sync complete', active_id, info);
         //})
-        .on('error', err => {
-          console.debug('Meta sync error', active_id, err);
+        .on('error', (err: any) => {
+          if (err.status === 401) {
+            console.debug('Meta sync waiting on auth', active_id);
+          } else {
+            console.debug('Meta sync error', active_id, err);
+          }
         });
     } else {
       meta_pause('No Sync')();
@@ -772,8 +784,12 @@ export async function update_project(
         //.on('complete', info => {
         //  console.debug('Data sync complete', active_id, info);
         //})
-        .on('error', err => {
-          console.debug('Data sync error', active_id, err);
+        .on('error', (err: any) => {
+          if (err.status === 401) {
+            console.debug('Data sync waiting on auth', active_id);
+          } else {
+            console.debug('Data sync error', active_id, err);
+          }
         });
     } else {
       data_pause('No Sync')();
