@@ -94,7 +94,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
           <ImageListItem key={index}>
             <img
               style={{
-                objectFit: 'none',
+                objectFit: 'scale-down',
                 cursor: 'allowed',
               }}
               src={URL.createObjectURL(image)}
