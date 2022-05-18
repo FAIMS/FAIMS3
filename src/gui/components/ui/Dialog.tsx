@@ -64,10 +64,7 @@ export default function FaimsDialog(props: DiagProps) {
       </DialogTitle>
       <DialogContent>
         {path !== null ? (
-          <img
-            style={{height: '100%', width: '100%', objectFit: 'none'}}
-            src={path}
-          />
+          <img style={{objectFit: 'none'}} src={path} />
         ) : (
           <DialogContentText id="alert-dialog-description">
             To Download attachments and photoes, go to settings page <br />
