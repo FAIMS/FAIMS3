@@ -59,7 +59,7 @@ import {getProjectMetadata} from '../../projectMetadata';
 
 import {TokenContents} from '../../datamodel/core';
 import {grey} from '@mui/material/colors';
-import {getFullRecordData} from '../../data_storage';
+import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
@@ -114,6 +114,7 @@ export default function Record(props: RecordeProps) {
   const classes = useStyles();
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [type, setType] = useState(null as null | string);
+  const [hrid, setHrid] = useState(null as null | string);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -122,8 +123,8 @@ export default function Record(props: RecordeProps) {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
-    {title: record_id},
-    {title: revision_id},
+    {title: hrid ?? record_id},
+    // {title: revision_id},
   ];
 
   useEffect(() => {
@@ -142,6 +143,7 @@ export default function Record(props: RecordeProps) {
         setRevisions(all_revisions);
       })
       .catch(console.error /*TODO*/);
+    getHRIDforRecordID(project_id, record_id).then(hrid => setHrid(hrid));
   }, [project_id, record_id]);
 
   useEffect(() => {
@@ -162,7 +164,7 @@ export default function Record(props: RecordeProps) {
   console.log('--------Meta Section');
   console.log(metaSection);
 
-  if (uiSpec === null || type === null)
+  if (uiSpec === null || type === null || hrid === null)
     return <CircularProgress size={12} thickness={4} />;
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
@@ -170,7 +172,7 @@ export default function Record(props: RecordeProps) {
       <Box mb={2} className={classes.LeftPaddding}>
         <Typography variant={'h2'} component={'h1'}>
           {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
-            ? 'Update ' + uiSpec.viewsets[type]['label'] + ' Record'
+            ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
             : ''}{' '}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
