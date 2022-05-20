@@ -37,7 +37,27 @@ export function getComponentFromFieldConfig(
     console.warn(`Failed to load component ${namespace}::${name}`, err);
     return undefined;
   }
-  return (
+  console.log(fieldConfig['component-parameters']['InputProps']['type']);
+  let inputlabel = false;
+  if (
+    name === 'TextField' &&
+    fieldConfig['component-parameters']['InputProps']['type'] !== 'text'
+  )
+    inputlabel = true;
+  return inputlabel ? (
+    <Field
+      component={Component}
+      name={fieldName}
+      value={formProps.values[fieldName]}
+      {...fieldConfig['component-parameters']}
+      {...fieldConfig['component-parameters']['InputProps']}
+      {...fieldConfig['component-parameters']['SelectProps']}
+      {...fieldConfig['component-parameters']['InputLabelProps']}
+      {...fieldConfig['component-parameters']['FormHelperTextProps']}
+      InputLabelProps={{shrink: true}} //e.g, TextField label for Date and email and number
+      onWheel={(event: any) => event.target.blur()}
+    />
+  ) : (
     <Field
       component={Component} //e.g, TextField (default <input>)
       name={fieldName}
