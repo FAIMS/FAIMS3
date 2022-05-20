@@ -182,7 +182,7 @@ function DraftEdit(props: DraftEditProps) {
       <React.Fragment>
         <Box mb={2} className={classes.LeftPaddding}>
           <Typography variant={'h2'} component={'h1'}>
-            Record {uiSpec['viewsets'][type_name]['label'] ?? type_name}
+            {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
           </Typography>
           <Typography variant={'subtitle1'} gutterBottom>
             Add a record for the{' '}
@@ -263,7 +263,7 @@ export default function RecordCreate(props: RecordCreateProps) {
       link: ROUTES.PROJECT + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
-    {title: 'Edit Draft'},
+    {title: 'Draft'},
   ];
 
   const classes = useStyles();

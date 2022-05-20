@@ -714,7 +714,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             </TabPanel>
           </Grid>
         )}
-        {String(process.env.REACT_APP_SERVER) === 'developer' && (
+        {String(process.env.REACT_APP_SERVER) === 'developers' && (
           <Grid item sm={6} xs={12}>
             <Box
               bgcolor={grey[200]}
@@ -726,7 +726,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             </Box>
           </Grid>
         )}
-        {String(process.env.REACT_APP_SERVER) === 'developer' && (
+        {String(process.env.REACT_APP_SERVER) === 'developers' && (
           <Grid item sm={6} xs={12}>
             <Box
               bgcolor={grey[200]}

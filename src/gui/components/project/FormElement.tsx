@@ -56,7 +56,10 @@ export const getComponentFromField = (
   } catch (err) {
     return <>Error</>;
   }
-  const value = formProps.values[fieldName];
+  let value = formProps.values[fieldName];
+  if (name === 'MultiSelect' && value === undefined) {
+    value = [];
+  }
 
   return (
     <Box key={fieldName}>

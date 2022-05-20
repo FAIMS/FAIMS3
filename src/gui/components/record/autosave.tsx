@@ -46,8 +46,7 @@ export default function AutoSave(props: AutosaveProps) {
           )
         }
       >
-        <b>{props.error !== null ? props.error : ''}</b>&nbsp; Draft last
-        saved&nbsp;
+        <b>{props.error !== null ? props.error : ''}</b> Draft last saved&nbsp;
         {moment(props.last_saved).fromNow()}{' '}
         <small>{props.last_saved.toString()}</small>
       </MuiAlert>

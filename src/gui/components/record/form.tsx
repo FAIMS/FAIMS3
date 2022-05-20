@@ -221,6 +221,8 @@ class RecordForm extends React.Component<
         },
       });
     }
+    console.log('is_saving value' + this.state.is_saving);
+    console.log('is_saving value called' + val + new Date());
   }
 
   async formChanged(draft_saving_started_already: boolean) {
@@ -732,7 +734,7 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           <Box display={{xs: 'none', sm: 'block'}} style={{padding: '3px'}}>
-            <div style={{overflowX: 'hidden'}}>
+            <div style={{overflowX: 'hidden'}} className={'recordstepper'}>
               <Stepper
                 nonLinear
                 activeStep={view_index}
@@ -829,13 +831,14 @@ class RecordForm extends React.Component<
             validateOnMount={true}
             onSubmit={(values, {setSubmitting}) => {
               this.setTimeout(() => {
+                console.log('is saving submiting called');
                 setSubmitting(false);
-
                 this.save(values, is_final_view);
               }, 500);
             }}
           >
             {formProps => {
+              console.log('is saving submiting' + formProps.isSubmitting);
               this.draftState.renderHook(
                 formProps.values,
                 this.state.annotation
@@ -1011,7 +1014,7 @@ class RecordForm extends React.Component<
                               <Typography variant="button">
                                 <b>
                                   {this.props.revision_id === undefined
-                                    ? 'save and new'
+                                    ? 'save and close'
                                     : 'update'}
                                 </b>
                               </Typography>{' '}
