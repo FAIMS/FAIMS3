@@ -33,13 +33,6 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
-// import TextField from '@mui/material/TextField';
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// interface option {
-//   key: string;
-//   value: string;
-//   label: string;
-// }
 
 interface ElementProps {
   options: Array<option>;
@@ -50,17 +43,16 @@ interface Props {
   select_others?: string;
 }
 
-export class Select extends React.Component<TextFieldProps & Props> {
+export class MultiSelect extends React.Component<TextFieldProps & Props> {
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
-    /***make seect not multiple to avoid error */
     return (
       <>
         <MuiTextField
           {...fieldToTextField(textFieldProps)}
           select={true}
           SelectProps={{
-            multiple: false,
+            multiple: true,
           }}
         >
           {children}
@@ -73,23 +65,12 @@ export class Select extends React.Component<TextFieldProps & Props> {
             </MenuItem>
           ))}
         </MuiTextField>
-        {/* {this.props.form.values[this.props.field.name].includes('Others')&&this.props.select_others==='otherswith'&&
-      <TextField
-      label='Others'
-      id={this.props.field.name+'others'}
-      variant="outlined"
-      onChange={(event: any) => {
-        this.props.form.setFieldValue(this.props.field.name+'others', event.target.value);
-
-      }}
-      />
-      }*/}
       </>
     );
   }
 }
 
-export function Selectcomponentsetting(props: componenentSettingprops) {
+export function MultiSelectcomponentsetting(props: componenentSettingprops) {
   const {handlerchangewithview, ...others} = props;
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {};
@@ -164,71 +145,41 @@ export function Selectcomponentsetting(props: componenentSettingprops) {
 
 const uiSpec = {
   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  'component-name': 'Select',
-  'type-returned': 'faims-core::String', // matches a type in the Project Model
+  'component-name': 'MultiSelect',
+  'type-returned': 'faims-core::Array', // matches a type in the Project Model
   'component-parameters': {
     fullWidth: true,
-    helperText: 'Choose a field from the dropdown',
+    helperText: 'Choose items from the dropdown',
     variant: 'outlined',
     required: false,
     select: true,
     InputProps: {},
-    SelectProps: {},
-    ElementProps: {
-      options: [],
+    SelectProps: {
+      multiple: true,
     },
-    // select_others:'otherswith',
+    ElementProps: {
+      options: [
+        {
+          value: 'Default',
+          label: 'Default',
+        },
+        {
+          value: 'Default2',
+          label: 'Default2',
+        },
+      ],
+    },
     InputLabelProps: {
-      label: 'Select Field',
+      label: 'Select Multiple',
     },
   },
-  validationSchema: [['yup.string']],
-  initialValue: '',
+  validationSchema: [['yup.array']],
+  initialValue: [],
 };
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['fields']['select_others'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'Select',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: true,
-      select: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {
-        options: [
-          {
-            value: 'otherswith',
-            label:
-              'Select Option with Others(with Spectify)-with input when user select others',
-          },
-          {
-            value: 'othersno',
-            label:
-              'Select Optiob with Others- no input when user select others',
-          },
-          {
-            value: 'no',
-            label: 'Select Optiob No Others',
-          },
-        ],
-      },
-      InputLabelProps: {
-        label: 'Select option with or No Others',
-      },
-    },
-    validationSchema: [['yup.string']],
-    initialValue: 'otherswith',
-  };
-  newuiSetting['views']['FormParamater']['fields'] = [
-    'helperText',
-    // 'select_others',
-  ];
+  newuiSetting['views']['FormParamater']['fields'] = ['helperText'];
 
   newuiSetting['viewsets'] = {
     settings: {
@@ -244,4 +195,4 @@ export function getSelectBuilderIcon() {
   return <BookmarksIcon />;
 }
 
-export const SelectSetting = [uiSetting(), uiSpec];
+export const MultiSelectSetting = [uiSetting(), uiSpec];

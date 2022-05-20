@@ -127,7 +127,20 @@ const FieldModel = (props: any) => {
     uiSpec['component-parameters']['SelectProps'] = {
       multiple: props.multselect ?? false,
     };
-    if (props.multselect === true) uiSpec.initialValue = initialValue ?? [''];
+    if (uiSpec['component-parameters']['SelectProps']['multiple'] === true)
+      uiSpec['component-parameters']['ElementProps'] = {
+        options: options ?? [
+          {
+            value: 'Default',
+            label: 'Default',
+          },
+          {
+            value: 'Default2',
+            label: 'Default2',
+          },
+        ],
+      };
+    if (props.multselect === true) uiSpec.initialValue = initialValue ?? [];
   }
   if (multiline === true) uiSpec['component-parameters']['multiline'] = true;
   if (componentName === 'TakePoint') {

@@ -832,7 +832,7 @@ class RecordForm extends React.Component<
             onSubmit={(values, {setSubmitting}) => {
               this.setTimeout(() => {
                 console.log('is saving submiting called');
-
+                setSubmitting(false);
                 this.save(values, is_final_view);
               }, 500);
             }}
