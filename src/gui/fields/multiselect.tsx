@@ -73,11 +73,13 @@ export class MultiSelect extends React.Component<TextFieldProps & Props> {
 export function MultiSelectcomponentsetting(props: componenentSettingprops) {
   const {handlerchangewithview, ...others} = props;
 
-  const handlerchanges = (event: FAIMSEVENTTYPE) => {};
+  const handlerchanges = (event: FAIMSEVENTTYPE) => {
+    console.log(event);
+  };
 
   const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
     //any actions that could in this form
-    props.handlerchangewithview(event, view);
+    handlerchangewithview(event, view);
 
     if (
       view === 'ElementProps' &&
@@ -180,7 +182,9 @@ const uiSpec = {
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
   newuiSetting['views']['FormParamater']['fields'] = ['helperText'];
-
+  (newuiSetting['fields']['options']['component-parameters']['helperText'] =
+    'Add more than 2 options here, use '),
+    'to seperate option';
   newuiSetting['viewsets'] = {
     settings: {
       views: ['InputLabelProps', 'FormParamater', 'ElementProps'],
