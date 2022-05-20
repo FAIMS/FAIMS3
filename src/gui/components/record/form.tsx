@@ -734,7 +734,7 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           <Box display={{xs: 'none', sm: 'block'}} style={{padding: '3px'}}>
-            <div style={{overflowX: 'hidden'}}>
+            <div style={{overflowX: 'hidden'}} className={'recordstepper'}>
               <Stepper
                 nonLinear
                 activeStep={view_index}

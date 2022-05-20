@@ -37,10 +37,10 @@ export function getComponentFromFieldConfig(
     console.warn(`Failed to load component ${namespace}::${name}`, err);
     return undefined;
   }
-  console.log(fieldConfig['component-parameters']['InputProps']['type']);
   let inputlabel = false;
   if (
     name === 'TextField' &&
+    fieldConfig['component-parameters']['InputProps'] !== undefined &&
     fieldConfig['component-parameters']['InputProps']['type'] !== 'text'
   )
     inputlabel = true;
