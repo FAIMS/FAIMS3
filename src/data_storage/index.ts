@@ -372,8 +372,13 @@ export async function getMetadataForAllRecords(
   project_id: ProjectID,
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
-  const record_list = Object.values(await listRecordMetadata(project_id));
-  return await filterRecordMetadata(project_id, record_list, filter_deleted);
+  try {
+    const record_list = Object.values(await listRecordMetadata(project_id));
+    return await filterRecordMetadata(project_id, record_list, filter_deleted);
+  } catch (error) {
+    console.error('Failed to get record metadata for', project_id, error);
+    return [];
+  }
 }
 
 export async function getRecordsWithRegex(
@@ -381,8 +386,13 @@ export async function getRecordsWithRegex(
   regex: string,
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
-  const record_list = Object.values(
-    await getAllRecordsWithRegex(project_id, regex)
-  );
-  return await filterRecordMetadata(project_id, record_list, filter_deleted);
+  try {
+    const record_list = Object.values(
+      await getAllRecordsWithRegex(project_id, regex)
+    );
+    return await filterRecordMetadata(project_id, record_list, filter_deleted);
+  } catch (error) {
+    console.error('Failed to regex search for', project_id, regex, error);
+    return [];
+  }
 }
