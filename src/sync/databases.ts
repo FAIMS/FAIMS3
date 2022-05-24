@@ -81,7 +81,7 @@ export interface LocalDBList<Content extends {}> {
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions
   | {
-      pull?: PouchDB.Replication.ReplicateOptions;
+      pull: PouchDB.Replication.ReplicateOptions;
       push: PouchDB.Replication.ReplicateOptions;
     };
 
@@ -359,7 +359,7 @@ export function setLocalConnection<Content extends {}>(
 
     const pull_filter = db_info.is_sync_attachments
       ? {}
-      : {filter: '_view', view: 'filter_attachments/filter_attachments'};
+      : {filter: '_view', view: 'attachment_filter/attachment_filter'};
 
     if (push_too) {
       const options_sync = options as PouchDB.Replication.SyncOptions;
@@ -370,10 +370,11 @@ export function setLocalConnection<Content extends {}>(
         options_sync.pull,
         pull_filter
       );
-      connection = PouchDB.sync(db_info.remote.db, db_info.local, {
+      connection = PouchDB.sync(db_info.local, db_info.remote.db, {
         push: {
           live: true,
           retry: true,
+          checkpoint: 'source',
           batch_size: POUCH_BATCH_SIZE,
           batches_limit: POUCH_BATCHES_LIMIT,
           ...options_sync.push,
@@ -381,6 +382,7 @@ export function setLocalConnection<Content extends {}>(
         pull: {
           live: true,
           retry: true,
+          checkpoint: 'target',
           batch_size: POUCH_BATCH_SIZE,
           batches_limit: POUCH_BATCHES_LIMIT,
           ...pull_filter,
@@ -392,6 +394,7 @@ export function setLocalConnection<Content extends {}>(
       connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
         live: true,
         retry: true,
+        checkpoint: 'target',
         ...options,
       });
     }
