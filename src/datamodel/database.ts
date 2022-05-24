@@ -187,11 +187,11 @@ export type AttributeValuePairMap = {
 };
 
 export type RevisionMap = {
-  [field_name: string]: Revision;
+  [revision_id: string]: Revision;
 };
 
 export type RecordMap = {
-  [field_name: string]: EncodedRecord;
+  [record_id: string]: EncodedRecord;
 };
 
 export interface Revision {
