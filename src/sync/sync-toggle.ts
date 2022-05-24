@@ -82,6 +82,8 @@ export async function setSyncingProject(
 
   if (has_remote(data_db)) {
     setLocalConnection(data_db);
+  } else {
+    console.log('project is local only');
   }
 
   try {
@@ -164,8 +166,9 @@ export async function setSyncingProjectAttachments(
   };
 
   if (has_remote(data_db)) {
-    console.log('project is local');
     setLocalConnection(data_db);
+  } else {
+    console.log('project is local only');
   }
 
   try {
