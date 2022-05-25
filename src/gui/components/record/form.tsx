@@ -574,8 +574,9 @@ class RecordForm extends React.Component<
       })
       //Clear the current draft area (Possibly after redirecting back to project page)
       .then(result => {
-        this.draftState.clear();
-        return result;
+        return this.draftState.clear().then(() => {
+          return result;
+        });
       })
       .then(result => {
         let redirecturl = this.props.project_id;
