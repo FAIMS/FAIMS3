@@ -308,31 +308,33 @@ class RecordDraftState {
             this.data.field_types
           ),
         };
-        this.data.draft_id.then(new_draft_id => {
-          if (this.data.state === 'edited') {
-            this.data = {
-              ...this.data,
-              draft_id: Promise.resolve(new_draft_id),
-            };
-            // If anyone is listening for when a new draft is created
-            // they probably expect the draft to be saved, so save it
-            // then call that listener:
+        this.data.draft_id
+          .then(async new_draft_id => {
+            if (this.data.state === 'edited') {
+              this.data = {
+                ...this.data,
+                draft_id: Promise.resolve(new_draft_id),
+              };
+              // If anyone is listening for when a new draft is created
+              // they probably expect the draft to be saved, so save it
+              // then call that listener:
 
-            setStagedData(
-              new_draft_id,
-              this.data.fields,
-              this.data.annotations,
-              this.data.field_types
-            ).then(() => {
-              if (this.newDraftListener !== null) {
-                this.newDraftListener(new_draft_id);
-              }
-            });
-          }
-          // this.data, in an impossibly rare execution, might be set to
-          // something other than 'edited' (possibly when clear() is called
-          // before resuming). In which case we don't want to set more data.
-        });
+              return await setStagedData(
+                new_draft_id,
+                this.data.fields,
+                this.data.annotations,
+                this.data.field_types
+              ).then(() => {
+                if (this.newDraftListener !== null) {
+                  this.newDraftListener(new_draft_id);
+                }
+              });
+            }
+            // this.data, in an impossibly rare execution, might be set to
+            // something other than 'edited' (possibly when clear() is called
+            // before resuming). In which case we don't want to set more data.
+          })
+          .catch(console.error);
       } else {
         // Edit existing document by setting data
         this.data = {

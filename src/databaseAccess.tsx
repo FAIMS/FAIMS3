@@ -51,7 +51,7 @@ export async function getProjectList(): Promise<ProjectInformation[]> {
   // TODO filter by active projects
   // TODO filter data by top 30 entries, sorted by most recently updated
   // TODO decode .data
-  waitForStateOnce(() => all_projects_updated);
+  await waitForStateOnce(() => all_projects_updated);
 
   const output: ProjectInformation[] = [];
   for (const listing_id_project_id in createdProjects) {
