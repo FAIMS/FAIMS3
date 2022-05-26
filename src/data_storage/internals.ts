@@ -92,7 +92,7 @@ export async function updateHeads(
   record.revisions = Array.from(revisions);
   record.revisions.sort();
 
-  datadb.put(record);
+  await datadb.put(record);
 }
 
 export async function getRecord(

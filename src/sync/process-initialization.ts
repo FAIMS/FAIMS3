@@ -411,7 +411,7 @@ export async function update_listing(
 
     projects_local.local
       .changes({...default_changes_opts, since: 0})
-      .on('change', info => {
+      .on('change', async info => {
         if (info.doc === undefined) {
           console.error('projects_local doc changes has doc undefined');
           return undefined;
@@ -429,7 +429,7 @@ export async function update_listing(
         }
 
         if (AUTOACTIVATE_PROJECTS) {
-          autoactivate_projects(listing_id, [info.id]);
+          await autoactivate_projects(listing_id, [info.id]);
         }
         return undefined;
       })
