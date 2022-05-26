@@ -412,3 +412,43 @@ export async function getInitialMergeDetails(
   const sorted_revisions = sortRevisionsForInitialMerge(available_revisons);
   return await findInitialMergeDetails(project_id, record_id, sorted_revisions);
 }
+
+export async function findConflictingFields(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revision_id: RevisionID
+): Promise<string[]> {
+  const record = await getRecord(project_id, record_id);
+  const conflicting_fields: Set<string> = new Set();
+
+  let revs_to_get: RevisionID[];
+  if (record.heads.includes(revision_id)) {
+    revs_to_get = record.heads;
+  } else {
+    revs_to_get = [revision_id, ...record.heads];
+    console.error(
+      'Not using a head to find conflicting fields',
+      project_id,
+      record_id,
+      revision_id
+    );
+  }
+
+  const revisions = await getRevisions(project_id, revs_to_get);
+
+  const initial_revision = revisions[revision_id];
+
+  for (const revid_to_compare of record.heads) {
+    if (revid_to_compare === revision_id) {
+      continue;
+    }
+    const rev_to_compare = revisions[revid_to_compare];
+    for (const [field_name, avp_id] of Object.entries(initial_revision.avps)) {
+      if (avp_id !== rev_to_compare.avps[field_name]) {
+        conflicting_fields.add(field_name);
+      }
+    }
+  }
+
+  return Array.from(conflicting_fields);
+}
