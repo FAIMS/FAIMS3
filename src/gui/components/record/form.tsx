@@ -512,137 +512,140 @@ class RecordForm extends React.Component<
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
-    getCurrentUserId(this.props.project_id)
-      .then(userid => {
-        const now = new Date();
-        const doc = {
-          record_id: this.props.record_id,
-          revision_id: this.props.revision_id ?? null,
-          type: this.state.type_cached!,
-          data: this.filterValues(values),
-          updated_by: userid,
-          updated: now,
-          annotations: this.state.annotation ?? {},
-          field_types: getReturnedTypesForViewSet(
-            ui_specification,
-            viewsetName
-          ),
-        };
-        if (DEBUG_APP) {
-          console.log(doc);
-        }
-        return doc;
-      })
-      .then(doc => {
-        return upsertFAIMSData(this.props.project_id, doc).then(() => {
-          return (
-            doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
-          );
-        });
-      })
-      .then(result => {
-        if (DEBUG_APP) {
-          console.log(result);
-        }
-        const message =
-          this.props.revision_id === undefined
-            ? 'Record successfully created'
-            : 'Record successfully updated';
-        this.context.dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: message,
-            severity: 'success',
-          },
-        });
-        console.log('Saved record', result);
-        return result;
-      })
-      .catch(err => {
-        const message =
-          this.props.revision_id === undefined
-            ? 'Could not create record'
-            : 'Could not update record';
-        this.context.dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
-            message: message,
-            severity: 'error',
-          },
-        });
-        console.error('Failed to save data', err);
-      })
-      //Clear the current draft area (Possibly after redirecting back to project page)
-      .then(result => {
-        this.draftState.clear();
-        return result;
-      })
-      .then(result => {
-        let redirecturl = this.props.project_id;
-        let search = '';
-        let state_pa = {};
-
-        if (this.props.revision_id === undefined && is_final_view) {
-          // check if last page and draft
-          const ori_search = window.location.search;
-          const url_split = ori_search.split('&');
-          const pathname = window.location.pathname;
-          redirecturl =
-            this.props.project_id +
-            ROUTES.RECORD_CREATE +
-            this.state.type_cached;
-
-          if (url_split.length > 1 && ori_search.includes('link=')) {
-            const fieldid = url_split[0];
-
-            search = ori_search.replace(
-              url_split[0] + '&' + url_split[1] + '&',
-              ''
-            );
-            if (url_split.length > 3 && url_split[0] === url_split[2])
-              search = ori_search.replace(
-                url_split[2] + '&' + url_split[3],
-                ''
-              );
-            const url_split_re = search.split('&');
-            if (
-              url_split_re.length > 1 &&
-              url_split_re[1].replace(
-                'link=/projects/' + this.props.project_id,
-                ''
-              ) ===
-                pathname.replace(
-                  '/projects/' +
-                    pathname.replace('/projects/', '').split('/')[0],
-                  ''
-                )
-            )
-              search = search.replace(
-                url_split_re[0] + '&' + url_split_re[1],
-                ''
-              );
-            state_pa = {
-              field_id: fieldid.replace('?field_id=', ''),
-              record_id: this.props.record_id,
-              hrid: result,
-              parent_link: search,
-            };
-            if (search !== '')
-              redirecturl = url_split[1].replace('link=/projects/', '');
+    return (
+      getCurrentUserId(this.props.project_id)
+        .then(userid => {
+          const now = new Date();
+          const doc = {
+            record_id: this.props.record_id,
+            revision_id: this.props.revision_id ?? null,
+            type: this.state.type_cached!,
+            data: this.filterValues(values),
+            updated_by: userid,
+            updated: now,
+            annotations: this.state.annotation ?? {},
+            field_types: getReturnedTypesForViewSet(
+              ui_specification,
+              viewsetName
+            ),
+          };
+          if (DEBUG_APP) {
+            console.log(doc);
           }
-          // scroll to top of page, seems to be needed on mobile devices
-        }
-        if (search === '') {
-          this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button
-        } else {
-          this.props.history.push({
-            pathname: ROUTES.PROJECT + redirecturl,
-            search: search,
-            state: state_pa,
+          return doc;
+        })
+        .then(doc => {
+          return upsertFAIMSData(this.props.project_id, doc).then(() => {
+            return (
+              doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
+            );
           });
-        }
-        window.scrollTo(0, 0);
-      });
+        })
+        .then(result => {
+          if (DEBUG_APP) {
+            console.log(result);
+          }
+          const message =
+            this.props.revision_id === undefined
+              ? 'Record successfully created'
+              : 'Record successfully updated';
+          this.context.dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message: message,
+              severity: 'success',
+            },
+          });
+          console.log('Saved record', result);
+          return result;
+        })
+        .catch(err => {
+          const message =
+            this.props.revision_id === undefined
+              ? 'Could not create record'
+              : 'Could not update record';
+          this.context.dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message: message,
+              severity: 'error',
+            },
+          });
+          console.error('Failed to save data', err);
+        })
+        //Clear the current draft area (Possibly after redirecting back to project page)
+        .then(result => {
+          return this.draftState.clear().then(() => {
+            return result;
+          });
+        })
+        .then(result => {
+          let redirecturl = this.props.project_id;
+          let search = '';
+          let state_pa = {};
+
+          if (this.props.revision_id === undefined && is_final_view) {
+            // check if last page and draft
+            const ori_search = window.location.search;
+            const url_split = ori_search.split('&');
+            const pathname = window.location.pathname;
+            redirecturl =
+              this.props.project_id +
+              ROUTES.RECORD_CREATE +
+              this.state.type_cached;
+
+            if (url_split.length > 1 && ori_search.includes('link=')) {
+              const fieldid = url_split[0];
+
+              search = ori_search.replace(
+                url_split[0] + '&' + url_split[1] + '&',
+                ''
+              );
+              if (url_split.length > 3 && url_split[0] === url_split[2])
+                search = ori_search.replace(
+                  url_split[2] + '&' + url_split[3],
+                  ''
+                );
+              const url_split_re = search.split('&');
+              if (
+                url_split_re.length > 1 &&
+                url_split_re[1].replace(
+                  'link=/projects/' + this.props.project_id,
+                  ''
+                ) ===
+                  pathname.replace(
+                    '/projects/' +
+                      pathname.replace('/projects/', '').split('/')[0],
+                    ''
+                  )
+              )
+                search = search.replace(
+                  url_split_re[0] + '&' + url_split_re[1],
+                  ''
+                );
+              state_pa = {
+                field_id: fieldid.replace('?field_id=', ''),
+                record_id: this.props.record_id,
+                hrid: result,
+                parent_link: search,
+              };
+              if (search !== '')
+                redirecturl = url_split[1].replace('link=/projects/', '');
+            }
+            // scroll to top of page, seems to be needed on mobile devices
+          }
+          if (search === '') {
+            this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button
+          } else {
+            this.props.history.push({
+              pathname: ROUTES.PROJECT + redirecturl,
+              search: search,
+              state: state_pa,
+            });
+          }
+          window.scrollTo(0, 0);
+        })
+    );
   }
 
   updateView(viewName: string) {

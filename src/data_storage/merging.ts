@@ -27,13 +27,14 @@ import {
   Revision,
   RevisionMap,
 } from '../datamodel/database';
-import {Record} from '../datamodel/ui';
-import {getFullRecordData} from './index';
+import {RecordMergeInformation, UserMergeResult} from '../datamodel/ui';
 import {
   generateFAIMSRevisionID,
+  generateFAIMSAttributeValuePairID,
   getRecord,
   getRevision,
   getRevisions,
+  getAttributeValuePairs,
   updateHeads,
 } from './internals';
 import {DEBUG_APP} from '../buildconfig';
@@ -41,7 +42,7 @@ import {DEBUG_APP} from '../buildconfig';
 export interface InitialMergeDetails {
   available_heads: RevisionID[];
   initial_head: RevisionID;
-  initial_head_data: Record;
+  initial_head_data: RecordMergeInformation;
 }
 
 type RevisionCache = {[revision_id: string]: Revision};
@@ -382,22 +383,58 @@ function sortRevisionsForInitialMerge(revisions: RevisionMap): RevisionMap {
   return revisions;
 }
 
-// TODO: Work out what contextual revision data is required by the UI
+async function getMergeInformationForRevision(
+  project_id: ProjectID,
+  revision: Revision
+): Promise<RecordMergeInformation> {
+  const avp_ids = Object.values(revision.avps);
+  const avps = await getAttributeValuePairs(project_id, avp_ids);
+
+  const record_info: RecordMergeInformation = {
+    project_id: project_id,
+    record_id: revision.record_id,
+    revision_id: revision._id,
+    type: revision.type,
+    updated: new Date(revision.created_by),
+    updated_by: revision.created,
+    fields: {},
+    deleted: revision.deleted ?? false,
+  };
+
+  for (const [name, avp_id] of Object.entries(revision.avps)) {
+    record_info.fields[name] = {
+      data: avps[avp_id].data,
+      type: avps[avp_id].type,
+      annotations: avps[avp_id].annotations,
+      created: new Date(avps[avp_id].created),
+      created_by: avps[avp_id].created_by,
+      avp_id: avp_id,
+    };
+  }
+
+  return record_info;
+}
+
 async function findInitialMergeDetails(
   project_id: ProjectID,
   record_id: RecordID,
   revisions: RevisionMap
 ): Promise<InitialMergeDetails | null> {
   for (const rev_id in revisions) {
-    const full_record = await getFullRecordData(project_id, record_id, rev_id);
-    if (full_record === null) {
+    try {
+      const full_record = await getMergeInformationForRevision(
+        project_id,
+        revisions[rev_id]
+      );
+      return {
+        available_heads: Object.keys(revisions),
+        initial_head: rev_id,
+        initial_head_data: full_record,
+      };
+    } catch (err) {
+      console.log('Error while looking up initial merge information', err);
       continue;
     }
-    return {
-      available_heads: Object.keys(revisions),
-      initial_head: rev_id,
-      initial_head_data: full_record,
-    };
   }
   // Unable to load any revisions
   return null;
@@ -411,4 +448,134 @@ export async function getInitialMergeDetails(
   const available_revisons = await getRevisions(project_id, record.heads);
   const sorted_revisions = sortRevisionsForInitialMerge(available_revisons);
   return await findInitialMergeDetails(project_id, record_id, sorted_revisions);
+}
+
+export async function findConflictingFields(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revision_id: RevisionID
+): Promise<string[]> {
+  const record = await getRecord(project_id, record_id);
+  const conflicting_fields: Set<string> = new Set();
+
+  let revs_to_get: RevisionID[];
+  if (record.heads.includes(revision_id)) {
+    revs_to_get = record.heads;
+  } else {
+    revs_to_get = [revision_id, ...record.heads];
+    console.error(
+      'Not using a head to find conflicting fields',
+      project_id,
+      record_id,
+      revision_id
+    );
+  }
+
+  const revisions = await getRevisions(project_id, revs_to_get);
+
+  const initial_revision = revisions[revision_id];
+
+  for (const revid_to_compare of record.heads) {
+    if (revid_to_compare === revision_id) {
+      continue;
+    }
+    const rev_to_compare = revisions[revid_to_compare];
+    for (const [field_name, avp_id] of Object.entries(initial_revision.avps)) {
+      if (avp_id !== rev_to_compare.avps[field_name]) {
+        conflicting_fields.add(field_name);
+      }
+    }
+  }
+
+  return Array.from(conflicting_fields);
+}
+
+export async function getMergeInformationForHead(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revision_id: RevisionID
+): Promise<RecordMergeInformation | null> {
+  try {
+    const record = await getRecord(project_id, record_id);
+    if (!record.heads.includes(revision_id)) {
+      console.error(
+        'Not using a head to find conflicting fields',
+        project_id,
+        record_id,
+        revision_id
+      );
+    }
+    const revision = await getRevision(project_id, revision_id);
+    return await getMergeInformationForRevision(project_id, revision);
+  } catch (err) {
+    console.error(
+      'Failed to get merge information for',
+      project_id,
+      revision_id,
+      err
+    );
+    return null;
+  }
+}
+
+async function getAVPMapFromMergeResult(
+  merge_result: UserMergeResult,
+  new_revision_id: RevisionID
+): Promise<AttributeValuePairIDMap> {
+  const avp_map: AttributeValuePairIDMap = {};
+
+  for (const [field_name, avp_id] of Object.entries(
+    merge_result.field_choices
+  )) {
+    if (avp_id === null) {
+      const datadb = await getDataDB(merge_result.project_id);
+      const new_avp_id = generateFAIMSAttributeValuePairID();
+      const new_avp = {
+        _id: new_avp_id,
+        avp_format_version: 1,
+        type: merge_result.field_types[field_name] ?? '??:??',
+        data: null,
+        revision_id: new_revision_id,
+        record_id: merge_result.record_id,
+        annotations: null,
+        created: merge_result.updated.toISOString(),
+        created_by: merge_result.updated_by,
+      };
+      await datadb.put(new_avp);
+      avp_map[field_name] = new_avp_id;
+    } else {
+      avp_map[field_name] = avp_id;
+    }
+  }
+
+  return avp_map;
+}
+
+export async function saveUserMergeResult(merge_result: UserMergeResult) {
+  const project_id = merge_result.project_id;
+  const record_id = merge_result.record_id;
+  const parents = merge_result.parents;
+  const updated = merge_result.updated;
+  const updated_by = merge_result.updated_by;
+  const type = merge_result.type;
+
+  const revision_id = generateFAIMSRevisionID();
+
+  const datadb = await getDataDB(project_id);
+  const avp_map = await getAVPMapFromMergeResult(merge_result, revision_id);
+
+  const new_revision: Revision = {
+    _id: revision_id,
+    revision_format_version: 1,
+    avps: avp_map,
+    record_id: record_id,
+    parents: parents,
+    created: updated.toISOString(),
+    created_by: updated_by,
+    deleted: false,
+    type: type,
+  };
+  await datadb.put(new_revision);
+
+  await updateHeads(project_id, record_id, parents, revision_id);
 }

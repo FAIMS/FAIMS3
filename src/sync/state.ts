@@ -234,12 +234,12 @@ function start_listening_for_changes(proj_id: ProjectID) {
     since: 'now',
     live: true,
     include_docs: true,
-  }).on('change', doc => {
+  }).on('change', async doc => {
     if (doc !== undefined) {
       const pdoc = doc.doc;
 
       if (pdoc !== undefined && isRecord(pdoc)) {
-        mergeHeads(proj_id, doc.id);
+        await mergeHeads(proj_id, doc.id);
       }
     }
   });
