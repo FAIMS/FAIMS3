@@ -222,7 +222,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   };
 
   return (
-    <>
+    <Grid style={{minWidth:'800px',overflowX: 'auto'}} >
       <ConflictToolBar
         headerlist={conflicts['available_heads']}
         revisionlist={revisionlist}
@@ -266,6 +266,6 @@ export default function ConflictForm(props: ConflictFormProps) {
             </TabPanel>
           ))}
       </TabContext>
-    </>
+    </Grid>
   );
 }

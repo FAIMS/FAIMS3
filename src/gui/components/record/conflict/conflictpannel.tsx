@@ -166,8 +166,8 @@ export default function ConflictPanel(props: ConflictPanelProp) {
           <ConflictSaveButton onButtonClick={onButtonSave} />
         </Grid>
       )}
-      <Grid container style={{height: '500px', overflowY: 'auto'}} columns={14}>
-        <Grid item sm={4} style={cardgridstyle}>
+      <Grid container style={{height: '500px', overflowY: 'auto',minWidth:'800px',overflowX: 'auto'}} columns={14}>
+        <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
             isloading={conflictA === null || conflictB === null}
             isspin={
@@ -187,7 +187,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             ui_specification={ui_specification}
           />
         </Grid>
-        <Grid item sm={1} xs={12}>
+        <Grid item sm={1} xs={1} md={1} >
           {conflictB !== null &&
             conflictB !== null &&
             ui_specification['views'][view]['fields'].map(fieldName => (
@@ -199,7 +199,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
               />
             ))}
         </Grid>
-        <Grid item sm={4} xs={12} style={cardgridstyle}>
+        <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
             isloading={chosenvalues === null || conflictB === null}
             isspin={false}
@@ -211,7 +211,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             ui_specification={ui_specification}
           />
         </Grid>
-        <Grid item sm={1} xs={12}>
+        <Grid item sm={1} xs={1} md={1}>
           {conflictB !== null &&
             conflictB !== null &&
             ui_specification['views'][view]['fields'].map(fieldName => (
@@ -223,7 +223,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
               />
             ))}
         </Grid>
-        <Grid item sm={4} xs={12} style={cardgridstyle}>
+        <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
             isloading={conflictA === null || conflictB === null}
             isspin={revisionlist[1] === ''}

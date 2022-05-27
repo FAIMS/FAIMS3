@@ -291,7 +291,7 @@ export default function Record(props: RecordeProps) {
               />
             </Box>
           </TabPanel>
-          <TabPanel value="4">
+          <TabPanel value="4" style={{overflowX: 'auto'}}>
             <Box mt={2}>
               <ConflictForm
                 project_id={project_id}
