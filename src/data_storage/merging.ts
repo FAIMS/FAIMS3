@@ -27,13 +27,13 @@ import {
   Revision,
   RevisionMap,
 } from '../datamodel/database';
-import {Record} from '../datamodel/ui';
-import {getFullRecordData} from './index';
+import {RecordMergeInformation} from '../datamodel/ui';
 import {
   generateFAIMSRevisionID,
   getRecord,
   getRevision,
   getRevisions,
+  getAttributeValuePairs,
   updateHeads,
 } from './internals';
 import {DEBUG_APP} from '../buildconfig';
@@ -41,7 +41,7 @@ import {DEBUG_APP} from '../buildconfig';
 export interface InitialMergeDetails {
   available_heads: RevisionID[];
   initial_head: RevisionID;
-  initial_head_data: Record;
+  initial_head_data: RecordMergeInformation;
 }
 
 type RevisionCache = {[revision_id: string]: Revision};
@@ -382,22 +382,58 @@ function sortRevisionsForInitialMerge(revisions: RevisionMap): RevisionMap {
   return revisions;
 }
 
-// TODO: Work out what contextual revision data is required by the UI
+async function getMergeInformationForRevision(
+  project_id: ProjectID,
+  revision: Revision
+): Promise<RecordMergeInformation> {
+  const avp_ids = Object.values(revision.avps);
+  const avps = await getAttributeValuePairs(project_id, avp_ids);
+
+  const record_info: RecordMergeInformation = {
+    project_id: project_id,
+    record_id: revision.record_id,
+    revision_id: revision._id,
+    type: revision.type,
+    updated: new Date(revision.created_by),
+    updated_by: revision.created,
+    fields: {},
+    deleted: revision.deleted ?? false,
+  };
+
+  for (const [name, avp_id] of Object.entries(revision.avps)) {
+    record_info.fields[name] = {
+      data: avps[avp_id].data,
+      type: avps[avp_id].type,
+      annotations: avps[avp_id].annotations,
+      created: new Date(avps[avp_id].created),
+      created_by: avps[avp_id].created_by,
+      avp_id: avp_id,
+    };
+  }
+
+  return record_info;
+}
+
 async function findInitialMergeDetails(
   project_id: ProjectID,
   record_id: RecordID,
   revisions: RevisionMap
 ): Promise<InitialMergeDetails | null> {
   for (const rev_id in revisions) {
-    const full_record = await getFullRecordData(project_id, record_id, rev_id);
-    if (full_record === null) {
+    try {
+      const full_record = await getMergeInformationForRevision(
+        project_id,
+        revisions[rev_id]
+      );
+      return {
+        available_heads: Object.keys(revisions),
+        initial_head: rev_id,
+        initial_head_data: full_record,
+      };
+    } catch (err) {
+      console.log('Error while looking up initial merge information', err);
       continue;
     }
-    return {
-      available_heads: Object.keys(revisions),
-      initial_head: rev_id,
-      initial_head_data: full_record,
-    };
   }
   // Unable to load any revisions
   return null;
@@ -451,4 +487,32 @@ export async function findConflictingFields(
   }
 
   return Array.from(conflicting_fields);
+}
+
+export async function getMergeInformationForHead(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revision_id: RevisionID
+): Promise<RecordMergeInformation | null> {
+  try {
+    const record = await getRecord(project_id, record_id);
+    if (!record.heads.includes(revision_id)) {
+      console.error(
+        'Not using a head to find conflicting fields',
+        project_id,
+        record_id,
+        revision_id
+      );
+    }
+    const revision = await getRevision(project_id, revision_id);
+    return await getMergeInformationForRevision(project_id, revision);
+  } catch (err) {
+    console.error(
+      'Failed to get merge information for',
+      project_id,
+      revision_id,
+      err
+    );
+    return null;
+  }
 }
