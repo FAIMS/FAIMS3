@@ -102,10 +102,10 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info.name} Attachment Setting
+          {project_info.name} ATTACHMENTS SETTINGS
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the Sync Attachment setting for {project_info.name}
+          Update the attachments synchronisation setting for {project_info.name}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           <br />
@@ -113,7 +113,7 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
       </Box>
       <Paper square>
         <Typography variant={'body1'} style={{marginLeft: '1em'}}>
-          {'      '} Auto Sync Attachment {'  '}
+          {'      '}
           <FormControlLabel
             control={
               <Switch
