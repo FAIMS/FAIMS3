@@ -27,7 +27,7 @@ import {
   Revision,
   RevisionMap,
 } from '../datamodel/database';
-import {RecordMergeInformation} from '../datamodel/ui';
+import {RecordMergeInformation, UserMergeResult} from '../datamodel/ui';
 import {
   generateFAIMSRevisionID,
   getRecord,
@@ -515,4 +515,53 @@ export async function getMergeInformationForHead(
     );
     return null;
   }
+}
+
+async function getAVPMapFromMergeResult(
+  merge_result: UserMergeResult,
+  new_revision_id: RevisionID
+): Promise<AttributeValuePairIDMap> {
+  const field_choices = merge_result.field_choices;
+
+  const avp_map: AttributeValuePairIDMap = {};
+
+  // TODO: Handle null case more correctly
+  for (const [field_name, avp_id] of Object.entries(field_choices)) {
+    if (avp_id === null) {
+      console.error('Null merge case not implemented yet', new_revision_id);
+    } else {
+      avp_map[field_name] = avp_id;
+    }
+  }
+
+  return avp_map;
+}
+
+export async function saveUserMergeResult(merge_result: UserMergeResult) {
+  const project_id = merge_result.project_id;
+  const record_id = merge_result.record_id;
+  const parents = merge_result.parents;
+  const updated = merge_result.updated;
+  const updated_by = merge_result.updated_by;
+  const type = merge_result.type;
+
+  const revision_id = generateFAIMSRevisionID();
+
+  const datadb = await getDataDB(project_id);
+  const avp_map = await getAVPMapFromMergeResult(merge_result, revision_id);
+
+  const new_revision: Revision = {
+    _id: revision_id,
+    revision_format_version: 1,
+    avps: avp_map,
+    record_id: record_id,
+    parents: parents,
+    created: updated.toISOString(),
+    created_by: updated_by,
+    deleted: false,
+    type: type,
+  };
+  await datadb.put(new_revision);
+
+  await updateHeads(project_id, record_id, parents, revision_id);
 }

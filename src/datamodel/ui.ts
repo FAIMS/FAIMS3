@@ -111,6 +111,16 @@ export interface RecordMergeInformation {
   deleted: boolean;
 }
 
+export interface UserMergeResult {
+  project_id: ProjectID;
+  record_id: RecordID;
+  parents: RevisionID[];
+  updated: Date;
+  updated_by: string;
+  field_choices: {[field_name: string]: AttributeValuePairID | null};
+  type: FAIMSTypeName;
+}
+
 export type RecordList = {
   [key: string]: Record;
 };
