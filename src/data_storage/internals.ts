@@ -60,7 +60,7 @@ export function generateFAIMSRevisionID(): RevisionID {
   return 'frev-' + uuidv4();
 }
 
-function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
+export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
   return 'avp-' + uuidv4();
 }
 
