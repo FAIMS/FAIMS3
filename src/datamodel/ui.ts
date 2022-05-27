@@ -117,8 +117,9 @@ export interface UserMergeResult {
   parents: RevisionID[];
   updated: Date;
   updated_by: string;
-  field_choices: {[field_name: string]: AttributeValuePairID | null};
   type: FAIMSTypeName;
+  field_choices: {[field_name: string]: AttributeValuePairID | null};
+  field_types: {[field_name: string]: FAIMSTypeName};
 }
 
 export type RecordList = {
