@@ -105,6 +105,11 @@
     "serve": "^13.0.2",
     "uuid": "8.3.2",
     "web-vitals": "2.1.4",
+    "workbox-core": "6.5.3",
+    "workbox-expiration": "6.5.3",
+    "workbox-precaching": "6.5.3",
+    "workbox-routing": "6.5.3",
+    "workbox-strategies": "6.5.3",
     "yup": "0.32.11"
   },
   "devDependencies": {
