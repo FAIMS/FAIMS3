@@ -1,8 +1,9 @@
 import {Route, Redirect, RouteProps} from 'react-router-dom';
 
+import {DISABLE_SIGNIN_REDIRECT} from '../buildconfig';
 import * as ROUTES from './routes';
-
 import {TokenContents} from '../datamodel/core';
+
 interface PrivateRouteProps extends RouteProps {
   // tslint:disable-next-line:no-any
   component: any;
@@ -10,8 +11,6 @@ interface PrivateRouteProps extends RouteProps {
   extraProps?: any;
   is_sign?: boolean;
 }
-
-const DISABLE_SIGNIN_REDIRECT = true;
 
 export const PrivateRoute = (props: PrivateRouteProps) => {
   const {component: Component, is_sign, token, extraProps, ...rest} = props;
