@@ -53,7 +53,7 @@ import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 import {createdProjects} from './sync/state';
 import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
-import {getTokenContentsForCluster} from './users';
+import {getTokenContentsForRouting} from './users';
 
 import {useEffect, useState} from 'react';
 
@@ -76,9 +76,11 @@ export default function App() {
 
   const [token, setToken] = useState(null as null | undefined | TokenContents);
 
+  // TODO: Rather than returning the contents of a token, we should work out
+  // what details are actually needed.
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenContentsForCluster('default'));
+      setToken(await getTokenContentsForRouting());
     };
     getToken();
   }, []);

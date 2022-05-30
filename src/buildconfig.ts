@@ -246,6 +246,36 @@ function cluster_admin_group_name(): string {
   return name;
 }
 
+function disable_signin_redirect(): boolean {
+  const disable_signin = process.env.REACT_APP_DISABLE_SIGNIN_REDIRECT;
+  if (disable_signin === '' || disable_signin === undefined) {
+    return false;
+  }
+  if (FALSEY_STRINGS.includes(disable_signin.toLowerCase())) {
+    return false;
+  } else if (TRUTHY_STRINGS.includes(disable_signin.toLowerCase())) {
+    return true;
+  } else {
+    console.error(
+      'REACT_APP_DISABLE_SIGNIN_REDIRECT badly defined, assuming false'
+    );
+    return false;
+  }
+}
+
+function get_login_token(): string | undefined {
+  const login_token = process.env.REACT_APP_LOGIN_TOKEN;
+  if (login_token === '' || login_token === undefined) {
+    return undefined;
+  }
+  if (PROD_BUILD) {
+    console.error(
+      'Production builds should not set login token, except under test'
+    );
+  }
+  return login_token;
+}
+
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
@@ -261,3 +291,5 @@ export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
 export const SHOW_MINIFAUXTON = show_minifauxton();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
+export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
+export const BUILT_LOGIN_TOKEN = get_login_token();
