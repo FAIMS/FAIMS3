@@ -34,7 +34,7 @@
     "postintegration": "npm run lint",
     "eject": "react-scripts eject",
     "preserve": "npm run build",
-    "serve": "npx serve build",
+    "serve": "npx serve --single --no-clipboard build",
     "prewebapp-build": "npm run build",
     "webapp-build": "cap copy",
     "app-update": "cap update",
