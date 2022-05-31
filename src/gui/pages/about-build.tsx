@@ -22,6 +22,7 @@ import React from 'react';
 import {Box, Container} from '@mui/material';
 import Button from '@mui/material/Button';
 import * as ROUTES from '../../constants/routes';
+import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -77,6 +78,7 @@ export default function AboutBuild() {
           variant="outlined"
           color={'primary'}
           onClick={() => {
+            unregisterServiceWorker();
             wipe_all_pouch_databases().then(() => {
               console.log('User cleaned database');
               window.location.reload();
@@ -92,6 +94,7 @@ export default function AboutBuild() {
         color={'primary'}
         onClick={() => {
           console.log('User refreshed page');
+          unregisterServiceWorker();
           window.location.reload();
         }}
         style={{marginRight: '10px'}}
