@@ -81,6 +81,13 @@ const iconstyle = {
   color: '#fff',
   borderRadius: '2px',
 };
+
+const isclickiconstyle = {
+  backgroundColor: '#fff',
+  color: '#1B3E93',
+  borderRadius: '2px',
+};
+
 export function FieldButtonGroup(props: any) {
   const {type, id, isclick, setFieldChanged} = props;
 
@@ -130,15 +137,19 @@ export function FieldButtonGroup(props: any) {
       <ButtonGroup>
         <FieldButton
           onButtonClick={onButtonDeleteLeft}
-          startIcon={<DeleteOutlineIcon style={iconstyle} />}
+          startIcon={
+            <DeleteOutlineIcon
+              style={isclick[id] ? isclickiconstyle : iconstyle}
+            />
+          }
           id={id}
-          variant={isclick[id] ? 'outlined' : 'contained'}
         />
         <FieldButton
           onButtonClick={onButtonLeft}
-          startIcon={<DoneIcon style={iconstyle} />}
+          startIcon={
+            <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
+          }
           id={id}
-          variant={isclick[id] ? 'outlined' : 'contained'}
         />
       </ButtonGroup>
     </Box>
@@ -157,17 +168,36 @@ export function FieldButtonGroup(props: any) {
         {/* orientation="vertical" */}
         <FieldButton
           onButtonClick={onButtonRight}
-          startIcon={<DoneIcon style={iconstyle} />}
+          startIcon={
+            <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
+          }
           id={id}
-          variant={isclick[id] ? 'outlined' : 'contained'}
         />
         <FieldButton
           onButtonClick={onButtonDeleteRight}
-          startIcon={<DeleteOutlineIcon style={iconstyle} />}
+          startIcon={
+            <DeleteOutlineIcon
+              style={isclick[id] ? isclickiconstyle : iconstyle}
+            />
+          }
           id={id}
-          variant={isclick[id] ? 'outlined' : 'contained'}
         />
       </ButtonGroup>
     </Box>
+  );
+}
+
+export function FieldEmptyButton() {
+  return (
+    <Box
+      bgcolor={grey[200]}
+      display="flex"
+      justifyContent="center"
+      alignItems="flex-start"
+      minHeight="340px"
+      maxHeight="340px"
+      pt={10}
+      pb={0}
+    ></Box>
   );
 }

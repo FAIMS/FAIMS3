@@ -23,21 +23,60 @@ import React from 'react';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {Tab} from '@mui/material';
 import TabList from '@mui/lab/TabList';
+import Badge from '@mui/material/Badge';
 
 type recordTabProps = {
   ui_specification: ProjectUIModel;
   handleChange: any;
   type: string;
+  conflictfields: Array<string>;
 };
+// /{
+//   <Badge badgeContent={2} color="error">
+//     {'Conflicts  '}
+//     {'\xa0\xa0'}
+//   </Badge>
+// }
 
+function getConflictnumber(
+  ui_specification: ProjectUIModel,
+  view: string,
+  conflictfields: Array<string>
+) {
+  let num = 0;
+  ui_specification['views'][view]['fields'].map(field =>
+    conflictfields.includes(field) ? (num = num + 1) : num
+  );
+
+  return num;
+}
 export default function RecordTabBar(props: recordTabProps) {
-  const {ui_specification, handleChange, type} = props;
+  const {ui_specification, handleChange, type, conflictfields} = props;
+  const num: {[key: string]: number} = {};
+  ui_specification['viewsets'][type]['views'].map(
+    view =>
+      (num[view] = getConflictnumber(ui_specification, view, conflictfields))
+  );
+  //num[tab]===0?ui_specification['views'][tab]['label']:
+  // <Badge badgeContent={num[tab]} color="error">
+  // {ui_specification['views'][tab]['label']}
+  // {'\xa0\xa0'}
+  // </Badge>
   return (
     <TabList onChange={handleChange} aria-label="Record Tab">
       {ui_specification['viewsets'][type]['views'].map((tab, index) => (
         <Tab
           key={index + 'conflict_tab'}
-          label={ui_specification['views'][tab]['label']}
+          label={
+            num[tab] === 0 ? (
+              ui_specification['views'][tab]['label']
+            ) : (
+              <Badge badgeContent={num[tab]} color="error">
+                {ui_specification['views'][tab]['label']}
+                {'\xa0\xa0\xa0\xa0'}
+              </Badge>
+            )
+          }
           value={index + ''}
         />
       ))}

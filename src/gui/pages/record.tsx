@@ -24,6 +24,7 @@ import {useHistory, useParams, Redirect} from 'react-router-dom';
 import {
   AppBar,
   Box,
+  Grid,
   Container,
   Typography,
   Paper,
@@ -64,7 +65,9 @@ import {
 } from '../../data_storage/merging';
 import Alert from '@mui/material/Alert';
 import {ConflictHelpDialog} from '../components/record/conflict/conflictDialog';
+import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -125,6 +128,7 @@ export default function Record(props: RecordeProps) {
   const [conflicts, setConflicts] = useState(
     null as InitialMergeDetails | null
   );
+  const [selectrevision, setselectedRevision] = useState(null as null | string);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -155,7 +159,10 @@ export default function Record(props: RecordeProps) {
         })
         .catch(console.error /*TODO*/);
       getHRIDforRecordID(project_id, record_id).then(hrid => setHrid(hrid));
-      setConflicts(await getInitialMergeDetails(project_id, record_id));
+      getInitialMergeDetails(project_id, record_id).then(result => {
+        setConflicts(result);
+        if (result !== null) setselectedRevision(result['initial_head']);
+      });
     };
 
     getIni();
@@ -176,8 +183,11 @@ export default function Record(props: RecordeProps) {
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
-  console.log('--------Meta Section');
-  console.log(metaSection);
+
+  const setRevision = (revision: string, index: number) => {
+    setselectedRevision(revision);
+    //update revision id for record form
+  };
 
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
     return <CircularProgress size={12} thickness={4} />;
@@ -200,6 +210,7 @@ export default function Record(props: RecordeProps) {
             <Alert
               severity="warning"
               action={<ConflictHelpDialog type={'info'} />}
+              icon={<InfoOutlinedIcon />}
             >
               This Record has {conflicts['available_heads'].length} conflicting
               instances. Resolve these conflicts before continue
@@ -223,7 +234,10 @@ export default function Record(props: RecordeProps) {
               conflicts['available_heads'].length > 1 ? (
                 <Tab
                   label={
-                    <Badge badgeContent={2} color="error">
+                    <Badge
+                      badgeContent={conflicts['available_heads'].length}
+                      color="error"
+                    >
                       {'Conflicts  '}
                       {'\xa0\xa0'}
                     </Badge>
@@ -236,7 +250,7 @@ export default function Record(props: RecordeProps) {
               )}
             </TabList>
           </AppBar>
-          <TabPanel value="1">
+          <TabPanel value="1" style={{paddingLeft: 0, paddingRight: 0}}>
             {(() => {
               if (error !== null) {
                 dispatch({
@@ -253,14 +267,64 @@ export default function Record(props: RecordeProps) {
                 return <CircularProgress size={12} thickness={4} />;
               } else {
                 return (
-                  <RecordForm
-                    project_id={project_id}
-                    record_id={record_id}
-                    revision_id={revision_id}
-                    ui_specification={uiSpec}
-                    draft_id={draft_id}
-                    metaSection={metaSection}
-                  />
+                  <Box pl={0}>
+                    {conflicts !== null &&
+                      conflicts['available_heads'] !== undefined &&
+                      conflicts['available_heads'].length > 1 && (
+                        <Box bgcolor={grey[200]} py={10} pl={0}>
+                          <Grid
+                            container
+                            justifyContent="flex-start"
+                            alignItems="center"
+                          >
+                            <Grid
+                              item
+                              md={5}
+                              xs={12}
+                              container
+                              justifyContent="center"
+                              alignItems="center"
+                            >
+                              <EditDroplist
+                                label={'eidt'}
+                                headerlist={conflicts['available_heads']}
+                                revision={selectrevision ?? ''}
+                                index={0}
+                                setRevision={setRevision}
+                                disablerevision={''}
+                              />
+                            </Grid>
+                            <Grid
+                              item
+                              md={7}
+                              xs={12}
+                              container
+                              justifyContent="center"
+                              alignItems="center"
+                            >
+                              <Alert
+                                severity="warning"
+                                icon={<InfoOutlinedIcon />}
+                              >
+                                Edits have been made to this record by different
+                                users that cannot be automatically mergeed.
+                                Resolve the conflicting fields before editing to
+                                prevent creating futhrer versions of this
+                                record. RESOLVE CONFLICTS
+                              </Alert>
+                            </Grid>
+                          </Grid>
+                        </Box>
+                      )}
+                    <RecordForm
+                      project_id={project_id}
+                      record_id={record_id}
+                      revision_id={revision_id}
+                      ui_specification={uiSpec}
+                      draft_id={draft_id}
+                      metaSection={metaSection}
+                    />
+                  </Box>
                 );
               }
             })()}

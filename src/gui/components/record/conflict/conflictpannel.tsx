@@ -20,15 +20,27 @@
 
 import React from 'react';
 import {Grid, Box} from '@mui/material';
-import {ProjectUIModel, Record} from '../../../../datamodel/ui';
+import {ProjectUIModel} from '../../../../datamodel/ui';
 import {Formik, Form} from 'formik';
 import {
   FieldWithAnnotation,
   EmptyField,
   ConflictResolveIcon,
 } from './conflictfield';
-import {FieldButtonGroup, ConflictSaveButton} from './conflictbutton';
+import {
+  FieldButtonGroup,
+  ConflictSaveButton,
+  FieldEmptyButton,
+} from './conflictbutton';
 import {CircularProgress} from '@mui/material';
+
+function getinitial(data: any, fieldslist: Array<string>) {
+  const initialvalues: {[key: string]: string} = {};
+  fieldslist.map(
+    field => (initialvalues[field] = data['fields'][field]['data'])
+  );
+  return initialvalues;
+}
 
 type ConflictSectionPanelProps = {
   ui_specification: ProjectUIModel;
@@ -36,15 +48,28 @@ type ConflictSectionPanelProps = {
   type?: string;
   data: any;
   styletypes: iscolourList;
+  fieldslist: Array<string>;
+  conflictfields: Array<string>;
+  istoggleAll: boolean;
 };
 function ConflictSectionPanel(props: ConflictSectionPanelProps) {
-  const {ui_specification, view, data, type, styletypes} = props;
+  const {
+    ui_specification,
+    view,
+    data,
+    type,
+    styletypes,
+    fieldslist,
+    conflictfields,
+    istoggleAll,
+  } = props;
   if (data === null) return <CircularProgress size={12} thickness={4} />;
+  const initialvalues = getinitial(data, fieldslist);
   return (
     <>
       <Formik
         enableReinitialize={type === 'middle' ? true : false}
-        initialValues={data['data']}
+        initialValues={initialvalues}
         validateOnMount={true}
         onSubmit={(values, {setSubmitting}) => {
           setSubmitting(false);
@@ -53,16 +78,21 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
         {formProps => {
           return (
             <Form>
-              {ui_specification['views'][view]['fields'].map(fieldName => (
-                <FieldWithAnnotation
-                  fieldName={fieldName}
-                  fieldConfig={ui_specification['fields'][fieldName]}
-                  formProps={formProps}
-                  type={type}
-                  data={data}
-                  styletype={styletypes[fieldName]}
-                />
-              ))}
+              {ui_specification['views'][view]['fields'].map(
+                fieldName =>
+                  (istoggleAll === true ||
+                    (istoggleAll === false &&
+                      conflictfields.includes(fieldName))) && (
+                    <FieldWithAnnotation
+                      fieldName={fieldName}
+                      fieldConfig={ui_specification['fields'][fieldName]}
+                      formProps={formProps}
+                      type={type}
+                      data={data}
+                      styletype={styletypes[fieldName]}
+                    />
+                  )
+              )}
             </Form>
           );
         }}
@@ -98,28 +128,12 @@ function LoadingSpin(props: loadingProps) {
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
 // FormikProps<{[key: string]: unknown}>
-type ConflictPanelProp = {
-  ui_specification: ProjectUIModel;
-  view: string;
-  type: string;
-  conflictA: Record;
-  conflictB: any;
-  chosenvalues: any;
-  isclickLeft: isclicklist;
-  isclickRight: isclicklist;
-  styletypeLeft: iscolourList;
-  styletypeMiddle: iscolourList;
-  styletypeRight: iscolourList;
-  setFieldChanged: any;
-  revisionlist: Array<string>;
-  inirevision: string;
-  onButtonSave: any;
-};
 
 const cardgridstyle = {
   backgroundColor: 'white',
 };
 type ConflictPanelFormProps = any;
+
 function ConflictPanelForm(props: ConflictPanelFormProps) {
   return props.isloading ? (
     <LoadingSpin
@@ -136,9 +150,64 @@ function ConflictPanelForm(props: ConflictPanelFormProps) {
       ui_specification={props.ui_specification}
       type={props.type}
       styletypes={props.styletypes}
+      fieldslist={props.fieldslist}
+      conflictfields={props.conflictfields}
+      istoggleAll={props.istoggleAll}
     />
   );
 }
+type ConflictButtonProps = {
+  istoggleAll: boolean;
+  isconflict: boolean; //conflictfields.includes(fieldName)
+  fieldName: string;
+  setFieldChanged: any;
+  isclick: isclicklist;
+  type: string;
+};
+function ConflictButton(props: ConflictButtonProps) {
+  const {istoggleAll, isconflict, isclick} = props;
+  if (istoggleAll && isconflict)
+    return (
+      <FieldButtonGroup
+        type={props.type}
+        id={props.fieldName}
+        setFieldChanged={props.setFieldChanged}
+        isclick={isclick}
+      />
+    );
+  if (istoggleAll && !isconflict) return <FieldEmptyButton />;
+  if (!istoggleAll && isconflict)
+    return (
+      <FieldButtonGroup
+        type={props.type}
+        id={props.fieldName}
+        setFieldChanged={props.setFieldChanged}
+        isclick={isclick}
+      />
+    );
+  return <div></div>;
+}
+
+type ConflictPanelProp = {
+  ui_specification: ProjectUIModel;
+  view: string;
+  type: string;
+  conflictA: any;
+  conflictB: any;
+  chosenvalues: any;
+  isclickLeft: isclicklist;
+  isclickRight: isclicklist;
+  styletypeLeft: iscolourList;
+  styletypeMiddle: iscolourList;
+  styletypeRight: iscolourList;
+  setFieldChanged: any;
+  revisionlist: Array<string>;
+  inirevision: string;
+  onButtonSave: any;
+  fieldslist: Array<string>;
+  conflictfields: Array<string>;
+  istoggleAll: boolean;
+};
 
 export default function ConflictPanel(props: ConflictPanelProp) {
   const {
@@ -156,17 +225,33 @@ export default function ConflictPanel(props: ConflictPanelProp) {
     revisionlist,
     inirevision,
     onButtonSave,
+    fieldslist,
+    conflictfields,
+    istoggleAll,
   } = props;
 
   return (
     <Box mb={3}>
       {conflictB !== null && conflictB !== null && (
         <Grid container>
-          <ConflictResolveIcon numResolved={2} numUnResolved={3} num={5} />
+          <ConflictResolveIcon
+            numResolved={0}
+            numUnResolved={3}
+            num={conflictfields.length}
+          />
           <ConflictSaveButton onButtonClick={onButtonSave} />
         </Grid>
       )}
-      <Grid container style={{height: '500px', overflowY: 'auto',minWidth:'800px',overflowX: 'auto'}} columns={14}>
+      <Grid
+        container
+        style={{
+          height: '500px',
+          overflowY: 'auto',
+          minWidth: '800px',
+          overflowX: 'auto',
+        }}
+        columns={14}
+      >
         <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
             isloading={conflictA === null || conflictB === null}
@@ -185,17 +270,22 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             view={view}
             type="left"
             ui_specification={ui_specification}
+            fieldslist={fieldslist}
+            conflictfields={conflictfields}
+            istoggleAll={istoggleAll}
           />
         </Grid>
-        <Grid item sm={1} xs={1} md={1} >
+        <Grid item sm={1} xs={1} md={1}>
           {conflictB !== null &&
             conflictB !== null &&
             ui_specification['views'][view]['fields'].map(fieldName => (
-              <FieldButtonGroup
-                type={'left'}
-                id={fieldName}
-                setFieldChanged={setFieldChanged}
+              <ConflictButton
+                istoggleAll={istoggleAll}
                 isclick={isclickLeft}
+                type={'left'}
+                fieldName={fieldName}
+                setFieldChanged={setFieldChanged}
+                isconflict={conflictfields.includes(fieldName)}
               />
             ))}
         </Grid>
@@ -209,17 +299,22 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             view={view}
             type="middle"
             ui_specification={ui_specification}
+            fieldslist={fieldslist}
+            conflictfields={conflictfields}
+            istoggleAll={istoggleAll}
           />
         </Grid>
         <Grid item sm={1} xs={1} md={1}>
           {conflictB !== null &&
             conflictB !== null &&
             ui_specification['views'][view]['fields'].map(fieldName => (
-              <FieldButtonGroup
-                type={'right'}
-                id={fieldName}
-                setFieldChanged={setFieldChanged}
+              <ConflictButton
+                istoggleAll={istoggleAll}
                 isclick={isclickRight}
+                type={'right'}
+                fieldName={fieldName}
+                setFieldChanged={setFieldChanged}
+                isconflict={conflictfields.includes(fieldName)}
               />
             ))}
         </Grid>
@@ -233,6 +328,9 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             view={view}
             type="right"
             ui_specification={ui_specification}
+            fieldslist={fieldslist}
+            conflictfields={conflictfields}
+            istoggleAll={istoggleAll}
           />
         </Grid>
       </Grid>

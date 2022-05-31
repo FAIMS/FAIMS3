@@ -21,12 +21,18 @@
 import React, {useEffect} from 'react';
 import {useState} from 'react';
 import {ProjectID, RecordID, RevisionID} from '../../../../datamodel/core';
-import {ProjectUIModel, Record} from '../../../../datamodel/ui';
+import {
+  ProjectUIModel,
+  RecordMergeInformation,
+  UserMergeResult,
+} from '../../../../datamodel/ui';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
 import RecordTabBar from './recordTab';
-import {InitialMergeDetails} from '../../../../data_storage/merging';
-import {getFullRecordData} from '../../../../data_storage';
+import {
+  InitialMergeDetails,
+  getMergeInformationForHead,
+} from '../../../../data_storage/merging';
 import {CircularProgress} from '@mui/material';
 
 import {grey} from '@mui/material/colors';
@@ -46,56 +52,127 @@ type ConflictFormProps = {
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
+type updatedType = {conflictfields: Array<string>; colourstyle: iscolourList};
+
+function comparegetconflictField(
+  conflictA: RecordMergeInformation,
+  conflictB: RecordMergeInformation,
+  fieldslist: Array<string>,
+  ismcolour: iscolourList
+): updatedType {
+  const conflictfields: Array<string> = [];
+  fieldslist.map(field => {
+    if (
+      conflictA['fields'][field]['avp_id'] !==
+      conflictB['fields'][field]['avp_id']
+    )
+      conflictfields.push(field);
+    else ismcolour[field] = 'clear';
+  });
+  return {conflictfields: conflictfields, colourstyle: ismcolour};
+}
 
 export default function ConflictForm(props: ConflictFormProps) {
-  const [tabvalue, setValue] = useState('0');
   const {ui_specification, project_id, record_id, type, conflicts} = props;
+  //this are tabs for form sections
+  const [tabvalue, setValue] = useState('0');
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
   };
-
+  //below are the header data of three columns
   const [conflictA, setConflictA] = useState(conflicts['initial_head_data']);
-  const [conflictB, setsetConflictB] = useState(null as Record | null);
-  const [chosenvalues, setChoosenvalues] = useState(
-    conflicts['initial_head_data']
+  const [conflictB, setConflictB] = useState(
+    null as RecordMergeInformation | null
   );
-
   const fieldslist: Array<string> = [];
+  const initialvalues: RecordMergeInformation = {
+    ...conflicts['initial_head_data'],
+    fields: {},
+  };
   ui_specification['viewsets'][type]['views'].map((view: string) =>
-    ui_specification['views'][view]['fields'].map(field =>
-      fieldslist.push(field)
-    )
+    ui_specification['views'][view]['fields'].map((field: string) => {
+      fieldslist.push(field);
+      initialvalues['fields'][field] = {
+        ...conflicts['initial_head_data']['fields'][field],
+      };
+    })
   );
+  const [chosenvalues, setChoosenvalues] = useState(initialvalues);
+  //this the header data of middle column, which is the choosen one
+  //above are the header data of three columns
+  // to get all fields of the form
+
+  //below are the style of icons to choose reject or tick
   const isclick: isclicklist = {};
   fieldslist.map(field => (isclick[field] = false));
-  const iscolour: iscolourList = {};
-  fieldslist.map(field => (iscolour[field] = 'default'));
   const [isclickLeft, setIsClickLeft] = useState(isclick);
   const [isclickRight, setIsClickRight] = useState(isclick);
+  //above are the style of icons to choose reject or tick
+  //below are the style of 3 columns of forms , including color inditor on the top, icons
+  const iscolour: iscolourList = {};
+  fieldslist.map(field => (iscolour[field] = 'default'));
   const [styletypeLeft, setstyletypeLeft] = useState(iscolour);
   const [styletypeRight, setstyletypeRight] = useState(iscolour);
   const ismcolour: iscolourList = {};
   fieldslist.map(field => (ismcolour[field] = 'warning'));
+  //above are the style of 3 columns of forms , including color inditor on the top, icons
   const [styletypeMiddle, setstyletypeMiddle] = useState(ismcolour);
   const [revisionlist, setRevisionList] = useState([
     conflicts['initial_head'],
     '',
-  ]);
-  const [comparedrevision, setR] = useState('');
-  const [isloading, setIsloading] = useState(true);
+  ]); // 2 compared revision list(revision A and revision B )
+  const [comparedrevision, setR] = useState(''); // this is just a value to trigger the revsion changed
+  const [isloading, setIsloading] = useState(true); //when 2 conflict revision been load, value will be set to false
+  const [conflictfields, setconflictfields] = useState<Array<string>>([]); //get list of comnflict fields for the 2 revisions
+  const [istoggleAll, setIstoggleAll] = useState(false); // toggle to show all Field of Form or just conflict fields
+
+  const updateconflict = (
+    setconflict: any,
+    revisionvalue: string,
+    compareconflict: RecordMergeInformation | null
+  ) => {
+    let updated: updatedType;
+    if (revisionvalue !== '') {
+      setconflict(null);
+      setIsloading(true);
+      getMergeInformationForHead(project_id, record_id, revisionvalue).then(
+        result => {
+          setconflict(result);
+          //reset the color and click for the buttons and cards
+          setstyletypeMiddle({...ismcolour});
+          setstyletypeLeft({...iscolour});
+          setstyletypeRight({...iscolour});
+          setIsClickLeft({...isclick});
+          setIsClickRight({...isclick});
+          setChoosenvalues({...initialvalues});
+          if (result !== null && compareconflict !== null) {
+            updated = comparegetconflictField(
+              result,
+              compareconflict,
+              fieldslist,
+              ismcolour
+            );
+            setconflictfields(updated.conflictfields);
+            setstyletypeMiddle(updated.colourstyle);
+          }
+          setIsloading(false);
+          console.log(
+            '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+          );
+          console.log(result);
+        }
+      );
+    }
+  };
 
   useEffect(() => {
     const getConflict = async () => {
-      if (conflicts !== null && revisionlist[1] !== '') {
-        setsetConflictB(null);
-        setIsloading(true);
-        console.log(comparedrevision);
-        getFullRecordData(project_id, record_id, revisionlist[1]).then(
-          retuslt => {
-            setsetConflictB(retuslt);
-            setIsloading(false);
-          }
-        );
+      if (comparedrevision === null || comparedrevision === '') return;
+      if (comparedrevision.charAt(0) === '1') {
+        return updateconflict(setConflictB, revisionlist[1], conflictA);
+      }
+      if (comparedrevision.charAt(0) === '0') {
+        return updateconflict(setConflictA, revisionlist[0], conflictB);
       }
     };
     getConflict();
@@ -128,43 +205,13 @@ export default function ConflictForm(props: ConflictFormProps) {
     choosevalueA: boolean,
     left: boolean
   ) => {
+    if (conflictA === null || conflictB === null) return;
     if (sleft !== null)
       setstyletypeLeft({...styletypeLeft, [fieldName]: sleft});
     if (smiddle !== null)
       setstyletypeMiddle({...styletypeMiddle, [fieldName]: smiddle});
     if (sright !== null)
       setstyletypeRight({...styletypeRight, [fieldName]: sright});
-    if (chosenvalues !== null) {
-      const newvalues = chosenvalues['data'];
-      if (choosevalueA === true && conflicts !== null && newvalues !== null) {
-        newvalues[fieldName] = conflictA['data'][fieldName];
-      } else if (
-        choosevalueA === false &&
-        conflicts !== null &&
-        newvalues !== null
-      ) {
-        if (conflictB !== null)
-          newvalues[fieldName] = conflictB['data'][fieldName];
-      } else if (
-        choosevalueA === null &&
-        left &&
-        isclickRight[fieldName] === true
-      ) {
-        setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
-      } else if (
-        choosevalueA === null &&
-        left === false &&
-        isclickLeft[fieldName] === true
-      ) {
-        setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
-      }
-      setChoosenvalues({...chosenvalues, data: {...newvalues}});
-      console.log(
-        '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
-      );
-      console.log(chosenvalues);
-      console.log(newvalues);
-    }
     if (left) {
       setIsClickLeft({...isclickLeft, [fieldName]: true});
       if (choosevalueA !== null)
@@ -172,40 +219,117 @@ export default function ConflictForm(props: ConflictFormProps) {
     } else {
       setIsClickRight({...isclickRight, [fieldName]: true});
       if (choosevalueA !== null)
-        setIsClickLeft({...isclickRight, [fieldName]: true});
+        setIsClickLeft({...isclickLeft, [fieldName]: true});
+    }
+    if (chosenvalues !== null) {
+      const newvalues = chosenvalues['fields'][fieldName];
+      if (choosevalueA === true && conflicts !== null && newvalues !== null) {
+        newvalues['data'] = conflictA['fields'][fieldName]['data'];
+        newvalues['avp_id'] = conflictA['fields'][fieldName]['avp_id'];
+      } else if (
+        choosevalueA === false &&
+        conflicts !== null &&
+        newvalues !== null
+      ) {
+        if (conflictB !== null) {
+          newvalues['data'] = conflictB['fields'][fieldName]['data'];
+          newvalues['avp_id'] = conflictB['fields'][fieldName]['avp_id'];
+        }
+      } else if (
+        choosevalueA === null &&
+        left &&
+        isclickRight[fieldName] === true
+      ) {
+        setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
+        // newvalues['data'] = null;
+        newvalues['avp_id'] = '';
+      } else if (
+        choosevalueA === null &&
+        left === false &&
+        isclickLeft[fieldName] === true
+      ) {
+        setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
+        // newvalues['data'] = null;
+        newvalues['avp_id'] = '';
+      }
+      setChoosenvalues({
+        ...chosenvalues,
+        fields: {...chosenvalues.fields, [fieldName]: newvalues},
+      });
+      console.log(
+        '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+      );
+      console.log(chosenvalues['fields'][fieldName]);
+      console.log(conflictA['fields'][fieldName]);
     }
   };
 
   const setChooseAll = (value: string) => {
     const newleft: iscolourList = {};
     const newright: iscolourList = {};
+    const newmiddle: iscolourList = {};
     const newclick = isclick;
 
     if (value === 'A') {
       fieldslist.map(fieldName => {
-        newleft[fieldName] = 'success';
-        newright[fieldName] = 'reject';
-        newclick[fieldName] = true;
+        if (conflictfields.includes(fieldName)) {
+          newleft[fieldName] = 'success';
+          newmiddle[fieldName] = 'success';
+          newright[fieldName] = 'reject';
+          newclick[fieldName] = true;
+        } else {
+          newleft[fieldName] = styletypeLeft[fieldName];
+          newright[fieldName] = styletypeRight[fieldName];
+          newmiddle[fieldName] = styletypeMiddle[fieldName];
+        }
       });
       setstyletypeLeft({...newleft});
-      setstyletypeMiddle({...newleft});
+      setstyletypeMiddle({...newmiddle});
       setstyletypeRight({...newright});
       setIsClickLeft({...newclick});
       setIsClickRight({...newclick});
-      setChoosenvalues({...chosenvalues, data: {...conflictA['data']}});
+      const values: RecordMergeInformation = {
+        ...conflictA,
+        fields: {},
+      };
+      fieldslist.map(
+        field =>
+          (values['fields'][field] = {
+            ...conflictA['fields'][field],
+          })
+      );
+      setChoosenvalues({...values});
     } else if (value === 'B') {
       fieldslist.map(fieldName => {
-        newleft[fieldName] = 'reject';
-        newright[fieldName] = 'success';
-        newclick[fieldName] = true;
+        if (conflictfields.includes(fieldName)) {
+          newleft[fieldName] = 'reject';
+          newright[fieldName] = 'success';
+          newmiddle[fieldName] = 'success';
+          newclick[fieldName] = true;
+        } else {
+          newleft[fieldName] = styletypeLeft[fieldName];
+          newright[fieldName] = styletypeRight[fieldName];
+          newmiddle[fieldName] = styletypeMiddle[fieldName];
+        }
       });
       setstyletypeLeft({...newleft});
       setstyletypeRight({...newright});
-      setstyletypeMiddle({...newright});
+      setstyletypeMiddle({...newmiddle});
       setIsClickLeft({...newclick});
       setIsClickRight({...newclick});
-      if (conflictB !== null)
-        setChoosenvalues({...chosenvalues, data: {...conflictB['data']}});
+      if (conflictB !== null) {
+        const values: RecordMergeInformation = {
+          ...conflictB,
+          fields: {},
+        };
+        fieldslist.map(
+          field =>
+            (values['fields'][field] = {
+              ...conflictB['fields'][field],
+            })
+        );
+        setChoosenvalues({...values});
+      }
     }
   };
 
@@ -222,7 +346,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   };
 
   return (
-    <Grid style={{minWidth:'800px',overflowX: 'auto'}} >
+    <Grid style={{minWidth: '800px', overflowX: 'auto'}}>
       <ConflictToolBar
         headerlist={conflicts['available_heads']}
         revisionlist={revisionlist}
@@ -230,12 +354,15 @@ export default function ConflictForm(props: ConflictFormProps) {
         setR={setR}
         setChooseAll={setChooseAll}
         isloading={isloading}
+        istoggleAll={istoggleAll}
+        setIstoggleAll={setIstoggleAll}
       />
       <TabContext value={tabvalue}>
         <RecordTabBar
           handleChange={handleChange}
           ui_specification={ui_specification}
           type={type}
+          conflictfields={conflictfields}
         />
         {conflicts !== null &&
           ui_specification['viewsets'][type]['views'].map((tab, index) => (
@@ -261,6 +388,9 @@ export default function ConflictForm(props: ConflictFormProps) {
                   revisionlist={revisionlist}
                   inirevision={conflicts['initial_head']}
                   onButtonSave={onButtonSave}
+                  fieldslist={fieldslist}
+                  conflictfields={conflictfields}
+                  istoggleAll={istoggleAll}
                 />
               </div>
             </TabPanel>

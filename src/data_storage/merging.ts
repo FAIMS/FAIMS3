@@ -383,7 +383,7 @@ function sortRevisionsForInitialMerge(revisions: RevisionMap): RevisionMap {
   return revisions;
 }
 
-async function getMergeInformationForRevision(
+export async function getMergeInformationForRevision(
   project_id: ProjectID,
   revision: Revision
 ): Promise<RecordMergeInformation> {

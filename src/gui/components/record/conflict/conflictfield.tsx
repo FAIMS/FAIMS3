@@ -55,7 +55,7 @@ type EmptyProps = {
 };
 export function EmptyField(props: EmptyProps) {
   return (
-    <Box pt={10} pl={3} pr={3} style={cardsstyles.empty.card}>
+    <Box pt={10} px={3} style={cardsstyles.empty.card}>
       {props.isspin && (
         <Grid
           container
@@ -80,7 +80,7 @@ export function EmptyField(props: EmptyProps) {
           <Grid item xs={10}>
             <Typography variant="caption" display="block">
               {props.isloading === false
-                ? " This data isn't on your device yet "
+                ? " This data isn't on your device yet. It's loading,it might take some time. You can wait or select another conflict to resolve in the meantime. "
                 : props.text}
             </Typography>
           </Grid>
@@ -160,7 +160,8 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
   // const styletype =
   //   props.styletype ?? type === 'middle' ? 'warning' : 'default';
   const cardstyle: cardstyletype = cardsstyles[styletype];
-  return styletype === 'warning' || styletype === 'delete' ? (
+  //=== 'warning' || styletype === 'delete'
+  return ['warning', 'delete', 'clear'].includes(styletype) ? (
     <Box pt={10} pl={3} pr={3} minHeight="340px" maxHeight="340px">
       <Grid
         container
@@ -171,9 +172,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
         {cardstyle.icon}
         {/* <InfoIcon style={cardstyle.iconstyle} /> */}
         <Typography variant="caption" display="block">
-          {styletype === 'warning'
-            ? 'Select Value from Conflict A or Conflict B'
-            : 'Field is rejected'}
+          {cardstyle.text}
         </Typography>
       </Grid>
     </Box>
@@ -189,7 +188,10 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             }
           />
         ) : (
-          <CardHeader title={label ?? fieldName} style={cardstyle.cardheader} />
+          <CardHeader
+            title={label ?? fieldName}
+            style={cardstyle['cardheader']}
+          />
         )}
         <CardContent>
           <Typography variant="body2" color="text.secondary"></Typography>
@@ -217,7 +219,9 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
                 fieldName={fieldName}
                 // formProps={this.props.formProps}
                 field={fieldConfig}
-                annotation={data['annotations']}
+                annotation={{
+                  [fieldName]: {...data['fields'][fieldName]['annotations']},
+                }}
                 handerannoattion={() => {
                   console.log('annotation');
                 }}
@@ -231,8 +235,8 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             alignItems="flex-end"
           >
             <Typography variant="caption" color="text.secondary">
-              {data['updated_by']}
-              {JSON.stringify(data['updated'])
+              Last Updated By {data['fields'][fieldName]['created_by']}
+              {JSON.stringify(data['fields'][fieldName]['created'])
                 .replaceAll('"', '')
                 .replaceAll('T', ' ')
                 .slice(0, 19)}

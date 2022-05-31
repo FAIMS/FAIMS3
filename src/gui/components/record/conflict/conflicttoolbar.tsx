@@ -20,14 +20,10 @@
 import * as React from 'react';
 import {useState} from 'react';
 import Box from '@mui/material/Box';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import FormHelperText from '@mui/material/FormHelperText';
-import Select, {SelectChangeEvent} from '@mui/material/Select';
 import {Grid} from '@mui/material';
 import {Switch, FormControlLabel} from '@mui/material';
 import {ConflictHelpDialog, ConflictButton} from './conflictDialog';
+import {ConflictDropSelect} from './conflictdroplist';
 
 type ConflictToolBarProps = {
   headerlist: Array<string>;
@@ -36,6 +32,8 @@ type ConflictToolBarProps = {
   setR: any;
   setChooseAll: any;
   isloading: boolean;
+  istoggleAll: boolean;
+  setIstoggleAll: any;
 };
 export default function ConflictToolBar(props: ConflictToolBarProps) {
   const {
@@ -44,6 +42,8 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
     setRevisionList,
     setChooseAll,
     isloading,
+    istoggleAll,
+    setIstoggleAll,
   } = props;
   const [ischoose, setischoose] = useState(false);
   const onButtonClick = (value: string) => {
@@ -52,13 +52,11 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
     setischoose(true);
   };
 
-  const [istoggle, setIstoggle] = useState(true);
-
   const setRevision = (revision: string, index: number) => {
     const newrevisionlist = revisionlist;
     newrevisionlist[index] = revision;
     setRevisionList(newrevisionlist);
-    props.setR(revision);
+    props.setR(index + 'R' + revision);
   };
 
   return (
@@ -125,12 +123,6 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
           justifyContent="flex-start"
           alignItems="center"
         >
-          {/* <IconButton color="primary" aria-label="upload picture" component="span" onClick={onButtonHelp}>
-          <InfoOutlinedIcon />
-        </IconButton>
-        <Typography variant="caption" display="block" >
-        Conflict Resolution Help
-        </Typography> */}
           <ConflictHelpDialog />
         </Grid>
         <Grid
@@ -143,9 +135,9 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
           <FormControlLabel
             control={
               <Switch
-                checked={istoggle}
+                checked={istoggleAll}
                 onChange={async (event, checked) => {
-                  setIstoggle(checked);
+                  setIstoggleAll(checked);
                 }}
               />
             }
@@ -154,47 +146,6 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
           <br />
         </Grid>
       </Grid>
-    </Box>
-  );
-}
-
-function ConflictDropSelect(props: any) {
-  const {
-    label,
-    headerlist,
-    revision,
-    index,
-    setRevision,
-    disablerevision,
-  } = props;
-  const [value, setValue] = useState(revision);
-
-  const handleChange = (event: SelectChangeEvent) => {
-    setRevision(event.target.value as string, index);
-    setValue(event.target.value as string);
-  };
-
-  return (
-    <Box sx={{minWidth: 400, maxWidth: 400}}>
-      <FormControl fullWidth>
-        <InputLabel id={'Conflictselect' + label}>
-          {'Conflict ' + label}
-        </InputLabel>
-        <Select
-          labelId={'Conflictselect' + label}
-          id={'Conflictselect' + label}
-          value={value}
-          label={'Conflict ' + label}
-          onChange={handleChange}
-        >
-          {headerlist.map((value: string) => (
-            <MenuItem value={value} disabled={value === disablerevision}>
-              {value}
-            </MenuItem>
-          ))}
-        </Select>
-        <FormHelperText>Select a conflict to resolve</FormHelperText>
-      </FormControl>
     </Box>
   );
 }

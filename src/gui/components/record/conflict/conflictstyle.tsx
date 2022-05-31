@@ -23,12 +23,15 @@ import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import CancelSharpIcon from '@mui/icons-material/CancelSharp';
 
-export type cardstyletype = any;
-// {
-//   'card':{[key: string]: any};
-//   'cardheader': {[key: string]: any};
-//   'icon':any;
-// }
+export type cardstyletype = {
+  card: {[key: string]: string};
+  cardheader: {[key: string]: string};
+  icon?: any;
+  iconstyle?: {[key: string]: string};
+  text?: string;
+  textstyle?: {[key: string]: string};
+};
+
 export const cardsstyles: {[key: string]: cardstyletype} = {
   warning: {
     card: {
@@ -38,17 +41,12 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardheader: {
       backgroundColor: '#f9dbaf',
       height: '50px',
-      // height:'35px',
-      // 'MuiCardHeader-action':{
-      //   padding:'-5px',
-      //   marginTop:'-5px'
-      // }
     },
     iconstyle: {
       backgroundColor: '#f9dbaf',
       color: '#f29c3e',
-      paddingLeft: 2,
-      paddingRight: 2,
+      paddingLeft: '2px',
+      paddingRight: '2px',
     },
     icon: (
       <InfoIcon
@@ -60,6 +58,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
         }}
       />
     ),
+    text: 'Select Value from Conflict A or Conflict B',
   },
   default: {
     card: {
@@ -84,12 +83,12 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     iconstyle: {
       backgroundColor: '#449852',
       color: '#fff',
-      paddingLeft: 2,
-      paddingRight: 2,
+      paddingLeft: '2px',
+      paddingRight: '2px',
     },
     textstyle: {
-      paddingLeft: 10,
-      paddingRight: 10,
+      paddingLeft: '10px',
+      paddingRight: '10px',
     },
     icon: <CheckBoxIcon />,
   },
@@ -101,11 +100,6 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     },
     cardheader: {
       backgroundColor: '#ee565a',
-      // height:'35px',
-      // 'MuiCardHeader-action':{
-      //   padding:'-5px',
-      //   marginTop:'-5px'
-      // }
     },
     icon: <CancelSharpIcon />,
   },
@@ -119,8 +113,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     iconstyle: {
       backgroundColor: '#e8f4fd',
       color: '#9ccffa',
-      paddingLeft: 2,
-      paddingRight: 2,
+      paddingLeft: '2px',
+      paddingRight: '2px',
     },
   },
   delete: {
@@ -131,30 +125,54 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardheader: {
       backgroundColor: '#e8f4fd',
       height: '50px',
-      // height:'35px',
-      // 'MuiCardHeader-action':{
-      //   padding:'-5px',
-      //   marginTop:'-5px'
-      // }
     },
     iconstyle: {
       backgroundColor: '#e8f4fd',
       color: '#9ccffa',
-      paddingLeft: 2,
-      paddingRight: 2,
+      paddingLeft: '2px',
+      paddingRight: '2px',
     },
     icon: (
       <ErrorOutlineOutlinedIcon
         style={{backgroundColor: '#e8f4fd', color: '#9ccffa'}}
       />
     ),
+    text: 'Field is rejected',
   },
   conflict: {
+    card: {
+      borderColor: '#fff',
+      height: '320px',
+    },
+    cardheader: {
+      backgroundColor: '#fff',
+      height: '50px',
+    },
+    icon: null,
     iconstyle: {
       backgroundColor: '#000',
       color: '#fff',
-      paddingLeft: 2,
-      paddingRight: 2,
+      paddingLeft: '2px',
+      paddingRight: '2px',
     },
+  },
+  clear: {
+    card: {
+      borderColor: '#fff',
+      height: '320px',
+    },
+    cardheader: {
+      backgroundColor: '#fff',
+      height: '50px',
+      color: '#000',
+    },
+    iconstyle: {
+      backgroundColor: '#fff',
+      color: '#fff',
+      paddingLeft: '2px',
+      paddingRight: '2px',
+    },
+    icon: null,
+    text: 'No Conflict',
   },
 };
