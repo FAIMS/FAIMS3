@@ -278,8 +278,9 @@ export default function Record(props: RecordeProps) {
                 return (
                   <Box pl={0}>
                     {conflicts !== null &&
-                      conflicts['available_heads'] !== undefined &&
-                      conflicts['available_heads'].length > 1 && (
+                    conflicts['available_heads'] !== undefined &&
+                    conflicts['available_heads'].length > 1 ? (
+                      <Box pl={0}>
                         <Box bgcolor={grey[200]} py={10} pl={0}>
                           <Grid
                             container
@@ -324,15 +325,29 @@ export default function Record(props: RecordeProps) {
                             </Grid>
                           </Grid>
                         </Box>
-                      )}
-                    <RecordForm
-                      project_id={project_id}
-                      record_id={record_id}
-                      revision_id={revision_id}
-                      ui_specification={uiSpec}
-                      draft_id={draft_id}
-                      metaSection={metaSection}
-                    />
+                        <RecordForm
+                          project_id={project_id}
+                          record_id={record_id}
+                          revision_id={
+                            selectrevision !== null
+                              ? selectrevision
+                              : revision_id
+                          }
+                          ui_specification={uiSpec}
+                          draft_id={draft_id}
+                          metaSection={metaSection}
+                        />
+                      </Box>
+                    ) : (
+                      <RecordForm
+                        project_id={project_id}
+                        record_id={record_id}
+                        revision_id={revision_id}
+                        ui_specification={uiSpec}
+                        draft_id={draft_id}
+                        metaSection={metaSection}
+                      />
+                    )}
                   </Box>
                 );
               }
