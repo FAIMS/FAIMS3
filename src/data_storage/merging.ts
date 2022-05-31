@@ -395,8 +395,8 @@ export async function getMergeInformationForRevision(
     record_id: revision.record_id,
     revision_id: revision._id,
     type: revision.type,
-    updated: new Date(revision.created_by),
-    updated_by: revision.created,
+    updated: new Date(revision.created),
+    updated_by: revision.created_by,
     fields: {},
     deleted: revision.deleted ?? false,
   };
@@ -578,4 +578,6 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
   await datadb.put(new_revision);
 
   await updateHeads(project_id, record_id, parents, revision_id);
+
+  return true;
 }

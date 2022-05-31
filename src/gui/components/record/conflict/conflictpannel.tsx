@@ -22,22 +22,16 @@ import React from 'react';
 import {Grid, Box} from '@mui/material';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {Formik, Form} from 'formik';
-import {
-  FieldWithAnnotation,
-  EmptyField,
-  ConflictResolveIcon,
-} from './conflictfield';
-import {
-  FieldButtonGroup,
-  ConflictSaveButton,
-  FieldEmptyButton,
-} from './conflictbutton';
+import {FieldWithAnnotation, EmptyField} from './conflictfield';
+import {FieldButtonGroup, FieldEmptyButton} from './conflictbutton';
 import {CircularProgress} from '@mui/material';
 
 function getinitial(data: any, fieldslist: Array<string>) {
   const initialvalues: {[key: string]: string} = {};
-  fieldslist.map(
-    field => (initialvalues[field] = data['fields'][field]['data'])
+  fieldslist.map(field =>
+    data['fields'][field] !== undefined
+      ? (initialvalues[field] = data['fields'][field]['data'])
+      : field
   );
   return initialvalues;
 }
@@ -109,7 +103,14 @@ type loadingProps = {
 };
 function LoadingSpin(props: loadingProps) {
   const {ui_specification, view, isspin, text, isloading} = props;
-  return (
+  return isloading ? (
+    <EmptyField
+      isloading={isloading}
+      key={ui_specification['views'][view]['fields'][0]}
+      isspin={isspin}
+      text={text}
+    />
+  ) : (
     <>
       {ui_specification['views'][view]['fields'].map(
         (field: string, index: number) => (
@@ -203,7 +204,6 @@ type ConflictPanelProp = {
   setFieldChanged: any;
   revisionlist: Array<string>;
   inirevision: string;
-  onButtonSave: any;
   fieldslist: Array<string>;
   conflictfields: Array<string>;
   istoggleAll: boolean;
@@ -224,29 +224,25 @@ export default function ConflictPanel(props: ConflictPanelProp) {
     chosenvalues,
     revisionlist,
     inirevision,
-    onButtonSave,
     fieldslist,
     conflictfields,
     istoggleAll,
   } = props;
 
+  const isconflictrevision =
+    revisionlist[0] === inirevision && revisionlist[1] === '';
+  // !(
+  //   revisionlist[0] !== '' &&
+  //   revisionlist[1] !== inirevision &&
+  //   revisionlist[1] !== ''
+  // ) // this is to check if both revision been setup
+
   return (
     <Box mb={3}>
-      {conflictB !== null && conflictB !== null && (
-        <Grid container>
-          <ConflictResolveIcon
-            numResolved={0}
-            numUnResolved={3}
-            num={conflictfields.length}
-          />
-          <ConflictSaveButton onButtonClick={onButtonSave} />
-        </Grid>
-      )}
       <Grid
         container
         style={{
-          height: '500px',
-          overflowY: 'auto',
+          minHeight: '300px',
           minWidth: '800px',
           overflowX: 'auto',
         }}
@@ -255,13 +251,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
         <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
             isloading={conflictA === null || conflictB === null}
-            isspin={
-              !(
-                revisionlist[0] !== '' &&
-                revisionlist[1] !== inirevision &&
-                revisionlist[1] !== ''
-              )
-            }
+            isspin={isconflictrevision}
             text={
               'Fields will show here once a second conflict has been selected. Use the dropdown at the top right to continue'
             }
@@ -276,7 +266,8 @@ export default function ConflictPanel(props: ConflictPanelProp) {
           />
         </Grid>
         <Grid item sm={1} xs={1} md={1}>
-          {conflictB !== null &&
+          {!isconflictrevision &&
+            conflictB !== null &&
             conflictB !== null &&
             ui_specification['views'][view]['fields'].map(fieldName => (
               <ConflictButton
@@ -292,7 +283,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
         <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
             isloading={chosenvalues === null || conflictB === null}
-            isspin={false}
+            isspin={isconflictrevision}
             text={''}
             data={chosenvalues !== null ? chosenvalues : null}
             styletypes={styletypeMiddle}
@@ -305,7 +296,8 @@ export default function ConflictPanel(props: ConflictPanelProp) {
           />
         </Grid>
         <Grid item sm={1} xs={1} md={1}>
-          {conflictB !== null &&
+          {!isconflictrevision &&
+            conflictB !== null &&
             conflictB !== null &&
             ui_specification['views'][view]['fields'].map(fieldName => (
               <ConflictButton
@@ -321,7 +313,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
         <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
             isloading={conflictA === null || conflictB === null}
-            isspin={revisionlist[1] === ''}
+            isspin={isconflictrevision}
             text={'Select a second conflict to resolve'}
             data={conflictB !== null ? conflictB : null}
             styletypes={styletypeRight}

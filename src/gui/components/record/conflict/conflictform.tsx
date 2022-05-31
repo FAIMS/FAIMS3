@@ -28,17 +28,21 @@ import {
 } from '../../../../datamodel/ui';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
+import {Grid} from '@mui/material';
 import RecordTabBar from './recordTab';
 import {
   InitialMergeDetails,
   getMergeInformationForHead,
+  saveUserMergeResult,
 } from '../../../../data_storage/merging';
 import {CircularProgress} from '@mui/material';
 
 import {grey} from '@mui/material/colors';
 import ConflictPanel from './conflictpannel';
 import ConflictToolBar from './conflicttoolbar';
-import {Grid} from '@mui/material';
+import {ConflictResolveIcon} from './conflictfield';
+import {ConflictSaveButton} from './conflictbutton';
+
 type ConflictFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -49,6 +53,7 @@ type ConflictFormProps = {
   revision_id?: null | RevisionID;
   type: string;
   conflicts: InitialMergeDetails;
+  setissavedconflict: any;
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
@@ -63,6 +68,11 @@ function comparegetconflictField(
   const conflictfields: Array<string> = [];
   fieldslist.map(field => {
     if (
+      conflictA['fields'][field] === undefined ||
+      conflictB['fields'][field] === undefined
+    )
+      return;
+    if (
       conflictA['fields'][field]['avp_id'] !==
       conflictB['fields'][field]['avp_id']
     )
@@ -73,7 +83,14 @@ function comparegetconflictField(
 }
 
 export default function ConflictForm(props: ConflictFormProps) {
-  const {ui_specification, project_id, record_id, type, conflicts} = props;
+  const {
+    ui_specification,
+    project_id,
+    record_id,
+    type,
+    conflicts,
+    setissavedconflict,
+  } = props;
   //this are tabs for form sections
   const [tabvalue, setValue] = useState('0');
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
@@ -89,12 +106,29 @@ export default function ConflictForm(props: ConflictFormProps) {
     ...conflicts['initial_head_data'],
     fields: {},
   };
+  const [revisionlist, setRevisionList] = useState([
+    conflicts['initial_head'],
+    '',
+  ]); // 2 compared revision list(revision A and revision B )
+  const mergeresult: UserMergeResult = {
+    project_id: project_id,
+    record_id: record_id,
+    parents: revisionlist,
+    updated: conflicts['initial_head_data']['updated'],
+    updated_by: conflicts['initial_head_data']['updated_by'],
+    field_choices: {},
+    field_types: {},
+    type: type,
+  };
+
   ui_specification['viewsets'][type]['views'].map((view: string) =>
     ui_specification['views'][view]['fields'].map((field: string) => {
       fieldslist.push(field);
       initialvalues['fields'][field] = {
         ...conflicts['initial_head_data']['fields'][field],
       };
+      mergeresult['field_types'][field] =
+        conflicts['initial_head_data']['fields'][field]['type']; //get type for all field
     })
   );
   const [chosenvalues, setChoosenvalues] = useState(initialvalues);
@@ -117,14 +151,15 @@ export default function ConflictForm(props: ConflictFormProps) {
   fieldslist.map(field => (ismcolour[field] = 'warning'));
   //above are the style of 3 columns of forms , including color inditor on the top, icons
   const [styletypeMiddle, setstyletypeMiddle] = useState(ismcolour);
-  const [revisionlist, setRevisionList] = useState([
-    conflicts['initial_head'],
-    '',
-  ]); // 2 compared revision list(revision A and revision B )
+
   const [comparedrevision, setR] = useState(''); // this is just a value to trigger the revsion changed
   const [isloading, setIsloading] = useState(true); //when 2 conflict revision been load, value will be set to false
   const [conflictfields, setconflictfields] = useState<Array<string>>([]); //get list of comnflict fields for the 2 revisions
   const [istoggleAll, setIstoggleAll] = useState(false); // toggle to show all Field of Form or just conflict fields
+
+  const [saveduserMergeResult, setUserMergeResult] = useState(
+    null as UserMergeResult | null
+  );
 
   const updateconflict = (
     setconflict: any,
@@ -135,6 +170,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     if (revisionvalue !== '') {
       setconflict(null);
       setIsloading(true);
+      setUserMergeResult({...mergeresult, parents: revisionlist}); // update the value when conflist revision changes
       getMergeInformationForHead(project_id, record_id, revisionvalue).then(
         result => {
           setconflict(result);
@@ -145,6 +181,8 @@ export default function ConflictForm(props: ConflictFormProps) {
           setIsClickLeft({...isclick});
           setIsClickRight({...isclick});
           setChoosenvalues({...initialvalues});
+          if (saveduserMergeResult !== null)
+            setUserMergeResult({...saveduserMergeResult, field_choices: {}}); //reset the savedusermergeresult
           if (result !== null && compareconflict !== null) {
             updated = comparegetconflictField(
               result,
@@ -221,11 +259,13 @@ export default function ConflictForm(props: ConflictFormProps) {
       if (choosevalueA !== null)
         setIsClickLeft({...isclickLeft, [fieldName]: true});
     }
-    if (chosenvalues !== null) {
+    if (chosenvalues !== null && saveduserMergeResult !== null) {
       const newvalues = chosenvalues['fields'][fieldName];
+      const newmerged = saveduserMergeResult['field_choices'];
       if (choosevalueA === true && conflicts !== null && newvalues !== null) {
         newvalues['data'] = conflictA['fields'][fieldName]['data'];
         newvalues['avp_id'] = conflictA['fields'][fieldName]['avp_id'];
+        newmerged[fieldName] = newvalues['avp_id'];
       } else if (
         choosevalueA === false &&
         conflicts !== null &&
@@ -234,6 +274,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         if (conflictB !== null) {
           newvalues['data'] = conflictB['fields'][fieldName]['data'];
           newvalues['avp_id'] = conflictB['fields'][fieldName]['avp_id'];
+          newmerged[fieldName] = newvalues['avp_id'];
         }
       } else if (
         choosevalueA === null &&
@@ -243,6 +284,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
         // newvalues['data'] = null;
         newvalues['avp_id'] = '';
+        newmerged[fieldName] = null;
       } else if (
         choosevalueA === null &&
         left === false &&
@@ -251,10 +293,15 @@ export default function ConflictForm(props: ConflictFormProps) {
         setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
         // newvalues['data'] = null;
         newvalues['avp_id'] = '';
+        newmerged[fieldName] = null;
       }
       setChoosenvalues({
         ...chosenvalues,
         fields: {...chosenvalues.fields, [fieldName]: newvalues},
+      });
+      setUserMergeResult({
+        ...saveduserMergeResult,
+        field_choices: {...newmerged},
       });
       console.log(
         '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
@@ -337,13 +384,34 @@ export default function ConflictForm(props: ConflictFormProps) {
     '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++Revisions'
   );
   console.log(conflicts);
+  console.log(saveduserMergeResult);
 
-  const onButtonSave = () => {
-    alert('saved');
-    // remove two revisions from headers
-    // check if headers not empty
-    // direct user to new conflict resolving or edit tab
+  const onButtonSave = async () => {
+    if (saveduserMergeResult !== null) {
+      const fieldchoise: {[key: string]: string | null} = {};
+      fieldslist.map(field =>
+        conflictfields.includes(field)
+          ? (fieldchoise[field] = saveduserMergeResult['field_choices'][field])
+          : (fieldchoise[field] = conflictA['fields'][field]['avp_id'])
+      );
+      const result = await saveUserMergeResult({
+        ...saveduserMergeResult,
+        field_choices: {...fieldchoise},
+      });
+      if (result) {
+        alert('Saved');
+        //need to get result
+        // direct user to new conflict resolving or edit tab if there is no confilct ??
+        setissavedconflict(record_id + revisionlist[1]);
+      }
+    } else alert('Not saved');
   };
+
+  const numResolved =
+    saveduserMergeResult !== null
+      ? Object.keys(saveduserMergeResult.field_choices).length
+      : 0;
+  const numUnResolved = conflictfields.length - numResolved;
 
   return (
     <Grid style={{minWidth: '800px', overflowX: 'auto'}}>
@@ -357,6 +425,18 @@ export default function ConflictForm(props: ConflictFormProps) {
         istoggleAll={istoggleAll}
         setIstoggleAll={setIstoggleAll}
       />
+      {conflictA !== null &&
+        conflictB !== null &&
+        saveduserMergeResult !== null && (
+          <Grid container>
+            <ConflictResolveIcon
+              numResolved={numResolved}
+              numUnResolved={numUnResolved}
+              num={conflictfields.length}
+            />
+            <ConflictSaveButton onButtonClick={onButtonSave} />
+          </Grid>
+        )}
       <TabContext value={tabvalue}>
         <RecordTabBar
           handleChange={handleChange}
@@ -387,7 +467,6 @@ export default function ConflictForm(props: ConflictFormProps) {
                   setFieldChanged={setFieldChanged}
                   revisionlist={revisionlist}
                   inirevision={conflicts['initial_head']}
-                  onButtonSave={onButtonSave}
                   fieldslist={fieldslist}
                   conflictfields={conflictfields}
                   istoggleAll={istoggleAll}
@@ -395,6 +474,16 @@ export default function ConflictForm(props: ConflictFormProps) {
               </div>
             </TabPanel>
           ))}
+        {conflictA !== null && conflictB !== null && (
+          <Grid container>
+            <ConflictResolveIcon
+              numResolved={numResolved}
+              numUnResolved={numUnResolved}
+              num={conflictfields.length}
+            />
+            <ConflictSaveButton onButtonClick={onButtonSave} />
+          </Grid>
+        )}
       </TabContext>
     </Grid>
   );

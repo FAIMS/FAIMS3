@@ -129,6 +129,7 @@ export default function Record(props: RecordeProps) {
     null as InitialMergeDetails | null
   );
   const [selectrevision, setselectedRevision] = useState(null as null | string);
+  const [issavedconflict, setissavedconflict] = useState(record_id);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -159,6 +160,13 @@ export default function Record(props: RecordeProps) {
         })
         .catch(console.error /*TODO*/);
       getHRIDforRecordID(project_id, record_id).then(hrid => setHrid(hrid));
+    };
+
+    getIni();
+  }, [project_id, record_id]);
+
+  useEffect(() => {
+    const getIni = async () => {
       getInitialMergeDetails(project_id, record_id).then(result => {
         setConflicts(result);
         if (result !== null) setselectedRevision(result['initial_head']);
@@ -166,7 +174,7 @@ export default function Record(props: RecordeProps) {
     };
 
     getIni();
-  }, [project_id, record_id]);
+  }, [project_id, record_id, issavedconflict]);
 
   useEffect(() => {
     const getType = async () => {
@@ -186,6 +194,7 @@ export default function Record(props: RecordeProps) {
 
   const setRevision = (revision: string, index: number) => {
     setselectedRevision(revision);
+    console.log(index);
     //update revision id for record form
   };
 
@@ -365,6 +374,7 @@ export default function Record(props: RecordeProps) {
                 metaSection={metaSection}
                 type={type}
                 conflicts={conflicts}
+                setissavedconflict={setissavedconflict}
               />
             </Box>
           </TabPanel>
