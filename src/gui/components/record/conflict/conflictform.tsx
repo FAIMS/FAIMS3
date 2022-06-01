@@ -194,10 +194,6 @@ export default function ConflictForm(props: ConflictFormProps) {
             setstyletypeMiddle(updated.colourstyle);
           }
           setIsloading(false);
-          console.log(
-            '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
-          );
-          console.log(result);
         }
       );
     }
@@ -316,6 +312,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     const newright: iscolourList = {};
     const newmiddle: iscolourList = {};
     const newclick = isclick;
+    const newvalues: {[key: string]: string | null} = {};
 
     if (value === 'A') {
       fieldslist.map(fieldName => {
@@ -324,6 +321,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           newmiddle[fieldName] = 'success';
           newright[fieldName] = 'reject';
           newclick[fieldName] = true;
+          newvalues[fieldName] = conflictA['fields'][fieldName]['avp_id'];
         } else {
           newleft[fieldName] = styletypeLeft[fieldName];
           newright[fieldName] = styletypeRight[fieldName];
@@ -335,6 +333,11 @@ export default function ConflictForm(props: ConflictFormProps) {
       setstyletypeRight({...newright});
       setIsClickLeft({...newclick});
       setIsClickRight({...newclick});
+      if (saveduserMergeResult !== null)
+        setUserMergeResult({
+          ...saveduserMergeResult,
+          field_choices: {...newvalues},
+        });
       const values: RecordMergeInformation = {
         ...conflictA,
         fields: {},
@@ -346,13 +349,14 @@ export default function ConflictForm(props: ConflictFormProps) {
           })
       );
       setChoosenvalues({...values});
-    } else if (value === 'B') {
+    } else if (value === 'B' && conflictB !== null) {
       fieldslist.map(fieldName => {
         if (conflictfields.includes(fieldName)) {
           newleft[fieldName] = 'reject';
           newright[fieldName] = 'success';
           newmiddle[fieldName] = 'success';
           newclick[fieldName] = true;
+          newvalues[fieldName] = conflictB['fields'][fieldName]['avp_id'];
         } else {
           newleft[fieldName] = styletypeLeft[fieldName];
           newright[fieldName] = styletypeRight[fieldName];
@@ -364,6 +368,11 @@ export default function ConflictForm(props: ConflictFormProps) {
       setstyletypeMiddle({...newmiddle});
       setIsClickLeft({...newclick});
       setIsClickRight({...newclick});
+      if (saveduserMergeResult !== null)
+        setUserMergeResult({
+          ...saveduserMergeResult,
+          field_choices: {...newvalues},
+        });
       if (conflictB !== null) {
         const values: RecordMergeInformation = {
           ...conflictB,
@@ -394,14 +403,20 @@ export default function ConflictForm(props: ConflictFormProps) {
           ? (fieldchoise[field] = saveduserMergeResult['field_choices'][field])
           : (fieldchoise[field] = conflictA['fields'][field]['avp_id'])
       );
-      const result = await saveUserMergeResult({
-        ...saveduserMergeResult,
-        field_choices: {...fieldchoise},
-      });
-      if (result) {
-        alert('Saved');
-        //need to get result
-        // direct user to new conflict resolving or edit tab if there is no confilct ??
+      try {
+        const result = await saveUserMergeResult({
+          ...saveduserMergeResult,
+          field_choices: {...fieldchoise},
+        });
+        if (result) {
+          alert('Saved');
+          //need to get result
+          // direct user to new conflict resolving or edit tab if there is no confilct ??
+          setissavedconflict(record_id + revisionlist[1]);
+        }
+      } catch {
+        // this need to be updated and get the actual error handler here
+        alert('Error but result saved');
         setissavedconflict(record_id + revisionlist[1]);
       }
     } else alert('Not saved');
@@ -434,7 +449,10 @@ export default function ConflictForm(props: ConflictFormProps) {
               numUnResolved={numUnResolved}
               num={conflictfields.length}
             />
-            <ConflictSaveButton onButtonClick={onButtonSave} />
+            <ConflictSaveButton
+              onButtonClick={onButtonSave}
+              numUnResolved={numUnResolved}
+            />
           </Grid>
         )}
       <TabContext value={tabvalue}>
@@ -481,7 +499,10 @@ export default function ConflictForm(props: ConflictFormProps) {
               numUnResolved={numUnResolved}
               num={conflictfields.length}
             />
-            <ConflictSaveButton onButtonClick={onButtonSave} />
+            <ConflictSaveButton
+              onButtonClick={onButtonSave}
+              numUnResolved={numUnResolved}
+            />
           </Grid>
         )}
       </TabContext>

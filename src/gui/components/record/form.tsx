@@ -74,6 +74,8 @@ type RecordFormProps = {
   // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
+  conflictfields?: string[] | null;
+  handleChangeTab?: any;
   metaSection?: any;
 } & (
   | {
@@ -685,6 +687,7 @@ class RecordForm extends React.Component<
   }
 
   render() {
+    console.log(this.props.conflictfields);
     if (this.state.draft_created !== null) {
       // If a draft was created, that implies this form started from
       // a non draft, so it must have been an existing record (see props
@@ -856,15 +859,7 @@ class RecordForm extends React.Component<
                         error={this.state.draftError}
                       />
                     </Grid>
-                    <Grid
-                      item
-                      sm={
-                        String(process.env.REACT_APP_SERVER) === 'developers'
-                          ? 6
-                          : 12
-                      }
-                      xs={12}
-                    >
+                    <Grid item sm={12} xs={12}>
                       <ViewComponent
                         viewName={viewName}
                         ui_specification={ui_specification}
@@ -872,6 +867,8 @@ class RecordForm extends React.Component<
                         draftState={this.draftState}
                         annotation={this.state.annotation}
                         handerannoattion={this.updateannotation}
+                        conflictfields={this.props.conflictfields}
+                        handleChangeTab={this.props.handleChangeTab}
                       />
                       <br />
 

@@ -32,6 +32,13 @@ export type cardstyletype = {
   textstyle?: {[key: string]: string};
 };
 
+export const conflicticonstyle = {
+  backgroundColor: '#f9dbaf',
+  borderRadius: 35,
+  textTransform: 'none',
+  color: '#f29c3e',
+};
+
 export const cardsstyles: {[key: string]: cardstyletype} = {
   warning: {
     card: {

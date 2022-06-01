@@ -30,6 +30,7 @@ import {
   Paper,
   Tab,
   CircularProgress,
+  Button,
 } from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
@@ -62,13 +63,14 @@ import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
 import {
   InitialMergeDetails,
   getInitialMergeDetails,
+  findConflictingFields,
 } from '../../data_storage/merging';
 import Alert from '@mui/material/Alert';
 import {ConflictHelpDialog} from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-
+import {ResolveButton} from '../components/record/conflict/conflictbutton';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
@@ -128,8 +130,9 @@ export default function Record(props: RecordeProps) {
   const [conflicts, setConflicts] = useState(
     null as InitialMergeDetails | null
   );
-  const [selectrevision, setselectedRevision] = useState(null as null | string);
-  const [issavedconflict, setissavedconflict] = useState(record_id);
+  const [selectrevision, setselectedRevision] = useState(null as null | string); // set default one as revision_id and if there is confilct then get the new vision of content
+  const [issavedconflict, setissavedconflict] = useState(record_id); // this is to check if the conflict resolved been saved
+  const [conflictfields, setConflictfields] = useState(null as null | string[]);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -165,16 +168,36 @@ export default function Record(props: RecordeProps) {
     getIni();
   }, [project_id, record_id]);
 
+  // below function is to get conflicts headers when loading record or after user save the conflict resolve button
   useEffect(() => {
-    const getIni = async () => {
+    const getconflicts = async () => {
       getInitialMergeDetails(project_id, record_id).then(result => {
         setConflicts(result);
-        if (result !== null) setselectedRevision(result['initial_head']);
+        if (
+          result !== null &&
+          result['available_heads'] !== undefined &&
+          result['available_heads'].length > 1
+        ) {
+          setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
+        }
       });
     };
 
-    getIni();
+    getconflicts();
   }, [project_id, record_id, issavedconflict]);
+
+  useEffect(() => {
+    const getConflictList = async () => {
+      if (selectrevision !== null)
+        setConflictfields(
+          await findConflictingFields(project_id, record_id, selectrevision)
+        );
+    };
+    console.log('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
+    console.log(selectrevision);
+    console.log(conflictfields);
+    getConflictList();
+  }, [selectrevision]);
 
   useEffect(() => {
     const getType = async () => {
@@ -192,11 +215,14 @@ export default function Record(props: RecordeProps) {
     setValue(newValue);
   };
 
-  const setRevision = (revision: string, index: number) => {
+  const setRevision = async (revision: string, index: number) => {
     setselectedRevision(revision);
-    console.log(index);
+    const fields = await findConflictingFields(project_id, record_id, revision);
+    // setConflictfields(fields)
+    console.log(fields);
     //update revision id for record form
   };
+  console.log(conflictfields);
 
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
     return <CircularProgress size={12} thickness={4} />;
@@ -320,7 +346,8 @@ export default function Record(props: RecordeProps) {
                                 users that cannot be automatically mergeed.
                                 Resolve the conflicting fields before editing to
                                 prevent creating futhrer versions of this
-                                record. RESOLVE CONFLICTS
+                                record.{' '}
+                                <ResolveButton handleChange={handleChange} />
                               </Alert>
                             </Grid>
                           </Grid>
@@ -336,6 +363,8 @@ export default function Record(props: RecordeProps) {
                           ui_specification={uiSpec}
                           draft_id={draft_id}
                           metaSection={metaSection}
+                          conflictfields={conflictfields}
+                          handleChangeTab={handleChange}
                         />
                       </Box>
                     ) : (

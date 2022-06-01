@@ -27,6 +27,8 @@ import {getComponentFromFieldConfig} from './fields';
 import {Annotation, AnnotationField} from './Annotation';
 import {Grid} from '@mui/material';
 import {Box} from '@mui/material';
+import {EditConflictDisalog} from './conflict/conflictDialog';
+
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
@@ -34,36 +36,77 @@ type ViewProps = {
   draftState: RecordDraftState;
   annotation: any;
   handerannoattion: any;
+  conflictfields?: string[] | null; // those two props are handling the conflict icons
+  handleChangeTab?: any;
+};
+type SingleComponentProps = {
+  fieldName: string;
+  fields: {[key: string]: any};
+  index: number;
+  formProps: FormikProps<{[key: string]: unknown}>;
+  annotation: any;
+  handerannoattion: any;
+  draftState: RecordDraftState;
+  conflictfields?: string[] | null; // those two props are handling the conflict icons
+  handleChangeTab?: any;
 };
 
-function SingleComponent(props: any) {
+function SingleComponent(props: SingleComponentProps) {
+  const conflictfields = props.conflictfields;
   const fieldName = props.fieldName;
   const fields = props.fields;
   const [isclicked, setIsClick] = useState(false);
-
+  const fieldConfig = fields[fieldName];
+  const label =
+    fieldConfig['component-parameters']['InputLabelProps'] !== undefined
+      ? fieldConfig['component-parameters']['InputLabelProps']['label']
+      : fieldConfig['component-parameters']['FormLabelProps'] !== undefined
+      ? fieldConfig['component-parameters']['FormLabelProps']['children']
+      : fieldConfig['component-parameters']['FormControlLabelProps'] !==
+        undefined
+      ? fieldConfig['component-parameters']['FormControlLabelProps']['children']
+      : fieldName;
+  console.log(conflictfields);
   return (
     <Box mb={3} key={fieldName + props.index}>
       <Grid container>
-        <Grid item sm={10} xs={12}>
-          {getComponentFromFieldConfig(
-            fields[fieldName],
-            fieldName,
-            props.formProps
-          )}
+        <Grid item sm={8} xs={12}>
+          {getComponentFromFieldConfig(fieldConfig, fieldName, props.formProps)}
         </Grid>
-        <Grid item sm={2} xs={12} style={{marginTop: '0.5em'}}>
-          {props.annotation !== undefined &&
-            fields[fieldName].meta !== undefined &&
-            fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-            fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
-            fields[fieldName]['component-name'] !== 'RandomStyle' && (
-              <Annotation
-                key={'annotation' + fieldName + 'box'}
-                setIsClick={setIsClick}
-                isclicked={isclicked}
-                field={fields[fieldName]}
-              />
-            )}
+        <Grid
+          item
+          sm={4}
+          xs={12}
+          style={{marginTop: '0.5em'}}
+          container
+          justifyContent="flex-start"
+          alignItems="flex-start"
+        >
+          <Grid item>
+            {props.annotation !== undefined &&
+              fields[fieldName].meta !== undefined &&
+              fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
+              fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
+              fields[fieldName]['component-name'] !== 'RandomStyle' && (
+                <Annotation
+                  key={'annotation' + fieldName + 'box'}
+                  setIsClick={setIsClick}
+                  isclicked={isclicked}
+                  field={fields[fieldName]}
+                />
+              )}
+          </Grid>
+          <Grid item style={{paddingLeft: 10}}>
+            {' '}
+            {conflictfields !== null &&
+              conflictfields !== undefined &&
+              conflictfields.includes(fieldName) && (
+                <EditConflictDisalog
+                  label={label}
+                  handleChangeTab={props.handleChangeTab}
+                />
+              )}{' '}
+          </Grid>
         </Grid>
         {props.annotation !== undefined &&
           fields[fieldName].meta !== undefined &&
@@ -108,7 +151,7 @@ export function ViewComponent(props: ViewProps) {
       isactive = false;
     }; // cleanup toggles value,
   }, [props.formProps]);
-
+  console.log(props.conflictfields);
   return (
     <React.Fragment>
       {fieldNames.map((fieldName, index) => (
@@ -121,6 +164,8 @@ export function ViewComponent(props: ViewProps) {
           handerannoattion={props.handerannoattion}
           index={index}
           key={index}
+          conflictfields={props.conflictfields}
+          handleChangeTab={props.handleChangeTab}
         />
       ))}
       {!props.formProps.isValid && error !== false && (

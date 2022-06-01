@@ -24,6 +24,7 @@ import {styled} from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
 import Typography from '@mui/material/Typography';
@@ -31,6 +32,7 @@ import IconButton from '@mui/material/IconButton';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {CircularProgress} from '@mui/material';
 import {Grid, Box} from '@mui/material';
+import {conflicticonstyle} from './conflictstyle';
 
 export function ConflictButton(props: any) {
   return (
@@ -171,6 +173,7 @@ function ConflictInfoContent() {
 type ConflictHelpDialogProps = {
   type?: string;
 };
+
 export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -238,6 +241,106 @@ export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
           </Button>
         </DialogActions>
       </ConflictDialog>
+    </Grid>
+  );
+}
+
+function ConflictChildDialog(props: any) {
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    props.handleparentClose(false);
+    setOpen(false);
+  };
+
+  return (
+    <Grid container>
+      <Button onClick={handleClickOpen}>Resolve Conflicts</Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{' Alert '}</DialogTitle>
+        <DialogContent style={{width: '600px', height: '100px'}}>
+          <DialogContentText id="alert-dialog-description">
+            If you proceed to the Conflicts tab, all changes made here will be
+            lost
+            <br />
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={event => props.handleChangeTab(event, '4')}>
+            PROCEED TO CONFLICTS
+          </Button>
+          <Button onClick={handleClose} autoFocus>
+            Continue Editing
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Grid>
+  );
+}
+
+export function EditConflictDisalog(props: any) {
+  const {label} = props;
+  const [open, setOpen] = React.useState(false);
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  return (
+    <Grid container>
+      <Button
+        variant="contained"
+        style={{
+          textTransform: 'none',
+          backgroundColor: '#f9dbaf',
+          borderRadius: 35,
+          color: '#f29c3e',
+        }}
+        startIcon={
+          <InfoOutlinedIcon style={{paddingLeft: 0, paddingRight: 0}} />
+        }
+        onClick={handleClickOpen}
+        size="small"
+      >
+        Conflict
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {label} field is in Conflict
+        </DialogTitle>
+        <DialogContent style={{width: '600px', height: '100px'}}>
+          <DialogContentText id="alert-dialog-description">
+            This record contains conflicting data for the {label} field. If you
+            wish to resolve the conflicting data, go to the conflicts tab(you
+            will lose any changes you have made here)
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <ConflictChildDialog
+            handleparentClose={handleClose}
+            handleChangeTab={props.handleChangeTab}
+          />
+          <Button onClick={handleClose} autoFocus>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   );
 }

@@ -25,6 +25,19 @@ import {grey} from '@mui/material/colors';
 import DoneIcon from '@mui/icons-material/Done';
 import IconButton from '@mui/material/IconButton';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+
+export function ResolveButton(props: any) {
+  return (
+    <Button
+      variant="text"
+      style={{color: '#f29c3e', paddingLeft: 0}}
+      onClick={event => props.handleChange(event, '4')}
+    >
+      RESOLVE CONFLICTS
+    </Button>
+  );
+}
+
 function FieldButton(props: any) {
   return (
     <IconButton
@@ -69,7 +82,7 @@ export function ConflictSaveButton(props: any) {
         startIcon={props.startIcon}
         variant="text"
         color={props.issaving ? undefined : 'primary'}
-        disabled={props.issaving}
+        disabled={props.issaving || props.numUnResolved !== 0}
       >
         Save
       </Button>
