@@ -40,7 +40,7 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '../../../data_storage/index';
-import {useEventedPromise} from '../../pouchHook';
+import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
 
@@ -299,7 +299,11 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       );
       return metadata;
     },
-    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    constantArgsSplit(
+      listenDataDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id]
+    ),
     false,
     [project_id],
     project_id
@@ -338,7 +342,11 @@ export function RecordsSearchTable(props: RecordsSearchTableProps) {
       );
       return metadata;
     },
-    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    constantArgsSplit(
+      listenDataDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id, query]
+    ),
     false,
     [project_id, query],
     project_id,
