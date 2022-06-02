@@ -201,14 +201,14 @@ function DraftRecord(props: DraftsRecordProps) {
           sortModel: [{field: 'updated', sort: 'desc'}],
         },
         pagination: {
-          pageSize: 
+          pageSize:
             maxRows !== null
               ? not_xs
                 ? maxRows
                 : defaultMaxRowsMobile
               : not_xs
               ? 25
-              : defaultMaxRowsMobile
+              : defaultMaxRowsMobile,
         },
       }}
     />

@@ -43,6 +43,7 @@ function getConflictnumber(
   view: string,
   conflictfields: Array<string>
 ) {
+  if (conflictfields.length === 0) return 0;
   let num = 0;
   ui_specification['views'][view]['fields'].map(field =>
     conflictfields.includes(field) ? (num = num + 1) : num
@@ -50,6 +51,7 @@ function getConflictnumber(
 
   return num;
 }
+
 export default function RecordTabBar(props: recordTabProps) {
   const {ui_specification, handleChange, type, conflictfields} = props;
   const num: {[key: string]: number} = {};
@@ -63,7 +65,11 @@ export default function RecordTabBar(props: recordTabProps) {
   // {'\xa0\xa0'}
   // </Badge>
   return (
-    <TabList onChange={handleChange} aria-label="Record Tab">
+    <TabList
+      onChange={handleChange}
+      aria-label="Record Tab"
+      variant="scrollable"
+    >
       {ui_specification['viewsets'][type]['views'].map((tab, index) => (
         <Tab
           key={index + 'conflict_tab'}

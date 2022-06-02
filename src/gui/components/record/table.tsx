@@ -261,7 +261,6 @@ function RecordsTable(props: RecordsTableProps) {
           autoHeight
           rowHeight={not_xs ? 52 : 130}
           rowsPerPageOptions={[10, 25, 50, 100]}
-          
           checkboxSelection
           density={not_xs ? 'standard' : 'comfortable'}
           components={{
@@ -272,14 +271,14 @@ function RecordsTable(props: RecordsTableProps) {
               sortModel: [{field: 'updated', sort: 'desc'}],
             },
             pagination: {
-              pageSize: 
+              pageSize:
                 maxRows !== null
                   ? not_xs
                     ? maxRows
                     : defaultMaxRowsMobile
                   : not_xs
                   ? 25
-                  : defaultMaxRowsMobile
+                  : defaultMaxRowsMobile,
             },
           }}
         />
