@@ -15,11 +15,11 @@
  *
  * Filename: confictform.tsx
  * Description:
- *   TODO
+ *   TODO: Get date/time and username for conflict Drop list instead of ids
  */
 
 import React, {useEffect} from 'react';
-import {useContext,useState} from 'react';
+import {useContext, useState} from 'react';
 import {ProjectID, RecordID, RevisionID} from '../../../../datamodel/core';
 import {
   ProjectUIModel,
@@ -47,14 +47,13 @@ import {ActionType} from '../../../../actions';
 type ConflictFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
-  // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
   metaSection?: any;
   revision_id?: null | RevisionID;
   type: string;
   conflicts: InitialMergeDetails;
-  setissavedconflict: any;
+  setissavedconflict: any; // this is paramater that allow user can reload the conflict headers
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
@@ -301,11 +300,6 @@ export default function ConflictForm(props: ConflictFormProps) {
         ...saveduserMergeResult,
         field_choices: {...newmerged},
       });
-      console.log(
-        '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
-      );
-      console.log(chosenvalues['fields'][fieldName]);
-      console.log(conflictA['fields'][fieldName]);
     }
   };
 
@@ -391,12 +385,6 @@ export default function ConflictForm(props: ConflictFormProps) {
     }
   };
 
-  console.log(
-    '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++Revisions'
-  );
-  console.log(conflicts);
-  console.log(saveduserMergeResult);
-
   const onButtonSave = async () => {
     if (saveduserMergeResult !== null) {
       const fieldchoise: {[key: string]: string | null} = {};
@@ -411,7 +399,6 @@ export default function ConflictForm(props: ConflictFormProps) {
           field_choices: {...fieldchoise},
         });
         if (result) {
-         
           dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -434,7 +421,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         });
         setissavedconflict(record_id + revisionlist[1]);
       }
-    } else{
+    } else {
       // alert user if the conflict not been saved
       dispatch({
         type: ActionType.ADD_ALERT,
