@@ -5,7 +5,12 @@ set -euo pipefail
 GITROOT=$(git rev-parse --show-toplevel)
 cd $GITROOT
 
-bash android/bin/mergeTagFromMain.sh
+export TAG_EXPRESSION="${1:-v*}"
+
+
+bash android/bin/mergeTagFromMain.sh "$TAG_EXPRESSION"
+
+
 
 
 export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
