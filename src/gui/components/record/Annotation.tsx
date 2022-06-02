@@ -25,7 +25,7 @@ import NoteIcon from '@mui/icons-material/Note';
 
 import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
-
+import {Grid} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export function Annotation(props: any) {
   const {field, isclicked, setIsClick} = props;
@@ -90,11 +90,15 @@ type AnnotationFieldProp = {
   field: any;
   handerannoattion: any;
   annotation: any;
+  disabled?: boolean;
+  isxs?: boolean;
   // formProps:any
 };
 
 export function AnnotationField(props: AnnotationFieldProp) {
   const {field, fieldName, handerannoattion, isclicked} = props;
+  const disabled = props.disabled ?? false; // this is diabled on conflcit tab , ddefault value is false
+  const isxs = props.isxs ?? true; // this is enabled on conflcit tab , ddefault value is true
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
       ? props.annotation[fieldName] !== undefined
@@ -128,11 +132,22 @@ export function AnnotationField(props: AnnotationFieldProp) {
       'uncertainty'
     );
   };
+
+  const isannotationshow =
+    isclicked && field.meta !== undefined && field.meta.annotation !== false;
+  const isuncertityshow =
+    field.meta !== undefined &&
+    field.meta['uncertainty'] !== undefined &&
+    field['meta']['uncertainty']['include'] &&
+    isclicked;
   return (
-    <>
-      {isclicked &&
-        field.meta !== undefined &&
-        field.meta.annotation !== false && (
+    <Grid container>
+      {isannotationshow && (
+        <Grid
+          item
+          sm={isannotationshow && isuncertityshow && isxs ? 8 : 12}
+          xs={12}
+        >
           <Field
             component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
             name={fieldName + 'annotation'}
@@ -143,12 +158,13 @@ export function AnnotationField(props: AnnotationFieldProp) {
             InputProps={{type: 'text'}}
             label={field['meta']['annotation_label']}
             InputLabelProps={{shrink: true}}
+            disabled={disabled}
+            fullWidth
           />
-        )}
-      {field.meta !== undefined &&
-        field.meta['uncertainty'] !== undefined &&
-        field['meta']['uncertainty']['include'] &&
-        isclicked && (
+        </Grid>
+      )}
+      {isuncertityshow && (
+        <Grid item sm={4} xs={12}>
           <Field
             component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
             name={props.fieldName + 'uncertainty'}
@@ -160,9 +176,11 @@ export function AnnotationField(props: AnnotationFieldProp) {
               label: field['meta']['uncertainty']['label'],
             }}
             onChange={handlerchangesUncertainty}
+            disabled={disabled}
           />
-        )}
+        </Grid>
+      )}
       <br />
-    </>
+    </Grid>
   );
 }

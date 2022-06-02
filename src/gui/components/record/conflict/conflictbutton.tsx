@@ -98,7 +98,7 @@ const iconstyle = {
 const isclickiconstyle = {
   backgroundColor: '#fff',
   color: '#1B3E93',
-  borderRadius: '2px',
+  borderRadius: '0px',
 };
 
 export function FieldButtonGroup(props: any) {

@@ -19,7 +19,7 @@
  */
 
 import React, {useEffect} from 'react';
-import {useState} from 'react';
+import {useContext,useState} from 'react';
 import {ProjectID, RecordID, RevisionID} from '../../../../datamodel/core';
 import {
   ProjectUIModel,
@@ -42,7 +42,8 @@ import ConflictPanel from './conflictpannel';
 import ConflictToolBar from './conflicttoolbar';
 import {ConflictResolveIcon} from './conflictfield';
 import {ConflictSaveButton} from './conflictbutton';
-
+import {store} from '../../../../store';
+import {ActionType} from '../../../../actions';
 type ConflictFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -160,6 +161,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   const [saveduserMergeResult, setUserMergeResult] = useState(
     null as UserMergeResult | null
   );
+  const {dispatch} = useContext(store);
 
   const updateconflict = (
     setconflict: any,
@@ -409,17 +411,40 @@ export default function ConflictForm(props: ConflictFormProps) {
           field_choices: {...fieldchoise},
         });
         if (result) {
-          alert('Saved');
-          //need to get result
+         
+          dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message: 'Saved Conflict Resolve',
+              severity: 'success',
+            },
+          });
+          console.log('Saved Conflict Resolve');
           // direct user to new conflict resolving or edit tab if there is no confilct ??
           setissavedconflict(record_id + revisionlist[1]);
         }
       } catch {
-        // this need to be updated and get the actual error handler here
-        alert('Error but result saved');
+        // alert user if the conflict not been saved
+        dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Conflict Resolve Not saved',
+            severity: 'error',
+          },
+        });
         setissavedconflict(record_id + revisionlist[1]);
       }
-    } else alert('Not saved');
+    } else{
+      // alert user if the conflict not been saved
+      dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Conflict Resolve Not saved',
+          severity: 'error',
+        },
+      });
+      setissavedconflict(record_id + revisionlist[1]);
+    }
   };
 
   const numResolved =

@@ -32,7 +32,6 @@ import IconButton from '@mui/material/IconButton';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {CircularProgress} from '@mui/material';
 import {Grid, Box} from '@mui/material';
-import {conflicticonstyle} from './conflictstyle';
 
 export function ConflictButton(props: any) {
   return (

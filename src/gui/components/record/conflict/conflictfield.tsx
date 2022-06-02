@@ -30,15 +30,13 @@ import {
   Typography,
 } from '@mui/material';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
-import {getComponentByName} from '../../../component_registry';
-import {Field} from 'formik';
 import {AnnotationField} from '../Annotation';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import {cardsstyles, cardstyletype} from './conflictstyle';
 import {CircularProgress} from '@mui/material';
-
+import {getComponentFromFieldConfig} from '../fields';
 type FieldWithAnnotationProp = {
   fieldName: string;
   fieldConfig: any;
@@ -153,14 +151,9 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
         undefined
       ? fieldConfig['component-parameters']['FormControlLabelProps']['children']
       : fieldName;
-  const Component = getComponentByName(
-    fieldConfig['component-namespace'],
-    fieldConfig['component-name']
-  );
-  // const styletype =
-  //   props.styletype ?? type === 'middle' ? 'warning' : 'default';
+
   const cardstyle: cardstyletype = cardsstyles[styletype];
-  //=== 'warning' || styletype === 'delete'
+
   return ['warning', 'delete', 'clear'].includes(styletype) ? (
     <Box pt={10} pl={3} pr={3} minHeight="340px" maxHeight="340px">
       <Grid
@@ -170,14 +163,13 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
         style={cardstyle.cardheader}
       >
         {cardstyle.icon}
-        {/* <InfoIcon style={cardstyle.iconstyle} /> */}
         <Typography variant="caption" display="block">
           {cardstyle.text}
         </Typography>
       </Grid>
     </Box>
   ) : (
-    <Box pt={10} pl={3} pr={3}>
+    <Box pt={10} px={3}>
       <Card style={cardstyle.card}>
         {cardstyle !== null ? (
           <CardHeader
@@ -193,43 +185,39 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             style={cardstyle['cardheader']}
           />
         )}
-        <CardContent>
-          <Typography variant="body2" color="text.secondary"></Typography>
-
-          <Field
-            component={Component}
-            name={fieldName}
-            value={formProps['values'][fieldName]}
-            {...fieldConfig['component-parameters']}
-            {...fieldConfig['component-parameters']['InputProps']}
-            {...fieldConfig['component-parameters']['SelectProps']}
-            {...fieldConfig['component-parameters']['InputLabelProps']}
-            {...fieldConfig['component-parameters']['FormHelperTextProps']}
-            InputLabelProps={{shrink: true}} //e.g, TextField label for Date and email and number
-            onWheel={(event: any) => event.target.blur()}
-            disabled="true"
-          />
-          <br />
-          <br />
-          {fieldConfig['meta'] !== undefined &&
-            fieldConfig['meta']['annotation'] !== undefined &&
-            fieldConfig['meta']['annotation'] === true && (
-              <AnnotationField
-                key={'annotation' + fieldName + 'box'}
-                fieldName={fieldName}
-                // formProps={this.props.formProps}
-                field={fieldConfig}
-                annotation={{
-                  [fieldName]: {...data['fields'][fieldName]['annotations']},
-                }}
-                handerannoattion={() => {
-                  console.log('annotation');
-                }}
-                isclicked={true}
-              />
+        <CardContent style={cardstyle.cardcotent}>
+          <Grid style={{minHeight: '225px'}}>
+            <Typography variant="body2" color="text.secondary"></Typography>
+            {getComponentFromFieldConfig(
+              fieldConfig,
+              fieldName,
+              formProps,
+              true
             )}
+            <br />
+            <br />
+            {fieldConfig['meta'] !== undefined &&
+              fieldConfig['meta']['annotation'] !== undefined &&
+              fieldConfig['meta']['annotation'] === true && (
+                <AnnotationField
+                  key={'annotation' + fieldName + 'box'}
+                  fieldName={fieldName}
+                  // formProps={this.props.formProps}
+                  field={fieldConfig}
+                  annotation={{
+                    [fieldName]: {...data['fields'][fieldName]['annotations']},
+                  }}
+                  handerannoattion={() => {
+                    console.log('annotation');
+                  }}
+                  isclicked={true}
+                  disabled={true}
+                  isxs={false}
+                />
+              )}
+          </Grid>
           <Grid
-            style={{display: 'block'}}
+            style={{display: 'block', paddingLeft: 1}}
             container
             justifyContent="flex-end"
             alignItems="flex-end"

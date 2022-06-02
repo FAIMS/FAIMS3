@@ -30,6 +30,7 @@ export type cardstyletype = {
   iconstyle?: {[key: string]: string};
   text?: string;
   textstyle?: {[key: string]: string};
+  cardcotent?: {[key: string]: string};
 };
 
 export const conflicticonstyle = {
@@ -71,10 +72,16 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     card: {
       borderColor: '#f6f6f6',
       height: '320px',
+      paddingLeft: '0px',
+      paddingRight: '0px',
     },
     cardheader: {
       backgroundColor: '#f6f6f6',
       // height:'35px',
+    },
+    cardcotent: {
+      paddingLeft: '3px',
+      paddingRight: '3px',
     },
     icon: null,
   },

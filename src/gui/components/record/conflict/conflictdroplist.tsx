@@ -25,6 +25,7 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Select, {SelectChangeEvent} from '@mui/material/Select';
+import {Typography} from '@mui/material';
 
 type ConflictDropSelectprops = {
   label: string;
@@ -33,8 +34,7 @@ type ConflictDropSelectprops = {
   index: number;
   setRevision: any;
   disablerevision: string;
-  text?: string;
-  helptext?: string;
+  islabel?: boolean;
 };
 
 function RevisionDropList(props: ConflictDropSelectprops) {
@@ -45,8 +45,7 @@ function RevisionDropList(props: ConflictDropSelectprops) {
     index,
     setRevision,
     disablerevision,
-    text,
-    helptext,
+    islabel,
   } = props;
   const [value, setValue] = useState(revision);
 
@@ -56,25 +55,20 @@ function RevisionDropList(props: ConflictDropSelectprops) {
   };
 
   return (
-    <Box sx={{minWidth: 400, maxWidth: 400}}>
-      <FormControl fullWidth>
-        <InputLabel htmlFor={'Conflictselect' + label}>{text}</InputLabel>
-        <Select
-          labelId={'Conflictselect' + label}
-          id={'Conflictselect' + label}
-          value={value}
-          label={'Conflict ' + label}
-          onChange={handleChange}
-        >
-          {headerlist.map((value: string) => (
-            <MenuItem value={value} disabled={value === disablerevision}>
-              {value}
-            </MenuItem>
-          ))}
-        </Select>
-        <FormHelperText>{helptext}</FormHelperText>
-      </FormControl>
-    </Box>
+    <Select
+      labelId={'Conflictselect' + label}
+      id={'Conflictselect' + label}
+      label={islabel ? 'Conflict ' + label : ''}
+      value={value}
+      onChange={handleChange}
+      displayEmpty
+    >
+      {headerlist.map((value: string) => (
+        <MenuItem value={value} disabled={value === disablerevision}>
+          {value}
+        </MenuItem>
+      ))}
+    </Select>
   );
 }
 
@@ -89,16 +83,23 @@ export function ConflictDropSelect(props: ConflictDropSelectprops) {
   } = props;
 
   return (
-    <RevisionDropList
-      label={label}
-      headerlist={headerlist}
-      revision={revision}
-      index={index}
-      setRevision={setRevision}
-      disablerevision={disablerevision}
-      helptext={'Select a conflict to resolve'}
-      text={'Conflict ' + label}
-    />
+    <Box sx={{minWidth: 400, maxWidth: 400}}>
+      <FormControl fullWidth>
+        <InputLabel htmlFor={'Conflictselect' + label}>
+          {'Conflict ' + label}
+        </InputLabel>
+        <RevisionDropList
+          label={label}
+          headerlist={headerlist}
+          revision={revision}
+          index={index}
+          setRevision={setRevision}
+          disablerevision={disablerevision}
+          islabel={true}
+        />
+        <FormHelperText>Select a conflict to resolve</FormHelperText>
+      </FormControl>
+    </Box>
   );
 }
 
@@ -113,15 +114,22 @@ export function EditDroplist(props: ConflictDropSelectprops) {
   } = props;
 
   return (
-    <RevisionDropList
-      label={label}
-      headerlist={headerlist}
-      revision={revision}
-      index={index}
-      setRevision={setRevision}
-      disablerevision={disablerevision}
-      helptext={'Select a revision you wish to edit'}
-      text={'Currently editing version: '}
-    />
+    <Box sx={{minWidth: 400, maxWidth: 400}}>
+      <FormControl fullWidth>
+        <Typography variant="h6" display="block">
+          Currently editing version:
+        </Typography>
+        <RevisionDropList
+          label={label}
+          headerlist={headerlist}
+          revision={revision}
+          index={index}
+          setRevision={setRevision}
+          disablerevision={disablerevision}
+          islabel={false}
+        />
+        <FormHelperText>Select a revision you wish to edit</FormHelperText>
+      </FormControl>
+    </Box>
   );
 }

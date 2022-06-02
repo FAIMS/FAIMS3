@@ -30,7 +30,6 @@ import {
   Paper,
   Tab,
   CircularProgress,
-  Button,
 } from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
@@ -193,9 +192,6 @@ export default function Record(props: RecordeProps) {
           await findConflictingFields(project_id, record_id, selectrevision)
         );
     };
-    console.log('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++');
-    console.log(selectrevision);
-    console.log(conflictfields);
     getConflictList();
   }, [selectrevision]);
 
@@ -215,14 +211,9 @@ export default function Record(props: RecordeProps) {
     setValue(newValue);
   };
 
-  const setRevision = async (revision: string, index: number) => {
+  const setRevision = async (revision: string) => {
     setselectedRevision(revision);
-    const fields = await findConflictingFields(project_id, record_id, revision);
-    // setConflictfields(fields)
-    console.log(fields);
-    //update revision id for record form
   };
-  console.log(conflictfields);
 
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
     return <CircularProgress size={12} thickness={4} />;
