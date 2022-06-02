@@ -1,3 +1,5 @@
+update_fastlane
+
 default_platform(:ios)
 
 DEVELOPER_APP_ID = ENV["DEVELOPER_APP_ID"]

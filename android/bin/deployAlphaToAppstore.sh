@@ -11,8 +11,6 @@ export TAG_EXPRESSION="${1:-v*}"
 bash android/bin/mergeTagFromMain.sh "$TAG_EXPRESSION"
 
 
-
-
 export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
 export REACT_APP_DIRECTORY_HOST=alpha.db.faims.edu.au
 export REACT_APP_PRODUCTION_BUILD=true

@@ -9,6 +9,7 @@ git commit -sam "prebuild commit" || echo "Nothing to commit, continuing."
 git fetch --all
 #git pull
 
+
 export TAG_EXPRESSION="${1:-v*}"
 
 git switch --detach
