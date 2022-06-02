@@ -24,7 +24,6 @@ import {Container, Grid} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
-// import {store} from '../../store';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import {CircularProgress} from '@mui/material';
 import {useEventedPromise} from '../pouchHook';
@@ -73,7 +72,6 @@ type ProjectProps = {
 
 export default function ProjectList(props: ProjectProps) {
   const classes = useStyles();
-  // const globalState = useContext(store);
   const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,

@@ -15,7 +15,7 @@
  *
  * Filename: table.tsx
  * Description:
- *   TODO
+ *   Components for displaying record metadata in a table.
  */
 
 import React from 'react';
@@ -36,8 +36,10 @@ import * as ROUTES from '../../../constants/routes';
 import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {RecordMetadata} from '../../../datamodel/ui';
-import {getMetadataForAllRecords} from '../../../data_storage/index';
-import {getAllRecordsWithRegex} from '../../../data_storage/queries';
+import {
+  getMetadataForAllRecords,
+  getRecordsWithRegex,
+} from '../../../data_storage/index';
 import {useEventedPromise} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
@@ -61,6 +63,7 @@ type RecordsSearchTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   query: string;
+  filter_deleted: boolean;
   viewsets?: ProjectUIViewsets | null;
 };
 
@@ -257,6 +260,7 @@ function RecordsTable(props: RecordsTableProps) {
           columns={columns}
           autoHeight
           rowHeight={not_xs ? 52 : 130}
+          rowsPerPageOptions={[10, 25, 50, 100]}
           pageSize={
             maxRows !== null
               ? not_xs
@@ -320,11 +324,20 @@ RecordsBrowseTable.defaultProps = {
 };
 
 export function RecordsSearchTable(props: RecordsSearchTableProps) {
-  const {project_id, maxRows, query} = props;
+  const {project_id, maxRows, query, filter_deleted} = props;
 
   const rows = useEventedPromise(
-    async (project_id: ProjectID, query: string) =>
-      Object.values(await getAllRecordsWithRegex(project_id, query)),
+    async (project_id: ProjectID, query: string) => {
+      if (DEBUG_APP) {
+        console.log('RecordsSearchTable updating', project_id);
+      }
+      const metadata = await getRecordsWithRegex(
+        project_id,
+        query,
+        filter_deleted
+      );
+      return metadata;
+    },
     listenDataDB.bind(null, project_id, {since: 'now', live: true}),
     false,
     [project_id, query],
@@ -345,6 +358,7 @@ export function RecordsSearchTable(props: RecordsSearchTableProps) {
     />
   );
 }
-RecordsBrowseTable.defaultProps = {
+RecordsSearchTable.defaultProps = {
   maxRows: null,
+  filter_deleted: true,
 };

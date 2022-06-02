@@ -15,12 +15,15 @@
  *
  * Filename: index.ts
  * Description:
- *   TODO
+ *   GUI level functions and listeners for the syncing state of the datadbs
+ *   (currently), including attachments. Further syncing control (e.g. for
+ *   projects) at the GUI level should probably go here also.
  */
 
 import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject} from '../datamodel/database';
 import {
+  active_db,
   data_dbs,
   ExistingActiveDoc,
   LocalDB,
@@ -57,10 +60,15 @@ export function isSyncingProject(active_id: ProjectID): boolean {
   return data_dbs[active_id]!.is_sync;
 }
 
-export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
+export async function setSyncingProject(
+  active_id: ProjectID,
+  syncing: boolean
+) {
   if (syncing === isSyncingProject(active_id)) {
+    console.error('Did not change sync for project', active_id);
     return; //Nothing to do, already same value
   }
+  console.info('Change sync for project', active_id, syncing);
   const data_db = data_dbs[active_id];
   data_db.is_sync = syncing;
 
@@ -74,6 +82,16 @@ export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
 
   if (has_remote(data_db)) {
     setLocalConnection(data_db);
+  } else {
+    console.log('project is local only');
+  }
+
+  try {
+    const active_doc = await active_db.get(active_id);
+    active_doc.is_sync = syncing;
+    await active_db.put(active_doc);
+  } catch (err) {
+    console.error('Failed to update active_db with sync state', err);
   }
 
   const created = createdProjects[active_id];
@@ -87,6 +105,90 @@ export function setSyncingProject(active_id: ProjectID, syncing: boolean) {
         active: {
           ...created.active,
           is_sync: !syncing,
+        },
+      },
+    ],
+    false,
+    false,
+    createdListings[created.active.listing_id].listing,
+    created.active,
+    created.project
+  );
+}
+
+export function listenSyncingProjectAttachments(
+  active_id: ProjectID,
+  callback: (syncing: boolean) => unknown
+): () => void {
+  const project_update_cb = (
+    _type: unknown,
+    _mc: unknown,
+    _dc: unknown,
+    _listing: unknown,
+    active: ExistingActiveDoc
+  ) => {
+    if (active._id === active_id) {
+      callback(active.is_sync_attachments);
+    }
+  };
+  events.on('project_update', project_update_cb);
+  return events.removeListener.bind(
+    events,
+    'project_update',
+    project_update_cb
+  );
+}
+
+export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
+  console.error(data_dbs);
+  console.error(active_db);
+  return data_dbs[active_id]!.is_sync_attachments;
+}
+
+export async function setSyncingProjectAttachments(
+  active_id: ProjectID,
+  syncing: boolean
+) {
+  if (syncing === isSyncingProjectAttachments(active_id)) {
+    console.error('Did not change attachment sync for project', active_id);
+    return; //Nothing to do, already same value
+  }
+  console.info('Change attachment sync for project', active_id, syncing);
+  const data_db = data_dbs[active_id];
+  data_db.is_sync_attachments = syncing;
+
+  const has_remote = (
+    db: typeof data_db
+  ): db is LocalDB<ProjectDataObject> & {
+    remote: LocalDBRemote<ProjectDataObject>;
+  } => {
+    return db.remote !== null;
+  };
+
+  if (has_remote(data_db)) {
+    setLocalConnection(data_db);
+  } else {
+    console.log('project is local only');
+  }
+
+  try {
+    const active_doc = await active_db.get(active_id);
+    active_doc.is_sync_attachments = syncing;
+    await active_db.put(active_doc);
+  } catch (err) {
+    console.error('Failed to update active_db with attachment sync state', err);
+  }
+
+  const created = createdProjects[active_id];
+  events.emit(
+    'project_update',
+    [
+      'update',
+      {
+        ...created,
+        active: {
+          ...created.active,
+          is_sync_attachments: !syncing,
         },
       },
     ],

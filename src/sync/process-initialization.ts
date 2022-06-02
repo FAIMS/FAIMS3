@@ -171,7 +171,11 @@ export async function update_directory(
   };
   const directory_error = (err: any) => {
     if (DEBUG_APP) {
-      console.debug('Directory sync error', err);
+      if (err.status === 401) {
+        console.debug('Directory sync waiting on auth');
+      } else {
+        console.debug('Directory sync error', err);
+      }
     }
   };
   //const directory_complete = (info: any) => {
@@ -224,7 +228,7 @@ export function reprocess_listing(listing_id: string) {
       // so it's an error if it doesn't exist.
       err => events.emit('listing_error', listing_id, err)
     );
-  // This is a workaround until we add notebook-level activation
+  // FIXME: This is a workaround until we add notebook-level activation
   window.location.reload();
 }
 
@@ -330,7 +334,8 @@ export async function update_listing(
     'projects',
     listing_id,
     true,
-    projects_dbs
+    projects_dbs,
+    true
   );
 
   // These createdListings objects are created as soon as possible
@@ -406,7 +411,7 @@ export async function update_listing(
 
     projects_local.local
       .changes({...default_changes_opts, since: 0})
-      .on('change', info => {
+      .on('change', async info => {
         if (info.doc === undefined) {
           console.error('projects_local doc changes has doc undefined');
           return undefined;
@@ -424,7 +429,7 @@ export async function update_listing(
         }
 
         if (AUTOACTIVATE_PROJECTS) {
-          autoactivate_projects(listing_id, [info.id]);
+          await autoactivate_projects(listing_id, [info.id]);
         }
         return undefined;
       })
@@ -481,8 +486,12 @@ export async function update_listing(
       //.on('change', info => {
       //  console.debug('Projects sync change', listing_id, info);
       //})
-      .on('error', err => {
-        console.debug('Projects sync error', listing_id, err);
+      .on('error', (err: any) => {
+        if (err.status === 401) {
+          console.debug('Projects sync waiting on auth', listing_id);
+        } else {
+          console.debug('Projects sync error', listing_id, err);
+        }
       });
   } else {
     projects_pause('No Sync')();
@@ -531,6 +540,7 @@ export async function activate_project(
         username: username,
         password: password,
         is_sync: is_sync,
+        is_sync_attachments: false,
       });
       return active_id;
     } else {
@@ -616,19 +626,21 @@ export async function update_project(
    * metadata/data databases.
    */
   const active_id = active_project._id;
-  console.debug('Processing project', active_id);
+  console.debug('Processing project', active_id, active_project);
 
   const [meta_did_change, meta_local] = ensure_local_db(
     'metadata',
     active_id,
     active_project.is_sync,
-    metadata_dbs
+    metadata_dbs,
+    true
   );
   const [data_did_change, data_local] = ensure_local_db(
     'data',
     active_id,
     active_project.is_sync,
-    data_dbs
+    data_dbs,
+    active_project.is_sync_attachments
   );
 
   // These createdProjects objects are created as soon as possible
@@ -736,8 +748,12 @@ export async function update_project(
         //.on('complete', info => {
         //  console.debug('Meta sync complete', active_id, info);
         //})
-        .on('error', err => {
-          console.debug('Meta sync error', active_id, err);
+        .on('error', (err: any) => {
+          if (err.status === 401) {
+            console.debug('Meta sync waiting on auth', active_id);
+          } else {
+            console.debug('Meta sync error', active_id, err);
+          }
         });
     } else {
       meta_pause('No Sync')();
@@ -747,7 +763,10 @@ export async function update_project(
       active_id,
       data_connection_info,
       data_dbs,
-      {push: {}}
+      {
+        push: {},
+        pull: {},
+      }
     );
 
     if (data_remote.remote !== null && data_remote.remote.connection !== null) {
@@ -765,8 +784,12 @@ export async function update_project(
         //.on('complete', info => {
         //  console.debug('Data sync complete', active_id, info);
         //})
-        .on('error', err => {
-          console.debug('Data sync error', active_id, err);
+        .on('error', (err: any) => {
+          if (err.status === 401) {
+            console.debug('Data sync waiting on auth', active_id);
+          } else {
+            console.debug('Data sync error', active_id, err);
+          }
         });
     } else {
       data_pause('No Sync')();

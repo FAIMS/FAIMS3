@@ -15,7 +15,7 @@
  *
  * Filename: TakePhoto.tsx
  * Description:
- *   TODO
+ *   TODO : to add function check if photoes be downloaded
  */
 
 import React from 'react';
@@ -25,8 +25,15 @@ import {Camera, CameraResultType, CameraPhoto} from '@capacitor/camera';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 
-import ImageList from '@mui/material/ImageList';
+// import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
+import ImageListItemBar from '@mui/material/ImageListItemBar';
+import IconButton from '@mui/material/IconButton';
+import ImageIcon from '@mui/icons-material/Image';
+import FaimsDialog from '../components/ui/Dialog';
+import {Typography} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import {styled} from '@mui/material/styles';
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
@@ -44,8 +51,92 @@ function base64image_to_blob(image: CameraPhoto): Blob {
 }
 
 interface Props {
-  helperText?: string;
+  helpertext?: string;
   label?: string;
+}
+
+type ImgeListProps = {
+  images: Array<any>;
+  setopen: any;
+  setimage: any;
+};
+
+/******** create own Image List for dynamic loading images TODO: need to test if it's working on browsers and phone *** Kate */
+const ImageGalleryList = styled('ul')(({theme}) => ({
+  display: 'grid',
+  padding: 0,
+  margin: theme.spacing(0, 4),
+  gap: 8,
+  [theme.breakpoints.up('sm')]: {
+    gridTemplateColumns: 'repeat(2, 1fr)',
+  },
+  [theme.breakpoints.up('md')]: {
+    gridTemplateColumns: 'repeat(4, 1fr)',
+  },
+  [theme.breakpoints.up('lg')]: {
+    gridTemplateColumns: 'repeat(5, 1fr)',
+  },
+}));
+
+const FAIMESImageList = (props: ImgeListProps) => {
+  const {images, setopen, setimage} = props;
+  const handelonClick = (index: number) => {
+    if (images.length > index) {
+      const newimages = images.filter((image: any, i: number) => i !== index);
+      setimage(newimages);
+    }
+  };
+  console.log(images);
+  return images !== null && images !== undefined ? (
+    <ImageGalleryList>
+      {images.map((image, index) =>
+        image['attachment_id'] === undefined ? (
+          <ImageListItem key={index}>
+            <img
+              style={{
+                objectFit: 'scale-down',
+                cursor: 'allowed',
+              }}
+              src={URL.createObjectURL(image)}
+              onClick={() => setopen(URL.createObjectURL(image))}
+            />
+            <ImageListItemBar
+              sx={{
+                background:
+                  'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, ' +
+                  'rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)',
+              }}
+              title={''}
+              position="top"
+              actionIcon={
+                <IconButton
+                  sx={{color: 'white'}}
+                  aria-label={`star ${index}`}
+                  onClick={() => handelonClick(index)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              }
+              actionPosition="left"
+            />
+          </ImageListItem>
+        ) : (
+          // ?? not allow user to delete image if the image is not download yet
+          <ImageListItem key={index}>
+            <IconButton aria-label="image" onClick={() => setopen(null)}>
+              <ImageIcon />
+            </IconButton>
+          </ImageListItem>
+        )
+      )}{' '}
+    </ImageGalleryList>
+  ) : (
+    <span>No photo taken.</span>
+  );
+};
+interface State {
+  open: boolean;
+  photopath: string | null;
 }
 export class TakePhoto extends React.Component<
   FieldProps &
@@ -54,8 +145,24 @@ export class TakePhoto extends React.Component<
       ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
       ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
       NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
-    }
+    },
+  State
 > {
+  constructor(
+    props: FieldProps &
+      Props &
+      ButtonProps & {
+        ValueTextProps: React.HTMLAttributes<HTMLSpanElement>;
+        ErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+        NoErrorTextProps: React.HTMLAttributes<HTMLSpanElement>;
+      }
+  ) {
+    super(props);
+    this.state = {
+      open: false,
+      photopath: null,
+    };
+  }
   async takePhoto() {
     try {
       const image = base64image_to_blob(
@@ -64,38 +171,25 @@ export class TakePhoto extends React.Component<
           allowEditing: false,
           resultType: CameraResultType.Base64,
           correctOrientation: true,
+          promptLabelHeader: 'Take/Select a photo (drag to view more)',
         })
       );
       console.log(image);
-      this.props.form.setFieldValue(this.props.field.name, [image]);
+      const newimages =
+        this.props.field.value !== null
+          ? this.props.field.value.concat(image)
+          : [image];
+      this.props.form.setFieldValue(this.props.field.name, newimages);
     } catch (err: any) {
       console.error('Failed to take photo', err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
-  // 20220401 BBS https://mui.com/components/modal/#basic-modal
-  //              Didn't get it to work in time, but looks straightforward to include the blob in a modal
   render() {
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    const image_tag_list = [];
+    console.log(images);
 
-    if (images !== null && images !== undefined) {
-      for (const image of images) {
-        const image_ref = URL.createObjectURL(image);
-        const image_tag = (
-          <img
-            //style={{height: '200px', width: '100%', objectFit: 'cover'}}
-            //20220401 BBS removed style, above
-            //             prior was pulled from https://mui.com/components/image-list/
-            //             trying to get basic fitting to work
-            src={`${image_ref}`} // ?w=164&h=164&fit=crop&auto=format -- these were part of the example, but because
-            srcSet={`${image_ref}`} //?w=164&h=164&fit=crop&auto=format&dpr=2 2x
-          />
-        );
-        image_tag_list.push(image_tag);
-      }
-    }
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
       error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
@@ -108,10 +202,9 @@ export class TakePhoto extends React.Component<
     // But it doesn't look like we support masonry right now.
     //
     // It also looks like we don't have multiple photos being returned...
-    // 20220401 BBS - Ok, looks like the MUI update means that I can spec cols=4 without specific height stuff
     return (
       <div>
-        {this.props.helperText}
+        {this.props.helpertext}
         <Button
           variant="outlined"
           color={'primary'}
@@ -127,19 +220,25 @@ export class TakePhoto extends React.Component<
             ? this.props.label
             : 'Take Photo'}
         </Button>
-        {image_tag_list ? (
-          <ImageList cols={4} gap={8}>
-            {image_tag_list.map((image_tag, index) => (
-              <ImageListItem key={index}>
-                {image_tag}
-                BasicModal()
-              </ImageListItem>
-            ))}{' '}
-          </ImageList>
-        ) : (
-          <span>No photo taken.</span>
-        )}
-        {error_text}{' '}
+        <FAIMESImageList
+          images={images}
+          setopen={(path: string) =>
+            this.setState({open: true, photopath: path})
+          }
+          setimage={(newfiles: Array<any>) =>
+            this.props.form.setFieldValue(this.props.field.name, newfiles)
+          }
+        />
+        <Typography variant="caption" color="textSecondary">
+          {error_text}{' '}
+        </Typography>
+        <FaimsDialog
+          project_id={this.props.form.values['_project_id']}
+          open={this.state.open}
+          setopen={() => this.setState({open: false})}
+          filedId={this.props.id}
+          path={this.state.photopath}
+        />
       </div>
     );
   }
@@ -153,7 +252,7 @@ const uiSpec = {
     fullWidth: true,
     name: 'take-photo-field',
     id: 'take-photo-field',
-    helperText: 'Take a photo',
+    helpertext: 'Take a photo',
     variant: 'outlined',
     label: 'Take Photo',
   },
@@ -163,7 +262,7 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
+  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helpertext'];
   newuiSetting['viewsets'] = {
     settings: {
       views: ['FormParamater'],

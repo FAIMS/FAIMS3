@@ -15,12 +15,14 @@ import {reprocess_listing} from '../../../sync/process-initialization';
 export type LoginFormProps = {
   listing_id: string;
   setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
+  is_refresh: boolean;
 };
 
 export type LoginButtonProps = {
   listing_id: string;
   auth_info: AuthInfo; // User-visible name
   setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
+  is_refresh: boolean;
 };
 
 function LoginButton(props: LoginButtonProps) {
@@ -91,7 +93,11 @@ function LoginButton(props: LoginButtonProps) {
         }
       }}
     >
-      Sign-in with {props.auth_info.name}
+      {!props.is_refresh ? (
+        <> Sign-in with {props.auth_info.name} </>
+      ) : (
+        <> Reconnect with {props.auth_info.name} </>
+      )}
     </Button>
   );
 }
@@ -119,9 +125,11 @@ export function LoginForm(props: LoginFormProps) {
       <Box>
         {Object.keys(auth_mechanisms).map(auth_id => (
           <LoginButton
+            key={props.listing_id}
             listing_id={props.listing_id}
             auth_info={auth_mechanisms[auth_id]}
             setToken={props.setToken}
+            is_refresh={props.is_refresh}
           />
         ))}
       </Box>

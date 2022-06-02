@@ -60,6 +60,7 @@ export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
   changes: PouchDB.Core.Changes<Content>;
   is_sync: boolean;
+  is_sync_attachments: boolean;
   remote: null | LocalDBRemote<Content>;
 }
 
@@ -80,7 +81,7 @@ export interface LocalDBList<Content extends {}> {
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions
   | {
-      pull?: PouchDB.Replication.ReplicateOptions;
+      pull: PouchDB.Replication.ReplicateOptions;
       push: PouchDB.Replication.ReplicateOptions;
     };
 
@@ -113,6 +114,7 @@ export const directory_db: LocalDB<ListingsObject> = {
   changes: directory_db_pouch.changes({...default_changes_opts, since: 'now'}),
   remote: null,
   is_sync: true,
+  is_sync_attachments: false,
 };
 
 /**
@@ -246,7 +248,8 @@ export function ensure_local_db<Content extends {}>(
   prefix: string,
   local_db_id: string,
   start_sync: boolean,
-  global_dbs: LocalDBList<Content>
+  global_dbs: LocalDBList<Content>,
+  start_sync_attachments: boolean
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
     global_dbs[local_db_id].is_sync = start_sync;
@@ -262,6 +265,7 @@ export function ensure_local_db<Content extends {}>(
         local: db,
         changes: db.changes(default_changes_opts),
         is_sync: start_sync,
+        is_sync_attachments: start_sync_attachments,
         remote: null,
       }),
     ];
@@ -340,19 +344,37 @@ export function setLocalConnection<Content extends {}>(
   const options = db_info.remote.options;
   console.debug('Setting local connection:', db_info);
 
-  if (db_info.is_sync && db_info.remote.connection === null) {
+  if (db_info.is_sync) {
+    if (db_info.remote.connection !== null) {
+      // Stop an existing connection
+      db_info.remote.connection.cancel();
+      db_info.remote.connection = null;
+      console.debug('Removed sync for', db_info);
+    }
     // Start a new connection
     const push_too = (options as {push?: unknown}).push !== undefined;
     let connection:
       | PouchDB.Replication.Replication<Content>
       | PouchDB.Replication.Sync<Content>;
 
+    const pull_filter = db_info.is_sync_attachments
+      ? {}
+      : {filter: '_view', view: 'attachment_filter/attachment_filter'};
+
     if (push_too) {
       const options_sync = options as PouchDB.Replication.SyncOptions;
-      connection = PouchDB.sync(db_info.remote.db, db_info.local, {
+      console.debug(
+        'Pushing and pulling from',
+        db_info,
+        options_sync.push,
+        options_sync.pull,
+        pull_filter
+      );
+      connection = PouchDB.sync(db_info.local, db_info.remote.db, {
         push: {
           live: true,
           retry: true,
+          checkpoint: 'source',
           batch_size: POUCH_BATCH_SIZE,
           batches_limit: POUCH_BATCHES_LIMIT,
           ...options_sync.push,
@@ -360,27 +382,32 @@ export function setLocalConnection<Content extends {}>(
         pull: {
           live: true,
           retry: true,
+          checkpoint: 'target',
           batch_size: POUCH_BATCH_SIZE,
           batches_limit: POUCH_BATCHES_LIMIT,
+          ...pull_filter,
           ...(options_sync.pull || {}),
         },
       });
     } else {
+      console.debug('Pulling only from', db_info, options);
       connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
         live: true,
         retry: true,
+        checkpoint: 'target',
         ...options,
       });
     }
 
     db_info.remote.connection = connection;
+    console.debug('Added sync for', db_info);
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
     db_info.remote.connection.cancel();
     db_info.remote.connection = null;
     console.debug('Removed sync for', db_info);
   } else {
-    console.error('This is an odd state', db_info);
+    console.error('Sync is still off', db_info);
   }
 }
 

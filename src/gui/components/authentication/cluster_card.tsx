@@ -61,15 +61,18 @@ export default function ClusterCard(props: ClusterCardProps) {
   useEffect(() => {
     const getToken = async () => {
       setToken(await getTokenContentsForCluster(props.listing_id));
-      console.log(token);
     };
     getToken();
   }, [props.listing_id]);
 
   useEffect(() => {
+    let isactive = true;
     if (token !== undefined) {
-      props.setToken(token);
+      if (isactive) props.setToken(token);
     }
+    return () => {
+      isactive = false;
+    }; // cleanup toggles value,
   }, [token]);
 
   return (
@@ -78,18 +81,20 @@ export default function ClusterCard(props: ClusterCardProps) {
       <CardContent style={{paddingTop: 0}}>
         <p>{props.listing_description}</p>
         {token === undefined ? (
-          <LoginForm listing_id={props.listing_id} setToken={setToken} />
+          <LoginForm
+            listing_id={props.listing_id}
+            setToken={setToken}
+            is_refresh={false}
+          />
         ) : (
           <>
             <p>Logged in as: {token.username}</p>
-            <p>
-              Roles are
-              <ul>
-                {token.roles.map(group => {
-                  return <li>{group}</li>;
-                })}
-              </ul>
-            </p>
+            Roles are
+            <ul>
+              {token.roles.map((group, index) => {
+                return <li key={index}>{group}</li>;
+              })}
+            </ul>
             <br />
             <Button
               color="primary"
@@ -111,6 +116,11 @@ export default function ClusterCard(props: ClusterCardProps) {
             >
               Logout
             </Button>
+            <LoginForm
+              listing_id={props.listing_id}
+              setToken={setToken}
+              is_refresh={true}
+            />
           </>
         )}
       </CardContent>

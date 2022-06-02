@@ -40,6 +40,7 @@ import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
 import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
 import AutoIncrementEdit from './gui/pages/autoincrement-edit';
+import PROJECTATTACHMENT from './gui/pages/project-settingattch';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './store';
 
@@ -52,7 +53,7 @@ import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 import {createdProjects} from './sync/state';
 import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
-import {getTokenContentsForCluster} from './users';
+import {getTokenContentsForRouting} from './users';
 
 import {useEffect, useState} from 'react';
 
@@ -75,9 +76,11 @@ export default function App() {
 
   const [token, setToken] = useState(null as null | undefined | TokenContents);
 
+  // TODO: Rather than returning the contents of a token, we should work out
+  // what details are actually needed.
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenContentsForCluster('default'));
+      setToken(await getTokenContentsForRouting());
     };
     getToken();
   }, []);
@@ -233,6 +236,15 @@ export default function App() {
                   ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST
                 }
                 component={AutoIncrementBrowse}
+                token={token}
+                extraProps={{token: token}}
+              />
+              <PrivateRoute
+                exact
+                path={
+                  ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_ATTACHMENT
+                }
+                component={PROJECTATTACHMENT}
                 token={token}
                 extraProps={{token: token}}
               />

@@ -46,22 +46,28 @@ export default function RangeHeader(props: {project: any}) {
       '\xa0\xa0\xa0\xa0\xa0\xa0\xa0';
 
   useEffect(() => {
-    get_user_friendly_status_for_project(props.project.project_id).then(res =>
-      setStatus(res)
-    );
+    let isactive = true;
+    if (isactive) {
+      get_user_friendly_status_for_project(props.project.project_id).then(res =>
+        setStatus(res)
+      );
 
-    console.debug('Updating ranges for', props.project.project_id);
+      console.debug('Updating ranges for', props.project.project_id);
+    }
+    return () => {
+      isactive = false;
+    };
   }, [props.project.project_id]);
 
   return (
     <>
       {subtitle}
       {status !== undefined && status.length > 0 ? 'Range Index: ' : ''}
-      {status?.map(sta => (
-        <>
+      {status?.map((sta, index) => (
+        <span key={index}>
           {sta.label}:{sta.last_used}/{sta.end}
           {'\xa0\xa0\xa0\xa0\xa0\xa0\xa0'}
-        </>
+        </span>
       ))}
     </>
   );

@@ -15,17 +15,15 @@
  *
  * Filename: ui.ts
  * Description:
- *   TODO
+ *   Types/interfaces for the UI code.
+ *   Do not use with sync code; UI code only.
  */
 
-/**
- * User readable information about a project
- * Do not use with sync code; UI code only
- */
 import {
   ProjectID,
   RecordID,
   RevisionID,
+  AttributeValuePairID,
   ListingID,
   FAIMSTypeName,
   Annotations,
@@ -91,6 +89,37 @@ export interface Record {
   */
   created?: Date;
   created_by?: string;
+}
+
+export interface FieldMergeInformation {
+  avp_id: AttributeValuePairID;
+  data: any;
+  type: FAIMSTypeName;
+  annotations: Annotations;
+  created: Date;
+  created_by: string;
+}
+
+export interface RecordMergeInformation {
+  project_id: ProjectID;
+  record_id: RecordID;
+  revision_id: RevisionID;
+  type: FAIMSTypeName;
+  updated: Date;
+  updated_by: string;
+  fields: {[field_name: string]: FieldMergeInformation};
+  deleted: boolean;
+}
+
+export interface UserMergeResult {
+  project_id: ProjectID;
+  record_id: RecordID;
+  parents: RevisionID[];
+  updated: Date;
+  updated_by: string;
+  type: FAIMSTypeName;
+  field_choices: {[field_name: string]: AttributeValuePairID | null};
+  field_types: {[field_name: string]: FAIMSTypeName};
 }
 
 export type RecordList = {

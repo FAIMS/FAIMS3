@@ -25,6 +25,7 @@ import {
   RecordID,
   RevisionID,
   AttributeValuePairID,
+  FAIMSAttachmentID,
   ProjectID,
   FAIMSTypeName,
   Annotations,
@@ -105,6 +106,7 @@ export interface ActiveDoc {
   password: string | null;
   friendly_name?: string;
   is_sync: boolean;
+  is_sync_attachments: boolean;
 }
 
 export interface LocalAuthDoc {
@@ -185,11 +187,11 @@ export type AttributeValuePairMap = {
 };
 
 export type RevisionMap = {
-  [field_name: string]: Revision;
+  [revision_id: string]: Revision;
 };
 
 export type RecordMap = {
-  [field_name: string]: EncodedRecord;
+  [record_id: string]: EncodedRecord;
 };
 
 export interface Revision {
@@ -217,6 +219,29 @@ export interface AttributeValuePair {
   revision_id: RevisionID;
   record_id: RecordID;
   annotations: Annotations;
+  created: string;
+  created_by: string;
+  faims_attachments?: FAIMSAttachmentReference[];
+}
+
+export interface FAIMSAttachmentReference {
+  attachment_id: FAIMSAttachmentID;
+  filename: string;
+  file_type: string;
+}
+
+export interface FAIMSAttachment {
+  _id: string;
+  _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean; // This is for couchdb deletion
+  _attachments?: PouchDB.Core.Attachments;
+  filename: string;
+  attach_format_version: number;
+  avp_id: AttributeValuePairID;
+  revision_id: RevisionID;
+  record_id: RecordID;
+  created: string;
+  created_by: string;
 }
 
 /*
@@ -262,7 +287,11 @@ export type ProjectMetaObject =
  * Elements of a Project's dataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
-export type ProjectDataObject = AttributeValuePair | Revision | EncodedRecord;
+export type ProjectDataObject =
+  | AttributeValuePair
+  | Revision
+  | EncodedRecord
+  | FAIMSAttachment;
 
 export function isRecord(doc: ProjectDataObject): doc is EncodedRecord {
   return (<EncodedRecord>doc).record_format_version !== undefined;

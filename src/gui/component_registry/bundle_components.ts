@@ -32,6 +32,11 @@ import {
   Selectcomponentsetting,
   getSelectBuilderIcon,
 } from '../fields/select';
+import {
+  MultiSelect,
+  MultiSelectSetting,
+  MultiSelectcomponentsetting,
+} from '../fields/multiselect';
 import {ActionButton, ActionSetting} from '../fields/ActionButton';
 import {TakePoint, TakePointSetting} from '../fields/TakePoint';
 import {
@@ -176,7 +181,7 @@ registerComponent(
   'Select',
   setupComponentProperties(
     'Select',
-    'Select',
+    'Select one item',
     'Select',
     FAIMSSelect,
     {
@@ -189,6 +194,27 @@ registerComponent(
     },
     SelectSetting,
     Selectcomponentsetting,
+    getSelectBuilderIcon()
+  )
+);
+registerComponent(
+  'faims-custom',
+  'MultiSelect',
+  setupComponentProperties(
+    'MultiSelect',
+    'Select multiple items',
+    'Select',
+    MultiSelect,
+    {
+      namespace: 'faims-custom',
+      componentName: 'MultiSelect',
+      select: true,
+      type_return: 'faims-core::Array',
+      validationSchema: [['yup.Array']],
+      type: 'select',
+    },
+    MultiSelectSetting,
+    MultiSelectcomponentsetting,
     getSelectBuilderIcon()
   )
 );
