@@ -69,7 +69,7 @@ function RevisionDropList(props: ConflictDropSelectprops) {
     settemvalue(value);
   };
 
-  const handleConfirm = (event: React.ChangeEvent<{}>) => {
+  const handleConfirm = () => {
     setOpen(false);
     setRevision(temvalue, index);
     setValue(temvalue);
