@@ -55,9 +55,6 @@ function FieldButton(props: any) {
 }
 
 export function ConflictSaveButton(props: any) {
-  const onButtonDiscard = () => {
-    alert('Discard');
-  };
   return (
     <Grid
       item
@@ -69,7 +66,7 @@ export function ConflictSaveButton(props: any) {
     >
       <Button
         aria-label={''}
-        onClick={onButtonDiscard}
+        onClick={props.onButtonDiscard}
         value={'conflictDiscard'}
         id={'conflictDiscard'}
         variant="text"

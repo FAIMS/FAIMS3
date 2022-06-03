@@ -435,6 +435,17 @@ export default function ConflictForm(props: ConflictFormProps) {
     }
   };
 
+  const onButtonDiscard = () => {
+    // alert user if the conflict not been saved
+    dispatch({
+      type: ActionType.ADD_ALERT,
+      payload: {
+        message: 'Conflict Resolve Not saved',
+        severity: 'error',
+      },
+    });
+  };
+
   const numResolved =
     saveduserMergeResult !== null
       ? Object.keys(saveduserMergeResult.field_choices).length
@@ -465,6 +476,7 @@ export default function ConflictForm(props: ConflictFormProps) {
             <ConflictSaveButton
               onButtonClick={onButtonSave}
               numUnResolved={numUnResolved}
+              onButtonDiscard={onButtonDiscard}
             />
           </Grid>
         )}
@@ -515,6 +527,7 @@ export default function ConflictForm(props: ConflictFormProps) {
             <ConflictSaveButton
               onButtonClick={onButtonSave}
               numUnResolved={numUnResolved}
+              onButtonDiscard={onButtonDiscard}
             />
           </Grid>
         )}
