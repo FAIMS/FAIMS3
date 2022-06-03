@@ -15,7 +15,8 @@
  *
  * Filename: RecordTabBar.tsx
  * Description:
- *   TODO
+ *   Tabs for section of record form , show conflict number if in Conflicts Tab, used in record Edit, Conflicts Tab, View Tab
+ *   Draft use Steppers instead of Tab
  */
 
 import React from 'react';
@@ -31,12 +32,6 @@ type recordTabProps = {
   type: string;
   conflictfields: Array<string>;
 };
-// /{
-//   <Badge badgeContent={2} color="error">
-//     {'Conflicts  '}
-//     {'\xa0\xa0'}
-//   </Badge>
-// }
 
 function getConflictnumber(
   ui_specification: ProjectUIModel,
@@ -59,11 +54,7 @@ export default function RecordTabBar(props: recordTabProps) {
     view =>
       (num[view] = getConflictnumber(ui_specification, view, conflictfields))
   );
-  //num[tab]===0?ui_specification['views'][tab]['label']:
-  // <Badge badgeContent={num[tab]} color="error">
-  // {ui_specification['views'][tab]['label']}
-  // {'\xa0\xa0'}
-  // </Badge>
+
   return (
     <TabList
       onChange={handleChange}

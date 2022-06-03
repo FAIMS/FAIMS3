@@ -15,7 +15,10 @@
  *
  * Filename: RecordTabBar.tsx
  * Description:
- *   TODO
+ *   File contains element of conflict field
+ *    ---- Conflict Field: Form field, Annoation with uncertiy , Updated By
+ *    ---- Empty Field before data Sync to device
+ *    ---- ConflictResolveIcon: shows number of conflict, unresolved , resolved and rejects
  */
 
 import React from 'react';

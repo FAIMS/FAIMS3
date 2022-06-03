@@ -15,7 +15,8 @@
  *
  * Filename: confictform.tsx
  * Description:
- *   TODO: Get date/time and username for conflict Drop list instead of ids
+ *   Conflict Tab inclides all conflict Resolve information
+ * TODO: Get date/time and username for conflict Drop list instead of ids
  */
 
 import React, {useEffect} from 'react';

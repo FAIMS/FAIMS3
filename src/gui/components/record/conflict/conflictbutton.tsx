@@ -15,7 +15,9 @@
  *
  * Filename: RecordTabBar.tsx
  * Description:
- *   TODO
+ *   This is file contains
+ *     -- Conflict buttons in Conflics section Tab, which allow user to choose reject or accept conflict field
+ *     -- Conflict save button to allow user save the Conflict Resove Result or cancel
  */
 
 import React from 'react';

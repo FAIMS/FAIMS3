@@ -15,7 +15,7 @@
  *
  * Filename: conflictdroplist.tsx
  * Description:
- *   TODO
+ *   File about Revision Droplist, user can choose revision to resolve or edit from droplist
  */
 import * as React from 'react';
 import {useState} from 'react';

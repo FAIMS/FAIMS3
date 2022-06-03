@@ -225,6 +225,7 @@ export default function Record(props: RecordeProps) {
           {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
             ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
             : ''}{' '}
+          {draft_id !== undefined && ' Draft '}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           Edit data for this record. If you need to, you can also revisit
@@ -312,14 +313,22 @@ export default function Record(props: RecordeProps) {
                               justifyContent="center"
                               alignItems="center"
                             >
-                              <EditDroplist
-                                label={'eidt'}
-                                headerlist={conflicts['available_heads']}
-                                revision={selectrevision ?? ''}
-                                index={0}
-                                setRevision={setRevision}
-                                disablerevision={''}
-                              />
+                              {draft_id !== undefined ? (
+                                <Typography>
+                                  <strong>Current Edit Resiviosn:</strong>{' '}
+                                  <br />
+                                  {revision_id}
+                                </Typography>
+                              ) : (
+                                <EditDroplist
+                                  label={'eidt'}
+                                  headerlist={conflicts['available_heads']}
+                                  revision={selectrevision ?? ''}
+                                  index={0}
+                                  setRevision={setRevision}
+                                  disablerevision={''}
+                                />
+                              )}
                             </Grid>
                             <Grid
                               item

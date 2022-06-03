@@ -28,7 +28,8 @@ import {Annotation, AnnotationField} from './Annotation';
 import {Grid} from '@mui/material';
 import {Box} from '@mui/material';
 import {EditConflictDisalog} from './conflict/conflictDialog';
-
+// import makeStyles from '@mui/styles/makeStyles';
+// import {useTheme} from '@mui/material/styles';
 type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
@@ -66,9 +67,16 @@ function SingleComponent(props: SingleComponentProps) {
         undefined
       ? fieldConfig['component-parameters']['FormControlLabelProps']['children']
       : fieldName;
-  console.log(conflictfields);
+
   return (
-    <Box mb={3} key={fieldName + props.index}>
+    <Box
+      mb={3}
+      key={fieldName + props.index}
+      sx={{
+        boxShadow: isclicked ? 8 : 0,
+        padding: isclicked ? '10px 5px' : '3px 0px',
+      }}
+    >
       <Grid container>
         <Grid item sm={8} xs={12}>
           {getComponentFromFieldConfig(fieldConfig, fieldName, props.formProps)}

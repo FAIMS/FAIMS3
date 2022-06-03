@@ -15,7 +15,7 @@
  *
  * Filename: confictstyle.tsx
  * Description:
- *   TODO
+ *   File contains all box style for different type of conflict to show user status of conflict
  */
 
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';

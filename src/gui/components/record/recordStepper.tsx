@@ -15,7 +15,9 @@
  *
  * Filename: RecordTabBar.tsx
  * Description:
- *   TODO
+ *   ONLY for Draft use
+ *   Steppers show sections of Form
+ *   MobileStepper for samll screen ONLY
  */
 
 import React from 'react';

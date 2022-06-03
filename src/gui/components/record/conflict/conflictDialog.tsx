@@ -15,7 +15,14 @@
  *
  * Filename: RecordTabBar.tsx
  * Description:
- *   TODO
+ *   File contains:
+ *  ConflictHelpDialog
+ *    - shows User How to work on Conflict Resolve
+ *  ConflictInfoDialog
+ *   - Shows User what is Conflict
+ *  EditConflictDisalog
+ *   - In Record Edit Tab shows user the information for Conflict Icon and help user choose resove conflict
+ *
  */
 
 import * as React from 'react';
