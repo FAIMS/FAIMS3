@@ -254,7 +254,7 @@ export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
 function ConflictChildDialog(props: any) {
   const [open, setOpen] = React.useState(false);
 
-  const handleClickOpen = () => {
+  const handleOpen = () => {
     setOpen(true);
   };
   const handleClose = () => {
@@ -262,33 +262,59 @@ function ConflictChildDialog(props: any) {
     setOpen(false);
   };
 
+  const handleConfirm = (event: React.ChangeEvent<{}>) =>
+    props.handleChangeTab(event, '4');
+
   return (
     <Grid container>
-      <Button onClick={handleClickOpen}>Resolve Conflicts</Button>
-      <Dialog
+      <Button onClick={handleOpen}>Resolve Conflicts</Button>
+      <BasicDiaglog
+        handleClose={handleClose}
+        handleOpen={handleOpen}
+        handleConfirm={handleConfirm}
+        content={
+          'If you proceed to the Conflicts tab, all changes made here will be lost'
+        }
+        continue={'PROCEED TO CONFLICTS'}
+        cancel={'Continue Editing'}
         open={open}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{' Alert '}</DialogTitle>
-        <DialogContent style={{width: '600px', height: '100px'}}>
-          <DialogContentText id="alert-dialog-description">
-            If you proceed to the Conflicts tab, all changes made here will be
-            lost
-            <br />
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={event => props.handleChangeTab(event, '4')}>
-            PROCEED TO CONFLICTS
-          </Button>
-          <Button onClick={handleClose} autoFocus>
-            Continue Editing
-          </Button>
-        </DialogActions>
-      </Dialog>
+      />
     </Grid>
+  );
+}
+
+type BasicDiaglogProps = {
+  handleClose: any;
+  handleOpen: any;
+  handleConfirm: any;
+  content: string;
+  continue: string;
+  cancel: string;
+  open: boolean;
+};
+
+export function BasicDiaglog(props: BasicDiaglogProps) {
+  return (
+    <Dialog
+      open={props.open}
+      onClose={props.handleClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogTitle id="alert-dialog-title">{' Alert '}</DialogTitle>
+      <DialogContent style={{width: '600px', height: '100px'}}>
+        <DialogContentText id="alert-dialog-description">
+          {props.content}
+          <br />
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={props.handleConfirm}>{props.continue}</Button>
+        <Button onClick={props.handleClose} autoFocus>
+          {props.cancel}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

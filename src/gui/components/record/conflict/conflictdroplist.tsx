@@ -20,13 +20,14 @@
 import * as React from 'react';
 import {useState} from 'react';
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Select, {SelectChangeEvent} from '@mui/material/Select';
 import {Typography} from '@mui/material';
-
+import {BasicDiaglog} from './conflictDialog';
 type ConflictDropSelectprops = {
   label: string;
   headerlist: Array<string>;
@@ -41,34 +42,69 @@ function RevisionDropList(props: ConflictDropSelectprops) {
   const {
     label,
     headerlist,
-    revision,
     index,
     setRevision,
     disablerevision,
     islabel,
   } = props;
-  const [value, setValue] = useState(revision);
+  const [value, setValue] = useState(props.revision);
+  const [open, setOpen] = React.useState(false);
+  const [temvalue, settemvalue] = useState(props.revision);
 
   const handleChange = (event: SelectChangeEvent) => {
-    setRevision(event.target.value as string, index);
-    setValue(event.target.value as string);
+    if (props.revision !== '') {
+      settemvalue(event.target.value as string);
+      setOpen(true);
+    } else {
+      setRevision(event.target.value as string, index);
+      setValue(event.target.value as string);
+    }
+  };
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+    settemvalue(value);
+  };
+
+  const handleConfirm = (event: React.ChangeEvent<{}>) => {
+    setOpen(false);
+    setRevision(temvalue, index);
+    setValue(temvalue);
   };
 
   return (
-    <Select
-      labelId={'Conflictselect' + label}
-      id={'Conflictselect' + label}
-      label={islabel ? 'Conflict ' + label : ''}
-      value={value}
-      onChange={handleChange}
-      displayEmpty
-    >
-      {headerlist.map((value: string) => (
-        <MenuItem value={value} disabled={value === disablerevision}>
-          {value}
-        </MenuItem>
-      ))}
-    </Select>
+    <>
+      <Grid>
+        <BasicDiaglog
+          handleClose={handleClose}
+          handleOpen={handleOpen}
+          handleConfirm={handleConfirm}
+          content={
+            'If you proceed to change Conflict revision, all changes made here will be lost'
+          }
+          continue={'Continue'}
+          cancel={'Cancel'}
+          open={open}
+        />
+      </Grid>
+      <Select
+        labelId={'Conflictselect' + label}
+        id={'Conflictselect' + label}
+        label={islabel ? 'Conflict ' + label : ''}
+        value={value}
+        onChange={handleChange}
+        displayEmpty
+      >
+        {headerlist.map((value: string) => (
+          <MenuItem value={value} disabled={value === disablerevision}>
+            {value}
+          </MenuItem>
+        ))}
+      </Select>
+    </>
   );
 }
 
