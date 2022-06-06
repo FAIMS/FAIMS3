@@ -49,7 +49,7 @@ export default function FaimsDialog(props: DiagProps) {
       aria-describedby="alert-dialog-description"
     >
       <DialogTitle id="alert-dialog-title">
-        {path !== null ? '' : 'Download attachment and Photoes'}
+        {path !== null ? '' : 'Download attachments and photos'}
         <IconButton
           aria-label="close"
           onClick={setopen}
@@ -67,8 +67,8 @@ export default function FaimsDialog(props: DiagProps) {
           <img style={{objectFit: 'none'}} src={path} />
         ) : (
           <DialogContentText id="alert-dialog-description">
-            To Download attachments and photoes, go to settings page <br />
-            To enable auto sync attachments, go to settings
+            To download attachments and photos, please go to Settings, and
+            enable auto sync for attachments
           </DialogContentText>
         )}
       </DialogContent>
@@ -89,7 +89,7 @@ export default function FaimsDialog(props: DiagProps) {
             component={RouterLink}
             to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
           >
-            Go to change setting
+            CHANGE SETTINGS
           </Button>
         </DialogActions>
       )}

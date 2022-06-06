@@ -56,7 +56,7 @@ interface InitialMergeRevisionDetails {
   deleted: boolean;
 }
 
-type InitialMergeRevisionDetailsMap = {
+export type InitialMergeRevisionDetailsMap = {
   [revision_id: string]: InitialMergeRevisionDetails;
 };
 
@@ -404,7 +404,7 @@ function sortRevisionsForInitialMerge(revisions: RevisionMap): RevisionMap {
   return revisions;
 }
 
-async function getMergeInformationForRevision(
+export async function getMergeInformationForRevision(
   project_id: ProjectID,
   revision: Revision
 ): Promise<RecordMergeInformation> {
@@ -626,4 +626,6 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
   await datadb.put(new_revision);
 
   await updateHeads(project_id, record_id, parents, revision_id);
+
+  return true;
 }
