@@ -156,6 +156,10 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
       : fieldName;
 
   const cardstyle: cardstyletype = cardsstyles[styletype];
+  const annoataion =
+    data['fields'][fieldName] !== undefined
+      ? data['fields'][fieldName]['annotations']
+      : null;
 
   return ['warning', 'delete', 'clear'].includes(styletype) ? (
     <Box pt={10} pl={3} pr={3} minHeight="340px" maxHeight="340px">
@@ -201,14 +205,15 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             <br />
             {fieldConfig['meta'] !== undefined &&
               fieldConfig['meta']['annotation'] !== undefined &&
-              fieldConfig['meta']['annotation'] === true && (
+              fieldConfig['meta']['annotation'] === true &&
+              annoataion !== null && (
                 <AnnotationField
                   key={'annotation' + fieldName + 'box'}
                   fieldName={fieldName}
                   // formProps={this.props.formProps}
                   field={fieldConfig}
                   annotation={{
-                    [fieldName]: {...data['fields'][fieldName]['annotations']},
+                    [fieldName]: {...annoataion},
                   }}
                   handerannoattion={() => {
                     console.log('annotation');
