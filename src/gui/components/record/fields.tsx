@@ -27,7 +27,8 @@ export function getComponentFromFieldConfig(
   fieldConfig: any,
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>,
-  isSyncing = false
+  isSyncing = false,
+  disabled = false
 ) {
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
@@ -57,6 +58,7 @@ export function getComponentFromFieldConfig(
       {...fieldConfig['component-parameters']['FormHelperTextProps']}
       InputLabelProps={{shrink: true}} //e.g, TextField label for Date and email and number
       onWheel={(event: any) => event.target.blur()}
+      disabled={disabled}
     />
   ) : (
     <Field
@@ -69,7 +71,8 @@ export function getComponentFromFieldConfig(
       {...fieldConfig['component-parameters']['InputLabelProps']}
       {...fieldConfig['component-parameters']['FormHelperTextProps']}
       onWheel={(event: any) => event.target.blur()}
-      isSyncing={isSyncing}
+      issyncing={isSyncing}
+      disabled={disabled}
     />
   );
 }

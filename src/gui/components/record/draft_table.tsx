@@ -56,7 +56,7 @@ type DraftsRecordProps = {
 function DraftRecord(props: DraftsRecordProps) {
   const {project_id, maxRows, rows, loading, not_xs} = props;
   // const newrows: any = rows;
-  const defaultMaxRowsMobile = 10;
+  const defaultMaxRowsMobile = 25;
 
   // newrows.map((r:any)=>
   //   props.viewsets !== null &&
@@ -191,21 +191,26 @@ function DraftRecord(props: DraftsRecordProps) {
       columns={columns}
       autoHeight
       rowHeight={not_xs ? 52 : 100}
-      pageSize={
-        maxRows !== null
-          ? not_xs
-            ? maxRows
-            : defaultMaxRowsMobile
-          : not_xs
-          ? 25
-          : defaultMaxRowsMobile
-      }
       checkboxSelection
       density={not_xs ? 'standard' : 'comfortable'}
       components={{
         Toolbar: GridToolbar,
       }}
-      sortModel={[{field: 'updated', sort: 'desc'}]}
+      initialState={{
+        sorting: {
+          sortModel: [{field: 'updated', sort: 'desc'}],
+        },
+        pagination: {
+          pageSize:
+            maxRows !== null
+              ? not_xs
+                ? maxRows
+                : defaultMaxRowsMobile
+              : not_xs
+              ? 25
+              : defaultMaxRowsMobile,
+        },
+      }}
     />
   );
 }
