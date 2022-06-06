@@ -351,7 +351,7 @@ export default function Record(props: RecordeProps) {
                                 prevent creating further versions of this
                                 record.{' '}
                                 <ResolveButton handleChange={handleChange} />
-                                {isalerting && (
+                                {isalerting && draft_id === undefined && (
                                   <Typography>
                                     Select revision and {'   '}
                                     <Button
@@ -367,7 +367,7 @@ export default function Record(props: RecordeProps) {
                             </Grid>
                           </Grid>
                         </Box>
-                        {isalerting === false && (
+                        {(isalerting === false || draft_id !== undefined) && (
                           <RecordForm
                             project_id={project_id}
                             record_id={record_id}
