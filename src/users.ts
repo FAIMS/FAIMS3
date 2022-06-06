@@ -24,7 +24,7 @@
 import {jwtVerify, importSPKI} from 'jose';
 import type {KeyLike} from 'jose';
 
-import {CLUSTER_ADMIN_GROUP_NAME} from './buildconfig';
+import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
 import {active_db, directory_db, local_auth_db} from './sync/databases';
 import {
   ClusterProjectRoles,
@@ -304,4 +304,23 @@ export async function shouldDisplayRecord(
   }
   console.info('Not see record hit fallback', record_metadata.record_id);
   return false;
+}
+
+export async function getTokenContentsForRouting(): Promise<
+  TokenContents | undefined
+> {
+  // TODO: We need to add more generic handling of user details and login state
+  // here
+  const CLUSTER_TO_CHECK = 'default';
+
+  if (BUILT_LOGIN_TOKEN !== undefined) {
+    const parsed_token = JSON.parse(BUILT_LOGIN_TOKEN);
+    await setTokenForCluster(
+      parsed_token.token,
+      parsed_token.pubkey,
+      parsed_token.pubalg,
+      CLUSTER_TO_CHECK
+    );
+  }
+  return await getTokenContentsForCluster(CLUSTER_TO_CHECK);
 }
