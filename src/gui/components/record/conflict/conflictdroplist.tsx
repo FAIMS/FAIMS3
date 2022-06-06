@@ -36,6 +36,7 @@ type ConflictDropSelectprops = {
   setRevision: any;
   disablerevision: string;
   islabel?: boolean;
+  isalerting?: boolean;
 };
 
 function RevisionDropList(props: ConflictDropSelectprops) {
@@ -50,9 +51,10 @@ function RevisionDropList(props: ConflictDropSelectprops) {
   const [value, setValue] = useState(props.revision);
   const [open, setOpen] = React.useState(false);
   const [temvalue, settemvalue] = useState(props.revision);
+  const isalerting = props.isalerting ?? false;
 
   const handleChange = (event: SelectChangeEvent) => {
-    if (props.revision !== '') {
+    if (props.revision !== '' && isalerting === false) {
       settemvalue(event.target.value as string);
       setOpen(true);
     } else {
@@ -147,6 +149,7 @@ export function EditDroplist(props: ConflictDropSelectprops) {
     index,
     setRevision,
     disablerevision,
+    isalerting,
   } = props;
 
   return (
@@ -163,6 +166,7 @@ export function EditDroplist(props: ConflictDropSelectprops) {
           setRevision={setRevision}
           disablerevision={disablerevision}
           islabel={false}
+          isalerting={isalerting}
         />
         <FormHelperText>Select a revision you wish to edit</FormHelperText>
       </FormControl>

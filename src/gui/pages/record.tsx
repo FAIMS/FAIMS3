@@ -30,6 +30,7 @@ import {
   Paper,
   Tab,
   CircularProgress,
+  Button,
 } from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
@@ -132,6 +133,7 @@ export default function Record(props: RecordeProps) {
   const [selectrevision, setselectedRevision] = useState(null as null | string); // set default one as revision_id and if there is confilct then get the new vision of content
   const [issavedconflict, setissavedconflict] = useState(record_id); // this is to check if the conflict resolved been saved
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
+  const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -327,6 +329,7 @@ export default function Record(props: RecordeProps) {
                                   index={0}
                                   setRevision={setRevision}
                                   disablerevision={''}
+                                  isalerting={isalerting}
                                 />
                               )}
                             </Grid>
@@ -345,27 +348,41 @@ export default function Record(props: RecordeProps) {
                                 Edits have been made to this record by different
                                 users that cannot be automatically mergeed.
                                 Resolve the conflicting fields before editing to
-                                prevent creating futhrer versions of this
+                                prevent creating further versions of this
                                 record.{' '}
                                 <ResolveButton handleChange={handleChange} />
+                                {isalerting && (
+                                  <Typography>
+                                    Select revision and {'   '}
+                                    <Button
+                                      variant="text"
+                                      style={{color: '#f29c3e', paddingLeft: 0}}
+                                      onClick={() => setIsalerting(false)}
+                                    >
+                                      Start Edit
+                                    </Button>
+                                  </Typography>
+                                )}
                               </Alert>
                             </Grid>
                           </Grid>
                         </Box>
-                        <RecordForm
-                          project_id={project_id}
-                          record_id={record_id}
-                          revision_id={
-                            selectrevision !== null
-                              ? selectrevision
-                              : revision_id
-                          }
-                          ui_specification={uiSpec}
-                          draft_id={draft_id}
-                          metaSection={metaSection}
-                          conflictfields={conflictfields}
-                          handleChangeTab={handleChange}
-                        />
+                        {isalerting === false && (
+                          <RecordForm
+                            project_id={project_id}
+                            record_id={record_id}
+                            revision_id={
+                              selectrevision !== null
+                                ? selectrevision
+                                : revision_id
+                            }
+                            ui_specification={uiSpec}
+                            draft_id={draft_id}
+                            metaSection={metaSection}
+                            conflictfields={conflictfields}
+                            handleChangeTab={handleChange}
+                          />
+                        )}
                       </Box>
                     ) : (
                       <RecordForm

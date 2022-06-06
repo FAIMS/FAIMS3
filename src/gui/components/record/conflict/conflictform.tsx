@@ -39,7 +39,7 @@ import {
 import {CircularProgress} from '@mui/material';
 
 import {grey} from '@mui/material/colors';
-import ConflictPanel from './conflictpannel';
+import ConflictPanel from './conflictpanel';
 import ConflictToolBar from './conflicttoolbar';
 import {ConflictResolveIcon} from './conflictfield';
 import {ConflictSaveButton} from './conflictbutton';
