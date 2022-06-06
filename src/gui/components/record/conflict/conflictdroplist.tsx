@@ -86,7 +86,7 @@ function RevisionDropList(props: ConflictDropSelectprops) {
           handleOpen={handleOpen}
           handleConfirm={handleConfirm}
           content={
-            'If you proceed to change Conflict revision, all changes made here will be lost'
+            'If you change the conflict revision, any changes made here will be lost. Proceed?'
           }
           continue={'Continue'}
           cancel={'Cancel'}

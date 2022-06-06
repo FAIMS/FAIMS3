@@ -81,7 +81,7 @@ export function EmptyField(props: EmptyProps) {
           <Grid item xs={10}>
             <Typography variant="caption" display="block">
               {props.isloading === false
-                ? " This data isn't on your device yet. It's loading,it might take some time. You can wait or select another conflict to resolve in the meantime. "
+                ? " This data isn't on your device yet. It's loading, but can take some time - depending on the data in conflict. You can wait, or select another conflict to resolve in the meantime (the conflict will continue to download in the background)."
                 : props.text}
             </Typography>
           </Grid>

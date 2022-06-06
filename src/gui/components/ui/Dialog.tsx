@@ -67,7 +67,7 @@ export default function FaimsDialog(props: DiagProps) {
           <img style={{objectFit: 'none'}} src={path} />
         ) : (
           <DialogContentText id="alert-dialog-description">
-            To download attachments and photos, please go to Settings page, and
+            To download attachments and photos, please go to Settings, and
             enable auto sync for attachments
           </DialogContentText>
         )}

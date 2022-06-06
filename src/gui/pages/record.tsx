@@ -336,8 +336,7 @@ export default function Record(props: RecordeProps) {
                             >
                               {draft_id !== undefined ? (
                                 <Typography>
-                                  <strong>Current Edit Resiviosn:</strong>{' '}
-                                  <br />
+                                  <strong>Current Edit Revision:</strong> <br />
                                   {revision_id}
                                 </Typography>
                               ) : (
@@ -369,19 +368,18 @@ export default function Record(props: RecordeProps) {
                                 Resolve the conflicting fields before editing to
                                 prevent creating further versions of this
                                 record.{' '}
-                                <ResolveButton handleChange={handleChange} />
-                                {isalerting && draft_id === undefined && (
-                                  <Typography>
-                                    Select revision and {'   '}
+                                <Typography>
+                                  <ResolveButton handleChange={handleChange} />
+                                  {isalerting && draft_id === undefined && (
                                     <Button
                                       variant="text"
                                       style={{color: '#f29c3e', paddingLeft: 0}}
                                       onClick={() => setIsalerting(false)}
                                     >
-                                      Start Edit
+                                      Edit anyway
                                     </Button>
-                                  </Typography>
-                                )}
+                                  )}
+                                </Typography>
                               </Alert>
                             </Grid>
                           </Grid>

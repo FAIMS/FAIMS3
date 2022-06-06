@@ -160,7 +160,7 @@ function ConflictInfoContent() {
     <Box pb={10} pt={10} pl={3} pr={3}>
       <Typography>
         Conflicts generally arise when two users have changed the same fields in
-        a record, or if ibe yser deleted a file while another user was modifying
+        a record, or if the user deleted a file while another user was modifying
         it. In these cases, FAIMS cannot automatically detemine what is correct.
       </Typography>
       <Typography>
@@ -171,6 +171,7 @@ function ConflictInfoContent() {
         Users may continue to edit records whilst confilcts exist, but should be
         aware that doing so may create futher conflicts, it is advisable to
         resolve all conflicts before editing
+        <br />
       </Typography>
     </Box>
   );
