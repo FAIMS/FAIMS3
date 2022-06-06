@@ -218,7 +218,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     return <CircularProgress size={12} thickness={4} />;
   if (
     conflicts['available_heads'] === undefined ||
-    conflicts['available_heads'].length <= 1
+    Object.keys(conflicts['available_heads']).length <= 1
   )
     return (
       <Grid

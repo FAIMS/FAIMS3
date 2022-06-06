@@ -28,9 +28,10 @@ import FormHelperText from '@mui/material/FormHelperText';
 import Select, {SelectChangeEvent} from '@mui/material/Select';
 import {Typography} from '@mui/material';
 import {BasicDiaglog} from './conflictDialog';
+import {InitialMergeRevisionDetailsMap} from '../../../../data_storage/merging';
 type ConflictDropSelectprops = {
   label: string;
-  headerlist: Array<string>;
+  headerlist: InitialMergeRevisionDetailsMap;
   revision: string;
   index: number;
   setRevision: any;
@@ -100,9 +101,14 @@ function RevisionDropList(props: ConflictDropSelectprops) {
         onChange={handleChange}
         displayEmpty
       >
-        {headerlist.map((value: string) => (
-          <MenuItem value={value} disabled={value === disablerevision}>
-            {value}
+        {Object.keys(headerlist).map((key: string) => (
+          <MenuItem value={key} disabled={key === disablerevision}>
+            {JSON.stringify(headerlist[key]['created'])
+              .replaceAll('"', '')
+              .replaceAll('T', ' ')
+              .slice(0, 19) +
+              ' ' +
+              headerlist[key]['created_by']}
           </MenuItem>
         ))}
       </Select>

@@ -56,7 +56,7 @@ interface InitialMergeRevisionDetails {
   deleted: boolean;
 }
 
-type InitialMergeRevisionDetailsMap = {
+export type InitialMergeRevisionDetailsMap = {
   [revision_id: string]: InitialMergeRevisionDetails;
 };
 

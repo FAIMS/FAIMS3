@@ -25,9 +25,9 @@ import {Grid} from '@mui/material';
 import {Switch, FormControlLabel} from '@mui/material';
 import {ConflictHelpDialog, ConflictButton} from './conflictDialog';
 import {ConflictDropSelect} from './conflictdroplist';
-
+import {InitialMergeRevisionDetailsMap} from '../../../../data_storage/merging';
 type ConflictToolBarProps = {
-  headerlist: Array<string>;
+  headerlist: InitialMergeRevisionDetailsMap;
   revisionlist: Array<string>;
   setRevisionList: any;
   setR: any;

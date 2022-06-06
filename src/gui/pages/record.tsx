@@ -134,7 +134,7 @@ export default function Record(props: RecordeProps) {
   const [issavedconflict, setissavedconflict] = useState(record_id); // this is to check if the conflict resolved been saved
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
-
+  const [recrodinfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
@@ -143,7 +143,7 @@ export default function Record(props: RecordeProps) {
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: hrid ?? record_id},
-    // {title: revision_id},
+    // {title: recrodinfo},
   ];
 
   useEffect(() => {
@@ -177,7 +177,7 @@ export default function Record(props: RecordeProps) {
         if (
           result !== null &&
           result['available_heads'] !== undefined &&
-          result['available_heads'].length > 1
+          Object.keys(result['available_heads']).length > 1
         ) {
           setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
         }
@@ -204,7 +204,17 @@ export default function Record(props: RecordeProps) {
         record_id,
         revision_id
       );
-      if (latest_record !== null) setType(latest_record.type);
+      if (latest_record !== null) {
+        setType(latest_record.type);
+        setRecordinfo(
+          JSON.stringify(latest_record.updated)
+            .replaceAll('"', '')
+            .replaceAll('T', ' ')
+            .slice(0, 19) +
+            ' ' +
+            latest_record.updated_by
+        );
+      }
     };
     getType();
   }, [project_id, record_id, revision_id]);
@@ -222,6 +232,13 @@ export default function Record(props: RecordeProps) {
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
+      {recrodinfo !== null && (
+        <Box justifyContent="flex-end" alignItems="flex-end" display="flex">
+          <Typography variant={'caption'} gutterBottom>
+            Last Updated {recrodinfo}
+          </Typography>
+        </Box>
+      )}
       <Box mb={2} className={classes.LeftPaddding}>
         <Typography variant={'h2'} component={'h1'}>
           {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
@@ -235,14 +252,14 @@ export default function Record(props: RecordeProps) {
         </Typography>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
-          conflicts['available_heads'].length > 1 && (
+          Object.keys(conflicts['available_heads']).length > 1 && (
             <Alert
               severity="warning"
               action={<ConflictHelpDialog type={'info'} />}
               icon={<InfoOutlinedIcon />}
             >
-              This Record has {conflicts['available_heads'].length} conflicting
-              instances. Resolve these conflicts before continue
+              This Record has {Object.keys(conflicts['available_heads']).length}{' '}
+              conflicting instances. Resolve these conflicts before continue
             </Alert>
           )}
       </Box>
@@ -260,11 +277,13 @@ export default function Record(props: RecordeProps) {
               <Tab label="Meta" value="3" sx={{color: '#c2c2c2'}} />
               {conflicts !== null &&
               conflicts['available_heads'] !== undefined &&
-              conflicts['available_heads'].length > 1 ? (
+              Object.keys(conflicts['available_heads']).length > 1 ? (
                 <Tab
                   label={
                     <Badge
-                      badgeContent={conflicts['available_heads'].length}
+                      badgeContent={
+                        Object.keys(conflicts['available_heads']).length
+                      }
                       color="error"
                     >
                       {'Conflicts  '}
@@ -299,7 +318,7 @@ export default function Record(props: RecordeProps) {
                   <Box pl={0}>
                     {conflicts !== null &&
                     conflicts['available_heads'] !== undefined &&
-                    conflicts['available_heads'].length > 1 ? (
+                    Object.keys(conflicts['available_heads']).length > 1 ? (
                       <Box pl={0}>
                         <Box bgcolor={grey[200]} py={10} pl={0}>
                           <Grid
