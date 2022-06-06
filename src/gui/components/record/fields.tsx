@@ -26,7 +26,8 @@ import {getComponentByName} from '../../component_registry';
 export function getComponentFromFieldConfig(
   fieldConfig: any,
   fieldName: string,
-  formProps: FormikProps<{[key: string]: unknown}>
+  formProps: FormikProps<{[key: string]: unknown}>,
+  isSyncing = false
 ) {
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
@@ -68,6 +69,7 @@ export function getComponentFromFieldConfig(
       {...fieldConfig['component-parameters']['InputLabelProps']}
       {...fieldConfig['component-parameters']['FormHelperTextProps']}
       onWheel={(event: any) => event.target.blur()}
+      isSyncing={isSyncing}
     />
   );
 }

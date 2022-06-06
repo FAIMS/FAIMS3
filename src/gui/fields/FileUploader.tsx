@@ -49,6 +49,7 @@ interface Props {
   maximum_file_size?: number; // this is in bytes
   minimum_file_size?: number; // this is in bytes
   helperText?: string;
+  isSyncing?: boolean;
 }
 
 export function FileUploader(props: FieldProps & Props) {
@@ -170,6 +171,7 @@ export function FileUploader(props: FieldProps & Props) {
         setopen={() => setopen(false)}
         filedId={props['field']['name']}
         path={path}
+        isSyncing={props.isSyncing}
       />
     </div>
   );

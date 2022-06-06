@@ -75,6 +75,7 @@ type RecordFormProps = {
   view_default?: string;
   ui_specification: ProjectUIModel;
   metaSection?: any;
+  isSyncing?: boolean;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -872,6 +873,7 @@ class RecordForm extends React.Component<
                         draftState={this.draftState}
                         annotation={this.state.annotation}
                         handerannoattion={this.updateannotation}
+                        isSyncing={this.props.isSyncing}
                       />
                       <br />
 

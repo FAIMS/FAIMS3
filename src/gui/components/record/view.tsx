@@ -34,6 +34,7 @@ type ViewProps = {
   draftState: RecordDraftState;
   annotation: any;
   handerannoattion: any;
+  isSyncing?: boolean;
 };
 
 function SingleComponent(props: any) {
@@ -48,7 +49,8 @@ function SingleComponent(props: any) {
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
-            props.formProps
+            props.formProps,
+            props.isSyncing
           )}
         </Grid>
         <Grid item sm={2} xs={12} style={{marginTop: '0.5em'}}>
@@ -121,6 +123,7 @@ export function ViewComponent(props: ViewProps) {
           handerannoattion={props.handerannoattion}
           index={index}
           key={index}
+          isSyncing={props.isSyncing}
         />
       ))}
       {!props.formProps.isValid && error !== false && (

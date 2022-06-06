@@ -29,6 +29,7 @@ import {IconButton} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import * as ROUTES from '../../../constants/routes';
 import {Link as RouterLink} from 'react-router-dom';
+import CircularProgress from '@mui/material/CircularProgress';
 
 type DiagProps = {
   open?: boolean;
@@ -36,10 +37,11 @@ type DiagProps = {
   setopen: any;
   filedId?: string;
   path?: string | null;
+  isSyncing?: boolean;
 };
 export default function FaimsDialog(props: DiagProps) {
   //   const [open, setOpen] = React.useState(props.open??false);
-  const {open, setopen, project_id, path} = props;
+  const {open, setopen, project_id, path, isSyncing} = props;
 
   return (
     <Dialog
@@ -65,6 +67,20 @@ export default function FaimsDialog(props: DiagProps) {
       <DialogContent>
         {path !== null ? (
           <img style={{objectFit: 'none'}} src={path} />
+        ) : isSyncing ? (
+          <DialogContentText id="alert-dialog-description">
+            Photo/File is Syncing
+            <CircularProgress
+              size={24}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: -12,
+                marginLeft: -12,
+              }}
+            />
+          </DialogContentText>
         ) : (
           <DialogContentText id="alert-dialog-description">
             To Download attachments and photoes, go to settings page <br />

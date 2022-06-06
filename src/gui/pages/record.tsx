@@ -60,6 +60,7 @@ import {getProjectMetadata} from '../../projectMetadata';
 import {TokenContents} from '../../datamodel/core';
 import {grey} from '@mui/material/colors';
 import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
+import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
@@ -116,6 +117,7 @@ export default function Record(props: RecordeProps) {
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
 
+  const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachement sync
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
@@ -133,6 +135,7 @@ export default function Record(props: RecordeProps) {
       getProjectMetadata(project_id, 'sections').then(res =>
         setMetaSection(res)
       );
+      setIsSyncing(isSyncingProjectAttachments(project_id));
     }
   }, [project_id]);
 
@@ -206,7 +209,11 @@ export default function Record(props: RecordeProps) {
                 });
                 history.goBack();
                 return <React.Fragment />;
-              } else if (uiSpec === null || type === null) {
+              } else if (
+                uiSpec === null ||
+                type === null ||
+                isSyncing === null
+              ) {
                 // Loading
                 return <CircularProgress size={12} thickness={4} />;
               } else {
@@ -218,6 +225,7 @@ export default function Record(props: RecordeProps) {
                     ui_specification={uiSpec}
                     draft_id={draft_id}
                     metaSection={metaSection}
+                    isSyncing={isSyncing}
                   />
                 );
               }
