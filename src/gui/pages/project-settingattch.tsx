@@ -21,7 +21,7 @@
  *   add the sync attachment function and download files function
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useContext} from 'react';
 import {useParams, Redirect, useHistory} from 'react-router-dom';
 import {
   Box,
@@ -46,7 +46,8 @@ import {
   setSyncingProjectAttachments,
   listenSyncingProjectAttachments,
 } from '../../sync/sync-toggle';
-
+import {store} from '../../store';
+import {ActionType} from '../../actions';
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
@@ -54,6 +55,7 @@ type ProjectProps = {
 export default function PROJECTATTACHMENT(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
+  const {dispatch} = useContext(store);
 
   useEffect(() => {
     try {
@@ -120,6 +122,14 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
                 checked={isSyncing}
                 onChange={async (event, checked) => {
                   await setSyncingProjectAttachments(project_id, checked);
+                  if (checked)
+                    dispatch({
+                      type: ActionType.ADD_ALERT,
+                      payload: {
+                        message: 'Start Syncing',
+                        severity: 'success',
+                      },
+                    });
                 }}
               />
             }

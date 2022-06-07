@@ -60,6 +60,7 @@ import {getProjectMetadata} from '../../projectMetadata';
 import {TokenContents} from '../../datamodel/core';
 import {grey} from '@mui/material/colors';
 import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
+import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {
   InitialMergeDetails,
   getInitialMergeDetails,
@@ -71,6 +72,7 @@ import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
+
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
@@ -127,6 +129,7 @@ export default function Record(props: RecordeProps) {
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
+  const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachement sync
   const [conflicts, setConflicts] = useState(
     null as InitialMergeDetails | null
   );
@@ -135,6 +138,7 @@ export default function Record(props: RecordeProps) {
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
   const [recrodinfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
+
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
@@ -152,6 +156,7 @@ export default function Record(props: RecordeProps) {
       getProjectMetadata(project_id, 'sections').then(res =>
         setMetaSection(res)
       );
+      setIsSyncing(isSyncingProjectAttachments(project_id));
     }
   }, [project_id]);
 
@@ -310,7 +315,11 @@ export default function Record(props: RecordeProps) {
                 });
                 history.goBack();
                 return <React.Fragment />;
-              } else if (uiSpec === null || type === null) {
+              } else if (
+                uiSpec === null ||
+                type === null ||
+                isSyncing === null
+              ) {
                 // Loading
                 return <CircularProgress size={12} thickness={4} />;
               } else {
@@ -398,6 +407,7 @@ export default function Record(props: RecordeProps) {
                             metaSection={metaSection}
                             conflictfields={conflictfields}
                             handleChangeTab={handleChange}
+                            isSyncing={isSyncing}
                           />
                         )}
                       </Box>
@@ -409,6 +419,7 @@ export default function Record(props: RecordeProps) {
                         ui_specification={uiSpec}
                         draft_id={draft_id}
                         metaSection={metaSection}
+                        isSyncing={isSyncing}
                       />
                     )}
                   </Box>
@@ -444,16 +455,19 @@ export default function Record(props: RecordeProps) {
           </TabPanel>
           <TabPanel value="4" style={{overflowX: 'auto'}}>
             <Box mt={2}>
-              <ConflictForm
-                project_id={project_id}
-                record_id={record_id}
-                revision_id={revision_id}
-                ui_specification={uiSpec}
-                metaSection={metaSection}
-                type={type}
-                conflicts={conflicts}
-                setissavedconflict={setissavedconflict}
-              />
+              {isSyncing !== null && (
+                <ConflictForm
+                  project_id={project_id}
+                  record_id={record_id}
+                  revision_id={revision_id}
+                  ui_specification={uiSpec}
+                  metaSection={metaSection}
+                  type={type}
+                  conflicts={conflicts}
+                  setissavedconflict={setissavedconflict}
+                  isSyncing={isSyncing}
+                />
+              )}
             </Box>
           </TabPanel>
         </TabContext>

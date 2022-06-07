@@ -37,6 +37,7 @@ type ViewProps = {
   draftState: RecordDraftState;
   annotation: any;
   handerannoattion: any;
+  isSyncing?: boolean;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
 };
@@ -50,6 +51,7 @@ type SingleComponentProps = {
   draftState: RecordDraftState;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
+  isSyncing?: boolean;
 };
 
 function SingleComponent(props: SingleComponentProps) {
@@ -78,8 +80,13 @@ function SingleComponent(props: SingleComponentProps) {
       }}
     >
       <Grid container>
-        <Grid item sm={8} xs={12}>
-          {getComponentFromFieldConfig(fieldConfig, fieldName, props.formProps)}
+        <Grid item sm={10} xs={12}>
+          {getComponentFromFieldConfig(
+            fields[fieldName],
+            fieldName,
+            props.formProps,
+            props.isSyncing
+          )}
         </Grid>
         <Grid
           item
@@ -172,6 +179,7 @@ export function ViewComponent(props: ViewProps) {
           handerannoattion={props.handerannoattion}
           index={index}
           key={index}
+          isSyncing={props.isSyncing}
           conflictfields={props.conflictfields}
           handleChangeTab={props.handleChangeTab}
         />

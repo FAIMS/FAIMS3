@@ -40,14 +40,6 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import {cardsstyles, cardstyletype} from './conflictstyle';
 import {CircularProgress} from '@mui/material';
 import {getComponentFromFieldConfig} from '../fields';
-type FieldWithAnnotationProp = {
-  fieldName: string;
-  fieldConfig: any;
-  formProps: any;
-  styletype: string;
-  type?: string;
-  data?: any;
-};
 
 type EmptyProps = {
   isspin: boolean;
@@ -143,8 +135,18 @@ export function ConflictResolveIcon(props: ConflictResolveIconProps) {
   );
 }
 
+type FieldWithAnnotationProp = {
+  fieldName: string;
+  fieldConfig: any;
+  formProps: any;
+  styletype: string;
+  type?: string;
+  data?: any;
+  isSyncing: boolean;
+};
+
 export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
-  const {fieldName, fieldConfig, formProps, data, styletype} = props;
+  const {fieldName, fieldConfig, formProps, data, styletype, isSyncing} = props;
   const label =
     fieldConfig['component-parameters']['InputLabelProps'] !== undefined
       ? fieldConfig['component-parameters']['InputLabelProps']['label']
@@ -199,6 +201,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
               fieldConfig,
               fieldName,
               formProps,
+              isSyncing,
               true
             )}
             <br />

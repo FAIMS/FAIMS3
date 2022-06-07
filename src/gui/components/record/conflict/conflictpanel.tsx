@@ -45,6 +45,7 @@ type ConflictSectionPanelProps = {
   fieldslist: Array<string>;
   conflictfields: Array<string>;
   istoggleAll: boolean;
+  isSyncing: boolean;
 };
 function ConflictSectionPanel(props: ConflictSectionPanelProps) {
   const {
@@ -56,6 +57,7 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
     fieldslist,
     conflictfields,
     istoggleAll,
+    isSyncing,
   } = props;
   if (data === null) return <CircularProgress size={12} thickness={4} />;
   const initialvalues = getinitial(data, fieldslist);
@@ -84,6 +86,7 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
                       type={type}
                       data={data}
                       styletype={styletypes[fieldName]}
+                      isSyncing={isSyncing}
                     />
                   )
               )}
@@ -154,6 +157,7 @@ function ConflictPanelForm(props: ConflictPanelFormProps) {
       fieldslist={props.fieldslist}
       conflictfields={props.conflictfields}
       istoggleAll={props.istoggleAll}
+      isSyncing={props.isSyncing}
     />
   );
 }
@@ -207,6 +211,7 @@ type ConflictPanelProp = {
   fieldslist: Array<string>;
   conflictfields: Array<string>;
   istoggleAll: boolean;
+  isSyncing: boolean;
 };
 
 export default function ConflictPanel(props: ConflictPanelProp) {
@@ -227,6 +232,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
     fieldslist,
     conflictfields,
     istoggleAll,
+    isSyncing,
   } = props;
 
   const isconflictrevision =
@@ -263,6 +269,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             fieldslist={fieldslist}
             conflictfields={conflictfields}
             istoggleAll={istoggleAll}
+            isSyncing={isSyncing}
           />
         </Grid>
         <Grid item sm={1} xs={1} md={1}>
@@ -293,6 +300,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             fieldslist={fieldslist}
             conflictfields={conflictfields}
             istoggleAll={istoggleAll}
+            isSyncing={isSyncing}
           />
         </Grid>
         <Grid item sm={1} xs={1} md={1}>
@@ -323,6 +331,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             fieldslist={fieldslist}
             conflictfields={conflictfields}
             istoggleAll={istoggleAll}
+            isSyncing={isSyncing}
           />
         </Grid>
       </Grid>

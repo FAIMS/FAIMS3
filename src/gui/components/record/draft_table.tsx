@@ -56,7 +56,7 @@ type DraftsRecordProps = {
 function DraftRecord(props: DraftsRecordProps) {
   const {project_id, maxRows, rows, loading, not_xs} = props;
   // const newrows: any = rows;
-  const defaultMaxRowsMobile = 10;
+  const defaultMaxRowsMobile = 25;
 
   // newrows.map((r:any)=>
   //   props.viewsets !== null &&

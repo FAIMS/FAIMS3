@@ -55,6 +55,7 @@ type ConflictFormProps = {
   type: string;
   conflicts: InitialMergeDetails;
   setissavedconflict: any; // this is paramater that allow user can reload the conflict headers
+  isSyncing: boolean;
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
@@ -91,6 +92,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     type,
     conflicts,
     setissavedconflict,
+    isSyncing,
   } = props;
   //this are tabs for form sections
   const [tabvalue, setValue] = useState('0');
@@ -513,6 +515,7 @@ export default function ConflictForm(props: ConflictFormProps) {
                   fieldslist={fieldslist}
                   conflictfields={conflictfields}
                   istoggleAll={istoggleAll}
+                  isSyncing={isSyncing}
                 />
               </div>
             </TabPanel>

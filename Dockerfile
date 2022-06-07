@@ -36,7 +36,7 @@ ENV REACT_APP_DIRECTORY_PORT 443
 # They say to run with min privs, but since we're building and not running, I CBF'd right now.
 RUN npm run-script build
 
-FROM nginx:mainline-alpine@sha256:a74534e76ee1121d418fa7394ca930eb67440deda413848bc67c68138535b989
+FROM nginx:mainline-alpine@sha256:5a0df7fb7c8c03e4158ae9974bfbd6a15da2bdfdeded4fb694367ec812325d31
 RUN rm -rf /usr/share/nginx/html/*
 # not /app/www but /app/build because react
 COPY ./.nginx/nginx.conf /etc/nginx/nginx.conf

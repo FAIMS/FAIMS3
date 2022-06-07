@@ -49,6 +49,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardheader: {
       backgroundColor: '#f9dbaf',
       height: '50px',
+      overflowY: 'auto',
     },
     iconstyle: {
       backgroundColor: '#f9dbaf',
@@ -82,6 +83,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardcotent: {
       paddingLeft: '3px',
       paddingRight: '3px',
+      overflowY: 'auto',
     },
     icon: null,
   },
@@ -93,6 +95,9 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     },
     cardheader: {
       backgroundColor: '#449852',
+    },
+    cardcotent: {
+      overflowY: 'auto',
     },
     iconstyle: {
       backgroundColor: '#449852',
