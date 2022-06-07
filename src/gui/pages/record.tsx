@@ -380,13 +380,19 @@ export default function Record(props: RecordeProps) {
                                 <Typography>
                                   <ResolveButton handleChange={handleChange} />
                                   {isalerting && draft_id === undefined && (
-                                    <Button
-                                      variant="text"
-                                      style={{color: '#f29c3e', paddingLeft: 0}}
-                                      onClick={() => setIsalerting(false)}
-                                    >
-                                      Edit anyway
-                                    </Button>
+                                    <>
+                                      Or select version and {'  '}
+                                      <Button
+                                        variant="text"
+                                        style={{
+                                          color: '#f29c3e',
+                                          paddingLeft: 0,
+                                        }}
+                                        onClick={() => setIsalerting(false)}
+                                      >
+                                        {'  '}Edit anyway
+                                      </Button>
+                                    </>
                                   )}
                                 </Typography>
                               </Alert>
