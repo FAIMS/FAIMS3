@@ -21,12 +21,7 @@
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridToolbar,
-} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
 import {Typography} from '@mui/material';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
@@ -43,6 +38,7 @@ import {
 import {useEventedPromise} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
+import CustomToolbar from './customtoolbar';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -264,7 +260,7 @@ function RecordsTable(props: RecordsTableProps) {
           checkboxSelection
           density={not_xs ? 'standard' : 'comfortable'}
           components={{
-            Toolbar: GridToolbar,
+            Toolbar: CustomToolbar,
           }}
           initialState={{
             sorting: {
