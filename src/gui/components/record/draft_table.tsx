@@ -20,12 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridToolbar,
-} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
 import {Typography} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@mui/material/Link';
@@ -37,7 +32,7 @@ import {DraftMetadata} from '../../../datamodel/drafts';
 import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
-
+import CustomToolbar from './customtoolbar';
 type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -194,7 +189,7 @@ function DraftRecord(props: DraftsRecordProps) {
       checkboxSelection
       density={not_xs ? 'standard' : 'comfortable'}
       components={{
-        Toolbar: GridToolbar,
+        Toolbar: CustomToolbar,
       }}
       initialState={{
         sorting: {
