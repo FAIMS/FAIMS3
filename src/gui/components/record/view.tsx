@@ -80,7 +80,7 @@ function SingleComponent(props: SingleComponentProps) {
       }}
     >
       <Grid container>
-        <Grid item sm={10} xs={12}>
+        <Grid item sm={8} xs={12}>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
