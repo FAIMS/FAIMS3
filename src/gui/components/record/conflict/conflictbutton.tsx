@@ -141,8 +141,8 @@ export function FieldButtonGroup(props: any) {
       display="flex"
       justifyContent="center"
       alignItems="flex-start"
-      minHeight="340px"
-      maxHeight="340px"
+      minHeight="470px"
+      maxHeight="470px"
       pt={10}
       pb={0}
     >
@@ -171,8 +171,8 @@ export function FieldButtonGroup(props: any) {
       display="flex"
       justifyContent="center"
       alignItems="flex-start"
-      minHeight="340px"
-      maxHeight="340px"
+      minHeight="470px"
+      maxHeight="470px"
       pt={10}
       pb={0}
     >
@@ -206,8 +206,8 @@ export function FieldEmptyButton() {
       display="flex"
       justifyContent="center"
       alignItems="flex-start"
-      minHeight="340px"
-      maxHeight="340px"
+      minHeight="470px"
+      maxHeight="470px"
       pt={10}
       pb={0}
     ></Box>

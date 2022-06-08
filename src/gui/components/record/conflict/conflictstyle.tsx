@@ -44,7 +44,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
   warning: {
     card: {
       borderColor: '#f9dbaf',
-      height: '320px',
+      height: '450px',
     },
     cardheader: {
       backgroundColor: '#f9dbaf',
@@ -72,7 +72,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
   default: {
     card: {
       borderColor: '#f6f6f6',
-      height: '320px',
+      height: '450px',
       paddingLeft: '0px',
       paddingRight: '0px',
     },
@@ -83,14 +83,14 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardcotent: {
       paddingLeft: '3px',
       paddingRight: '3px',
-      overflowY: 'auto',
+      overflow: 'visible',
     },
     icon: null,
   },
   success: {
     card: {
       borderColor: '#449852',
-      height: '320px',
+      height: '450px',
       border: '#449852 2px solid',
     },
     cardheader: {
@@ -114,7 +114,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
   reject: {
     card: {
       borderColor: '#ee565a',
-      height: '320px',
+      height: '450px',
       border: '#ee565a 2px solid',
     },
     cardheader: {
@@ -124,7 +124,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
   },
   empty: {
     card: {
-      height: '320px',
+      height: '450px',
     },
     cardheader: {
       backgroundColor: '#e8f4fd',
@@ -139,7 +139,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
   delete: {
     card: {
       borderColor: '#e8f4fd',
-      height: '320px',
+      height: '450px',
     },
     cardheader: {
       backgroundColor: '#e8f4fd',
@@ -161,7 +161,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
   conflict: {
     card: {
       borderColor: '#fff',
-      height: '320px',
+      height: '450px',
     },
     cardheader: {
       backgroundColor: '#fff',
@@ -178,7 +178,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
   clear: {
     card: {
       borderColor: '#fff',
-      height: '320px',
+      height: '450px',
     },
     cardheader: {
       backgroundColor: '#fff',

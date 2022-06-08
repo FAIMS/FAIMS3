@@ -76,6 +76,8 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
             <Form>
               {ui_specification['views'][view]['fields'].map(
                 fieldName =>
+                  ui_specification['fields'][fieldName]['component-name'] !==
+                    'RandomStyle' &&
                   (istoggleAll === true ||
                     (istoggleAll === false &&
                       conflictfields.includes(fieldName))) && (
@@ -276,16 +278,20 @@ export default function ConflictPanel(props: ConflictPanelProp) {
           {!isconflictrevision &&
             conflictB !== null &&
             conflictB !== null &&
-            ui_specification['views'][view]['fields'].map(fieldName => (
-              <ConflictButton
-                istoggleAll={istoggleAll}
-                isclick={isclickLeft}
-                type={'left'}
-                fieldName={fieldName}
-                setFieldChanged={setFieldChanged}
-                isconflict={conflictfields.includes(fieldName)}
-              />
-            ))}
+            ui_specification['views'][view]['fields'].map(
+              fieldName =>
+                ui_specification['fields'][fieldName]['component-name'] !==
+                  'RandomStyle' && (
+                  <ConflictButton
+                    istoggleAll={istoggleAll}
+                    isclick={isclickLeft}
+                    type={'left'}
+                    fieldName={fieldName}
+                    setFieldChanged={setFieldChanged}
+                    isconflict={conflictfields.includes(fieldName)}
+                  />
+                )
+            )}
         </Grid>
         <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm
@@ -307,16 +313,20 @@ export default function ConflictPanel(props: ConflictPanelProp) {
           {!isconflictrevision &&
             conflictB !== null &&
             conflictB !== null &&
-            ui_specification['views'][view]['fields'].map(fieldName => (
-              <ConflictButton
-                istoggleAll={istoggleAll}
-                isclick={isclickRight}
-                type={'right'}
-                fieldName={fieldName}
-                setFieldChanged={setFieldChanged}
-                isconflict={conflictfields.includes(fieldName)}
-              />
-            ))}
+            ui_specification['views'][view]['fields'].map(
+              fieldName =>
+                ui_specification['fields'][fieldName]['component-name'] !==
+                  'RandomStyle' && (
+                  <ConflictButton
+                    istoggleAll={istoggleAll}
+                    isclick={isclickRight}
+                    type={'right'}
+                    fieldName={fieldName}
+                    setFieldChanged={setFieldChanged}
+                    isconflict={conflictfields.includes(fieldName)}
+                  />
+                )
+            )}
         </Grid>
         <Grid item sm={4} xs={4} md={4} style={cardgridstyle}>
           <ConflictPanelForm

@@ -162,9 +162,8 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
     data['fields'][fieldName] !== undefined
       ? data['fields'][fieldName]['annotations']
       : null;
-
   return ['warning', 'delete', 'clear'].includes(styletype) ? (
-    <Box pt={10} pl={3} pr={3} minHeight="340px" maxHeight="340px">
+    <Box pt={10} pl={3} pr={3} minHeight="470px" maxHeight="470px">
       <Grid
         container
         justifyContent="flex-start"
@@ -195,7 +194,15 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
           />
         )}
         <CardContent style={cardstyle.cardcotent}>
-          <Grid style={{minHeight: '225px'}}>
+          <Grid
+            style={{
+              maxHeight: '340px',
+              minHeight: '330px',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              paddingTop: '5px',
+            }}
+          >
             <Typography variant="body2" color="text.secondary"></Typography>
             {getComponentFromFieldConfig(
               fieldConfig,
@@ -208,7 +215,9 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             <br />
             {fieldConfig['meta'] !== undefined &&
               fieldConfig['meta']['annotation'] !== undefined &&
-              fieldConfig['meta']['annotation'] === true &&
+              fieldConfig['component-name'] !== 'BasicAutoIncrementer' &&
+              fieldConfig['component-name'] !== 'TemplatedStringField' &&
+              fieldConfig['component-name'] !== 'RandomStyle' &&
               annoataion !== null && (
                 <AnnotationField
                   key={'annotation' + fieldName + 'box'}
