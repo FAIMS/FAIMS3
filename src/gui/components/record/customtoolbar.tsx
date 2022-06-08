@@ -18,7 +18,7 @@
  *   File is creating custom tool bar instead of default GridToolbar to diable export button
  */
 
-import React, {useEffect} from 'react';
+import React from 'react';
 import {
   GridToolbarContainer,
   GridToolbarColumnsButton,
