@@ -570,7 +570,6 @@ export default function ConflictForm(props: ConflictFormProps) {
                   styletypeRight={styletypeRight}
                   setFieldChanged={setFieldChanged}
                   revisionlist={revisionlist}
-                  inirevision={conflicts['initial_head']}
                   fieldslist={fieldslist}
                   conflictfields={conflictfields}
                   istoggleAll={istoggleAll}

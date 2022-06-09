@@ -212,7 +212,6 @@ type ConflictPanelProp = {
   styletypeRight: iscolourList;
   setFieldChanged: any;
   revisionlist: Array<string>;
-  inirevision: string;
   fieldslist: Array<string>;
   conflictfields: Array<string>;
   istoggleAll: boolean;
@@ -230,20 +229,13 @@ export default function ConflictPanel(props: ConflictPanelProp) {
     setFieldChanged,
     chosenvalues,
     revisionlist,
-    inirevision,
     fieldslist,
     conflictfields,
     istoggleAll,
     isSyncing,
   } = props;
 
-  const isconflictrevision =
-    revisionlist[0] === inirevision && revisionlist[1] === '';
-  // !(
-  //   revisionlist[0] !== '' &&
-  //   revisionlist[1] !== inirevision &&
-  //   revisionlist[1] !== ''
-  // ) // this is to check if both revision been setup
+  const isconflictrevision = revisionlist[0] === '' || revisionlist[1] === '';
 
   return (
     <Box mb={3}>

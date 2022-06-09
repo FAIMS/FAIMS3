@@ -76,15 +76,16 @@ import {ResolveButton} from '../components/record/conflict/conflictbutton';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 0,
-      paddingRight: 0,
+      paddingLeft: 2,
+      paddingRight: 2,
     },
-    paddingLeft: 0,
-    paddingRight: 1,
+    paddingLeft: 5,
+    paddingRight: 5,
   },
   LeftPaddding: {
     [theme.breakpoints.down('md')]: {
       paddingLeft: 10,
+      paddingRight: 10,
     },
   },
 }));
@@ -244,7 +245,7 @@ export default function Record(props: RecordeProps) {
           </Typography>
         </Box>
       )}
-      <Box mb={2} className={classes.LeftPaddding}>
+      <Box mb={2} className={classes.LeftPaddding} pr={1}>
         <Typography variant={'h2'} component={'h1'}>
           {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
             ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
@@ -263,8 +264,8 @@ export default function Record(props: RecordeProps) {
               action={<ConflictHelpDialog type={'info'} />}
               icon={<InfoOutlinedIcon />}
             >
-              This Record has {Object.keys(conflicts['available_heads']).length}{' '}
-              conflicting instances. Resolve these conflicts before continue
+              This record has {Object.keys(conflicts['available_heads']).length}{' '}
+              conflicting instances. Resolve these conflicts before continuing
             </Alert>
           )}
       </Box>
@@ -273,13 +274,29 @@ export default function Record(props: RecordeProps) {
           <AppBar position="static" color="primary">
             <TabList
               onChange={handleChange}
-              aria-label="simple tabs example"
+              aria-label="Record Form Tab"
               indicatorColor={'secondary'}
               textColor="secondary"
+              // centered
             >
-              <Tab label="Edit" value="1" sx={{color: '#c2c2c2'}} />
-              <Tab label="Revisions" value="2" sx={{color: '#c2c2c2'}} />
-              <Tab label="Meta" value="3" sx={{color: '#c2c2c2'}} />
+              <Tab
+                label="Edit"
+                value="1"
+                style={{
+                  color: '#c2c2c2',
+                  width: '70px',
+                }}
+              />
+              <Tab
+                label="Revisions"
+                value="2"
+                style={{color: '#c2c2c2', maxWidth: '70px'}}
+              />
+              <Tab
+                label="Meta"
+                value="3"
+                style={{color: '#c2c2c2', maxWidth: '70px'}}
+              />
               {conflicts !== null &&
               conflicts['available_heads'] !== undefined &&
               Object.keys(conflicts['available_heads']).length > 1 ? (
@@ -296,10 +313,14 @@ export default function Record(props: RecordeProps) {
                     </Badge>
                   }
                   value="4"
-                  sx={{color: '#c2c2c2'}}
+                  style={{color: '#c2c2c2'}}
                 />
               ) : (
-                <Tab label="Conflicts" value="4" sx={{color: '#c2c2c2'}} />
+                <Tab
+                  label="Conflicts"
+                  value="4"
+                  style={{color: '#c2c2c2', maxWidth: '80px'}}
+                />
               )}
             </TabList>
           </AppBar>

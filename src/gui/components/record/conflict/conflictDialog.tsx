@@ -165,12 +165,12 @@ function ConflictInfoContent() {
       </Typography>
       <Typography>
         The record will be marked as conflicted. It is then the users'
-        responsibiltiy to resolve the conflict.
+        responsibility to resolve the conflict.
       </Typography>
       <Typography>
-        Users may continue to edit records whilst confilcts exist, but should be
+        Users may continue to edit records whilst conflicts exist, but should be
         aware that doing so may create futher conflicts, it is advisable to
-        resolve all conflicts before editing
+        resolve all conflicts before editing.
         <br />
       </Typography>
     </Box>

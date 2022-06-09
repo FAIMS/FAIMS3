@@ -127,7 +127,7 @@ export function ConflictDropSelect(props: ConflictDropSelectprops) {
   } = props;
 
   return (
-    <Box sx={{minWidth: 400, maxWidth: 400}}>
+    <Box sx={{minWidth: 200, maxWidth: 400}}>
       <FormControl fullWidth>
         <InputLabel htmlFor={'Conflictselect' + label}>
           {'Conflict ' + label}
@@ -159,7 +159,7 @@ export function EditDroplist(props: ConflictDropSelectprops) {
   } = props;
 
   return (
-    <Box sx={{minWidth: 400, maxWidth: 400}}>
+    <Box sx={{minWidth: 200, maxWidth: 400}}>
       <FormControl fullWidth>
         <Typography variant="h6" display="block">
           Currently editing version:
