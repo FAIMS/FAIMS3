@@ -142,7 +142,7 @@ type FieldWithAnnotationProp = {
   styletype: string;
   type?: string;
   data?: any;
-  isSyncing: boolean;
+  isSyncing: string;
 };
 
 export function FieldWithAnnotation(props: FieldWithAnnotationProp) {

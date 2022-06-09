@@ -49,7 +49,7 @@ interface Props {
   maximum_file_size?: number; // this is in bytes
   minimum_file_size?: number; // this is in bytes
   helperText?: string;
-  issyncing?: boolean;
+  issyncing?: string;
 }
 
 export function FileUploader(props: FieldProps & Props) {

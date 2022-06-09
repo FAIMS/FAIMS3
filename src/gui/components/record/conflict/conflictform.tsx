@@ -55,7 +55,7 @@ type ConflictFormProps = {
   type: string;
   conflicts: InitialMergeDetails;
   setissavedconflict: any; // this is paramater that allow user can reload the conflict headers
-  isSyncing: boolean;
+  isSyncing: string;
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};

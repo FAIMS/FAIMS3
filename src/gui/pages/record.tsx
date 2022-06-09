@@ -413,7 +413,7 @@ export default function Record(props: RecordeProps) {
                             metaSection={metaSection}
                             conflictfields={conflictfields}
                             handleChangeTab={handleChange}
-                            isSyncing={isSyncing}
+                            isSyncing={isSyncing.toString()}
                           />
                         )}
                       </Box>
@@ -425,7 +425,7 @@ export default function Record(props: RecordeProps) {
                         ui_specification={uiSpec}
                         draft_id={draft_id}
                         metaSection={metaSection}
-                        isSyncing={isSyncing}
+                        isSyncing={isSyncing.toString()}
                       />
                     )}
                   </Box>
@@ -471,7 +471,7 @@ export default function Record(props: RecordeProps) {
                   type={type}
                   conflicts={conflicts}
                   setissavedconflict={setissavedconflict}
-                  isSyncing={isSyncing}
+                  isSyncing={isSyncing.toString()}
                 />
               )}
             </Box>

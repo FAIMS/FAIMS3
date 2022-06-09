@@ -45,7 +45,7 @@ type ConflictSectionPanelProps = {
   fieldslist: Array<string>;
   conflictfields: Array<string>;
   istoggleAll: boolean;
-  isSyncing: boolean;
+  isSyncing: string;
 };
 function ConflictSectionPanel(props: ConflictSectionPanelProps) {
   const {
