@@ -72,6 +72,8 @@ import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
@@ -139,6 +141,8 @@ export default function Record(props: RecordeProps) {
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
   const [recrodinfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -259,14 +263,26 @@ export default function Record(props: RecordeProps) {
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
           Object.keys(conflicts['available_heads']).length > 1 && (
-            <Alert
-              severity="warning"
-              action={<ConflictHelpDialog type={'info'} />}
-              icon={<InfoOutlinedIcon />}
-            >
-              This record has {Object.keys(conflicts['available_heads']).length}{' '}
-              conflicting instances. Resolve these conflicts before continuing
-            </Alert>
+            <Box bgcolor={'#fff3e0'}>
+              <Grid container>
+                <Grid sm={6} xs={12} md={6}>
+                  <Alert severity="warning" icon={<InfoOutlinedIcon />}>
+                    This record has{' '}
+                    {Object.keys(conflicts['available_heads']).length}{' '}
+                    conflicting instances. Resolve these conflicts before
+                    continuing
+                  </Alert>
+                </Grid>
+
+                <Grid sm={6} xs={12} md={6}>
+                  <Alert
+                    severity="warning"
+                    action={<ConflictHelpDialog type={'info'} />}
+                    icon={<></>}
+                  ></Alert>
+                </Grid>
+              </Grid>
+            </Box>
           )}
       </Box>
       <Paper square className={classes.NoPaddding}>
@@ -277,7 +293,7 @@ export default function Record(props: RecordeProps) {
               aria-label="Record Form Tab"
               indicatorColor={'secondary'}
               textColor="secondary"
-              // centered
+              centered={not_xs ? false : true}
             >
               <Tab
                 label="Edit"

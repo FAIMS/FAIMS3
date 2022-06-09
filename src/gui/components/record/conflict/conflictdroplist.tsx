@@ -55,6 +55,10 @@ function RevisionDropList(props: ConflictDropSelectprops) {
   const isalerting = props.isalerting ?? false;
 
   const handleChange = (event: SelectChangeEvent) => {
+    console.log(event.target);
+    if (event.target.value === '') {
+      return;
+    }
     if (props.revision !== '' && isalerting === false) {
       settemvalue(event.target.value as string);
       setOpen(true);
