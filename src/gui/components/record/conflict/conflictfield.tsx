@@ -175,6 +175,22 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
           {cardstyle.text}
         </Typography>
       </Grid>
+      {/* Add alert message for required message */}
+      {fieldConfig['component-parameters']['required'] === true &&
+        styletype === 'warning' && (
+          <Grid
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+            style={cardstyle.cardheader}
+          >
+            {cardstyle.icon}
+            <Typography variant="caption" display="block">
+              {' '}
+              This Field is requierd, NOT reject both revisions{' '}
+            </Typography>
+          </Grid>
+        )}
     </Box>
   ) : (
     <Box pt={10} px={3}>
@@ -196,8 +212,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
         <CardContent style={cardstyle.cardcotent}>
           <Grid
             style={{
-              maxHeight: '340px',
-              minHeight: '330px',
+              height: '320px',
               overflowY: 'auto',
               overflowX: 'hidden',
               paddingTop: '5px',
@@ -237,17 +252,28 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
               )}
           </Grid>
           <Grid
-            style={{display: 'block', paddingLeft: 1}}
+            style={{paddingLeft: 1}}
             container
             justifyContent="flex-end"
             alignItems="flex-end"
           >
             <Typography variant="caption" color="text.secondary">
-              Last Updated By {data['fields'][fieldName]['created_by']}
-              {JSON.stringify(data['fields'][fieldName]['created'])
-                .replaceAll('"', '')
-                .replaceAll('T', ' ')
-                .slice(0, 19)}
+              {data['fields'][fieldName] !== undefined &&
+                'Last updated by' + data['fields'][fieldName]['created_by']}
+            </Typography>
+          </Grid>
+          <Grid
+            style={{paddingLeft: 1}}
+            container
+            justifyContent="flex-end"
+            alignItems="flex-end"
+          >
+            <Typography variant="caption" color="text.secondary">
+              {data['fields'][fieldName] !== undefined &&
+                JSON.stringify(data['fields'][fieldName]['created'])
+                  .replaceAll('"', '')
+                  .replaceAll('T', ' ')
+                  .slice(0, 19)}
             </Typography>
           </Grid>
         </CardContent>

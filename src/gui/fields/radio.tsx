@@ -61,6 +61,7 @@ interface Props {
   FormLabelProps: FormLabelProps;
   FormHelperTextProps: FormHelperTextProps;
   ElementProps: ElementProps;
+  disabled?: boolean;
 }
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
@@ -92,6 +93,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
               control={<MuiRadio {...option['RadioProps']} />}
               label={option.label}
               {...option['FormControlProps']}
+              disabled={this.props.disabled ?? false}
             />
           ))}
         </MuiRadioGroup>

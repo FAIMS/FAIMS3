@@ -72,8 +72,10 @@ function comparegetconflictField(
     if (
       conflictA['fields'][field] === undefined ||
       conflictB['fields'][field] === undefined
-    )
+    ) {
+      ismcolour[field] = 'clear';
       return;
+    }
     if (
       conflictA['fields'][field]['avp_id'] !==
       conflictB['fields'][field]['avp_id']
@@ -130,8 +132,13 @@ export default function ConflictForm(props: ConflictFormProps) {
       initialvalues['fields'][field] = {
         ...conflicts['initial_head_data']['fields'][field],
       };
-      mergeresult['field_types'][field] =
-        conflicts['initial_head_data']['fields'][field]['type']; //get type for all field
+      if (conflicts['initial_head_data']['fields'][field] !== undefined)
+        mergeresult['field_types'][field] =
+          conflicts['initial_head_data']['fields'][field]['type'];
+      //get type for all field
+      else
+        mergeresult['field_types'][field] =
+          ui_specification['fields'][field]['type-returned'];
     })
   );
   const [chosenvalues, setChoosenvalues] = useState(initialvalues);
@@ -139,22 +146,31 @@ export default function ConflictForm(props: ConflictFormProps) {
   //above are the header data of three columns
   // to get all fields of the form
 
-  //below are the style of icons to choose reject or tick
+  //intial values
   const isclick: isclicklist = {};
-  fieldslist.map(field => (isclick[field] = false));
+  const isdisbaled: {[key: string]: boolean} = {};
+  const iscolour: iscolourList = {};
+  const ismcolour: iscolourList = {};
+  fieldslist.map(field => {
+    isclick[field] = false;
+    iscolour[field] = 'default';
+    isdisbaled[field] = false;
+    ismcolour[field] = 'warning';
+  });
+  //below are the style of icons to choose reject or tick
   const [isclickLeft, setIsClickLeft] = useState(isclick);
   const [isclickRight, setIsClickRight] = useState(isclick);
   //above are the style of icons to choose reject or tick
   //below are the style of 3 columns of forms , including color inditor on the top, icons
-  const iscolour: iscolourList = {};
-  fieldslist.map(field => (iscolour[field] = 'default'));
+
   const [styletypeLeft, setstyletypeLeft] = useState(iscolour);
   const [styletypeRight, setstyletypeRight] = useState(iscolour);
-  const ismcolour: iscolourList = {};
-  fieldslist.map(field => (ismcolour[field] = 'warning'));
+
   //above are the style of 3 columns of forms , including color inditor on the top, icons
   const [styletypeMiddle, setstyletypeMiddle] = useState(ismcolour);
 
+  const [disbaledRight, setdisbaledRight] = useState(isdisbaled);
+  const [disbaledLeft, setdisbaledLeft] = useState(isdisbaled);
   const [comparedrevision, setR] = useState(''); // this is just a value to trigger the revsion changed
   const [isloading, setIsloading] = useState(true); //when 2 conflict revision been load, value will be set to false
   const [conflictfields, setconflictfields] = useState<Array<string>>([]); //get list of comnflict fields for the 2 revisions
@@ -197,6 +213,8 @@ export default function ConflictForm(props: ConflictFormProps) {
             setconflictfields(updated.conflictfields);
             setstyletypeMiddle(updated.colourstyle);
           }
+          setdisbaledRight({...isdisbaled});
+          setdisbaledLeft({...isdisbaled});
           setIsloading(false);
         }
       );
@@ -244,6 +262,18 @@ export default function ConflictForm(props: ConflictFormProps) {
     left: boolean
   ) => {
     if (conflictA === null || conflictB === null) return;
+    // check if rejected
+    if (
+      choosevalueA === null &&
+      ui_specification['fields'][fieldName]['component-parameters'][
+        'required'
+      ] === true &&
+      ((left && styletypeRight[fieldName] === 'reject') ||
+        (left === false && styletypeLeft[fieldName] === 'reject'))
+    ) {
+      alert('This Field is requierd, NOT reject both revisions');
+      return;
+    }
     if (sleft !== null)
       setstyletypeLeft({...styletypeLeft, [fieldName]: sleft});
     if (smiddle !== null)
@@ -279,7 +309,8 @@ export default function ConflictForm(props: ConflictFormProps) {
       } else if (
         choosevalueA === null &&
         left &&
-        isclickRight[fieldName] === true
+        isclickRight[fieldName] === true &&
+        styletypeRight[fieldName] === 'reject'
       ) {
         setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
         // newvalues['data'] = null;
@@ -288,7 +319,8 @@ export default function ConflictForm(props: ConflictFormProps) {
       } else if (
         choosevalueA === null &&
         left === false &&
-        isclickLeft[fieldName] === true
+        isclickLeft[fieldName] === true &&
+        styletypeLeft[fieldName] === 'reject'
       ) {
         setstyletypeMiddle({...styletypeMiddle, [fieldName]: 'delete'});
         // newvalues['data'] = null;
@@ -303,6 +335,31 @@ export default function ConflictForm(props: ConflictFormProps) {
         ...saveduserMergeResult,
         field_choices: {...newmerged},
       });
+    }
+    // user use reject icon to reject field
+    if (choosevalueA === null) {
+      if (
+        left &&
+        sleft === 'reject' &&
+        ui_specification['fields'][fieldName]['component-parameters'][
+          'required'
+        ] === true
+      ) {
+        setdisbaledRight({...disbaledRight, [fieldName]: true});
+      } else if (
+        left === false &&
+        sright === 'reject' &&
+        ui_specification['fields'][fieldName]['component-parameters'][
+          'required'
+        ] === true
+      ) {
+        setdisbaledLeft({...disbaledLeft, [fieldName]: true});
+      }
+    } else {
+      if (disbaledRight[fieldName])
+        setdisbaledRight({...disbaledRight, [fieldName]: false});
+      if (disbaledLeft[fieldName])
+        setdisbaledLeft({...disbaledLeft, [fieldName]: false});
     }
   };
 
@@ -386,6 +443,8 @@ export default function ConflictForm(props: ConflictFormProps) {
         setChoosenvalues({...values});
       }
     }
+    setdisbaledRight({...isdisbaled});
+    setdisbaledLeft({...isdisbaled});
   };
 
   const onButtonSave = async () => {
@@ -516,6 +575,8 @@ export default function ConflictForm(props: ConflictFormProps) {
                   conflictfields={conflictfields}
                   istoggleAll={istoggleAll}
                   isSyncing={isSyncing}
+                  disbaledRight={disbaledRight}
+                  disbaledLeft={disbaledLeft}
                 />
               </div>
             </TabPanel>

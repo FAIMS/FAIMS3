@@ -170,9 +170,10 @@ type ConflictButtonProps = {
   setFieldChanged: any;
   isclick: isclicklist;
   type: string;
+  disbaled: {[key: string]: boolean};
 };
 function ConflictButton(props: ConflictButtonProps) {
-  const {istoggleAll, isconflict, isclick} = props;
+  const {istoggleAll, isconflict, isclick, disbaled} = props;
   if (istoggleAll && isconflict)
     return (
       <FieldButtonGroup
@@ -180,6 +181,7 @@ function ConflictButton(props: ConflictButtonProps) {
         id={props.fieldName}
         setFieldChanged={props.setFieldChanged}
         isclick={isclick}
+        disbaled={disbaled}
       />
     );
   if (istoggleAll && !isconflict) return <FieldEmptyButton />;
@@ -190,6 +192,7 @@ function ConflictButton(props: ConflictButtonProps) {
         id={props.fieldName}
         setFieldChanged={props.setFieldChanged}
         isclick={isclick}
+        disbaled={disbaled}
       />
     );
   return <div></div>;
@@ -213,7 +216,9 @@ type ConflictPanelProp = {
   fieldslist: Array<string>;
   conflictfields: Array<string>;
   istoggleAll: boolean;
-  isSyncing: boolean;
+  isSyncing: string;
+  disbaledLeft: {[key: string]: boolean};
+  disbaledRight: {[key: string]: boolean};
 };
 
 export default function ConflictPanel(props: ConflictPanelProp) {
@@ -222,12 +227,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
     view,
     conflictA,
     conflictB,
-    styletypeLeft,
-    styletypeRight,
-    styletypeMiddle,
     setFieldChanged,
-    isclickLeft,
-    isclickRight,
     chosenvalues,
     revisionlist,
     inirevision,
@@ -264,7 +264,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
               'Fields will show here once a second conflict has been selected. Use the dropdown at the top right to continue'
             }
             data={conflictA !== null ? conflictA : null}
-            styletypes={styletypeLeft}
+            styletypes={props.styletypeLeft}
             view={view}
             type="left"
             ui_specification={ui_specification}
@@ -284,11 +284,12 @@ export default function ConflictPanel(props: ConflictPanelProp) {
                   'RandomStyle' && (
                   <ConflictButton
                     istoggleAll={istoggleAll}
-                    isclick={isclickLeft}
+                    isclick={props.isclickLeft}
                     type={'left'}
                     fieldName={fieldName}
                     setFieldChanged={setFieldChanged}
                     isconflict={conflictfields.includes(fieldName)}
+                    disbaled={props.disbaledLeft}
                   />
                 )
             )}
@@ -299,7 +300,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             isspin={isconflictrevision}
             text={''}
             data={chosenvalues !== null ? chosenvalues : null}
-            styletypes={styletypeMiddle}
+            styletypes={props.styletypeMiddle}
             view={view}
             type="middle"
             ui_specification={ui_specification}
@@ -319,11 +320,12 @@ export default function ConflictPanel(props: ConflictPanelProp) {
                   'RandomStyle' && (
                   <ConflictButton
                     istoggleAll={istoggleAll}
-                    isclick={isclickRight}
+                    isclick={props.isclickRight}
                     type={'right'}
                     fieldName={fieldName}
                     setFieldChanged={setFieldChanged}
                     isconflict={conflictfields.includes(fieldName)}
+                    disbaled={props.disbaledRight}
                   />
                 )
             )}
@@ -334,7 +336,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             isspin={isconflictrevision}
             text={'Select a second conflict to resolve'}
             data={conflictB !== null ? conflictB : null}
-            styletypes={styletypeRight}
+            styletypes={props.styletypeRight}
             view={view}
             type="right"
             ui_specification={ui_specification}

@@ -48,6 +48,7 @@ function FieldButton(props: any) {
       onClick={() => props.onButtonClick()}
       style={{padding: '8px 0px'}}
       id={props.id}
+      disabled={props.disbaled}
     >
       {props.startIcon}
     </IconButton>
@@ -100,8 +101,22 @@ const isclickiconstyle = {
   borderRadius: '0px',
 };
 
-export function FieldButtonGroup(props: any) {
-  const {type, id, isclick, setFieldChanged} = props;
+const disabediconstyle = {
+  backgroundColor: '#bdbdbd',
+  color: '#fff',
+  borderRadius: '2px',
+};
+
+type FieldButtonGroupProps = {
+  type: string;
+  id: string;
+  isclick: {[key: string]: boolean};
+  setFieldChanged: any;
+  disbaled: {[key: string]: boolean};
+};
+
+export function FieldButtonGroup(props: FieldButtonGroupProps) {
+  const {type, id, isclick, setFieldChanged, disbaled} = props;
 
   const onButtonDeleteLeft = () => {
     setFieldChanged(isclick[id], id, 'reject', null, null, null, true);
@@ -151,10 +166,17 @@ export function FieldButtonGroup(props: any) {
           onButtonClick={onButtonDeleteLeft}
           startIcon={
             <DeleteOutlineIcon
-              style={isclick[id] ? isclickiconstyle : iconstyle}
+              style={
+                disbaled[id]
+                  ? disabediconstyle
+                  : isclick[id]
+                  ? isclickiconstyle
+                  : iconstyle
+              }
             />
           }
           id={id}
+          disabled={disbaled[id]}
         />
         <FieldButton
           onButtonClick={onButtonLeft}
@@ -162,6 +184,7 @@ export function FieldButtonGroup(props: any) {
             <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
           }
           id={id}
+          disabled={false}
         />
       </ButtonGroup>
     </Box>
@@ -184,15 +207,23 @@ export function FieldButtonGroup(props: any) {
             <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
           }
           id={id}
+          disabled={false}
         />
         <FieldButton
           onButtonClick={onButtonDeleteRight}
           startIcon={
             <DeleteOutlineIcon
-              style={isclick[id] ? isclickiconstyle : iconstyle}
+              style={
+                disbaled[id]
+                  ? disabediconstyle
+                  : isclick[id]
+                  ? isclickiconstyle
+                  : iconstyle
+              }
             />
           }
           id={id}
+          disabled={disbaled[id]}
         />
       </ButtonGroup>
     </Box>
