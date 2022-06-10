@@ -37,7 +37,7 @@ type DiagProps = {
   setopen: any;
   filedId?: string;
   path?: string | null;
-  isSyncing?: boolean;
+  isSyncing?: string;
 };
 export default function FaimsDialog(props: DiagProps) {
   //   const [open, setOpen] = React.useState(props.open??false);
@@ -67,7 +67,7 @@ export default function FaimsDialog(props: DiagProps) {
       <DialogContent>
         {path !== null ? (
           <img style={{objectFit: 'none'}} src={path} />
-        ) : isSyncing ? (
+        ) : isSyncing === 'true' ? (
           <DialogContentText id="alert-dialog-description">
             Photo/File is Syncing
             <CircularProgress

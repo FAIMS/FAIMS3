@@ -38,6 +38,7 @@ type ConflictDropSelectprops = {
   disablerevision: string;
   islabel?: boolean;
   isalerting?: boolean;
+  numResolved?: number;
 };
 
 function RevisionDropList(props: ConflictDropSelectprops) {
@@ -53,9 +54,14 @@ function RevisionDropList(props: ConflictDropSelectprops) {
   const [open, setOpen] = React.useState(false);
   const [temvalue, settemvalue] = useState(props.revision);
   const isalerting = props.isalerting ?? false;
+  const isalert = props.numResolved !== 0 ? true : false;
 
   const handleChange = (event: SelectChangeEvent) => {
-    if (props.revision !== '' && isalerting === false) {
+    console.log(event.target);
+    if (event.target.value === '') {
+      return;
+    }
+    if (props.revision !== '' && isalerting === false && isalert) {
       settemvalue(event.target.value as string);
       setOpen(true);
     } else {
@@ -127,7 +133,7 @@ export function ConflictDropSelect(props: ConflictDropSelectprops) {
   } = props;
 
   return (
-    <Box sx={{minWidth: 400, maxWidth: 400}}>
+    <Box sx={{minWidth: 200, maxWidth: 400}}>
       <FormControl fullWidth>
         <InputLabel htmlFor={'Conflictselect' + label}>
           {'Conflict ' + label}
@@ -140,6 +146,7 @@ export function ConflictDropSelect(props: ConflictDropSelectprops) {
           setRevision={setRevision}
           disablerevision={disablerevision}
           islabel={true}
+          numResolved={props.numResolved}
         />
         <FormHelperText>Select a conflict to resolve</FormHelperText>
       </FormControl>
@@ -159,7 +166,7 @@ export function EditDroplist(props: ConflictDropSelectprops) {
   } = props;
 
   return (
-    <Box sx={{minWidth: 400, maxWidth: 400}}>
+    <Box sx={{minWidth: 200, maxWidth: 400}}>
       <FormControl fullWidth>
         <Typography variant="h6" display="block">
           Currently editing version:
@@ -173,6 +180,7 @@ export function EditDroplist(props: ConflictDropSelectprops) {
           disablerevision={disablerevision}
           islabel={false}
           isalerting={isalerting}
+          numResolved={1}
         />
         <FormHelperText>Select a revision you wish to edit</FormHelperText>
       </FormControl>

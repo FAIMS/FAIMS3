@@ -39,6 +39,9 @@ import IconButton from '@mui/material/IconButton';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {CircularProgress} from '@mui/material';
 import {Grid, Box} from '@mui/material';
+import {FieldButton, iconstyle} from './conflictbutton';
+import DoneIcon from '@mui/icons-material/Done';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 export function ConflictButton(props: any) {
   return (
@@ -150,6 +153,40 @@ function ConflictDialogContent() {
             Select all conflicts from conflict A(disregard all from conflict B)
           </Typography>
         </Grid>
+        <Grid
+          item
+          xs={6}
+          container
+          justifyContent="center"
+          alignItems="flex-end"
+        >
+          <FieldButton
+            onButtonClick={() => console.log('click')}
+            startIcon={<DeleteOutlineIcon style={iconstyle} />}
+            id={''}
+            disabled={false}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <Typography>Click to reject conflict</Typography>
+        </Grid>
+        <Grid
+          item
+          xs={6}
+          container
+          justifyContent="center"
+          alignItems="flex-end"
+        >
+          <FieldButton
+            onButtonClick={() => console.log('click')}
+            startIcon={<DoneIcon style={iconstyle} />}
+            id={''}
+            disabled={false}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <Typography>Click to accept conflict</Typography>
+        </Grid>
       </Grid>
     </Box>
   );
@@ -165,12 +202,12 @@ function ConflictInfoContent() {
       </Typography>
       <Typography>
         The record will be marked as conflicted. It is then the users'
-        responsibiltiy to resolve the conflict.
+        responsibility to resolve the conflict.
       </Typography>
       <Typography>
-        Users may continue to edit records whilst confilcts exist, but should be
+        Users may continue to edit records whilst conflicts exist, but should be
         aware that doing so may create futher conflicts, it is advisable to
-        resolve all conflicts before editing
+        resolve all conflicts before editing.
         <br />
       </Typography>
     </Box>
@@ -281,6 +318,44 @@ function ConflictChildDialog(props: any) {
         open={open}
       />
     </Grid>
+  );
+}
+
+export function DiscardDialog(props: any) {
+  const [open, setOpen] = React.useState(false);
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleConfirm = (event: React.ChangeEvent<{}>) => {
+    props.discardconflict(event);
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Button
+        value={'conflictDiscard'}
+        id={'conflictDiscard'}
+        variant="text"
+        onClick={handleOpen}
+      >
+        Discard
+      </Button>
+      <BasicDiaglog
+        handleClose={handleClose}
+        handleOpen={handleOpen}
+        handleConfirm={handleConfirm}
+        content={'If you proceed, all changes made here will be lost'}
+        continue={'Discard'}
+        cancel={'Cancel'}
+        open={open}
+      />
+    </>
   );
 }
 

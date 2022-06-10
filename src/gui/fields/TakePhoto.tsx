@@ -53,7 +53,7 @@ function base64image_to_blob(image: CameraPhoto): Blob {
 interface Props {
   helpertext?: string;
   label?: string;
-  issyncing?: boolean;
+  issyncing?: string;
 }
 
 type ImgeListProps = {

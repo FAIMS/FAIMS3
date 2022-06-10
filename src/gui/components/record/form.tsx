@@ -68,7 +68,7 @@ type RecordFormProps = {
   conflictfields?: string[] | null;
   handleChangeTab?: any;
   metaSection?: any;
-  isSyncing?: boolean;
+  isSyncing?: string;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision

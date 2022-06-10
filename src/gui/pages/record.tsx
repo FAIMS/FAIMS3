@@ -67,24 +67,30 @@ import {
   findConflictingFields,
 } from '../../data_storage/merging';
 import Alert from '@mui/material/Alert';
-import {ConflictHelpDialog} from '../components/record/conflict/conflictDialog';
+import {
+  ConflictHelpDialog,
+  BasicDiaglog,
+} from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 0,
-      paddingRight: 0,
+      paddingLeft: 2,
+      paddingRight: 2,
     },
-    paddingLeft: 0,
-    paddingRight: 1,
+    paddingLeft: 5,
+    paddingRight: 5,
   },
   LeftPaddding: {
     [theme.breakpoints.down('md')]: {
       paddingLeft: 10,
+      paddingRight: 10,
     },
   },
 }));
@@ -138,6 +144,10 @@ export default function Record(props: RecordeProps) {
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
   const [recrodinfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const [open, setOpen] = React.useState(false);
+  const [pressedvalue, setpressedvalue] = useState(value);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -225,7 +235,20 @@ export default function Record(props: RecordeProps) {
   }, [project_id, record_id, revision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
-    setValue(newValue);
+    if (
+      value === '4' &&
+      conflicts !== null &&
+      conflicts['available_heads'] !== undefined &&
+      Object.keys(conflicts['available_heads']).length > 1
+    ) {
+      setOpen(true);
+      setpressedvalue(newValue);
+    } else setValue(newValue);
+  };
+
+  const handleConfirm = () => {
+    setValue(pressedvalue);
+    setOpen(false);
   };
 
   const setRevision = async (revision: string) => {
@@ -244,7 +267,7 @@ export default function Record(props: RecordeProps) {
           </Typography>
         </Box>
       )}
-      <Box mb={2} className={classes.LeftPaddding}>
+      <Box mb={2} className={classes.LeftPaddding} pr={1}>
         <Typography variant={'h2'} component={'h1'}>
           {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
             ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
@@ -258,14 +281,26 @@ export default function Record(props: RecordeProps) {
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
           Object.keys(conflicts['available_heads']).length > 1 && (
-            <Alert
-              severity="warning"
-              action={<ConflictHelpDialog type={'info'} />}
-              icon={<InfoOutlinedIcon />}
-            >
-              This Record has {Object.keys(conflicts['available_heads']).length}{' '}
-              conflicting instances. Resolve these conflicts before continue
-            </Alert>
+            <Box bgcolor={'#fff3e0'}>
+              <Grid container>
+                <Grid sm={6} xs={12} md={6}>
+                  <Alert severity="warning" icon={<InfoOutlinedIcon />}>
+                    This record has{' '}
+                    {Object.keys(conflicts['available_heads']).length}{' '}
+                    conflicting instances. Resolve these conflicts before
+                    continuing
+                  </Alert>
+                </Grid>
+
+                <Grid sm={6} xs={12} md={6}>
+                  <Alert
+                    severity="warning"
+                    action={<ConflictHelpDialog type={'info'} />}
+                    icon={<></>}
+                  ></Alert>
+                </Grid>
+              </Grid>
+            </Box>
           )}
       </Box>
       <Paper square className={classes.NoPaddding}>
@@ -273,13 +308,29 @@ export default function Record(props: RecordeProps) {
           <AppBar position="static" color="primary">
             <TabList
               onChange={handleChange}
-              aria-label="simple tabs example"
+              aria-label="Record Form Tab"
               indicatorColor={'secondary'}
               textColor="secondary"
+              centered={not_xs ? false : true}
             >
-              <Tab label="Edit" value="1" sx={{color: '#c2c2c2'}} />
-              <Tab label="Revisions" value="2" sx={{color: '#c2c2c2'}} />
-              <Tab label="Meta" value="3" sx={{color: '#c2c2c2'}} />
+              <Tab
+                label="Edit"
+                value="1"
+                style={{
+                  color: '#c2c2c2',
+                  width: '70px',
+                }}
+              />
+              <Tab
+                label="Revisions"
+                value="2"
+                style={{color: '#c2c2c2', maxWidth: '70px'}}
+              />
+              <Tab
+                label="Meta"
+                value="3"
+                style={{color: '#c2c2c2', maxWidth: '70px'}}
+              />
               {conflicts !== null &&
               conflicts['available_heads'] !== undefined &&
               Object.keys(conflicts['available_heads']).length > 1 ? (
@@ -296,10 +347,14 @@ export default function Record(props: RecordeProps) {
                     </Badge>
                   }
                   value="4"
-                  sx={{color: '#c2c2c2'}}
+                  style={{color: '#c2c2c2'}}
                 />
               ) : (
-                <Tab label="Conflicts" value="4" sx={{color: '#c2c2c2'}} />
+                <Tab
+                  label="Conflicts"
+                  value="4"
+                  style={{color: '#c2c2c2', maxWidth: '80px'}}
+                />
               )}
             </TabList>
           </AppBar>
@@ -413,7 +468,7 @@ export default function Record(props: RecordeProps) {
                             metaSection={metaSection}
                             conflictfields={conflictfields}
                             handleChangeTab={handleChange}
-                            isSyncing={isSyncing}
+                            isSyncing={isSyncing.toString()}
                           />
                         )}
                       </Box>
@@ -425,7 +480,7 @@ export default function Record(props: RecordeProps) {
                         ui_specification={uiSpec}
                         draft_id={draft_id}
                         metaSection={metaSection}
-                        isSyncing={isSyncing}
+                        isSyncing={isSyncing.toString()}
                       />
                     )}
                   </Box>
@@ -461,6 +516,18 @@ export default function Record(props: RecordeProps) {
           </TabPanel>
           <TabPanel value="4" style={{overflowX: 'auto'}}>
             <Box mt={2}>
+              <BasicDiaglog
+                handleClose={() => setOpen(false)}
+                handleOpen={() => setOpen(true)}
+                handleConfirm={handleConfirm}
+                content={`This record has
+                ${Object.keys(conflicts['available_heads']).length} 
+                conflicting instances. Resolve these conflicts before
+                continuing`}
+                continue={'continue'}
+                cancel={'Rsolve'}
+                open={open}
+              />
               {isSyncing !== null && (
                 <ConflictForm
                   project_id={project_id}
@@ -471,7 +538,7 @@ export default function Record(props: RecordeProps) {
                   type={type}
                   conflicts={conflicts}
                   setissavedconflict={setissavedconflict}
-                  isSyncing={isSyncing}
+                  isSyncing={isSyncing.toString()}
                 />
               )}
             </Box>

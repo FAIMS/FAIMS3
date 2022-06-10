@@ -37,7 +37,7 @@ type ViewProps = {
   draftState: RecordDraftState;
   annotation: any;
   handerannoattion: any;
-  isSyncing?: boolean;
+  isSyncing?: string;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
 };
@@ -51,7 +51,7 @@ type SingleComponentProps = {
   draftState: RecordDraftState;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
-  isSyncing?: boolean;
+  isSyncing?: string;
 };
 
 function SingleComponent(props: SingleComponentProps) {
