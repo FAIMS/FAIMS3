@@ -35,6 +35,7 @@ type ConflictToolBarProps = {
   isloading: boolean;
   istoggleAll: boolean;
   setIstoggleAll: any;
+  numResolved: number;
 };
 export default function ConflictToolBar(props: ConflictToolBarProps) {
   const {
@@ -72,6 +73,7 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
               index={0}
               setRevision={setRevision}
               disablerevision={revisionlist[1]}
+              numResolved={props.numResolved}
             />
             <ConflictButton
               onButtonClick={onButtonClick}
@@ -98,6 +100,7 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
               index={1}
               setRevision={setRevision}
               disablerevision={revisionlist[0]}
+              numResolved={props.numResolved}
             />
           </Grid>
           <Grid item>

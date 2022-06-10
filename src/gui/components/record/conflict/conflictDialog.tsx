@@ -284,6 +284,44 @@ function ConflictChildDialog(props: any) {
   );
 }
 
+export function DiscardDialog(props: any) {
+  const [open, setOpen] = React.useState(false);
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleConfirm = (event: React.ChangeEvent<{}>) => {
+    props.discardconflict(event);
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Button
+        value={'conflictDiscard'}
+        id={'conflictDiscard'}
+        variant="text"
+        onClick={handleOpen}
+      >
+        Discard
+      </Button>
+      <BasicDiaglog
+        handleClose={handleClose}
+        handleOpen={handleOpen}
+        handleConfirm={handleConfirm}
+        content={'If you proceed, all changes made here will be lost'}
+        continue={'Discard'}
+        cancel={'Cancel'}
+        open={open}
+      />
+    </>
+  );
+}
+
 type BasicDiaglogProps = {
   handleClose: any;
   handleOpen: any;

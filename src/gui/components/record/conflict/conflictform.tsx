@@ -195,14 +195,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         result => {
           setconflict(result);
           //reset the color and click for the buttons and cards
-          setstyletypeMiddle({...ismcolour});
-          setstyletypeLeft({...iscolour});
-          setstyletypeRight({...iscolour});
-          setIsClickLeft({...isclick});
-          setIsClickRight({...isclick});
-          setChoosenvalues({...initialvalues});
-          if (saveduserMergeResult !== null)
-            setUserMergeResult({...saveduserMergeResult, field_choices: {}}); //reset the savedusermergeresult
+          resettyle();
           if (result !== null && compareconflict !== null) {
             updated = comparegetconflictField(
               result,
@@ -213,12 +206,24 @@ export default function ConflictForm(props: ConflictFormProps) {
             setconflictfields(updated.conflictfields);
             setstyletypeMiddle(updated.colourstyle);
           }
-          setdisbaledRight({...isdisbaled});
-          setdisbaledLeft({...isdisbaled});
           setIsloading(false);
         }
       );
     }
+  };
+
+  const resettyle = () => {
+    setstyletypeMiddle({...ismcolour});
+    setstyletypeLeft({...iscolour});
+    setstyletypeRight({...iscolour});
+    setIsClickLeft({...isclick});
+    setIsClickRight({...isclick});
+    setChoosenvalues({...initialvalues});
+    if (saveduserMergeResult !== null)
+      setUserMergeResult({...saveduserMergeResult, field_choices: {}}); //reset the savedusermergeresult
+
+    setdisbaledRight({...isdisbaled});
+    setdisbaledLeft({...isdisbaled});
   };
 
   useEffect(() => {
@@ -498,13 +503,17 @@ export default function ConflictForm(props: ConflictFormProps) {
 
   const onButtonDiscard = () => {
     // alert user if the conflict not been saved
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
-        message: 'Conflict Resolve Not saved',
-        severity: 'error',
-      },
-    });
+    resettyle();
+    if (conflictB !== null && conflictA !== null) {
+      const updated = comparegetconflictField(
+        conflictB,
+        conflictA,
+        fieldslist,
+        ismcolour
+      );
+      setconflictfields(updated.conflictfields);
+      setstyletypeMiddle(updated.colourstyle);
+    }
   };
 
   const numResolved =
@@ -524,6 +533,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         isloading={isloading}
         istoggleAll={istoggleAll}
         setIstoggleAll={setIstoggleAll}
+        numResolved={numResolved}
       />
       {conflictA !== null &&
         conflictB !== null &&

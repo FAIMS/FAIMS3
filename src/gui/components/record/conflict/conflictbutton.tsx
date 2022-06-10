@@ -27,7 +27,7 @@ import {grey} from '@mui/material/colors';
 import DoneIcon from '@mui/icons-material/Done';
 import IconButton from '@mui/material/IconButton';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-
+import {DiscardDialog} from './conflictDialog';
 export function ResolveButton(props: any) {
   return (
     <Button
@@ -65,15 +65,7 @@ export function ConflictSaveButton(props: any) {
       alignItems="center"
       style={{paddingBottom: 10}}
     >
-      <Button
-        aria-label={''}
-        onClick={props.onButtonDiscard}
-        value={'conflictDiscard'}
-        id={'conflictDiscard'}
-        variant="text"
-      >
-        Discard
-      </Button>
+      <DiscardDialog discardconflict={props.onButtonDiscard} />
       <Button
         aria-label={''}
         onClick={() => props.onButtonClick(props.value)}
