@@ -33,6 +33,11 @@ import {
   getSelectBuilderIcon,
 } from '../fields/select';
 import {
+  AdvancedSelect,
+  AdvancedSelectSetting,
+  AdvancedSelectcomponentsetting,
+} from '../fields/selectadvanced';
+import {
   MultiSelect,
   MultiSelectSetting,
   MultiSelectcomponentsetting,
@@ -215,6 +220,27 @@ registerComponent(
     },
     MultiSelectSetting,
     MultiSelectcomponentsetting,
+    getSelectBuilderIcon()
+  )
+);
+registerComponent(
+  'faims-custom',
+  'AdvancedSelect',
+  setupComponentProperties(
+    'AdvancedSelect',
+    'Select item',
+    'Select',
+    AdvancedSelect,
+    {
+      namespace: 'faims-custom',
+      componentName: 'AdvancedSelect',
+      select: true,
+      type_return: 'faims-core::string',
+      validationSchema: [['yup.string']],
+      type: 'select',
+    },
+    AdvancedSelectSetting,
+    AdvancedSelectcomponentsetting,
     getSelectBuilderIcon()
   )
 );

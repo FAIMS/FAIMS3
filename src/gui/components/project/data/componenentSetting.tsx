@@ -342,6 +342,11 @@ const getvalue = (
     );
     return returnvalue;
   }
+  if (name === 'optiontree' && view === 'ElementProps') {
+    const optiontree =
+      fieldui['component-parameters']['ElementProps']['optiontree'];
+    return JSON.stringify(optiontree);
+  }
   if (['access', 'validationSchema'].includes(view)) return fieldui[name];
   if (view === 'meta' && fieldui['meta'] !== undefined) {
     if (name === 'uncertainty_include' || name === 'uncertainty_label')
