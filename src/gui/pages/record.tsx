@@ -67,7 +67,10 @@ import {
   findConflictingFields,
 } from '../../data_storage/merging';
 import Alert from '@mui/material/Alert';
-import {ConflictHelpDialog} from '../components/record/conflict/conflictDialog';
+import {
+  ConflictHelpDialog,
+  BasicDiaglog,
+} from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -143,6 +146,8 @@ export default function Record(props: RecordeProps) {
   const [recrodinfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const [open, setOpen] = React.useState(false);
+  const [pressedvalue, setpressedvalue] = useState(value);
 
   const breadcrumbs = [
     {link: ROUTES.HOME, title: 'Home'},
@@ -230,7 +235,20 @@ export default function Record(props: RecordeProps) {
   }, [project_id, record_id, revision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
-    setValue(newValue);
+    if (
+      value === '4' &&
+      conflicts !== null &&
+      conflicts['available_heads'] !== undefined &&
+      Object.keys(conflicts['available_heads']).length > 1
+    ) {
+      setOpen(true);
+      setpressedvalue(newValue);
+    } else setValue(newValue);
+  };
+
+  const handleConfirm = () => {
+    setValue(pressedvalue);
+    setOpen(false);
   };
 
   const setRevision = async (revision: string) => {
@@ -498,6 +516,18 @@ export default function Record(props: RecordeProps) {
           </TabPanel>
           <TabPanel value="4" style={{overflowX: 'auto'}}>
             <Box mt={2}>
+              <BasicDiaglog
+                handleClose={() => setOpen(false)}
+                handleOpen={() => setOpen(true)}
+                handleConfirm={handleConfirm}
+                content={`This record has
+                ${Object.keys(conflicts['available_heads']).length} 
+                conflicting instances. Resolve these conflicts before
+                continuing`}
+                continue={'continue'}
+                cancel={'Rsolve'}
+                open={open}
+              />
               {isSyncing !== null && (
                 <ConflictForm
                   project_id={project_id}
