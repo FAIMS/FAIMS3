@@ -253,7 +253,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         alignItems="center"
       >
         {' '}
-        No conclict{' '}
+        No conflict{' '}
       </Grid>
     );
 
