@@ -40,7 +40,7 @@ export function ResolveButton(props: any) {
   );
 }
 
-function FieldButton(props: any) {
+export function FieldButton(props: any) {
   return (
     <IconButton
       color="primary"
@@ -81,7 +81,7 @@ export function ConflictSaveButton(props: any) {
     </Grid>
   );
 }
-const iconstyle = {
+export const iconstyle = {
   backgroundColor: '#1B3E93',
   color: '#fff',
   borderRadius: '2px',

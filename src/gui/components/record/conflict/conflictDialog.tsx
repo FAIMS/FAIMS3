@@ -39,6 +39,9 @@ import IconButton from '@mui/material/IconButton';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {CircularProgress} from '@mui/material';
 import {Grid, Box} from '@mui/material';
+import {FieldButton, iconstyle} from './conflictbutton';
+import DoneIcon from '@mui/icons-material/Done';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 
 export function ConflictButton(props: any) {
   return (
@@ -149,6 +152,40 @@ function ConflictDialogContent() {
           <Typography>
             Select all conflicts from conflict A(disregard all from conflict B)
           </Typography>
+        </Grid>
+        <Grid
+          item
+          xs={6}
+          container
+          justifyContent="center"
+          alignItems="flex-end"
+        >
+          <FieldButton
+            onButtonClick={() => console.log('click')}
+            startIcon={<DeleteOutlineIcon style={iconstyle} />}
+            id={''}
+            disabled={false}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <Typography>Click to reject conflict</Typography>
+        </Grid>
+        <Grid
+          item
+          xs={6}
+          container
+          justifyContent="center"
+          alignItems="flex-end"
+        >
+          <FieldButton
+            onButtonClick={() => console.log('click')}
+            startIcon={<DoneIcon style={iconstyle} />}
+            id={''}
+            disabled={false}
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <Typography>Click to accept conflict</Typography>
         </Grid>
       </Grid>
     </Box>
