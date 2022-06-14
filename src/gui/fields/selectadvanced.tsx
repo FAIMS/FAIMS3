@@ -48,7 +48,7 @@ import Typography from '@mui/material/Typography';
 interface RenderTree {
   id: string;
   name: string;
-  children?: readonly RenderTree[];
+  children?: Array<RenderTree>;
 }
 
 interface ElementProps {
@@ -142,32 +142,85 @@ const data: RenderTree = {
   children: [],
 };
 
+
+const example = 
+    [{
+        id: 1,
+        name: 'parent 1',
+        children: [
+            {
+                id: 'c1',
+                name: 'child 1',
+                children: [
+                    {
+                        id: 'g1',
+                        name: 'grand 1',
+                        children: [],
+                    },
+                ],
+            },
+        ],
+    },
+    {
+        id: 2,
+        name: 'parent 2',
+        children: [
+            {
+                id: 2,
+                name: 'c1',
+                children: [],
+            },
+        ],
+    },
+    { id: 3, name: 'parent 3', children: [] },
+]
+
+function findAll(search:string,object: any):any {
+  if (object.id === search) return [object.name];
+  else if ((object.children) || Array.isArray(object)) {
+      const children = Array.isArray(object) ? object : object.children;
+      for (const child of children) {
+          const result = findAll(child, search);
+          if (result) {
+              if (object.id ) result.unshift(object.name);
+              return result;
+          }
+      }
+  }
+}
+
 export function AdvancedSelect(props: TextFieldProps & Props) {
   const {ElementProps, children, ...textFieldProps} = props;
-  const [value, setValue] = React.useState('');
+  const [value, setValue] = React.useState("");
   /***make seect not multiple to avoid error */
   const onselectvalue = (newvalue: string) => {
     props.form.setFieldValue(props.field.name, newvalue);
-    setValue(newvalue);
+    const resultvalue=findAll('g1',example)
+      setValue(newvalue);
+      console.log("++++++++++++++++++++++++")
+      console.log(resultvalue)
+    
   };
 
-  const renderTree = (nodes: RenderTree) => (
-    <CustomTreeItem
-      key={nodes.id}
-      nodeId={nodes.id}
+  const renderTree = (nodes: RenderTree,key:number,parentkey:string, parentnode:string) => {
+    const singlekey = parentkey!==""?parentkey+"."+key:key+""
+    const name = parentnode!==""?parentnode+" > "+nodes.name:nodes.name
+    return(<CustomTreeItem
+      key={singlekey}
+      nodeId={name}
       label={nodes.name}
       onselectvalue={onselectvalue}
     >
       {Array.isArray(nodes.children)
-        ? nodes.children.map(node => renderTree(node))
+        ? nodes.children.map((node,childkey) => renderTree(node,childkey,singlekey,name))
         : null}
-    </CustomTreeItem>
-  );
+    </CustomTreeItem>)
+  };
   return (
     <>
       <Typography>{props.label}</Typography>
       <Typography variant="caption">{props.helperText}</Typography>
-      <Box>{value}</Box>
+      <Box>{Array.isArray(value)?value.map(v=><p>{v}</p>):value}</Box>
       <TreeView
         aria-label="file system navigator"
         defaultCollapseIcon={<ExpandMoreIcon />}
@@ -176,7 +229,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         multiSelect
       >
         {Array.isArray(ElementProps.optiontree) &&
-          ElementProps.optiontree.map(node => renderTree(node))}
+          ElementProps.optiontree.map((node,key) => renderTree(node,key,"",""))}
       </TreeView>
     </>
   );
