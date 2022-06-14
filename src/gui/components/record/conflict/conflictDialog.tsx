@@ -34,14 +34,20 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {CircularProgress} from '@mui/material';
-import {Grid, Box} from '@mui/material';
 import {FieldButton, iconstyle} from './conflictbutton';
 import DoneIcon from '@mui/icons-material/Done';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import {
+  Grid,
+  Box,
+  Card,
+  CardHeader,
+  IconButton,
+  Typography,
+} from '@mui/material';
+import {cardsstyles} from './conflictstyle';
 
 export function ConflictButton(props: any) {
   return (
@@ -177,6 +183,28 @@ function ConflictDialogContent() {
           justifyContent="center"
           alignItems="flex-end"
         >
+          <Card style={{width: '100%'}}>
+            <CardHeader
+              title={''}
+              style={cardsstyles.reject.cardheader}
+              action={
+                <IconButton sx={{color: 'white'}}>
+                  {cardsstyles.reject.icon}
+                </IconButton>
+              }
+            />
+          </Card>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography>Field in conflict Rejected</Typography>
+        </Grid>
+        <Grid
+          item
+          xs={6}
+          container
+          justifyContent="center"
+          alignItems="flex-end"
+        >
           <FieldButton
             onButtonClick={() => console.log('click')}
             startIcon={<DoneIcon style={iconstyle} />}
@@ -186,6 +214,52 @@ function ConflictDialogContent() {
         </Grid>
         <Grid item xs={6}>
           <Typography>Click to accept conflict</Typography>
+        </Grid>
+        <Grid
+          item
+          xs={6}
+          container
+          justifyContent="center"
+          alignItems="flex-end"
+        >
+          <Card style={{width: '100%'}}>
+            <CardHeader
+              title={''}
+              style={cardsstyles.success.cardheader}
+              action={
+                <IconButton sx={{color: 'white'}}>
+                  {cardsstyles.success.icon}
+                </IconButton>
+              }
+            />
+          </Card>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography>Field in conflict Accepted</Typography>
+        </Grid>
+        <Grid
+          item
+          xs={6}
+          container
+          justifyContent="center"
+          alignItems="flex-end"
+        >
+          <Card style={{width: '100%'}}>
+            <CardHeader
+              title={''}
+              style={cardsstyles.delete.cardheader}
+              action={
+                <IconButton sx={{color: 'white'}}>
+                  {cardsstyles.delete.icon}
+                </IconButton>
+              }
+            />
+          </Card>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography>
+            Reject value in both conflict, field will be set empty.{' '}
+          </Typography>
         </Grid>
       </Grid>
     </Box>
