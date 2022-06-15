@@ -15,17 +15,16 @@
  *
  * Filename: select.tsx
  * Description:
- *   TODO
+ *   File is the field about Tree view for prototype for hierarchical-vocabularies, not finalized yet
  */
 
-import MuiTextField from '@mui/material/TextField';
-import {fieldToTextField, TextFieldProps} from 'formik-mui';
-import {MenuItem} from '@mui/material';
+import {TextFieldProps} from 'formik-mui';
+
 import {
   Defaultcomponentsetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
-import {option} from '../../datamodel/typesystem';
+
 import {
   ProjectUIModel,
   componenentSettingprops,
@@ -37,11 +36,7 @@ import * as React from 'react';
 import TreeView from '@mui/lab/TreeView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import TreeItem, {
-  TreeItemProps,
-  useTreeItem,
-  TreeItemContentProps,
-} from '@mui/lab/TreeItem';
+import TreeItem, {TreeItemProps, useTreeItem} from '@mui/lab/TreeItem';
 import clsx from 'clsx';
 import Typography from '@mui/material/Typography';
 
@@ -142,85 +137,93 @@ const data: RenderTree = {
   children: [],
 };
 
-
-const example = 
-    [{
-        id: 1,
-        name: 'parent 1',
+const example = [
+  {
+    id: 1,
+    name: 'parent 1',
+    children: [
+      {
+        id: 'c1',
+        name: 'child 1',
         children: [
-            {
-                id: 'c1',
-                name: 'child 1',
-                children: [
-                    {
-                        id: 'g1',
-                        name: 'grand 1',
-                        children: [],
-                    },
-                ],
-            },
+          {
+            id: 'g1',
+            name: 'grand 1',
+            children: [],
+          },
         ],
-    },
-    {
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: 'parent 2',
+    children: [
+      {
         id: 2,
-        name: 'parent 2',
-        children: [
-            {
-                id: 2,
-                name: 'c1',
-                children: [],
-            },
-        ],
-    },
-    { id: 3, name: 'parent 3', children: [] },
-]
+        name: 'c1',
+        children: [],
+      },
+    ],
+  },
+  {id: 3, name: 'parent 3', children: []},
+];
 
-function findAll(search:string,object: any):any {
+function findAll(search: string, object: any): any {
   if (object.id === search) return [object.name];
-  else if ((object.children) || Array.isArray(object)) {
-      const children = Array.isArray(object) ? object : object.children;
-      for (const child of children) {
-          const result = findAll(child, search);
-          if (result) {
-              if (object.id ) result.unshift(object.name);
-              return result;
-          }
+  else if (object.children || Array.isArray(object)) {
+    const children = Array.isArray(object) ? object : object.children;
+    for (const child of children) {
+      const result = findAll(child, search);
+      if (result) {
+        if (object.id) result.unshift(object.name);
+        return result;
       }
+    }
   }
 }
 
 export function AdvancedSelect(props: TextFieldProps & Props) {
-  const {ElementProps, children, ...textFieldProps} = props;
-  const [value, setValue] = React.useState("");
+  const {ElementProps} = props;
+  const [value, setValue] = React.useState('');
   /***make seect not multiple to avoid error */
   const onselectvalue = (newvalue: string) => {
     props.form.setFieldValue(props.field.name, newvalue);
-    const resultvalue=findAll('g1',example)
-      setValue(newvalue);
-      console.log("++++++++++++++++++++++++")
-      console.log(resultvalue)
-    
+    const resultvalue = findAll('g1', example);
+    setValue(newvalue);
+    console.log('++++++++++++++++++++++++');
+    console.log(resultvalue);
   };
 
-  const renderTree = (nodes: RenderTree,key:number,parentkey:string, parentnode:string) => {
-    const singlekey = parentkey!==""?parentkey+"."+key:key+""
-    const name = parentnode!==""?parentnode+" > "+nodes.name:nodes.name
-    return(<CustomTreeItem
-      key={singlekey}
-      nodeId={name}
-      label={nodes.name}
-      onselectvalue={onselectvalue}
-    >
-      {Array.isArray(nodes.children)
-        ? nodes.children.map((node,childkey) => renderTree(node,childkey,singlekey,name))
-        : null}
-    </CustomTreeItem>)
+  const renderTree = (
+    nodes: RenderTree,
+    key: number,
+    parentkey: string,
+    parentnode: string
+  ) => {
+    const singlekey = parentkey !== '' ? parentkey + '.' + key : key + '';
+    const name =
+      parentnode !== '' ? parentnode + ' > ' + nodes.name : nodes.name;
+    return (
+      <CustomTreeItem
+        key={singlekey}
+        nodeId={name}
+        label={nodes.name}
+        onselectvalue={onselectvalue}
+      >
+        {Array.isArray(nodes.children)
+          ? nodes.children.map((node, childkey) =>
+              renderTree(node, childkey, singlekey, name)
+            )
+          : null}
+      </CustomTreeItem>
+    );
   };
   return (
     <>
       <Typography>{props.label}</Typography>
       <Typography variant="caption">{props.helperText}</Typography>
-      <Box>{Array.isArray(value)?value.map(v=><p>{v}</p>):value}</Box>
+      <Box>{Array.isArray(value) ? value.map(v => <p>{v}</p>) : value}</Box>
       <TreeView
         aria-label="file system navigator"
         defaultCollapseIcon={<ExpandMoreIcon />}
@@ -229,7 +232,9 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         multiSelect
       >
         {Array.isArray(ElementProps.optiontree) &&
-          ElementProps.optiontree.map((node,key) => renderTree(node,key,"",""))}
+          ElementProps.optiontree.map((node, key) =>
+            renderTree(node, key, '', '')
+          )}
       </TreeView>
     </>
   );
@@ -238,11 +243,13 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
 export function AdvancedSelectcomponentsetting(props: componenentSettingprops) {
   const {handlerchangewithview, ...others} = props;
 
-  const handlerchanges = (event: FAIMSEVENTTYPE) => {};
+  const handlerchanges = (event: FAIMSEVENTTYPE) => {
+    console.debug(event);
+  };
 
   const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
     //any actions that could in this form
-    props.handlerchangewithview(event, view);
+    handlerchangewithview(event, view);
 
     if (
       view === 'ElementProps' &&
