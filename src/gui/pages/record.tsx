@@ -454,23 +454,25 @@ export default function Record(props: RecordeProps) {
                             </Grid>
                           </Grid>
                         </Box>
-                        {(isalerting === false || draft_id !== undefined) && (
-                          <RecordForm
-                            project_id={project_id}
-                            record_id={record_id}
-                            revision_id={
-                              selectrevision !== null
-                                ? selectrevision
-                                : revision_id
-                            }
-                            ui_specification={uiSpec}
-                            draft_id={draft_id}
-                            metaSection={metaSection}
-                            conflictfields={conflictfields}
-                            handleChangeTab={handleChange}
-                            isSyncing={isSyncing.toString()}
-                          />
-                        )}
+                        <Box px={not_xs ? 30 : 0}>
+                          {(isalerting === false || draft_id !== undefined) && (
+                            <RecordForm
+                              project_id={project_id}
+                              record_id={record_id}
+                              revision_id={
+                                selectrevision !== null
+                                  ? selectrevision
+                                  : revision_id
+                              }
+                              ui_specification={uiSpec}
+                              draft_id={draft_id}
+                              metaSection={metaSection}
+                              conflictfields={conflictfields}
+                              handleChangeTab={handleChange}
+                              isSyncing={isSyncing.toString()}
+                            />
+                          )}
+                        </Box>
                       </Box>
                     ) : (
                       <RecordForm

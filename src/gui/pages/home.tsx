@@ -20,14 +20,14 @@
 
 import React from 'react';
 import makeStyles from '@mui/styles/makeStyles';
-import {Link as RouterLink} from 'react-router-dom';
+// import {Link as RouterLink} from 'react-router-dom';
 import {
   Container,
   Typography,
   Box,
   Grid,
   Paper,
-  Link,
+  // Link,
   CircularProgress,
 } from '@mui/material';
 import ProjectCard from '../components/project/card';
@@ -128,20 +128,7 @@ export default function Home(props: HomeProps) {
                 })
               )}
             </Grid>
-            <Box mt={2}>
-              <Link
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                }}
-                component={RouterLink}
-                to={ROUTES.PROJECT_LIST}
-              >
-                View all notebooks
-                {/*<ChevronRightIcon />*/}
-              </Link>
-            </Box>
+            <Box mt={2}></Box>
           </Paper>
         </Grid>
       </Grid>
