@@ -104,16 +104,23 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info.name} ATTACHMENTS SETTINGS
+          SHOW/DOWNLOAD EXTERNAL ATTACHMENTS
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the attachments synchronisation setting for {project_info.name}
+          Configure external attachments for {project_info.name}
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           <br />
         </Typography>
       </Box>
       <Paper square>
+        <Typography style={{padding: '15px 15px'}}>
+          This control is notebook specific. If ‘Download and show other
+          devices' images and attachments’ is turned on, FAIMS will
+          automatically show images and attachments for the notebook. This
+          setting does not affect uploads. Attachments are always uploaded to
+          the server regardless of the setting
+        </Typography>
         <Typography variant={'body1'} style={{marginLeft: '1em'}}>
           {'      '}
           <FormControlLabel
@@ -126,14 +133,18 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
                     dispatch({
                       type: ActionType.ADD_ALERT,
                       payload: {
-                        message: 'Start Syncing',
+                        message: 'Start downlading',
                         severity: 'success',
                       },
                     });
                 }}
               />
             }
-            label={<Typography variant={'button'}>Sync</Typography>}
+            label={
+              <Typography variant={'button'}>
+                Download and show other devices' external images and attachments
+              </Typography>
+            }
           />
           <br />
         </Typography>
