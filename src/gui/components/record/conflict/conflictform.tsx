@@ -45,6 +45,8 @@ import {ConflictResolveIcon} from './conflictfield';
 import {ConflictSaveButton} from './conflictbutton';
 import {store} from '../../../../store';
 import {ActionType} from '../../../../actions';
+import {isEqualFAIMS} from '../../../../datamodel/typesystem';
+
 type ConflictFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -59,31 +61,51 @@ type ConflictFormProps = {
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
-type updatedType = {conflictfields: Array<string>; colourstyle: iscolourList};
+type updatedType = {
+  conflictfields: Array<string>;
+  colourstyle: iscolourList;
+  saveduserMergeResult: UserMergeResult;
+};
 
-function comparegetconflictField(
+async function comparegetconflictField(
   conflictA: RecordMergeInformation,
   conflictB: RecordMergeInformation,
   fieldslist: Array<string>,
-  ismcolour: iscolourList
-): updatedType {
+  ismcolour: iscolourList,
+  saveduserMergeResult: UserMergeResult
+): Promise<updatedType> {
   const conflictfields: Array<string> = [];
-  fieldslist.map(field => {
+  for (const field of fieldslist) {
     if (
       conflictA['fields'][field] === undefined ||
       conflictB['fields'][field] === undefined
     ) {
       ismcolour[field] = 'clear';
-      return;
-    }
-    if (
+    } else if (
       conflictA['fields'][field]['avp_id'] !==
       conflictB['fields'][field]['avp_id']
-    )
-      conflictfields.push(field);
-    else ismcolour[field] = 'clear';
-  });
-  return {conflictfields: conflictfields, colourstyle: ismcolour};
+    ) {
+      //if avp_id not same, compare the values of two field
+      const same = await isEqualFAIMS(
+        conflictA['fields'][field]['data'],
+        conflictB['fields'][field]['data']
+      );
+      if (!same) conflictfields.push(field);
+      else {
+        // if value is same, treat as not conflict field and set the field value to resolved one
+        ismcolour[field] = 'clear';
+        saveduserMergeResult['field_choices'][field] =
+          conflictA['fields'][field]['avp_id'];
+      }
+
+      // conflictfields.push(field);
+    } else ismcolour[field] = 'clear';
+  }
+  return {
+    conflictfields: conflictfields,
+    colourstyle: ismcolour,
+    saveduserMergeResult: saveduserMergeResult,
+  };
 }
 
 export default function ConflictForm(props: ConflictFormProps) {
@@ -181,34 +203,51 @@ export default function ConflictForm(props: ConflictFormProps) {
   );
   const {dispatch} = useContext(store);
 
-  const updateconflict = (
+  const updateconflictvalue = async (
+    setconflict: any,
+    result: RecordMergeInformation | null,
+    compareconflict: RecordMergeInformation | null,
+    saveduserMergeResult: UserMergeResult
+  ) => {
+    setconflict(result);
+    //reset the color and click for the buttons and cards
+    if (
+      result !== null &&
+      compareconflict !== null &&
+      saveduserMergeResult !== null
+    ) {
+      const updated = await comparegetconflictField(
+        result,
+        compareconflict,
+        fieldslist,
+        ismcolour,
+        saveduserMergeResult
+      );
+      setconflictfields(updated.conflictfields);
+      setstyletypeMiddle(updated.colourstyle);
+      setUserMergeResult(updated.saveduserMergeResult);
+    }
+  };
+  const updateconflict = async (
     setconflict: any,
     revisionvalue: string,
     compareconflict: RecordMergeInformation | null
   ) => {
-    let updated: updatedType;
     if (revisionvalue !== '') {
       setconflict(null);
       setIsloading(true);
-      setUserMergeResult({...mergeresult, parents: revisionlist}); // update the value when conflist revision changes
-      getMergeInformationForHead(project_id, record_id, revisionvalue).then(
-        result => {
-          setconflict(result);
-          //reset the color and click for the buttons and cards
-          resettyle();
-          if (result !== null && compareconflict !== null) {
-            updated = comparegetconflictField(
-              result,
-              compareconflict,
-              fieldslist,
-              ismcolour
-            );
-            setconflictfields(updated.conflictfields);
-            setstyletypeMiddle(updated.colourstyle);
-          }
-          setIsloading(false);
-        }
+      // setUserMergeResult({...mergeresult, parents: revisionlist}); // update the value when conflist revision changes
+      const result = await getMergeInformationForHead(
+        project_id,
+        record_id,
+        revisionvalue
       );
+      await updateconflictvalue(setconflict, result, compareconflict, {
+        ...mergeresult,
+        parents: revisionlist,
+      });
+      resettyle();
+      setIsloading(false);
     }
   };
 
@@ -230,10 +269,10 @@ export default function ConflictForm(props: ConflictFormProps) {
     const getConflict = async () => {
       if (comparedrevision === null || comparedrevision === '') return;
       if (comparedrevision.charAt(0) === '1') {
-        return updateconflict(setConflictB, revisionlist[1], conflictA);
+        return await updateconflict(setConflictB, revisionlist[1], conflictA);
       }
       if (comparedrevision.charAt(0) === '0') {
-        return updateconflict(setConflictA, revisionlist[0], conflictB);
+        return await updateconflict(setConflictA, revisionlist[0], conflictB);
       }
     };
     getConflict();
@@ -504,15 +543,22 @@ export default function ConflictForm(props: ConflictFormProps) {
   const onButtonDiscard = () => {
     // alert user if the conflict not been saved
     resettyle();
-    if (conflictB !== null && conflictA !== null) {
-      const updated = comparegetconflictField(
+    if (
+      conflictB !== null &&
+      conflictA !== null &&
+      saveduserMergeResult !== null
+    ) {
+      comparegetconflictField(
         conflictB,
         conflictA,
         fieldslist,
-        ismcolour
-      );
-      setconflictfields(updated.conflictfields);
-      setstyletypeMiddle(updated.colourstyle);
+        ismcolour,
+        saveduserMergeResult
+      ).then(updated => {
+        setconflictfields(updated.conflictfields);
+        setstyletypeMiddle(updated.colourstyle);
+        setUserMergeResult(updated.saveduserMergeResult);
+      });
     }
   };
 
@@ -521,7 +567,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       ? Object.keys(saveduserMergeResult.field_choices).length
       : 0;
   const numUnResolved = conflictfields.length - numResolved;
-
+  console.log(saveduserMergeResult);
   return (
     <Grid style={{minWidth: '800px', overflowX: 'auto'}}>
       <ConflictToolBar
