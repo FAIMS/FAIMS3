@@ -28,7 +28,7 @@ jobs:
           bundle install # to get cocoapods...   
       - run: fastlane install_plugins
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}            
           cache: 'npm'
