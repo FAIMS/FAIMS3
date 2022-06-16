@@ -36,18 +36,10 @@ import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {CircularProgress} from '@mui/material';
-import {FieldButton, iconstyle} from './conflictbutton';
+import {FieldButton, iconstyle, iconstylereject} from './conflictbutton';
 import DoneIcon from '@mui/icons-material/Done';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import {
-  Grid,
-  Box,
-  Card,
-  CardHeader,
-  IconButton,
-  Typography,
-} from '@mui/material';
-import {cardsstyles} from './conflictstyle';
+import {Grid, Box, IconButton, Typography} from '@mui/material';
 
 export function ConflictButton(props: any) {
   return (
@@ -116,150 +108,52 @@ function ConflictDialogContent() {
           alignItems="flex-end"
         >
           <Typography>
-            The most recent conflict has been pre-selected. Choose another using
-            the dropdown box
+            This interface allows you to choose between conflicting versions of
+            a record. In the top left (Conflict A) choose a revision. In the top
+            right (Conflict B) choose a second revision. The conflicting fields
+            will now be displayed in the left and right columns of the Section
+            table. Choose fields from A and B (left and right columns).Reject
+            field use{' '}
+            <FieldButton
+              onButtonClick={() => console.log('click')}
+              startIcon={<DeleteOutlineIcon style={iconstylereject} />}
+              id={''}
+              disabled={false}
+            />
+            , accept field use{' '}
+            <FieldButton
+              onButtonClick={() => console.log('click')}
+              startIcon={<DoneIcon style={iconstyle} />}
+              id={''}
+              disabled={false}
+            />
+            . The selected revision for each field is then displayed in the
+            central column. The A and B columns will be coloured accordingly
+            (green=chosen, red=rejected ). If you wish to choose the entirety of
+            revision A or B use the “CHOOSE A”
+            <ConflictButton
+              onButtonClick={() => {
+                console.debug('');
+              }}
+              text="Choose A"
+              ischoose={false}
+            />{' '}
+            or “CHOOSE B”{' '}
+            <ConflictButton
+              onButtonClick={() => {
+                console.debug('');
+              }}
+              text="Choose B"
+              ischoose={false}
+            />{' '}
+            button.
+          </Typography>
+          <Typography>
+            {' '}
+            <CircularProgress /> means confilct is still downloading to this
+            device, and it not yet selectable.
           </Typography>
           <br />
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="center"
-          alignItems="flex-end"
-        >
-          <CircularProgress />
-        </Grid>
-        <Grid item xs={6}>
-          <Typography>
-            Confilct is still downloading to this device, and it not yet
-            selectable.
-          </Typography>
-        </Grid>
-        <Grid item xs={12}>
-          <br />
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="center"
-          alignItems="flex-end"
-        >
-          <ConflictButton
-            onButtonClick={() => {
-              console.debug('');
-            }}
-            text="Choose A"
-            ischoose={false}
-          />
-        </Grid>
-        <Grid item xs={6}>
-          <Typography>
-            Select all conflicts from conflict A(disregard all from conflict B)
-          </Typography>
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="center"
-          alignItems="flex-end"
-        >
-          <FieldButton
-            onButtonClick={() => console.log('click')}
-            startIcon={<DeleteOutlineIcon style={iconstyle} />}
-            id={''}
-            disabled={false}
-          />
-        </Grid>
-        <Grid item xs={6}>
-          <Typography>Click to reject conflict</Typography>
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="center"
-          alignItems="flex-end"
-        >
-          <Card style={{width: '100%'}}>
-            <CardHeader
-              title={''}
-              style={cardsstyles.reject.cardheader}
-              action={
-                <IconButton sx={{color: 'white'}}>
-                  {cardsstyles.reject.icon}
-                </IconButton>
-              }
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={6}>
-          <Typography>Field in conflict Rejected</Typography>
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="center"
-          alignItems="flex-end"
-        >
-          <FieldButton
-            onButtonClick={() => console.log('click')}
-            startIcon={<DoneIcon style={iconstyle} />}
-            id={''}
-            disabled={false}
-          />
-        </Grid>
-        <Grid item xs={6}>
-          <Typography>Click to accept conflict</Typography>
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="center"
-          alignItems="flex-end"
-        >
-          <Card style={{width: '100%'}}>
-            <CardHeader
-              title={''}
-              style={cardsstyles.success.cardheader}
-              action={
-                <IconButton sx={{color: 'white'}}>
-                  {cardsstyles.success.icon}
-                </IconButton>
-              }
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={6}>
-          <Typography>Field in conflict Accepted</Typography>
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="center"
-          alignItems="flex-end"
-        >
-          <Card style={{width: '100%'}}>
-            <CardHeader
-              title={''}
-              style={cardsstyles.delete.cardheader}
-              action={
-                <IconButton sx={{color: 'white'}}>
-                  {cardsstyles.delete.icon}
-                </IconButton>
-              }
-            />
-          </Card>
-        </Grid>
-        <Grid item xs={6}>
-          <Typography>
-            Reject value in both conflict, field will be set empty.{' '}
-          </Typography>
         </Grid>
       </Grid>
     </Box>

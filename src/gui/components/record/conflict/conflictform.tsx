@@ -202,6 +202,8 @@ export default function ConflictForm(props: ConflictFormProps) {
     null as UserMergeResult | null
   );
   const {dispatch} = useContext(store);
+  const [loading, setloading] = useState(false);
+  const [numRejected, setnumRejected] = useState(0);
 
   const updateconflictvalue = async (
     setconflict: any,
@@ -260,14 +262,15 @@ export default function ConflictForm(props: ConflictFormProps) {
     setChoosenvalues({...initialvalues});
     if (saveduserMergeResult !== null)
       setUserMergeResult({...saveduserMergeResult, field_choices: {}}); //reset the savedusermergeresult
-
     setdisbaledRight({...isdisbaled});
     setdisbaledLeft({...isdisbaled});
   };
 
   useEffect(() => {
     const getConflict = async () => {
-      if (comparedrevision === null || comparedrevision === '') return;
+      if (comparedrevision === null || comparedrevision === '') {
+        return;
+      }
       if (comparedrevision.charAt(0) === '1') {
         return await updateconflict(setConflictB, revisionlist[1], conflictA);
       }
@@ -278,7 +281,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     getConflict();
   }, [comparedrevision]);
 
-  if (ui_specification === null || conflicts === null)
+  if (ui_specification === null || conflicts === null || loading)
     return <CircularProgress size={12} thickness={4} />;
   if (
     conflicts['available_heads'] === undefined ||
@@ -379,7 +382,18 @@ export default function ConflictForm(props: ConflictFormProps) {
         ...saveduserMergeResult,
         field_choices: {...newmerged},
       });
+      //reset rejected number
+      let newreject = 0;
+      if (newmerged !== null) {
+        Object.keys(newmerged).map(key =>
+          newmerged[key] === null ? (newreject = newreject + 1) : newreject
+        );
+      }
+      console.log(newmerged);
+      console.log(newreject);
+      setnumRejected(newreject);
     }
+
     // user use reject icon to reject field
     if (choosevalueA === null) {
       if (
@@ -500,6 +514,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           : (fieldchoise[field] = conflictA['fields'][field]['avp_id'])
       );
       try {
+        setIsloading(true);
         const result = await saveUserMergeResult({
           ...saveduserMergeResult,
           field_choices: {...fieldchoise},
@@ -512,9 +527,15 @@ export default function ConflictForm(props: ConflictFormProps) {
               severity: 'success',
             },
           });
+          setloading(false);
+          //this function need to be tested more
+          setConflictB(null);
+          resettyle();
+          setissavedconflict(record_id + revisionlist[1]);
+          setRevisionList(['', '']);
+          // setR(1 + 'R' + '')
           console.log('Saved Conflict Resolve');
           // direct user to new conflict resolving or edit tab if there is no confilct ??
-          setissavedconflict(record_id + revisionlist[1]);
         }
       } catch {
         // alert user if the conflict not been saved
@@ -566,8 +587,13 @@ export default function ConflictForm(props: ConflictFormProps) {
     saveduserMergeResult !== null
       ? Object.keys(saveduserMergeResult.field_choices).length
       : 0;
-  const numUnResolved = conflictfields.length - numResolved;
+  const numUnResolved =
+    conflictfields.length > numResolved
+      ? conflictfields.length - numResolved
+      : 0;
+
   console.log(saveduserMergeResult);
+  console.log(numRejected);
   return (
     <Grid style={{minWidth: '800px', overflowX: 'auto'}}>
       <ConflictToolBar
@@ -589,6 +615,7 @@ export default function ConflictForm(props: ConflictFormProps) {
               numResolved={numResolved}
               numUnResolved={numUnResolved}
               num={conflictfields.length}
+              numRejected={numRejected}
             />
             <ConflictSaveButton
               onButtonClick={onButtonSave}
@@ -642,6 +669,7 @@ export default function ConflictForm(props: ConflictFormProps) {
               numResolved={numResolved}
               numUnResolved={numUnResolved}
               num={conflictfields.length}
+              numRejected={numRejected}
             />
             <ConflictSaveButton
               onButtonClick={onButtonSave}

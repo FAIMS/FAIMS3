@@ -104,10 +104,11 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          SHOW/DOWNLOAD EXTERNAL ATTACHMENTS
+          Get attachments from other devices
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Configure external attachments for {project_info.name}
+          Configure download of attachments from central server for this
+          notebook ( {project_info.name} )
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           <br />
@@ -115,11 +116,13 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
       </Box>
       <Paper square>
         <Typography style={{padding: '15px 15px'}}>
-          This control is notebook specific. If ‘Download and show other
-          devices' images and attachments’ is turned on, FAIMS will
-          automatically show images and attachments for the notebook. This
-          setting does not affect uploads. Attachments are always uploaded to
-          the server regardless of the setting
+          This control is notebook and device specific. If this option is
+          enabled, FAIMS will automatically download and show images and
+          attachments created by other devices. Be aware that this may be
+          resource intensive and use your mobile data plan. Disable this setting
+          to minimise network usage. This setting will not affect uploading of
+          your data from this device to the central server. Attachments are
+          always uploaded to the server regardless of this setting.
         </Typography>
         <Typography variant={'body1'} style={{marginLeft: '1em'}}>
           {'      '}
@@ -142,7 +145,7 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
             }
             label={
               <Typography variant={'button'}>
-                Download and show other devices' external images and attachments
+                Get attachments from other devices
               </Typography>
             }
           />
