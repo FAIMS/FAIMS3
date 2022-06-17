@@ -31,7 +31,6 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import Box from '@mui/material/Box';
-
 import * as React from 'react';
 import TreeView from '@mui/lab/TreeView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -39,9 +38,11 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import TreeItem, {TreeItemProps, useTreeItem} from '@mui/lab/TreeItem';
 import clsx from 'clsx';
 import Typography from '@mui/material/Typography';
-
+import Chip from '@mui/material/Chip';
+import Paper from '@mui/material/Paper';
+import {styled} from '@mui/material/styles';
 interface RenderTree {
-  id: string;
+  // id: string;
   name: string;
   children?: Array<RenderTree>;
 }
@@ -54,6 +55,7 @@ interface Props {
   ElementProps: ElementProps;
   label?: string;
   helperText?: string;
+  valuetype?: string;
 }
 
 type SelectProps = {
@@ -132,67 +134,75 @@ const CustomTreeItem = (props: TreeItemProps & SelectProps) => (
   />
 );
 const data: RenderTree = {
-  id: '0',
+  // id: '0',
   name: 'Default',
   children: [],
 };
 
-const example = [
-  {
-    id: 1,
-    name: 'parent 1',
-    children: [
-      {
-        id: 'c1',
-        name: 'child 1',
-        children: [
-          {
-            id: 'g1',
-            name: 'grand 1',
-            children: [],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'parent 2',
-    children: [
-      {
-        id: 2,
-        name: 'c1',
-        children: [],
-      },
-    ],
-  },
-  {id: 3, name: 'parent 3', children: []},
-];
+interface ValueChipsArrayProps {
+  data: any;
+}
 
-function findAll(search: string, object: any): any {
-  if (object.id === search) return [object.name];
-  else if (object.children || Array.isArray(object)) {
-    const children = Array.isArray(object) ? object : object.children;
-    for (const child of children) {
-      const result = findAll(child, search);
-      if (result) {
-        if (object.id) result.unshift(object.name);
-        return result;
-      }
-    }
-  }
+// interface ChipData {
+//   key: number;
+//   name: string;
+// }
+
+const ListItem = styled('li')(({theme}) => ({
+  margin: theme.spacing(0.5),
+}));
+
+function ValueChipsArray(props: ValueChipsArrayProps) {
+  // const [chipData, setChipData] = React.useState<ChipData[]>(props.data);
+
+  // const handleDelete = (chipToDelete: ChipData) => () => {
+  //   setChipData(chips => chips.filter(chip => chip.key !== chipToDelete.key));
+  // };
+
+  return (
+    <Paper
+      sx={{
+        display: 'flex',
+        justifyContent: 'flex-start',
+        flexWrap: 'wrap',
+        listStyle: 'none',
+        p: 0.5,
+        m: 0,
+      }}
+      component="ul"
+    >
+      {props.data.map((value: string) =>
+        value !== '' ? (
+          <ListItem key={value}>
+            <Chip
+              // icon={icon}
+              label={value}
+              // onDelete={data.name === 'React' ? undefined : handleDelete(data)}
+            />
+          </ListItem>
+        ) : (
+          value
+        )
+      )}
+    </Paper>
+  );
 }
 
 export function AdvancedSelect(props: TextFieldProps & Props) {
   const {ElementProps} = props;
-  const [value, setValue] = React.useState('');
+  const [value, setValue] = React.useState([
+    props.form.values[props.field.name],
+  ]);
   /***make seect not multiple to avoid error */
   const onselectvalue = (newvalue: string) => {
-    props.form.setFieldValue(props.field.name, newvalue);
-    const resultvalue = findAll('g1', example);
-    setValue(newvalue);
-    console.log('++++++++++++++++++++++++');
-    console.log(resultvalue);
+    let returnvalue = newvalue;
+    if (props.valuetype === 'child') {
+      const valuearray = newvalue.replaceAll(' ', '').split('>');
+      returnvalue =
+        valuearray.length > 0 ? valuearray[valuearray.length - 1] : returnvalue;
+    }
+    props.form.setFieldValue(props.field.name, returnvalue);
+    setValue([returnvalue]);
   };
 
   const renderTree = (
@@ -220,23 +230,34 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
     );
   };
   return (
-    <>
+    <Box>
       <Typography>{props.label}</Typography>
+      <ValueChipsArray data={value} />
+      {/* <TextField
+        label={props.label}
+        id={props.label + 'value'}
+        variant="outlined"
+        disabled={true}
+        value={value}
+        fullWidth
+        helperText={props.helperText}
+      /> */}
       <Typography variant="caption">{props.helperText}</Typography>
-      <Box>{Array.isArray(value) ? value.map(v => <p>{v}</p>) : value}</Box>
-      <TreeView
-        aria-label="file system navigator"
-        defaultCollapseIcon={<ExpandMoreIcon />}
-        defaultExpandIcon={<ChevronRightIcon />}
-        sx={{height: 240, flexGrow: 1, maxWidth: 400, overflowY: 'auto'}}
-        multiSelect
-      >
-        {Array.isArray(ElementProps.optiontree) &&
-          ElementProps.optiontree.map((node, key) =>
-            renderTree(node, key, '', '')
-          )}
-      </TreeView>
-    </>
+      <Box style={{maxHeight: '150px'}}>
+        <TreeView
+          aria-label="file system navigator"
+          defaultCollapseIcon={<ExpandMoreIcon />}
+          defaultExpandIcon={<ChevronRightIcon />}
+          sx={{height: 240, flexGrow: 1, maxWidth: 400, overflowY: 'scroll'}}
+          // multiSelect
+        >
+          {Array.isArray(ElementProps.optiontree) &&
+            ElementProps.optiontree.map((node, key) =>
+              renderTree(node, key, '', '')
+            )}
+        </TreeView>
+      </Box>
+    </Box>
   );
 }
 
@@ -284,7 +305,7 @@ const uiSpec = {
   'type-returned': 'faims-core::String', // matches a type in the Project Model
   'component-parameters': {
     fullWidth: true,
-    helperText: 'Choose a field from the dropdown',
+    helperText: 'Select from list',
     variant: 'outlined',
     required: false,
     select: true,
@@ -295,6 +316,7 @@ const uiSpec = {
     },
     // select_others:'otherswith',
     label: 'Select Field',
+    valuetype: 'full',
   },
   validationSchema: [['yup.string']],
   initialValue: '',
@@ -328,7 +350,43 @@ const uiSetting = () => {
     initialValue: JSON.stringify([data]),
   };
 
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
+  newuiSetting['fields']['valuetype'] = {
+    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+    'component-name': 'Select',
+    'type-returned': 'faims-core::String', // matches a type in the Project Model
+    'component-parameters': {
+      fullWidth: true,
+      helperText: '',
+      variant: 'outlined',
+      required: false,
+      select: true,
+      InputProps: {},
+      SelectProps: {},
+      ElementProps: {
+        options: [
+          {
+            value: 'full',
+            label: 'Full path',
+          },
+          {
+            value: 'child',
+            label: 'Only Child',
+          },
+        ],
+      },
+      InputLabelProps: {
+        label: 'Select Type of Value',
+      },
+    },
+    validationSchema: [['yup.string']],
+    initialValue: 'full',
+  };
+
+  newuiSetting['views']['FormParamater']['fields'] = [
+    'label',
+    'helperText',
+    'valuetype',
+  ];
 
   newuiSetting['views']['ElementProps']['fields'] = ['optiontree'];
 

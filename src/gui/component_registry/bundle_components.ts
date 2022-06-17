@@ -227,8 +227,8 @@ registerComponent(
   'faims-custom',
   'AdvancedSelect',
   setupComponentProperties(
-    'AdvancedSelect',
-    'Select item',
+    'Hierarchical Select',
+    'Hierarchical vocabularies pick',
     'Select',
     AdvancedSelect,
     {
