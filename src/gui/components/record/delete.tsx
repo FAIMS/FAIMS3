@@ -38,7 +38,7 @@ import {store} from '../../../store';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setRecordAsDeleted} from '../../../data_storage';
-import {deleteStagedData} from '../../../sync/draft-storage';
+import {deleteStagedData} from '../../../drafts/draft-storage';
 
 type RecordDeleteProps = {
   project_id: ProjectID;

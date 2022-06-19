@@ -22,7 +22,7 @@ import React, {useEffect, useState} from 'react';
 import {FormikProps} from 'formik';
 import Alert from '@mui/material/Alert';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import RecordDraftState from '../../../sync/draft-state';
+import RecordDraftState from '../../../drafts/draft-state';
 import {getComponentFromFieldConfig} from './fields';
 import {Annotation, AnnotationField} from './Annotation';
 import {Grid} from '@mui/material';

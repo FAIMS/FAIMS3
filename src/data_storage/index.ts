@@ -22,7 +22,6 @@
 import {v4 as uuidv4} from 'uuid';
 
 import {DEBUG_APP} from '../buildconfig';
-import {getDataDB} from '../sync';
 import {
   RecordID,
   ProjectID,
@@ -44,6 +43,7 @@ import {
   listRecordMetadata,
 } from './internals';
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
+import {getDataDB, getDraftDB} from '../sync/index';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
@@ -228,6 +228,7 @@ export async function setRecordAsDeleted(
   };
   await datadb.put(new_revision);
   await updateHeads(project_id, obsid, [base_revision._id], new_rev_id);
+  await deleteDraftForRecord(project_id, obsid, base_revid);
   return new_rev_id;
 }
 
@@ -394,5 +395,39 @@ export async function getRecordsWithRegex(
   } catch (error) {
     console.error('Failed to regex search for', project_id, regex, error);
     return [];
+  }
+}
+
+export async function deleteDraftForRecord(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revision_id: RevisionID
+) {
+  console.error("getDraftDB", getDraftDB);
+  const draft_db = await getDraftDB();
+  try {
+    const res = await draft_db.find({
+      selector: {
+        project_id: project_id,
+        existing: {
+          record_id: record_id,
+          revision_id: revision_id,
+        },
+      },
+    });
+    const ids_to_delete = res.docs.map(o => {
+      return {
+        _id: o._id,
+        _rev: o._rev,
+        _deleted: true,
+      };
+    });
+    console.error('ids_to_delete', ids_to_delete);
+    if (ids_to_delete.length > 0) {
+      await (draft_db as PouchDB.Database<{}>).bulkDocs(ids_to_delete);
+    }
+  } catch (err) {
+    console.error('Failed to remove drafts', err);
+    throw err;
   }
 }

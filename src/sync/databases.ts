@@ -36,12 +36,12 @@ import {
   LocalAuthDoc,
   NonNullListingsObject,
 } from '../datamodel/database';
+import {EncodedDraft} from '../datamodel/drafts';
 import {
   ConnectionInfo_create_pouch,
   local_pouch_options,
   materializeConnectionInfo,
 } from './connection';
-import {draft_db} from './draft-storage';
 
 export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
@@ -137,6 +137,14 @@ export const local_state_db = new PouchDB('local_state', local_pouch_options);
  */
 export const local_auth_db = new PouchDB<LocalAuthDoc>(
   'local_auth',
+  local_pouch_options
+);
+
+/**
+ * Local database for drafts
+ */
+export const draft_db = new PouchDB<EncodedDraft>(
+  'draft-storage',
   local_pouch_options
 );
 

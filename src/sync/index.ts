@@ -29,11 +29,13 @@ import {
   ProjectMetaObject,
   ListingsObject,
 } from '../datamodel/database';
+import {EncodedDraft} from '../datamodel/drafts';
 import {
   data_dbs,
   ExistingActiveDoc,
   metadata_dbs,
   directory_db,
+  draft_db,
 } from './databases';
 import {
   all_projects_updated,
@@ -43,6 +45,10 @@ import {
 
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);
+
+export async function getDraftDB(): Promise<PouchDB.Database<EncodedDraft>> {
+  return draft_db;
+}
 
 /**
  * Allows the user to asynchronously await for any of listings_updated,

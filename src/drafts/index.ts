@@ -18,9 +18,10 @@
  *   TODO
  */
 
-import {ProjectID} from './datamodel/core';
-import {draft_db, listDraftMetadata} from './sync/draft-storage';
-import {DraftMetadataList} from './datamodel/drafts';
+import {ProjectID} from '../datamodel/core';
+import {draft_db} from '../sync/databases';
+import {listDraftMetadata} from './draft-storage';
+import {DraftMetadataList} from '../datamodel/drafts';
 
 export function listenDrafts(
   project_id: ProjectID,

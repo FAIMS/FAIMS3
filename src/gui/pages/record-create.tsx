@@ -49,7 +49,7 @@ import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
 } from '../../uiSpecification';
-import {newStagedData} from '../../sync/draft-storage';
+import {newStagedData} from '../../drafts/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';

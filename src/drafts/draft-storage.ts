@@ -30,22 +30,16 @@ import {
 } from '../datamodel/core';
 import {DEBUG_APP} from '../buildconfig';
 import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
-import {local_pouch_options} from './connection';
 import {
   generate_file_name,
   attachment_to_file,
 } from '../data_storage/attachments';
-
-export type DraftDB = PouchDB.Database<EncodedDraft>;
-
-export const draft_db: DraftDB = new PouchDB(
-  'draft-storage',
-  local_pouch_options
-);
+import {getDraftDB} from '../sync/index';
 
 export async function getStagedData(
   draft_id: string
 ): Promise<EncodedDraft & PouchDB.Core.GetMeta> {
+  const draft_db = await getDraftDB();
   const draft = await draft_db.get(draft_id, {
     attachments: true,
     binary: true,
@@ -96,6 +90,7 @@ export async function newStagedData(
 ): Promise<PouchDB.Core.DocumentId> {
   const _id = 'drf-' + uuidv4();
   const date = new Date();
+  const draft_db = await getDraftDB();
 
   return (
     await draft_db.put({
@@ -126,6 +121,7 @@ export async function setStagedData(
   new_annotations: {[key: string]: unknown},
   field_types: {[field_name: string]: FAIMSTypeName}
 ): Promise<PouchDB.Core.Response> {
+  const draft_db = await getDraftDB();
   const existing = await draft_db.get(draft_id);
   if (DEBUG_APP) {
     console.debug('Saving draft values:', new_data, new_annotations);
@@ -197,6 +193,7 @@ export async function deleteStagedData(
   draft_id: PouchDB.Core.DocumentId,
   revision_cache: null | PouchDB.Core.RevisionId
 ) {
+  const draft_db = await getDraftDB();
   const revision =
     revision_cache !== null
       ? revision_cache
@@ -224,6 +221,7 @@ export async function listDraftsEncoded(
   project_id: string,
   filter: 'updates' | 'created' | 'all'
 ): Promise<EncodedDraft[]> {
+  const draft_db = await getDraftDB();
   return (
     await draft_db.find({
       selector: {

@@ -45,7 +45,7 @@ import {ProjectUIModel} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
-import RecordDraftState from '../../../sync/draft-state';
+import RecordDraftState from '../../../drafts/draft-state';
 import {
   getFieldsForViewSet,
   getFieldNamesFromFields,
