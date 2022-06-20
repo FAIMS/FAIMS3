@@ -35,7 +35,6 @@ import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import DashboardActions from '../components/dashboard/actions';
 import {useEventedPromise} from '../pouchHook';
 import {TokenContents} from '../../datamodel/core';
 
@@ -93,13 +92,6 @@ export default function Home(props: HomeProps) {
     <Container maxWidth="lg">
       <Breadcrumbs data={breadcrumbs} token={props.token} />
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="overline">Add new Record</Typography>
-          <Paper className={classes.paper}>
-            <DashboardActions pouchProjectList={pouchProjectList ?? []} />
-          </Paper>
-        </Grid>
-
         {/* Recent Projects */}
         <Grid item xs={12} md={12} lg={12}>
           <Typography variant="overline">My Notebooks</Typography>

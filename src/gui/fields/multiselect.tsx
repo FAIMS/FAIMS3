@@ -182,9 +182,8 @@ const uiSpec = {
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
   newuiSetting['views']['FormParamater']['fields'] = ['helperText'];
-  (newuiSetting['fields']['options']['component-parameters']['helperText'] =
-    'Add more than 2 options here, use '),
-    'to seperate option';
+  newuiSetting['fields']['options']['component-parameters']['helperText'] =
+    'Add more than 2 options here, use "," to seperate option';
   newuiSetting['viewsets'] = {
     settings: {
       views: ['InputLabelProps', 'FormParamater', 'ElementProps'],

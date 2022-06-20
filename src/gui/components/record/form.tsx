@@ -757,7 +757,6 @@ class RecordForm extends React.Component<
         view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
-      console.log(this.state.activeStep);
       return (
         <React.Fragment>
           {this.props.revision_id === undefined ? (
@@ -801,7 +800,6 @@ class RecordForm extends React.Component<
             }}
           >
             {formProps => {
-              console.log('is saving submiting' + formProps.isSubmitting);
               this.draftState.renderHook(
                 formProps.values,
                 this.state.annotation
