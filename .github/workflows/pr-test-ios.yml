@@ -16,7 +16,7 @@ jobs:
   deploy:
     name: Running Fastlane
     runs-on: macOS-latest
-
+    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v1
