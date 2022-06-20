@@ -93,7 +93,7 @@ function SingleComponent(props: SingleComponentProps) {
           item
           sm={1}
           xs={12}
-          style={{marginTop: '0.5em'}}
+          style={{marginTop: '0.5em', paddingLeft: '0.5em'}}
           container
           justifyContent="flex-start"
           alignItems="flex-start"
