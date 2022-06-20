@@ -87,9 +87,10 @@ type ConflictResolveIconProps = {
   numResolved: number;
   numUnResolved: number;
   num: number;
+  numRejected: number;
 };
 export function ConflictResolveIcon(props: ConflictResolveIconProps) {
-  const {numResolved, numUnResolved, num} = props;
+  const {numResolved, numUnResolved, num, numRejected} = props;
   return (
     <Grid
       item
@@ -129,7 +130,7 @@ export function ConflictResolveIcon(props: ConflictResolveIconProps) {
         display="block"
         style={cardsstyles.delete.textstyle}
       >
-        {numResolved} Rejected
+        {numRejected} Rejected
       </Typography>
     </Grid>
   );

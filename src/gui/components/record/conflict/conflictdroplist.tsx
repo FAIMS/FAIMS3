@@ -50,9 +50,19 @@ function RevisionDropList(props: ConflictDropSelectprops) {
     disablerevision,
     islabel,
   } = props;
-  const [value, setValue] = useState(props.revision);
+  let inivalue = props.revision; // this is the default value for droplist
+  if (!Object.keys(headerlist).includes(props.revision) && inivalue !== '') {
+    if (index === 1) inivalue = '';
+    else inivalue = Object.keys(headerlist)[0]; //if value is out of range, set the first one as default one and reset the conflict
+    setRevision(inivalue, index);
+  }
+  if (inivalue === '' && index === 0) {
+    inivalue = Object.keys(headerlist)[0];
+    setRevision(inivalue, index);
+  }
+  const [value, setValue] = useState(inivalue);
   const [open, setOpen] = React.useState(false);
-  const [temvalue, settemvalue] = useState(props.revision);
+  const [temvalue, settemvalue] = useState(inivalue);
   const isalerting = props.isalerting ?? false;
   const isalert = props.numResolved !== 0 ? true : false;
 

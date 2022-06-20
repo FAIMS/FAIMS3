@@ -797,7 +797,7 @@ class RecordForm extends React.Component<
                 console.log('is saving submiting called');
                 setSubmitting(false);
                 this.save(values, is_final_view);
-              }, 500);
+              }, 5000);
             }}
           >
             {formProps => {

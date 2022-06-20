@@ -57,6 +57,9 @@ import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
 import {TokenContents} from '../../datamodel/core';
 import RecordDelete from '../components/record/delete';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
+
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
@@ -150,6 +153,8 @@ function DraftEdit(props: DraftEditProps) {
   const classes = useStyles();
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [value, setValue] = React.useState('1');
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -205,14 +210,16 @@ function DraftEdit(props: DraftEditProps) {
               </TabList>
             </AppBar>
             <TabPanel value="1">
-              <RecordForm
-                project_id={project_id}
-                draft_id={draft_id}
-                type={type_name}
-                ui_specification={uiSpec}
-                record_id={record_id}
-                metaSection={metaSection}
-              />
+              <Box px={not_xs ? 30 : 0}>
+                <RecordForm
+                  project_id={project_id}
+                  draft_id={draft_id}
+                  type={type_name}
+                  ui_specification={uiSpec}
+                  record_id={record_id}
+                  metaSection={metaSection}
+                />
+              </Box>
             </TabPanel>
             <TabPanel value="2">
               <Box mt={2}>

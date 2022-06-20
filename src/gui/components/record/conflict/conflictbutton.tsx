@@ -82,7 +82,13 @@ export function ConflictSaveButton(props: any) {
   );
 }
 export const iconstyle = {
-  backgroundColor: '#1B3E93',
+  backgroundColor: '#449852',
+  color: '#fff',
+  borderRadius: '2px',
+};
+
+export const iconstylereject = {
+  backgroundColor: '#ee565a',
   color: '#fff',
   borderRadius: '2px',
 };
@@ -163,7 +169,7 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
                   ? disabediconstyle
                   : isclick[id]
                   ? isclickiconstyle
-                  : iconstyle
+                  : iconstylereject
               }
             />
           }
@@ -210,7 +216,7 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
                   ? disabediconstyle
                   : isclick[id]
                   ? isclickiconstyle
-                  : iconstyle
+                  : iconstylereject
               }
             />
           }
