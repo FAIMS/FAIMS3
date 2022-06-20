@@ -16,6 +16,7 @@
  * Filename: view.tsx
  * Description:
  *   TODO
+ *   20220620 BBS Adjusted sm to 11 from 8 to get rid of the awful margin reported in FAIMS3-328
  */
 
 import React, {useEffect, useState} from 'react';
@@ -80,7 +81,7 @@ function SingleComponent(props: SingleComponentProps) {
       }}
     >
       <Grid container>
-        <Grid item sm={8} xs={12}>
+        <Grid item sm={11} xs={12}>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
@@ -90,7 +91,7 @@ function SingleComponent(props: SingleComponentProps) {
         </Grid>
         <Grid
           item
-          sm={4}
+          sm={1}
           xs={12}
           style={{marginTop: '0.5em'}}
           container
