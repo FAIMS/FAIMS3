@@ -160,7 +160,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
       {isannotationshow && (
         <Grid
           item
-          sm={isannotationshow && isxs ? 8 : 12}
+          sm={isannotationshow && isxs ? 10 : 12}
           xs={12}
           style={{padding: '15px 0px'}}
         >
@@ -182,9 +182,9 @@ export function AnnotationField(props: AnnotationFieldProp) {
       {isuncertityshow && (
         <Grid
           item
-          sm={isannotationshow && isxs ? 4 : 12}
+          sm={isannotationshow && isxs ? 2 : 12}
           xs={12}
-          style={{padding: '15px 0px'}}
+          style={{padding: '5px 15px'}}
         >
           <Field
             component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
