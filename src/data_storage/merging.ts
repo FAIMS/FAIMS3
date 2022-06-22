@@ -251,6 +251,12 @@ export async function do3WayMerge(
     throw Error('Merging of revisions with differing types is unsupported');
   }
 
+  const them_deleted = them.deleted ?? false;
+  const us_deleted = us.deleted ?? false;
+  if (them_deleted !== us_deleted) {
+    merge_result.set_no_merge();
+  }
+
   const attrs = getAttributes(base, them, us);
   for (const attr of attrs) {
     const base_avp_id = base.avps[attr];
