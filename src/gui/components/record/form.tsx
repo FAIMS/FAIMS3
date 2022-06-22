@@ -791,12 +791,12 @@ class RecordForm extends React.Component<
             initialValues={initialValues}
             validationSchema={validationSchema}
             validateOnMount={true}
-            onSubmit={(values, {setSubmitting}) => {
+            onSubmit={values => {
               this.setTimeout(() => {
-                console.log('is saving submiting called');
-                setSubmitting(false);
+                // console.log('is saving submiting called');
+                // setSubmitting(false); remove setsubmiting function, after click save, user should not be able to save again
                 this.save(values, is_final_view);
-              }, 5000);
+              }, 500);
             }}
           >
             {formProps => {

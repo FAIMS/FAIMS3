@@ -82,15 +82,17 @@ export function ConflictSaveButton(props: any) {
   );
 }
 export const iconstyle = {
-  backgroundColor: '#449852',
+  backgroundColor: '#1B3E93',
   color: '#fff',
   borderRadius: '2px',
+  marginRight: '5px',
 };
 
 export const iconstylereject = {
-  backgroundColor: '#ee565a',
+  backgroundColor: '#1B3E93',
   color: '#fff',
   borderRadius: '2px',
+  marginRight: '5px',
 };
 
 const isclickiconstyle = {
@@ -159,32 +161,30 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
       pt={10}
       pb={0}
     >
-      <ButtonGroup>
-        <FieldButton
-          onButtonClick={onButtonDeleteLeft}
-          startIcon={
-            <DeleteOutlineIcon
-              style={
-                disbaled[id]
-                  ? disabediconstyle
-                  : isclick[id]
-                  ? isclickiconstyle
-                  : iconstylereject
-              }
-            />
-          }
-          id={id}
-          disabled={disbaled[id]}
-        />
-        <FieldButton
-          onButtonClick={onButtonLeft}
-          startIcon={
-            <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
-          }
-          id={id}
-          disabled={false}
-        />
-      </ButtonGroup>
+      <FieldButton
+        onButtonClick={onButtonDeleteLeft}
+        startIcon={
+          <DeleteOutlineIcon
+            style={
+              disbaled[id]
+                ? disabediconstyle
+                : isclick[id]
+                ? isclickiconstyle
+                : iconstylereject
+            }
+          />
+        }
+        id={id}
+        disabled={disbaled[id]}
+      />
+      <FieldButton
+        onButtonClick={onButtonLeft}
+        startIcon={
+          <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
+        }
+        id={id}
+        disabled={false}
+      />
     </Box>
   ) : (
     <Box
