@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
@@ -54,8 +54,6 @@ import {createdProjects} from './sync/state';
 import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
 import {getTokenContentsForRouting} from './users';
-
-import {useEffect, useState} from 'react';
 
 import {TokenContents} from './datamodel/core';
 

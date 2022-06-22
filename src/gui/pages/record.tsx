@@ -39,13 +39,22 @@ import {ActionType} from '../../actions';
 
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  TokenContents,
+} from '../../datamodel/core';
 import {
   ProjectUIModel,
   ProjectInformation,
   SectionMeta,
 } from '../../datamodel/ui';
-import {listFAIMSRecordRevisions} from '../../data_storage';
+import {
+  listFAIMSRecordRevisions,
+  getFullRecordData,
+  getHRIDforRecordID,
+} from '../../data_storage';
 import {store} from '../../store';
 import {getUiSpecForProject} from '../../uiSpecification';
 import RecordForm from '../components/record/form';
@@ -57,9 +66,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
-import {TokenContents} from '../../datamodel/core';
 import {grey} from '@mui/material/colors';
-import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {
   InitialMergeDetails,

@@ -20,7 +20,7 @@
 
 import React, {useContext} from 'react';
 import {useLocation} from 'react-router-dom';
-import {Box, Grid, Typography, Paper} from '@mui/material';
+import {Box, Grid, Typography, Paper, Container} from '@mui/material';
 import packageJson from '../../../package.json';
 
 import {COMMIT_VERSION} from '../../buildconfig';
@@ -28,7 +28,6 @@ import {store} from '../../store';
 import InProgress from './ui/inProgress';
 import BoxTab from './ui/boxTab';
 import Link from '@mui/material/Link';
-import {Container} from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import {EHTML} from '../../footer';

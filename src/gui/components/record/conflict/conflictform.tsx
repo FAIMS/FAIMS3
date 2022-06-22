@@ -19,8 +19,7 @@
  * TODO: Get date/time and username for conflict Drop list instead of ids
  */
 
-import React, {useEffect} from 'react';
-import {useContext, useState} from 'react';
+import React, {useEffect, useContext, useState} from 'react';
 import {ProjectID, RecordID, RevisionID} from '../../../../datamodel/core';
 import {
   ProjectUIModel,
@@ -29,14 +28,13 @@ import {
 } from '../../../../datamodel/ui';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
-import {Grid} from '@mui/material';
+import {Grid, CircularProgress} from '@mui/material';
 import RecordTabBar from './recordTab';
 import {
   InitialMergeDetails,
   getMergeInformationForHead,
   saveUserMergeResult,
 } from '../../../../data_storage/merging';
-import {CircularProgress} from '@mui/material';
 
 import {grey} from '@mui/material/colors';
 import ConflictPanel from './conflictpanel';

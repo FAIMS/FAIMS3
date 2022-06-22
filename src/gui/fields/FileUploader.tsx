@@ -24,17 +24,17 @@ import Dropzone from 'react-dropzone';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {Typography} from '@mui/material';
 import {
+  Typography,
   List,
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
   ListItemButton,
   ListItemIcon,
+  IconButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {IconButton} from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';

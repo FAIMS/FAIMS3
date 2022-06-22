@@ -39,8 +39,7 @@ import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {ProjectInformation} from '../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../uiSpecification';
-import {ProjectID} from '../../datamodel/core';
-import {TokenContents} from '../../datamodel/core';
+import {ProjectID, TokenContents} from '../../datamodel/core';
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };

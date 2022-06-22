@@ -18,10 +18,9 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {Tab, Tabs, Grid} from '@mui/material';
 import makeStyles from '@mui/styles/makeStyles';
-import {useState, useEffect} from 'react';
 import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
 import {gettabform} from '../data/ComponentSetting';

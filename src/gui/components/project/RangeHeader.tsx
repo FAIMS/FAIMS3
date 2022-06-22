@@ -19,8 +19,7 @@
  *   TODO: different design settings
  */
 
-import React from 'react';
-import {useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   get_user_friendly_status_for_project,
   UserFriendlyAutoincrementStatus,

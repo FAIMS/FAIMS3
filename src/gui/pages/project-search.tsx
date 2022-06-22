@@ -26,10 +26,9 @@ import {ProjectSearchCard} from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel/core';
+import {ProjectID, TokenContents} from '../../datamodel/core';
 import {ProjectInformation} from '../../datamodel/ui';
 import makeStyles from '@mui/styles/makeStyles';
-import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {

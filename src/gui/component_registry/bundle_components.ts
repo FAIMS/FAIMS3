@@ -21,9 +21,11 @@
 import Input from '@mui/material/Input';
 import Checkbox from '@mui/material/Checkbox';
 import TextField from '@mui/material/TextField';
-import {TextField as FormikTextField} from 'formik-mui';
-import {Select as FormikSelect} from 'formik-mui';
-import {RadioGroup as FormikRadioGroup} from 'formik-mui';
+import {
+  TextField as FormikTextField,
+  Select as FormikSelect,
+  RadioGroup as FormikRadioGroup,
+} from 'formik-mui';
 // import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-mui';
 
 import {
@@ -81,6 +83,7 @@ import {
   Defaultcomponentsetting,
   MultiTextuiSetting,
   MultiTextuiSpec,
+  getDefaultuiSetting,
 } from '../fields/BasicFieldSettings';
 // Mapping plugin imports
 import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
@@ -89,7 +92,6 @@ import {
   MapFieldUISetting,
   MapFieldUISpec,
 } from '@faims-project/faims3-map-input';
-import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
 
 const MapFieldBuilderSettings = [
   MapFieldUISetting(getDefaultuiSetting()),

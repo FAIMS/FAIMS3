@@ -22,12 +22,11 @@
 
 import React, {useEffect, useState} from 'react';
 import {Field} from 'formik';
-import {IconButton, Box} from '@mui/material';
+import {IconButton, Box, Grid} from '@mui/material';
 import NoteIcon from '@mui/icons-material/Note';
 
 import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
-import {Grid} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export function Annotation(props: any) {
   const {field, isclicked, setIsClick} = props;

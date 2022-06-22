@@ -19,9 +19,8 @@
  *   TODO: different design settings
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 
-import {useState, useEffect} from 'react';
 import {Formik, Form, Field} from 'formik';
 import {Grid, Box, Chip, TextField} from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';

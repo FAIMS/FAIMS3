@@ -24,11 +24,8 @@ import {DEBUG_POUCHDB} from '../buildconfig';
 import {directory_connection_info} from './databases';
 import {events} from './events';
 import {update_directory} from './process-initialization';
-import {
-  all_projects_updated,
-  register_basic_automerge_resolver,
-  register_sync_state,
-} from './state';
+import {all_projects_updated, register_sync_state} from './state';
+import {register_basic_automerge_resolver} from './automerge';
 
 /**
  * To prevent initialize() being called multiple times

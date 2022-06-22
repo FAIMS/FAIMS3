@@ -28,7 +28,12 @@ import {Autocomplete} from 'formik-mui';
 
 import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName} from '../../datamodel/core';
-import {RecordReference} from '../../datamodel/ui';
+import {
+  RecordReference,
+  ProjectUIModel,
+  componenentSettingprops,
+  FAIMSEVENTTYPE,
+} from '../../datamodel/ui';
 import {getRecordsByType} from '../../data_storage';
 import {
   getDefaultuiSetting,
@@ -36,11 +41,6 @@ import {
 } from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {option} from '../../datamodel/typesystem';
-import {
-  ProjectUIModel,
-  componenentSettingprops,
-  FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
 import {useLocation, Link} from 'react-router-dom';
 import {Typography} from '@mui/material';
 

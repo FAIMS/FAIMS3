@@ -39,7 +39,7 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {generateFAIMSDataID} from '../../data_storage';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID, RecordID} from '../../datamodel/core';
+import {ProjectID, RecordID, TokenContents} from '../../datamodel/core';
 import {
   ProjectUIModel,
   ProjectInformation,
@@ -55,7 +55,6 @@ import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
-import {TokenContents} from '../../datamodel/core';
 import RecordDelete from '../components/record/delete';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {

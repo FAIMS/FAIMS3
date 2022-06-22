@@ -19,12 +19,11 @@
  */
 
 import React from 'react';
-import {Grid, Box} from '@mui/material';
+import {Grid, Box, CircularProgress} from '@mui/material';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {Formik, Form} from 'formik';
 import {FieldWithAnnotation, EmptyField} from './conflictfield';
 import {FieldButtonGroup, FieldEmptyButton} from './conflictbutton';
-import {CircularProgress} from '@mui/material';
 
 function getinitial(data: any, fieldslist: Array<string>) {
   const initialvalues: {[key: string]: string} = {};

@@ -26,9 +26,12 @@ import {getComponentFromField} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {getprojectform} from '../data/ComponentSetting';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {
+  ProjevtValueList,
+  FAIMShandlerType,
+  ProjectUIModel,
+} from '../../../../datamodel/ui';
 import {AddUserButton, ProjectSubmit} from './ProjectButton';
-import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@mui/material/Alert';
 /* eslint-disable @typescript-eslint/no-unused-vars */

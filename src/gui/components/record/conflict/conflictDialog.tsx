@@ -35,11 +35,8 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {CircularProgress} from '@mui/material';
-import {FieldButton, iconstyle} from './conflictbutton';
-import DoneIcon from '@mui/icons-material/Done';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
+  CircularProgress,
   Grid,
   Box,
   Card,
@@ -47,6 +44,9 @@ import {
   IconButton,
   Typography,
 } from '@mui/material';
+import {FieldButton, iconstyle} from './conflictbutton';
+import DoneIcon from '@mui/icons-material/Done';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {cardsstyles} from './conflictstyle';
 
 export function ConflictButton(props: any) {

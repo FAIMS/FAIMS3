@@ -403,7 +403,7 @@ export async function deleteDraftForRecord(
   record_id: RecordID,
   revision_id: RevisionID
 ) {
-  console.error("getDraftDB", getDraftDB);
+  console.error('getDraftDB', getDraftDB);
   const draft_db = await getDraftDB();
   try {
     const res = await draft_db.find({

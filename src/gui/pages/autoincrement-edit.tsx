@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {useParams} from 'react-router-dom';
+import {useParams, useHistory} from 'react-router-dom';
 
 import {Box, Container, Typography, Paper, Button} from '@mui/material';
 
@@ -30,7 +30,6 @@ import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import AutoIncrementEditForm from '../components/autoincrement/edit-form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {useHistory} from 'react-router-dom';
 
 export default function AutoIncrementEdit() {
   const {project_id, form_id, field_id, label} = useParams<{

@@ -21,8 +21,7 @@
 import * as React from 'react';
 import {useState} from 'react';
 import Box from '@mui/material/Box';
-import {Grid} from '@mui/material';
-import {Switch, FormControlLabel} from '@mui/material';
+import {Grid, Switch, FormControlLabel} from '@mui/material';
 import {ConflictHelpDialog, ConflictButton} from './conflictDialog';
 import {ConflictDropSelect} from './conflictdroplist';
 import {InitialMergeRevisionDetailsMap} from '../../../../data_storage/merging';

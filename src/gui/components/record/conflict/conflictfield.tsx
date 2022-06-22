@@ -31,6 +31,7 @@ import {
   CardContent,
   IconButton,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import {AnnotationField} from '../Annotation';
@@ -38,7 +39,6 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import {cardsstyles, cardstyletype} from './conflictstyle';
-import {CircularProgress} from '@mui/material';
 import {getComponentFromFieldConfig} from '../fields';
 
 type EmptyProps = {

@@ -20,18 +20,16 @@
 
 import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
-import {Container} from '@mui/material';
+import {Container, CircularProgress} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel/core';
+import {ProjectID, TokenContents} from '../../datamodel/core';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import {CircularProgress} from '@mui/material';
 import {ProjectInformation} from '../../datamodel/ui';
 import makeStyles from '@mui/styles/makeStyles';
-import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPaddding: {

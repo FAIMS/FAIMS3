@@ -1,5 +1,9 @@
 {
-  "extends": "./node_modules/gts/",
+  "extends": [
+    "./node_modules/gts/",
+    "plugin:import/recommended",
+    "plugin:import/typescript"
+  ],
   "overrides": [
     {
       "files": "**/*.test.ts",
@@ -20,6 +24,13 @@
     "no-trailing-spaces": "warn",
     "@typescript-eslint/no-explicit-any": "off",
     "no-constant-condition": "off",
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
     "@typescript-eslint/no-empty-interface": "off"
+  },
+  "settings": {
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts", ".tsx"]
+    }
   }
 }

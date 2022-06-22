@@ -20,12 +20,11 @@
 
 import React from 'react';
 import makeStyles from '@mui/styles/makeStyles';
-import {Container, Grid} from '@mui/material';
+import {Container, Grid, CircularProgress} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
-import {CircularProgress} from '@mui/material';
 import {useEventedPromise} from '../pouchHook';
 import {TokenContents} from '../../datamodel/core';
 

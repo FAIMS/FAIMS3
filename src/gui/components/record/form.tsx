@@ -19,11 +19,11 @@
  */
 
 import React from 'react';
-import {withRouter} from 'react-router-dom';
+import {withRouter, Link as RouterLink} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {Button, Grid, Box, ButtonGroup, Typography} from '@mui/material';
+import {Button, Grid, Box, ButtonGroup, Typography, Link} from '@mui/material';
 
 import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
@@ -53,8 +53,6 @@ import {
 } from '../../../uiSpecification';
 import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
-import {Link} from '@mui/material';
-import {Link as RouterLink} from 'react-router-dom';
 import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
 import RecordTabBar from './conflict/recordTab';
