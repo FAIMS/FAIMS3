@@ -527,7 +527,7 @@ export default function Record(props: RecordeProps) {
                 conflicting instances. Resolve these conflicts before
                 continuing`}
                 continue={'continue'}
-                cancel={'Rsolve'}
+                cancel={'Resolve'}
                 open={open}
               />
               {isSyncing !== null && (

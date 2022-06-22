@@ -35,11 +35,14 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {CircularProgress} from '@mui/material';
 import {FieldButton, iconstyle, iconstylereject} from './conflictbutton';
 import DoneIcon from '@mui/icons-material/Done';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {Grid, Box, IconButton, Typography} from '@mui/material';
+import {cardsstyles} from './conflictstyle';
+import InfoIcon from '@mui/icons-material/Info';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 
 export function ConflictButton(props: any) {
   return (
@@ -104,56 +107,301 @@ function ConflictDialogContent() {
           item
           xs={12}
           container
-          justifyContent="center"
-          alignItems="flex-end"
+          justifyContent="flex-start"
+          alignItems="flex-start"
         >
           <Typography>
-            This interface allows you to choose between conflicting versions of
-            a record. In the top left (Conflict A) choose a revision. In the top
-            right (Conflict B) choose a second revision. The conflicting fields
-            will now be displayed in the left and right columns of the Section
-            table. Choose fields from A and B (left and right columns).Reject
-            field use{' '}
+            When you work in a team, occasionally somebody may change a record
+            you are currently working on. If these changes do not overlap (i.e.,
+            changes were made to different fields), the conflicting records are
+            merged automatically. However, if the same fields were affected,
+            FAIMS cannot pick one side over the other, and asks you to resolve
+            the conflict using the Conflict Resolution Tool.
+            <br />
+            <br />
+          </Typography>
+          <Typography>
+            This tool consists of three panes:
+            <ul>
+              <li>
+                The left pane shows the data entered for the conflicting fields
+                from Revision A (selected from the left-hand dropdown).
+              </li>
+              <li>
+                The right pane shows the data saved for the conflicting fields
+                from Revision B (selected from the right-hand dropdown).
+              </li>
+              <li>
+                The central pane shows the results of resolving conflicts per
+                field.
+              </li>
+            </ul>
+          </Typography>
+          <Typography>
+            You can choose to accept the value of a field from Revision A or
+            Revision B. Once you have chosen a value, no further action is
+            required for that field.
+            <br />
+            <br />
+          </Typography>
+          <Typography>
+            To automatically accept all conflicting changes from Revision A or
+            B, click the Choose A or Choose B button.
+            <br />
+            <br />
+          </Typography>
+          <Typography>
+            Once you have made a decision (chosen a side, or rejected both
+            values) on all fields, you may save the result to the record, ending
+            the conflict resolution process.
+            <br />
+            <br />
+          </Typography>
+          <Typography
+            alignItems="flex-start"
+            justifyContent="flex-start"
+            variant="h6"
+          >
+            A quick-help component key is shown below:
+          </Typography>
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="center"
+        >
+          <Grid
+            item
+            xs={3}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+            style={{paddingRight: 5}}
+          >
             <FieldButton
               onButtonClick={() => console.log('click')}
               startIcon={<DeleteOutlineIcon style={iconstylereject} />}
               id={''}
               disabled={false}
             />
-            , accept field use{' '}
+          </Grid>
+          <Grid
+            item
+            xs={9}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            {'  '}discard this field value from revision A/B
+          </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <hr />
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="center"
+        >
+          <Grid
+            item
+            xs={3}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+            style={{paddingRight: 5}}
+          >
             <FieldButton
               onButtonClick={() => console.log('click')}
               startIcon={<DoneIcon style={iconstyle} />}
               id={''}
               disabled={false}
             />
-            . The selected revision for each field is then displayed in the
-            central column. The A and B columns will be coloured accordingly
-            (green=chosen, red=rejected ). If you wish to choose the entirety of
-            revision A or B use the “CHOOSE A”
+          </Grid>
+          <Grid
+            item
+            xs={9}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            {'  '}accept this field value from revision A/B
+          </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <hr />
+        </Grid>
+
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="center"
+        >
+          <Grid
+            item
+            xs={3}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+            style={{paddingRight: 5}}
+          >
+            <InfoIcon style={cardsstyles.conflict.iconstyle} />
+          </Grid>
+          <Grid
+            item
+            xs={9}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            {'  '}displays the initial number of conflicting fields on the
+            revisions
+          </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <hr />
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="center"
+        >
+          <Grid
+            item
+            xs={3}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+            style={{paddingRight: 5}}
+          >
+            <InfoIcon style={cardsstyles.warning.iconstyle} />
+          </Grid>
+          <Grid
+            item
+            xs={9}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            {'  '}displays the number of conflicting fields on the revisions yet
+            to be resolved
+          </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <hr />
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="center"
+        >
+          <Grid
+            item
+            xs={3}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+            style={{paddingRight: 5}}
+          >
+            <CheckBoxIcon style={cardsstyles.success.iconstyle} />
+          </Grid>
+          <Grid
+            item
+            xs={9}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            {'  '}displays the number of conflicting fields on the revisions
+            that have been resolved
+          </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <hr />
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="center"
+        >
+          <Grid item xs={3} style={{paddingRight: 5}}>
+            <ErrorOutlineOutlinedIcon style={cardsstyles.delete.iconstyle} />
+          </Grid>
+          <Grid
+            item
+            xs={9}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            <Typography>
+              {'  '}displays the number of conflicting fields on the revisions
+              where both values have been rejected, and the field will be
+              removed from the record
+            </Typography>
+          </Grid>
+        </Grid>
+        <Grid item xs={12}>
+          <hr />
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="center"
+        >
+          <Grid
+            item
+            xs={3}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+            style={{paddingRight: 5}}
+          >
             <ConflictButton
               onButtonClick={() => {
                 console.debug('');
               }}
               text="Choose A"
               ischoose={false}
-            />{' '}
-            or “CHOOSE B”{' '}
-            <ConflictButton
-              onButtonClick={() => {
-                console.debug('');
-              }}
-              text="Choose B"
-              ischoose={false}
-            />{' '}
-            button.
-          </Typography>
+            />
+          </Grid>
+          <Grid
+            item
+            xs={9}
+            container
+            justifyContent="flex-start"
+            alignItems="center"
+          >
+            {'  '}automatically accept all conflicting changes from Revision A
+            or B
+          </Grid>
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          container
+          justifyContent="flex-start"
+          alignItems="flex-start"
+        >
           <Typography>
-            {' '}
-            <CircularProgress /> means confilct is still downloading to this
-            device, and it not yet selectable.
+            <br />
+            For more detailed information and help with the conflict resolution
+            process, view the docs.
           </Typography>
-          <br />
         </Grid>
       </Grid>
     </Box>

@@ -194,4 +194,31 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     icon: null,
     text: 'No Conflict',
   },
+  automerge: {
+    card: {
+      borderColor: '#e8f4fd',
+      height: '450px',
+    },
+    cardheader: {
+      backgroundColor: '#e8f4fd',
+      height: '50px',
+    },
+    iconstyle: {
+      backgroundColor: '#e8f4fd',
+      color: '#9ccffa',
+      paddingLeft: '2px',
+      paddingRight: '2px',
+    },
+    icon: (
+      <InfoIcon
+        style={{
+          backgroundColor: '#e8f4fd',
+          color: '#9ccffa',
+          paddingLeft: 2,
+          paddingRight: 4,
+        }}
+      />
+    ),
+    text: 'Field been auto merged.',
+  },
 };

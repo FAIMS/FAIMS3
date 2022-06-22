@@ -85,20 +85,26 @@ async function comparegetconflictField(
       conflictA['fields'][field]['avp_id'] !==
       conflictB['fields'][field]['avp_id']
     ) {
-      //if avp_id not same, compare the values of two field
-      const same = await isEqualFAIMS(
-        conflictA['fields'][field]['data'],
-        conflictB['fields'][field]['data']
-      );
-      if (!same) conflictfields.push(field);
-      else {
-        // if value is same, treat as not conflict field and set the field value to resolved one
-        ismcolour[field] = 'clear';
-        saveduserMergeResult['field_choices'][field] =
-          conflictA['fields'][field]['avp_id'];
+      //check if hir
+      if (field.startsWith('hrid')) {
+        ismcolour[field] = 'automerge';
+        saveduserMergeResult['field_choices'][field] = null;
+        conflictfields.push(field);
+      } else {
+        //if avp_id not same, compare the values of two field
+        const same = await isEqualFAIMS(
+          conflictA['fields'][field]['data'],
+          conflictB['fields'][field]['data']
+        );
+        if (!same) conflictfields.push(field);
+        else {
+          // if value is same, treat as not conflict field and set the field value to resolved one
+          ismcolour[field] = 'automerge';
+          saveduserMergeResult['field_choices'][field] =
+            conflictA['fields'][field]['avp_id'];
+        }
+        // conflictfields.push(field);
       }
-
-      // conflictfields.push(field);
     } else ismcolour[field] = 'clear';
   }
   return {
@@ -583,17 +589,29 @@ export default function ConflictForm(props: ConflictFormProps) {
     }
   };
 
-  const numResolved =
-    saveduserMergeResult !== null
-      ? Object.keys(saveduserMergeResult.field_choices).length
-      : 0;
+  let numResolved = 0;
+  // check resolved value and exclude the one which value same but avp_id not same
+  if (
+    conflictfields.length > 0 &&
+    saveduserMergeResult !== null &&
+    saveduserMergeResult.field_choices !== undefined &&
+    Object.keys(saveduserMergeResult.field_choices).length > 0 &&
+    conflictfields !== null
+  ) {
+    conflictfields.map(field =>
+      Object.keys(saveduserMergeResult.field_choices).includes(field)
+        ? (numResolved = numResolved + 1)
+        : numResolved
+    );
+  }
+
   const numUnResolved =
     conflictfields.length > numResolved
       ? conflictfields.length - numResolved
       : 0;
 
-  console.log(saveduserMergeResult);
-  console.log(numRejected);
+  console.log(conflictA);
+
   return (
     <Grid style={{minWidth: '800px', overflowX: 'auto'}}>
       <ConflictToolBar

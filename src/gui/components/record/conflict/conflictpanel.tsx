@@ -171,10 +171,11 @@ type ConflictButtonProps = {
   isclick: isclicklist;
   type: string;
   disbaled: {[key: string]: boolean};
+  styletype?: string;
 };
 function ConflictButton(props: ConflictButtonProps) {
-  const {istoggleAll, isconflict, isclick, disbaled} = props;
-  if (istoggleAll && isconflict)
+  const {istoggleAll, isconflict, isclick, disbaled, styletype} = props;
+  if (istoggleAll && isconflict && styletype !== 'automerge')
     return (
       <FieldButtonGroup
         type={props.type}
@@ -185,6 +186,8 @@ function ConflictButton(props: ConflictButtonProps) {
       />
     );
   if (istoggleAll && !isconflict) return <FieldEmptyButton />;
+  // add for checking if field is auto merged
+  if (isconflict && styletype === 'automerge') return <FieldEmptyButton />;
   if (!istoggleAll && isconflict)
     return (
       <FieldButtonGroup
@@ -282,6 +285,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
                     setFieldChanged={setFieldChanged}
                     isconflict={conflictfields.includes(fieldName)}
                     disbaled={props.disbaledLeft}
+                    styletype={props.styletypeMiddle[fieldName]}
                   />
                 )
             )}
@@ -318,6 +322,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
                     setFieldChanged={setFieldChanged}
                     isconflict={conflictfields.includes(fieldName)}
                     disbaled={props.disbaledRight}
+                    styletype={props.styletypeMiddle[fieldName]}
                   />
                 )
             )}
