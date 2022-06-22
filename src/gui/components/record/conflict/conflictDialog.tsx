@@ -174,7 +174,7 @@ function ConflictDialogContent() {
         >
           <Grid
             item
-            xs={1}
+            xs={3}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -189,7 +189,7 @@ function ConflictDialogContent() {
           </Grid>
           <Grid
             item
-            xs={11}
+            xs={9}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -209,7 +209,7 @@ function ConflictDialogContent() {
         >
           <Grid
             item
-            xs={1}
+            xs={3}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -224,7 +224,7 @@ function ConflictDialogContent() {
           </Grid>
           <Grid
             item
-            xs={11}
+            xs={9}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -245,7 +245,7 @@ function ConflictDialogContent() {
         >
           <Grid
             item
-            xs={1}
+            xs={3}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -255,7 +255,7 @@ function ConflictDialogContent() {
           </Grid>
           <Grid
             item
-            xs={11}
+            xs={9}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -276,7 +276,7 @@ function ConflictDialogContent() {
         >
           <Grid
             item
-            xs={1}
+            xs={3}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -286,7 +286,7 @@ function ConflictDialogContent() {
           </Grid>
           <Grid
             item
-            xs={11}
+            xs={9}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -307,7 +307,7 @@ function ConflictDialogContent() {
         >
           <Grid
             item
-            xs={1}
+            xs={3}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -317,7 +317,7 @@ function ConflictDialogContent() {
           </Grid>
           <Grid
             item
-            xs={11}
+            xs={9}
             container
             justifyContent="flex-start"
             alignItems="center"
@@ -336,12 +336,12 @@ function ConflictDialogContent() {
           justifyContent="flex-start"
           alignItems="center"
         >
-          <Grid item xs={1} style={{paddingRight: 5}}>
+          <Grid item xs={3} style={{paddingRight: 5}}>
             <ErrorOutlineOutlinedIcon style={cardsstyles.delete.iconstyle} />
           </Grid>
           <Grid
             item
-            xs={11}
+            xs={9}
             container
             justifyContent="flex-start"
             alignItems="center"

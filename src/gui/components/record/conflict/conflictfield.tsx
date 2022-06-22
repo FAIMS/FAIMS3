@@ -163,7 +163,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
     data['fields'][fieldName] !== undefined
       ? data['fields'][fieldName]['annotations']
       : null;
-  return ['warning', 'delete', 'clear'].includes(styletype) ? (
+  return ['warning', 'delete', 'clear', 'automerge'].includes(styletype) ? (
     <Box pt={10} pl={3} pr={3} minHeight="470px" maxHeight="470px">
       <Grid
         container
@@ -174,6 +174,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
         {cardstyle.icon}
         <Typography variant="caption" display="block">
           {cardstyle.text}
+          {fieldName.startsWith('hrid') && ' This field is not editable'}
         </Typography>
       </Grid>
       {/* Add alert message for required message */}
