@@ -583,10 +583,22 @@ export default function ConflictForm(props: ConflictFormProps) {
     }
   };
 
-  const numResolved =
-    saveduserMergeResult !== null
-      ? Object.keys(saveduserMergeResult.field_choices).length
-      : 0;
+  let numResolved = 0;
+  // check resolved value and exclude the one which value same but avp_id not same
+  if (
+    conflictfields.length > 0 &&
+    saveduserMergeResult !== null &&
+    saveduserMergeResult.field_choices !== undefined &&
+    Object.keys(saveduserMergeResult.field_choices).length > 0 &&
+    conflictfields !== null
+  ) {
+    conflictfields.map(field =>
+      Object.keys(saveduserMergeResult.field_choices).includes(field)
+        ? (numResolved = numResolved + 1)
+        : numResolved
+    );
+  }
+
   const numUnResolved =
     conflictfields.length > numResolved
       ? conflictfields.length - numResolved
