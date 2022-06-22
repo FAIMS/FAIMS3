@@ -196,8 +196,9 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   /***make seect not multiple to avoid error */
   const onselectvalue = (newvalue: string) => {
     let returnvalue = newvalue;
+    //get value for only child selection
     if (props.valuetype === 'child') {
-      const valuearray = newvalue.replaceAll(' ', '').split('>');
+      const valuearray = newvalue.split('>');
       returnvalue =
         valuearray.length > 0 ? valuearray[valuearray.length - 1] : returnvalue;
     }
@@ -243,12 +244,12 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         helperText={props.helperText}
       /> */}
       <Typography variant="caption">{props.helperText}</Typography>
-      <Box style={{maxHeight: '150px'}}>
+      <Box>
         <TreeView
           aria-label="file system navigator"
           defaultCollapseIcon={<ExpandMoreIcon />}
           defaultExpandIcon={<ChevronRightIcon />}
-          sx={{height: 240, flexGrow: 1, maxWidth: 400, overflowY: 'scroll'}}
+          sx={{flexGrow: 1, minWidth: 300, overflowY: 'auto'}}
           // multiSelect
         >
           {Array.isArray(ElementProps.optiontree) &&
