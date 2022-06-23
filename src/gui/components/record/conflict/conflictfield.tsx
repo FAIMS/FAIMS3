@@ -114,7 +114,7 @@ export function ConflictResolveIcon(props: ConflictResolveIconProps) {
         display="block"
         style={cardsstyles.success.textstyle}
       >
-        {numUnResolved} UnResolved
+        {numUnResolved} Unresolved
       </Typography>
       <CheckBoxIcon style={cardsstyles.success.iconstyle} />
       <Typography
@@ -128,7 +128,7 @@ export function ConflictResolveIcon(props: ConflictResolveIconProps) {
       <Typography
         variant="caption"
         display="block"
-        style={cardsstyles.delete.textstyle}
+        style={cardsstyles.success.textstyle}
       >
         {numRejected} Rejected
       </Typography>
@@ -260,7 +260,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
           >
             <Typography variant="caption" color="text.secondary">
               {data['fields'][fieldName] !== undefined &&
-                'Last updated by' + data['fields'][fieldName]['created_by']}
+                'Last updated by: ' + data['fields'][fieldName]['created_by']}
             </Typography>
           </Grid>
           <Grid
