@@ -198,34 +198,45 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
           ))}
         <Typography>
           {projectvalue.ispublic === true
-            ? 'Notebook is Online Save your new design by Click Update Button'
+            ? 'Your notebook is online. To save your changes, click Save Notebook.'
             : ''}
           {projectvalue.ispublic !== true && state === false
-            ? 'Save Notebook Firstly then click Publish Button to send request'
+            ? '[FEATURE IN DEVELOPMENT] Please save your notebook to your local device and contact support@faims.edu.au to proceed.'
             : ''}
           {projectvalue.ispublic !== true &&
             issubmit === true &&
-            'Request is sent, please wait for approve'}
+            '[FEATURE IN DEVELOPMENT] please contact support@faims.edu.au to proceed.'}
         </Typography>
       </Grid>
       <Grid item sm={6} xs={12}>
         <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
           <Typography variant={'h6'} component={'h6'}>
-            What happens next after SAVE ?
+            What happens next after you click SAVE NOTEBOOK?
           </Typography>
           <Typography>
-            Once your notebook has been saved to your local device, you can get
-            it form Notesbooks in menu bar.You can edit it and save it to device
-            again later.
+            Once your notebook has been saved to your local device, you can
+            access it from notebooks option in the menu bar. You can edit it and
+            save again, but it will remain ON YOUR LOCAL DEVICE ONLY and cannot
+            be shared. If you reset the FAIMS3 app you will LOSE YOUR WORK.
+            Contact support@faims.edu.au for advice on how to save your notebook
+            design.
           </Typography>
-          <Typography variant={'h6'} component={'h6'}>
-            What happens next after REQUEST RESOURCES ?
+          <br />
+          <Typography variant={'h5'} component={'h6'}>
+            What happens next after you REQUEST RESOURCES?
           </Typography>
           <Typography>
-            Once your notebook has been approved, users authorised in the User
-            tab will receive an email inviting them to join this notebook.
-            Approval timescales are around 72 hours, depending on staff
-            avaliablity and the current number of requests
+            Note: this feature is IN PROGRESS.{' '}
+            <strong>
+              At the moment NOTHING will happen when you click REQUEST
+              RESOURCES.
+            </strong>{' '}
+            Once we are in production, when you click REQUEST RESOURCES, your
+            notebook will be submitted for review. Once your notebook has been
+            approved, users authorised in the User tab will receive an email
+            inviting them to join this notebook. Approval timescales are around
+            72 hours, depending on staff availability and the current number of
+            requests.
           </Typography>
         </Box>
       </Grid>

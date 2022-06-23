@@ -102,7 +102,7 @@ export default function ClusterCard(props: ClusterCardProps) {
               size="large"
               onClick={() => history.push(ROUTES.WORKSPACE)}
             >
-              Go Back To WorkSpace
+              Go Back To Workspace
             </Button>
             <Button
               variant="contained"

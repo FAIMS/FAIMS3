@@ -58,7 +58,7 @@ export default function AutoIncrementEdit() {
     },
     {
       link: ROUTES.PROJECT + project_id + ROUTES.AUTOINCREMENT_LIST,
-      title: 'AutoIncrement Settings',
+      title: 'Auto-Incrementer Settings',
     },
     {
       title: label,
