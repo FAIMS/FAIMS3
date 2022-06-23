@@ -334,7 +334,8 @@ class RecordForm extends React.Component<
     }
   }
 
-  componentWillUnmount() {
+  async componentWillUnmount() {
+    await this.draftState.forceSave();
     this._isMounted = false;
     for (const timeout_id of this.timeouts) {
       clearTimeout(
