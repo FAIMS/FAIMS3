@@ -598,7 +598,6 @@ const Componentsetting = (props: componenentSettingprops) => {
                 'faims-core::Integer';
               newvalues['fields'][props.fieldName]['validationSchema'] = [
                 ['yup.number'],
-                ['yup.min', 1],
               ];
               if (
                 newvalues['fields'][props.fieldName]['component-parameters'][
@@ -607,7 +606,6 @@ const Componentsetting = (props: componenentSettingprops) => {
               )
                 newvalues['fields'][props.fieldName]['validationSchema'] = [
                   ['yup.number'],
-                  ['yup.min', 1],
                   ['yup.required'],
                 ];
               break;
