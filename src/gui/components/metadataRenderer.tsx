@@ -24,7 +24,7 @@ import {CircularProgress, Chip} from '@mui/material';
 import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel/core';
 import {listenProjectDB} from '../../sync';
-import {useEventedPromise} from '../pouchHook';
+import {useEventedPromise, constantArgsSplit} from '../pouchHook';
 import {DEBUG_APP} from '../../buildconfig';
 
 type MetadataProps = {
@@ -53,7 +53,11 @@ export default function MetadataRenderer(props: MetadataProps) {
         return '';
       }
     },
-    listenProjectDB.bind(null, project_id, {since: 'now', live: true}),
+    constantArgsSplit(
+      listenProjectDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id, metadata_key]
+    ),
     true,
     [project_id, metadata_key],
     project_id,

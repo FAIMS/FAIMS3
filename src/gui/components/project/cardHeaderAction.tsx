@@ -18,7 +18,7 @@ import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {listenProjectDB} from '../../../sync';
-import {useEventedPromise} from '../../pouchHook';
+import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 
 type ProjectCardActionProps = {
   project: ProjectInformation;
@@ -162,7 +162,11 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
 
   const ui_spec = useEventedPromise(
     getUiSpecForProject,
-    listenProjectDB.bind(null, project_id, {since: 'now', live: true}),
+    constantArgsSplit(
+      listenProjectDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id]
+    ),
     true,
     [project_id],
     project_id
