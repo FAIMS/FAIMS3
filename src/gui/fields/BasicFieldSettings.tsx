@@ -226,7 +226,7 @@ export const MultiTextuiSetting = {
         type: 'number',
       },
       alert: false,
-      validationSchema: [['yup.number'], ['yup.positive']],
+      validationSchema: [['yup.number']],
       initialValue: 'rows',
     },
   },

@@ -138,6 +138,7 @@ export function TemplatedStringcomponentsetting(
         ['yup.required'],
         ['yup.min', 1],
       ];
+      //TODO 20220626 - BBS The min above seems like a bug, and the replace of the greek below will likely need to be improved.
       let inivalue = templatevalue.split('-');
       inivalue =
         inivalue.length > 0 && inivalue[i] !== undefined
