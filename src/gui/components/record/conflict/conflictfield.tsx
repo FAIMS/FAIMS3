@@ -189,7 +189,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             {cardstyle.icon}
             <Typography variant="caption" display="block">
               {' '}
-              This Field is requierd, NOT reject both revisions{' '}
+              This Field is requierd, DO NOT reject both revisions{' '}
             </Typography>
           </Grid>
         )}

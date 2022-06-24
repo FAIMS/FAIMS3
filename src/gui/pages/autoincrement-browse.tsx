@@ -98,14 +98,18 @@ export default function Record() {
           {project_info?.name ?? <CircularProgress />}.
         </Typography>
       </Box>
-      <Paper square>{autoincremeter_links}</Paper>
+      <Paper square>
+        <Typography style={{padding: '15px 15px'}}>
+          {autoincremeter_links}
+        </Typography>
+      </Paper>
       <Button
         color="primary"
         size="large"
         component={RouterLink}
         to={ROUTES.PROJECT + project_id}
       >
-        Return to Project
+        Go Back to Notebook
       </Button>
     </Container>
   );

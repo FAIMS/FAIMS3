@@ -35,7 +35,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {FieldButton, iconstyle, iconstylereject} from './conflictbutton';
+import {FieldButton, iconstyle} from './conflictbutton';
 import DoneIcon from '@mui/icons-material/Done';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {Grid, Box, IconButton, Typography} from '@mui/material';
@@ -176,15 +176,16 @@ function ConflictDialogContent() {
             item
             xs={3}
             container
-            justifyContent="flex-start"
+            justifyContent="center"
             alignItems="center"
             style={{paddingRight: 5}}
           >
             <FieldButton
               onButtonClick={() => console.log('click')}
-              startIcon={<DeleteOutlineIcon style={iconstylereject} />}
+              startIcon={<DeleteOutlineIcon style={iconstyle.icon} />}
               id={''}
               disabled={false}
+              style={iconstyle.button}
             />
           </Grid>
           <Grid
@@ -211,15 +212,16 @@ function ConflictDialogContent() {
             item
             xs={3}
             container
-            justifyContent="flex-start"
+            justifyContent="center"
             alignItems="center"
             style={{paddingRight: 5}}
           >
             <FieldButton
               onButtonClick={() => console.log('click')}
-              startIcon={<DoneIcon style={iconstyle} />}
+              startIcon={<DoneIcon style={iconstyle.icon} />}
               id={''}
               disabled={false}
+              style={iconstyle.button}
             />
           </Grid>
           <Grid
@@ -247,7 +249,7 @@ function ConflictDialogContent() {
             item
             xs={3}
             container
-            justifyContent="flex-start"
+            justifyContent="center"
             alignItems="center"
             style={{paddingRight: 5}}
           >
@@ -278,7 +280,7 @@ function ConflictDialogContent() {
             item
             xs={3}
             container
-            justifyContent="flex-start"
+            justifyContent="center"
             alignItems="center"
             style={{paddingRight: 5}}
           >
@@ -309,7 +311,7 @@ function ConflictDialogContent() {
             item
             xs={3}
             container
-            justifyContent="flex-start"
+            justifyContent="center"
             alignItems="center"
             style={{paddingRight: 5}}
           >
@@ -336,7 +338,14 @@ function ConflictDialogContent() {
           justifyContent="flex-start"
           alignItems="center"
         >
-          <Grid item xs={3} style={{paddingRight: 5}}>
+          <Grid
+            item
+            xs={3}
+            container
+            justifyContent="center"
+            alignItems="center"
+            style={{paddingRight: 5}}
+          >
             <ErrorOutlineOutlinedIcon style={cardsstyles.delete.iconstyle} />
           </Grid>
           <Grid
@@ -367,7 +376,7 @@ function ConflictDialogContent() {
             item
             xs={3}
             container
-            justifyContent="flex-start"
+            justifyContent="center"
             alignItems="center"
             style={{paddingRight: 5}}
           >

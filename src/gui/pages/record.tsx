@@ -541,6 +541,7 @@ export default function Record(props: RecordeProps) {
                   conflicts={conflicts}
                   setissavedconflict={setissavedconflict}
                   isSyncing={isSyncing.toString()}
+                  not_xs={not_xs}
                 />
               )}
             </Box>

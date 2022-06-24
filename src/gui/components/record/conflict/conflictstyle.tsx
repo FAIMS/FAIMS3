@@ -219,6 +219,6 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
         }}
       />
     ),
-    text: 'Field been auto merged.',
+    text: 'Field has been auto merged.',
   },
 };

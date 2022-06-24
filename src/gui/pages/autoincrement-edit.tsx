@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {useParams} from 'react-router-dom';
+import {useParams, Link as RouterLink} from 'react-router-dom';
 
 import {Box, Container, Typography, Paper, Button} from '@mui/material';
 
@@ -85,7 +85,15 @@ export default function AutoIncrementEdit() {
         />
       </Paper>
       <Button color="primary" size="large" onClick={() => history.goBack()}>
-        Go Back
+        Go Back to record
+      </Button>
+      <Button
+        color="primary"
+        size="large"
+        component={RouterLink}
+        to={ROUTES.PROJECT + project_id}
+      >
+        Go Back to Notebook
       </Button>
     </Container>
   );
