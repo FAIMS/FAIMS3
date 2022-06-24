@@ -20,7 +20,6 @@
 
 import React, {useEffect} from 'react';
 import {useParams, Link as RouterLink} from 'react-router-dom';
-
 import {
   Box,
   Container,
@@ -60,7 +59,7 @@ export default function Record() {
       link: ROUTES.PROJECT + project_id,
       title: project_info?.name ?? project_id,
     },
-    {title: 'AutoIncrement Settings'},
+    {title: 'Auto-Incrementer Settings'},
   ];
   const [references, setReferences] = React.useState(
     [] as AutoIncrementReference[]
@@ -84,7 +83,7 @@ export default function Record() {
         })}
       </div>
     ) : (
-      <p>This project has no AutoIncrementers</p>
+      <p>This project has no Auto-Incrementers</p>
     );
 
   return (
@@ -92,10 +91,10 @@ export default function Record() {
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          Update AutoIncrement Settings
+          Update Auto-Incrementer Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the settings for the AutoIncrementer for
+          Update the settings for the Auto-Incrementer for{' '}
           {project_info?.name ?? <CircularProgress />}.
         </Typography>
       </Box>

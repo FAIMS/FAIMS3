@@ -64,7 +64,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
                   </ListItemIcon>
                   {this.props.token !== null && this.props.token !== undefined
                     ? 'Account Information'
-                    : 'Sign In To NoteBooks'}
+                    : 'Sign in to notebooks'}
                 </MenuItem>
               </MenuList>
             </Paper>

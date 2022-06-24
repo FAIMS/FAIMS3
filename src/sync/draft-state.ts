@@ -514,6 +514,17 @@ class RecordDraftState {
   }
 
   /**
+   * Force pushes the currently touched values into the draft DB, needed when
+   * the user leaves the page.
+   *
+   * This is awaitable as a normal async function
+   */
+  async forceSave(): Promise<void> {
+    this.is_saving = false; // don't skip saving if we're still saving
+    await this._saveData();
+  }
+
+  /**
    * Called by setInitialValues, this function retrieves any existing
    * data from the draft storage for this current record/revision
    */

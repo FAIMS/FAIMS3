@@ -1031,23 +1031,14 @@ describe('test basic automerge', () => {
 
     return mergeHeads(project_id, record_id)
       .then(status => {
-        expect(status).toBe(true);
+        expect(status).toBe(false);
       })
       .then(() => {
         return getRecord(project_id, record_id);
       })
       .then(record => {
-        return getRevision(project_id, record.heads[0]);
-      })
-      .then(revision => {
-        expect(revision.deleted).toBe(false); // Should not be deleted
-      })
-      .then(() => {
-        return getRecord(project_id, record_id);
-      })
-      .then(record => {
-        expect(record.heads).toHaveLength(1); // Should be 1 head
-        expect(record.revisions).toHaveLength(5); // 1 merge should happen
+        expect(record.heads).toHaveLength(2); // Should be 1 head
+        expect(record.revisions).toHaveLength(4); // 1 merge should happen
       });
   });
 
