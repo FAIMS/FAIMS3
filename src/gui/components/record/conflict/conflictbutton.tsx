@@ -46,7 +46,7 @@ export function FieldButton(props: any) {
       color="primary"
       component="span"
       onClick={() => props.onButtonClick()}
-      style={{padding: '8px 0px'}}
+      style={props.style}
       id={props.id}
       disabled={props.disbaled}
     >
@@ -82,29 +82,52 @@ export function ConflictSaveButton(props: any) {
   );
 }
 export const iconstyle = {
-  backgroundColor: '#1B3E93',
-  color: '#fff',
-  borderRadius: '2px',
-  marginRight: '5px',
-};
-
-export const iconstylereject = {
-  backgroundColor: '#1B3E93',
-  color: '#fff',
-  borderRadius: '2px',
-  marginRight: '5px',
+  button: {
+    width: 35,
+    height: 35,
+    padding: '0px 5px',
+    backgroundColor: '#1B3E93',
+    borderRadius: '5px',
+    marginBottom: '2px',
+    marginRight: '2px',
+  },
+  icon: {
+    backgroundColor: '#1B3E93',
+    color: '#fff',
+    borderRadius: '5px',
+  },
 };
 
 const isclickiconstyle = {
-  backgroundColor: '#fff',
-  color: '#1B3E93',
-  borderRadius: '0px',
+  button: {
+    width: 35,
+    height: 35,
+    padding: '0px 5px',
+    backgroundColor: '#fff',
+    borderRadius: '2px',
+    border: '1px solid #1B3E93',
+  },
+  icon: {
+    backgroundColor: '#fff',
+    color: '#1B3E93',
+    borderRadius: '0px',
+  },
 };
 
 const disabediconstyle = {
-  backgroundColor: '#bdbdbd',
-  color: '#fff',
-  borderRadius: '2px',
+  button: {
+    width: 35,
+    height: 35,
+    padding: '0px 5px',
+    backgroundColor: '#bdbdbd',
+    borderRadius: '2px',
+    // border:'1px solid #fff'
+  },
+  icon: {
+    backgroundColor: '#bdbdbd',
+    color: '#fff',
+    borderRadius: '2px',
+  },
 };
 
 type FieldButtonGroupProps = {
@@ -161,30 +184,67 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
       pt={10}
       pb={0}
     >
-      <FieldButton
-        onButtonClick={onButtonDeleteLeft}
-        startIcon={
+      {/* <ButtonGroup variant="contained" >
+        <Button
+          onClick={onButtonDeleteLeft}
+          size="small"
+          >
           <DeleteOutlineIcon
-            style={
-              disbaled[id]
-                ? disabediconstyle
-                : isclick[id]
-                ? isclickiconstyle
-                : iconstylereject
-            }
-          />
-        }
-        id={id}
-        disabled={disbaled[id]}
-      />
-      <FieldButton
-        onButtonClick={onButtonLeft}
-        startIcon={
-          <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
-        }
-        id={id}
-        disabled={false}
-      />
+              style={
+                disbaled[id]
+                  ? disabediconstyle.icon
+                  : isclick[id]
+                  ? isclickiconstyle.icon
+                  : iconstyle.icon
+              }
+            />
+        </Button>
+        <Button
+          onClick={onButtonDeleteLeft}
+          size="small"
+          >
+          <DoneIcon
+              style={isclick[id] ? isclickiconstyle.icon : iconstyle.icon}
+            />
+        </Button>
+      </ButtonGroup> */}
+
+      <ButtonGroup>
+        <FieldButton
+          onButtonClick={onButtonDeleteLeft}
+          startIcon={
+            <DeleteOutlineIcon
+              style={
+                disbaled[id]
+                  ? disabediconstyle.icon
+                  : isclick[id]
+                  ? isclickiconstyle.icon
+                  : iconstyle.icon
+              }
+            />
+          }
+          id={id}
+          disabled={disbaled[id]}
+          style={
+            disbaled[id]
+              ? disabediconstyle.button
+              : isclick[id]
+              ? isclickiconstyle.button
+              : iconstyle.button
+          }
+        />
+        <FieldButton
+          onButtonClick={onButtonLeft}
+          startIcon={
+            <DoneIcon
+              style={isclick[id] ? isclickiconstyle.icon : iconstyle.icon}
+            />
+          }
+          id={id}
+          disabled={false}
+          style={isclick[id] ? isclickiconstyle.button : iconstyle.button}
+        />
+      </ButtonGroup>
     </Box>
   ) : (
     <Box
@@ -196,16 +256,20 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
       maxHeight="470px"
       pt={10}
       pb={0}
+      style={{borderRadius: '5px'}}
     >
       <ButtonGroup>
         {/* orientation="vertical" */}
         <FieldButton
           onButtonClick={onButtonRight}
           startIcon={
-            <DoneIcon style={isclick[id] ? isclickiconstyle : iconstyle} />
+            <DoneIcon
+              style={isclick[id] ? isclickiconstyle.icon : iconstyle.icon}
+            />
           }
           id={id}
           disabled={false}
+          style={isclick[id] ? isclickiconstyle.button : iconstyle.button}
         />
         <FieldButton
           onButtonClick={onButtonDeleteRight}
@@ -213,15 +277,22 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
             <DeleteOutlineIcon
               style={
                 disbaled[id]
-                  ? disabediconstyle
+                  ? disabediconstyle.icon
                   : isclick[id]
-                  ? isclickiconstyle
-                  : iconstylereject
+                  ? isclickiconstyle.icon
+                  : iconstyle.icon
               }
             />
           }
           id={id}
           disabled={disbaled[id]}
+          style={
+            disbaled[id]
+              ? disabediconstyle.button
+              : isclick[id]
+              ? isclickiconstyle.button
+              : iconstyle.button
+          }
         />
       </ButtonGroup>
     </Box>

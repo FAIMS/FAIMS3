@@ -58,6 +58,7 @@ type ConflictFormProps = {
   conflicts: InitialMergeDetails;
   setissavedconflict: any; // this is paramater that allow user can reload the conflict headers
   isSyncing: string;
+  not_xs?: boolean;
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
@@ -520,7 +521,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           : (fieldchoise[field] = conflictA['fields'][field]['avp_id'])
       );
       try {
-        setIsloading(true);
+        setloading(true);
         const result = await saveUserMergeResult({
           ...saveduserMergeResult,
           field_choices: {...fieldchoise},
@@ -533,15 +534,12 @@ export default function ConflictForm(props: ConflictFormProps) {
               severity: 'success',
             },
           });
-          setloading(false);
           //this function need to be tested more
+          setRevisionList(['', '']);
           setConflictB(null);
           resettyle();
           setissavedconflict(record_id + revisionlist[1]);
-          setRevisionList(['', '']);
-          // setR(1 + 'R' + '')
           console.log('Saved Conflict Resolve');
-          // direct user to new conflict resolving or edit tab if there is no confilct ??
         }
       } catch {
         // alert user if the conflict not been saved

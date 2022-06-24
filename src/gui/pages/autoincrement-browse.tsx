@@ -19,7 +19,7 @@
  */
 
 import React, {useEffect} from 'react';
-import {useParams} from 'react-router-dom';
+import {useParams, Link as RouterLink} from 'react-router-dom';
 
 import {
   Box,
@@ -27,6 +27,7 @@ import {
   Typography,
   Paper,
   CircularProgress,
+  Button,
 } from '@mui/material';
 
 import * as ROUTES from '../../constants/routes';
@@ -98,7 +99,19 @@ export default function Record() {
           {project_info?.name ?? <CircularProgress />}.
         </Typography>
       </Box>
-      <Paper square>{autoincremeter_links}</Paper>
+      <Paper square>
+        <Typography style={{padding: '15px 15px'}}>
+          {autoincremeter_links}
+        </Typography>
+      </Paper>
+      <Button
+        color="primary"
+        size="large"
+        component={RouterLink}
+        to={ROUTES.PROJECT + project_id}
+      >
+        Go Back to Notebook
+      </Button>
     </Container>
   );
 }

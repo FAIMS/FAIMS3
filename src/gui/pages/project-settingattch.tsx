@@ -22,7 +22,7 @@
  */
 
 import React, {useEffect, useState, useContext} from 'react';
-import {useParams, Redirect, useHistory} from 'react-router-dom';
+import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
 import {
   Box,
   Button,
@@ -69,7 +69,6 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
   }, [project_id]);
 
   let project_info: ProjectInformation | null;
-  const history = useHistory();
 
   try {
     project_info = useEventedPromise(
@@ -153,8 +152,13 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
         </Typography>
       </Paper>
       <br />
-      <Button color="primary" size="large" onClick={() => history.goBack()}>
-        Go Back
+      <Button
+        color="primary"
+        size="large"
+        component={RouterLink}
+        to={ROUTES.PROJECT + project_id}
+      >
+        Go Back to Notebook
       </Button>
     </Container>
   ) : (

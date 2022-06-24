@@ -143,22 +143,11 @@ interface ValueChipsArrayProps {
   data: any;
 }
 
-// interface ChipData {
-//   key: number;
-//   name: string;
-// }
-
 const ListItem = styled('li')(({theme}) => ({
   margin: theme.spacing(0.5),
 }));
 
 function ValueChipsArray(props: ValueChipsArrayProps) {
-  // const [chipData, setChipData] = React.useState<ChipData[]>(props.data);
-
-  // const handleDelete = (chipToDelete: ChipData) => () => {
-  //   setChipData(chips => chips.filter(chip => chip.key !== chipToDelete.key));
-  // };
-
   return (
     <Paper
       sx={{
@@ -244,12 +233,12 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         helperText={props.helperText}
       /> */}
       <Typography variant="caption">{props.helperText}</Typography>
-      <Box>
+      <Box sx={{overflowY: 'auto'}}>
         <TreeView
           aria-label="file system navigator"
           defaultCollapseIcon={<ExpandMoreIcon />}
           defaultExpandIcon={<ChevronRightIcon />}
-          sx={{flexGrow: 1, minWidth: 300, overflowY: 'auto'}}
+          sx={{flexGrow: 1, minWidth: 300, maxHeight: 150, overflowY: 'auto'}}
           // multiSelect
         >
           {Array.isArray(ElementProps.optiontree) &&
