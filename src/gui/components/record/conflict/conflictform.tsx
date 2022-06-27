@@ -521,7 +521,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           : (fieldchoise[field] = conflictA['fields'][field]['avp_id'])
       );
       try {
-        setloading(true);
+        // setloading(true);
         const result = await saveUserMergeResult({
           ...saveduserMergeResult,
           field_choices: {...fieldchoise},
@@ -535,14 +535,16 @@ export default function ConflictForm(props: ConflictFormProps) {
             },
           });
           //this function need to be tested more
-          setRevisionList(['', '']);
+          // setRevisionList(['', '']);
           setConflictB(null);
           resettyle();
           setissavedconflict(record_id + revisionlist[1]);
+          // setloading(false);
           console.log('Saved Conflict Resolve');
         }
       } catch {
         // alert user if the conflict not been saved
+        setloading(false);
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
@@ -554,6 +556,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       }
     } else {
       // alert user if the conflict not been saved
+      setloading(false);
       dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -573,13 +576,10 @@ export default function ConflictForm(props: ConflictFormProps) {
       conflictA !== null &&
       saveduserMergeResult !== null
     ) {
-      comparegetconflictField(
-        conflictB,
-        conflictA,
-        fieldslist,
-        ismcolour,
-        saveduserMergeResult
-      ).then(updated => {
+      comparegetconflictField(conflictB, conflictA, fieldslist, ismcolour, {
+        ...saveduserMergeResult,
+        field_choices: {},
+      }).then(updated => {
         setconflictfields(updated.conflictfields);
         setstyletypeMiddle(updated.colourstyle);
         setUserMergeResult(updated.saveduserMergeResult);

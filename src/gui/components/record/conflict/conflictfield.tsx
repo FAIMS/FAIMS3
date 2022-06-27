@@ -164,7 +164,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
       ? data['fields'][fieldName]['annotations']
       : null;
   return ['warning', 'delete', 'clear', 'automerge'].includes(styletype) ? (
-    <Box pt={10} pl={3} pr={3} minHeight="470px" maxHeight="470px">
+    <Box pb={8} pl={10} pr={10} minHeight="470px" maxHeight="470px">
       <Grid
         container
         justifyContent="flex-start"
@@ -189,13 +189,13 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             {cardstyle.icon}
             <Typography variant="caption" display="block">
               {' '}
-              This Field is requierd, DO NOT reject both revisions{' '}
+              This Field is requierd
             </Typography>
           </Grid>
         )}
     </Box>
   ) : (
-    <Box pt={10} px={3}>
+    <Box pb={8} pl={10} pr={10}>
       <Card style={cardstyle.card}>
         {cardstyle !== null ? (
           <CardHeader
@@ -217,7 +217,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
               height: '320px',
               overflowY: 'auto',
               overflowX: 'hidden',
-              paddingTop: '5px',
+              padding: '5px 10px',
             }}
           >
             <Typography variant="body2" color="text.secondary"></Typography>
@@ -254,7 +254,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
               )}
           </Grid>
           <Grid
-            style={{paddingLeft: 1}}
+            style={{padding: '0px 10px'}}
             container
             justifyContent="flex-end"
             alignItems="flex-end"
@@ -265,7 +265,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             </Typography>
           </Grid>
           <Grid
-            style={{paddingLeft: 1}}
+            style={{padding: '5px 10px'}}
             container
             justifyContent="flex-end"
             alignItems="flex-end"

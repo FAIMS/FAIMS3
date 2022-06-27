@@ -56,6 +56,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       color: '#f29c3e',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
     icon: (
       <InfoIcon
@@ -104,10 +106,14 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       color: '#fff',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
     textstyle: {
-      paddingLeft: '10px',
-      paddingRight: '10px',
+      padding: '1px 10px',
+      border: '1px solid #b5b5b5',
+      borderRadius: '0px 3px 3px 0px',
+      marginRight: '5px',
     },
     icon: <CheckBoxIcon />,
   },
@@ -150,6 +156,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       color: '#9ccffa',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
     icon: (
       <ErrorOutlineOutlinedIcon
@@ -173,6 +181,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       color: '#fff',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
   },
   clear: {

@@ -137,6 +137,7 @@ type iscolourList = {[key: string]: string};
 
 const cardgridstyle = {
   backgroundColor: 'white',
+  paddingTop: '20px',
 };
 type ConflictPanelFormProps = any;
 
