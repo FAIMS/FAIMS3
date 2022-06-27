@@ -156,14 +156,9 @@ export function AnnotationField(props: AnnotationFieldProp) {
     field['meta']['uncertainty']['include'] &&
     isclicked;
   return (
-    <Grid container>
-      {isannotationshow && (
-        <Grid
-          item
-          sm={isannotationshow && isxs ? 10 : 12}
-          xs={12}
-          style={{padding: '15px 0px'}}
-        >
+    <Grid>
+      {isannotationshow && isxs && (
+        <Grid item sm={10} xs={12} style={{padding: '15px 0px'}}>
           <Field
             component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
             name={fieldName + 'annotation'}
@@ -176,9 +171,26 @@ export function AnnotationField(props: AnnotationFieldProp) {
             InputLabelProps={{shrink: true}}
             disabled={disabled}
             fullWidth
+            style={{padding: '15px 0px'}}
           />
         </Grid>
       )}
+      {isannotationshow && !isxs && (
+        <Field
+          component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
+          name={fieldName + 'annotation'}
+          id={props.fieldName + 'annotation'}
+          value={annotation}
+          variant="outlined"
+          onChange={handlerchangesAnnotation}
+          InputProps={{type: 'text'}}
+          label={field['meta']['annotation_label']}
+          InputLabelProps={{shrink: true}}
+          disabled={disabled}
+          fullWidth
+        />
+      )}
+
       {isuncertityshow && (
         <Grid
           item

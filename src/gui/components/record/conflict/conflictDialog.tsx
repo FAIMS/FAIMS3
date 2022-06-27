@@ -568,6 +568,7 @@ export function DiscardDialog(props: any) {
         id={'conflictDiscard'}
         variant="text"
         onClick={handleOpen}
+        disabled={props.disabled}
       >
         Discard
       </Button>

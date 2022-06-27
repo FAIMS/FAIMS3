@@ -56,6 +56,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       color: '#f29c3e',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
     icon: (
       <InfoIcon
@@ -67,7 +69,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
         }}
       />
     ),
-    text: 'Select Value from Conflict A or Conflict B',
+    text: 'Select value from Conflict A or Conflict B',
   },
   default: {
     card: {
@@ -81,8 +83,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       // height:'35px',
     },
     cardcotent: {
-      paddingLeft: '3px',
-      paddingRight: '3px',
+      paddingLeft: '0px',
+      paddingRight: '0px',
       overflow: 'visible',
     },
     icon: null,
@@ -98,16 +100,22 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     },
     cardcotent: {
       overflowY: 'auto',
+      paddingLeft: '0px',
+      paddingRight: '0px',
     },
     iconstyle: {
       backgroundColor: '#449852',
       color: '#fff',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
     textstyle: {
-      paddingLeft: '10px',
-      paddingRight: '10px',
+      padding: '1px 10px',
+      border: '1px solid #b5b5b5',
+      borderRadius: '0px 3px 3px 0px',
+      marginRight: '5px',
     },
     icon: <CheckBoxIcon />,
   },
@@ -119,6 +127,11 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     },
     cardheader: {
       backgroundColor: '#ee565a',
+    },
+    cardcotent: {
+      overflowY: 'auto',
+      paddingLeft: '0px',
+      paddingRight: '0px',
     },
     icon: <CancelSharpIcon />,
   },
@@ -150,6 +163,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       color: '#9ccffa',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
     icon: (
       <ErrorOutlineOutlinedIcon
@@ -173,6 +188,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       color: '#fff',
       paddingLeft: '2px',
       paddingRight: '2px',
+      borderRadius: '3px 0px 0px 3px',
+      border: '1px solid #b5b5b5',
     },
   },
   clear: {

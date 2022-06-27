@@ -137,6 +137,7 @@ type iscolourList = {[key: string]: string};
 
 const cardgridstyle = {
   backgroundColor: 'white',
+  paddingTop: '20px',
 };
 type ConflictPanelFormProps = any;
 
@@ -246,7 +247,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
         container
         style={{
           minHeight: '300px',
-          minWidth: '800px',
+          minWidth: '960px',
           overflowX: 'auto',
         }}
         columns={14}
