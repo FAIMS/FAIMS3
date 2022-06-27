@@ -65,7 +65,10 @@ export function ConflictSaveButton(props: any) {
       alignItems="center"
       style={{paddingBottom: 10}}
     >
-      <DiscardDialog discardconflict={props.onButtonDiscard} />
+      <DiscardDialog
+        discardconflict={props.onButtonDiscard}
+        disabled={props.numResolved === 0}
+      />
       <Button
         aria-label={''}
         onClick={() => props.onButtonClick(props.value)}

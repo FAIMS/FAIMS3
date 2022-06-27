@@ -247,7 +247,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
         container
         style={{
           minHeight: '300px',
-          minWidth: '800px',
+          minWidth: '960px',
           overflowX: 'auto',
         }}
         columns={14}

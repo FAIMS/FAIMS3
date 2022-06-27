@@ -611,7 +611,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   console.log(conflictA);
 
   return (
-    <Grid style={{minWidth: '800px', overflowX: 'auto'}}>
+    <Grid style={{minWidth: '960px', overflowX: 'auto'}}>
       <ConflictToolBar
         headerlist={conflicts['available_heads']}
         revisionlist={revisionlist}
@@ -637,6 +637,7 @@ export default function ConflictForm(props: ConflictFormProps) {
               onButtonClick={onButtonSave}
               numUnResolved={numUnResolved}
               onButtonDiscard={onButtonDiscard}
+              numResolved={numResolved}
             />
           </Grid>
         )}
@@ -691,6 +692,7 @@ export default function ConflictForm(props: ConflictFormProps) {
               onButtonClick={onButtonSave}
               numUnResolved={numUnResolved}
               onButtonDiscard={onButtonDiscard}
+              numResolved={numResolved}
             />
           </Grid>
         )}

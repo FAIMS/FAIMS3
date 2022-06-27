@@ -69,7 +69,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
         }}
       />
     ),
-    text: 'Select Value from Conflict A or Conflict B',
+    text: 'Select value from Conflict A or Conflict B',
   },
   default: {
     card: {
@@ -83,8 +83,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       // height:'35px',
     },
     cardcotent: {
-      paddingLeft: '3px',
-      paddingRight: '3px',
+      paddingLeft: '0px',
+      paddingRight: '0px',
       overflow: 'visible',
     },
     icon: null,
@@ -100,6 +100,8 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     },
     cardcotent: {
       overflowY: 'auto',
+      paddingLeft: '0px',
+      paddingRight: '0px',
     },
     iconstyle: {
       backgroundColor: '#449852',
@@ -125,6 +127,11 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     },
     cardheader: {
       backgroundColor: '#ee565a',
+    },
+    cardcotent: {
+      overflowY: 'auto',
+      paddingLeft: '0px',
+      paddingRight: '0px',
     },
     icon: <CancelSharpIcon />,
   },

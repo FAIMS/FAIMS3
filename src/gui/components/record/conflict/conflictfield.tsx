@@ -189,7 +189,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             {cardstyle.icon}
             <Typography variant="caption" display="block">
               {' '}
-              This Field is requierd
+              This field is requierd
             </Typography>
           </Grid>
         )}
