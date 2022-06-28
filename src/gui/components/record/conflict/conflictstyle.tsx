@@ -141,6 +141,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     },
     cardheader: {
       backgroundColor: '#e8f4fd',
+      minHeight: '100px',
     },
     iconstyle: {
       backgroundColor: '#e8f4fd',

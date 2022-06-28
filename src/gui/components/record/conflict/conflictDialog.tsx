@@ -632,7 +632,13 @@ export function EditConflictDisalog(props: any) {
   };
 
   return (
-    <Grid container>
+    <Grid
+      container
+      sx={{
+        width: 89,
+        height: 32,
+      }}
+    >
       <Button
         variant="contained"
         style={{
