@@ -174,7 +174,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
         {cardstyle.icon}
         <Typography variant="caption" display="block">
           {cardstyle.text}
-          {fieldName.startsWith('hrid') && ' This field is not editable'}
+          {fieldName.startsWith('hrid')}
         </Typography>
       </Grid>
       {/* Add alert message for required message */}

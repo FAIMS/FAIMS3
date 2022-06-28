@@ -49,11 +49,11 @@ export function Annotation(props: any) {
       field.meta.uncertainty.include !== false) ? (
     <Box
       display="flex"
-      justifyContent="flex-start"
+      justifyContent="center"
       alignItems="center"
       className="Button"
       sx={{
-        width: 80,
+        width: 89,
         height: 32,
         borderRadius: '30px',
         backgroundColor: '#e8f4fd',

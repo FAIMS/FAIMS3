@@ -98,7 +98,7 @@ function SingleComponent(props: SingleComponentProps) {
           justifyContent="flex-start"
           alignItems="flex-start"
         >
-          <Grid item>
+          <Grid item style={{paddingLeft: '5px'}}>
             {props.annotation !== undefined &&
               fields[fieldName].meta !== undefined &&
               fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
@@ -112,7 +112,7 @@ function SingleComponent(props: SingleComponentProps) {
                 />
               )}
           </Grid>
-          <Grid item style={{paddingLeft: 10}}>
+          <Grid item style={{paddingLeft: '5px'}}>
             {' '}
             {conflictfields !== null &&
               conflictfields !== undefined &&
