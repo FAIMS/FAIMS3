@@ -17,7 +17,7 @@
  * Description:
  *   File contains:
  *  ConflictHelpDialog
- *    - shows User How to work on Conflict Resolve
+ *    - shows user how to work on conflict resolution
  *  ConflictInfoDialog
  *   - Shows User what is Conflict
  *  EditConflictDisalog
@@ -667,8 +667,8 @@ export function EditConflictDisalog(props: any) {
         <DialogContent style={{width: '600px', height: '100px'}}>
           <DialogContentText id="alert-dialog-description">
             This record contains conflicting data for the {label} field. If you
-            wish to resolve the conflicting data, go to the conflicts tab(you
-            will lose any changes you have made here)
+            wish to resolve the conflicting data, go to the conflicts tab (you
+            will lose any changes you have made here).
           </DialogContentText>
         </DialogContent>
         <DialogActions>
