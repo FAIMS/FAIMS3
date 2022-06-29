@@ -219,15 +219,6 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
       style={{borderRadius: '5px'}}
     >
       <ButtonGroup variant="contained" orientation="vertical">
-        {' '}
-        {/*  */}
-        <Button
-          onClick={onButtonRight}
-          size="small"
-          variant={isclick[id] ? 'outlined' : 'contained'}
-        >
-          <DoneIcon />
-        </Button>
         <Button
           onClick={onButtonDeleteRight}
           size="small"
@@ -236,6 +227,13 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
           disabled={disbaled[id]}
         >
           <DeleteOutlineIcon />
+        </Button>
+        <Button
+          onClick={onButtonRight}
+          size="small"
+          variant={isclick[id] ? 'outlined' : 'contained'}
+        >
+          <DoneIcon />
         </Button>
       </ButtonGroup>
     </Box>
