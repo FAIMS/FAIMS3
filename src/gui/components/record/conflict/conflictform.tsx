@@ -530,7 +530,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
-              message: 'Saved Conflict Resolve',
+              message: 'Saved conflict resolved.',
               severity: 'success',
             },
           });
@@ -540,7 +540,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           resettyle();
           setissavedconflict(record_id + revisionlist[1]);
           // setloading(false);
-          console.log('Saved Conflict Resolve');
+          console.log('Saved Conflict Resolved');
         }
       } catch {
         // alert user if the conflict not been saved
@@ -548,7 +548,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Conflict Resolve Not saved',
+            message: 'Attempted conflict resolution not saved',
             severity: 'error',
           },
         });
