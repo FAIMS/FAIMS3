@@ -31,6 +31,7 @@ export REACT_APP_USE_REAL_DATA=true
 export REACT_APP_PROD_BUILD=true
 export platform="testing-main-latest"
 export serverprefix="testing"
+export prnum=$(bin/getDescribeString.sh android)
 npm ci --prefer-offline
 npm run build
 npx cap sync --deployment android
