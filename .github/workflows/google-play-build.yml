@@ -80,13 +80,17 @@ jobs:
           distribution: 'adopt'
           java-version: '11'
       # https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions
+      # Because fastlane stuff is in android, we need working-directory
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 2.7.5
           bundler-cache: true
+          working-directory: android
       - name: Run tests
-        run: cd android && bundle exec fastlane android test
+        run: |
+          cd android 
+          bundle exec fastlane android test
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
