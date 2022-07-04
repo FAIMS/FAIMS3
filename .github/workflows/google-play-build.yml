@@ -87,10 +87,11 @@ jobs:
           ruby-version: 2.7.5
           bundler-cache: true
           working-directory: android
-      - name: Run tests
-        run: |
-          cd android 
-          bundle exec fastlane android test
+      # We'll do this when we have android-specific tests...
+      # - name: Run tests
+      #   run: |
+      #     cd android 
+      #     bundle exec fastlane android test
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
