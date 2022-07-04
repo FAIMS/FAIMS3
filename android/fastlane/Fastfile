@@ -83,7 +83,7 @@ platform :android do
               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
            }
            )
-    upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"]
+    upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
                          track: 'internal',
                          release_status: 'completed',
                          skip_upload_metadata: true,
