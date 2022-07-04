@@ -18,7 +18,7 @@ export REACT_APP_USE_REAL_DATA=true
 export REACT_APP_PROD_BUILD=true
 export platform="play"
 export serverprefix="demo"
-export prnum=$(../../bin/getDescribeStringGH.sh gh-play)
+export prnum=$(bin/getDescribeString.sh android)
 npm ci --prefer-offline
 npm run build
 npx cap sync --deployment android

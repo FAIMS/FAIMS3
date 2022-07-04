@@ -26,7 +26,7 @@ do
 	export REACT_APP_SERVICES=FAIMSTEXT
 	export REACT_APP_PROD_BUILD=true
 	export platform="play"
-	export prnum=$(../../bin/getDescribeStringGH.sh gh-play)
+	export prnum="$SPID.$(bin/getDescribeString.sh play)"
 	export serverprefix=$(echo -n "$server" | sed -E "s/([A-Z][a-z])[^A-Z]*/\1/g")
 	export APP_NAME="FIPSoilData ($SPID)"
 	# else
