@@ -1,6 +1,6 @@
 ---
 # Nightly compile for e2e testing
-name: Brian test build
+name: Deploy to Google Play Internal Testing Track
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
@@ -16,7 +16,8 @@ on:
   #     - main
 
   workflow_dispatch:
-
+  schedule:
+    - cron: '30 22 * * 2-6'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
