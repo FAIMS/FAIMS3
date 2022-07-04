@@ -21,7 +21,7 @@ JAVA_KEY = ENV["JAVA_KEY"]
 JAVA_KEY_PASSWORD = ENV["JAVA_KEY_PASSWORD"]
 FIP_CLOSED_LANE = ENV["FIP_LANE"]
 VERSION= `echo "$(($(date +%s)/60))" | tr -d "\n"`
-VERSION_NAME=`echo -n "${serverprefix}.$(../../bin/getDescribeString.sh play)" | tr -d "\n"`
+VERSION_NAME=`echo -n "${serverprefix}.${prnum}" | tr -d "\n"`
 
 platform :android do  
   desc "Deploy a new version to Google Play"

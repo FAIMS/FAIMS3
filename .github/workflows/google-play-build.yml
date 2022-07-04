@@ -92,13 +92,17 @@ jobs:
       #   run: |
       #     cd android 
       #     bundle exec fastlane android test
+      - name: Get PR Number
+        id: prnum
+        run: |
+          echo "::set-output name=value::$(git log --perl-regexp --pretty='%s' | grep 'Merge #' | head -n1 | cut -d'#' -f2)-$(git describe --long 2>/dev/null || git describe --all --long --always)| tr -d '\n')"
+        shell: bash
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
         with:
           fileName: "fastlane-android-google-play-key.json"
-          encodedString: ${{ secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON }}
-     
+          encodedString: ${{ secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON }}     
       - name: Decode Keystore File
         uses: timheuer/base64-to-file@v1
         id: android_keystore
@@ -110,8 +114,10 @@ jobs:
         uses: android-actions/setup-android@v2
       - name: Building webapp
         run: |
+          export platform="github-actions-play"
+          export serverprefix="testing"
           export REACT_APP_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh play)
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh gh-play)
           export REACT_APP_DEBUG_APP=true
           export REACT_APP_DEBUG_POUCHDB=false
           export REACT_APP_USE_HTTPS=true
@@ -124,13 +130,11 @@ jobs:
           export REACT_APP_SERVICES=FAIMSTEXT
           export REACT_APP_TAG=testingAndroid          
           export REACT_APP_PROD_BUILD=true
-          export platform="github-actions-play"
-          export serverprefix="testing"
           git clean -xfd
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
-      # The bundle install shouldn't be necessary, but given we've got ios and android in...
+      # The bundle install shouldn't be necessary, but given we've got ios and android in...      
       - run: npx cap sync --deployment android
       - name: Fastlane
         run: |
@@ -143,14 +147,16 @@ jobs:
           JAVA_KEY: ${{ secrets.JAVA_KEY}}
           JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
-         
+          platform: "github-actions-play"
+          serverprefix: "testing"
+          prnum: ${{steps.prnum.outputs.value}}
       # - run: cd android && ./gradlew assembleDebug
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: assets
           path: |
-            ${{ github.workspace }}/app/build/outputs/bundle/release
+            ${{ github.workspace }}/android/app/build/outputs/bundle/release
       # - uses: "marvinpinto/action-automatic-releases@latest"
       #   with:
       #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
