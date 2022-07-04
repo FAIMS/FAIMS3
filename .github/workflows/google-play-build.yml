@@ -92,10 +92,11 @@ jobs:
       #   run: |
       #     cd android 
       #     bundle exec fastlane android test
+        # echo -n "::set-output name=value::$(git log --perl-regexp --pretty='%s' | grep 'Merge #' | head -n1 | cut -d'#' -f2)-$(git describe --long 2>/dev/null || git describe --all --long --always)"
       - name: Get PR Number
         id: prnum
         run: |
-          echo "::set-output name=value::$(git log --perl-regexp --pretty='%s' | grep 'Merge #' | head -n1 | cut -d'#' -f2)-$(git describe --long 2>/dev/null || git describe --all --long --always)| tr -d '\n')"
+          echo -n "::set-output name=value::$(bin/getDescribeString.sh gh-play)"
         shell: bash
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
@@ -147,7 +148,6 @@ jobs:
           JAVA_KEY: ${{ secrets.JAVA_KEY}}
           JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
-          platform: "github-actions-play"
           serverprefix: "testing"
           prnum: ${{steps.prnum.outputs.value}}
       # - run: cd android && ./gradlew assembleDebug
