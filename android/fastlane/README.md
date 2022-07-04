@@ -31,6 +31,14 @@ Deploy a new version to Google Play
 
 
 
+### android deploy_testing_github
+
+```sh
+[bundle exec] fastlane android deploy_testing_github
+```
+
+
+
 ### android deploy_alpha
 
 ```sh
