@@ -20,12 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridToolbar,
-} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
 import {Typography} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@mui/material/Link';
@@ -37,7 +32,7 @@ import {DraftMetadata} from '../../../datamodel/drafts';
 import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
-
+import CustomToolbar from './customtoolbar';
 type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -56,7 +51,7 @@ type DraftsRecordProps = {
 function DraftRecord(props: DraftsRecordProps) {
   const {project_id, maxRows, rows, loading, not_xs} = props;
   // const newrows: any = rows;
-  const defaultMaxRowsMobile = 10;
+  const defaultMaxRowsMobile = 25;
 
   // newrows.map((r:any)=>
   //   props.viewsets !== null &&
@@ -191,21 +186,26 @@ function DraftRecord(props: DraftsRecordProps) {
       columns={columns}
       autoHeight
       rowHeight={not_xs ? 52 : 100}
-      pageSize={
-        maxRows !== null
-          ? not_xs
-            ? maxRows
-            : defaultMaxRowsMobile
-          : not_xs
-          ? 25
-          : defaultMaxRowsMobile
-      }
       checkboxSelection
       density={not_xs ? 'standard' : 'comfortable'}
       components={{
-        Toolbar: GridToolbar,
+        Toolbar: CustomToolbar,
       }}
-      sortModel={[{field: 'updated', sort: 'desc'}]}
+      initialState={{
+        sorting: {
+          sortModel: [{field: 'updated', sort: 'desc'}],
+        },
+        pagination: {
+          pageSize:
+            maxRows !== null
+              ? not_xs
+                ? maxRows
+                : defaultMaxRowsMobile
+              : not_xs
+              ? 25
+              : defaultMaxRowsMobile,
+        },
+      }}
     />
   );
 }

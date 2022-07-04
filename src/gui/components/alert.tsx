@@ -39,6 +39,12 @@ export default function SystemAlert() {
   const classes = useStyles();
   const globalState = useContext(store);
   const {dispatch} = globalState;
+  const alerts = globalState.state.alerts;
+
+  if (alerts.length === 0) return <></>;
+
+  const oldest_alert = alerts[alerts.length - 1]; // adjst the sequence to display the latest alert on the top, instead of bottom
+
   const handleClose = (key: string) => {
     dispatch({
       type: ActionType.DELETE_ALERT,
@@ -47,9 +53,12 @@ export default function SystemAlert() {
       },
     });
   };
+  // this code is to move the successful message after 2 second, need to be updated in the next stage
+  setTimeout(() => {
+    if (oldest_alert !== undefined && oldest_alert.severity === 'success')
+      handleClose(oldest_alert.key);
+  }, 2000);
 
-  const alerts = globalState.state.alerts;
-  const oldest_alert = alerts[0];
   if (alerts.length > 0) console.log(oldest_alert.severity);
   return (
     <div className={classes.root}>

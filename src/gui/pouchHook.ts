@@ -152,6 +152,34 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
 }
 
 /**
+ *
+ * @param attacher prototype of a common listen function that takes a set of A
+ *     arguments, then the OK & error callbacks. See databaseAccess.tsx for
+ *     examples.
+ * @param attach_args Arguments to pass as the first arguments to attacher but
+ *     NOT the callback.
+ * @param trigger_args Arguments to pass as the first arguments to the
+ *     trigger_callback, but NOT the attacher.
+ * @returns
+ */
+export function constantArgsSplit<
+  AttachArgs extends unknown[],
+  TrigArgs extends unknown[]
+>(
+  attacher: (
+    ...args: [...AttachArgs, () => void | (() => void), (err: {}) => void]
+  ) => () => void,
+  attach_args: AttachArgs,
+  trigger_args: TrigArgs
+): (
+  trigger_callback: (...args: TrigArgs) => void,
+  error_callback: (error: {}) => void
+) => void | (() => void) {
+  return (trig, err) =>
+    attacher(...attach_args, () => trig(...trigger_args), err);
+}
+
+/**
  * React hook abtracting the use of an EventEmitter combined with a Promise
  *
  * Allows you to wait for events to occur, then when they do occur, further

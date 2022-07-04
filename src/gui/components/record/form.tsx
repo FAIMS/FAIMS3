@@ -23,17 +23,7 @@ import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  Step,
-  Stepper,
-  StepButton,
-  MobileStepper,
-} from '@mui/material';
+import {Button, Grid, Box, ButtonGroup, Typography} from '@mui/material';
 
 import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
@@ -65,16 +55,20 @@ import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
-import {indexOf} from 'lodash';
 import {grey} from '@mui/material/colors';
-
+import RecordStepper from './recordStepper';
+import RecordTabBar from './conflict/recordTab';
+import TabContext from '@mui/lab/TabContext';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
   // Might be given in the URL:
   view_default?: string;
   ui_specification: ProjectUIModel;
+  conflictfields?: string[] | null;
+  handleChangeTab?: any;
   metaSection?: any;
+  isSyncing?: string;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -184,6 +178,8 @@ class RecordForm extends React.Component<
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
     this.updateannotation = this.updateannotation.bind(this);
+    this.onChangeStepper = this.onChangeStepper.bind(this);
+    this.onChangeTab = this.onChangeTab.bind(this);
   }
 
   componentDidMount() {
@@ -338,7 +334,8 @@ class RecordForm extends React.Component<
     }
   }
 
-  componentWillUnmount() {
+  async componentWillUnmount() {
+    await this.draftState.forceSave();
     this._isMounted = false;
     for (const timeout_id of this.timeouts) {
       clearTimeout(
@@ -506,6 +503,33 @@ class RecordForm extends React.Component<
       }
     }
     return new_values;
+  }
+
+  onChangeStepper(view_name: string, activestepindex: number) {
+    this.setState({
+      view_cached: view_name,
+      activeStep: activestepindex,
+    });
+  }
+
+  onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
+    const activestepindex = parseInt(newValue);
+    console.log(activestepindex);
+
+    if (this.state.type_cached !== null) {
+      console.log(
+        this.props.ui_specification.viewsets[this.state.type_cached].views[
+          activestepindex
+        ]
+      );
+      const viewname = this.props.ui_specification.viewsets[
+        this.state.type_cached
+      ].views[activestepindex];
+      this.setState({
+        view_cached: viewname,
+        activeStep: activestepindex,
+      });
+    }
   }
 
   save(values: object, is_final_view: boolean) {
@@ -685,6 +709,7 @@ class RecordForm extends React.Component<
   }
 
   render() {
+    console.log(this.props.conflictfields);
     if (this.state.draft_created !== null) {
       // If a draft was created, that implies this form started from
       // a non draft, so it must have been an existing record (see props
@@ -733,91 +758,26 @@ class RecordForm extends React.Component<
         view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
-
       return (
         <React.Fragment>
-          <Box display={{xs: 'none', sm: 'block'}} style={{padding: '3px'}}>
-            <div style={{overflowX: 'hidden'}} className={'recordstepper'}>
-              <Stepper
-                nonLinear
-                activeStep={view_index}
-                alternativeLabel
-                style={{overflowY: 'hidden', overflowX: 'auto'}}
-              >
-                {ui_specification.viewsets[viewsetName].views.map(
-                  (view_name: string) => (
-                    <Step key={view_name}>
-                      <StepButton
-                        onClick={() => {
-                          this.setState({
-                            view_cached: view_name,
-                            activeStep: indexOf(
-                              ui_specification.viewsets[viewsetName].views,
-                              view_name
-                            ),
-                          });
-                        }}
-                      >
-                        {ui_specification.views[view_name].label}
-                      </StepButton>
-                    </Step>
-                  )
-                )}
-              </Stepper>
-            </div>
-          </Box>
-          <Box display={{xs: 'block', sm: 'none'}}>
-            <MobileStepper
-              variant="text"
-              steps={ui_specification.viewsets[viewsetName].views.length}
-              position="static"
+          {this.props.revision_id === undefined ? (
+            <RecordStepper
+              view_index={view_index}
+              ui_specification={ui_specification}
+              viewsetName={viewsetName}
               activeStep={this.state.activeStep}
-              nextButton={
-                <Button
-                  size="small"
-                  onClick={() => {
-                    const stepnum = this.state.activeStep + 1;
-                    this.setState({
-                      activeStep: stepnum,
-                      view_cached:
-                        ui_specification.viewsets[viewsetName].views[stepnum],
-                    });
-                  }}
-                  disabled={
-                    this.state.activeStep ===
-                    ui_specification.viewsets[viewsetName].views.length - 1
-                  }
-                >
-                  Next
-                </Button>
-              }
-              backButton={
-                <Button
-                  size="small"
-                  onClick={() => {
-                    const stepnum = this.state.activeStep - 1;
-                    this.setState({
-                      activeStep: stepnum,
-                      view_cached:
-                        ui_specification.viewsets[viewsetName].views[stepnum],
-                    });
-                  }}
-                  disabled={this.state.activeStep === 0}
-                >
-                  Back
-                </Button>
-              }
+              onChangeStepper={this.onChangeStepper}
             />
-            <Typography variant="h5" align="center">
-              {
-                ui_specification.views[
-                  ui_specification.viewsets[viewsetName].views[
-                    this.state.activeStep
-                  ]
-                ].label
-              }
-            </Typography>
-          </Box>
+          ) : (
+            <TabContext value={this.state.activeStep + ''}>
+              <RecordTabBar
+                ui_specification={ui_specification}
+                handleChange={this.onChangeTab}
+                type={viewsetName}
+                conflictfields={[]}
+              />
+            </TabContext>
+          )}
           {description !== '' && (
             <Box
               bgcolor={'#fafafa'}
@@ -832,16 +792,15 @@ class RecordForm extends React.Component<
             initialValues={initialValues}
             validationSchema={validationSchema}
             validateOnMount={true}
-            onSubmit={(values, {setSubmitting}) => {
+            onSubmit={values => {
               this.setTimeout(() => {
-                console.log('is saving submiting called');
-                setSubmitting(false);
+                // console.log('is saving submiting called');
+                // setSubmitting(false); remove setsubmiting function, after click save, user should not be able to save again
                 this.save(values, is_final_view);
               }, 500);
             }}
           >
             {formProps => {
-              console.log('is saving submiting' + formProps.isSubmitting);
               this.draftState.renderHook(
                 formProps.values,
                 this.state.annotation
@@ -856,15 +815,7 @@ class RecordForm extends React.Component<
                         error={this.state.draftError}
                       />
                     </Grid>
-                    <Grid
-                      item
-                      sm={
-                        String(process.env.REACT_APP_SERVER) === 'developers'
-                          ? 6
-                          : 12
-                      }
-                      xs={12}
-                    >
+                    <Grid item sm={12} xs={12}>
                       <ViewComponent
                         viewName={viewName}
                         ui_specification={ui_specification}
@@ -872,6 +823,9 @@ class RecordForm extends React.Component<
                         draftState={this.draftState}
                         annotation={this.state.annotation}
                         handerannoattion={this.updateannotation}
+                        isSyncing={this.props.isSyncing}
+                        conflictfields={this.props.conflictfields}
+                        handleChangeTab={this.props.handleChangeTab}
                       />
                       <br />
 

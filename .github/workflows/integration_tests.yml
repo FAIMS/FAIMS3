@@ -49,13 +49,15 @@ jobs:
         node-version: ['lts/*'] # '14'
         experimental: [false]
         include:
-          - node-version: '16' #, 16 ok, it looks like v2 doesn't support /nv even though the docs say it does. Hardcoding version for now.
+          - node-version: 'current'
+            experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
+          - node-version: 'latest'
             experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'

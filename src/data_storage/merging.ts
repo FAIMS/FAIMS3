@@ -21,7 +21,12 @@
  */
 
 import {getDataDB} from '../sync';
-import {RecordID, ProjectID, RevisionID} from '../datamodel/core';
+import {
+  FAIMSTypeName,
+  RecordID,
+  ProjectID,
+  RevisionID,
+} from '../datamodel/core';
 import {
   AttributeValuePairIDMap,
   Revision,
@@ -39,8 +44,24 @@ import {
 } from './internals';
 import {DEBUG_APP} from '../buildconfig';
 
+interface InitialMergeHeadDetails {
+  initial_head: RevisionID;
+  initial_head_data: RecordMergeInformation;
+}
+
+interface InitialMergeRevisionDetails {
+  created: Date;
+  created_by: string;
+  type: FAIMSTypeName;
+  deleted: boolean;
+}
+
+export type InitialMergeRevisionDetailsMap = {
+  [revision_id: string]: InitialMergeRevisionDetails;
+};
+
 export interface InitialMergeDetails {
-  available_heads: RevisionID[];
+  available_heads: InitialMergeRevisionDetailsMap;
   initial_head: RevisionID;
   initial_head_data: RecordMergeInformation;
 }
@@ -230,6 +251,12 @@ export async function do3WayMerge(
     throw Error('Merging of revisions with differing types is unsupported');
   }
 
+  const them_deleted = them.deleted ?? false;
+  const us_deleted = us.deleted ?? false;
+  if (them_deleted !== us_deleted) {
+    merge_result.set_no_merge();
+  }
+
   const attrs = getAttributes(base, them, us);
   for (const attr of attrs) {
     const base_avp_id = base.avps[attr];
@@ -383,7 +410,7 @@ function sortRevisionsForInitialMerge(revisions: RevisionMap): RevisionMap {
   return revisions;
 }
 
-async function getMergeInformationForRevision(
+export async function getMergeInformationForRevision(
   project_id: ProjectID,
   revision: Revision
 ): Promise<RecordMergeInformation> {
@@ -395,8 +422,8 @@ async function getMergeInformationForRevision(
     record_id: revision.record_id,
     revision_id: revision._id,
     type: revision.type,
-    updated: new Date(revision.created_by),
-    updated_by: revision.created,
+    updated: new Date(revision.created),
+    updated_by: revision.created_by,
     fields: {},
     deleted: revision.deleted ?? false,
   };
@@ -419,7 +446,7 @@ async function findInitialMergeDetails(
   project_id: ProjectID,
   record_id: RecordID,
   revisions: RevisionMap
-): Promise<InitialMergeDetails | null> {
+): Promise<InitialMergeHeadDetails | null> {
   for (const rev_id in revisions) {
     try {
       const full_record = await getMergeInformationForRevision(
@@ -427,7 +454,6 @@ async function findInitialMergeDetails(
         revisions[rev_id]
       );
       return {
-        available_heads: Object.keys(revisions),
         initial_head: rev_id,
         initial_head_data: full_record,
       };
@@ -440,6 +466,22 @@ async function findInitialMergeDetails(
   return null;
 }
 
+function getInitialMergeRevisionDetails(
+  revisions: RevisionMap
+): InitialMergeRevisionDetailsMap {
+  const rev_details_map: InitialMergeRevisionDetailsMap = {};
+  for (const rev_id in revisions) {
+    const revision = revisions[rev_id];
+    rev_details_map[rev_id] = {
+      type: revision.type,
+      created: new Date(revision.created),
+      created_by: revision.created_by,
+      deleted: revision.deleted ?? false,
+    };
+  }
+  return rev_details_map;
+}
+
 export async function getInitialMergeDetails(
   project_id: ProjectID,
   record_id: RecordID
@@ -447,7 +489,19 @@ export async function getInitialMergeDetails(
   const record = await getRecord(project_id, record_id);
   const available_revisons = await getRevisions(project_id, record.heads);
   const sorted_revisions = sortRevisionsForInitialMerge(available_revisons);
-  return await findInitialMergeDetails(project_id, record_id, sorted_revisions);
+  const initial_head_details = await findInitialMergeDetails(
+    project_id,
+    record_id,
+    sorted_revisions
+  );
+  if (initial_head_details === null) {
+    return null;
+  }
+  return {
+    initial_head: initial_head_details.initial_head,
+    initial_head_data: initial_head_details.initial_head_data,
+    available_heads: getInitialMergeRevisionDetails(sorted_revisions),
+  };
 }
 
 export async function findConflictingFields(
@@ -578,4 +632,6 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
   await datadb.put(new_revision);
 
   await updateHeads(project_id, record_id, parents, revision_id);
+
+  return true;
 }
