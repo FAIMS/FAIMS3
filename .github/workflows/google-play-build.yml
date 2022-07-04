@@ -130,10 +130,12 @@ jobs:
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
+      # The bundle install shouldn't be necessary, but given we've got ios and android in...
       - run: npx cap sync --deployment android
       - name: Fastlane
         run: |
           cd android
+          bundle install
           bundle exec fastlane deploy_testing_github
         env:
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
