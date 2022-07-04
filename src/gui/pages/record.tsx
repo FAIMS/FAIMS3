@@ -106,6 +106,7 @@ export default function Record(props: RecordeProps) {
     revision_id: RevisionID;
     draft_id?: string;
   }>();
+  const [updatedrevision_id, setrevision_id] = React.useState(revision_id);
   const {dispatch} = useContext(store);
   const history = useHistory();
 
@@ -189,12 +190,10 @@ export default function Record(props: RecordeProps) {
     const getconflicts = async () => {
       getInitialMergeDetails(project_id, record_id).then(result => {
         setConflicts(result);
-        if (
-          result !== null &&
-          result['available_heads'] !== undefined &&
-          Object.keys(result['available_heads']).length > 1
-        ) {
-          setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
+        if (result !== null && result['available_heads'] !== undefined) {
+          setrevision_id(result['initial_head']); //reset revision id after conflict
+          if (Object.keys(result['available_heads']).length > 1)
+            setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
         }
       });
     };
@@ -217,7 +216,7 @@ export default function Record(props: RecordeProps) {
       const latest_record = await getFullRecordData(
         project_id,
         record_id,
-        revision_id
+        updatedrevision_id
       );
       if (latest_record !== null) {
         setType(latest_record.type);
@@ -232,7 +231,7 @@ export default function Record(props: RecordeProps) {
       }
     };
     getType();
-  }, [project_id, record_id, revision_id]);
+  }, [project_id, record_id, updatedrevision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
@@ -401,7 +400,7 @@ export default function Record(props: RecordeProps) {
                               {draft_id !== undefined ? (
                                 <Typography>
                                   <strong>Current Edit Revision:</strong> <br />
-                                  {revision_id}
+                                  {updatedrevision_id}
                                 </Typography>
                               ) : (
                                 <EditDroplist
@@ -462,7 +461,7 @@ export default function Record(props: RecordeProps) {
                               revision_id={
                                 selectrevision !== null
                                   ? selectrevision
-                                  : revision_id
+                                  : updatedrevision_id
                               }
                               ui_specification={uiSpec}
                               draft_id={draft_id}
@@ -478,7 +477,7 @@ export default function Record(props: RecordeProps) {
                       <RecordForm
                         project_id={project_id}
                         record_id={record_id}
-                        revision_id={revision_id}
+                        revision_id={updatedrevision_id}
                         ui_specification={uiSpec}
                         draft_id={draft_id}
                         metaSection={metaSection}
@@ -506,13 +505,13 @@ export default function Record(props: RecordeProps) {
             <RecordMeta
               project_id={project_id}
               record_id={record_id}
-              revision_id={revision_id}
+              revision_id={updatedrevision_id}
             />
             <Box mt={2}>
               <RecordDelete
                 project_id={project_id}
                 record_id={record_id}
-                revision_id={revision_id}
+                revision_id={updatedrevision_id}
               />
             </Box>
           </TabPanel>
@@ -534,7 +533,7 @@ export default function Record(props: RecordeProps) {
                 <ConflictForm
                   project_id={project_id}
                   record_id={record_id}
-                  revision_id={revision_id}
+                  revision_id={updatedrevision_id}
                   ui_specification={uiSpec}
                   metaSection={metaSection}
                   type={type}
