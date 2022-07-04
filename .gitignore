@@ -112,6 +112,11 @@ build
 active
 directory
 .DS_Store
+__pycache__
+*.swp
+*.pyc
+*.pyo
+*~
 staging
 local_state
 draft-storage

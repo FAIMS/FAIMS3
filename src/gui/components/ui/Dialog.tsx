@@ -29,6 +29,7 @@ import {IconButton} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import * as ROUTES from '../../../constants/routes';
 import {Link as RouterLink} from 'react-router-dom';
+import CircularProgress from '@mui/material/CircularProgress';
 
 type DiagProps = {
   open?: boolean;
@@ -36,10 +37,11 @@ type DiagProps = {
   setopen: any;
   filedId?: string;
   path?: string | null;
+  isSyncing?: string;
 };
 export default function FaimsDialog(props: DiagProps) {
   //   const [open, setOpen] = React.useState(props.open??false);
-  const {open, setopen, project_id, path} = props;
+  const {open, setopen, project_id, path, isSyncing} = props;
 
   return (
     <Dialog
@@ -48,8 +50,8 @@ export default function FaimsDialog(props: DiagProps) {
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">
-        {path !== null ? '' : 'Download attachment and Photoes'}
+      <DialogTitle id="alert-dialog-title" style={{minWidth: '300px'}}>
+        {path !== null ? '' : 'Download attachments and photos'}
         <IconButton
           aria-label="close"
           onClick={setopen}
@@ -65,10 +67,24 @@ export default function FaimsDialog(props: DiagProps) {
       <DialogContent>
         {path !== null ? (
           <img style={{objectFit: 'none'}} src={path} />
+        ) : isSyncing === 'true' ? (
+          <DialogContentText id="alert-dialog-description">
+            Photo/File is Syncing
+            <CircularProgress
+              size={24}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: -12,
+                marginLeft: -12,
+              }}
+            />
+          </DialogContentText>
         ) : (
           <DialogContentText id="alert-dialog-description">
-            To Download attachments and photoes, go to settings page <br />
-            To enable auto sync attachments, go to settings
+            To download attachments and photos, please go to Settings and enable
+            it.
           </DialogContentText>
         )}
       </DialogContent>
@@ -89,7 +105,7 @@ export default function FaimsDialog(props: DiagProps) {
             component={RouterLink}
             to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_ATTACHMENT}
           >
-            Go to change setting
+            CHANGE SETTINGS
           </Button>
         </DialogActions>
       )}

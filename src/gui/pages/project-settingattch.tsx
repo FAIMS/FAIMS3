@@ -21,8 +21,8 @@
  *   add the sync attachment function and download files function
  */
 
-import React, {useEffect, useState} from 'react';
-import {useParams, Redirect, useHistory} from 'react-router-dom';
+import React, {useEffect, useState, useContext} from 'react';
+import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
 import {
   Box,
   Button,
@@ -46,7 +46,8 @@ import {
   setSyncingProjectAttachments,
   listenSyncingProjectAttachments,
 } from '../../sync/sync-toggle';
-
+import {store} from '../../store';
+import {ActionType} from '../../actions';
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
@@ -54,6 +55,7 @@ type ProjectProps = {
 export default function PROJECTATTACHMENT(props: ProjectProps) {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
+  const {dispatch} = useContext(store);
 
   useEffect(() => {
     try {
@@ -67,7 +69,6 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
   }, [project_id]);
 
   let project_info: ProjectInformation | null;
-  const history = useHistory();
 
   try {
     project_info = useEventedPromise(
@@ -102,35 +103,62 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          {project_info.name} Attachment Setting
+          Get attachments from other devices
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the Sync Attachment setting for {project_info.name}
+          Configure download of attachments from central server for this
+          notebook ( {project_info.name} )
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
           <br />
         </Typography>
       </Box>
       <Paper square>
+        <Typography style={{padding: '15px 15px'}}>
+          This control is notebook and device specific. If this option is
+          enabled, FAIMS will automatically download and show images and
+          attachments created by other devices. Be aware that this may be
+          resource intensive and use your mobile data plan. Disable this setting
+          to minimise network usage. This setting will not affect uploading of
+          your data from this device to the central server. Attachments are
+          always uploaded to the server regardless of this setting.
+        </Typography>
         <Typography variant={'body1'} style={{marginLeft: '1em'}}>
-          {'      '} Auto Sync Attachment {'  '}
+          {'      '}
           <FormControlLabel
             control={
               <Switch
                 checked={isSyncing}
                 onChange={async (event, checked) => {
                   await setSyncingProjectAttachments(project_id, checked);
+                  if (checked)
+                    dispatch({
+                      type: ActionType.ADD_ALERT,
+                      payload: {
+                        message: 'Start downlading',
+                        severity: 'success',
+                      },
+                    });
                 }}
               />
             }
-            label={<Typography variant={'button'}>Sync</Typography>}
+            label={
+              <Typography variant={'button'}>
+                Get attachments from other devices
+              </Typography>
+            }
           />
           <br />
         </Typography>
       </Paper>
       <br />
-      <Button color="primary" size="large" onClick={() => history.goBack()}>
-        Go Back
+      <Button
+        color="primary"
+        size="large"
+        component={RouterLink}
+        to={ROUTES.PROJECT + project_id}
+      >
+        Go Back to Notebook
       </Button>
     </Container>
   ) : (

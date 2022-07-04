@@ -239,7 +239,11 @@ function start_listening_for_changes(proj_id: ProjectID) {
       const pdoc = doc.doc;
 
       if (pdoc !== undefined && isRecord(pdoc)) {
-        await mergeHeads(proj_id, doc.id);
+        try {
+          await mergeHeads(proj_id, doc.id);
+        } catch (err) {
+          console.error('Automerge errored', err);
+        }
       }
     }
   });

@@ -1,11 +1,12 @@
 ---
 # Nightly compile for e2e testing
-name: Integration test for Android compile, no upload
+name: Deploy to Google Play Internal Testing Track
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 
-  
+# TODO To be combined into human app build when it works.
+
 on:
   # Trigger the workflow on push or pull request,
   # but only for the main branch
@@ -15,23 +16,32 @@ on:
   #     - main
 
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - staging
-      - trying
-  pull_request:
-    branches:
-      - main
-      - staging
-      - trying
+  schedule:
+    - cron: '30 22 * * 2-6'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  node-deb-android-job-no-release:
+  check_date:
+    runs-on: ubuntu-latest
+    name: Check latest commit
+    outputs:
+      should_run: ${{ steps.should_run.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: print latest_commit
+        run: echo ${{ github.sha }}
+
+      - id: should_run
+        continue-on-error: true
+        name: check latest commit is less than a day
+        if: ${{ github.event_name == 'schedule' }}
+        run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
+
+  node-deb-android-job-for-testing:
     # The type of runner that the job will run on
     # https://github.com/Apple-Actions/Example-iOS/blob/master/.github/workflows/test.yml
     runs-on: ubuntu-latest
+    needs: check_date
     continue-on-error: true
     strategy:
       matrix:
@@ -40,7 +50,6 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-      
       - name: Cache node modules
         uses: actions/cache@v3
         env:
@@ -71,13 +80,46 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '11'
+      # https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions
+      # Because fastlane stuff is in android, we need working-directory
+      - name: Set up ruby env
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7.5
+          bundler-cache: true
+          working-directory: android
+      # We'll do this when we have android-specific tests...
+      # - name: Run tests
+      #   run: |
+      #     cd android 
+      #     bundle exec fastlane android test
+        # echo -n "::set-output name=value::$(git log --perl-regexp --pretty='%s' | grep 'Merge #' | head -n1 | cut -d'#' -f2)-$(git describe --long 2>/dev/null || git describe --all --long --always)"
+      - name: Get PR Number
+        id: prnum
+        run: |
+          echo -n "::set-output name=value::$(bin/getDescribeString.sh gh-play)"
+        shell: bash
+      - name: Decode Service Account Key JSON File
+        uses: timheuer/base64-to-file@v1
+        id: service_account_json_file
+        with:
+          fileName: "fastlane-android-google-play-key.json"
+          encodedString: ${{ secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON }}     
+      - name: Decode Keystore File
+        uses: timheuer/base64-to-file@v1
+        id: android_keystore
+        with:
+          fileName: "android-signing-keystore.jks"
+          encodedString: ${{ secrets.KEYSTORE_FILE }}        
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
       - name: Building webapp
         run: |
+          export platform="github-actions-play"
+          export serverprefix="testing"
           export REACT_APP_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh gh-play)
           export REACT_APP_DEBUG_APP=true
           export REACT_APP_DEBUG_POUCHDB=false
           export REACT_APP_USE_HTTPS=true
@@ -94,67 +136,28 @@ jobs:
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
+      # The bundle install shouldn't be necessary, but given we've got ios and android in...      
       - run: npx cap sync --deployment android
-        # Sync runs copy then update
-      #- run: npx cap copy android
-      #- run: npx cap update android
-      # Builds for debian, presently out of scope.
-
-      # # build local deb
-      # - run: npm run dist
-      # - run: cp "$(find . -name '*.deb')" .
-      # - name: Archive deb
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: ubuntu-deb
-      #     path: |
-      #       ./*.deb
-      # Don't need to explicitly unzip
-      # https://github.com/oxr463/setup-cordova
-      # This is a docker build, so I don't think any of the caching will do any good...
-      # This is also using gradle 5.7 instead of 7, so we'll have to rebuild this.
-      # - name: Use oxr463/setup-cordova
-      #   uses: oxr463/setup-cordova@0.0.2
-      #   with:
-      #     exec: |
-      #       cordova platform add android && \
-      #       cordova build --no-telemetry && \
-      #       echo "$(find . -name '*.apk')" && \
-      #       cp "$(find . -name '*.apk')" .
-      # https://docs.github.com/en/free-pro-team@latest/actions/guides/caching-dependencies-to-speed-up-workflows
-      
-      # https://github.com/marketplace/actions/setup-ionic
-      # - name: Use coturiv/setup-ionic
-      #   uses: coturiv/setup-ionic@v1
-      #   with:
-      #     cordova-version: 9
-      # - name: Build
-      #   run: |
-      #     cordova platform add android
-      #     cordova build --no-telemetry
-      
-      # https://cordova.apache.org/docs/en/latest/guide/cli/
-      # We need to make sure to cache this, but ... later
-      # - run: sudo npm install -g cordova # This installs cordova 10. We'll want to staple it to a specific major version.
-      # - run: cordova platform add android # Again, adding that... locally. How odd.
-      # - run: cordova requirements
-      # - run: cordova build android 
-      # limiting scope to only android here.
-      # - run: sudo npm install -g cordova
-      # https://forum.ionicframework.com/t/how-to-build-apk-from-capacitor-ionic-poject-without-using-android-studio/177814/7
-        # setting the environment variable app_url with the output of this cURL.
-        # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-output-parameter
-      - run: cd android && ./gradlew assembleDebug
-      - run: cp "$(find . -name '*.apk')" .
-      # - name: "Upload APK to Browserstack with curl"
-      #   run: |
-      #     curl --silent --show-error --fail -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" -X POST "https://api-cloud.browserstack.com/app-automate/upload" -F "file=@./app-debug.apk" -F "custom_id=Alpha-Github-Actions" | jq .app_url -M | xargs -I{} echo "app_url={}" >> $GITHUB_ENV
-      - name: Archive apks
-        uses: actions/upload-artifact@v2
+      - name: Fastlane
+        run: |
+          cd android
+          bundle install
+          bundle exec fastlane deploy_testing_github
+        env:
+          JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
+          JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}
+          JAVA_KEY: ${{ secrets.JAVA_KEY}}
+          JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
+          ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
+          serverprefix: "testing"
+          prnum: ${{steps.prnum.outputs.value}}
+      # - run: cd android && ./gradlew assembleDebug
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
         with:
-          name: apks
+          name: assets
           path: |
-            ./*.apk
+            ${{ github.workspace }}/android/app/build/outputs/bundle/release
       # - uses: "marvinpinto/action-automatic-releases@latest"
       #   with:
       #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -163,8 +166,5 @@ jobs:
       #     title: "Android APK Development Build"
       #     files: |
       #       LICENSE
-      #       *.apk
-      # https://www.browserstack.com/docs/automate/selenium/github-actions#set-up-a-github-workflow-to-run-browserstack-tests
-      # Thereafter, invoke setup-env BrowserStack Action to set up 
-      # environment variables in the runner
- 
+      #       *.apk            
+  

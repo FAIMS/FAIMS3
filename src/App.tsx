@@ -30,7 +30,7 @@ import {SignIn} from './gui/pages/signin';
 import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';
 import Home from './gui/pages/home';
-import ProjectList from './gui/pages/project-list';
+// import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
 import ProjectSettings from './gui/pages/project-settings';
 import ProjectSearch from './gui/pages/project-search';
@@ -123,7 +123,7 @@ export default function App() {
               <PrivateRoute
                 exact
                 path={ROUTES.PROJECT_LIST}
-                component={ProjectList}
+                component={Home}
                 token={token}
                 extraProps={{token: token}}
               />

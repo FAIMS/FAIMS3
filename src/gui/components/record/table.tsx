@@ -21,12 +21,7 @@
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridToolbar,
-} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
 import {Typography} from '@mui/material';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
@@ -40,9 +35,10 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '../../../data_storage/index';
-import {useEventedPromise} from '../../pouchHook';
+import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
+import CustomToolbar from './customtoolbar';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -261,21 +257,26 @@ function RecordsTable(props: RecordsTableProps) {
           autoHeight
           rowHeight={not_xs ? 52 : 130}
           rowsPerPageOptions={[10, 25, 50, 100]}
-          pageSize={
-            maxRows !== null
-              ? not_xs
-                ? maxRows
-                : defaultMaxRowsMobile
-              : not_xs
-              ? 25
-              : defaultMaxRowsMobile
-          }
           checkboxSelection
           density={not_xs ? 'standard' : 'comfortable'}
           components={{
-            Toolbar: GridToolbar,
+            Toolbar: CustomToolbar,
           }}
-          sortModel={[{field: 'updated', sort: 'desc'}]}
+          initialState={{
+            sorting: {
+              sortModel: [{field: 'updated', sort: 'desc'}],
+            },
+            pagination: {
+              pageSize:
+                maxRows !== null
+                  ? not_xs
+                    ? maxRows
+                    : defaultMaxRowsMobile
+                  : not_xs
+                  ? 25
+                  : defaultMaxRowsMobile,
+            },
+          }}
         />
       </div>
     </div>
@@ -299,7 +300,11 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       );
       return metadata;
     },
-    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    constantArgsSplit(
+      listenDataDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id]
+    ),
     false,
     [project_id],
     project_id
@@ -338,7 +343,11 @@ export function RecordsSearchTable(props: RecordsSearchTableProps) {
       );
       return metadata;
     },
-    listenDataDB.bind(null, project_id, {since: 'now', live: true}),
+    constantArgsSplit(
+      listenDataDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id, query]
+    ),
     false,
     [project_id, query],
     project_id,

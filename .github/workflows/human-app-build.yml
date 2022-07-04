@@ -26,7 +26,7 @@ jobs:
     outputs:
       should_run: ${{ steps.should_run.outputs.should_run }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: print latest_commit
         run: echo ${{ github.sha }}
 
@@ -47,9 +47,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Cache node modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-node-modules
         with:
@@ -62,13 +62,13 @@ jobs:
             ${{ runner.os }}-
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}            
           cache: 'npm'
@@ -107,7 +107,7 @@ jobs:
       - run: cd android && ./gradlew assembleDebug
       - run: cp "$(find . -name '*.apk')" .
       - name: Archive apks
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: dev-apk
           path: |
@@ -133,9 +133,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Cache node modules
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-node-modules
         with:
@@ -148,13 +148,13 @@ jobs:
             ${{ runner.os }}-
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}            
           cache: 'npm'
@@ -193,7 +193,7 @@ jobs:
       - run: cd android && ./gradlew assembleDebug
       - run: cp "$(find . -name '*.apk')" .
       - name: Archive apks
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: testing-apk
           path: |
@@ -222,7 +222,7 @@ jobs:
           bundle install # to get cocoapods...   
       - run: fastlane install_plugins
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}            
           cache: 'npm'
@@ -271,7 +271,7 @@ jobs:
           BROWSERSTACK_USERNAME: '${{secrets.BROWSERSTACK_USERNAME}}'
           BROWSERSTACK_ACCESS_KEY: '${{secrets.BROWSERSTACK_ACCESS_KEY}}'
       - name: Archive ipas
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ipa
           path: |

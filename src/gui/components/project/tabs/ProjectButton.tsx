@@ -110,7 +110,8 @@ export function UpButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
-      size="large"
+      size="small"
+      style={{paddingLeft: 0}}
     >
       <ExpandLessIcon fontSize="small" />
     </IconButton>
@@ -124,7 +125,8 @@ export function DownButton(props: ButtonProps) {
       onClick={() => props.onButtonClick(props.id)}
       value={props.value}
       id={props.id}
-      size="large"
+      size="small"
+      style={{paddingLeft: 0}}
     >
       <ExpandMoreIcon fontSize="small" />
     </IconButton>

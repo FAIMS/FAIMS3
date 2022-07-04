@@ -21,7 +21,7 @@ JAVA_KEY = ENV["JAVA_KEY"]
 JAVA_KEY_PASSWORD = ENV["JAVA_KEY_PASSWORD"]
 FIP_CLOSED_LANE = ENV["FIP_LANE"]
 VERSION= `echo "$(($(date +%s)/60))" | tr -d "\n"`
-VERSION_NAME=`echo -n "${serverprefix}.$(../../bin/getDescribeString.sh play)" | tr -d "\n"`
+VERSION_NAME=`echo -n "${serverprefix}.${prnum}" | tr -d "\n"`
 
 platform :android do  
   desc "Deploy a new version to Google Play"
@@ -44,7 +44,9 @@ platform :android do
   end
 
 
-  lane :deploy_testing do
+
+
+  lane :deploy_closed_track do
     gradle(task: "clean")    
     sh("echo", VERSION_NAME)
     sh("../bin/changelog.sh", VERSION)
@@ -59,12 +61,13 @@ platform :android do
               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
            }
            )
-    upload_to_play_store(track: 'internal',
-                         release_status: 'completed',
+    upload_to_play_store(track: FIP_CLOSED_LANE,
+                         release_status: 'completed'
                         )
   end
 
-  lane :deploy_alpha do
+
+  lane :deploy_internal_testing do
     gradle(task: "clean")    
     sh("echo", VERSION_NAME)
     sh("../bin/changelog.sh", VERSION)
@@ -81,8 +84,38 @@ platform :android do
            )
     upload_to_play_store(track: 'internal',
                          release_status: 'completed',
+                         skip_upload_metadata: true,
+                         skip_upload_changelogs: true,
+                         skip_upload_images: true,
+                         skip_upload_screenshots: true
                         )
   end
+  #https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions
+  lane :deploy_testing_github do
+    gradle(task: "clean")    
+    sh("echo", VERSION_NAME)
+    sh("../bin/changelog.sh", VERSION)
+    gradle(task: "bundle",
+           build_type: "Release",
+           properties: {
+              "android.injected.version.code" => VERSION,
+              "android.injected.version.name" => VERSION_NAME,
+              "android.injected.signing.store.file" => JAVA_KEYSTORE,
+              "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
+              "android.injected.signing.key.alias" => JAVA_KEY,
+              "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
+           }
+           )
+    upload_to_play_store(json_key: ENV["ANDROID_JSON_KEY_FILE"],
+                         track: 'internal',
+                         release_status: 'completed',
+                         skip_upload_metadata: true,
+                         skip_upload_changelogs: true,
+                         skip_upload_images: true,
+                         skip_upload_screenshots: true
+                        )
+  end  
+
   lane :deploy_demo do
     gradle(task: "clean")    
     sh("echo", VERSION_NAME)

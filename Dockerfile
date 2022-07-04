@@ -1,6 +1,6 @@
 #https://nodejs.org/en/docs/guides/nodejs-docker-webapp/
 
-FROM node:lts-alpine3.14@sha256:53a5c087654e75f8b12475fe143c5ab8b5f33254a37dc87743d066a57e67b4de as build
+FROM node:lts-alpine3.14@sha256:889139aa824c8b9dd29938eecfd300d51fc2e984f9cd03df391bcfbe9cf10b53 as build
 ARG REACT_APP_COMMIT_VERSION
 ARG REACT_APP_DIRECTORY_HOST
 ARG REACT_APP_SERVICES
@@ -36,7 +36,7 @@ ENV REACT_APP_DIRECTORY_PORT 443
 # They say to run with min privs, but since we're building and not running, I CBF'd right now.
 RUN npm run-script build
 
-FROM nginx:mainline-alpine@sha256:5a0df7fb7c8c03e4158ae9974bfbd6a15da2bdfdeded4fb694367ec812325d31
+FROM nginx:mainline-alpine@sha256:8e38930f0390cbd79b2d1528405fb17edcda5f4a30875ecf338ebaa598dc994e
 RUN rm -rf /usr/share/nginx/html/*
 # not /app/www but /app/build because react
 COPY ./.nginx/nginx.conf /etc/nginx/nginx.conf

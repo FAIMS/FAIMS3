@@ -53,6 +53,7 @@ function base64image_to_blob(image: CameraPhoto): Blob {
 interface Props {
   helpertext?: string;
   label?: string;
+  issyncing?: string;
 }
 
 type ImgeListProps = {
@@ -238,6 +239,7 @@ export class TakePhoto extends React.Component<
           setopen={() => this.setState({open: false})}
           filedId={this.props.id}
           path={this.state.photopath}
+          isSyncing={this.props.issyncing}
         />
       </div>
     );

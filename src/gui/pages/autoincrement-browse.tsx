@@ -19,14 +19,14 @@
  */
 
 import React, {useEffect} from 'react';
-import {useParams} from 'react-router-dom';
-
+import {useParams, Link as RouterLink} from 'react-router-dom';
 import {
   Box,
   Container,
   Typography,
   Paper,
   CircularProgress,
+  Button,
 } from '@mui/material';
 
 import * as ROUTES from '../../constants/routes';
@@ -59,7 +59,7 @@ export default function Record() {
       link: ROUTES.PROJECT + project_id,
       title: project_info?.name ?? project_id,
     },
-    {title: 'AutoIncrement Settings'},
+    {title: 'Auto-Incrementer Settings'},
   ];
   const [references, setReferences] = React.useState(
     [] as AutoIncrementReference[]
@@ -83,7 +83,7 @@ export default function Record() {
         })}
       </div>
     ) : (
-      <p>This project has no AutoIncrementers</p>
+      <p>This project has no Auto-Incrementers</p>
     );
 
   return (
@@ -91,14 +91,26 @@ export default function Record() {
       <Breadcrumbs data={breadcrumbs} />
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>
-          Update AutoIncrement Settings
+          Update Auto-Incrementer Settings
         </Typography>
         <Typography variant={'subtitle1'} gutterBottom>
-          Update the settings for the AutoIncrementer for
+          Update the settings for the Auto-Incrementer for{' '}
           {project_info?.name ?? <CircularProgress />}.
         </Typography>
       </Box>
-      <Paper square>{autoincremeter_links}</Paper>
+      <Paper square>
+        <Typography style={{padding: '15px 15px'}}>
+          {autoincremeter_links}
+        </Typography>
+      </Paper>
+      <Button
+        color="primary"
+        size="large"
+        component={RouterLink}
+        to={ROUTES.PROJECT + project_id}
+      >
+        Go Back to Notebook
+      </Button>
     </Container>
   );
 }
