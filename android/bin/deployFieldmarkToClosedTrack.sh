@@ -33,4 +33,5 @@ npx cap sync --deployment android
 
 cd android
 bundle exec fastlane deploy_fieldmark_closed_track
-#git switch -
+git switch -
+git checkout android-fastlane app
