@@ -17,12 +17,8 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-    dexOptions {
-        preDexLibraries false
-        javaMaxHeapSize "8g"
     }
 }
 
