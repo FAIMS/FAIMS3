@@ -44,7 +44,9 @@ platform :android do
   end
 
 
-  lane :deploy_testing do
+
+
+  lane :deploy_fieldmark_closed_track do
     gradle(task: "clean")    
     sh("echo", VERSION_NAME)
     sh("../bin/changelog.sh", VERSION)
@@ -59,12 +61,8 @@ platform :android do
               "android.injected.signing.key.password" => JAVA_KEY_PASSWORD,           
            }
            )
-    upload_to_play_store(track: 'internal',
-                         release_status: 'completed',
-                         skip_upload_metadata: true,
-                         skip_upload_changelogs: true,
-                         skip_upload_images: true,
-                         skip_upload_screenshots: true
+    upload_to_play_store(track: FIP_CLOSED_LANE,
+                         release_status: 'draft'
                         )
   end
   #https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions

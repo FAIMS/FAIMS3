@@ -9,8 +9,11 @@ git commit -sam "prebuild commit" || echo "Nothing to commit, continuing."
 git fetch --all
 #git pull
 
+
+export TAG_EXPRESSION="${1:-v*}"
+
 git switch --detach
-faims_tag=$(git describe --tags `git rev-list --tags=v* --max-count=1`)    
+faims_tag=$(git describe --tags `git rev-list --tags="$TAG_EXPRESSION" --max-count=1`)    
 git merge $faims_tag --no-edit
 #git checkout $faims_tag
 #git branch -D tagged_to_android

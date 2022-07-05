@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "org.fedarch.faims3"
@@ -9,11 +10,14 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            debugSymbolLevel = 'FULL'
+        }
     }
     buildTypes {
         release {
-            minifyEnabled false
-            // proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
