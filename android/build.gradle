@@ -31,4 +31,4 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-android.defaultConfig.ndk.debugSymbolLevel = 'FULL'
+

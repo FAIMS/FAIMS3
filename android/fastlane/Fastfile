@@ -46,13 +46,14 @@ platform :android do
 
 
 
-  lane :deploy_closed_track do
+  lane :deploy_fieldmark_closed_track do
     gradle(task: "clean")    
     sh("echo", VERSION_NAME)
     sh("../bin/changelog.sh", VERSION)
     gradle(task: "bundle",
            build_type: "Release",
            properties: {
+              "android.injected.version.code" => "au.edu.faims.fieldmark"
               "android.injected.version.code" => VERSION,
               "android.injected.version.name" => VERSION_NAME,
               "android.injected.signing.store.file" => JAVA_KEYSTORE,
