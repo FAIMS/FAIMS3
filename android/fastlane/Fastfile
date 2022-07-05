@@ -53,7 +53,7 @@ platform :android do
     gradle(task: "bundle",
            build_type: "Release",
            properties: {
-              "android.injected.version.code" => "au.edu.faims.fieldmark"
+              "android.injected.applicationId" => "au.edu.faims.fieldmark",
               "android.injected.version.code" => VERSION,
               "android.injected.version.name" => VERSION_NAME,
               "android.injected.signing.store.file" => JAVA_KEYSTORE,
@@ -63,7 +63,7 @@ platform :android do
            }
            )
     upload_to_play_store(track: FIP_CLOSED_LANE,
-                         release_status: 'completed'
+                         release_status: 'draft'
                         )
   end
   #https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions
