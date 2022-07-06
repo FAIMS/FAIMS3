@@ -46,7 +46,7 @@ Further build/install instructions can be found at
 1. Spin up a new Ubuntu container with your local machine location of the repository and give it a CONTAINERNAME of your choice `docker run -dt -v /LOCAL_REPO_LOCATION:/opt/projects -p 3000-4000:3000-4000 --name CONTAINERNAME ubuntu /bin/bash`
 1. Check the container was created successfully with `docker container list -a`.
 1. If successfuly enter the container environment using `docker exec -it CONTAINERNAME bash`
-1. Update linux package sources list to the latest and upgrade the current packages installed to latest versions with `apt update && apt upgrade`, type `y` for any prompts to allow installs to use disk space.
+1. Update linux package sources list to the latest and upgrade the current packages installed to latest versions with `apt update && apt upgrade`, type `y` and press enter for any prompts to allow installs to use disk space.
 1. Install curl and fetch node with `apt install curl` then `curl -fsSL https://deb.nodesource.com/setup_16.x | bash -` to fetch node and make it visible to bash.
 1. Install required tools for the project to run with `apt install gcc g++ make nodejs` which installs GNU Compiler Collection, GNU c++ compiler, Make unix utility and Nodejs.
 1. Enter project folder `cd /opt/projects`.
