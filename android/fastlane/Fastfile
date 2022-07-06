@@ -71,7 +71,7 @@ platform :android do
     sh("echo", VERSION_NAME)
     sh("../bin/changelog.sh", VERSION)
     gradle(task: "bundle",
-           build_type: "Release",
+           build_type: "Debug",
            properties: {
               "android.injected.version.code" => VERSION,
               "android.injected.version.name" => VERSION_NAME,
