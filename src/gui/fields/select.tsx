@@ -210,11 +210,11 @@ const uiSetting = () => {
           {
             value: 'othersno',
             label:
-              'Select Optiob with Others- no input when user select others',
+              'Select Option with Others- no input when user select others',
           },
           {
             value: 'no',
-            label: 'Select Optiob No Others',
+            label: 'Select Option No Others',
           },
         ],
       },

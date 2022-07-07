@@ -182,7 +182,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   const [value, setValue] = React.useState([
     props.form.values[props.field.name],
   ]);
-  /***make seect not multiple to avoid error */
+  /***make select not multiple to avoid error */
   const onselectvalue = (newvalue: string) => {
     let returnvalue = newvalue;
     //get value for only child selection

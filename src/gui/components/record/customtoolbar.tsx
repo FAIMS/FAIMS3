@@ -15,7 +15,7 @@
  *
  * Filename: cusotmtoolbar.tsx
  * Description:
- *   File is creating custom tool bar instead of default GridToolbar to diable export button
+ *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
 import React from 'react';

@@ -16,7 +16,7 @@
  * Filename: RecordTabBar.tsx
  * Description:
  *   File contains element of conflict field
- *    ---- Conflict Field: Form field, Annoation with uncertiy , Updated By
+ *    ---- Conflict Field: Form field, Annotation with uncertainty , Updated By
  *    ---- Empty Field before data Sync to device
  *    ---- ConflictResolveIcon: shows number of conflict, unresolved , resolved and rejects
  */
@@ -122,7 +122,7 @@ export function ConflictResolveIcon(props: ConflictResolveIconProps) {
         display="block"
         style={cardsstyles.success.textstyle}
       >
-        {numResolved} Resoved
+        {numResolved} Resolved
       </Typography>
       <ErrorOutlineOutlinedIcon style={cardsstyles.delete.iconstyle} />
       <Typography

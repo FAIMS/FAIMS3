@@ -20,7 +20,7 @@
  *    - shows user how to work on conflict resolution
  *  ConflictInfoDialog
  *   - Shows User what is Conflict
- *  EditConflictDisalog
+ *  EditConflictDialogue
  *   - In Record Edit Tab shows user the information for Conflict Icon and help user choose resove conflict
  *
  */
@@ -423,15 +423,18 @@ function ConflictInfoContent() {
       <Typography>
         Conflicts generally arise when two users have changed the same fields in
         a record, or if the user deleted a file while another user was modifying
-        it. In these cases, FAIMS cannot automatically detemine what is correct.
+        it. In these cases, FAIMS cannot automatically determine what is
+        correct.
+        <br />
       </Typography>
       <Typography>
         The record will be marked as conflicted. It is then the users'
         responsibility to resolve the conflict.
+        <br />
       </Typography>
       <Typography>
         Users may continue to edit records whilst conflicts exist, but should be
-        aware that doing so may create futher conflicts, it is advisable to
+        aware that doing so may create further conflicts, it is advisable to
         resolve all conflicts before editing.
         <br />
       </Typography>

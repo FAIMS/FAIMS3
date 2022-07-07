@@ -400,7 +400,7 @@ class RecordForm extends React.Component<
 
     const child_state: any = this.props.location.state;
     if (child_state !== undefined && child_state.record_id !== undefined) {
-      //save the sub_record id into intitial value
+      //save the sub_record id into initial value
       const field_id = child_state.field_id.replace('?', '');
       const sub_record_id = child_state.record_id;
       const hrid = child_state.hrid ?? sub_record_id;
