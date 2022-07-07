@@ -184,7 +184,7 @@ const uiSetting = () => {
         label: 'Multiple',
       },
       FormHelperTextProps: {
-        children: 'Tick if user can add multiple record for this relateionship',
+        children: 'Tick if user can add multiple records for this relationship',
       },
     },
     validationSchema: [['yup.bool']],

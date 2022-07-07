@@ -136,11 +136,11 @@ export default function Record(props: RecordeProps) {
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
-  const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachement sync
+  const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachment sync
   const [conflicts, setConflicts] = useState(
     null as InitialMergeDetails | null
   );
-  const [selectrevision, setselectedRevision] = useState(null as null | string); // set default one as revision_id and if there is confilct then get the new vision of content
+  const [selectrevision, setselectedRevision] = useState(null as null | string); // set default one as revision_id and if there is conflict then get the new vision of content
   const [issavedconflict, setissavedconflict] = useState(record_id); // this is to check if the conflict resolved been saved
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
@@ -404,7 +404,7 @@ export default function Record(props: RecordeProps) {
                                 </Typography>
                               ) : (
                                 <EditDroplist
-                                  label={'eidt'}
+                                  label={'edit'}
                                   headerlist={conflicts['available_heads']}
                                   revision={selectrevision ?? ''}
                                   index={0}

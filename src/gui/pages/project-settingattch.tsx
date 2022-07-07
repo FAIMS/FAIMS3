@@ -135,7 +135,7 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
                     dispatch({
                       type: ActionType.ADD_ALERT,
                       payload: {
-                        message: 'Start downlading',
+                        message: 'Start downloading',
                         severity: 'success',
                       },
                     });

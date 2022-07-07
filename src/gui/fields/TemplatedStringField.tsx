@@ -339,7 +339,7 @@ export function TemplatedStringcomponentsetting(
   };
 
   const setuphrid = () => {
-    //check if there is hird
+    //check if there is hrid
     let ishird = false;
     props.uiSpec['viewsets'][props.currentform]['views'].map((view: string) => {
       if (

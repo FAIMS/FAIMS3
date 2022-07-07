@@ -20,7 +20,7 @@
  *    - shows user how to work on conflict resolution
  *  ConflictInfoDialog
  *   - Shows User what is Conflict
- *  EditConflictDisalog
+ *  EditConflictDialogue
  *   - In Record Edit Tab shows user the information for Conflict Icon and help user choose resove conflict
  *
  */

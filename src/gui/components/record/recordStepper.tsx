@@ -17,7 +17,7 @@
  * Description:
  *   ONLY for Draft use
  *   Steppers show sections of Form
- *   MobileStepper for samll screen ONLY
+ *   MobileStepper for small screen ONLY
  */
 
 import React from 'react';

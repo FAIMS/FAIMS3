@@ -16,7 +16,7 @@
  * Filename: conflicttoolbar.tsx
  * Description:
  *   File contains tools in Conflict Tab
- *    - incluse Droplist bar, InfoDialog, Help Dialog
+ *    - includes Droplist bar, InfoDialog, Help Dialog
  */
 import * as React from 'react';
 import {useState} from 'react';

@@ -15,7 +15,7 @@
  *
  * Filename: confictform.tsx
  * Description:
- *   Conflict Tab inclides all conflict Resolve information
+ *   Conflict Tab includes all conflict Resolve information
  * TODO: Get date/time and username for conflict Drop list instead of ids
  */
 
@@ -56,7 +56,7 @@ type ConflictFormProps = {
   revision_id?: null | RevisionID;
   type: string;
   conflicts: InitialMergeDetails;
-  setissavedconflict: any; // this is paramater that allow user can reload the conflict headers
+  setissavedconflict: any; // this is parameter that allow user can reload the conflict headers
   isSyncing: string;
   not_xs?: boolean;
 };
@@ -171,11 +171,11 @@ export default function ConflictForm(props: ConflictFormProps) {
     })
   );
   const [chosenvalues, setChoosenvalues] = useState(initialvalues);
-  //this the header data of middle column, which is the choosen one
+  //this the header data of middle column, which is the chosen one
   //above are the header data of three columns
   // to get all fields of the form
 
-  //intial values
+  //initial values
   const isclick: isclicklist = {};
   const isdisbaled: {[key: string]: boolean} = {};
   const iscolour: iscolourList = {};
@@ -190,7 +190,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   const [isclickLeft, setIsClickLeft] = useState(isclick);
   const [isclickRight, setIsClickRight] = useState(isclick);
   //above are the style of icons to choose reject or tick
-  //below are the style of 3 columns of forms , including color inditor on the top, icons
+  //below are the style of 3 columns of forms , including color indicator on the top, icons
 
   const [styletypeLeft, setstyletypeLeft] = useState(iscolour);
   const [styletypeRight, setstyletypeRight] = useState(iscolour);
@@ -325,7 +325,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       ((left && styletypeRight[fieldName] === 'reject') ||
         (left === false && styletypeLeft[fieldName] === 'reject'))
     ) {
-      alert('This Field is requierd, NOT reject both revisions');
+      alert('This Field is required. You cannot reject both revisions!');
       return;
     }
     if (sleft !== null)
