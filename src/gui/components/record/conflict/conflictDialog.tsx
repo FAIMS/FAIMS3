@@ -423,13 +423,14 @@ function ConflictInfoContent() {
       <Typography>
         Conflicts generally arise when two users have changed the same fields in
         a record, or if the user deleted a file while another user was modifying
-        it. In these cases, FAIMS cannot automatically determine what is correct.
-        <br/>
+        it. In these cases, FAIMS cannot automatically determine what is
+        correct.
+        <br />
       </Typography>
       <Typography>
         The record will be marked as conflicted. It is then the users'
         responsibility to resolve the conflict.
-        <br/>
+        <br />
       </Typography>
       <Typography>
         Users may continue to edit records whilst conflicts exist, but should be
