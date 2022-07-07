@@ -340,7 +340,7 @@ export const getprojectform = (
       multirows: 4,
       disable: projectvalue.ispublish ?? false,
       initialValue: projectvalue.users,
-      helperText: 'It will be actived after Notebook is online',
+      helperText: 'It will be activated after the notebook is online',
     },
     {
       name: 'usersassinged',
@@ -351,7 +351,7 @@ export const getprojectform = (
       multiline: true,
       multirows: 4,
       disable: projectvalue.ispublish ?? false,
-      helperText: 'It will be actived after Notebook is online',
+      helperText: 'It will be activated after the notebook is online',
     },
   ];
 
