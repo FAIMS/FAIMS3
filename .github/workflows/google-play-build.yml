@@ -137,6 +137,7 @@ jobs:
           npm run build
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...      
+      - run: npx cap update android
       - run: npx cap sync --deployment android
       - name: Fastlane
         run: |

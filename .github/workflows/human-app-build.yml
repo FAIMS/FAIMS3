@@ -103,6 +103,7 @@ jobs:
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
+      - run: npx cap update android
       - run: npx cap sync --deployment android
       - run: cd android && ./gradlew assembleDebug
       - run: cp "$(find . -name '*.apk')" .
@@ -189,6 +190,7 @@ jobs:
           npm ci
           npm run build
       # https://capacitorjs.com/docs/android
+      - run: npx cap update android
       - run: npx cap sync --deployment android
       - run: cd android && ./gradlew assembleDebug
       - run: cp "$(find . -name '*.apk')" .
