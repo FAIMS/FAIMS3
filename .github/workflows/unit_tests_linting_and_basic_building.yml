@@ -70,7 +70,7 @@ jobs:
     # do the npm stuff
     - run: npm ci
     - run: npm run lint
-    - run: npm run build --if-present
-    - run: npm run test
-    - run: npx cap copy
-    - run: npx cap doctor android # ios requires xcode
+    - run: npm run build --if-present || ${{ matrix.experimental }}
+    - run: npm run test  || ${{ matrix.experimental }}
+    - run: npx cap copy || ${{ matrix.experimental }}
+    - run: npx cap doctor android || ${{ matrix.experimental }} # ios requires xcode

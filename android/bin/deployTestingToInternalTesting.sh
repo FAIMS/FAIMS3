@@ -37,6 +37,7 @@ npm run build
 npx cap sync --deployment android
 
 cd android
-bundle exec fastlane deploy_testing
+bundle exec fastlane deploy_alpha
+# Deploy_alpha deploys it to internal track.
 
 git switch android-fastlane --discard-changes
