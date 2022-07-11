@@ -65,7 +65,7 @@ export async function waitForStateOnce(
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const all_state_cb = () => {
-      // Don't let errors in statePredicatae go uncaught
+      // Don't let errors in statePredicate go uncaught
       let do_resolve = false;
       try {
         do_resolve = statePredicate();
@@ -133,7 +133,7 @@ export async function getProject(
  *       * The project info is *updated* (replaced will be true)
  *       * The project info is dropped (e.g. the user left)
  *     * Returning _'keep'_ changes behaviour: If this is a project info update,
- *       the destructor previsously returned or kept from listener isn't run,
+ *       the destructor previously returned or kept from listener isn't run,
  *       and in fact, sticks around until next listener() (not returning keep)
  *       or other detach/error scenario.
  *     * Returning _'noop'_ returns a constructor doing nothing
@@ -506,9 +506,4 @@ export async function getAllListings(): Promise<ListingsObject[]> {
     }
   });
   return listings;
-}
-
-export async function checkattachement(): Promise<Object[]> {
-  const files = [{filename: 'new'}];
-  return files;
 }
