@@ -15,7 +15,9 @@
  *
  * Filename: index.ts
  * Description:
- *   TODO
+ *   This is the primary entry point to the sync code for use within the rest of
+ *   the app. Custom react hooks to work with pouch should use this code to map
+ *   between pouchdb event handlers and react hooks.
  */
 
 import {events} from './events';
@@ -415,7 +417,7 @@ export function listenDataDB(
           if (DEBUG_APP) {
             console.info('listenDataDB cleanup called');
           }
-          changes.cancel.bind(changes);
+          changes.cancel();
         };
       } else {
         return 'keep';
