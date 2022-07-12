@@ -99,8 +99,8 @@ platform :android do
     gradle(task: "bundle",
            build_type: "Release",
            properties: {
-              "android.injected.versionCode" => VERSION,
-              "android.injected.versionName" => VERSION_NAME,
+              "versionCode" => VERSION,
+              "versionName" => VERSION_NAME,
               "android.injected.signing.store.file" => JAVA_KEYSTORE,
               "android.injected.signing.store.password" => JAVA_KEYSTORE_PASSWORD,
               "android.injected.signing.key.alias" => JAVA_KEY,
