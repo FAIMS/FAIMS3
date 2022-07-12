@@ -28,7 +28,7 @@ do
 	export platform="play"
 	export prnum="$SPID.$(bin/getDescribeString.sh play)"
 	export serverprefix=$(echo -n "$server" | sed -E "s/([A-Z][a-z])[^A-Z]*/\1/g")
-	export APP_NAME="FIPSoilData ($SPID)"
+	export APP_NAME="PSMIP Soil"
 	# else
 	# fi
 	echo "$APP_NAME ${server}.fipapp.ansis.net Lane: $FIP_LANE"

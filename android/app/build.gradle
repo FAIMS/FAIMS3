@@ -10,13 +10,14 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk {
-            debugSymbolLevel = 'FULL'
-        }
+        // ndk {
+        //     debugSymbolLevel = 'FULL'
+        // }
     }
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
+            // minifyEnabled true
             //proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
