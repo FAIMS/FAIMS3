@@ -5,7 +5,7 @@ set -euo pipefail
 GITROOT=$(git rev-parse --show-toplevel)
 cd $GITROOT
 
-bash android/bin/mergeTagFromMain.sh
+#bash android/bin/mergeTagFromMain.sh
 npm ci
 for server in $(cat android/faimsservers); do
 	cd $GITROOT
