@@ -6,10 +6,11 @@ GITROOT=$(git rev-parse --show-toplevel)
 cd $GITROOT
 
 export TAG_EXPRESSION="${1:-v*}"
-
-
-bash android/bin/mergeTagFromMain.sh "$TAG_EXPRESSION"
+faims_tag=$(git describe --tags `git rev-list --tags="$TAG_EXPRESSION" --max-count=1`)    
 git switch --detach
+git checkout $faims_tag
+
+#bash android/bin/mergeTagFromMain.sh "$TAG_EXPRESSION"
 export FIP_LANE="${1:-alpha}"
 export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
 export REACT_APP_DIRECTORY_HOST="${FIP_LANE}.db.faims.edu.au"
@@ -33,5 +34,5 @@ npx cap sync --deployment android
 
 cd android
 bundle exec fastlane deploy_fieldmark_closed_track
+git checkout main app
 git switch -
-git checkout android-fastlane app
