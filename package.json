@@ -83,7 +83,7 @@
     "fast-json-stable-stringify": "2.1.0",
     "formik": "2.2.9",
     "formik-mui": "4.0.0",
-    "formik-mui-lab": "1.0.0-alpha.3",
+    "formik-mui-lab": "1.0.0",
     "graphviz-react": "1.2.0",
     "jose": "4.8.3",
     "json-stable-stringify": "1.0.1",
