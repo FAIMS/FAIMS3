@@ -50,7 +50,7 @@ jobs:
           bundler-cache: true
       - run: |
           bundle install # to get cocoapods...   
-      - run: fastlane install_plugins
+          bundle exec fastlane install_plugins
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -71,7 +71,7 @@ jobs:
           git clean -xfd
           npm ci
           npm run build
-      #   export REACT_APP_LOGIN_TOKEN='${{ secrets.JWT_TEST_TOKEN }}'          
+      #   export REACT_APP_LOGIN_TOKEN='${{ secrets.JWT_TEST_TOKEN }}'
       # https://capacitorjs.com/docs/android
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
