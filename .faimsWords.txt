@@ -476,3 +476,10 @@ uuidv4
 toggled
 Evented
 farray
+Testflight
+cocoapods
+fastlane
+serverprefix
+pubalg
+hostedtoolcache
+maierj
