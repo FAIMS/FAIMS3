@@ -53,22 +53,21 @@ export default function RecordStepper(props: RecordStepperProps) {
   return (
     <>
       <Box display={{xs: 'none', sm: 'block'}} style={{paddingTop: '3px'}}>
-        <div style={{overflowX: 'hidden'}} >
+        <div style={{overflowX: 'hidden'}}>
           <Stepper
             nonLinear
             activeStep={view_index}
             alternativeLabel
             style={{overflowY: 'hidden', overflowX: 'auto'}}
-
           >
             {ui_specification.viewsets[viewsetName].views.map(
               (view_name: string, index: number) => (
-                <Step key={view_name} >
+                <Step key={view_name}>
                   <StepButton
                     onClick={() => {
                       onChangeStepper(view_name, index);
                     }}
-                    sx={{width:'93%' }}
+                    sx={{width: '93%'}}
                   >
                     {ui_specification.views[view_name].label}
                   </StepButton>
