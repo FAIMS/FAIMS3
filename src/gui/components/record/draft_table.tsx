@@ -239,7 +239,7 @@ export default function DraftsTable(props: DraftsTableProps) {
     <div>
       <Typography
         variant="overline"
-        style={not_xs ? {} : {paddingLeft: '10px'}}
+        style={not_xs ? {paddingLeft: '5px'} : {paddingLeft: '10px'}}
       >
         New Draft
       </Typography>

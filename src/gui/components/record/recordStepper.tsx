@@ -51,7 +51,7 @@ export default function RecordStepper(props: RecordStepperProps) {
 
   return (
     <>
-      <Box display={{xs: 'none', sm: 'block'}} style={{padding: '3px'}}>
+      <Box display={{sm: 'none', md: 'block'}} style={{padding: '3px'}}>
         <div style={{overflowX: 'hidden'}} className={'recordstepper'}>
           <Stepper
             nonLinear
@@ -75,7 +75,7 @@ export default function RecordStepper(props: RecordStepperProps) {
           </Stepper>
         </div>
       </Box>
-      <Box display={{xs: 'block', sm: 'none'}}>
+      <Box display={{xs: 'block', md: 'none'}}>
         <MobileStepper
           variant="text"
           steps={ui_specification.viewsets[viewsetName].views.length}

@@ -73,7 +73,7 @@ jobs:
           npm ci
           npm run build
         env:
-          REACT_APP_LOGIN_TOKEN: "${{ secrets.JWT_TEST_TOKEN }}"
+          REACT_APP_LOGIN_TOKEN: '{"token":"${{ secrets.JWT_TEST_TOKEN }}",  "pubkey":"${{ secrets.JWT_TEST_PUBKEY }}", "pubalg":"RS256"} }'
       # export REACT_APP_LOGIN_TOKEN="${{ secrets.JWT_TEST_TOKEN }}"
       # https://capacitorjs.com/docs/android
       - run: npx cap update ios

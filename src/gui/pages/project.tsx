@@ -36,8 +36,8 @@ import {TokenContents} from '../../datamodel/core';
 const useStyles = makeStyles(theme => ({
   NoPaddding: {
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 0,
-      paddingRight: 0,
+      paddingLeft: 5,
+      paddingRight: 5,
     },
   },
 }));
