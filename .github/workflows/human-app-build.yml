@@ -66,12 +66,12 @@ jobs:
           export REACT_APP_TAG=testingAndroid
           export REACT_APP_USE_REAL_DATA=true
           export REACT_APP_PROD_BUILD=true
-          export REACT_APP_LOGIN_TOKEN='${{ secrets.JWT_TEST_TOKEN }}'
           export platform="selenium-gh-ios"
           export serverprefix="selenium"
           git clean -xfd
           npm ci
           npm run build
+      #   export REACT_APP_LOGIN_TOKEN='${{ secrets.JWT_TEST_TOKEN }}'          
       # https://capacitorjs.com/docs/android
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
