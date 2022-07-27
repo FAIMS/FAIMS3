@@ -47,7 +47,8 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.0.2
-          bundler-cache: true
+          bundler-cache: false
+          # No cache because permissions issues?
       - run: |
           bundle install # to get cocoapods...   
           bundle exec fastlane install_plugins
