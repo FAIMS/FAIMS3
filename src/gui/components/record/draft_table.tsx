@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: draft_table.tsx
- * Description: This duocument is to get all draft record
+ * Description: This document is to get all draft record
  *   TODO need to check created draft route
  */
 
@@ -239,7 +239,7 @@ export default function DraftsTable(props: DraftsTableProps) {
     <div>
       <Typography
         variant="overline"
-        style={not_xs ? {} : {paddingLeft: '10px'}}
+        style={not_xs ? {paddingLeft: '5px'} : {paddingLeft: '10px'}}
       >
         New Draft
       </Typography>
