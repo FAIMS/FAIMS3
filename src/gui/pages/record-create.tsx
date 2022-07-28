@@ -69,8 +69,8 @@ const useStyles = makeStyles(theme => ({
   },
   LeftPaddding: {
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 10,
-      paddingRight: 10,
+      paddingLeft: 5,
+      paddingRight: 5,
     },
   },
 }));
@@ -186,7 +186,7 @@ function DraftEdit(props: DraftEditProps) {
     // Loaded, variant picked, show form:
     return (
       <React.Fragment>
-        <Box mb={2} className={classes.LeftPaddding}>
+        <Box mb={2} className={classes.NoPaddding}>
           <Typography variant={'h2'} component={'h1'}>
             {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
           </Typography>
@@ -210,7 +210,7 @@ function DraftEdit(props: DraftEditProps) {
               </TabList>
             </AppBar>
             <TabPanel value="1">
-              <Box px={not_xs ? 30 : 0}>
+              <Box px={not_xs ? 2 : 0}>
                 <RecordForm
                   project_id={project_id}
                   draft_id={draft_id}

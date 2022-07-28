@@ -232,14 +232,14 @@ function RecordsTable(props: RecordsTableProps) {
             </div>
           ),
         },
-        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+        // {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200}, // Only one column for mobile
       ];
 
   return (
     <div>
       <Typography
         variant="overline"
-        style={not_xs ? {} : {paddingLeft: '10px'}}
+        style={not_xs ? {paddingLeft: '10px'} : {paddingLeft: '10px'}}
       >
         Recent Record
       </Typography>

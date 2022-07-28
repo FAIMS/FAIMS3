@@ -109,8 +109,8 @@ const useStyles = makeStyles(theme => ({
   NoPaddding: {
     paddingTop: 0,
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 0,
-      paddingRight: 0,
+      paddingLeft: 5, // adjust padding for mobile
+      paddingRight: 5,
     },
   },
   LeftPaddding: {
