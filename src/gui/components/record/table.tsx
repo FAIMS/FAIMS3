@@ -196,7 +196,13 @@ function RecordsTable(props: RecordsTableProps) {
                 gutterBottom
                 component="div"
               >
-                Created: {(params.row.created || '').toString()}
+                Created at{' '}
+                {params.row.created !== undefined &&
+                  params.row.created !== '' &&
+                  JSON.stringify(params.row.created)
+                    .replaceAll('"', '')
+                    .replaceAll('T', ' ')
+                    .slice(0, 19)}
               </Typography>
               <Typography
                 color="textSecondary"

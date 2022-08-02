@@ -47,10 +47,11 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.0.2
-          bundler-cache: true
+          bundler-cache: false
+          # No cache because permissions issues?
       - run: |
           bundle install # to get cocoapods...   
-      - run: fastlane install_plugins
+          bundle exec fastlane install_plugins
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -66,25 +67,29 @@ jobs:
           export REACT_APP_TAG=testingAndroid
           export REACT_APP_USE_REAL_DATA=true
           export REACT_APP_PROD_BUILD=true
-          export REACT_APP_LOGIN_TOKEN='${{ secrets.JWT_TEST_TOKEN }}'
           export platform="selenium-gh-ios"
           export serverprefix="selenium"
           git clean -xfd
           npm ci
           npm run build
+        env:
+          REACT_APP_LOGIN_TOKEN: '{"token": "${{ secrets.JWT_TEST_TOKEN }}", "pubkey": "${{ secrets.JWT_SERVER_FLATTENED_PUBKEY }}", "pubalg": "RS256"}'
+
+      # export REACT_APP_LOGIN_TOKEN="${{ secrets.JWT_TEST_TOKEN }}"
       # https://capacitorjs.com/docs/android
       - run: npx cap update ios
       - run: npx cap sync --deployment ios
       - run: cd ios/App; pod install
       - run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
       - name: Deploy iOS Beta to TestFlight via Fastlane
-        uses: maierj/fastlane-action@v2
+        uses: maierj/fastlane-action@v2.2.1
         with:
           lane: closed_beta_testflight
           subdirectory: 'ios/App'
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
+          REACT_APP_LOGIN_TOKEN: "${{ secrets.JWT_TEST_TOKEN }}"
           APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
           DEVELOPER_APP_ID: '${{ secrets.DEVELOPER_APP_ID }}'
           DEVELOPER_APP_IDENTIFIER: '${{ secrets.DEVELOPER_APP_IDENTIFIER }}'

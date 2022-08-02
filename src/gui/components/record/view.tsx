@@ -81,7 +81,7 @@ function SingleComponent(props: SingleComponentProps) {
       }}
     >
       <Grid container>
-        <Grid item sm={11} xs={12}>
+        <Grid item xs={12} sm={10} md={10} lg={11}>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
@@ -91,7 +91,9 @@ function SingleComponent(props: SingleComponentProps) {
         </Grid>
         <Grid
           item
-          sm={1}
+          lg={1}
+          md={2}
+          sm={2}
           xs={12}
           style={{marginTop: '0.5em', paddingLeft: '0.5em'}}
           container

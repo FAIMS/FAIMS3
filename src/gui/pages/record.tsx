@@ -262,7 +262,12 @@ export default function Record(props: RecordeProps) {
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
       {recrodinfo !== null && (
-        <Box justifyContent="flex-end" alignItems="flex-end" display="flex">
+        <Box
+          justifyContent="flex-end"
+          alignItems="flex-end"
+          display="flex"
+          style={{paddingRight: 3}}
+        >
           <Typography variant={'caption'} gutterBottom>
             Last Updated {recrodinfo}
           </Typography>

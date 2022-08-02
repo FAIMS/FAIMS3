@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: draft_table.tsx
- * Description: This duocument is to get all draft record
+ * Description: This document is to get all draft record
  *   TODO need to check created draft route
  */
 

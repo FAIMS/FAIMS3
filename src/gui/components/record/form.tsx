@@ -57,8 +57,7 @@ import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
-import RecordTabBar from './conflict/recordTab';
-import TabContext from '@mui/lab/TabContext';
+
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -760,24 +759,15 @@ class RecordForm extends React.Component<
       const description = this.requireDescription(viewName);
       return (
         <React.Fragment>
-          {this.props.revision_id === undefined ? (
-            <RecordStepper
-              view_index={view_index}
-              ui_specification={ui_specification}
-              viewsetName={viewsetName}
-              activeStep={this.state.activeStep}
-              onChangeStepper={this.onChangeStepper}
-            />
-          ) : (
-            <TabContext value={this.state.activeStep + ''}>
-              <RecordTabBar
-                ui_specification={ui_specification}
-                handleChange={this.onChangeTab}
-                type={viewsetName}
-                conflictfields={[]}
-              />
-            </TabContext>
-          )}
+          {/* remove the tab for edit ---Jira 530 */}
+          <RecordStepper
+            view_index={view_index}
+            ui_specification={ui_specification}
+            viewsetName={viewsetName}
+            activeStep={this.state.activeStep}
+            onChangeStepper={this.onChangeStepper}
+          />
+
           {description !== '' && (
             <Box
               bgcolor={'#fafafa'}
@@ -788,205 +778,207 @@ class RecordForm extends React.Component<
             </Box>
           )}
           <br />
-          <Formik
-            initialValues={initialValues}
-            validationSchema={validationSchema}
-            validateOnMount={true}
-            onSubmit={values => {
-              this.setTimeout(() => {
-                // console.log('is saving submiting called');
-                // setSubmitting(false); remove setsubmiting function, after click save, user should not be able to save again
-                this.save(values, is_final_view);
-              }, 500);
-            }}
-          >
-            {formProps => {
-              this.draftState.renderHook(
-                formProps.values,
-                this.state.annotation
-              );
-              return (
-                <Form>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <AutoSave
-                        last_saved={this.state.last_saved}
-                        is_saving={this.state.is_saving}
-                        error={this.state.draftError}
-                      />
-                    </Grid>
-                    <Grid item sm={12} xs={12}>
-                      <ViewComponent
-                        viewName={viewName}
-                        ui_specification={ui_specification}
-                        formProps={formProps}
-                        draftState={this.draftState}
-                        annotation={this.state.annotation}
-                        handerannoattion={this.updateannotation}
-                        isSyncing={this.props.isSyncing}
-                        conflictfields={this.props.conflictfields}
-                        handleChangeTab={this.props.handleChangeTab}
-                      />
-                      <br />
+          {/* add padding for form only */}
+          <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
+            <Formik
+              initialValues={initialValues}
+              validationSchema={validationSchema}
+              validateOnMount={true}
+              onSubmit={values => {
+                this.setTimeout(() => {
+                  // console.log('is saving submiting called');
+                  // setSubmitting(false); remove setsubmiting function, after click save, user should not be able to save again
+                  this.save(values, is_final_view);
+                }, 500);
+              }}
+            >
+              {formProps => {
+                this.draftState.renderHook(
+                  formProps.values,
+                  this.state.annotation
+                );
+                return (
+                  <Form>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <AutoSave
+                          last_saved={this.state.last_saved}
+                          is_saving={this.state.is_saving}
+                          error={this.state.draftError}
+                        />
+                      </Grid>
+                      <Grid item sm={12} xs={12}>
+                        <ViewComponent
+                          viewName={viewName}
+                          ui_specification={ui_specification}
+                          formProps={formProps}
+                          draftState={this.draftState}
+                          annotation={this.state.annotation}
+                          handerannoattion={this.updateannotation}
+                          isSyncing={this.props.isSyncing}
+                          conflictfields={this.props.conflictfields}
+                          handleChangeTab={this.props.handleChangeTab}
+                        />
+                        <br />
 
-                      <br />
-                      <ButtonGroup
-                        color="primary"
-                        aria-label="contained primary button group"
-                      >
-                        {is_final_view ? (
-                          <Button
-                            type="submit"
-                            color={
-                              formProps.isSubmitting ? undefined : 'primary'
-                            }
-                            variant="contained"
-                            disableElevation
-                            disabled={formProps.isSubmitting}
-                          >
-                            {formProps.isSubmitting
-                              ? !(this.props.revision_id === undefined)
-                                ? 'Working...'
-                                : 'Working...'
-                              : !(this.props.revision_id === undefined)
-                              ? 'Save and Close'
-                              : window.location.search.includes('link=')
-                              ? // &&
-                                //   ui_specification.viewsets[viewsetName]
-                                //     .submit_label !== undefined
-                                'Save and Close'
-                              : // ui_specification.viewsets[viewsetName]
-                                //     .submit_label
-                                'Save and Close'}
-                            {formProps.isSubmitting && (
-                              <CircularProgress
-                                size={24}
-                                style={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  left: '50%',
-                                  marginTop: -12,
-                                  marginLeft: -12,
-                                }}
-                              />
-                            )}
-                          </Button>
-                        ) : (
-                          ''
-                        )}
-                      </ButtonGroup>
-                      {this.state.activeStep <
-                        ui_specification.viewsets[viewsetName].views.length -
-                          1 && (
+                        <br />
                         <ButtonGroup
                           color="primary"
                           aria-label="contained primary button group"
                         >
-                          <Button
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => {
-                              if (DEBUG_APP) {
-                                console.log(this.state.activeStep);
+                          {is_final_view ? (
+                            <Button
+                              type="submit"
+                              color={
+                                formProps.isSubmitting ? undefined : 'primary'
                               }
-                              const stepnum = this.state.activeStep + 1;
-                              if (DEBUG_APP) {
-                                console.log(
-                                  ui_specification.viewsets[viewsetName].views[
-                                    stepnum
-                                  ]
-                                );
-                              }
-
-                              this.setState({
-                                activeStep: stepnum,
-                                view_cached:
-                                  ui_specification.viewsets[viewsetName].views[
-                                    stepnum
-                                  ],
-                              });
-                            }}
-                          >
-                            {'  '}
-                            Continue{' '}
-                          </Button>
-                          <Button
-                            type="submit"
-                            color={
-                              formProps.isSubmitting ? undefined : 'primary'
-                            }
-                            variant="outlined"
-                            disableElevation
-                            disabled={formProps.isSubmitting}
-                          >
-                            {formProps.isSubmitting
-                              ? !(this.props.revision_id === undefined)
-                                ? 'Working...'
-                                : 'Working...'
-                              : 'Save and Close'}
-                            {formProps.isSubmitting && (
-                              <CircularProgress
-                                size={24}
-                                style={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  left: '50%',
-                                  marginTop: -12,
-                                  marginLeft: -12,
-                                }}
-                              />
-                            )}
-                          </Button>
+                              variant="contained"
+                              disableElevation
+                              disabled={formProps.isSubmitting}
+                            >
+                              {formProps.isSubmitting
+                                ? !(this.props.revision_id === undefined)
+                                  ? 'Working...'
+                                  : 'Working...'
+                                : !(this.props.revision_id === undefined)
+                                ? 'Save and Close'
+                                : window.location.search.includes('link=')
+                                ? // &&
+                                  //   ui_specification.viewsets[viewsetName]
+                                  //     .submit_label !== undefined
+                                  'Save and Close'
+                                : // ui_specification.viewsets[viewsetName]
+                                  //     .submit_label
+                                  'Save and Close'}
+                              {formProps.isSubmitting && (
+                                <CircularProgress
+                                  size={24}
+                                  style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    marginTop: -12,
+                                    marginLeft: -12,
+                                  }}
+                                />
+                              )}
+                            </Button>
+                          ) : (
+                            ''
+                          )}
                         </ButtonGroup>
+                        {this.state.activeStep <
+                          ui_specification.viewsets[viewsetName].views.length -
+                            1 && (
+                          <ButtonGroup
+                            color="primary"
+                            aria-label="contained primary button group"
+                          >
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              onClick={() => {
+                                if (DEBUG_APP) {
+                                  console.log(this.state.activeStep);
+                                }
+                                const stepnum = this.state.activeStep + 1;
+                                if (DEBUG_APP) {
+                                  console.log(
+                                    ui_specification.viewsets[viewsetName]
+                                      .views[stepnum]
+                                  );
+                                }
+
+                                this.setState({
+                                  activeStep: stepnum,
+                                  view_cached:
+                                    ui_specification.viewsets[viewsetName]
+                                      .views[stepnum],
+                                });
+                              }}
+                            >
+                              {'  '}
+                              Continue{' '}
+                            </Button>
+                            <Button
+                              type="submit"
+                              color={
+                                formProps.isSubmitting ? undefined : 'primary'
+                              }
+                              variant="outlined"
+                              disableElevation
+                              disabled={formProps.isSubmitting}
+                            >
+                              {formProps.isSubmitting
+                                ? !(this.props.revision_id === undefined)
+                                  ? 'Working...'
+                                  : 'Working...'
+                                : 'Save and Close'}
+                              {formProps.isSubmitting && (
+                                <CircularProgress
+                                  size={24}
+                                  style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    marginTop: -12,
+                                    marginLeft: -12,
+                                  }}
+                                />
+                              )}
+                            </Button>
+                          </ButtonGroup>
+                        )}
+                      </Grid>
+                      {String(process.env.REACT_APP_SERVER) ===
+                        'developers' && (
+                        <Grid item sm={6} xs={12}>
+                          <BoxTab title={'Developer tool: form state'} />
+                          <Box
+                            bgcolor={grey[200]}
+                            pl={2}
+                            pr={2}
+                            style={{overflowX: 'scroll'}}
+                          >
+                            <pre>{JSON.stringify(formProps, null, 2)}</pre>
+                            <pre>{JSON.stringify(this.state, null, 2)}</pre>
+                          </Box>
+                          <Box mt={3}>
+                            <BoxTab
+                              title={
+                                'Alpha info: Autosave, validation and syncing'
+                              }
+                            />
+                            <Box bgcolor={grey[200]} p={2}>
+                              <p>
+                                The data in this form are auto-saved locally
+                                within the app every 5 seconds. The data do not
+                                need to be valid, and you can return to this
+                                page to complete this record on this device at
+                                any time.
+                              </p>
+                              <p>
+                                Once you are ready, click the{' '}
+                                <Typography variant="button">
+                                  <b>
+                                    {this.props.revision_id === undefined
+                                      ? 'save and close'
+                                      : 'update'}
+                                  </b>
+                                </Typography>{' '}
+                                button. This will firstly validate the data, and
+                                if valid, sync the record to the remote server.
+                              </p>
+                            </Box>
+                          </Box>
+                        </Grid>
                       )}
                     </Grid>
-                    {String(process.env.REACT_APP_SERVER) === 'developers' && (
-                      <Grid item sm={6} xs={12}>
-                        <BoxTab title={'Developer tool: form state'} />
-                        <Box
-                          bgcolor={grey[200]}
-                          pl={2}
-                          pr={2}
-                          style={{overflowX: 'scroll'}}
-                        >
-                          <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                          <pre>{JSON.stringify(this.state, null, 2)}</pre>
-                        </Box>
-                        <Box mt={3}>
-                          <BoxTab
-                            title={
-                              'Alpha info: Autosave, validation and syncing'
-                            }
-                          />
-                          <Box bgcolor={grey[200]} p={2}>
-                            <p>
-                              The data in this form are auto-saved locally
-                              within the app every 5 seconds. The data do not
-                              need to be valid, and you can return to this page
-                              to complete this record on this device at any
-                              time.
-                            </p>
-                            <p>
-                              Once you are ready, click the{' '}
-                              <Typography variant="button">
-                                <b>
-                                  {this.props.revision_id === undefined
-                                    ? 'save and close'
-                                    : 'update'}
-                                </b>
-                              </Typography>{' '}
-                              button. This will firstly validate the data, and
-                              if valid, sync the record to the remote server.
-                            </p>
-                          </Box>
-                        </Box>
-                      </Grid>
-                    )}
-                  </Grid>
-                </Form>
-              );
-            }}
-          </Formik>
+                  </Form>
+                );
+              }}
+            </Formik>
+          </div>
         </React.Fragment>
       );
     } else {
