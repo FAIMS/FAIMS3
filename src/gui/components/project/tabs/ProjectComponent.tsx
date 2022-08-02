@@ -31,7 +31,7 @@ import TabPanel from './TabPanel';
 import {getprojectform, getacessoption} from '../data/ComponentSetting';
 import {ProjectSubmit, ProjectDelete} from './ProjectButton';
 
-import ConfirmdeleteDisalog from './ConfirmdeleteDisalog';
+import ConfirmdeleteDialog from './ConfirmdeleteDialog';
 
 import SectionTabs from './PSections';
 import {grey} from '@mui/material/colors';
@@ -168,7 +168,7 @@ function LiveFormTab(props: FormTabProps) {
             })}
           />
         )}
-        <ConfirmdeleteDisalog
+        <ConfirmdeleteDialog
           id={formvariants}
           deleteform={deleteform}
           type={'FORM'}

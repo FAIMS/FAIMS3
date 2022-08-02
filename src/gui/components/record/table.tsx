@@ -196,7 +196,13 @@ function RecordsTable(props: RecordsTableProps) {
                 gutterBottom
                 component="div"
               >
-                Created: {(params.row.created || '').toString()}
+                Created at{' '}
+                {params.row.created !== undefined &&
+                  params.row.created !== '' &&
+                  JSON.stringify(params.row.created)
+                    .replaceAll('"', '')
+                    .replaceAll('T', ' ')
+                    .slice(0, 19)}
               </Typography>
               <Typography
                 color="textSecondary"
@@ -232,14 +238,14 @@ function RecordsTable(props: RecordsTableProps) {
             </div>
           ),
         },
-        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+        // {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200}, // Only one column for mobile
       ];
 
   return (
     <div>
       <Typography
         variant="overline"
-        style={not_xs ? {} : {paddingLeft: '10px'}}
+        style={not_xs ? {paddingLeft: '10px'} : {paddingLeft: '10px'}}
       >
         Recent Record
       </Typography>

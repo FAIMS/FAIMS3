@@ -31,7 +31,7 @@ import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {getprojectform, getacessoption} from '../data/ComponentSetting';
 import {CloseButton, AddButton, ProjectSubmit} from './ProjectButton';
-import ConfirmdeleteDisalog from './ConfirmdeleteDisalog';
+import ConfirmdeleteDialog from './ConfirmdeleteDialog';
 import SectionComponents from './PSectionComponents';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -137,7 +137,7 @@ export default function SectionTab(props: SectionTabProps) {
             // setProjectValue={props.setProjectValue}
             handlerChanges={handleChangeFormSection}
           />
-          <ConfirmdeleteDisalog
+          <ConfirmdeleteDialog
             id={formuiview}
             deleteform={deleteform}
             type={'SECTION'}

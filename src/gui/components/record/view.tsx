@@ -28,7 +28,7 @@ import {getComponentFromFieldConfig} from './fields';
 import {Annotation, AnnotationField} from './Annotation';
 import {Grid} from '@mui/material';
 import {Box} from '@mui/material';
-import {EditConflictDisalog} from './conflict/conflictDialog';
+import {EditConflictDialog} from './conflict/conflictDialog';
 // import makeStyles from '@mui/styles/makeStyles';
 // import {useTheme} from '@mui/material/styles';
 type ViewProps = {
@@ -81,7 +81,7 @@ function SingleComponent(props: SingleComponentProps) {
       }}
     >
       <Grid container>
-        <Grid item sm={11} xs={12}>
+        <Grid item xs={12} sm={10} md={10} lg={11}>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
@@ -91,7 +91,9 @@ function SingleComponent(props: SingleComponentProps) {
         </Grid>
         <Grid
           item
-          sm={1}
+          lg={1}
+          md={2}
+          sm={2}
           xs={12}
           style={{marginTop: '0.5em', paddingLeft: '0.5em'}}
           container
@@ -117,7 +119,7 @@ function SingleComponent(props: SingleComponentProps) {
             {conflictfields !== null &&
               conflictfields !== undefined &&
               conflictfields.includes(fieldName) && (
-                <EditConflictDisalog
+                <EditConflictDialog
                   label={label}
                   handleChangeTab={props.handleChangeTab}
                 />

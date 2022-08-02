@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: ConfirmdeleteDisalog.tsx
+ * Filename: ConfirmdeleteDialog.tsx
  */
 import React from 'react';
 
@@ -28,13 +28,13 @@ import {
 
 import {ProjectDelete} from './ProjectButton';
 
-type ConfirmdeleteDisalogProps = {
+type ConfirmdeleteDialogProps = {
   id: string;
   deleteform: any;
   type: string;
 };
 
-export default function ConfirmdeleteDisalog(props: ConfirmdeleteDisalogProps) {
+export default function ConfirmdeleteDialog(props: ConfirmdeleteDialogProps) {
   const [open, setOpen] = React.useState(false);
   const {id, deleteform, type} = props;
   return (

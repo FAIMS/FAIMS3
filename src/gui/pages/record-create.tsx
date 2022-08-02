@@ -61,16 +61,16 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
 const useStyles = makeStyles(theme => ({
-  NoPaddding: {
+  NoPadding: {
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 0,
-      paddingRight: 0,
+      paddingLeft: 5,
+      paddingRight: 5,
     },
   },
-  LeftPaddding: {
+  LeftPadding: {
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 10,
-      paddingRight: 10,
+      paddingLeft: 5,
+      paddingRight: 5,
     },
   },
 }));
@@ -186,7 +186,7 @@ function DraftEdit(props: DraftEditProps) {
     // Loaded, variant picked, show form:
     return (
       <React.Fragment>
-        <Box mb={2} className={classes.LeftPaddding}>
+        <Box mb={2} className={classes.NoPadding}>
           <Typography variant={'h2'} component={'h1'}>
             {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
           </Typography>
@@ -210,7 +210,7 @@ function DraftEdit(props: DraftEditProps) {
               </TabList>
             </AppBar>
             <TabPanel value="1">
-              <Box px={not_xs ? 30 : 0}>
+              <Box px={not_xs ? 2 : 0}>
                 <RecordForm
                   project_id={project_id}
                   draft_id={draft_id}
@@ -278,7 +278,7 @@ export default function RecordCreate(props: RecordCreateProps) {
 
   return (
     <React.Fragment>
-      <Container maxWidth="lg" className={classes.NoPaddding}>
+      <Container maxWidth="lg" className={classes.NoPadding}>
         <Breadcrumbs data={breadcrumbs} token={props.token} />
         {draft_id === undefined ? (
           <DraftCreate project_id={project_id} type_name={type_name} />

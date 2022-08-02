@@ -106,14 +106,14 @@ const useStyles = makeStyles(theme => ({
     display: 'inline',
     // fontSize: '0.8rem',
   },
-  NoPaddding: {
+  NoPadding: {
     paddingTop: 0,
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 0,
-      paddingRight: 0,
+      paddingLeft: 5, // adjust padding for mobile
+      paddingRight: 5,
     },
   },
-  LeftPaddding: {
+  LeftPadding: {
     [theme.breakpoints.down('md')]: {
       paddingLeft: 10,
     },
@@ -215,7 +215,7 @@ export default function Card(props: ProjectCardProps) {
           </ListItem>
         </List>
       ) : (
-        <MuiCard className={classes.NoPaddding}>
+        <MuiCard className={classes.NoPadding}>
           <CardHeader
             className={classes.cardHeader}
             avatar={
@@ -242,8 +242,8 @@ export default function Card(props: ProjectCardProps) {
             subheader={<RangeHeader project={project} />}
           />
 
-          <CardContent className={classes.NoPaddding}>
-            <Box mb={2} className={classes.LeftPaddding}>
+          <CardContent className={classes.NoPadding}>
+            <Box mb={2} className={classes.LeftPadding}>
               <MetadataRenderer
                 project_id={project.project_id}
                 metadata_key={'project_status'}
@@ -367,7 +367,7 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
       {loading ? (
         <CircularProgress size={12} thickness={4} />
       ) : (
-        <MuiCard className={classes.NoPaddding}>
+        <MuiCard className={classes.NoPadding}>
           <CardHeader
             className={classes.cardHeader}
             avatar={
@@ -392,8 +392,8 @@ export function ProjectSearchCard(props: ProjectSearchCardProps) {
             subheader={<RangeHeader project={project} />}
           />
 
-          <CardContent style={{paddingTop: 0}} className={classes.NoPaddding}>
-            <Box mb={2} className={classes.LeftPaddding}>
+          <CardContent style={{paddingTop: 0}} className={classes.NoPadding}>
+            <Box mb={2} className={classes.LeftPadding}>
               <MetadataRenderer
                 project_id={project.project_id}
                 metadata_key={'project_status'}

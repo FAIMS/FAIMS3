@@ -31,7 +31,7 @@ import {
   MobileStepper,
 } from '@mui/material';
 import {ProjectUIModel} from '../../../datamodel/ui';
-
+import makeStyles from '@mui/styles/makeStyles';
 type RecordStepperProps = {
   view_index: number;
   ui_specification: ProjectUIModel;
@@ -40,7 +40,25 @@ type RecordStepperProps = {
   onChangeStepper: any;
 };
 
+const useStyles = makeStyles(() => ({
+  stepperStyle: {
+    overflowY: 'hidden',
+    overflowX: 'auto',
+    '&::-webkit-scrollbar': {
+      width: 10,
+    },
+    '&::-webkit-scrollbar-track': {
+      backgroundColor: '#fff',
+    },
+    '&::-webkit-scrollbar-thumb': {
+      backgroundColor: '#fff',
+      borderRadius: 2,
+    },
+  },
+}));
+
 export default function RecordStepper(props: RecordStepperProps) {
+  const classes = useStyles();
   const {
     view_index,
     ui_specification,
@@ -52,13 +70,16 @@ export default function RecordStepper(props: RecordStepperProps) {
   // Client didn't want the absence of the stepper in sm-md resolutions, so reverted md->sm and am making text changes
   return (
     <>
-      <Box display={{xs: 'none', sm: 'block'}} style={{paddingTop: '3px'}}>
+      <Box
+        display={{xs: 'none', sm: 'block'}}
+        style={{paddingTop: '3px', paddingBottom: '3px'}}
+      >
         <div style={{overflowX: 'hidden'}}>
           <Stepper
             nonLinear
             activeStep={view_index}
             alternativeLabel
-            style={{overflowY: 'hidden', overflowX: 'auto'}}
+            className={classes.stepperStyle}
           >
             {ui_specification.viewsets[viewsetName].views.map(
               (view_name: string, index: number) => (
