@@ -41,7 +41,7 @@ type RecordStepperProps = {
 };
 
 const useStyles = makeStyles(() => ({
-  stepperstyle: {
+  stepperStyle: {
     overflowY: 'hidden',
     overflowX: 'auto',
     '&::-webkit-scrollbar': {
@@ -79,7 +79,7 @@ export default function RecordStepper(props: RecordStepperProps) {
             nonLinear
             activeStep={view_index}
             alternativeLabel
-            className={classes.stepperstyle}
+            className={classes.stepperStyle}
           >
             {ui_specification.viewsets[viewsetName].views.map(
               (view_name: string, index: number) => (

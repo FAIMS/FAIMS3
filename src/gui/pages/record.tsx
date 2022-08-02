@@ -69,7 +69,7 @@ import {
 import Alert from '@mui/material/Alert';
 import {
   ConflictHelpDialog,
-  BasicDiaglog,
+  BasicDialog,
 } from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
@@ -97,11 +97,11 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-type RecordeProps = {
+type RecordProps = {
   token?: null | undefined | TokenContents;
 };
 
-export default function Record(props: RecordeProps) {
+export default function Record(props: RecordProps) {
   const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
@@ -146,7 +146,7 @@ export default function Record(props: RecordeProps) {
   const [issavedconflict, setissavedconflict] = useState(record_id); // this is to check if the conflict resolved been saved
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
-  const [recrodinfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
+  const [recrodInfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const [open, setOpen] = React.useState(false);
@@ -160,7 +160,7 @@ export default function Record(props: RecordeProps) {
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: hrid ?? record_id},
-    // {title: recrodinfo},
+    // {title: recrodInfo},
   ];
 
   useEffect(() => {
@@ -261,7 +261,7 @@ export default function Record(props: RecordeProps) {
   return (
     <Container maxWidth="lg" className={classes.NoPaddding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
-      {recrodinfo !== null && (
+      {recrodInfo !== null && (
         <Box
           justifyContent="flex-end"
           alignItems="flex-end"
@@ -269,7 +269,7 @@ export default function Record(props: RecordeProps) {
           style={{paddingRight: 3}}
         >
           <Typography variant={'caption'} gutterBottom>
-            Last Updated {recrodinfo}
+            Last Updated {recrodInfo}
           </Typography>
         </Box>
       )}
@@ -524,7 +524,7 @@ export default function Record(props: RecordeProps) {
           </TabPanel>
           <TabPanel value="4" style={{overflowX: 'auto'}}>
             <Box mt={2}>
-              <BasicDiaglog
+              <BasicDialog
                 handleClose={() => setOpen(false)}
                 handleOpen={() => setOpen(true)}
                 handleConfirm={handleConfirm}

@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: Diaglog.tsx
+ * Filename: Dialog.tsx
  * Description:
  *   TODO: download single file
  */
