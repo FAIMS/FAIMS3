@@ -534,7 +534,7 @@ function ConflictChildDialog(props: any) {
   return (
     <Grid container>
       <Button onClick={handleOpen}>Resolve Conflicts</Button>
-      <BasicDiaglog
+      <BasicDialog
         handleClose={handleClose}
         handleOpen={handleOpen}
         handleConfirm={handleConfirm}
@@ -575,7 +575,7 @@ export function DiscardDialog(props: any) {
       >
         Discard
       </Button>
-      <BasicDiaglog
+      <BasicDialog
         handleClose={handleClose}
         handleOpen={handleOpen}
         handleConfirm={handleConfirm}
@@ -588,7 +588,7 @@ export function DiscardDialog(props: any) {
   );
 }
 
-type BasicDiaglogProps = {
+type BasicDialogProps = {
   handleClose: any;
   handleOpen: any;
   handleConfirm: any;
@@ -598,7 +598,7 @@ type BasicDiaglogProps = {
   open: boolean;
 };
 
-export function BasicDiaglog(props: BasicDiaglogProps) {
+export function BasicDialog(props: BasicDialogProps) {
   return (
     <Dialog
       open={props.open}
@@ -623,7 +623,7 @@ export function BasicDiaglog(props: BasicDiaglogProps) {
   );
 }
 
-export function EditConflictDisalog(props: any) {
+export function EditConflictDialog(props: any) {
   const {label} = props;
   const [open, setOpen] = React.useState(false);
 

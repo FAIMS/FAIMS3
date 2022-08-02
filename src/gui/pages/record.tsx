@@ -69,7 +69,7 @@ import {
 import Alert from '@mui/material/Alert';
 import {
   ConflictHelpDialog,
-  BasicDiaglog,
+  BasicDialog,
 } from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
@@ -97,11 +97,11 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-type RecordeProps = {
+type RecordProps = {
   token?: null | undefined | TokenContents;
 };
 
-export default function Record(props: RecordeProps) {
+export default function Record(props: RecordProps) {
   const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
@@ -524,7 +524,7 @@ export default function Record(props: RecordeProps) {
           </TabPanel>
           <TabPanel value="4" style={{overflowX: 'auto'}}>
             <Box mt={2}>
-              <BasicDiaglog
+              <BasicDialog
                 handleClose={() => setOpen(false)}
                 handleOpen={() => setOpen(true)}
                 handleConfirm={handleConfirm}

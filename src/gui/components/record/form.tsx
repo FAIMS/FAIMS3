@@ -357,7 +357,7 @@ class RecordForm extends React.Component<
             this.props.record_id,
             this.props.revision_id
           )) || {};
-    console.log('++++get intial db');
+    console.log('++++get initial db');
     console.log(fromdb);
 
     const database_data = fromdb.data ?? {};
@@ -504,29 +504,29 @@ class RecordForm extends React.Component<
     return new_values;
   }
 
-  onChangeStepper(view_name: string, activestepindex: number) {
+  onChangeStepper(view_name: string, activeStepIndex: number) {
     this.setState({
       view_cached: view_name,
-      activeStep: activestepindex,
+      activeStep: activeStepIndex,
     });
   }
 
   onChangeTab(event: React.ChangeEvent<{}>, newValue: string) {
-    const activestepindex = parseInt(newValue);
-    console.log(activestepindex);
+    const activeStepIndex = parseInt(newValue);
+    console.log(activeStepIndex);
 
     if (this.state.type_cached !== null) {
       console.log(
         this.props.ui_specification.viewsets[this.state.type_cached].views[
-          activestepindex
+          activeStepIndex
         ]
       );
       const viewname = this.props.ui_specification.viewsets[
         this.state.type_cached
-      ].views[activestepindex];
+      ].views[activeStepIndex];
       this.setState({
         view_cached: viewname,
-        activeStep: activestepindex,
+        activeStep: activeStepIndex,
       });
     }
   }
@@ -786,7 +786,7 @@ class RecordForm extends React.Component<
               validateOnMount={true}
               onSubmit={values => {
                 this.setTimeout(() => {
-                  // console.log('is saving submiting called');
+                  // console.log('is saving submitting called');
                   // setSubmitting(false); remove setsubmiting function, after click save, user should not be able to save again
                   this.save(values, is_final_view);
                 }, 500);

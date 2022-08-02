@@ -27,7 +27,7 @@ import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import Select, {SelectChangeEvent} from '@mui/material/Select';
 import {Typography} from '@mui/material';
-import {BasicDiaglog} from './conflictDialog';
+import {BasicDialog} from './conflictDialog';
 import {InitialMergeRevisionDetailsMap} from '../../../../data_storage/merging';
 type ConflictDropSelectprops = {
   label: string;
@@ -97,7 +97,7 @@ function RevisionDropList(props: ConflictDropSelectprops) {
   return (
     <>
       <Grid>
-        <BasicDiaglog
+        <BasicDialog
           handleClose={handleClose}
           handleOpen={handleOpen}
           handleConfirm={handleConfirm}
