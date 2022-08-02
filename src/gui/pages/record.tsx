@@ -79,7 +79,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
 const useStyles = makeStyles(theme => ({
-  NoPaddding: {
+  NoPadding: {
     [theme.breakpoints.down('md')]: {
       paddingLeft: 2,
       paddingRight: 2,
@@ -87,7 +87,7 @@ const useStyles = makeStyles(theme => ({
     paddingLeft: 2,
     paddingRight: 2,
   },
-  LeftPaddding: {
+  LeftPadding: {
     [theme.breakpoints.down('md')]: {
       paddingLeft: 2,
       paddingRight: 2,
@@ -146,7 +146,7 @@ export default function Record(props: RecordeProps) {
   const [issavedconflict, setissavedconflict] = useState(record_id); // this is to check if the conflict resolved been saved
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
-  const [recrodinfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
+  const [recordInfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const [open, setOpen] = React.useState(false);
@@ -160,7 +160,7 @@ export default function Record(props: RecordeProps) {
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: hrid ?? record_id},
-    // {title: recrodinfo},
+    // {title: recordInfo},
   ];
 
   useEffect(() => {
@@ -259,9 +259,9 @@ export default function Record(props: RecordeProps) {
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
     return <CircularProgress size={12} thickness={4} />;
   return (
-    <Container maxWidth="lg" className={classes.NoPaddding}>
+    <Container maxWidth="lg" className={classes.NoPadding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
-      {recrodinfo !== null && (
+      {recordInfo !== null && (
         <Box
           justifyContent="flex-end"
           alignItems="flex-end"
@@ -269,11 +269,11 @@ export default function Record(props: RecordeProps) {
           style={{paddingRight: 3}}
         >
           <Typography variant={'caption'} gutterBottom>
-            Last Updated {recrodinfo}
+            Last Updated {recordInfo}
           </Typography>
         </Box>
       )}
-      <Box mb={2} className={classes.LeftPaddding} pr={1}>
+      <Box mb={2} className={classes.LeftPadding} pr={1}>
         <Typography variant={'h2'} component={'h1'}>
           {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
             ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
@@ -309,7 +309,7 @@ export default function Record(props: RecordeProps) {
             </Box>
           )}
       </Box>
-      <Paper square className={classes.NoPaddding}>
+      <Paper square className={classes.NoPadding}>
         <TabContext value={value}>
           <AppBar position="static" color="primary">
             <TabList

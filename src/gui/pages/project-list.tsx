@@ -58,10 +58,10 @@ const useStyles = makeStyles(theme => ({
     fontSize: 14,
     fontWeight: 500,
   },
-  NoPaddding: {
+  NoPadding: {
     [theme.breakpoints.down('md')]: {
-      paddingLeft: 0,
-      paddingRight: 0,
+      paddingLeft: 5,
+      paddingRight: 5,
     },
   },
 }));
@@ -84,7 +84,7 @@ export default function ProjectList(props: ProjectProps) {
   ];
 
   return (
-    <Container maxWidth="lg" className={classes.NoPaddding}>
+    <Container maxWidth="lg" className={classes.NoPadding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>

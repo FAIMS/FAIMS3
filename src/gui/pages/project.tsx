@@ -34,7 +34,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
-  NoPaddding: {
+  NoPadding: {
     [theme.breakpoints.down('md')]: {
       paddingLeft: 5,
       paddingRight: 5,
@@ -73,7 +73,7 @@ export default function Project(props: ProjectProps) {
   ];
 
   return project_info ? (
-    <Container maxWidth="lg" className={classes.NoPaddding}>
+    <Container maxWidth="lg" className={classes.NoPadding}>
       <Breadcrumbs data={breadcrumbs} token={props.token} />
       <ProjectCard project={project_info} showRecords={true} listView={false} />
     </Container>
