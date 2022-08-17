@@ -31,7 +31,7 @@ import {
 
 import makeStyles from '@mui/styles/makeStyles';
 
-import {LoginForm} from './login_form';
+import {LoginButton} from './login_form';
 import {
   getTokenContentsForCluster,
   deleteTokenForCluster,
@@ -44,6 +44,7 @@ type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
   listing_description: string;
+  conductor_url: string;
   setToken?: any;
 };
 
@@ -81,8 +82,11 @@ export default function ClusterCard(props: ClusterCardProps) {
       <CardContent style={{paddingTop: 0}}>
         <p>{props.listing_description}</p>
         {token === undefined ? (
-          <LoginForm
+          <LoginButton
+            key={props.listing_id}
             listing_id={props.listing_id}
+            listing_name={props.listing_name}
+            conductor_url={props.conductor_url}
             setToken={setToken}
             is_refresh={false}
           />
@@ -116,8 +120,11 @@ export default function ClusterCard(props: ClusterCardProps) {
             >
               Logout
             </Button>
-            <LoginForm
+            <LoginButton
+              key={props.listing_id}
               listing_id={props.listing_id}
+              listing_name={props.listing_name}
+              conductor_url={props.conductor_url}
               setToken={setToken}
               is_refresh={true}
             />

@@ -25,7 +25,7 @@ import {jwtVerify, importSPKI} from 'jose';
 import type {KeyLike} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
-import {active_db, directory_db, local_auth_db} from './sync/databases';
+import {active_db, local_auth_db} from './sync/databases';
 import {
   ClusterProjectRoles,
   ProjectID,
@@ -34,7 +34,7 @@ import {
   TokenInfo,
   TokenContents,
 } from './datamodel/core';
-import {AuthInfo, LOCALLY_CREATED_PROJECT_PREFIX} from './datamodel/database';
+import {LOCALLY_CREATED_PROJECT_PREFIX} from './datamodel/database';
 import {RecordMetadata} from './datamodel/ui';
 
 interface SplitCouchDBRole {
@@ -163,18 +163,6 @@ export async function getTokenContentsForCluster(
     return undefined;
   }
   return await parseToken(token_info.token, token_info.pubkey);
-}
-
-export async function getAuthMechianismsForListing(
-  listing_id: string
-): Promise<{[name: string]: AuthInfo} | null> {
-  try {
-    const doc = await directory_db.local.get(listing_id);
-    return doc.auth_mechanisms;
-  } catch (err) {
-    console.warn('AuthInfo not found for:', listing_id, err);
-    return null;
-  }
 }
 
 export async function parseToken(

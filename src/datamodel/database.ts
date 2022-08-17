@@ -59,16 +59,7 @@ export interface ConnectionInfo {
   jwt_token?: string;
 }
 
-/**
- * User-facing description of an Authentication mechanism.
- * The actual auth mechanisms are stored in authconfig.ts in the FAIMS3-conductor
- * in the auth proxy of the listing that this auth is for.
- */
-export type AuthInfo = {
-  portal: string; // Url to give AuthInfo to get token(s)
-  type: 'oauth';
-  name: string;
-};
+export type ConductorURL = string;
 
 export type PossibleConnectionInfo =
   | undefined
@@ -90,7 +81,7 @@ export interface ListingsObject {
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  auth_mechanisms: {[key: string]: AuthInfo};
+  conductor_url?: ConductorURL;
   local_only?: boolean;
 }
 
