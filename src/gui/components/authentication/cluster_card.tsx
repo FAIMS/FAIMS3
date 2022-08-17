@@ -32,10 +32,7 @@ import {
 import makeStyles from '@mui/styles/makeStyles';
 
 import {LoginButton} from './login_form';
-import {
-  getTokenContentsForCluster,
-  deleteTokenForCluster,
-} from '../../../users';
+import {getTokenContentsForCluster, forgetCurrentToken} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
 import {TokenContents} from '../../../datamodel/core';
 import * as ROUTES from '../../../constants/routes';
@@ -112,7 +109,7 @@ export default function ClusterCard(props: ClusterCardProps) {
               variant="contained"
               size="large"
               onClick={() =>
-                deleteTokenForCluster(props.listing_id).then(() => {
+                forgetCurrentToken(props.listing_id).then(() => {
                   setToken(undefined);
                   reprocess_listing(props.listing_id);
                 })
