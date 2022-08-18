@@ -27,12 +27,19 @@ import {
   CardActions,
   CardContent,
   CardHeader,
+  MenuItem,
+  Select,
 } from '@mui/material';
 
 import makeStyles from '@mui/styles/makeStyles';
 
 import {LoginButton} from './login_form';
-import {getTokenContentsForCluster, forgetCurrentToken} from '../../../users';
+import {
+  getTokenContentsForCluster,
+  forgetCurrentToken,
+  getAllUsersForCluster,
+  switchUsername,
+} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
 import {TokenContents} from '../../../datamodel/core';
 import * as ROUTES from '../../../constants/routes';
@@ -45,11 +52,42 @@ type ClusterCardProps = {
   setToken?: any;
 };
 
+type UserSwitcherProps = {
+  listing_id: string;
+  current_username: string;
+};
+
 const useStyles = makeStyles(() => ({
   cardHeader: {
     alignItems: 'flex-start',
   },
 }));
+
+function UserSwitcher(props: UserSwitcherProps) {
+  const [userList, setUserList] = useState([] as TokenContents[]);
+  useEffect(() => {
+    const getUserList = async () => {
+      setUserList(await getAllUsersForCluster(props.listing_id));
+    };
+    getUserList();
+  }, [props.listing_id]);
+  if (userList.length === 0) {
+    return <p>No logged in users</p>;
+  }
+  return (
+    <Select
+      id={`user-switcher-${props.listing_id}`}
+      label="Switch User"
+      onChange={event => {
+        return switchUsername(props.listing_id, event.target.value as string);
+      }}
+    >
+      {userList.map(info => (
+        <MenuItem value={info.username}>{info.name}</MenuItem>
+      ))}
+    </Select>
+  );
+}
 
 export default function ClusterCard(props: ClusterCardProps) {
   const classes = useStyles();
@@ -89,7 +127,7 @@ export default function ClusterCard(props: ClusterCardProps) {
           />
         ) : (
           <>
-            <p>Logged in as: {token.username}</p>
+            <p>Currently logged in as: {token.name}</p>
             Roles are
             <ul>
               {token.roles.map((group, index) => {
@@ -97,6 +135,10 @@ export default function ClusterCard(props: ClusterCardProps) {
               })}
             </ul>
             <br />
+            <UserSwitcher
+              listing_id={props.listing_id}
+              current_username={token.username}
+            />
             <Button
               color="primary"
               variant="contained"
@@ -115,7 +157,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                 })
               }
             >
-              Logout
+              Logout Current User
             </Button>
             <LoginButton
               key={props.listing_id}
