@@ -825,13 +825,6 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                // savefieldPersistenceSetting(
-                //   this.props.project_id,
-                //   this.state.type_cached,
-                //   formProps.values,
-                //   this.state.annotation,
-                //   ui_specification
-                // );
                 this.draftState.renderHook(
                   formProps.values,
                   this.state.annotation
