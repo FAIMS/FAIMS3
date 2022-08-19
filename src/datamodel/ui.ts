@@ -211,3 +211,15 @@ export type resetprops = {
 };
 
 export type SectionMeta = any;
+
+//inetface for field persistence state
+export interface fieldpersistencedata {
+  _id?: string;
+  project_id?: ProjectID;
+  type: FAIMSTypeName;
+  data: {[field_name: string]: any};
+  updated?: Date;
+  field_types?: {[field_name: string]: FAIMSTypeName};
+  annotations: {[field_name: string]: Annotations};
+  created?: Date;
+}

@@ -15,7 +15,7 @@
  *
  * Filename: form.tsx
  * Description:
- *   TODO
+ *   Record/Draft form file
  */
 
 import React from 'react';
@@ -57,7 +57,8 @@ import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
-
+import {savefieldPersistenceSetting} from './fieldPersistenceSetting';
+import {get_fieldpersistencedata} from '../../../datamodel/fieldpersistence';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -377,6 +378,14 @@ class RecordForm extends React.Component<
     );
     const fieldNames = getFieldNamesFromFields(fields);
 
+    // get value from persistence
+    let persistencevalue: any = {};
+    if (this.state.type_cached !== null)
+      persistencevalue = await get_fieldpersistencedata(
+        this.props.project_id,
+        this.state.type_cached
+      );
+
     const initialValues: {[key: string]: any} = {
       _id: this.props.record_id!,
       _project_id: this.props.project_id,
@@ -385,15 +394,29 @@ class RecordForm extends React.Component<
     const annotations: {[key: string]: any} = {};
 
     fieldNames.forEach(fieldName => {
+      let intvalue = fields[fieldName]['initialValue'];
+      // set value from persistence
+      if (
+        persistencevalue.data !== undefined &&
+        persistencevalue.data[fieldName] !== undefined
+      )
+        intvalue = persistencevalue.data[fieldName];
       initialValues[fieldName] = firstDefinedFromList([
         staged_data[fieldName],
         database_data[fieldName],
-        fields[fieldName]['initialValue'],
+        intvalue,
       ]);
+      // set annotation from persistence
+      let annotationvalue = {annotation: '', uncertainty: false};
+      if (
+        persistencevalue.annotations !== undefined &&
+        persistencevalue.annotations[fieldName] !== undefined
+      )
+        annotationvalue = persistencevalue.annotations[fieldName];
       annotations[fieldName] = firstDefinedFromList([
         staged_annotations[fieldName],
         database_annotations[fieldName],
-        {annotation: '', uncertainty: false},
+        annotationvalue,
       ]);
     });
 
@@ -534,6 +557,14 @@ class RecordForm extends React.Component<
   save(values: object, is_final_view: boolean) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
+    //save state into persistence data, this is just for testing, will determine when the value should be daved
+    savefieldPersistenceSetting(
+      this.props.project_id,
+      this.state.type_cached,
+      values,
+      this.state.annotation,
+      ui_specification
+    );
 
     return (
       getCurrentUserId(this.props.project_id)
@@ -757,6 +788,7 @@ class RecordForm extends React.Component<
         view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
+
       return (
         <React.Fragment>
           {/* remove the tab for edit ---Jira 530 */}
@@ -793,6 +825,13 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
+                // savefieldPersistenceSetting(
+                //   this.props.project_id,
+                //   this.state.type_cached,
+                //   formProps.values,
+                //   this.state.annotation,
+                //   ui_specification
+                // );
                 this.draftState.renderHook(
                   formProps.values,
                   this.state.annotation

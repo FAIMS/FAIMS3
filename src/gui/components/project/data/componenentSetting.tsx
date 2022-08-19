@@ -139,6 +139,25 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.bool']],
       initialValue: false,
     },
+    persistence: {
+      'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+      'component-name': 'Checkbox',
+      'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+      'component-parameters': {
+        name: 'persistence',
+        id: 'persistence',
+        required: false,
+        type: 'checkbox',
+        FormControlLabelProps: {
+          label: 'Select if value persistence',
+        },
+        FormHelperTextProps: {
+          children: '',
+        },
+      },
+      validationSchema: [['yup.bool']],
+      initialValue: false,
+    },
     field_type: {
       'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
       'component-name': 'Select',
@@ -225,7 +244,7 @@ const uiSettingOthers: ProjectUIModel = {
       label: 'access',
     },
     FormParamater: {
-      fields: ['required'],
+      fields: ['required', 'persistence'],
       uidesign: 'form',
       label: 'FormParamater',
     },
@@ -738,6 +757,9 @@ export function ResetComponentProperties(props: resetprops) {
         //not update value here
         // newvalues['fields'][fieldName]['component-parameters'][name] =
         // event.target.checked;
+      } else if (name === 'persistence') {
+        //set persistence value
+        newvalues['fields'][fieldName][name] = event.target.checked;
       } else {
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.value;
