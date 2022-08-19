@@ -64,7 +64,7 @@
     "@mui/material": "5.8.6",
     "@mui/styles": "5.8.6",
     "@mui/x-data-grid": "5.12.3",
-    "@sentry/react": "7.2.0",
+    "@sentry/react": "7.11.1",
     "@sentry/tracing": "7.7.0",
     "@testing-library/jest-dom": "5.16.4",
     "@testing-library/react": "12.1.5",
