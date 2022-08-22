@@ -30,7 +30,7 @@ import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
 import {HRID_STRING} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
+import {option} from '../../../../datamodel/typesystem';
 const uiSettingOthers: ProjectUIModel = {
   fields: {
     annotation_label: {
@@ -226,6 +226,42 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.string']],
       initialValue: '',
     },
+    // add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+    logic_select: {
+      'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+      'component-name': 'Select',
+      'type-returned': 'faims-core::String', // matches a type in the Project Model
+      'component-parameters': {
+        fullWidth: true,
+        helperText: 'Select logic ',
+        variant: 'outlined',
+        required: false,
+        select: true,
+        InputProps: {},
+        SelectProps: {},
+        ElementProps: {
+          options: [
+            {
+              value: 'none',
+              label: 'none',
+            },
+            {
+              value: 'field',
+              label: 'field',
+            },
+            {
+              value: 'section',
+              label: 'section',
+            },
+          ],
+        },
+        InputLabelProps: {
+          label: 'Select ',
+        },
+      },
+      validationSchema: [['yup.string']],
+      initialValue: '1',
+    },
   },
   views: {
     meta: {
@@ -253,6 +289,12 @@ const uiSettingOthers: ProjectUIModel = {
       uidesign: 'form',
       label: 'other',
     },
+    // add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+    logic: {
+      fields: ['logic_select'],
+      uidesign: 'form',
+      label: 'logic',
+    },
   },
   viewsets: {
     notes: {
@@ -267,8 +309,12 @@ const uiSettingOthers: ProjectUIModel = {
       views: ['FormParamater', 'validationSchema'],
       label: 'valid',
     },
+    logic: {
+      views: ['logic'],
+      label: 'valid',
+    },
   },
-  visible_types: ['notes', 'valid', 'access'],
+  visible_types: ['notes', 'valid', 'access', 'logic'],
 };
 
 export const regeneratesettinguiSpec = (
@@ -656,6 +702,21 @@ const Componentsetting = (props: componenentSettingprops) => {
         }
       }
     }
+    if (view === 'logic') {
+      const value = event.target.value;
+      let newvalues = props.uiSpec;
+      let newuis = uiSetting;
+      const name = event.target.name.replace(props.fieldName, '');
+      newvalues = definelogic(newvalues, value, props.fieldName, name);
+      newuis = generateuiforlogic(
+        props.uiSpec,
+        newuis,
+        props.fieldName,
+        props.currentform
+      );
+      props.setuiSpec({...newvalues});
+      setuiSetting({...newuis});
+    }
   };
   return (
     <>
@@ -668,6 +729,138 @@ const Componentsetting = (props: componenentSettingprops) => {
       />
     </>
   );
+};
+// add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+const definelogic = (
+  newvalues: ProjectUIModel,
+  value: any,
+  fieldname: string,
+  name: string
+) => {
+  if (name === 'logic_select') {
+    newvalues['fields'][fieldname][name] = {type: value};
+    return newvalues;
+  }
+  if (newvalues['fields'][fieldname]['logic_select']['type'] === 'field') {
+    newvalues['fields'][fieldname]['logic_select'][
+      name.replace('select', '').replace(fieldname, '')
+    ] = value;
+    // if (newvalues['fields'][value]['is_logic'] !== undefined)
+    //   newvalues['fields'][value]['is_logic'][fieldname] = name
+    //     .replace('select', '')
+    //     .replace(fieldname, '');
+    // else
+    //   newvalues['fields'][value]['is_logic'] = {
+    //     [fieldname]: name.replace('select', '').replace(fieldname, ''),
+    //   };
+    return newvalues;
+  }
+  if (newvalues['fields'][fieldname]['logic_select']['type'] === 'section') {
+    newvalues['fields'][fieldname]['logic_select'][
+      name.replace('select', '').replace(fieldname, '')
+    ] = value;
+    return newvalues;
+  }
+  return newvalues;
+};
+
+const getlogicoption = (
+  uiSpec: ProjectUIModel,
+  currentform: string,
+  type: string
+) => {
+  const options: Array<option> = [];
+  if (type === 'field') {
+    uiSpec['viewsets'][currentform]['views'].map((view: string) => {
+      uiSpec['views'][view]['fields'].map((field: string) =>
+        uiSpec['fields'][field]['component-name'] !== 'TemplatedStringField'
+          ? options.push({
+              value: field,
+              label: uiSpec['fields'][field]['component-name'] + ' - ' + field,
+            })
+          : field
+      );
+    });
+    return options;
+  }
+
+  if (type === 'section') {
+    uiSpec['viewsets'][currentform]['views'].map((view: string) => {
+      options.push({
+        value: view,
+        label: view,
+      });
+    });
+    return options;
+  }
+
+  return options;
+};
+
+const generateuiforlogic = (
+  uiSpec: ProjectUIModel,
+  newvalues: ProjectUIModel,
+  fieldName: string,
+  currentform: string
+) => {
+  //TODO pass the value of all field in this form
+
+  // let fields: Array<string> = [];
+
+  const options = getlogicoption(
+    uiSpec,
+    currentform,
+    uiSpec['fields'][fieldName]['logic_select']['type']
+  );
+  const newfieldlist: Array<string> = [];
+  // only working for select,tick or audio
+  if (
+    uiSpec['fields'][fieldName]['component-parameters']['ElementProps'] ===
+    undefined
+  )
+    return newvalues;
+  const values =
+    uiSpec['fields'][fieldName]['component-parameters']['ElementProps'][
+      'options'
+    ];
+  for (let i = 0; i < values.length; i++) {
+    //get all list field for the uiSpeting
+    const name = 'select' + values[i].value + fieldName;
+    const newfield = generatenewfield(
+      'faims-custom',
+      'Select',
+      null,
+      name,
+      null
+    );
+    newfield['component-parameters']['ElementProps']['options'] = options;
+    newfield['component-parameters']['required'] = true;
+    newfield['validationSchema'] = [
+      ['yup.string'],
+      ['yup.required'],
+      ['yup.min', 1],
+    ];
+    newfield['initialValue'] = '';
+    newvalues['fields'][name] = newfield;
+    // newini[name] = inivalue;
+    newfieldlist[i] = name;
+  }
+  newvalues['views']['logic']['fields'] = [
+    'logic_select' + fieldName,
+    ...newfieldlist,
+  ];
+  // newvalues['fields']['template' + fieldName]['value'] = isinit
+  //   ? templatevalue
+  //   : value;
+  // newini['numberfield' + props.fieldName] = fieldnum;
+  // newini['label' + props.fieldName] =
+  //   props.uiSpec['fields'][props.fieldName]['component-parameters'][
+  //     'InputLabelProps'
+  //   ]['label'];
+  // // newini['template'+props.fieldName]=isinit?templatevalue:value
+  // console.log(newini);
+  // props.setinitialValues({...props.initialValues, ...newini});
+  return newvalues;
 };
 
 const getuivalue = (
@@ -727,7 +920,11 @@ export function ResetComponentProperties(props: resetprops) {
     event: FAIMSEVENTTYPE,
     elementprop: string
   ) => {
-    if (['meta', 'access', 'validationSchema', 'other'].includes(elementprop))
+    if (
+      ['meta', 'access', 'validationSchema', 'other', 'logic'].includes(
+        elementprop
+      )
+    )
       return true;
     const newvalues = uiSpec;
     let ishird = false;

@@ -19,8 +19,6 @@
  *   Steppers show sections of Form
  *   MobileStepper for small screen ONLY
  */
-
-import React from 'react';
 import {
   Button,
   Box,
