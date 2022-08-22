@@ -60,16 +60,7 @@ export interface ConnectionInfo {
   jwt_token?: string;
 }
 
-/**
- * User-facing description of an Authentication mechanism.
- * The actual auth mechanisms are stored in authconfig.ts in the FAIMS3-conductor
- * in the auth proxy of the listing that this auth is for.
- */
-export type AuthInfo = {
-  portal: string; // Url to give AuthInfo to get token(s)
-  type: 'oauth';
-  name: string;
-};
+export type ConductorURL = string;
 
 export type PossibleConnectionInfo =
   | undefined
@@ -91,7 +82,7 @@ export interface ListingsObject {
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  auth_mechanisms: {[key: string]: AuthInfo};
+  conductor_url?: ConductorURL;
   local_only?: boolean;
 }
 
@@ -110,11 +101,24 @@ export interface ActiveDoc {
   is_sync_attachments: boolean;
 }
 
-export interface LocalAuthDoc {
-  _id: string; //Corresponds to a listings ID
-  token: string;
+export type JWTToken = string;
+
+export interface JWTTokenInfo {
   pubkey: string;
   pubalg: string;
+  token: JWTToken;
+}
+
+export type JWTTokenMap = {
+  [username: string]: JWTTokenInfo;
+};
+
+export interface LocalAuthDoc {
+  _id: string; //Corresponds to a listings ID
+  _rev?: string; // optional as we may want to include the raw json in places
+  current_token: JWTToken;
+  current_username: string;
+  available_tokens: JWTTokenMap;
 }
 
 /**

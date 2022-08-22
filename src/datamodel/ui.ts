@@ -34,6 +34,7 @@ export interface ListingInformation {
   id: ListingID;
   name: string;
   description: string;
+  conductor_url: string;
 }
 
 export interface ProjectInformation {

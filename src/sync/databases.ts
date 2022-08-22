@@ -174,7 +174,6 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
         directory_connection_info,
         possibly_corrupted_instance.projects_db
       ),
-      auth_mechanisms: {},
     };
   }
   return default_instance;

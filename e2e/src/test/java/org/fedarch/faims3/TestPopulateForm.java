@@ -19,16 +19,104 @@
  */
 package org.fedarch.faims3;
 
+import java.net.MalformedURLException;
+
+import org.fedarch.faims3.pages.AstroSkyMainPage;
+import org.fedarch.faims3.pages.ProjectsPage;
+import org.json.JSONException;
+import org.openqa.selenium.WebDriver;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Optional;
+import org.testng.annotations.Parameters;
+import org.testng.annotations.Test;
+
 /**
- * Skeleton for testing populating new form.
+ *  Test populate the fields on the app:
+ *   https://faimsproject.atlassian.net/browse/FAIMS3-153
  *
  * @author Rini Angreani, CSIRO
- *
  */
-public interface TestPopulateForm {
+public class TestPopulateForm {
+
+	protected AstroSkyMainPage astroSky;
+
+	protected ProjectsPage projects;
+
+	private WebDriver driver;
+
+	// Test description
+	private String description;
+
+
+	@BeforeClass
+	@Parameters({ "driver", "runLocally"})
+	public void setup(String driverType, @Optional("false") boolean runLocally)
+			throws MalformedURLException, JSONException {
+		this.description = "Test create and save new AstroSky observation form ("
+	        + driverType + ")";
+	    this.driver = WebDriverFactory.createDriver(driverType, runLocally, description);
+		this.projects = new ProjectsPage(driver);
+		this.astroSky = new AstroSkyMainPage(driver);
+	}
 
 	// Doable Task 2.1 - Observation creation
 	// Doable Task 2.3 - GPS and Taking a Point
-	public void testNewObservationWithGPS() throws Exception;
+	/**
+	 * This test scenario is when you put in all the mandatory fields correctly and
+	 * then click submit successfully.
+	 * Doable Task 2.1 - Observation creation
+	 * Doable Task 2.3 - GPS and Taking a Point
+	 * @throws Exception
+	 */
+	@Test
+	public void testNewObservationWithGPS() throws Exception {
+		try {
+			// first make sure auto increment id has a default range
+			// if not, create one
+	        this.projects.checkAutoIncrement();
+			// Start a new observation
+			projects.loadNewAstroSkyForm();
+			// The form should load up
+			astroSky.fillOutFormWithValidFields();
+
+			//TODO: remember record id for next tests
+			//Currently this is not working because hrid is not yet shown on the list of records
+			//String hrID = astroSky.getHrID();
+
+			// validate JSON
+			astroSky.validateJSON();
+			// Click save and new
+			astroSky.submit();
+			// Check the message
+			astroSky.verifyMessage("Record successfully created");
+			// return to the projects page
+			astroSky.leaveObservationForm();
+			// TODO: we'll do this when hrid is shown in records list instead of observation id
+			// Load the just-created observation
+			//projects.loadObservationRecord(recordId);
+			// Ensure that location and change are still present in the data
+			//astroSky.checkLatLongValues();
+		} catch (Exception e) {
+			TestUtils.markBrowserstackTestResult(driver, false,
+					"Exception " + e.getClass().getSimpleName() + " occurs! See log for details.");
+			throw e;
+		} catch (AssertionError e) {
+			TestUtils.markBrowserstackTestResult(driver, false,
+					"Assertion Error: '" + e.getMessage() + "' occurs! See log for details.");
+			throw e;
+		}
+		// if we make it to the end with no exceptions, that means we passed!
+		TestUtils.markBrowserstackTestResult(driver, true,
+				this.description + " passed!");
+	}
+
+	@AfterMethod
+	@AfterClass
+	public void tearDown() {
+	    this.driver.quit();
+	}
+
 
 }
