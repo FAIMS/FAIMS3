@@ -45,6 +45,7 @@ export const RECORD_INDEX_NAME = 'record-version-index';
 export const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 export const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 export const LOCALLY_CREATED_PROJECT_PREFIX = 'locallycreatedproject';
+export const LOCAL_FIELDpersistent_PREFIX = 'local-fieldpersistent-state';
 
 export interface ConnectionInfo {
   proto: string;
