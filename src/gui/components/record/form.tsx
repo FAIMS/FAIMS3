@@ -558,13 +558,14 @@ class RecordForm extends React.Component<
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
     //save state into persistence data, this is just for testing, will determine when the value should be daved
-    // savefieldPersistenceSetting(
-    //   this.props.project_id,
-    //   this.state.type_cached,
-    //   values,
-    //   this.state.annotation,
-    //   ui_specification
-    // )
+    savefieldPersistenceSetting(
+      this.props.project_id,
+      this.state.type_cached,
+      values,
+      this.state.annotation,
+      ui_specification
+    );
+
     return (
       getCurrentUserId(this.props.project_id)
         .then(userid => {
@@ -825,13 +826,13 @@ class RecordForm extends React.Component<
             >
               {formProps => {
                 //save the persistence value when form updated???
-                savefieldPersistenceSetting(
-                  this.props.project_id,
-                  this.state.type_cached,
-                  formProps.values,
-                  this.state.annotation,
-                  ui_specification
-                );
+                // savefieldPersistenceSetting(
+                //   this.props.project_id,
+                //   this.state.type_cached,
+                //   formProps.values,
+                //   this.state.annotation,
+                //   ui_specification
+                // );
                 this.draftState.renderHook(
                   formProps.values,
                   this.state.annotation
