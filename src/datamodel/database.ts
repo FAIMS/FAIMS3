@@ -211,6 +211,7 @@ export interface Revision {
   created_by: string;
   type: FAIMSTypeName;
   deleted?: boolean;
+  ugc_comment?: string;
 }
 
 export interface AttributeValuePair {
