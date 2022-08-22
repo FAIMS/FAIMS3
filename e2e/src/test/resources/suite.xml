@@ -1,0 +1,37 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="End to End Tests" verbose="2" annotations="JDK">
+  <!-- For developers: Change parameter to true for local runs -->
+  <parameter name="runLocally" value="false" />
+  <test name="Android Tests" >     
+    <!-- Android tests -->   
+    <parameter name="driver" value="android" />
+    <classes>   
+      <class name="org.fedarch.faims3.TestPopulateForm"/>
+      <class name="org.fedarch.faims3.TestStagingForm" />
+      <class name="org.fedarch.faims3.TestIncompleteDraftObservation" />
+    </classes>
+  </test>
+  <test name="Chrome Tests" >     
+    <!-- Chrome tests -->   
+    <parameter name="driver" value="chrome" />
+    <classes>   
+      <class name="org.fedarch.faims3.TestPopulateForm"/>
+      <class name="org.fedarch.faims3.TestStagingForm" />
+      <class name="org.fedarch.faims3.TestIncompleteDraftObservation" />
+    </classes>
+  </test>  
+  <test name="iOS Tests" >     
+    <!-- iOS tests -->   
+    <parameter name="driver" value="ios" />
+    <classes>   
+      <class name="org.fedarch.faims3.TestPopulateForm"/>
+      <class name="org.fedarch.faims3.TestStagingForm" />
+      <class name="org.fedarch.faims3.TestIncompleteDraftObservation" />
+    </classes>
+  </test>
+  <test name="multi platform parallel tests">
+    <classes>
+      <class name="org.fedarch.faims3.TestUpdateObservationsAndDraftDatabase" />
+    </classes>
+  </test>
+</suite>
