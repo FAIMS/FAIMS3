@@ -30,11 +30,14 @@ export function savefieldPersistenceSetting(
 ) {
   const newdata: {[field_name: string]: any} = {};
   const newanntation: {[field_name: string]: Annotations} = {};
-
+  if (form_type === null) return '';
+  // check if there is persisence value be set
+  let ispersitence = false;
   for (const [name] of Object.entries(uiSpec.fields)) {
     if (uiSpec['fields'][name]['persistence'] !== undefined) {
       newdata[name] = values[name];
       newanntation[name] = annotations[name];
+      ispersitence = true;
     }
   }
 
@@ -44,15 +47,11 @@ export function savefieldPersistenceSetting(
     data: newdata,
     annotations: newanntation,
   };
-  return form_type !== null
-    ? set_fieldpersistencedata(project_id, form_type, newstage)
+  return ispersitence
+    ? set_fieldpersistencedata(project_id, form_type || 'FORM1', newstage)
         .then(refs => {
-          console.log(project_id + form_type + '==================');
-          console.log(refs);
-          console.log(project_id + form_type + '==================');
           return refs;
         })
         .catch(console.error /*TODO*/)
     : '';
-  //   return <></>;
 }
