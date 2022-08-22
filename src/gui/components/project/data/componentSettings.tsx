@@ -24,7 +24,7 @@ import {
   ProjectUIModel,
   resetprops,
   FAIMSEVENTTYPE,
-  componenentSettingprops,
+  componentSettingprops,
 } from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
@@ -280,10 +280,10 @@ const uiSettingOthers: ProjectUIModel = {
       uidesign: 'form',
       label: 'access',
     },
-    FormParamater: {
+    FormParameter: {
       fields: ['required', 'persistent'],
       uidesign: 'form',
-      label: 'FormParamater',
+      label: 'FormParameter',
     },
     other: {
       fields: ['field_type'],
@@ -307,7 +307,7 @@ const uiSettingOthers: ProjectUIModel = {
       label: 'access',
     },
     valid: {
-      views: ['FormParamater', 'validationSchema'],
+      views: ['FormParameter', 'validationSchema'],
       label: 'valid',
     },
     logic: {
@@ -399,7 +399,7 @@ const getvalue = (
   fieldName: string
 ) => {
   const name = field.replace(fieldName, '');
-  if (view === 'FormParamater') {
+  if (view === 'FormParameter') {
     //this is for persistent, it's for developing/testing only, not ready for production yet
     if (name === 'persistent') return fieldui[name];
     return fieldui['component-parameters'][name];
@@ -437,7 +437,7 @@ const getvalue = (
   }
 };
 
-export const setSetingInitialValues = (
+export const setSettingInitialValues = (
   uiSetting: ProjectUIModel,
   fieldui: ProjectUIFields,
   fieldName: string
@@ -484,7 +484,7 @@ const isArrayInArray = (arr: Array<any>, item: Array<any>) => {
   return contains;
 };
 
-const Componentsetting = (props: componenentSettingprops) => {
+const Componentsetting = (props: componentSettingprops) => {
   const {handlerchangewithview, ...others} = props;
 
   const [uiSetting, setuiSetting] = useState(props.uiSetting);
@@ -596,7 +596,7 @@ const Componentsetting = (props: componenentSettingprops) => {
         );
       }
     }
-    if (view === 'FormParamater') {
+    if (view === 'FormParameter') {
       const newvalues = props.uiSpec;
       const name = event.target.name.replace(props.fieldName, '');
       if (name === 'required') {
@@ -934,7 +934,7 @@ const getuivalue = (
     if (uiSpec['fields'][fieldName]['component-name'] === 'TextField') {
       uiSetting['viewsets']['valid']['views'] = [
         'other',
-        'FormParamater',
+        'FormParameter',
         'validationSchema',
       ];
     }
@@ -979,27 +979,27 @@ export function ResetComponentProperties(props: resetprops) {
     )
       return true;
     const newvalues = uiSpec;
-    let ishird = false;
+    let ishrid = false;
     const newfieldname = HRID_STRING + currentform;
     if (
       newvalues['fields'][fieldName]['component-name'] ===
         'TemplatedStringField' &&
       newvalues['fields'][fieldName]['component-parameters']['hrid'] === true
     ) {
-      //set newvalue for hird
+      //set newvalue for hrid
 
-      ishird = true;
+      ishrid = true;
       console.log('++++++++++++++' + newfieldname);
     }
     if (newvalues['fields'][fieldName] === undefined) {
       newvalues['fields'][fieldName] = generatenewname(fieldui, fieldName);
     }
     const name = event.target.name.replace(fieldName, '');
-    if (elementprop === 'FormParamater')
+    if (elementprop === 'FormParameter')
       if (name === 'required') {
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.checked;
-        if (ishird)
+        if (ishrid)
           newvalues['fields'][newfieldname]['component-parameters'][name] =
             event.target.checked;
       } else if (name === 'hrid') {
@@ -1012,7 +1012,7 @@ export function ResetComponentProperties(props: resetprops) {
       } else {
         newvalues['fields'][fieldName]['component-parameters'][name] =
           event.target.value;
-        if (ishird)
+        if (ishrid)
           newvalues['fields'][newfieldname]['component-parameters'][name] =
             event.target.value;
       }
@@ -1023,7 +1023,7 @@ export function ResetComponentProperties(props: resetprops) {
       newvalues['fields'][fieldName]['component-parameters'][elementprop][
         'children'
       ] = event.target.value;
-      if (ishird)
+      if (ishrid)
         newvalues['fields'][newfieldname]['component-parameters'][elementprop][
           'children'
         ] = event.target.value;
@@ -1031,7 +1031,7 @@ export function ResetComponentProperties(props: resetprops) {
       newvalues['fields'][fieldName]['component-parameters'][elementprop][
         name
       ] = event.target.value;
-      if (ishird)
+      if (ishrid)
         newvalues['fields'][newfieldname]['component-parameters'][elementprop][
           name
         ] = event.target.value;

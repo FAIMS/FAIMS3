@@ -27,7 +27,7 @@ import {
 
 import {
   ProjectUIModel,
-  componenentSettingprops,
+  componentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import Box from '@mui/material/Box';
@@ -251,7 +251,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   );
 }
 
-export function AdvancedSelectcomponentsetting(props: componenentSettingprops) {
+export function AdvancedSelectcomponentsetting(props: componentSettingprops) {
   const {handlerchangewithview, ...others} = props;
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
@@ -372,7 +372,7 @@ const uiSetting = () => {
     initialValue: 'full',
   };
 
-  newuiSetting['views']['FormParamater']['fields'] = [
+  newuiSetting['views']['FormParameter']['fields'] = [
     'label',
     'helperText',
     'valuetype',
@@ -382,7 +382,7 @@ const uiSetting = () => {
 
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps', 'FormParamater', 'ElementProps'],
+      views: ['InputLabelProps', 'FormParameter', 'ElementProps'],
       label: 'settings',
     },
   };

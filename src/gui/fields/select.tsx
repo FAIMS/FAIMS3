@@ -30,7 +30,7 @@ import {
 import {option} from '../../datamodel/typesystem';
 import {
   ProjectUIModel,
-  componenentSettingprops,
+  componentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 // import TextField from '@mui/material/TextField';
@@ -53,7 +53,7 @@ interface Props {
 export class Select extends React.Component<TextFieldProps & Props> {
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
-    /***make seect not multiple to avoid error */
+    /***make select not multiple to avoid error */
     return (
       <>
         <MuiTextField
@@ -89,7 +89,7 @@ export class Select extends React.Component<TextFieldProps & Props> {
   }
 }
 
-export function Selectcomponentsetting(props: componenentSettingprops) {
+export function Selectcomponentsetting(props: componentSettingprops) {
   const {handlerchangewithview, ...others} = props;
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {};
@@ -118,7 +118,7 @@ export function Selectcomponentsetting(props: componenentSettingprops) {
     }
 
     if (
-      view === 'FormParamater' &&
+      view === 'FormParameter' &&
       event.target.name.replace(props.fieldName, '') === 'select_others'
     ) {
       const newvalues = props.uiSpec;
@@ -225,14 +225,14 @@ const uiSetting = () => {
     validationSchema: [['yup.string']],
     initialValue: 'otherswith',
   };
-  newuiSetting['views']['FormParamater']['fields'] = [
+  newuiSetting['views']['FormParameter']['fields'] = [
     'helperText',
     // 'select_others',
   ];
 
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps', 'FormParamater', 'ElementProps'],
+      views: ['InputLabelProps', 'FormParameter', 'ElementProps'],
       label: 'settings',
     },
   };

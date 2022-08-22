@@ -28,11 +28,11 @@ import {v4 as uuidv4} from 'uuid';
 import {getcomponent} from './uiFieldsRegistry';
 import {getComponentPropertiesByName} from '../../../component_registry';
 import {
-  setSetingInitialValues,
+  setSettingInitialValues,
   generatenewfield,
   regeneratesettinguiSpec,
-} from './componenentSetting';
-import {ProjevtValueList} from '../../../../datamodel/ui';
+} from './componentSettings';
+import {ProjectValueList} from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {HRID_STRING} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -50,7 +50,7 @@ export type uiSpecType = {
   visible_types: any;
 };
 
-type signlefieldType = any;
+type singlefieldType = any;
 type fieldlistType = any;
 type viewlistType = any;
 type optionType = {value: string; label: string};
@@ -66,7 +66,7 @@ export const getconnections = (
   tabs: Array<string>
 ) => {
   const connecions = CONNECTION_RELATIONS;
-  const conectiontabs: Array<tabLinkType> = [];
+  const connectiontabs: Array<tabLinkType> = [];
   uiSpec['viewsets'][comparetab]['views'].map((view: string) =>
     uiSpec['views'][view]['fields'].map((field: string) =>
       uiSpec['fields'][field]['component-name'] === 'RelatedRecordSelector'
@@ -74,7 +74,7 @@ export const getconnections = (
             '' &&
           uiSpec['fields'][field]['component-parameters']['related_type'] !==
             undefined &&
-          conectiontabs.push({
+          connectiontabs.push({
             tab:
               uiSpec['viewsets'][
                 uiSpec['fields'][field]['component-parameters']['related_type']
@@ -92,9 +92,9 @@ export const getconnections = (
   );
   //TODO get relation of tabs and return
   // tabs.map((tab: string) =>
-  //   conectiontabs.push({tab: tab, link: connecions[0]})
+  //   connectiontabs.push({tab: tab, link: connecions[0]})
   // );
-  return conectiontabs;
+  return connectiontabs;
 };
 
 export const checkvalid = (values: Array<string>) => {
@@ -112,7 +112,7 @@ export const checkvalid = (values: Array<string>) => {
 //   return {type: '', name: '', index: 0};
 // };
 
-export const getacessoption = (access: Array<string>) => {
+export const getaccessoption = (access: Array<string>) => {
   const options: Array<optionType> = [];
   const limitaccess = access.filter((access: string) => !(access === 'admin'));
   access.map(
@@ -126,12 +126,12 @@ export const getacessoption = (access: Array<string>) => {
 };
 //Add new field form or convert uiSpec to setting form convertuiSpectoSetting
 export const FieldSettings = (
-  component: signlefieldType,
+  component: singlefieldType,
   label: string,
   props: any,
   access: Array<string> = DEFAULT_accessgroup_d
 ) => {
-  const options: Array<optionType> = getacessoption(access);
+  const options: Array<optionType> = getaccessoption(access);
   const fields = [
     {name: '', lable: '', type: 'TextField', view: 'general'},
     {
@@ -216,7 +216,7 @@ export const gettabform = (tabs: Array<string>) => {
 };
 
 export const getprojectform = (
-  projectvalue: ProjevtValueList,
+  projectvalue: ProjectValueList,
   tab: string,
   props: any = null
 ) => {
@@ -280,7 +280,7 @@ export const getprojectform = (
       label: 'Save and Return',
     },
   ];
-  const options = getacessoption(projectvalue.accesses);
+  const options = getaccessoption(projectvalue.accesses);
   const form_info = [
     {
       name: 'submitAction',
@@ -425,7 +425,7 @@ export const getprojectform = (
     attachments: [
       {
         name: 'attachments',
-        label: 'Upload Attachements',
+        label: 'Upload Attachments',
         namespace: 'faims-custom',
         componentName: 'FileUploader',
         view: 'attachments',
@@ -584,7 +584,7 @@ export const getprojectform = (
   if (tab === 'preview') {
     props.forms.map((formtab: string, index: number) => {
       const newfield = {...preview, name: preview.name + formtab};
-      const options = getacessoption(
+      const options = getaccessoption(
         projectvalue['access' + formtab] ?? projectvalue.accesses
       );
       fields[tab][index] = {...newfield, options: options};
@@ -680,7 +680,7 @@ export const updateuiSpec = (type: string, props: any) => {
         props.projectvalue
       );
     case 'switch':
-      return swithField(
+      return switchField(
         props.index,
         props.type,
         props.formuiSpec,
@@ -756,17 +756,17 @@ const newfromui = (
       newformcom[view] = [];
       newuiSpec['views'][view]['fields'].map((fieldname: string) => {
         let field = newuiSpec['fields'][fieldname];
-        let gefieldname = fieldname;
-        if (gefieldname.includes(HRID_STRING)) {
-          //find the hird value
-          const newnhirdname =
+        let getfieldname = fieldname;
+        if (getfieldname.includes(HRID_STRING)) {
+          //find the hrid value
+          const newhridname =
             newuiSpec['fields'][fieldname]['component-parameters']['linked'];
           if (
-            newnhirdname !== undefined &&
-            newuiSpec['fields'][newnhirdname] !== undefined
+            newhridname !== undefined &&
+            newuiSpec['fields'][newhridname] !== undefined
           ) {
-            field = newuiSpec['fields'][newnhirdname];
-            gefieldname = newnhirdname;
+            field = newuiSpec['fields'][newhridname];
+            getfieldname = newhridname;
           }
         }
         if (field['meta'] === undefined)
@@ -793,7 +793,11 @@ const newfromui = (
             field['component-namespace'],
             field['component-name']
           ).settingsProps[0];
-          const newui = regeneratesettinguiSpec(newse, gefieldname, 'settings');
+          const newui = regeneratesettinguiSpec(
+            newse,
+            getfieldname,
+            'settings'
+          );
           formdesignuiSpec['fields'] = {
             ...formdesignuiSpec['fields'],
             ...newui['fields'],
@@ -812,12 +816,12 @@ const newfromui = (
           ];
           initialfieldvalue = {
             ...initialfieldvalue,
-            ...setSetingInitialValues(newse, field, gefieldname),
+            ...setSettingInitialValues(newse, field, getfieldname),
           };
           newformcom[view] = [
             ...newformcom[view],
             {
-              id: gefieldname,
+              id: getfieldname,
               uiSpec: newuiSpeclist,
               designvalue: 'settings',
               componentName: field['component-name'],
@@ -825,7 +829,7 @@ const newfromui = (
             },
           ];
         } catch (error) {
-          console.error(gefieldname + ' not set correctly', error);
+          console.error(getfieldname + ' not set correctly', error);
         }
       });
     });
@@ -834,7 +838,7 @@ const newfromui = (
   return {newformcom, initialfieldvalue, formdesignuiSpec};
 };
 
-const swithField = (
+const switchField = (
   index: any,
   type: boolean,
   formuiSpec: uiSpecType,
@@ -974,7 +978,7 @@ const addfield = (props: any) => {
       namespace: newfield['component-namespace'],
     },
   ];
-  const initialfieldvalue = setSetingInitialValues(
+  const initialfieldvalue = setSettingInitialValues(
     settings.settingsProps[0],
     newfield,
     name

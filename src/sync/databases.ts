@@ -107,7 +107,7 @@ const directory_db_pouch = new PouchDB<ListingsObject>(
   local_pouch_options
 );
 /**
- * Directory: All (public, anyways) Faims instances
+ * Directory: All public FAIMS instances
  */
 export const directory_db: LocalDB<ListingsObject> = {
   local: directory_db_pouch,
@@ -155,7 +155,7 @@ export const data_dbs: LocalDBList<ProjectDataObject> = {};
 /**
  * Synced from the project metadatabase for each active project,
  * This has the metadata describing a database. Project Schemas,
- * GUI Models, and a Prople database.
+ * GUI Models, and a People database.
  */
 export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
 
@@ -287,7 +287,7 @@ export function ensure_synced_db<Content extends {}>(
   options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id] === undefined) {
-    throw 'Logic eror: ensure_local_db must be called before this code';
+    throw 'Logic error: ensure_local_db must be called before this code';
   }
 
   // Already connected/connecting, or local-only database

@@ -29,7 +29,7 @@ import {
   getprojectform,
   checkvalid,
 } from '../data/ComponentSetting';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {UserRoleList, UserLists} from './PSettingCard';
@@ -37,7 +37,7 @@ import {AddUserButton, Addusersassign} from './ProjectButton';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 type ProjectUserProps = {
   project_id: string | null;
-  projectvalue: ProjevtValueList;
+  projectvalue: ProjectValueList;
   setProjectValue: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
   formProps: any;
@@ -59,7 +59,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
   const [initialValuesassign, setinitialValuesassign] = useState(
     setProjectInitialValues(uiSpecassign, 'start-view', {_id: ''})
   );
-  const [tabvalue, settatbValue] = useState(0);
+  const [tabvalue, settabValue] = useState(0);
   const [users, setusesers] = useState(projectvalue.users);
   const [usersadded, setusersadded] = useState('');
 
@@ -75,7 +75,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     setinitialValuesassign(
       setProjectInitialValues(uiSpecassign, 'start-view', {_id: ''})
     );
-    settatbValue(index);
+    settabValue(index);
   };
 
   const handlerassignuser = (role: string) => {
@@ -94,17 +94,14 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     const newproject = projectvalue;
     if (newproject['users'] === undefined) {
       newproject['users'] = users;
-      newproject['unassigndusers'] = users;
+      newproject['unassignusers'] = users;
       usergroups.map((user: string) => (newproject[user] = []));
     } else {
       newproject['users'] = [...newproject['users'], ...users];
-      newproject['unassigndusers'] = [
-        ...newproject['unassigndusers'],
-        ...users,
-      ];
+      newproject['unassignusers'] = [...newproject['unassignusers'], ...users];
     }
     newproject['users'] = checkvalid(newproject['users']);
-    newproject['unassigndusers'] = checkvalid(newproject['unassigndusers']);
+    newproject['unassignusers'] = checkvalid(newproject['unassignusers']);
     setProjectValue({...projectvalue, users: newproject['users']}); //TODO: add to check if duplicated user
     setusesers(newproject['users']);
   };
@@ -126,15 +123,15 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     let newusers = newproject[usergroup] ?? [];
     if (select) {
       newusers = [...newusers, newuser];
-      newproject['unassigndusers'] = newproject['unassigndusers'].filter(
+      newproject['unassignusers'] = newproject['unassignusers'].filter(
         (u: string) => u !== newuser
       );
     } else {
       newusers = newusers.filter((user: string) => user !== newuser);
-      newproject['unassigndusers'] = [...newproject['unassigndusers'], newuser];
+      newproject['unassignusers'] = [...newproject['unassignusers'], newuser];
     }
     newusers = checkvalid(newusers);
-    newproject['unassigndusers'] = checkvalid(newproject['unassigndusers']);
+    newproject['unassignusers'] = checkvalid(newproject['unassignusers']);
     newproject[usergroup] = newusers;
     setProjectValue({...newproject});
   };
@@ -151,7 +148,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
           <br />
           <Typography variant="subtitle2">All users</Typography>
           <UserLists
-            users={projectvalue.unassigndusers ?? []}
+            users={projectvalue.unassignusers ?? []}
             delete={false}
             handelonClick={selectusersgroup}
             usergroup={usergroup}
@@ -205,7 +202,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
                 type="submit"
                 isSubmitting={false}
                 text="Go To Next"
-                onButtonClick={() => settatbValue(1)}
+                onButtonClick={() => settabValue(1)}
               />
             ) : (
               ''

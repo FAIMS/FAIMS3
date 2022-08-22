@@ -29,7 +29,7 @@ import FieldsListCard from './FieldsListCard';
 import {FormForm, AutocompleteForm} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
-import {getprojectform, getacessoption} from '../data/ComponentSetting';
+import {getprojectform, getaccessoption} from '../data/ComponentSetting';
 import {CloseButton, AddButton, ProjectSubmit} from './ProjectButton';
 import ConfirmdeleteDialog from './ConfirmdeleteDialog';
 import SectionComponents from './PSectionComponents';
@@ -122,7 +122,7 @@ export default function SectionTab(props: SectionTabProps) {
           <br />
           <AutocompleteForm
             id={formuiview}
-            options={getacessoption(
+            options={getaccessoption(
               props.projectvalue['access']['access' + formvariants] ?? ['admin']
             )}
             labels={props.projectvalue['access']['access' + formuiview]}
@@ -183,7 +183,7 @@ export default function SectionTab(props: SectionTabProps) {
                 </Grid>
                 <Grid item sm={1} xs={1} className={classes.newfield_button}>
                   <CloseButton
-                    id="ColseAddField"
+                    id="CloseAddField"
                     onButtonClick={handleCloseFieldButton}
                     text="X"
                   />

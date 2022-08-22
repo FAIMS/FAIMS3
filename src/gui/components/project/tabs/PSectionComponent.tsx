@@ -25,9 +25,9 @@ import {Grid, Typography, Card} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {SettingCard} from './PSettingCard';
 import {getComponentFromField, AutocompleteForm} from '../FormElement';
-import {updateuiSpec, getacessoption} from '../data/ComponentSetting';
+import {updateuiSpec, getaccessoption} from '../data/ComponentSetting';
 import {CloseButton, UpButton, DownButton} from './ProjectButton';
-import {ResetComponentProperties} from '../data/componenentSetting';
+import {ResetComponentProperties} from '../data/componentSettings';
 import {HRID_STRING} from '../../../../datamodel/core';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -181,7 +181,7 @@ export default function SectionComponent(props: SectionComponent) {
         <Grid
           container
           className={classes.newfield}
-          key={`formcompoenet-form-${fieldName}`}
+          key={`form-component-form-${fieldName}`}
         >
           <Grid item sm={10} xs={12}>
             <Grid container spacing={1}>
@@ -233,7 +233,7 @@ export default function SectionComponent(props: SectionComponent) {
                 {designvalue === 'access' ? (
                   <AutocompleteForm
                     id={fieldName}
-                    options={getacessoption(
+                    options={getaccessoption(
                       props.projectvalue['access']['access' + formuiview] ?? [
                         'admin',
                       ]

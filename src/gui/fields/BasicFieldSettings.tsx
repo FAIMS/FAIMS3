@@ -1,7 +1,7 @@
 import {getComponentFromField} from '../components/project/FormElement';
 import {
   ProjectUIModel,
-  componenentSettingprops,
+  componentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {ProjectUIFields} from '../../datamodel/typesystem';
@@ -55,7 +55,7 @@ const DefaultuiSetting: ProjectUIModel = {
         variant: 'outlined',
         required: false,
         fullWidth: true,
-        helperText: "Add options here, use ','to seperate option",
+        helperText: "Add options here, use ','to separate option",
         InputLabelProps: {
           label: 'Options',
         },
@@ -156,15 +156,15 @@ const DefaultuiSetting: ProjectUIModel = {
       uidesign: 'form',
       label: 'FormControlLabelProps',
     },
-    FormParamater: {
+    FormParameter: {
       fields: ['helperText'],
       uidesign: 'form',
-      label: 'FormParamater',
+      label: 'FormParameter',
     },
   },
   viewsets: {
     settings: {
-      views: ['InputLabelProps', 'FormParamater'],
+      views: ['InputLabelProps', 'FormParameter'],
       label: 'settings',
     },
   },
@@ -240,7 +240,7 @@ export const MultiTextuiSetting = {
   },
   viewsets: {
     settings: {
-      views: ['InputLabelProps', 'FormParamater'],
+      views: ['InputLabelProps', 'FormParameter'],
       label: 'settings',
     },
   },
@@ -271,7 +271,7 @@ const getfieldNamesbyView = (
   return [];
 };
 
-export function Defaultcomponentsetting(props: componenentSettingprops) {
+export function Defaultcomponentsetting(props: componentSettingprops) {
   const uiSetting = props.uiSetting;
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     if (props.handlerchanges !== undefined) {

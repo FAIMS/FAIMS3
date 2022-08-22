@@ -34,7 +34,7 @@ import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {
   ProjectUIModel,
-  componenentSettingprops,
+  componentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {
@@ -109,7 +109,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
   }
 }
 
-export function Radiocomponentsetting(props: componenentSettingprops) {
+export function Radiocomponentsetting(props: componentSettingprops) {
   const {handlerchangewithview, ...others} = props;
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {};

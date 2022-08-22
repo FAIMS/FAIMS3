@@ -194,7 +194,7 @@ const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['FormParameter'],
       label: 'settings',
     },
   };

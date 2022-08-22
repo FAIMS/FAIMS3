@@ -38,7 +38,7 @@ import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {option} from '../../datamodel/typesystem';
 import {
   ProjectUIModel,
-  componenentSettingprops,
+  componentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {useLocation, Link} from 'react-router-dom';
@@ -244,7 +244,7 @@ const uiSetting = () => {
     initialValue: '',
   };
 
-  newuiSetting['views']['FormParamater']['fields'] = [
+  newuiSetting['views']['FormParameter']['fields'] = [
     'helperText',
     'related_type',
     'relation_type',
@@ -252,7 +252,7 @@ const uiSetting = () => {
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps', 'FormParamater'],
+      views: ['InputLabelProps', 'FormParameter'],
       label: 'settings',
     },
   };
@@ -266,7 +266,7 @@ export function getLinkedBuilderIcon() {
 
 export const LinkedSetting = [uiSetting(), uiSpec];
 
-export function Linkedcomponentsetting(props: componenentSettingprops) {
+export function Linkedcomponentsetting(props: componentSettingprops) {
   const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
 
   useEffect(() => {

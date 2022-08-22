@@ -28,7 +28,7 @@ import {FormForm, AutocompleteForm} from '../FormElement';
 
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
-import {getprojectform, getacessoption} from '../data/ComponentSetting';
+import {getprojectform, getaccessoption} from '../data/ComponentSetting';
 import {ProjectSubmit, ProjectDelete} from './ProjectButton';
 
 import ConfirmdeleteDialog from './ConfirmdeleteDialog';
@@ -130,7 +130,7 @@ function LiveFormTab(props: FormTabProps) {
             <AutocompleteForm
               handleAutocomplete={handleAutocomplete}
               id={formvariants}
-              options={getacessoption(props.projectvalue.accesses)}
+              options={getaccessoption(props.projectvalue.accesses)}
               labels={props.projectvalue['access']['access' + formvariants]}
               type={'form'}
               uiSpec={getprojectform(props.projectvalue, 'formaccess', {

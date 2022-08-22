@@ -26,12 +26,12 @@ import {
   Defaultcomponentsetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
-import {generatenewfield} from '../components/project/data/componenentSetting';
+import {generatenewfield} from '../components/project/data/componentSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {option} from '../../datamodel/typesystem';
 import {
   ProjectUIModel,
-  componenentSettingprops,
+  componentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {HRID_STRING} from '../../datamodel/core';
@@ -99,9 +99,7 @@ export class TemplatedStringField extends React.Component<
   }
 }
 
-export function TemplatedStringcomponentsetting(
-  props: componenentSettingprops
-) {
+export function TemplatedStringcomponentsetting(props: componentSettingprops) {
   const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
 
   React.useEffect(() => {
@@ -151,7 +149,7 @@ export function TemplatedStringcomponentsetting(
       value = value + '{{' + name + '}}-';
     }
     value = value.substring(0, value.length - 1);
-    newvalues['views']['FormParamater']['fields'] = [
+    newvalues['views']['FormParameter']['fields'] = [
       'hrid' + props.fieldName,
       'helperText' + props.fieldName,
       'numberfield' + props.fieldName,
@@ -340,7 +338,7 @@ export function TemplatedStringcomponentsetting(
 
   const setuphrid = () => {
     //check if there is hrid
-    let ishird = false;
+    let ishrid = false;
     props.uiSpec['viewsets'][props.currentform]['views'].map((view: string) => {
       if (
         props.uiSpec['views'][view]['fields'].includes(
@@ -348,13 +346,13 @@ export function TemplatedStringcomponentsetting(
         ) &&
         props.uiSpec['fields'][props.fieldName]['component-parameters'] !== true
       )
-        ishird = true;
+        ishrid = true;
     });
-    if (ishird) {
-      console.log('set hird twice');
-      //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
+    if (ishrid) {
+      console.log('set hrid twice');
+      //alert('Can ONLY set one Human Readable ID, please uncheck existing firstly')
     } else {
-      //change all name to hird
+      //change all name to hrid
       const newfieldname = HRID_STRING + props.currentform;
       const newui = props.uiSpec;
       newui['fields'][newfieldname] = JSON.parse(
@@ -431,7 +429,7 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText:
-        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component. And then select field or meta value from following dropdown list',
+        'Select number of Component for This ID field,please ensure to add BasicAutoIncrementer Component. And then select field or meta value from following dropdown list',
       variant: 'outlined',
       required: true,
       select: true,
@@ -492,7 +490,7 @@ function UISetting() {
     initialValue: false,
   };
 
-  newuiSetting['views']['FormParamater']['fields'] = [
+  newuiSetting['views']['FormParameter']['fields'] = [
     'hrid',
     'helperText',
     'numberfield',
@@ -500,7 +498,7 @@ function UISetting() {
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps', 'FormParamater'],
+      views: ['InputLabelProps', 'FormParameter'],
       label: 'settings',
     },
   };

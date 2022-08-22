@@ -30,7 +30,7 @@ import {
 import {option} from '../../datamodel/typesystem';
 import {
   ProjectUIModel,
-  componenentSettingprops,
+  componentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 
@@ -70,7 +70,7 @@ export class MultiSelect extends React.Component<TextFieldProps & Props> {
   }
 }
 
-export function MultiSelectcomponentsetting(props: componenentSettingprops) {
+export function MultiSelectcomponentsetting(props: componentSettingprops) {
   const {handlerchangewithview, ...others} = props;
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
@@ -101,7 +101,7 @@ export function MultiSelectcomponentsetting(props: componenentSettingprops) {
     }
 
     if (
-      view === 'FormParamater' &&
+      view === 'FormParameter' &&
       event.target.name.replace(props.fieldName, '') === 'select_others'
     ) {
       const newvalues = props.uiSpec;
@@ -181,12 +181,12 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['helperText'];
+  newuiSetting['views']['FormParameter']['fields'] = ['helperText'];
   newuiSetting['fields']['options']['component-parameters']['helperText'] =
-    'Add more than 2 options here, use "," to seperate option';
+    'Add more than 2 options here, use "," to separate option';
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps', 'FormParamater', 'ElementProps'],
+      views: ['InputLabelProps', 'FormParameter', 'ElementProps'],
       label: 'settings',
     },
   };

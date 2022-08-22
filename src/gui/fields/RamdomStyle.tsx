@@ -141,7 +141,7 @@ const uiSetting = () => {
     initialValue: '',
   };
 
-  newuiSetting['views']['FormParamater']['fields'] = [
+  newuiSetting['views']['FormParameter']['fields'] = [
     'label',
     'helperText',
     'variant_style',
@@ -149,7 +149,7 @@ const uiSetting = () => {
   ];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['FormParameter'],
       label: 'settings',
     },
   };

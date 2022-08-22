@@ -15,7 +15,7 @@
  *
  * Filename: TakePhoto.tsx
  * Description:
- *   TODO : to add function check if photoes be downloaded
+ *   TODO : to add function check if photos be downloaded
  */
 
 import React from 'react';
@@ -56,7 +56,7 @@ interface Props {
   issyncing?: string;
 }
 
-type ImgeListProps = {
+type ImageListProps = {
   images: Array<any>;
   setopen: any;
   setimage: any;
@@ -79,7 +79,7 @@ const ImageGalleryList = styled('ul')(({theme}) => ({
   },
 }));
 
-const FAIMESImageList = (props: ImgeListProps) => {
+const FAIMSImageList = (props: ImageListProps) => {
   const {images, setopen, setimage} = props;
   const handelonClick = (index: number) => {
     if (images.length > index) {
@@ -221,7 +221,7 @@ export class TakePhoto extends React.Component<
             ? this.props.label
             : 'Take Photo'}
         </Button>
-        <FAIMESImageList
+        <FAIMSImageList
           images={images}
           setopen={(path: string) =>
             this.setState({open: true, photopath: path})
@@ -264,10 +264,10 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helpertext'];
+  newuiSetting['views']['FormParameter']['fields'] = ['label', 'helpertext'];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['FormParameter'],
       label: 'settings',
     },
   };

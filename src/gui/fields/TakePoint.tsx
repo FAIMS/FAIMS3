@@ -162,10 +162,10 @@ const uiSpec = {
 
 const uiSetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['views']['FormParamater']['fields'] = ['label', 'helperText'];
+  newuiSetting['views']['FormParameter']['fields'] = ['label', 'helperText'];
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['FormParamater'],
+      views: ['FormParameter'],
       label: 'settings',
     },
   };

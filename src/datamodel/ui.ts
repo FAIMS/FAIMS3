@@ -169,7 +169,7 @@ export type FormComponentList = FormComponent[];
 
 export type FAIMShandlerType = any;
 export type FAIMSEVENTTYPE = any;
-export interface ProjevtValueList {
+export interface ProjectValueList {
   [key: string]: any;
 }
 
@@ -178,7 +178,7 @@ export interface BehaviourProperties {
   helpText: string;
 }
 
-export type componenentSettingprops = {
+export type componentSettingprops = {
   uiSetting: ProjectUIModel;
   formProps: any;
   component: FAIMSBuilderFormField;
