@@ -31,11 +31,8 @@ import {
 
 import makeStyles from '@mui/styles/makeStyles';
 
-import {LoginForm} from './login_form';
-import {
-  getTokenContentsForCluster,
-  deleteTokenForCluster,
-} from '../../../users';
+import {LoginButton} from './login_form';
+import {getTokenContentsForCluster, forgetCurrentToken} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
 import {TokenContents} from '../../../datamodel/core';
 import * as ROUTES from '../../../constants/routes';
@@ -44,6 +41,7 @@ type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
   listing_description: string;
+  conductor_url: string;
   setToken?: any;
 };
 
@@ -81,8 +79,11 @@ export default function ClusterCard(props: ClusterCardProps) {
       <CardContent style={{paddingTop: 0}}>
         <p>{props.listing_description}</p>
         {token === undefined ? (
-          <LoginForm
+          <LoginButton
+            key={props.listing_id}
             listing_id={props.listing_id}
+            listing_name={props.listing_name}
+            conductor_url={props.conductor_url}
             setToken={setToken}
             is_refresh={false}
           />
@@ -108,7 +109,7 @@ export default function ClusterCard(props: ClusterCardProps) {
               variant="contained"
               size="large"
               onClick={() =>
-                deleteTokenForCluster(props.listing_id).then(() => {
+                forgetCurrentToken(props.listing_id).then(() => {
                   setToken(undefined);
                   reprocess_listing(props.listing_id);
                 })
@@ -116,8 +117,11 @@ export default function ClusterCard(props: ClusterCardProps) {
             >
               Logout
             </Button>
-            <LoginForm
+            <LoginButton
+              key={props.listing_id}
               listing_id={props.listing_id}
+              listing_name={props.listing_name}
+              conductor_url={props.conductor_url}
               setToken={setToken}
               is_refresh={true}
             />
