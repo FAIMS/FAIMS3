@@ -212,8 +212,8 @@ export type resetprops = {
 
 export type SectionMeta = any;
 
-//inetface for field persistence state
-export interface fieldpersistencedata {
+//inetface for field persistent state
+export interface fieldpersistentdata {
   _id?: string;
   project_id?: ProjectID;
   type: FAIMSTypeName;

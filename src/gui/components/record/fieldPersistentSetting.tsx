@@ -13,15 +13,15 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: fieldPersistenceSetting.tsx
+ * Filename: fieldpersistentSetting.tsx
  * Description:
- *   This is the file is to set the values for persistence state
+ *   This is the file is to set the values for persistent state
  */
-import {set_fieldpersistencedata} from '../../../datamodel/fieldpersistence';
+import {set_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
 import {Annotations} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
 
-export function savefieldPersistenceSetting(
+export function savefieldpersistentSetting(
   project_id: string,
   form_type: string | null,
   values: {[field_name: string]: any},
@@ -34,7 +34,7 @@ export function savefieldPersistenceSetting(
   // check if there is persisence value be set
   let ispersitence = false;
   for (const [name] of Object.entries(uiSpec.fields)) {
-    if (uiSpec['fields'][name]['persistence'] !== undefined) {
+    if (uiSpec['fields'][name]['persistent'] !== undefined) {
       newdata[name] = values[name];
       newanntation[name] = annotations[name];
       ispersitence = true;
@@ -48,7 +48,7 @@ export function savefieldPersistenceSetting(
     annotations: newanntation,
   };
   return ispersitence
-    ? set_fieldpersistencedata(project_id, form_type || 'FORM1', newstage)
+    ? set_fieldpersistentdata(project_id, form_type || 'FORM1', newstage)
         .then(refs => {
           return refs;
         })

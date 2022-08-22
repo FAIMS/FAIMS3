@@ -57,8 +57,8 @@ import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
-import {savefieldPersistenceSetting} from './fieldPersistenceSetting';
-import {get_fieldpersistencedata} from '../../../datamodel/fieldpersistence';
+import {savefieldpersistentSetting} from './fieldPersistentSetting';
+import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -378,10 +378,10 @@ class RecordForm extends React.Component<
     );
     const fieldNames = getFieldNamesFromFields(fields);
 
-    // get value from persistence
-    let persistencevalue: any = {};
+    // get value from persistent
+    let persistentvalue: any = {};
     if (this.state.type_cached !== null)
-      persistencevalue = await get_fieldpersistencedata(
+      persistentvalue = await get_fieldpersistentdata(
         this.props.project_id,
         this.state.type_cached
       );
@@ -395,24 +395,24 @@ class RecordForm extends React.Component<
 
     fieldNames.forEach(fieldName => {
       let intvalue = fields[fieldName]['initialValue'];
-      // set value from persistence
+      // set value from persistent
       if (
-        persistencevalue.data !== undefined &&
-        persistencevalue.data[fieldName] !== undefined
+        persistentvalue.data !== undefined &&
+        persistentvalue.data[fieldName] !== undefined
       )
-        intvalue = persistencevalue.data[fieldName];
+        intvalue = persistentvalue.data[fieldName];
       initialValues[fieldName] = firstDefinedFromList([
         staged_data[fieldName],
         database_data[fieldName],
         intvalue,
       ]);
-      // set annotation from persistence
+      // set annotation from persistent
       let annotationvalue = {annotation: '', uncertainty: false};
       if (
-        persistencevalue.annotations !== undefined &&
-        persistencevalue.annotations[fieldName] !== undefined
+        persistentvalue.annotations !== undefined &&
+        persistentvalue.annotations[fieldName] !== undefined
       )
-        annotationvalue = persistencevalue.annotations[fieldName];
+        annotationvalue = persistentvalue.annotations[fieldName];
       annotations[fieldName] = firstDefinedFromList([
         staged_annotations[fieldName],
         database_annotations[fieldName],
@@ -557,8 +557,8 @@ class RecordForm extends React.Component<
   save(values: object, is_final_view: boolean) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
-    //save state into persistence data, this is just for testing, will determine when the value should be daved
-    savefieldPersistenceSetting(
+    //save state into persistent data
+    savefieldpersistentSetting(
       this.props.project_id,
       this.state.type_cached,
       values,
@@ -825,8 +825,8 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                //save the persistence value when form updated???
-                // savefieldPersistenceSetting(
+                //save the persistent value when form updated???
+                // savefieldpersistentSetting(
                 //   this.props.project_id,
                 //   this.state.type_cached,
                 //   formProps.values,
