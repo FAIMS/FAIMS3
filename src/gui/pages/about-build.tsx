@@ -23,6 +23,8 @@ import {Box, Container} from '@mui/material';
 import Button from '@mui/material/Button';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
+import {downloadBlob} from '../../utils';
+import {getFullDBSystemDump} from '../../sync/data-dump';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -113,6 +115,17 @@ export default function AboutBuild() {
           Open MiniFauxton
         </Button>
       )}
+      <Button
+        variant="outlined"
+        color={'primary'}
+        onClick={async () => {
+          const b = await getFullDBSystemDump();
+          downloadBlob(b, 'faims3-dump.json');
+        }}
+        style={{marginRight: '10px'}}
+      >
+        Download local database contents
+      </Button>
     </Container>
   );
 }
