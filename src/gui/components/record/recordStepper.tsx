@@ -33,9 +33,8 @@ import makeStyles from '@mui/styles/makeStyles';
 type RecordStepperProps = {
   view_index: number;
   ui_specification: ProjectUIModel;
-  viewsetName: string;
-  activeStep: number;
   onChangeStepper: any;
+  views: {[key: string]: any};
 };
 
 const useStyles = makeStyles(() => ({
@@ -60,9 +59,8 @@ export default function RecordStepper(props: RecordStepperProps) {
   const {
     view_index,
     ui_specification,
-    viewsetName,
-    activeStep,
     onChangeStepper,
+    views, //add for branching logic
   } = props;
   // 20220727 bbs the width 93% gets rid of the overflowX in the PSMIP notebook at most standard resolutions
   // Client didn't want the absence of the stepper in sm-md resolutions, so reverted md->sm and am making text changes
@@ -79,43 +77,35 @@ export default function RecordStepper(props: RecordStepperProps) {
             alternativeLabel
             className={classes.stepperStyle}
           >
-            {ui_specification.viewsets[viewsetName].views.map(
-              (view_name: string, index: number) => (
-                <Step key={view_name}>
-                  <StepButton
-                    onClick={() => {
-                      onChangeStepper(view_name, index);
-                    }}
-                    sx={{width: '93%'}}
-                  >
-                    {ui_specification.views[view_name].label}
-                  </StepButton>
-                </Step>
-              )
-            )}
+            {views.map((view_name: string, index: number) => (
+              <Step key={view_name}>
+                <StepButton
+                  onClick={() => {
+                    onChangeStepper(view_name, index);
+                  }}
+                  sx={{width: '93%'}}
+                >
+                  {ui_specification.views[view_name].label}
+                </StepButton>
+              </Step>
+            ))}
           </Stepper>
         </div>
       </Box>
       <Box display={{xs: 'block', sm: 'none'}}>
         <MobileStepper
           variant="text"
-          steps={ui_specification.viewsets[viewsetName].views.length}
+          steps={views.length}
           position="static"
-          activeStep={activeStep}
+          activeStep={view_index}
           nextButton={
             <Button
               size="small"
               onClick={() => {
-                const stepnum = activeStep + 1;
-                onChangeStepper(
-                  ui_specification.viewsets[viewsetName].views[stepnum],
-                  stepnum
-                );
+                const stepnum = view_index + 1;
+                onChangeStepper(views[stepnum], stepnum);
               }}
-              disabled={
-                activeStep ===
-                ui_specification.viewsets[viewsetName].views.length - 1
-              }
+              disabled={view_index === views.length - 1}
             >
               Next
             </Button>
@@ -124,24 +114,17 @@ export default function RecordStepper(props: RecordStepperProps) {
             <Button
               size="small"
               onClick={() => {
-                const stepnum = activeStep - 1;
-                onChangeStepper(
-                  ui_specification.viewsets[viewsetName].views[stepnum],
-                  stepnum
-                );
+                const stepnum = view_index - 1;
+                onChangeStepper(views[stepnum], stepnum);
               }}
-              disabled={activeStep === 0}
+              disabled={view_index === 0}
             >
               Back
             </Button>
           }
         />
         <Typography variant="h5" align="center">
-          {
-            ui_specification.views[
-              ui_specification.viewsets[viewsetName].views[activeStep]
-            ].label
-          }
+          {ui_specification.views[views[view_index]].label}
         </Typography>
       </Box>
     </>

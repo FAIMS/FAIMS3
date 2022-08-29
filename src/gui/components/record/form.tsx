@@ -26,7 +26,8 @@ import {Formik, Form} from 'formik';
 import {Button, Grid, Box, ButtonGroup, Typography} from '@mui/material';
 
 import CircularProgress from '@mui/material/CircularProgress';
-import {firstDefinedFromList, getlogicUiSpefic} from './helpers';
+import {firstDefinedFromList} from './helpers';
+import {get_logic_fields, get_logic_views} from './branchingLogic';
 
 import AutoSave from './autosave';
 import {ViewComponent} from './view';
@@ -393,29 +394,29 @@ class RecordForm extends React.Component<
     const annotations: {[key: string]: any} = {};
 
     fieldNames.forEach(fieldName => {
-      let intvalue = fields[fieldName]['initialValue'];
+      let initial_value = fields[fieldName]['initialValue'];
       // set value from persistence
       if (
         persistencevalue.data !== undefined &&
         persistencevalue.data[fieldName] !== undefined
       )
-        intvalue = persistencevalue.data[fieldName];
+      initial_value= persistencevalue.data[fieldName];
       initialValues[fieldName] = firstDefinedFromList([
         staged_data[fieldName],
         database_data[fieldName],
-        intvalue,
+        initial_value,
       ]);
       // set annotation from persistence
-      let annotationvalue = {annotation: '', uncertainty: false};
+      let annotation_value = {annotation: '', uncertainty: false};
       if (
         persistencevalue.annotations !== undefined &&
         persistencevalue.annotations[fieldName] !== undefined
       )
-        annotationvalue = persistencevalue.annotations[fieldName];
+      annotation_value = persistencevalue.annotations[fieldName];
       annotations[fieldName] = firstDefinedFromList([
         staged_annotations[fieldName],
         database_annotations[fieldName],
-        annotationvalue,
+        annotation_value,
       ]);
     });
 
@@ -556,7 +557,7 @@ class RecordForm extends React.Component<
   save(values: object, is_final_view: boolean) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
-    //save state into persistence data, this is just for testing, will determine when the value should be daved
+    //save state into persistence data, this is just for testing
     savefieldPersistenceSetting(
       this.props.project_id,
       this.state.type_cached,
@@ -775,8 +776,14 @@ class RecordForm extends React.Component<
       const viewName = this.requireView();
       const viewsetName = this.requireViewsetName();
       const initialValues = this.requireInitialValues();
-      // get ui_specification beased on values for branching logic
-      let ui_specification = getlogicUiSpefic(
+      const ui_specification = this.props.ui_specification;
+      //fields list and views list could be updated depends on values user choose
+      let fieldNames = get_logic_fields(
+        this.props.ui_specification,
+        initialValues,
+        viewName
+      );
+      let views = get_logic_views(
         this.props.ui_specification,
         viewsetName,
         initialValues
@@ -785,12 +792,9 @@ class RecordForm extends React.Component<
         ui_specification,
         viewsetName
       );
-      //value chould be update for branching logic, change to let
-      let view_index = ui_specification.viewsets[viewsetName].views.indexOf(
-        viewName
-      );
-      let is_final_view =
-        view_index + 1 === ui_specification.viewsets[viewsetName].views.length;
+      //value could be update for branching logic, change to let
+      let view_index = views.indexOf(viewName);
+      let is_final_view = view_index + 1 === views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
       return (
@@ -812,18 +816,18 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                ui_specification = getlogicUiSpefic(
-                  ui_specification,
+                fieldNames = get_logic_fields(
+                  this.props.ui_specification,
+                  formProps.values,
+                  viewName
+                );
+                views = get_logic_views(
+                  this.props.ui_specification,
                   viewsetName,
                   formProps.values
                 );
-                view_index = ui_specification.viewsets[
-                  viewsetName
-                ].views.indexOf(viewName);
-                is_final_view =
-                  view_index + 1 ===
-                  ui_specification.viewsets[viewsetName].views.length;
-                console.log(ui_specification);
+                view_index = views.indexOf(viewName);
+                is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
                   formProps.values,
                   this.state.annotation
@@ -834,9 +838,8 @@ class RecordForm extends React.Component<
                       <RecordStepper
                         view_index={view_index}
                         ui_specification={ui_specification}
-                        viewsetName={viewsetName}
-                        activeStep={this.state.activeStep}
                         onChangeStepper={this.onChangeStepper}
+                        views={views}
                       />
                     }
 
@@ -870,6 +873,7 @@ class RecordForm extends React.Component<
                             isSyncing={this.props.isSyncing}
                             conflictfields={this.props.conflictfields}
                             handleChangeTab={this.props.handleChangeTab}
+                            fieldNames={fieldNames}
                           />
                           <br />
 
@@ -919,10 +923,7 @@ class RecordForm extends React.Component<
                               ''
                             )}
                           </ButtonGroup>
-                          {this.state.activeStep <
-                            ui_specification.viewsets[viewsetName].views
-                              .length -
-                              1 && (
+                          {!is_final_view && (
                             <ButtonGroup
                               color="primary"
                               aria-label="contained primary button group"
@@ -934,19 +935,11 @@ class RecordForm extends React.Component<
                                   if (DEBUG_APP) {
                                     console.log(this.state.activeStep);
                                   }
-                                  const stepnum = this.state.activeStep + 1;
-                                  if (DEBUG_APP) {
-                                    console.log(
-                                      ui_specification.viewsets[viewsetName]
-                                        .views[stepnum]
-                                    );
-                                  }
+                                  const stepnum = view_index + 1;
 
                                   this.setState({
                                     activeStep: stepnum,
-                                    view_cached:
-                                      ui_specification.viewsets[viewsetName]
-                                        .views[stepnum],
+                                    view_cached: views[stepnum],
                                   });
                                 }}
                               >

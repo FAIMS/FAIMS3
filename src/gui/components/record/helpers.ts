@@ -17,13 +17,12 @@
  * Description:
  *   TODO
  */
-import {ProjectUIModel} from '../../../datamodel/ui';
 /**
  * Given a list of values, returns the first from the list that isn't null/undefined
  * This is to be used instead of list[0] || list[1] || list[2]
  * in the case that list can contain the number 0
  *
- * @param list List of undefineds, nulls, or anything else
+ * @param list List of undefined, nulls, or anything else
  * @returns Always returns null or a defined value, this never returns undefined.
  */
 export function firstDefinedFromList<T>(
@@ -37,97 +36,3 @@ export function firstDefinedFromList<T>(
     return list[0];
   }
 }
-
-export function getlogicUiSpefic(
-  ui_specification: ProjectUIModel,
-  form_type: string,
-  values: any
-) {
-  let newui = ui_specification;
-  ui_specification['viewsets'][form_type]['views'].map((view: string) => {
-    ui_specification['views'][view]['fields'].map(
-      (field: string) =>
-        (newui = getfield(newui, values, field, view, form_type))
-    );
-  });
-  return newui;
-}
-
-const getfield = (
-  ui_specification: ProjectUIModel,
-  values: any,
-  field: string,
-  view: string,
-  form_type: string
-) => {
-  if (ui_specification['fields'][field]['logic_select'] === undefined)
-    return ui_specification;
-  if (ui_specification['fields'][field]['logic_select'] === 'none')
-    return ui_specification;
-  const fields = ui_specification['fields'][field]['logic_select'];
-
-  if (ui_specification['fields'][field]['logic_select']['type'] === 'field') {
-    for (const [name] of Object.entries(fields)) {
-      if (name === 'type') {
-        //pass if name is type
-      } else if (values[field] !== name) {
-        const index = ui_specification['views'][view]['fields'].indexOf(
-          ui_specification['fields'][field]['logic_select'][name]
-        );
-        if (index > -1) {
-          ui_specification['views'][view]['fields'].splice(index, 1);
-        }
-      } else if (
-        values[field] === name &&
-        !ui_specification['views'][view]['fields'].includes(
-          ui_specification['fields'][field]['logic_select'][name]
-        )
-      ) {
-        const index = ui_specification['views'][view]['fields'].indexOf(field);
-        ui_specification['views'][view]['fields'].splice(
-          index + 1,
-          0,
-          ui_specification['fields'][field]['logic_select'][name]
-        );
-
-        console.log(name);
-      }
-    }
-    return ui_specification;
-  }
-  if (ui_specification['fields'][field]['logic_select']['type'] === 'section') {
-    for (const [name] of Object.entries(fields)) {
-      if (name === 'type') {
-        //pass if name is type
-      } else if (values[field] !== name) {
-        const viewname =
-          ui_specification['fields'][field]['logic_select'][name];
-        const index = ui_specification['viewsets'][form_type]['views'].indexOf(
-          viewname
-        );
-        if (index > -1) {
-          ui_specification['viewsets'][form_type]['views'].splice(index, 1);
-        }
-      } else if (
-        values[field] === name &&
-        !ui_specification['viewsets'][form_type]['views'].includes(
-          ui_specification['fields'][field]['logic_select'][name]
-        )
-      ) {
-        const viewname =
-          ui_specification['fields'][field]['logic_select'][name];
-        const index = ui_specification['viewsets'][form_type]['views'].indexOf(
-          view
-        );
-        ui_specification['viewsets'][form_type]['views'].splice(
-          index + 1,
-          0,
-          viewname
-        );
-      }
-    }
-    console.log(ui_specification['viewsets'][form_type]['views']);
-    return ui_specification;
-  }
-  return ui_specification;
-};

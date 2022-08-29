@@ -41,6 +41,7 @@ type ViewProps = {
   isSyncing?: string;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
+  fieldNames: string[]; //add for branching logic
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -150,8 +151,7 @@ function SingleComponent(props: SingleComponentProps) {
 
 export function ViewComponent(props: ViewProps) {
   const ui_specification = props.ui_specification;
-  const viewName = props.viewName;
-  const fieldNames: string[] = ui_specification.views[viewName].fields;
+  const fieldNames: string[] = props.fieldNames;
   const fields = ui_specification.fields;
   const [error, setError] = useState(true);
 
