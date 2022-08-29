@@ -108,7 +108,9 @@ export default function AboutBuild() {
           variant="outlined"
           color={'primary'}
           onClick={() => {
-            window.location.pathname = '/minifauxton.html';
+            window.open(
+              window.location.origin + '/minifauxton.html', "_blank"
+            );
           }}
           style={{marginRight: '10px'}}
         >
