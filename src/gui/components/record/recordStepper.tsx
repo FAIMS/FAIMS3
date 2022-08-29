@@ -62,6 +62,7 @@ export default function RecordStepper(props: RecordStepperProps) {
     onChangeStepper,
     views, //add for branching logic
   } = props;
+  // active step has been replaced by view_index because view_index will be updated every time form values updated
   // 20220727 bbs the width 93% gets rid of the overflowX in the PSMIP notebook at most standard resolutions
   // Client didn't want the absence of the stepper in sm-md resolutions, so reverted md->sm and am making text changes
   return (

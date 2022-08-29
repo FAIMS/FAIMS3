@@ -400,7 +400,7 @@ class RecordForm extends React.Component<
         persistencevalue.data !== undefined &&
         persistencevalue.data[fieldName] !== undefined
       )
-      initial_value= persistencevalue.data[fieldName];
+        initial_value = persistencevalue.data[fieldName];
       initialValues[fieldName] = firstDefinedFromList([
         staged_data[fieldName],
         database_data[fieldName],
@@ -412,7 +412,7 @@ class RecordForm extends React.Component<
         persistencevalue.annotations !== undefined &&
         persistencevalue.annotations[fieldName] !== undefined
       )
-      annotation_value = persistencevalue.annotations[fieldName];
+        annotation_value = persistencevalue.annotations[fieldName];
       annotations[fieldName] = firstDefinedFromList([
         staged_annotations[fieldName],
         database_annotations[fieldName],
