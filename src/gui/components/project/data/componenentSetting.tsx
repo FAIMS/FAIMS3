@@ -226,7 +226,7 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.string']],
       initialValue: '',
     },
-    // add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+    // add for branching logic setting, this is for testing/developing ONLY, not ready for production yet
     logic_select: {
       'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
       'component-name': 'Select',
@@ -707,7 +707,13 @@ const Componentsetting = (props: componenentSettingprops) => {
       let newvalues = props.uiSpec;
       let newuis = uiSetting;
       const name = event.target.name.replace(props.fieldName, '');
-      newvalues = definelogic(newvalues, value, props.fieldName, name);
+      newvalues = definelogic(
+        newvalues,
+        value,
+        props.fieldName,
+        name,
+        props.currentview
+      );
       newuis = generateuiforlogic(
         props.uiSpec,
         newuis,
@@ -730,12 +736,30 @@ const Componentsetting = (props: componenentSettingprops) => {
     </>
   );
 };
+
+const definelogicvalue = (
+  value: any,
+  fieldname: string,
+  pur_fieldname: string
+) => {
+  if (value['is_logic'] === undefined)
+    return {...value, is_logic: {[fieldname]: [pur_fieldname]}};
+  if (value['is_logic'][fieldname] === undefined)
+    return {...value, is_logic: {[fieldname]: [pur_fieldname]}};
+  if (!value['is_logic'][fieldname].includes(pur_fieldname)) {
+    const values = value['is_logic'];
+    values[fieldname].push(pur_fieldname);
+    return {...value, is_logic: {...values}};
+  }
+  return value;
+};
 // add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
 const definelogic = (
   newvalues: ProjectUIModel,
   value: any,
   fieldname: string,
-  name: string
+  name: string,
+  viewName: string
 ) => {
   if (name === 'logic_select') {
     newvalues['fields'][fieldname][name] = {type: value};
@@ -745,20 +769,39 @@ const definelogic = (
     newvalues['fields'][fieldname]['logic_select'][
       name.replace('select', '').replace(fieldname, '')
     ] = value;
-    // if (newvalues['fields'][value]['is_logic'] !== undefined)
-    //   newvalues['fields'][value]['is_logic'][fieldname] = name
-    //     .replace('select', '')
-    //     .replace(fieldname, '');
-    // else
-    //   newvalues['fields'][value]['is_logic'] = {
-    //     [fieldname]: name.replace('select', '').replace(fieldname, ''),
-    //   };
+    const pur_fieldname = name.replace('select', '').replace(fieldname, '');
+    if (value.length > 0) {
+      value.map((v: string) =>
+        newvalues['fields'][v]['is_logic'] !== undefined
+          ? newvalues['fields'][v]['is_logic'][fieldname] !== undefined
+            ? !newvalues['fields'][v]['is_logic'][fieldname].includes(
+                pur_fieldname
+              ) &&
+              newvalues['fields'][v]['is_logic'][fieldname].push(pur_fieldname)
+            : (newvalues['fields'][v]['is_logic'][fieldname] = [pur_fieldname])
+          : (newvalues['fields'][v]['is_logic'] = {
+              [fieldname]: [pur_fieldname],
+            })
+      );
+    }
+
     return newvalues;
   }
   if (newvalues['fields'][fieldname]['logic_select']['type'] === 'section') {
     newvalues['fields'][fieldname]['logic_select'][
       name.replace('select', '').replace(fieldname, '')
     ] = value;
+    const pur_fieldname = name.replace('select', '').replace(fieldname, '');
+    if (value.length > 0) {
+      value.map(
+        (v: string) =>
+          (newvalues['views'][v] = definelogicvalue(
+            newvalues['views'][v],
+            fieldname,
+            pur_fieldname
+          ))
+      );
+    }
     return newvalues;
   }
   return newvalues;
@@ -828,7 +871,7 @@ const generateuiforlogic = (
     const name = 'select' + values[i].value + fieldName;
     const newfield = generatenewfield(
       'faims-custom',
-      'Select',
+      'MultiSelect',
       null,
       name,
       null
@@ -840,7 +883,7 @@ const generateuiforlogic = (
       ['yup.required'],
       ['yup.min', 1],
     ];
-    newfield['initialValue'] = '';
+    newfield['initialValue'] = [];
     newvalues['fields'][name] = newfield;
     // newini[name] = inivalue;
     newfieldlist[i] = name;
