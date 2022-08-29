@@ -25,6 +25,20 @@ VERSION_NAME=`echo -n "${serverprefix}.${prnum}" | tr -d "\n"`
 
 platform :android do  
   desc "Deploy a new version to Google Play"
+
+  lane :debug do |variable|
+    gradle(task: "clean")
+    sh("echo", VERSION_NAME)
+    sh("echo", FIP_CLOSED_LANE)
+    sh("../bin/changelog.sh", VERSION)
+    gradle(task: "assemble",
+           build_type: "Debug",
+           properties: {
+              "versionCode" => VERSION,
+              "versionName" => VERSION_NAME,
+           }
+           )
+  end
   lane :compile_special do
     gradle(task: "clean")
     sh("echo", VERSION_NAME)
