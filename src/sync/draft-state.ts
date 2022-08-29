@@ -276,10 +276,12 @@ class RecordDraftState {
         // BUT we don't want things like {} to not equal another {} (or [] != [])
         // So we use JSON stable stringify to compare
         //
-        // undefined in gives undefined out. Which is prefectly fine
+        // undefined in gives undefined out. Which is perfectly fine
         if (
           stable_stringify(this.data.fields?.[field]) !==
-          stable_stringify(values?.[field])
+            stable_stringify(values?.[field]) ||
+          stable_stringify(this.data.annotations?.[field]) !==
+            stable_stringify(annotations?.[field])
         ) {
           this.touched_fields.add(field);
         }
