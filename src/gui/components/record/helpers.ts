@@ -17,13 +17,12 @@
  * Description:
  *   TODO
  */
-
 /**
  * Given a list of values, returns the first from the list that isn't null/undefined
  * This is to be used instead of list[0] || list[1] || list[2]
  * in the case that list can contain the number 0
  *
- * @param list List of undefineds, nulls, or anything else
+ * @param list List of undefined, nulls, or anything else
  * @returns Always returns null or a defined value, this never returns undefined.
  */
 export function firstDefinedFromList<T>(

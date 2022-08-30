@@ -139,11 +139,6 @@ export function TabEditable(props: TabProps) {
     setIsset(!isset);
   };
 
-  const handleSubmit = (event: any) => {
-    console.log(event);
-    setisedited(false);
-  };
-
   const handleSubmitForm = (values: any) => {
     const newtabs = tablists;
     const pretabs = tablists;

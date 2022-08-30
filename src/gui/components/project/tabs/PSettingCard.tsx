@@ -42,6 +42,7 @@ import {DeleteuserButton} from './ProjectButton';
 import NextWeekIcon from '@mui/icons-material/NextWeek';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import TaskIcon from '@mui/icons-material/Task';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({
   settiglist: {
@@ -110,6 +111,17 @@ export function SettingCard(props: SettingCard) {
       >
         <NoteIcon />
       </ListItem>
+      {/* add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet */}
+      {String(process.env.REACT_APP_SERVER) === 'developers' && (
+        <ListItem
+          button
+          onClick={() => handelonClick('logic', key_id)}
+          key="list5"
+          selected={selected === 'logic'}
+        >
+          <TaskIcon />
+        </ListItem>
+      )}
     </List>
   );
 }

@@ -57,6 +57,7 @@ export interface ProjectUIViews {
     fields: string[];
     uidesign?: string;
     next_label?: string;
+    is_logic?: {[key: string]: string[]}; //add for branching logic
   };
 }
 

@@ -26,6 +26,7 @@ import {local_state_db} from '../sync/databases';
 import {ProjectID} from './core';
 import {LOCAL_FIELDpersistent_PREFIX} from './database';
 import {fieldpersistentdata} from './ui';
+import stable_stringify from 'fast-json-stable-stringify';
 
 function get_pouch_id(project_id: ProjectID, form_id: string): string {
   return LOCAL_FIELDpersistent_PREFIX + '-' + project_id + '-' + form_id;
@@ -67,7 +68,10 @@ export async function set_fieldpersistentdata(
   new_state: fieldpersistentdata
 ) {
   const doc = await get_fieldpersistentdata(project_id, form_id);
-  console.log(doc);
+  //check if changes
+  if (!check_if_update(new_state, doc)) {
+    return true;
+  }
   doc.data = new_state.data;
   doc.annotations = new_state.annotations;
   try {
@@ -77,3 +81,26 @@ export async function set_fieldpersistentdata(
     throw Error('Unable to set local increment state');
   }
 }
+
+const check_if_update = (
+  new_state: fieldpersistentdata,
+  doc: fieldpersistentdata
+) => {
+  //if the origin data empty, always save the value
+  if (Object.keys(doc.data).length === 0) return true;
+  for (const [field] of Object.entries(new_state['data'])) {
+    if (
+      stable_stringify(doc.data[field]) !==
+      stable_stringify(new_state.data[field])
+    ) {
+      return true;
+    }
+    if (
+      stable_stringify(doc.annotations[field]) !==
+      stable_stringify(new_state.annotations[field])
+    ) {
+      return true;
+    }
+  }
+  return false;
+};

@@ -252,12 +252,17 @@ const getfieldNamesbyView = (
   view: string,
   fieldui: ProjectUIFields
 ) => {
-  if (view === 'meta') return uiSetting['views'][view]['fields'] ?? [];
-  if (view === 'validationSchema')
+  if (
+    [
+      'meta',
+      'validationSchema',
+      'access',
+      'FormParamater',
+      'other',
+      'logic',
+    ].includes(view)
+  )
     return uiSetting['views'][view]['fields'] ?? [];
-  if (view === 'access') return uiSetting['views'][view]['fields'] ?? [];
-  if (view === 'FormParamater') return uiSetting['views'][view]['fields'] ?? [];
-  if (view === 'other') return uiSetting['views'][view]['fields'] ?? [];
   if (
     uiSetting['views'][view] !== undefined &&
     fieldui['component-parameters'][view] !== undefined
@@ -304,7 +309,6 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
       </>
     );
   };
-
   return (
     <>
       {uiSetting['viewsets'][props.designvalue]['views'] !== undefined &&
