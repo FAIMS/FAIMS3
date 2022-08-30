@@ -13,28 +13,29 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: fieldpersistence.ts
+ * Filename: fieldpersistent.ts
  * Description:
  *  This is the document for saving/updating fields persistance
- *  persistence state been saved in local_state_db as local data for each device
- *  persistence state will be get when user open record or draft and filled in draft as initial value if initial value is empty
+ *  persistent state been saved in local_state_db as local data for each device
+ *  persistent state will be get when user open record or draft and filled in draft as initial value if initial value is empty
  *  if persitence state updated, all draft created after will be updated, but draft created before won't be affected
- *  persistence state will be updated when record been saved( to be discussed)
+ *  persistent state will be updated when record been saved( to be discussed)
  */
 
 import {local_state_db} from '../sync/databases';
 import {ProjectID} from './core';
-import {LOCAL_FIELDPERSISTENCE_PREFIX} from './database';
-import {fieldpersistencedata} from './ui';
+import {LOCAL_FIELDpersistent_PREFIX} from './database';
+import {fieldpersistentdata} from './ui';
+import stable_stringify from 'fast-json-stable-stringify';
 
 function get_pouch_id(project_id: ProjectID, form_id: string): string {
-  return LOCAL_FIELDPERSISTENCE_PREFIX + '-' + project_id + '-' + form_id;
+  return LOCAL_FIELDpersistent_PREFIX + '-' + project_id + '-' + form_id;
 }
-//function to get new persistence value to db
-export async function get_fieldpersistencedata(
+//function to get new persistent value to db
+export async function get_fieldpersistentdata(
   project_id: ProjectID,
   form_id: string
-): Promise<fieldpersistencedata> {
+): Promise<fieldpersistentdata> {
   const pouch_id = get_pouch_id(project_id, form_id);
   try {
     return await local_state_db.get(pouch_id);
@@ -60,14 +61,17 @@ export async function get_fieldpersistencedata(
     );
   }
 }
-//function to save new persistence value to db
-export async function set_fieldpersistencedata(
+//function to save new persistent value to db
+export async function set_fieldpersistentdata(
   project_id: ProjectID,
   form_id: string,
-  new_state: fieldpersistencedata
+  new_state: fieldpersistentdata
 ) {
-  const doc = await get_fieldpersistencedata(project_id, form_id);
-  console.log(doc);
+  const doc = await get_fieldpersistentdata(project_id, form_id);
+  //check if changes
+  if (!check_if_update(new_state, doc)) {
+    return true;
+  }
   doc.data = new_state.data;
   doc.annotations = new_state.annotations;
   try {
@@ -77,3 +81,26 @@ export async function set_fieldpersistencedata(
     throw Error('Unable to set local increment state');
   }
 }
+
+const check_if_update = (
+  new_state: fieldpersistentdata,
+  doc: fieldpersistentdata
+) => {
+  //if the origin data empty, always save the value
+  if (Object.keys(doc.data).length === 0) return true;
+  for (const [field] of Object.entries(new_state['data'])) {
+    if (
+      stable_stringify(doc.data[field]) !==
+      stable_stringify(new_state.data[field])
+    ) {
+      return true;
+    }
+    if (
+      stable_stringify(doc.annotations[field]) !==
+      stable_stringify(new_state.annotations[field])
+    ) {
+      return true;
+    }
+  }
+  return false;
+};

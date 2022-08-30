@@ -13,20 +13,19 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: TestStagingFormInterface.java
+ * Filename: utils.ts
  * Description:
- *   TODO
+ *   Contains utility functions which lack a better location.
  */
-package org.fedarch.faims3;
 
-import org.json.JSONException;
-/**
- * Skeleton for testing staging new form.
- * @author Rini Angreani, CSIRO
- *
- */
-public interface TestStagingForm {
-
-	public void testSwitchTab() throws JSONException;
-
+/// Downloads a blob as a file onto a user's device
+export function downloadBlob(b: Blob, filename: string) {
+  const u = URL.createObjectURL(b);
+  const a = document.createElement('a');
+  a.href = u;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(u);
 }

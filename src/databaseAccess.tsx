@@ -122,13 +122,23 @@ export async function getSyncableListingsInfo(): Promise<ListingInformation[]> {
   const all_listings = await getAllListings();
   const syncable_listings: ListingInformation[] = [];
   for (const listing_object of all_listings) {
-    if (listing_object.local_only !== true) {
-      syncable_listings.push({
-        id: listing_object._id,
-        name: listing_object.name,
-        description: listing_object.description,
-      });
+    if (listing_object.local_only === true) {
+      console.debug('Skipping as local only', listing_object._id);
+      continue;
     }
+    if (
+      listing_object.conductor_url === null ||
+      listing_object.conductor_url === undefined
+    ) {
+      console.debug('Skipping as missing conductor url', listing_object._id);
+      continue;
+    }
+    syncable_listings.push({
+      id: listing_object._id,
+      name: listing_object.name,
+      description: listing_object.description,
+      conductor_url: listing_object.conductor_url,
+    });
   }
   return syncable_listings;
 }

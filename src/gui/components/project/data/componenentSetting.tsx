@@ -139,17 +139,18 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.bool']],
       initialValue: false,
     },
-    persistence: {
+    //this is just for testing/developing, not ready for production yet
+    persistent: {
       'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
       'component-name': 'Checkbox',
       'type-returned': 'faims-core::Bool', // matches a type in the Project Model
       'component-parameters': {
-        name: 'persistence',
-        id: 'persistence',
+        name: 'persistent',
+        id: 'persistent',
         required: false,
         type: 'checkbox',
         FormControlLabelProps: {
-          label: 'Select if value persistence',
+          label: 'Select if value persistent',
         },
         FormHelperTextProps: {
           children: '',
@@ -280,7 +281,7 @@ const uiSettingOthers: ProjectUIModel = {
       label: 'access',
     },
     FormParamater: {
-      fields: ['required', 'persistence'],
+      fields: ['required', 'persistent'],
       uidesign: 'form',
       label: 'FormParamater',
     },
@@ -398,7 +399,11 @@ const getvalue = (
   fieldName: string
 ) => {
   const name = field.replace(fieldName, '');
-  if (view === 'FormParamater') return fieldui['component-parameters'][name];
+  if (view === 'FormParamater') {
+    //this is for persistent, it's for developing/testing only, not ready for production yet
+    if (name === 'persistent') return fieldui[name];
+    return fieldui['component-parameters'][name];
+  }
   if (name === 'options' && view === 'ElementProps') {
     const options = fieldui['component-parameters']['ElementProps']['options'];
     let returnvalue = '';
@@ -742,6 +747,10 @@ const definelogicvalue = (
   fieldname: string,
   pur_fieldname: string
 ) => {
+  if (value === undefined) {
+    console.error(value);
+    return value;
+  }
   if (value['is_logic'] === undefined)
     return {...value, is_logic: {[fieldname]: [pur_fieldname]}};
   if (value['is_logic'][fieldname] === undefined)
@@ -997,8 +1006,8 @@ export function ResetComponentProperties(props: resetprops) {
         //not update value here
         // newvalues['fields'][fieldName]['component-parameters'][name] =
         // event.target.checked;
-      } else if (name === 'persistence') {
-        //set persistence value
+      } else if (name === 'persistent') {
+        //set persistent value
         newvalues['fields'][fieldName][name] = event.target.checked;
       } else {
         newvalues['fields'][fieldName]['component-parameters'][name] =
