@@ -410,10 +410,14 @@ async function addNewAttributeValuePairs(
   const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
   for (const [field_name, field_value] of Object.entries(record.data)) {
     const stored_data = data.data[field_name];
+    const stored_anno = data.annotations[field_name];
     const eqfunc = getEqualityFunctionForType(record.field_types[field_name]);
     const has_data_changed =
       stored_data === undefined || !(await eqfunc(stored_data, field_value));
-    if (has_data_changed) {
+    const has_anno_changed =
+      stored_anno === undefined ||
+      !(await eqfunc(stored_anno, record.annotations[field_name]));
+    if (has_data_changed || has_anno_changed) {
       const new_avp_id = generateFAIMSAttributeValuePairID();
       const new_avp = {
         _id: new_avp_id,
