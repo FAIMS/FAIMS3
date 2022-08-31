@@ -487,3 +487,8 @@ keychain
 browserstack
 ipas
 psmip
+frev
+obsid
+revids
+revid
+datadb
