@@ -40,7 +40,7 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {ProjectInformation} from '../../datamodel/ui';
-import {ProjectID, TokenContents} from '../../datamodel/core';
+import {ProjectID} from '../../datamodel/core';
 import {
   isSyncingProjectAttachments,
   setSyncingProjectAttachments,
@@ -48,11 +48,8 @@ import {
 } from '../../sync/sync-toggle';
 import {store} from '../../store';
 import {ActionType} from '../../actions';
-type ProjectProps = {
-  token?: null | undefined | TokenContents;
-};
 
-export default function PROJECTATTACHMENT(props: ProjectProps) {
+export default function PROJECTATTACHMENT() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
   const {dispatch} = useContext(store);
@@ -87,7 +84,7 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
   }
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebook'},
     {
       link: ROUTES.PROJECT + project_id,
@@ -99,7 +96,7 @@ export default function PROJECTATTACHMENT(props: ProjectProps) {
   if (isSyncing === null) return <></>;
   return project_info ? (
     <Container maxWidth="lg">
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
+      <Breadcrumbs data={breadcrumbs} />
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>

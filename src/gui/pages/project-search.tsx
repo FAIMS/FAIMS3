@@ -29,7 +29,6 @@ import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {ProjectInformation} from '../../datamodel/ui';
 import makeStyles from '@mui/styles/makeStyles';
-import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPadding: {
@@ -40,11 +39,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-type ProjectProps = {
-  token?: null | undefined | TokenContents;
-};
-
-export default function ProjectSearch(props: ProjectProps) {
+export default function ProjectSearch() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   const [project_info, set_project_info] = useState(
     null as null | ProjectInformation
@@ -67,13 +62,13 @@ export default function ProjectSearch(props: ProjectProps) {
   }
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebook'},
     {title: project_info !== null ? project_info.name : ''},
   ];
   return project_info ? (
     <Container maxWidth="lg" className={classes.NoPadding}>
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
+      <Breadcrumbs data={breadcrumbs} />
       <ProjectSearchCard project={project_info} />
     </Container>
   ) : (

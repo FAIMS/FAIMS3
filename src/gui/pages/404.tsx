@@ -44,7 +44,7 @@ export default function NotFound404() {
     <Container maxWidth={false}>
       <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
         <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.HOME}>Home</NavLink>
+          <NavLink to={ROUTES.INDEX}>Home</NavLink>
           <Typography color="textPrimary">Not Found</Typography>
         </Breadcrumbs>
       </Box>
@@ -92,7 +92,7 @@ export default function NotFound404() {
                     flexWrap: 'wrap',
                   }}
                   component={RouterLink}
-                  to={ROUTES.HOME}
+                  to={ROUTES.INDEX}
                 >
                   <b>Go home</b>
                   <ChevronRightIcon />

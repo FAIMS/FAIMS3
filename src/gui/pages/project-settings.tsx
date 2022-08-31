@@ -40,12 +40,8 @@ import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {ProjectInformation} from '../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
-import {TokenContents} from '../../datamodel/core';
-type ProjectProps = {
-  token?: null | undefined | TokenContents;
-};
 
-export default function ProjectSettings(props: ProjectProps) {
+export default function ProjectSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   // TODO: remove these once we can send new project up
@@ -70,7 +66,7 @@ export default function ProjectSettings(props: ProjectProps) {
   }
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebook'},
     {
       link: ROUTES.PROJECT + project_id,
@@ -93,7 +89,7 @@ export default function ProjectSettings(props: ProjectProps) {
 
   return project_info ? (
     <Container maxWidth="lg">
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
+      <Breadcrumbs data={breadcrumbs} />
 
       <Box mb={2}>
         <Typography variant={'h2'} component={'h1'}>

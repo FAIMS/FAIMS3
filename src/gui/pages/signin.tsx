@@ -20,7 +20,7 @@
 
 import React, {useState, useEffect} from 'react';
 import makeStyles from '@mui/styles/makeStyles';
-import {Container, Grid, Typography} from '@mui/material';
+import {Box, Container, Grid, Typography} from '@mui/material';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ClusterCard from '../components/authentication/cluster_card';
@@ -42,8 +42,7 @@ type SignInProps = {
 export function SignIn(props: SignInProps) {
   const classes = useStyles();
   const [listings, setListings] = useState(null as null | ListingInformation[]);
-
-  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Sign In'}];
+  const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
 
   useEffect(() => {
     const getlocalist = async () => {
@@ -60,26 +59,43 @@ export function SignIn(props: SignInProps) {
       </Container>
     );
   }
-
   return (
-    <Container maxWidth="lg">
+    <Box
+      sx={{
+        minHeight: {
+          xs: 'calc(100vh - 320px)',
+          sm: 'calc(100vh - 204px)',
+        },
+      }}
+    >
       <Breadcrumbs data={breadcrumbs} />
-      <div className={classes.gridRoot}>
-        <Grid container spacing={1}>
-          {listings.map((listing_info, index) => (
-            <Grid item sm={6} xs={12} key={index}>
-              <ClusterCard
-                key={listing_info.id}
-                listing_id={listing_info.id}
-                listing_name={listing_info.name}
-                listing_description={listing_info.description}
-                conductor_url={listing_info.conductor_url}
-                setToken={props.setToken}
-              />
+      <Container maxWidth="xs">
+        <Box
+          sx={{
+            marginTop: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <div className={classes.gridRoot}>
+            <Grid container spacing={1}>
+              {listings.map((listing_info, index) => (
+                <Grid item sm={8} xs={12} key={index}>
+                  <ClusterCard
+                    key={listing_info.id}
+                    listing_id={listing_info.id}
+                    listing_name={listing_info.name}
+                    listing_description={listing_info.description}
+                    conductor_url={listing_info.conductor_url}
+                    setToken={props.setToken}
+                  />
+                </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
-      </div>
-    </Container>
+          </div>
+        </Box>
+      </Container>
+    </Box>
   );
 }

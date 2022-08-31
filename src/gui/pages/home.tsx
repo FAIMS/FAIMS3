@@ -19,10 +19,7 @@
  */
 
 import React from 'react';
-import makeStyles from '@mui/styles/makeStyles';
-// import {Link as RouterLink} from 'react-router-dom';
 import {
-  Container,
   Typography,
   Box,
   Grid,
@@ -36,46 +33,8 @@ import * as ROUTES from '../../constants/routes';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise} from '../pouchHook';
-import {TokenContents} from '../../datamodel/core';
 
-const useStyles = makeStyles(theme => ({
-  gridRoot: {
-    flexGrow: 1,
-  },
-  container: {
-    paddingTop: theme.spacing(4),
-    paddingBottom: theme.spacing(4),
-  },
-  paper: {
-    padding: theme.spacing(2),
-    display: 'flex',
-    overflow: 'auto',
-    flexDirection: 'column',
-  },
-
-  bullet: {
-    display: 'inline-block',
-    margin: '0 2px',
-    transform: 'scale(0.8)',
-  },
-  title: {
-    fontSize: 14,
-  },
-  pos: {
-    marginBottom: 12,
-  },
-  avatar: {
-    borderRadius: 8,
-    // backgroundColor: red[500],
-    backgroundColor: theme.palette.secondary.light,
-  },
-}));
-type HomeProps = {
-  token?: null | undefined | TokenContents;
-};
-export default function Home(props: HomeProps) {
-  const classes = useStyles();
-  // const globalState = useContext(store);
+export default function Home() {
   const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
@@ -84,18 +43,18 @@ export default function Home(props: HomeProps) {
   ).expect();
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {title: 'Workspace'},
   ];
 
   return (
-    <Container maxWidth="lg">
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
+    <React.Fragment>
+      <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={3}>
         {/* Recent Projects */}
         <Grid item xs={12} md={12} lg={12}>
           <Typography variant="overline">My Notebooks</Typography>
-          <Paper className={classes.paper}>
+          <Paper>
             <Grid container spacing={1}>
               {pouchProjectList === null ? (
                 <CircularProgress />
@@ -124,6 +83,6 @@ export default function Home(props: HomeProps) {
           </Paper>
         </Grid>
       </Grid>
-    </Container>
+    </React.Fragment>
   );
 }

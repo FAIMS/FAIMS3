@@ -31,7 +31,6 @@ import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@mui/material';
 import {ProjectInformation} from '../../datamodel/ui';
 import makeStyles from '@mui/styles/makeStyles';
-import {TokenContents} from '../../datamodel/core';
 
 const useStyles = makeStyles(theme => ({
   NoPadding: {
@@ -42,11 +41,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-type ProjectProps = {
-  token?: null | undefined | TokenContents;
-};
-
-export default function Project(props: ProjectProps) {
+export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   let project_info: ProjectInformation | null;
   const classes = useStyles();
@@ -67,14 +62,14 @@ export default function Project(props: ProjectProps) {
   }
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {title: project_info !== null ? project_info.name : ''},
   ];
 
   return project_info ? (
     <Container maxWidth="lg" className={classes.NoPadding}>
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
+      <Breadcrumbs data={breadcrumbs} />
       <ProjectCard project={project_info} showRecords={true} listView={false} />
     </Container>
   ) : (

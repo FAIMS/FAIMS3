@@ -53,7 +53,7 @@ export default function Record() {
   ).expect();
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,

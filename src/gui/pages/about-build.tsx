@@ -40,7 +40,7 @@ import {grey} from '@mui/material/colors';
 
 export default function AboutBuild() {
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {title: 'about-build'},
   ];
   return (

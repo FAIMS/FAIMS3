@@ -79,13 +79,13 @@ export default function ProjectList(props: ProjectProps) {
     []
   ).expect();
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {title: 'Notebooks'},
   ];
 
   return (
     <Container maxWidth="lg" className={classes.NoPadding}>
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
+      <Breadcrumbs data={breadcrumbs}/>
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
           {pouchProjectList === null ? (

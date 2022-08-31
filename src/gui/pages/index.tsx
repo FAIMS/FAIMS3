@@ -21,14 +21,7 @@
 import React from 'react';
 import {NavLink} from 'react-router-dom';
 
-import {
-  Grid,
-  Container,
-  Paper,
-  MenuList,
-  MenuItem,
-  ListItemIcon,
-} from '@mui/material';
+import {Grid, Paper, MenuList, MenuItem, ListItemIcon} from '@mui/material';
 // import AccountTree from '@mui/icons-material/AccountTree';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import WorkSharpIcon from '@mui/icons-material/WorkSharp';
@@ -52,8 +45,8 @@ export class Index extends React.Component<IndexProps, IndexState> {
   render() {
     const breadcrumbs = [{title: 'Home'}];
     return (
-      <Container maxWidth="lg">
-        <Breadcrumbs data={breadcrumbs} token={this.props.token} />
+      <React.Fragment>
+        <Breadcrumbs data={breadcrumbs} />
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} lg={4}>
             <Paper>
@@ -88,7 +81,7 @@ export class Index extends React.Component<IndexProps, IndexState> {
             </Paper>
           </Grid>
         </Grid>
-      </Container>
+      </React.Fragment>
     );
   }
 }

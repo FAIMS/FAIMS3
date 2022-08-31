@@ -20,7 +20,7 @@
  */
 
 import React, {useState} from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink, NavLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
   CircularProgress,
@@ -43,7 +43,6 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
-// import NotificationsIcon from '@mui/icons-material/Notifications';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import AccountTree from '@mui/icons-material/AccountTree';
@@ -52,10 +51,13 @@ import ListItemText from '@mui/material/ListItemText';
 import * as ROUTES from '../../constants/routes';
 import {SHOW_NEW_NOTEBOOK} from '../../buildconfig';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
-import SystemAlert from './alert';
+import SystemAlert from '../components/alert';
 import {ProjectInformation} from '../../datamodel/ui';
 import {useEventedPromise} from '../pouchHook';
+import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '../../datamodel/core';
+import {tokenExists} from '../../utils/helpers';
+
 // type NavBarState = {
 //   topMenuItems: any;
 //   bottomMenuItems: any;
@@ -82,12 +84,14 @@ const drawerWidth = 240;
 const useStyles = makeStyles(theme => ({
   root: {
     display: 'flex',
+    boxShadow: 'none',
   },
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
+    boxShadow: 'none',
   },
   appBarShift: {
     width: `calc(100% - ${drawerWidth}px)`,
@@ -168,6 +172,7 @@ export default function Navbar(props: NavbarProps) {
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const isSyncing = false;
+  const isAuthenticated = tokenExists(props.token);
   // const [isSyncing, setIsSyncing] = useState<boolean>(false);
   // const [projectList, setProjectList] = useState<ProjectsList>({});
   // const [error, setError] = useState<string | null>(null);
@@ -184,7 +189,7 @@ export default function Navbar(props: NavbarProps) {
     {
       title: 'Home',
       icon: <HomeIcon />,
-      to: ROUTES.HOME,
+      to: ROUTES.INDEX,
       disabled: false,
     },
     pouchProjectList === null
@@ -194,7 +199,7 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         }
-      : props.token !== undefined && props.token !== null
+      : isAuthenticated
       ? getNestedProjects(pouchProjectList)
       : {
           title: 'Notebooks',
@@ -208,18 +213,6 @@ export default function Navbar(props: NavbarProps) {
       to: ROUTES.PROJECT_CREATE,
       disabled: !SHOW_NEW_NOTEBOOK,
     },
-    // {
-    //   title: 'Tools',
-    //   icon: <BuildIcon />,
-    //   to: '/',
-    //   disabled: true,
-    // },
-    // {
-    //   title: 'Notifications',
-    //   icon: <NotificationsIcon />,
-    //   to: '/',
-    //   disabled: true,
-    // },
     {
       title: 'About Build',
       icon: <SettingsIcon />,
@@ -228,7 +221,7 @@ export default function Navbar(props: NavbarProps) {
     },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
-    props.token !== undefined && props.token !== null
+    isAuthenticated
       ? {
           title: 'Profile',
           icon: <AccountCircleIcon />,
@@ -241,13 +234,7 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         },
-    // {
-    //   title: 'Messages',
-    //   icon: <MessageIcon />,
-    //   to: '/',
-    //   disabled: true,
-    // },
-    props.token !== undefined && props.token !== null
+    isAuthenticated
       ? {
           title: 'Settings',
           icon: <SettingsIcon />,
@@ -287,19 +274,24 @@ export default function Navbar(props: NavbarProps) {
             >
               <MenuIcon />
             </IconButton>
-            <img
-              src="/static/logo/Faims-white-small.png"
-              style={{maxWidth: '70px', flex: 1}}
-            />
-            {isSyncing ? (
-              <CircularProgress
-                color={'secondary'}
-                size={'1rem'}
-                thickness={5}
+            <NavLink style={{flexGrow: 1}} to={ROUTES.INDEX}>
+              <img
+                src="/static/logo/Faims-white-small.png"
+                style={{maxWidth: '70px', flex: 1}}
               />
-            ) : (
-              ''
-            )}
+            </NavLink>
+            <div>
+              <AppBarAuth token={props.token} />
+              {isSyncing ? (
+                <CircularProgress
+                  color={'secondary'}
+                  size={'1rem'}
+                  thickness={5}
+                />
+              ) : (
+                ''
+              )}
+            </div>
           </Toolbar>
         </MuiAppBar>
         <Drawer

@@ -55,7 +55,6 @@ import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
-import {TokenContents} from '../../datamodel/core';
 import RecordDelete from '../components/record/delete';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
@@ -236,11 +235,8 @@ function DraftEdit(props: DraftEditProps) {
     );
   }
 }
-type RecordCreateProps = {
-  token?: null | undefined | TokenContents;
-};
 
-export default function RecordCreate(props: RecordCreateProps) {
+export default function RecordCreate() {
   const {project_id, type_name, draft_id} = useParams<{
     project_id: ProjectID;
     type_name: string;
@@ -265,7 +261,7 @@ export default function RecordCreate(props: RecordCreateProps) {
   }
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,
@@ -279,7 +275,7 @@ export default function RecordCreate(props: RecordCreateProps) {
   return (
     <React.Fragment>
       <Container maxWidth="lg" className={classes.NoPadding}>
-        <Breadcrumbs data={breadcrumbs} token={props.token} />
+        <Breadcrumbs data={breadcrumbs} />
         {draft_id === undefined ? (
           <DraftCreate project_id={project_id} type_name={type_name} />
         ) : (

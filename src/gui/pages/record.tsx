@@ -57,7 +57,6 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
-import {TokenContents} from '../../datamodel/core';
 import {grey} from '@mui/material/colors';
 import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
@@ -97,11 +96,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-type RecordProps = {
-  token?: null | undefined | TokenContents;
-};
-
-export default function Record(props: RecordProps) {
+export default function Record() {
   const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
@@ -153,7 +148,7 @@ export default function Record(props: RecordProps) {
   const [pressedvalue, setpressedvalue] = useState(value);
 
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
     {
       link: ROUTES.PROJECT + project_id,
@@ -260,7 +255,7 @@ export default function Record(props: RecordProps) {
     return <CircularProgress size={12} thickness={4} />;
   return (
     <Container maxWidth="lg" className={classes.NoPadding}>
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
+      <Breadcrumbs data={breadcrumbs} />
       {recordInfo !== null && (
         <Box
           justifyContent="flex-end"

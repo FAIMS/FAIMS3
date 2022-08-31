@@ -37,7 +37,7 @@ export default function ProjectCreate() {
   if (project_id === undefined) {
     console.log(project_id);
     const breadcrumbs = [
-      {link: ROUTES.HOME, title: 'Home'},
+      {link: ROUTES.INDEX, title: 'Home'},
       {title: 'New Notebook'},
     ];
     return (
@@ -92,7 +92,7 @@ export default function ProjectCreate() {
     }
 
     const breadcrumbs = [
-      {link: ROUTES.HOME, title: 'Home'},
+      {link: ROUTES.INDEX, title: 'Home'},
       {title: project_info.name},
     ];
 

@@ -27,19 +27,31 @@ declare module '@mui/styles/defaultTheme' {
 }
 
 const theme = createTheme({
-  spacing: 2,
+  // spacing: 2,
   palette: {
+    background: {
+      default: '#FAFAFB',
+    },
     primary: {
       main: '#1B3E93',
-      light: '#42a5f5',
-      dark: '#1565c0',
-      contrastText: '#fff',
+      light: '#5768c4',
+      dark: '#001964',
     },
     secondary: {
-      // main: '#F68E1E',
-      main: '#fff',
-      contrastText: '#1b7993',
+      100: colors.grey[100],
+      200: colors.grey[200],
+      light: colors.grey[300],
+      400: colors.grey[400],
+      main: colors.grey[500],
+      600: colors.grey[600],
+      dark: colors.grey[700],
+      800: colors.grey[800],
     },
+    // secondary: {
+    //   // main: '#F68E1E',
+    //   main: '#fff',
+    //   contrastText: '#1b7993',
+    // },
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
