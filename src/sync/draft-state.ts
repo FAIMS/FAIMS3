@@ -266,6 +266,11 @@ class RecordDraftState {
         this.data.fields = values;
       }
 
+      if (this.data.annotations === null) {
+        // 1st call to renderHook establishes the 'default' initial annotations
+        this.data.annotations = annotations;
+      }
+
       // Don't compare things that are in the staging area
       // but are completley absent from the form
       // as those components are just not in the current view
@@ -289,6 +294,11 @@ class RecordDraftState {
 
       if (this.touched_fields.size === 0) {
         return;
+      }
+      if (DEBUG_APP) {
+        console.debug('fields touched', this.touched_fields);
+        console.debug('data', this.data.fields, values);
+        console.debug('anno', this.data.annotations, annotations);
       }
 
       // If anything changed, we create the draft:
