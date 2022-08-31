@@ -45,7 +45,7 @@
     "prepare": "npm run compile"
   },
   "dependencies": {
-    "@awesome-cordova-plugins/core": "5.43.0",
+    "@awesome-cordova-plugins/core": "5.44.0",
     "@awesome-cordova-plugins/in-app-browser": "5.43.0",
     "@capacitor/android": "3.6.0",
     "@capacitor/app": "1.1.1",
@@ -83,7 +83,7 @@
     "fast-json-stable-stringify": "2.1.0",
     "formik": "2.2.9",
     "formik-mui": "4.0.0",
-    "formik-mui-lab": "1.0.0-alpha.3",
+    "formik-mui-lab": "1.0.0",
     "graphviz-react": "1.2.0",
     "jose": "4.8.3",
     "json-stable-stringify": "1.0.1",
@@ -116,7 +116,7 @@
   "devDependencies": {
     "@types/jest": "27.4.0",
     "@types/json-stable-stringify": "1.0.34",
-    "@types/node": "18.0.0",
+    "@types/node": "18.7.14",
     "@types/yup": "0.29.14",
     "fast-check": "2.25.0",
     "gts": "3.1.0",
