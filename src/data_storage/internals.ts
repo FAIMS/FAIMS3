@@ -383,6 +383,7 @@ export async function addNewRevisionFromForm(
     created: record.updated.toISOString(),
     created_by: record.updated_by,
     type: record.type,
+    ugc_comment: record.ugc_comment,
   };
   await datadb.put(new_revision);
 }
