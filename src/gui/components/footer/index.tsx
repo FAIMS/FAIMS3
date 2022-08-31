@@ -34,10 +34,7 @@ import {EHTML} from './footerEHTML';
 import {grey} from '@mui/material/colors';
 import * as ROUTES from '../../../constants/routes';
 
-type FooterProps = {
-  isAuthenticated: boolean;
-};
-export default function Footer(props: FooterProps) {
+export default function Footer() {
   /**
    * Display a large footer for INDEX and WORKSPACE routes
    * Show only the SlimFooter otherwise
@@ -56,16 +53,12 @@ export default function Footer(props: FooterProps) {
     // ROUTES.SIGN_IN,
   ].includes(location);
   return (
-    <div id={'footer'}>
-      {showFullFooter ? (
-        <FullFooter isAuthenticated={props.isAuthenticated} />
-      ) : (
-        <SlimFooter />
-      )}
+    <React.Fragment>
+      {showFullFooter ? <FullFooter /> : <SlimFooter />}
       <EHTML />
       {process.env.REACT_APP_SERVICES === 'FAIMSTEXT' && <EHTML />}
       {process.env.REACT_APP_SERVER === 'developer' && <DevelopTool />}
-    </div>
+    </React.Fragment>
   );
 }
 

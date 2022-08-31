@@ -1,9 +1,8 @@
 import React from 'react';
 import {Box} from '@mui/material';
-import Navbar from './navbar';
+import AppBar from './appBar';
 import {TokenContents} from '../../datamodel/core';
 import Footer from '../components/footer';
-import {tokenExists} from '../../utils/helpers';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,10 +10,9 @@ interface MainLayoutProps {
 }
 
 const MainLayout = (props: MainLayoutProps) => {
-  const isAuthenticated = tokenExists(props.token);
   return (
     <React.Fragment>
-      <Navbar token={props.token} />
+      <AppBar token={props.token} />
       <Box component="main" sx={{width: '100%', flexGrow: 1, p: 1}}>
         {/*<Breadcrumbs*/}
         {/*  navigation={navigation}*/}
@@ -26,7 +24,7 @@ const MainLayout = (props: MainLayoutProps) => {
 
         {props.children}
       </Box>
-      <Footer isAuthenticated={isAuthenticated} />
+      <Footer />
     </React.Fragment>
   );
 };

@@ -166,7 +166,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
 type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
-export default function Navbar(props: NavbarProps) {
+export default function AppBar(props: NavbarProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
 

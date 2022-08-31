@@ -63,8 +63,8 @@ export function SignIn(props: SignInProps) {
     <Box
       sx={{
         minHeight: {
-          xs: 'calc(100vh - 320px)',
-          sm: 'calc(100vh - 204px)',
+          xs: 'calc(100vh - 328px)',
+          sm: 'calc(100vh - 188px)',
         },
       }}
     >

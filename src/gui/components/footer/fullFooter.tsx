@@ -2,12 +2,10 @@ import {useTheme} from '@mui/material/styles';
 import React from 'react';
 import {Box, Divider, Grid, Typography} from '@mui/material';
 import Link from '@mui/material/Link';
-import {NavLink} from 'react-router-dom';
-import * as ROUTES from '../../../constants/routes';
-type FooterProps = {
-  isAuthenticated: boolean;
-};
-export default function FullFooter(props: FooterProps) {
+import SlimFooter from './slimFooter';
+import SupportEmail from './supportEmail';
+
+export default function FullFooter() {
   const theme = useTheme();
   return (
     <Box
@@ -19,36 +17,7 @@ export default function FullFooter(props: FooterProps) {
     >
       <Grid container spacing={2}>
         <Grid item xs={12} sx={{display: {xs: 'block', sm: 'none'}}}>
-          <Grid container>
-            <Grid item xs={6}>
-              <img
-                src="/static/logo/Faims-small.png" alt='faims logo'
-                style={{
-                  maxWidth: '80px',
-                  width: '100%',
-                  filter: 'grayscale(100%)',
-                  opacity: 0.8,
-                }}
-              />
-              <Typography variant="caption" display="block" gutterBottom>
-                Copyright © FAIMS {new Date().getFullYear()}
-              </Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Link
-                href="https://faims.edu.au/contact/"
-                underline="none"
-                target={'_blank'}
-                rel="noreferrer"
-              >
-                Contact
-              </Link>
-              <br />
-              <Link component={NavLink} to={ROUTES.SIGN_IN} underline="none">
-                {props.isAuthenticated ? 'Account Information' : 'Sign In'}
-              </Link>
-            </Grid>
-          </Grid>
+          <SlimFooter />
         </Grid>
         <Grid item sm={4} sx={{display: {xs: 'none', sm: 'block'}}}>
           <Box>
@@ -89,6 +58,17 @@ export default function FullFooter(props: FooterProps) {
             sx={{color: theme.palette.grey[600], mt: 1}}
           >
             Support
+          </Typography>
+          <SupportEmail />
+          <Typography
+            variant="subtitle2"
+            color="secondary"
+            component={Link}
+            href="https://faims.edu.au/contact/"
+            target="_blank"
+            underline="none"
+          >
+            Contact
           </Typography>
           <Typography variant={'caption'}>
             <Link
@@ -134,7 +114,8 @@ export default function FullFooter(props: FooterProps) {
           </Typography>
           <Box>
             <img
-              src={'/static/logo/partners/ARDC_logo_RGB.png'} alt={'ardc logo'}
+              src={'/static/logo/partners/ARDC_logo_RGB.png'}
+              alt={'ardc logo'}
               style={{
                 maxWidth: '150px',
                 width: '100%',
@@ -161,7 +142,8 @@ export default function FullFooter(props: FooterProps) {
                 style={{textAlign: 'center'}}
               >
                 <img
-                  src={'/static/logo/partners/CSIRO_Solid_RGB.png'} alt={'csiro logo'}
+                  src={'/static/logo/partners/CSIRO_Solid_RGB.png'}
+                  alt={'csiro logo'}
                   style={{
                     maxWidth: '60px',
                     width: '100%',
@@ -179,7 +161,8 @@ export default function FullFooter(props: FooterProps) {
                 style={{textAlign: 'center'}}
               >
                 <img
-                  src={'/static/logo/partners/MQ_MAS_HOR_BLACK.png'} alt={'macquarie university logo'}
+                  src={'/static/logo/partners/MQ_MAS_HOR_BLACK.png'}
+                  alt={'macquarie university logo'}
                   style={{
                     maxWidth: '200px',
                     width: '100%',

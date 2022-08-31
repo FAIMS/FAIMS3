@@ -1,8 +1,8 @@
 import React from 'react';
 import {useMediaQuery, Container, Link, Typography, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
-import Obfuscate from 'react-obfuscate';
 
+import SupportEmail from './supportEmail';
 const SlimFooter = () => {
   /**
    * Slim footer with minimal necessary links to reduce user distraction
@@ -11,17 +11,10 @@ const SlimFooter = () => {
    */
   const theme = useTheme();
   const matchDownSM = useMediaQuery(theme.breakpoints.down('sm'));
-  let supportEmail = 'info@faims.edu.au';
-  if (
-    process.env.REACT_APP_COMMIT_VERSION !== undefined &&
-    process.env.REACT_APP_COMMIT_VERSION.includes('psmip')
-  ) {
-    supportEmail = 'psmipsupport@faims.edu.au';
-  }
 
   return (
     <React.Fragment>
-      <Container maxWidth="xl" sx={{p: 2}}>
+      <Container maxWidth="xl" sx={{p: 1}}>
         <Stack
           direction={matchDownSM ? 'column' : 'row'}
           justifyContent={matchDownSM ? 'center' : 'space-between'}
@@ -47,16 +40,7 @@ const SlimFooter = () => {
             >
               Privacy Policy
             </Typography>
-            <Typography variant="subtitle2" color="secondary">
-              <Obfuscate
-                element={Link}
-                underline="none"
-                color="secondary"
-                email={supportEmail}
-              >
-                Support
-              </Obfuscate>
-            </Typography>
+            <SupportEmail />
             <Typography
               variant="subtitle2"
               color="secondary"

@@ -4,3 +4,7 @@
 .recordstepper::-webkit-scrollbar {
     display: none;
 }
+.support-link{
+    color:#9e9e9e;
+    text-decoration:none;
+}
