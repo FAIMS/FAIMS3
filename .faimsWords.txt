@@ -492,3 +492,8 @@ obsid
 revids
 revid
 datadb
+avps
+docid
+recs
+anno
+eqfunc
