@@ -263,18 +263,29 @@ class RecordDraftState {
 
       if (this.data.fields === null) {
         // 1st call to renderHook establishes the 'default' initial data
+        console.debug(
+          'Setting initial data for draft',
+          stable_stringify(values)
+        );
         this.data.fields = values;
       }
 
       if (this.data.annotations === null) {
         // 1st call to renderHook establishes the 'default' initial annotations
-        this.data.annotations = annotations;
+        console.debug(
+          'Setting initial annotations for draft',
+          stable_stringify(annotations)
+        );
+        // The JSON step here is to create a deep copy, to avoid both sets of
+        // data being modified at the same time.
+        this.data.annotations = JSON.parse(JSON.stringify(annotations));
       }
 
       // Don't compare things that are in the staging area
-      // but are completley absent from the form
+      // but are completely absent from the form
       // as those components are just not in the current view
       // Only compare fields in the current view:
+
       for (const field in values) {
         // Formik & Pouch should give us comparable JSON objects.
         // As long as it differs at the top level, we say it's touched
@@ -282,13 +293,34 @@ class RecordDraftState {
         // So we use JSON stable stringify to compare
         //
         // undefined in gives undefined out. Which is perfectly fine
+        if (DEBUG_APP) {
+          console.debug('looking at', field);
+          console.debug(
+            'data',
+            field,
+            this.data.fields?.[field],
+            values?.[field]
+          );
+          console.debug(
+            'anno',
+            field,
+            this.data.annotations?.[field],
+            annotations?.[field]
+          );
+        }
         if (
           stable_stringify(this.data.fields?.[field]) !==
             stable_stringify(values?.[field]) ||
           stable_stringify(this.data.annotations?.[field]) !==
             stable_stringify(annotations?.[field])
         ) {
+          if (DEBUG_APP) {
+            console.debug('field touched', field);
+          }
           this.touched_fields.add(field);
+        }
+        if (DEBUG_APP) {
+          console.debug('finished looking at', field);
         }
       }
 
