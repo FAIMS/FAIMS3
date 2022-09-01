@@ -202,11 +202,14 @@ export async function deleteStagedData(
       ? revision_cache
       : (await draft_db.get(draft_id))._rev;
 
-  await (draft_db as PouchDB.Database<{}>).put({
-    _id: draft_id,
-    _rev: revision,
-    _deleted: true,
-  });
+  await (draft_db as PouchDB.Database<{}>).put(
+    {
+      _id: draft_id,
+      _rev: revision,
+      _deleted: true,
+    },
+    {force: true}
+  );
 }
 
 /**
