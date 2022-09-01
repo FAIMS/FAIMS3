@@ -4,8 +4,11 @@ import {Box, Divider, Grid, Typography} from '@mui/material';
 import Link from '@mui/material/Link';
 import SlimFooter from './slimFooter';
 import SupportEmail from './supportEmail';
-
-export default function FullFooter() {
+import {TokenContents} from '../../../datamodel/core';
+interface FullFooterProps {
+  token?: null | undefined | TokenContents;
+}
+export default function FullFooter(props: FullFooterProps) {
   const theme = useTheme();
   return (
     <Box
@@ -17,7 +20,7 @@ export default function FullFooter() {
     >
       <Grid container spacing={2}>
         <Grid item xs={12} sx={{display: {xs: 'block', sm: 'none'}}}>
-          <SlimFooter />
+          <SlimFooter token={props.token} />
         </Grid>
         <Grid item sm={4} sx={{display: {xs: 'none', sm: 'block'}}}>
           <Box>

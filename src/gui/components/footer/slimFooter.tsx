@@ -3,7 +3,12 @@ import {useMediaQuery, Container, Link, Typography, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 
 import SupportEmail from './supportEmail';
-const SlimFooter = () => {
+import {TokenContents} from '../../../datamodel/core';
+
+interface SlimFooterProps {
+  token?: null | undefined | TokenContents;
+}
+const SlimFooter = (props: SlimFooterProps) => {
   /**
    * Slim footer with minimal necessary links to reduce user distraction
    * Switch the contact email based on REACT_APP_COMMIT_VERSION
@@ -40,7 +45,7 @@ const SlimFooter = () => {
             >
               Privacy Policy
             </Typography>
-            <SupportEmail />
+            <SupportEmail token={props.token} />
             <Typography
               variant="subtitle2"
               color="secondary"

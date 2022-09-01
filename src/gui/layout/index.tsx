@@ -24,7 +24,7 @@ const MainLayout = (props: MainLayoutProps) => {
 
         {props.children}
       </Box>
-      <Footer />
+      <Footer token={props.token} />
     </React.Fragment>
   );
 };

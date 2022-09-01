@@ -7,10 +7,14 @@ import {
   DIRECTORY_HOST,
   DIRECTORY_PORT,
   DIRECTORY_PROTOCOL,
-  RUNNING_UNDER_TEST,
 } from '../../../buildconfig';
+import {TokenContents} from '../../../datamodel/core';
 
-export default function SupportEmail() {
+interface SupportEmailProps {
+  token?: null | undefined | TokenContents;
+}
+
+export default function SupportEmail(props: SupportEmailProps) {
   let supportEmail = 'info@faims.edu.au';
   if (
     process.env.REACT_APP_COMMIT_VERSION !== undefined &&
@@ -21,8 +25,13 @@ export default function SupportEmail() {
   const bodyContent =
     `Directory Server: ${DIRECTORY_PROTOCOL}://${DIRECTORY_HOST}:${DIRECTORY_PORT}/ \r` +
     `Commit Version: ${COMMIT_VERSION} \r` +
-    `Running under test: ${RUNNING_UNDER_TEST ? 'True' : 'False'} \r` +
-    `Autoactivating projects: ${AUTOACTIVATE_PROJECTS ? 'True' : 'False'}`;
+    `Autoactivating projects: ${AUTOACTIVATE_PROJECTS ? 'True' : 'False'} \r` +
+    `Username: ${
+      props.token?.username ? props.token.username : 'Unauthenticated'
+    } \r` +
+    `Roles: ${
+      props.token?.roles ? JSON.stringify(props.token.roles) : 'Unauthenticated'
+    }`;
 
   return (
     <Typography variant="subtitle2" color="secondary">

@@ -33,8 +33,11 @@ import {EHTML} from './footerEHTML';
 
 import {grey} from '@mui/material/colors';
 import * as ROUTES from '../../../constants/routes';
-
-export default function Footer() {
+import {TokenContents} from '../../../datamodel/core';
+interface FooterProps {
+  token?: null | undefined | TokenContents;
+}
+export default function Footer(props: FooterProps) {
   /**
    * Display a large footer for INDEX and WORKSPACE routes
    * Show only the SlimFooter otherwise
@@ -54,7 +57,11 @@ export default function Footer() {
   ].includes(location);
   return (
     <React.Fragment>
-      {showFullFooter ? <FullFooter /> : <SlimFooter />}
+      {showFullFooter ? (
+        <FullFooter token={props.token} />
+      ) : (
+        <SlimFooter token={props.token} />
+      )}
       <EHTML />
       {process.env.REACT_APP_SERVICES === 'FAIMSTEXT' && <EHTML />}
       {process.env.REACT_APP_SERVER === 'developer' && <DevelopTool />}
