@@ -18,70 +18,80 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {NavLink} from 'react-router-dom';
 
-import {Grid, Paper, MenuList, MenuItem, ListItemIcon} from '@mui/material';
-// import AccountTree from '@mui/icons-material/AccountTree';
-import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import WorkSharpIcon from '@mui/icons-material/WorkSharp';
+import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import {TokenContents} from '../../datamodel/core';
+import {useTheme} from '@mui/material/styles';
 
-type IndexProps = {
-  token?: null | undefined | TokenContents;
-};
+export default function Index() {
+  /**
+   * Landing page
+   */
+  const theme = useTheme();
+  useEffect(() => {
+    document.body.classList.add('bg-primary-gradient');
 
-type IndexState = {};
+    return () => {
+      document.body.classList.remove('bg-primary-gradient');
+    };
+  });
 
-export class Index extends React.Component<IndexProps, IndexState> {
-  constructor(props: IndexProps) {
-    super(props);
-
-    this.state = {};
-  }
-
-  render() {
-    const breadcrumbs = [{title: 'Home'}];
-    return (
-      <React.Fragment>
-        <Breadcrumbs data={breadcrumbs} />
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} lg={4}>
-            <Paper>
-              <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.SIGN_IN}>
-                  <ListItemIcon>
-                    <AccountBoxIcon fontSize="small" />
-                  </ListItemIcon>
-                  {this.props.token !== null && this.props.token !== undefined
-                    ? 'Account Information'
-                    : 'Sign in to notebooks'}
-                </MenuItem>
-              </MenuList>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} lg={4}>
-            <Paper>
-              <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.WORKSPACE}>
-                  <ListItemIcon>
-                    <WorkSharpIcon fontSize="small" />
-                  </ListItemIcon>
-                  Workspace
-                </MenuItem>
-                {/* <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
-                  <ListItemIcon>
-                    <AccountTree fontSize="small" />
-                  </ListItemIcon>
-                  Notebooks
-                </MenuItem>*/}
-              </MenuList>
-            </Paper>
-          </Grid>
+  return (
+    <React.Fragment>
+      <Grid
+        container
+        direction="row"
+        justifyContent="center"
+        alignItems="center"
+        spacing={3}
+        sx={{minHeight: '60vh', padding: theme.spacing(2)}}
+      >
+        <Grid item xs={12} sm={6}>
+          <Typography
+            variant={'h1'}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            FAIMS 3.0 Electronic Field{' '}
+            <Typography variant={'h1'} sx={{color: '#E59136'}}>
+              Notebooks
+            </Typography>
+          </Typography>
+          <Typography
+            variant={'h4'}
+            sx={{fontWeight: 'light', mb: 3}}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            The FAIMS 3.0 Project is building the next generation of Electronic
+            Field Notebooks. Join us on the journey.
+          </Typography>
+          <Button
+            variant="contained"
+            color={'primary'}
+            disableElevation
+            sx={{mr: 1}}
+            component={NavLink}
+            to={ROUTES.SIGN_IN}
+          >
+            Sign In
+          </Button>
+          <Button
+            variant="outlined"
+            color={'secondary'}
+            disableElevation
+            href="https://faims.edu.au/contact/"
+            target={'_blank'}
+          >
+            Register your interest
+          </Button>
         </Grid>
-      </React.Fragment>
-    );
-  }
+        <Grid item xs={12} sm={6}>
+          {/*  picture could go here... */}
+        </Grid>
+      </Grid>
+    </React.Fragment>
+  );
 }

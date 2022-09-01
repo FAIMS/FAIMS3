@@ -23,7 +23,7 @@ import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
-import {Index} from './gui/pages';
+import Index from './gui/pages';
 import {SignIn} from './gui/pages/signin';
 import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';

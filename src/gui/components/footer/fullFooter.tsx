@@ -63,16 +63,6 @@ export default function FullFooter(props: FullFooterProps) {
             Support
           </Typography>
           <SupportEmail />
-          <Typography
-            variant="subtitle2"
-            color="secondary"
-            component={Link}
-            href="https://faims.edu.au/contact/"
-            target="_blank"
-            underline="none"
-          >
-            Contact
-          </Typography>
           <Typography variant={'caption'}>
             <Link
               href="https://faims.edu.au/contact/"
