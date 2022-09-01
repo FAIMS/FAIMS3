@@ -5,9 +5,11 @@ import Link from '@mui/material/Link';
 import SlimFooter from './slimFooter';
 import SupportEmail from './supportEmail';
 import {TokenContents} from '../../../datamodel/core';
+
 interface FullFooterProps {
   token?: null | undefined | TokenContents;
 }
+
 export default function FullFooter(props: FullFooterProps) {
   const theme = useTheme();
   return (
@@ -131,17 +133,16 @@ export default function FullFooter(props: FullFooterProps) {
                 xs={12}
                 sm={12}
                 md={12}
-                lg={4}
-                style={{textAlign: 'center'}}
+                lg={8}
+                style={{textAlign: 'left'}}
               >
                 <img
-                  src={'/static/logo/partners/CSIRO_Solid_RGB.png'}
-                  alt={'csiro logo'}
+                  src={'/static/logo/partners/MQ_INT_HOR_BLACK.png'}
+                  alt={'macquarie university logo'}
                   style={{
-                    maxWidth: '60px',
+                    maxWidth: '200px',
                     width: '100%',
                     filter: 'grayscale(100%)',
-                    opacity: 0.8,
                   }}
                 />
               </Grid>
@@ -150,14 +151,14 @@ export default function FullFooter(props: FullFooterProps) {
                 xs={12}
                 sm={12}
                 md={12}
-                lg={8}
-                style={{textAlign: 'center'}}
+                lg={4}
+                style={{textAlign: 'left'}}
               >
                 <img
-                  src={'/static/logo/partners/MQ_MAS_HOR_BLACK.png'}
-                  alt={'macquarie university logo'}
+                  src={'/static/logo/partners/CSIRO_Black.png'}
+                  alt={'csiro logo'}
                   style={{
-                    maxWidth: '200px',
+                    maxWidth: '60px',
                     width: '100%',
                     filter: 'grayscale(100%)',
                     opacity: 0.8,
@@ -175,7 +176,7 @@ export default function FullFooter(props: FullFooterProps) {
             variant="caption"
             target="_blank"
             rel="noreferrer"
-            sx={{textDecoration: 'none', color: theme.palette.grey[700]}}
+            sx={{textDecoration: 'none', color: theme.palette.text.primary}}
           >
             All FAIMS partners
           </Link>

@@ -8,6 +8,7 @@ import {TokenContents} from '../../../datamodel/core';
 interface SlimFooterProps {
   token?: null | undefined | TokenContents;
 }
+
 const SlimFooter = (props: SlimFooterProps) => {
   /**
    * Slim footer with minimal necessary links to reduce user distraction
@@ -26,7 +27,11 @@ const SlimFooter = (props: SlimFooterProps) => {
           spacing={2}
           textAlign={matchDownSM ? 'center' : 'inherit'}
         >
-          <Typography variant="subtitle2" color="secondary" component="span">
+          <Typography
+            variant="subtitle2"
+            color={theme.palette.grey[900]}
+            component="span"
+          >
             &copy; FAIMS {new Date().getFullYear()}&nbsp;
           </Typography>
 
@@ -37,7 +42,7 @@ const SlimFooter = (props: SlimFooterProps) => {
           >
             <Typography
               variant="subtitle2"
-              color="secondary"
+              color={theme.palette.grey[900]}
               component={Link}
               href="https://faims.edu.au/privacy"
               target="_blank"
@@ -48,7 +53,7 @@ const SlimFooter = (props: SlimFooterProps) => {
             <SupportEmail token={props.token} />
             <Typography
               variant="subtitle2"
-              color="secondary"
+              color={theme.palette.grey[900]}
               component={Link}
               href="https://faims.edu.au/contact/"
               target="_blank"

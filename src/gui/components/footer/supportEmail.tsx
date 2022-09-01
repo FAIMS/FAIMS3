@@ -9,12 +9,14 @@ import {
   DIRECTORY_PROTOCOL,
 } from '../../../buildconfig';
 import {TokenContents} from '../../../datamodel/core';
+import {useTheme} from '@mui/material/styles';
 
 interface SupportEmailProps {
   token?: null | undefined | TokenContents;
 }
 
 export default function SupportEmail(props: SupportEmailProps) {
+  const theme = useTheme();
   let supportEmail = 'info@faims.edu.au';
   if (
     process.env.REACT_APP_COMMIT_VERSION !== undefined &&
@@ -34,7 +36,7 @@ export default function SupportEmail(props: SupportEmailProps) {
     }`;
 
   return (
-    <Typography variant="subtitle2" color="secondary">
+    <Typography variant="subtitle2" color={theme.palette.grey[900]}>
       Support:{' '}
       <Obfuscate
         className={'support-link'}
