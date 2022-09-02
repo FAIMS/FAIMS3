@@ -24,12 +24,18 @@ import {NavLink} from 'react-router-dom';
 import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {useTheme} from '@mui/material/styles';
+import {checkToken} from '../../utils/helpers';
+import {TokenContents} from '../../datamodel/core';
 
-export default function Index() {
+type IndexProps = {
+  token?: null | undefined | TokenContents;
+};
+export default function Index(props: IndexProps) {
   /**
    * Landing page
    */
   const theme = useTheme();
+  const isAuthenticated = checkToken(props.token);
   useEffect(() => {
     document.body.classList.add('bg-primary-gradient');
 
@@ -55,7 +61,10 @@ export default function Index() {
             gutterBottom
           >
             FAIMS 3.0 Electronic Field{' '}
-            <Typography variant={'h1'} sx={{color: '#E59136'}}>
+            <Typography
+              variant={'h1'}
+              sx={{color: theme.palette.secondary.main}}
+            >
               Notebooks
             </Typography>
           </Typography>
@@ -68,25 +77,42 @@ export default function Index() {
             The FAIMS 3.0 Project is building the next generation of Electronic
             Field Notebooks. Join us on the journey.
           </Typography>
-          <Button
-            variant="contained"
-            color={'primary'}
-            disableElevation
-            sx={{mr: 1}}
-            component={NavLink}
-            to={ROUTES.SIGN_IN}
-          >
-            Sign In
-          </Button>
-          <Button
-            variant="outlined"
-            color={'secondary'}
-            disableElevation
-            href="https://faims.edu.au/contact/"
-            target={'_blank'}
-          >
-            Register your interest
-          </Button>
+          {isAuthenticated ? (
+            <React.Fragment>
+              <Button
+                variant="contained"
+                color={'secondary'}
+                disableElevation
+                sx={{mr: 1}}
+                component={NavLink}
+                to={ROUTES.WORKSPACE}
+              >
+                My Workspace
+              </Button>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <Button
+                variant="contained"
+                color={'primary'}
+                disableElevation
+                sx={{mr: 1}}
+                component={NavLink}
+                to={ROUTES.SIGN_IN}
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="outlined"
+                color={'secondary'}
+                disableElevation
+                href="https://faims.edu.au/contact/"
+                target={'_blank'}
+              >
+                Register your interest
+              </Button>
+            </React.Fragment>
+          )}
         </Grid>
         <Grid item xs={12} sm={6}>
           {/*  picture could go here... */}

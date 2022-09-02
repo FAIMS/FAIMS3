@@ -19,32 +19,88 @@
  *   throughout the app.
  */
 import React from 'react';
-import {Button, Typography} from '@mui/material';
+import {Button, Menu, MenuItem} from '@mui/material';
+import {useHistory} from 'react-router-dom';
 
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '../../../datamodel/core';
-import {tokenExists} from '../../../utils/helpers';
+import {checkToken} from '../../../utils/helpers';
+import {SIGN_IN} from '../../../constants/routes';
+
 interface AppBarAuthProps {
   token?: null | undefined | TokenContents;
 }
+
 export default function AppBarAuth(props: AppBarAuthProps) {
-  const isAuthenticated = tokenExists(props.token);
-  return (
-    <React.Fragment>
-      {isAuthenticated ? (
-        <Typography>{props.token?.username}</Typography>
-      ) : (
+  /**
+   * Show username and auth menu if authenticated, otherwise render login button
+   */
+  const isAuthenticated = checkToken(props.token);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const history = useHistory();
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleRoutingAndClose = (route: string) => {
+    handleClose();
+    history.push(route);
+  };
+
+  if (isAuthenticated) {
+    return (
+      <React.Fragment>
         <Button
-          component={NavLink}
-          to={ROUTES.SIGN_IN}
-          variant={'contained'}
-          color={'primary'}
-          disableElevation
+          size="large"
+          aria-label="account of current user"
+          aria-controls="menu-appbar"
+          aria-haspopup="true"
+          onClick={handleMenu}
+          color="inherit"
         >
-          Login
+          {props.token?.username}
         </Button>
-      )}
-    </React.Fragment>
-  );
+        <Menu
+          id="menu-appbar"
+          anchorEl={anchorEl}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          keepMounted
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          open={Boolean(anchorEl)}
+          onClose={handleClose}
+        >
+          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.WORKSPACE)}>
+            Workspace
+          </MenuItem>
+          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
+            Switch User
+          </MenuItem>
+          <MenuItem onClick={handleClose}>Logout TBD</MenuItem>
+        </Menu>
+      </React.Fragment>
+    );
+  } else {
+    return (
+      <Button
+        component={NavLink}
+        to={ROUTES.SIGN_IN}
+        variant={'contained'}
+        color={'primary'}
+        disableElevation
+      >
+        Login
+      </Button>
+    );
+  }
 }

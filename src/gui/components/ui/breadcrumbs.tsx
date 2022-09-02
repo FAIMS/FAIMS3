@@ -24,6 +24,7 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
             <Link
               component={RouterLink}
               to={item.link}
+              underline={'none'}
               key={'breadcrumb-item-' + item.title}
             >
               {item.title}
