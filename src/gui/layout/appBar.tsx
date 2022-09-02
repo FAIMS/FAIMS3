@@ -56,7 +56,9 @@ import {ProjectInformation} from '../../datamodel/ui';
 import {useEventedPromise} from '../pouchHook';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '../../datamodel/core';
-import {tokenExists} from '../../utils/helpers';
+import {checkToken} from '../../utils/helpers';
+import ConnectedStatus from '../components/authentication/connectedStatus';
+import SyncStatus from '../components/authentication/syncStatus';
 
 // type NavBarState = {
 //   topMenuItems: any;
@@ -171,11 +173,7 @@ export default function AppBar(props: NavbarProps) {
   // const globalState = useContext(store);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const isSyncing = false;
-  const isAuthenticated = tokenExists(props.token);
-  // const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  // const [projectList, setProjectList] = useState<ProjectsList>({});
-  // const [error, setError] = useState<string | null>(null);
+  const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
   const pouchProjectList = useEventedPromise(
@@ -281,16 +279,9 @@ export default function AppBar(props: NavbarProps) {
               />
             </NavLink>
             <div>
+              {isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}
+              {isAuthenticated ? <SyncStatus token={props.token} /> : ''}
               <AppBarAuth token={props.token} />
-              {isSyncing ? (
-                <CircularProgress
-                  color={'secondary'}
-                  size={'1rem'}
-                  thickness={5}
-                />
-              ) : (
-                ''
-              )}
             </div>
           </Toolbar>
         </MuiAppBar>

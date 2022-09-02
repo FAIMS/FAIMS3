@@ -18,9 +18,8 @@
  *   TODO
  */
 
-import React from 'react';
-import {Box, Container} from '@mui/material';
-import Button from '@mui/material/Button';
+import React, {useContext} from 'react';
+import {Box, Divider, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {
@@ -37,14 +36,35 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import {grey} from '@mui/material/colors';
+import {ActionType} from '../../actions';
+import {store} from '../../store';
 
 export default function AboutBuild() {
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
     {title: 'about-build'},
   ];
+
+  const {state, dispatch} = useContext(store);
+
+  const handleToggleSyncUp = () => {
+    dispatch({type: ActionType.IS_SYNCING_UP, payload: !state.isSyncingUp});
+  };
+  const handleToggleSyncDown = () => {
+    dispatch({type: ActionType.IS_SYNCING_DOWN, payload: !state.isSyncingDown});
+  };
+  const handleToggleUnsyncedChanges = () => {
+    dispatch({
+      type: ActionType.HAS_UNSYNCED_CHANGES,
+      payload: !state.hasUnsyncedChanges,
+    });
+  };
+  const handleToggleSyncError = () => {
+    dispatch({type: ActionType.IS_SYNC_ERROR, payload: !state.isSyncError});
+  };
+
   return (
-    <Container maxWidth="lg">
+    <Box sx={{p: 2}}>
       <Breadcrumbs data={breadcrumbs} />
       <BoxTab title={'Developer tool: About the build'} bgcolor={grey[100]} />
       <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}} mb={2}>
@@ -113,6 +133,25 @@ export default function AboutBuild() {
           Open MiniFauxton
         </Button>
       )}
-    </Container>
+      <Divider sx={{my: 3}}>Sync State Test</Divider>
+      <Button variant="contained" onClick={handleToggleSyncUp} sx={{mr: 1}}>
+        Toggle Sync UP {JSON.stringify(state.isSyncingUp)}
+      </Button>
+      <Button variant="contained" onClick={handleToggleSyncDown} sx={{mr: 1}}>
+        Toggle Sync DOWN {JSON.stringify(state.isSyncingDown)}
+      </Button>
+      <Button
+        variant="contained"
+        onClick={handleToggleUnsyncedChanges}
+        sx={{mr: 1}}
+      >
+        Local changes made {JSON.stringify(state.hasUnsyncedChanges)}
+      </Button>
+      <Button variant="contained" onClick={handleToggleSyncError} sx={{mr: 1}}>
+        Sync Error {JSON.stringify(state.isSyncError)}
+      </Button>
+
+      <Divider sx={{my: 3}} />
+    </Box>
   );
 }

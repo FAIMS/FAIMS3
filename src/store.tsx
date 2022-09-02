@@ -36,7 +36,10 @@ import {initialize} from './sync/initialize';
 
 interface InitialStateProps {
   initialized: boolean;
-  isSyncing: boolean;
+  isSyncingUp: boolean;
+  isSyncingDown: boolean;
+  hasUnsyncedChanges: boolean;
+  isSyncError: boolean;
 
   active_project: ProjectObject | null;
   active_record: Record | null;
@@ -50,7 +53,10 @@ interface InitialStateProps {
 
 const InitialState = {
   initialized: false,
-  isSyncing: false,
+  isSyncingUp: false,
+  isSyncingDown: false,
+  hasUnsyncedChanges: false,
+  isSyncError: false,
 
   active_project: null,
   active_record: null,
@@ -84,13 +90,30 @@ const StateProvider = (props: any) => {
             initialized: true,
           };
         }
-        case ActionType.IS_SYNCING: {
+        case ActionType.IS_SYNCING_UP: {
           return {
             ...state,
-            isSyncing: action.payload,
+            isSyncingUp: action.payload,
           };
         }
-
+        case ActionType.IS_SYNCING_DOWN: {
+          return {
+            ...state,
+            isSyncingDown: action.payload,
+          };
+        }
+        case ActionType.HAS_UNSYNCED_CHANGES: {
+          return {
+            ...state,
+            hasUnsyncedChanges: action.payload,
+          };
+        }
+        case ActionType.IS_SYNC_ERROR: {
+          return {
+            ...state,
+            isSyncError: action.payload,
+          };
+        }
         case ActionType.GET_ACTIVE_PROJECT: {
           return {...state, active_project: action.payload};
         }

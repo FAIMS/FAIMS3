@@ -22,7 +22,11 @@ import {ProjectObject} from './datamodel/database';
 import {Record} from './datamodel/ui';
 
 export enum ActionType {
-  IS_SYNCING,
+  IS_SYNCING_UP,
+  IS_SYNCING_DOWN,
+  HAS_UNSYNCED_CHANGES,
+  IS_SYNC_ERROR,
+
   INITIALIZED,
 
   GET_ACTIVE_PROJECT,
@@ -38,8 +42,21 @@ export enum ActionType {
   ADD_CUSTOM_ALERT,
 }
 
-export interface IS_SYNCING {
-  type: ActionType.IS_SYNCING;
+export interface IS_SYNCING_UP {
+  type: ActionType.IS_SYNCING_UP;
+  payload: boolean;
+}
+export interface IS_SYNCING_DOWN {
+  type: ActionType.IS_SYNCING_DOWN;
+  payload: boolean;
+}
+export interface HAS_UNSYNCED_CHANGES {
+  type: ActionType.HAS_UNSYNCED_CHANGES;
+  payload: boolean;
+}
+
+export interface IS_SYNC_ERROR {
+  type: ActionType.IS_SYNC_ERROR;
   payload: boolean;
 }
 
@@ -48,7 +65,7 @@ export interface INITIALIZED {
   payload: undefined;
 }
 
-export type SyncingActions = INITIALIZED | IS_SYNCING;
+export type SyncingActions = INITIALIZED | IS_SYNCING_UP | IS_SYNCING_DOWN | HAS_UNSYNCED_CHANGES | IS_SYNC_ERROR;
 
 export interface GET_ACTIVE_PROJECT {
   type: ActionType.GET_ACTIVE_PROJECT;
