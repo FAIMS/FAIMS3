@@ -41,7 +41,7 @@ export default function ProjectCreate() {
       {title: 'New Notebook'},
     ];
     return (
-      <Container maxWidth="lg">
+      <React.Fragment>
         <Breadcrumbs data={breadcrumbs} />
         <Box mb={2}>
           <Typography variant={'h2'} component={'h1'}>
@@ -53,14 +53,14 @@ export default function ProjectCreate() {
             select tabs to design your notebook.
           </Typography>
         </Box>
-        <Paper square>
+        <Paper square sx={{p: 0}}>
           <CreateProjectCard
             project_id={null}
             uiSpec={null}
             project_info={null}
           />
         </Paper>
-      </Container>
+      </React.Fragment>
     );
   } else {
     const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);

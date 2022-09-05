@@ -27,6 +27,7 @@ import {ProjectSubmit} from './ProjectButton';
 import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import Alert from '@mui/material/Alert';
 import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 type ProjectSubmitProps = {
@@ -51,6 +52,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
   const [state, seState] = useState(false);
   const [issubmit, setissubmit] = useState(projectvalue.ispublic ?? false);
   const [ischecked, setischecked] = useState(false);
+  const theme = useTheme();
 
   useEffect(() => {
     let isactive = true;
@@ -209,7 +211,10 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
         </Typography>
       </Grid>
       <Grid item sm={6} xs={12}>
-        <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
+        <Box
+          bgcolor={grey[200]}
+          sx={{overflowX: 'scroll', p: theme.spacing(2)}}
+        >
           <Typography variant={'h6'} component={'h6'}>
             What happens next after you click SAVE NOTEBOOK?
           </Typography>

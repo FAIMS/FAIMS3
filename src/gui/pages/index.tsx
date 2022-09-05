@@ -26,7 +26,7 @@ import * as ROUTES from '../../constants/routes';
 import {useTheme} from '@mui/material/styles';
 import {checkToken} from '../../utils/helpers';
 import {TokenContents} from '../../datamodel/core';
-
+import DashboardIcon from '@mui/icons-material/Dashboard';
 type IndexProps = {
   token?: null | undefined | TokenContents;
 };
@@ -52,7 +52,7 @@ export default function Index(props: IndexProps) {
         justifyContent="center"
         alignItems="center"
         spacing={3}
-        sx={{minHeight: '60vh', padding: theme.spacing(2)}}
+        sx={{minHeight: '60vh'}}
       >
         <Grid item xs={12} sm={6}>
           <Typography
@@ -86,8 +86,9 @@ export default function Index(props: IndexProps) {
                 sx={{mr: 1}}
                 component={NavLink}
                 to={ROUTES.WORKSPACE}
+                startIcon={<DashboardIcon />}
               >
-                My Workspace
+                Workspace
               </Button>
             </React.Fragment>
           ) : (
