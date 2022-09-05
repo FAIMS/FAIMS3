@@ -18,9 +18,9 @@
  *   This contains the connectedStatus React component, which allows users to see their connectivity status
  */
 import React from 'react';
-import {Button, Typography, IconButton, Badge} from '@mui/material';
+import {IconButton} from '@mui/material';
 import WifiIcon from '@mui/icons-material/Wifi';
-import WifiOffIcon from '@mui/icons-material/WifiOff';
+// import WifiOffIcon from '@mui/icons-material/WifiOff';
 import {TokenContents} from '../../../datamodel/core';
 
 interface ConnectedStatusProps {

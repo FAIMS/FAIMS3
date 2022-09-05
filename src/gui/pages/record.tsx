@@ -35,7 +35,7 @@ import {
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {ActionType} from '../../actions';
+import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
@@ -46,7 +46,7 @@ import {
   SectionMeta,
 } from '../../datamodel/ui';
 import {listFAIMSRecordRevisions} from '../../data_storage';
-import {store} from '../../store';
+import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 import RecordForm from '../components/record/form';
 import ConflictForm from '../components/record/conflict/conflictform';

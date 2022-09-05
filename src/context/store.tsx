@@ -22,8 +22,8 @@ import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
 
 import {v4 as uuidv4} from 'uuid';
 
-import {ProjectObject} from './datamodel/database';
-import {Record} from './datamodel/ui';
+import {ProjectObject} from '../datamodel/database';
+import {Record} from '../datamodel/ui';
 import {
   ProjectActions,
   RecordActions,
@@ -31,8 +31,8 @@ import {
   AlertActions,
   ActionType,
 } from './actions';
-import LoadingApp from './gui/components/loadingApp';
-import {initialize} from './sync/initialize';
+import LoadingApp from '../gui/components/loadingApp';
+import {initialize} from '../sync/initialize';
 
 interface InitialStateProps {
   initialized: boolean;
@@ -63,7 +63,7 @@ const InitialState = {
   alerts: [],
 };
 
-interface ContextType {
+export interface ContextType {
   state: InitialStateProps;
   dispatch: Dispatch<
     ProjectActions | RecordActions | SyncingActions | AlertActions

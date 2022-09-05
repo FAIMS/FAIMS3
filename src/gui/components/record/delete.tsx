@@ -32,9 +32,9 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import {Alert} from '@mui/material';
 
-import {ActionType} from '../../../actions';
+import {ActionType} from '../../../context/actions';
 import * as ROUTES from '../../../constants/routes';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setRecordAsDeleted} from '../../../data_storage';

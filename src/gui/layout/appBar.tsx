@@ -58,7 +58,7 @@ import {useEventedPromise} from '../pouchHook';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '../../datamodel/core';
 import {checkToken} from '../../utils/helpers';
-import ConnectedStatus from '../components/authentication/connectedStatus';
+// import ConnectedStatus from '../components/authentication/connectedStatus';
 import SyncStatus from '../components/authentication/syncStatus';
 
 // type NavBarState = {
@@ -286,7 +286,7 @@ export default function AppBar(props: NavbarProps) {
               />
             </NavLink>
             <div>
-              {isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}
+              {/*{isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}*/}
               {isAuthenticated ? <SyncStatus token={props.token} /> : ''}
               <AppBarAuth token={props.token} />
             </div>

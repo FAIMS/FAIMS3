@@ -51,19 +51,13 @@ export function SignIn(props: SignInProps) {
       </Box>
     );
   }
+
   return (
-    <Box
-      sx={{
-        minHeight: {
-          xs: 'calc(100vh - 328px)',
-          sm: 'calc(100vh - 188px)',
-        },
-      }}
-    >
+    <Box>
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={4}>
         {listings.map((listing_info, index) => (
-          <Grid item md={4} sm={6} xs={12} key={index}>
+          <Grid item md={4} sm={8} xs={12} key={index}>
             <ClusterCard
               key={listing_info.id}
               listing_id={listing_info.id}

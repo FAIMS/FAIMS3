@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: projectCard.tsx
+ * Filename: cluster_card.tsx
  * Description:
  *   TODO
  */
@@ -22,20 +22,17 @@ import {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 
 import {
+  Autocomplete,
   Button,
-  ButtonGroup,
-  Divider,
-  MenuItem,
-  Select,
+  Grid,
   Box,
   Typography,
   Chip,
-  InputLabel,
-  FormControl,
   Table,
   TableCell,
   TableRow,
   TableBody,
+  TextField,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import {LoginButton} from './login_form';
@@ -74,24 +71,19 @@ function UserSwitcher(props: UserSwitcherProps) {
     return <p>No logged in users</p>;
   }
   return (
-    <FormControl sx={{minWidth: 160}}>
-      <InputLabel>Switch User</InputLabel>
-      <Select
-        fullWidth
+    <React.Fragment>
+      <Autocomplete
+        disablePortal
         id={`user-switcher-${props.listing_id}`}
-        label="Switch User"
-        value={props.current_username}
-        onChange={event => {
-          return switchUsername(props.listing_id, event.target.value as string);
-        }}
-      >
-        {userList.map(info => (
-          <MenuItem value={info.username}>
-            {info.name ? info.name : info.username}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+        getOptionLabel={option => (option.name ? option.name : option.username)}
+        options={userList}
+        sx={{width: 300}}
+        onChange={(e, value) =>
+          switchUsername(props.listing_id, value?.username as string)
+        }
+        renderInput={params => <TextField {...params} label="Switch User" />}
+      />
+    </React.Fragment>
   );
 }
 
@@ -144,10 +136,11 @@ export default function ClusterCard(props: ClusterCardProps) {
         />
       ) : (
         <React.Fragment>
-          <Table size={'small'}>
+          <Table size={'small'} sx={{mb: 2}}>
             <colgroup>
               <col style={{width: '20%'}} />
-              <col style={{width: '80%'}} />
+              <col style={{width: '60%'}} />
+              <col style={{width: '20%'}} />
             </colgroup>
             <TableBody>
               <TableRow>
@@ -156,6 +149,20 @@ export default function ClusterCard(props: ClusterCardProps) {
                 </TableCell>
                 <TableCell align="left">
                   <code style={{fontWeight: 'bold'}}>{token.username}</code>
+                </TableCell>
+                <TableCell sx={{pr: 0}} align="right">
+                  <Button
+                    size={'small'}
+                    variant={'outlined'}
+                    onClick={() =>
+                      forgetCurrentToken(props.listing_id).then(() => {
+                        setToken(undefined);
+                        reprocess_listing(props.listing_id);
+                      })
+                    }
+                  >
+                    Logout
+                  </Button>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -169,37 +176,51 @@ export default function ClusterCard(props: ClusterCardProps) {
                     })}
                   </Box>
                 </TableCell>
+                <TableCell sx={{pr: 0}} align="right">
+                  <LoginButton
+                    key={props.listing_id}
+                    listing_id={props.listing_id}
+                    listing_name={props.listing_name}
+                    conductor_url={props.conductor_url}
+                    setToken={setToken}
+                    is_refresh={true}
+                    label={'refresh'}
+                    size={'small'}
+                  />
+                  <Typography variant={'caption'}>
+                    Sign in again to refresh roles
+                  </Typography>
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>
 
-          <ButtonGroup variant="outlined" size={'medium'} sx={{mt: 2}}>
-            <Button
-              onClick={() =>
-                forgetCurrentToken(props.listing_id).then(() => {
-                  setToken(undefined);
-                  reprocess_listing(props.listing_id);
-                })
-              }
-            >
-              Logout {token.username}
-            </Button>
-            <LoginButton
-              key={props.listing_id}
-              listing_id={props.listing_id}
-              listing_name={props.listing_name}
-              conductor_url={props.conductor_url}
-              setToken={setToken}
-              is_refresh={true}
-            />
-          </ButtonGroup>
-          <Divider sx={{my: 2}} />
           {token.username ? (
             <React.Fragment>
-              <UserSwitcher
-                listing_id={props.listing_id}
-                current_username={token.username}
-              />
+              <Grid
+                container
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Grid item>
+                  <UserSwitcher
+                    listing_id={props.listing_id}
+                    current_username={token.username}
+                  />
+                </Grid>
+                <Grid item>
+                  <LoginButton
+                    key={props.listing_id}
+                    listing_id={props.listing_id}
+                    listing_name={props.listing_name}
+                    conductor_url={props.conductor_url}
+                    setToken={setToken}
+                    is_refresh={true}
+                    label={'add user'}
+                    size={'small'}
+                  />
+                </Grid>
+              </Grid>
             </React.Fragment>
           ) : (
             ''

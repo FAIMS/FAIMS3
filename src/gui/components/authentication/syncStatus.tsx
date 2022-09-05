@@ -22,7 +22,7 @@ import {Box, Grid} from '@mui/material';
 import CloudIcon from '@mui/icons-material/Cloud';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
+// import CloudDoneIcon from '@mui/icons-material/CloudDone';
 
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -30,7 +30,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import 'animate.css';
 
 import {TokenContents} from '../../../datamodel/core';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 
 interface SyncStatusProps {
   token?: null | undefined | TokenContents;
@@ -50,7 +50,7 @@ export default function SyncStatus(props: SyncStatusProps) {
    * state.isSyncError =>  <CloudOffIcon />
    * state.isSyncingUp =>  <CloudIcon /> + <ArrowDropUpIcon/>
    * state.isSyncingDown =>  <CloudIcon /> + <ArrowDropDownIcon/>
-   * state.hasUnsyncedChanges =>  <CloudQueueIcon />
+   * state.hasUnsyncedChanges =>  <CloudQueueIcon /> <--- not currently in use
    *
    */
 
@@ -79,10 +79,9 @@ export default function SyncStatus(props: SyncStatusProps) {
             </React.Fragment>
           ) : state.isSyncingUp || state.isSyncingDown ? (
             <CloudIcon />
-          ) : state.hasUnsyncedChanges ? (
-            <CloudQueueIcon />
           ) : (
-            <CloudDoneIcon />
+            // state.hasUnsyncedChanges ? (<CloudQueueIcon />) : (<CloudDoneIcon />)
+            <CloudQueueIcon />
           )}
         </Box>
         {!state.isSyncError ? (

@@ -18,8 +18,8 @@
  *   TODO
  */
 
-import {ProjectObject} from './datamodel/database';
-import {Record} from './datamodel/ui';
+import {ProjectObject} from '../datamodel/database';
+import {Record} from '../datamodel/ui';
 
 export enum ActionType {
   IS_SYNCING_UP,
@@ -65,7 +65,12 @@ export interface INITIALIZED {
   payload: undefined;
 }
 
-export type SyncingActions = INITIALIZED | IS_SYNCING_UP | IS_SYNCING_DOWN | HAS_UNSYNCED_CHANGES | IS_SYNC_ERROR;
+export type SyncingActions =
+  | INITIALIZED
+  | IS_SYNCING_UP
+  | IS_SYNCING_DOWN
+  | HAS_UNSYNCED_CHANGES
+  | IS_SYNC_ERROR;
 
 export interface GET_ACTIVE_PROJECT {
   type: ActionType.GET_ACTIVE_PROJECT;

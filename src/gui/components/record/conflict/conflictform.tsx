@@ -43,8 +43,8 @@ import ConflictPanel from './conflictpanel';
 import ConflictToolBar from './conflicttoolbar';
 import {ConflictResolveIcon} from './conflictfield';
 import {ConflictSaveButton} from './conflictbutton';
-import {store} from '../../../../store';
-import {ActionType} from '../../../../actions';
+import {store} from '../../../../context/store';
+import {ActionType} from '../../../../context/actions';
 import {isEqualFAIMS} from '../../../../datamodel/typesystem';
 
 type ConflictFormProps = {

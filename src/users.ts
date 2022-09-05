@@ -210,6 +210,7 @@ export async function forgetCurrentToken(cluster_id: string) {
 }
 
 export async function switchUsername(cluster_id: string, new_username: string) {
+  console.log('Switching user to ', new_username, cluster_id);
   try {
     const doc = await local_auth_db.get(cluster_id);
     doc.current_token = doc.available_tokens[new_username].token;

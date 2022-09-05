@@ -20,11 +20,11 @@
  */
 
 import {useContext, useEffect, useState} from 'react';
-import {store} from '../../store';
+import {store} from '../../context/store';
 import {RouteComponentProps} from 'react-router';
 import {local_auth_db} from '../../sync/databases';
 import * as ROUTES from '../../constants/routes';
-import {ActionType} from '../../actions';
+import {ActionType} from '../../context/actions';
 import {CircularProgress} from '@mui/material';
 import {Redirect} from 'react-router-dom';
 

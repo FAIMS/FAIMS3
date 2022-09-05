@@ -32,7 +32,7 @@ import AutoSave from './autosave';
 import {ViewComponent} from './view';
 import BoxTab from '../ui/boxTab';
 
-import {ActionType} from '../../../actions';
+import {ActionType} from '../../../context/actions';
 
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -44,7 +44,7 @@ import {
 import {ProjectUIModel} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldsForViewSet,

@@ -31,9 +31,9 @@ import {
   CircularProgress,
 } from '@mui/material';
 
-import {ActionType} from '../../actions';
+import {ActionType} from '../../context/actions';
 import * as ROUTES from '../../constants/routes';
-import {store} from '../../store';
+import {store} from '../../context/store';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';

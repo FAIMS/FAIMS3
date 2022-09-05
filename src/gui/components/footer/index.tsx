@@ -24,12 +24,12 @@ import {Box, Grid, Typography} from '@mui/material';
 import packageJson from '../../../../package.json';
 
 import {COMMIT_VERSION} from '../../../buildconfig';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 import InProgress from '../ui/inProgress';
 import BoxTab from '../ui/boxTab';
 import FullFooter from './fullFooter';
 import SlimFooter from './slimFooter';
-import {EHTML} from './footerEHTML';
+// import {EHTML} from './footerEHTML';
 
 import {grey} from '@mui/material/colors';
 import * as ROUTES from '../../../constants/routes';
@@ -62,8 +62,7 @@ export default function Footer(props: FooterProps) {
       ) : (
         <SlimFooter token={props.token} />
       )}
-      <EHTML />
-      {process.env.REACT_APP_SERVICES === 'FAIMSTEXT' && <EHTML />}
+      {/*{process.env.REACT_APP_SERVICES === 'FAIMSTEXT' && <EHTML />}*/}
       {process.env.REACT_APP_SERVER === 'developer' && <DevelopTool />}
     </React.Fragment>
   );

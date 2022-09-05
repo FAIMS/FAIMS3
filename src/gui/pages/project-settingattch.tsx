@@ -46,8 +46,8 @@ import {
   setSyncingProjectAttachments,
   listenSyncingProjectAttachments,
 } from '../../sync/sync-toggle';
-import {store} from '../../store';
-import {ActionType} from '../../actions';
+import {store} from '../../context/store';
+import {ActionType} from '../../context/actions';
 
 export default function PROJECTATTACHMENT() {
   const {project_id} = useParams<{project_id: ProjectID}>();

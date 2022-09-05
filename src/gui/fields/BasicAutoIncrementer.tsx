@@ -22,8 +22,8 @@ import React from 'react';
 import Input from '@mui/material/Input';
 import {FieldProps} from 'formik';
 
-import {ActionType} from '../../actions';
-import {store} from '../../store';
+import {ActionType} from '../../context/actions';
+import {store} from '../../context/store';
 import {
   get_local_autoincrement_state_for_field,
   set_local_autoincrement_state_for_field,

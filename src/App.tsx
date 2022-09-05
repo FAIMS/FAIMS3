@@ -40,7 +40,7 @@ import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
 import AutoIncrementEdit from './gui/pages/autoincrement-edit';
 import PROJECTATTACHMENT from './gui/pages/project-settingattch';
 import NotFound404 from './gui/pages/404';
-import {StateProvider} from './store';
+import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 
