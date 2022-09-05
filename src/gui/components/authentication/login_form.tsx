@@ -91,7 +91,7 @@ export function LoginButton(props: LoginButtonProps) {
       {!props.is_refresh ? (
         <> Sign-in for {props.listing_name} </>
       ) : (
-        <> Reconnect with {props.listing_name} </>
+        <> Add user / update roles </>
       )}
     </Button>
   );
