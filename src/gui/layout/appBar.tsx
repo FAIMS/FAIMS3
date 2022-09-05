@@ -46,6 +46,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import AccountTree from '@mui/icons-material/AccountTree';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 
 import * as ROUTES from '../../constants/routes';
@@ -191,6 +192,12 @@ export default function AppBar(props: NavbarProps) {
       icon: <HomeIcon />,
       to: ROUTES.INDEX,
       disabled: false,
+    },
+    {
+      title: 'WorkSpace',
+      icon: <DashboardIcon />,
+      to: ROUTES.WORKSPACE,
+      disabled: !isAuthenticated,
     },
     pouchProjectList === null
       ? {

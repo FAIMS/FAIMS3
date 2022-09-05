@@ -26,7 +26,6 @@ import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '../../../datamodel/core';
 import {checkToken} from '../../../utils/helpers';
-import {SIGN_IN} from '../../../constants/routes';
 
 interface AppBarAuthProps {
   token?: null | undefined | TokenContents;
@@ -86,7 +85,9 @@ export default function AppBarAuth(props: AppBarAuthProps) {
           <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
             Switch User
           </MenuItem>
-          <MenuItem onClick={handleClose}>Logout TBD</MenuItem>
+          <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
+            Logout {props.token!.username}
+          </MenuItem>
         </Menu>
       </React.Fragment>
     );
