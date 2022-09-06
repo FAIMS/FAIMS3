@@ -27,9 +27,10 @@ import Index from './gui/pages';
 import {SignIn} from './gui/pages/signin';
 import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';
-import Home from './gui/pages/home';
-// import ProjectList from './gui/pages/project-list';
+import Workspace from './gui/pages/workspace';
+import ProjectList from './gui/pages/project-list';
 import Project from './gui/pages/project';
+import Notebook from './gui/pages/notebook';
 import ProjectSettings from './gui/pages/project-settings';
 import ProjectSearch from './gui/pages/project-search';
 import RecordList from './gui/pages/record-list';
@@ -107,7 +108,7 @@ export default function App() {
                 <PrivateRoute
                   exact
                   path={ROUTES.WORKSPACE}
-                  component={Home}
+                  component={Workspace}
                   token={token}
                   extraProps={{token: token}}
                 />
@@ -121,7 +122,7 @@ export default function App() {
                 <PrivateRoute
                   exact
                   path={ROUTES.PROJECT_LIST}
-                  component={Home}
+                  component={ProjectList}
                   token={token}
                   extraProps={{token: token}}
                 />
@@ -145,6 +146,13 @@ export default function App() {
                   component={Project}
                   token={token}
                   extraProps={{token: token}}
+                />
+                <PrivateRoute
+                    exact
+                    path={ROUTES.NOTEBOOK + ':project_id'}
+                    component={Notebook}
+                    token={token}
+                    extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact

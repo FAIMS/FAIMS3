@@ -13,13 +13,13 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: home.tsx
+ * Filename: workspace.tsx
  * Description:
  *   TODO
  */
 
 import React from 'react';
-import {Typography, Grid, Stack, CircularProgress} from '@mui/material';
+import {Typography, Grid, Stack, Box, CircularProgress} from '@mui/material';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 // import {store} from '../../store';
@@ -28,7 +28,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise} from '../pouchHook';
 import MainCard from '../components/ui/main-card';
 
-export default function Home() {
+export default function Workspace() {
   const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
@@ -51,13 +51,13 @@ export default function Home() {
           </Typography>
         </Grid>
         {/* Recent Projects */}
-        <Grid item xs={12} md={12} lg={12}>
-          <MainCard contentSX={{p: 2.25}} divider={true} content={true}>
+        <Grid item xs={12} md={12} lg={8}>
+          <MainCard divider={true} content={true}>
             <Stack spacing={0.5}>
               <Typography variant="h6" color="textSecondary">
                 My Notebooks
               </Typography>
-              <Grid container spacing={1}>
+              <Box>
                 {pouchProjectList === null ? (
                   <CircularProgress />
                 ) : Object.keys(pouchProjectList).length === 0 ? (
@@ -67,31 +67,23 @@ export default function Home() {
                     const project_id = project_info.project_id;
                     if (project_info !== null) {
                       return (
-                        <Grid
-                          item
-                          xs={12}
-                          key={'project-list-grid' + project_id}
-                        >
+                        <Box key={'project-list' + project_id}>
                           <ProjectCard
                             project={project_info}
                             dashboard={true}
                           />
-                        </Grid>
+                        </Box>
                       );
                     } else {
                       return (
-                        <Grid
-                          item
-                          xs={12}
-                          key={'project-list-grid' + project_id}
-                        >
+                        <Box key={'project-list' + project_id}>
                           Project could not be loaded
-                        </Grid>
+                        </Box>
                       );
                     }
                   })
                 )}
-              </Grid>
+              </Box>
             </Stack>
           </MainCard>
         </Grid>

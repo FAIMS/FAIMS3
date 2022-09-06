@@ -19,8 +19,7 @@
  */
 
 import React from 'react';
-import makeStyles from '@mui/styles/makeStyles';
-import {Container, Grid} from '@mui/material';
+import {Box, Grid} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
@@ -29,49 +28,11 @@ import {CircularProgress} from '@mui/material';
 import {useEventedPromise} from '../pouchHook';
 import {TokenContents} from '../../datamodel/core';
 
-const useStyles = makeStyles(theme => ({
-  gridRoot: {
-    flexGrow: 1,
-  },
-  bullet: {
-    display: 'inline-block',
-    margin: '0 2px',
-    transform: 'scale(0.8)',
-  },
-  title: {
-    fontSize: 14,
-  },
-  pos: {
-    marginBottom: 12,
-  },
-  avatar: {
-    borderRadius: 8,
-    // backgroundColor: red[500],
-    backgroundColor: theme.palette.secondary.light,
-  },
-  overline: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: 500,
-  },
-  NoPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 5,
-      paddingRight: 5,
-    },
-  },
-}));
-
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
 
 export default function ProjectList(props: ProjectProps) {
-  const classes = useStyles();
   const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
@@ -84,32 +45,30 @@ export default function ProjectList(props: ProjectProps) {
   ];
 
   return (
-    <Container maxWidth="lg" className={classes.NoPadding}>
-      <Breadcrumbs data={breadcrumbs}/>
-      <div className={classes.gridRoot}>
-        <Grid container spacing={1}>
-          {pouchProjectList === null ? (
-            <CircularProgress size={24} thickness={6} />
-          ) : (
-            pouchProjectList.map(project_info => {
-              return (
-                <Grid
-                  item
-                  xs={12}
-                  key={'project-list-grid' + project_info.project_id}
-                >
-                  <ProjectCard
-                    project={project_info}
-                    listView={true}
-                    showRecords={true}
-                    dashboard={false}
-                  />
-                </Grid>
-              );
-            })
-          )}
-        </Grid>
-      </div>
-    </Container>
+    <Box>
+      <Breadcrumbs data={breadcrumbs} />
+      {pouchProjectList === null ? (
+        <CircularProgress />
+      ) : Object.keys(pouchProjectList).length === 0 ? (
+        <span>No notebooks found</span>
+      ) : (
+        pouchProjectList.map(project_info => {
+          const project_id = project_info.project_id;
+          if (project_info !== null) {
+            return (
+              <Box key={'project-list' + project_id}>
+                <ProjectCard project={project_info} dashboard={true} />
+              </Box>
+            );
+          } else {
+            return (
+              <Box key={'project-list' + project_id}>
+                Project could not be loaded
+              </Box>
+            );
+          }
+        })
+      )}
+    </Box>
   );
 }

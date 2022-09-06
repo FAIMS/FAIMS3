@@ -13,16 +13,14 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: project.tsx
+ * Filename: notebook.tsx
  * Description:
  *   TODO
  */
-
 import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
 import {Container, Box} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
@@ -30,21 +28,16 @@ import {ProjectID} from '../../datamodel/core';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@mui/material';
 import {ProjectInformation} from '../../datamodel/ui';
-import makeStyles from '@mui/styles/makeStyles';
 
-const useStyles = makeStyles(theme => ({
-  NoPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 5,
-      paddingRight: 5,
-    },
-  },
-}));
+import NotebookComponent from '../components/notebook';
 
-export default function Project() {
+export default function Notebook() {
+  /**
+   *
+   */
   const {project_id} = useParams<{project_id: ProjectID}>();
   let project_info: ProjectInformation | null;
-  const classes = useStyles();
+
   try {
     project_info = useEventedPromise(
       getProjectInfo,
@@ -63,14 +56,16 @@ export default function Project() {
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
+    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {title: project_info !== null ? project_info.name : ''},
   ];
 
   return project_info ? (
     <Box>
       <Breadcrumbs data={breadcrumbs} />
-      <ProjectCard project={project_info} showRecords={true} listView={false} />
+      <NotebookComponent
+      project={project_info}
+      />
     </Box>
   ) : (
     <CircularProgress />

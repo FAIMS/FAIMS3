@@ -21,7 +21,7 @@
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
 import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
-import {Typography} from '@mui/material';
+import {Typography, Box, Paper} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
@@ -186,7 +186,6 @@ function DraftRecord(props: DraftsRecordProps) {
       columns={columns}
       autoHeight
       rowHeight={not_xs ? 52 : 100}
-      checkboxSelection
       density={not_xs ? 'standard' : 'comfortable'}
       components={{
         Toolbar: CustomToolbar,
@@ -236,29 +235,18 @@ export default function DraftsTable(props: DraftsTableProps) {
   }, [project_id, rows]);
 
   return (
-    <div>
-      <Typography
-        variant="overline"
-        style={not_xs ? {paddingLeft: '10px'} : {paddingLeft: '10px'}}
+      <Box
+          component={Paper} elevation={0}
       >
-        New Draft
-      </Typography>
-      <div
-        style={{
-          width: '100%',
-          marginBottom: not_xs ? '20px' : '40px',
-        }}
-      >
-        <DraftRecord
-          project_id={project_id}
-          maxRows={maxRows}
-          rows={rows}
-          loading={loading}
-          viewsets={props.viewsets}
-          not_xs={not_xs}
-        />
-      </div>
-    </div>
+          <DraftRecord
+              project_id={project_id}
+              maxRows={maxRows}
+              rows={rows}
+              loading={loading}
+              viewsets={props.viewsets}
+              not_xs={not_xs}
+          />
+      </Box>
   );
 }
 DraftsTable.defaultProps = {
