@@ -25,7 +25,6 @@ import {
   AppBar,
   Box,
   Grid,
-  Container,
   Typography,
   Paper,
   Tab,
@@ -49,6 +48,7 @@ import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 import RecordForm from '../components/record/form';
+import ChildRecordView from '../components/record/child_records';
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
 import RecordDelete from '../components/record/delete';
@@ -254,7 +254,7 @@ export default function Record() {
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
     return <CircularProgress size={12} thickness={4} />;
   return (
-    <Container maxWidth="lg" className={classes.NoPadding}>
+    <Box>
       <Breadcrumbs data={breadcrumbs} />
       {recordInfo !== null && (
         <Box
@@ -304,34 +304,19 @@ export default function Record() {
             </Box>
           )}
       </Box>
-      <Paper square className={classes.NoPadding}>
+      <Paper square className={classes.NoPadding} elevation={0} variant={'outlined'}>
         <TabContext value={value}>
           <AppBar position="static" color="primary">
             <TabList
               onChange={handleChange}
               aria-label="Record Form Tab"
-              indicatorColor={'secondary'}
-              textColor="secondary"
+              indicatorColor="secondary"
+              textColor="inherit"
               centered={not_xs ? false : true}
             >
-              <Tab
-                label="Edit"
-                value="1"
-                style={{
-                  color: '#c2c2c2',
-                  width: '70px',
-                }}
-              />
-              <Tab
-                label="Revisions"
-                value="2"
-                style={{color: '#c2c2c2', maxWidth: '70px'}}
-              />
-              <Tab
-                label="Meta"
-                value="3"
-                style={{color: '#c2c2c2', maxWidth: '70px'}}
-              />
+              <Tab label="Edit" value="1" />
+              <Tab label="Revisions" value="2"/>
+              <Tab label="Meta" value="3" />
               {conflicts !== null &&
               conflicts['available_heads'] !== undefined &&
               Object.keys(conflicts['available_heads']).length > 1 ? (
@@ -348,18 +333,13 @@ export default function Record() {
                     </Badge>
                   }
                   value="4"
-                  style={{color: '#c2c2c2'}}
                 />
               ) : (
-                <Tab
-                  label="Conflicts"
-                  value="4"
-                  style={{color: '#c2c2c2', maxWidth: '80px'}}
-                />
+                <Tab label="Conflicts" value="4"/>
               )}
             </TabList>
           </AppBar>
-          <TabPanel value="1" style={{paddingLeft: 0, paddingRight: 0}}>
+          <TabPanel value="1" style={{padding:theme.spacing(2)}}>
             {(() => {
               if (error !== null) {
                 dispatch({
@@ -381,6 +361,9 @@ export default function Record() {
               } else {
                 return (
                   <Box pl={0}>
+                    <Box>
+                      <ChildRecordView />
+                    </Box>
                     {conflicts !== null &&
                     conflicts['available_heads'] !== undefined &&
                     Object.keys(conflicts['available_heads']).length > 1 ? (
@@ -429,7 +412,7 @@ export default function Record() {
                                 icon={<InfoOutlinedIcon />}
                               >
                                 Edits have been made to this record by different
-                                users that cannot be automatically mergeed.
+                                users that cannot be automatically merged.
                                 Resolve the conflicting fields before editing to
                                 prevent creating further versions of this
                                 record.{' '}
@@ -491,7 +474,7 @@ export default function Record() {
               }
             })()}
           </TabPanel>
-          <TabPanel value="2">
+          <TabPanel value="2" style={{padding:theme.spacing(2)}}>
             <Box p={2} />
             <BoxTab title={'record revisions'} />
             <Box
@@ -503,7 +486,7 @@ export default function Record() {
               <pre>{JSON.stringify(revisions, null, 2)}</pre>
             </Box>
           </TabPanel>
-          <TabPanel value="3">
+          <TabPanel value="3" style={{padding:theme.spacing(2)}}>
             <RecordMeta
               project_id={project_id}
               record_id={record_id}
@@ -517,8 +500,8 @@ export default function Record() {
               />
             </Box>
           </TabPanel>
-          <TabPanel value="4" style={{overflowX: 'auto'}}>
-            <Box mt={2}>
+          <TabPanel value="4" style={{padding:theme.spacing(2), overflowX: 'auto'}}>
+            <Box>
               <BasicDialog
                 handleClose={() => setOpen(false)}
                 handleOpen={() => setOpen(true)}
@@ -549,6 +532,6 @@ export default function Record() {
           </TabPanel>
         </TabContext>
       </Paper>
-    </Container>
+    </Box>
   );
 }
