@@ -42,14 +42,8 @@ type ConflictDropSelectprops = {
 };
 
 function RevisionDropList(props: ConflictDropSelectprops) {
-  const {
-    label,
-    headerlist,
-    index,
-    setRevision,
-    disablerevision,
-    islabel,
-  } = props;
+  const {label, headerlist, index, setRevision, disablerevision, islabel} =
+    props;
   let inivalue = props.revision; // this is the default value for droplist
   if (!Object.keys(headerlist).includes(props.revision) && inivalue !== '') {
     if (index === 1) inivalue = '';
@@ -133,14 +127,8 @@ function RevisionDropList(props: ConflictDropSelectprops) {
 }
 
 export function ConflictDropSelect(props: ConflictDropSelectprops) {
-  const {
-    label,
-    headerlist,
-    revision,
-    index,
-    setRevision,
-    disablerevision,
-  } = props;
+  const {label, headerlist, revision, index, setRevision, disablerevision} =
+    props;
 
   return (
     <Box sx={{minWidth: 200, maxWidth: 400}}>

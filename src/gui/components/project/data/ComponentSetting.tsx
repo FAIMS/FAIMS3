@@ -75,10 +75,9 @@ export const getconnections = (
           uiSpec['fields'][field]['component-parameters']['related_type'] !==
             undefined &&
           conectiontabs.push({
-            tab:
-              uiSpec['viewsets'][
-                uiSpec['fields'][field]['component-parameters']['related_type']
-              ]['label'],
+            tab: uiSpec['viewsets'][
+              uiSpec['fields'][field]['component-parameters']['related_type']
+            ]['label'],
             link: uiSpec['fields'][field]['component-parameters'][
               'relation_type'
             ].replace('faims-core::', ''),

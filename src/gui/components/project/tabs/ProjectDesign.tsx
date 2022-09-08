@@ -91,9 +91,8 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
   } = props;
   const ini = {_id: project_id ?? 'new_notbook'};
   const [initialValues, setinitialValues] = useState(ini);
-  const [formcomponents, setFormComponents] = useState<formcomponents>(
-    form_defult
-  );
+  const [formcomponents, setFormComponents] =
+    useState<formcomponents>(form_defult);
   const [isAddField, setIsAddField] = useState(true);
   const [currentView, setCurrentView] = useState(sections_default[0]);
   const [designvalue, setDesignvalue] = useState<string>('settings');

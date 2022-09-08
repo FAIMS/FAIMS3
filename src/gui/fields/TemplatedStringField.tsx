@@ -218,9 +218,10 @@ export function TemplatedStringcomponentsetting(
         newvalues['fields']['numberfield' + props.fieldName][
           'component-parameters'
         ]['ElementProps']['options'] = numoptions;
-      let farray: Array<string> = props.uiSpec['fields'][props.fieldName][
-        'component-parameters'
-      ]['template'].split('-');
+      let farray: Array<string> =
+        props.uiSpec['fields'][props.fieldName]['component-parameters'][
+          'template'
+        ].split('-');
       farray = farray.filter((f: string) => f !== '');
       const num = farray.length > 1 ? farray.length : 1;
       newvalues = changeui(options, newvalues, num, true);
@@ -307,9 +308,8 @@ export function TemplatedStringcomponentsetting(
       else value[num] = event.target.value;
       const subvalue = value.join('-');
       // if (!subvalue.includes('αβγ ')) subvalue = 'αβγ ' + subvalue;
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'template'
-      ] = subvalue.substring(0, subvalue.length - 1);
+      newvalues['fields'][props.fieldName]['component-parameters']['template'] =
+        subvalue.substring(0, subvalue.length - 1);
 
       props.setuiSpec({...newvalues});
 
@@ -360,12 +360,10 @@ export function TemplatedStringcomponentsetting(
       newui['fields'][newfieldname] = JSON.parse(
         JSON.stringify(newui['fields'][props.fieldName])
       ); //change uifield name
-      newui['fields'][newfieldname]['component-parameters'][
-        'id'
-      ] = newfieldname;
-      newui['fields'][newfieldname]['component-parameters'][
-        'name'
-      ] = newfieldname;
+      newui['fields'][newfieldname]['component-parameters']['id'] =
+        newfieldname;
+      newui['fields'][newfieldname]['component-parameters']['name'] =
+        newfieldname;
       newui['fields'][newfieldname]['component-parameters']['linked'] =
         props.fieldName;
       newui['views'][props.currentview]['fields'] = newui['views'][
