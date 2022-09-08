@@ -21,6 +21,9 @@
 import React from 'react';
 import {Box, Container} from '@mui/material';
 import Button from '@mui/material/Button';
+
+import {Device} from '@capacitor/device';
+
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {downloadBlob} from '../../utils';
@@ -119,8 +122,14 @@ export default function AboutBuild() {
         variant="outlined"
         color={'primary'}
         onClick={async () => {
-          const b = await getFullDBSystemDump();
-          downloadBlob(b, 'faims3-dump.json');
+          const info = await Device.getInfo();
+          if (info.platform === 'web') {
+            const b = await getFullDBSystemDumpAsBlob();
+            downloadBlob(b, 'faims3-dump.json');
+          } else {
+            const b = await getFullDBSystemDump();
+            await downloadStringOnApp(b, 'utf-8', 'faims3-dump.json');
+          }
         }}
         style={{marginRight: '10px'}}
       >

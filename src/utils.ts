@@ -17,6 +17,8 @@
  * Description:
  *   Contains utility functions which lack a better location.
  */
+import {Device} from '@capacitor/device';
+import {Filesystem, Directory} from '@capacitor/filesystem';
 
 /// Downloads a blob as a file onto a user's device
 export function downloadBlob(b: Blob, filename: string) {
@@ -28,4 +30,34 @@ export function downloadBlob(b: Blob, filename: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(u);
+}
+
+export async function downloadStringOnApp(
+  s: string,
+  encoding: string,
+  filename: string
+) {
+  const info = await Device.getInfo();
+  if (info.platform === 'ios') {
+    await Filesystem.writeFile({
+      path: filename,
+      data: s,
+      directory: Directory.Documents,
+      encoding: encoding,
+    });
+  } else if (info.platform === 'android') {
+    const cache_res = await Filesystem.writeFile({
+      path: filename,
+      data: s,
+      directory: Directory.Cache,
+      encoding: encoding,
+    });
+    await Mediastore.saveToDownloads({
+      path: filename,
+      directory: cache_res.url,
+    });
+    await Filesystem.deleteFile({path: filename, directory: Directory.Cache});
+  } else {
+    throw Error('Do not know how to save on this platform');
+  }
 }

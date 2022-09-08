@@ -52,6 +52,7 @@
     "@capacitor/app": "4.0.1",
     "@capacitor/camera": "4.1.0",
     "@capacitor/core": "4.1.0",
+    "@capacitor/device": "4.0.1",
     "@capacitor/filesystem": "4.1.0",
     "@capacitor/geolocation": "4.0.1",
     "@capacitor/ios": "4.1.0",
