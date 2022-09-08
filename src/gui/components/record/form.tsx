@@ -69,6 +69,7 @@ type RecordFormProps = {
   handleChangeTab?: any;
   metaSection?: any;
   isSyncing?: string;
+  disabled?: boolean
 } & (
   | {
       // When editing existing record, we require the caller to know its revision

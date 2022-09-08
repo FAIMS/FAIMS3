@@ -21,10 +21,17 @@
 import React from 'react';
 import {Box, Typography} from '@mui/material';
 import {useHistory} from 'react-router-dom';
-import {DataGrid, GridColDef, GridEventListener} from '@mui/x-data-grid';
+import {
+  DataGrid,
+  GridColDef,
+  GridToolbarExport,
+  GridToolbarContainer,
+  GridToolbarFilterButton,
+  GridEventListener,
+} from '@mui/x-data-grid';
 
 const columns: GridColDef[] = [
-  {field: 'id', headerName: 'ID', flex: 0.2, minWidth: 100},
+  {field: 'id', headerName: 'ID', flex: 0.2, minWidth: 70},
   {
     field: 'recordName',
     headerName: 'Record name',
@@ -34,10 +41,16 @@ const columns: GridColDef[] = [
   {
     field: 'lastUpdatedBy',
     headerName: 'Last Updated',
-    flex: 0.3,
+    flex: 0.2,
     minWidth: 300,
   },
-  {field: 'recordRoute', hide: true},
+  {field: 'recordRoute', hide: true, filterable: false},
+  {
+    field: 'recordType',
+    headerName: 'Record Type',
+    flex: 0.2,
+    minWidth: 100,
+  },
 ];
 
 const rows = [
@@ -46,54 +59,70 @@ const rows = [
     recordName: 'Snow',
     lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
     recordRoute: 'go to record 1!',
+    recordType: 'Water',
   },
   {
     id: 2,
     recordName: 'Snow',
     lastUpdatedBy: '10/12/2020 11:09am by John Smith',
     recordRoute: 'go to record 2!',
+    recordType: 'Water',
   },
   {
     id: 3,
     recordName: 'Snow',
     lastUpdatedBy: '10/12/2020 11:09am by John Smith',
     recordRoute: 'go to record 2!',
+    recordType: 'Water',
   },
   {
     id: 4,
     recordName: 'Snow',
     lastUpdatedBy: '10/12/2020 11:09am by John Smith',
     recordRoute: 'go to record 2!',
+    recordType: 'Water',
   },
   {
     id: 5,
     recordName: 'Snow',
     lastUpdatedBy: '10/12/2020 11:09am by John Smith',
     recordRoute: 'go to record 2!',
+    recordType: 'Water',
   },
   {
     id: 6,
     recordName: 'Snow',
     lastUpdatedBy: '10/12/2020 11:09am by John Smith',
     recordRoute: 'go to record 2!',
+    recordType: 'Water',
   },
   {
     id: 7,
     recordName: 'Snow',
     lastUpdatedBy: '10/12/2020 11:09am by John Smith',
     recordRoute: 'go to record 2!',
+    recordType: 'Water',
   },
 ];
+function CustomToolbar() {
+  return (
+    <GridToolbarContainer>
+      <GridToolbarFilterButton />
+      <GridToolbarExport />
+    </GridToolbarContainer>
+  );
+}
 interface ChildRecordViewProps {}
+
 export default function ChildRecordView(props: ChildRecordViewProps) {
   /**
    * Display the child records associated with a records in a MUI Data Grid.
    * Row click to go to child record
    * Data Grid is set to autoHeight (grid will size according to its content) up to
-   * Notes for Kate -
-   *  - The entire row should link to the child record (i.e., when a user clicks the row,
+   * Notes for Kate
+   *  TODO The entire row should link to the child record (i.e., when a user clicks the row,
    *  they should move to that record). I've added the logic here, it needs wiring up to the data
-   *  - Last updated by shows date time and author
+   *  TODO Last updated by shows date time and author
    *
    */
   const location = useHistory();
@@ -107,15 +136,26 @@ export default function ChildRecordView(props: ChildRecordViewProps) {
       <Typography variant={'overline'}>Child Records</Typography>
       <Box sx={{width: '100%'}}>
         <DataGrid
-            autoHeight
-            density={'compact'}
+          autoHeight
+          components={{
+            Toolbar: CustomToolbar,
+          }}
+          initialState={{
+            columns: {
+              columnVisibilityModel: {
+                // Hide column recordRoute, the other columns will remain visible
+                recordRoute: false,
+              },
+            },
+          }}
+          density={'compact'}
           rows={rows}
           columns={columns}
           pageSize={5}
           rowsPerPageOptions={[5]}
-            disableSelectionOnClick
+          disableSelectionOnClick
           onRowClick={handleRowClick}
-            sx={{cursor: 'pointer'}}
+          sx={{cursor: 'pointer'}}
         />
       </Box>
     </Box>
