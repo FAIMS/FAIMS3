@@ -65,6 +65,11 @@ const theme = createTheme({
   components: {
     MuiAppBar: {
       styleOverrides: {
+        root: {
+          '&.MuiAppBar-root': {
+            boxShadow: 'none',
+          },
+        },
         colorPrimary: {
           backgroundColor: '#1B3E93',
           color: '#fff',
@@ -73,6 +78,33 @@ const theme = createTheme({
           indicatorColor: '#fff',
           text: {
             primary: '#fff',
+          },
+        },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          '&.MuiTabs-root': {
+            boxShadow: 'none',
+            fontWeight: 'bold',
+          },
+          '&.MuiTab-root': {
+            fontWeight: '700 !important',
+          },
+          '&.Mui-selected': {
+            fontWeight: '700 !important',
+            color: 'white',
+            backgroundColor: '#DA9449',
+          },
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          '&.MuiTab-root': {
+            fontWeight: 'bold',
           },
         },
       },
