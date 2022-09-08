@@ -311,18 +311,15 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
       uiSetting['viewsets'][props.designvalue]['views'].length === 0
         ? ''
         : uiSetting['viewsets'][props.designvalue]['views'].map((view: any) =>
-            getfieldNamesbyView(
-              uiSetting,
-              view,
-              props.fieldui
-            ).map((fieldName: string) =>
-              getfield(
-                fieldName,
-                uiSetting,
-                props.formProps,
-                handlerchangewithview,
-                view
-              )
+            getfieldNamesbyView(uiSetting, view, props.fieldui).map(
+              (fieldName: string) =>
+                getfield(
+                  fieldName,
+                  uiSetting,
+                  props.formProps,
+                  handlerchangewithview,
+                  view
+                )
             )
           )}
     </>
