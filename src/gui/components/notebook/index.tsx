@@ -25,6 +25,7 @@ import {RecordsBrowseTable} from '../record/table';
 import ProjectCardHeaderAction from '../project/cardHeaderAction';
 import RangeHeader from '../project/RangeHeader';
 import MetadataRenderer from '../metadataRenderer';
+import AddRecordButtons from "./add_record_types";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -118,6 +119,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
               </Typography>
             </Grid>
             <Grid item md={6} sm={12} xs={12}>
+              <AddRecordButtons project={project}/>
               <ProjectCardHeaderAction project={project} />
             </Grid>
             <Grid item md={4} sm={6} xs={12}>
