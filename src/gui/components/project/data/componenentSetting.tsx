@@ -511,9 +511,8 @@ const Componentsetting = (props: componenentSettingprops) => {
   ) => {
     const newuis: ProjectUIModel = uiSetting;
     newuis['fields']['annotation' + props.fieldName].checked = annotation_value;
-    newuis['fields'][
-      'uncertainty_include' + props.fieldName
-    ].checked = uncertainty_value;
+    newuis['fields']['uncertainty_include' + props.fieldName].checked =
+      uncertainty_value;
     newuis['views']['meta']['fields'] = ['annotation' + props.fieldName];
     if (annotation_value === true)
       newuis['views']['meta']['fields'].push(
@@ -621,13 +620,12 @@ const Componentsetting = (props: componenentSettingprops) => {
               ['yup.required']
             )
           ) {
-            newvalues['fields'][props.fieldName][
-              'validationSchema'
-            ] = newvalues['fields'][props.fieldName]['validationSchema'].filter(
-              (valid: Array<string>) => {
-                return !valid.includes('yup.required');
-              }
-            );
+            newvalues['fields'][props.fieldName]['validationSchema'] =
+              newvalues['fields'][props.fieldName]['validationSchema'].filter(
+                (valid: Array<string>) => {
+                  return !valid.includes('yup.required');
+                }
+              );
             props.setuiSpec({...newvalues});
             console.log('Contain' + 'SHould NOT');
           }
@@ -662,10 +660,9 @@ const Componentsetting = (props: componenentSettingprops) => {
                 ];
               break;
             case 'number':
-              newvalues['fields'][props.fieldName][
-                'validationSchema'
-              ] = newvalues['fields'][props.fieldName]['type-returned'] =
-                'faims-core::Integer';
+              newvalues['fields'][props.fieldName]['validationSchema'] =
+                newvalues['fields'][props.fieldName]['type-returned'] =
+                  'faims-core::Integer';
               newvalues['fields'][props.fieldName]['validationSchema'] = [
                 ['yup.number'],
               ];
