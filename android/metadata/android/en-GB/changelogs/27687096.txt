@@ -1,0 +1,14 @@
+* prebuild commit
+* prebuild commit
+* Merge #685
+* all versions in fastfile using new variables
+* project properties to do versioncodes?
+* changing injection because gradle changed?
+* Merge branch 'add-cap-update' of github.com:FAIMS/FAIMS3 into add-cap-update
+* tracking down version number issues
+* commiting changelog just in case it changes the version number
+* store settings changes
+* more changelog fixing while I notice it
+* more 7.4.2 migration tests
+* fixing changelog.sh
+* updated gradl...

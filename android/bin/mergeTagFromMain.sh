@@ -25,4 +25,4 @@ git merge $faims_tag --no-edit
 #git merge tagged_to_android
 #git branch -D tagged_to_android
 #git branch
-#git switch android-fastlane --discard-changes
+git switch android-fastlane --discard-changes

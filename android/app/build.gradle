@@ -4,7 +4,7 @@ android {
     //https://stackoverflow.com/a/69312217
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "org.fedarch.faims3"
+        applicationId "au.edu.faims.fieldmark"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         //versionCode 1

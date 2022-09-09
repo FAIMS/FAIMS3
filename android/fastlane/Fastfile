@@ -25,20 +25,6 @@ VERSION_NAME=`echo -n "${serverprefix}.${prnum}" | tr -d "\n"`
 
 platform :android do  
   desc "Deploy a new version to Google Play"
-
-  lane :debug do |variable|
-    gradle(task: "clean")
-    sh("echo", VERSION_NAME)
-    sh("echo", FIP_CLOSED_LANE)
-    sh("../bin/changelog.sh", VERSION)
-    gradle(task: "assemble",
-           build_type: "Debug",
-           properties: {
-              "versionCode" => VERSION,
-              "versionName" => VERSION_NAME,
-           }
-           )
-  end
   lane :compile_special do
     gradle(task: "clean")
     sh("echo", VERSION_NAME)
@@ -76,8 +62,9 @@ platform :android do
            }
            )
     upload_to_play_store(track: FIP_CLOSED_LANE,
-                         release_status: 'draft',
+                         release_status: 'completed',
                          skip_upload_metadata: true,
+                         skip_upload_changelogs: false,
                          skip_upload_images: true,
                          skip_upload_screenshots: true
                         )
@@ -102,6 +89,7 @@ platform :android do
                          track: 'internal',
                          release_status: 'completed',
                          skip_upload_metadata: true,
+                         skip_upload_changelogs: true,
                          skip_upload_images: true,
                          skip_upload_screenshots: true
                         )
@@ -126,6 +114,7 @@ platform :android do
     upload_to_play_store(track: 'internal',
                          release_status: 'completed',
                          skip_upload_metadata: true,
+                         skip_upload_changelogs: true,
                          skip_upload_images: true,
                          skip_upload_screenshots: true
                         )
@@ -148,6 +137,7 @@ platform :android do
     upload_to_play_store(track: 'Demo',
                          release_status: 'completed',
                          skip_upload_metadata: true,
+                         skip_upload_changelogs: false,
                          skip_upload_images: true,
                          skip_upload_screenshots: true
                         )
@@ -171,6 +161,7 @@ platform :android do
     upload_to_play_store(track: FIP_CLOSED_LANE,
                          release_status: 'completed',
                          skip_upload_metadata: true,
+                         skip_upload_changelogs: false,
                          skip_upload_images: true,
                          skip_upload_screenshots: true
                         )

@@ -1,1 +1,3 @@
-The Pilot Soil Monitoring Incentives Program (PSMIP) soil data entry application has been built using the FAIMS Project's FieldNote technology. This electronic field notebook allows for offline data collection and editing.
+EFN provides research-focused field data capture and management solutions for individuals, teams, and enterprises. Our app, Fieldmark, is a flexible platform for digital data capture and management in online, network-degraded, or offline fieldwork environments. Fieldmark enables geospatial and multimedia capture combined with structured vocabularies, relational data, and robust data version history. We enable researchers to create high-quality, born-digital datasets with the efficiency needed for high impact research, and support organisations to manage these data assets and meet increasingly complex compliance requirements. 
+
+Contact info@fieldmark.com.au for a demo.

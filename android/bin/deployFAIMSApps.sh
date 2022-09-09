@@ -5,12 +5,7 @@ set -euo pipefail
 GITROOT=$(git rev-parse --show-toplevel)
 cd $GITROOT
 
-# bash android/bin/mergeTagFromMain.sh
-export TAG_EXPRESSION="${1:-v*}"
-faims_tag=$(git describe --tags `git rev-list --tags="$TAG_EXPRESSION" --max-count=1`)    
-git switch --detach
-git checkout $faims_tag
-
+#bash android/bin/mergeTagFromMain.sh
 npm ci
 for server in $(cat android/faimsservers); do
 	cd $GITROOT
@@ -46,7 +41,7 @@ for server in $(cat android/faimsservers); do
 	#break
 done
 
-git switch -
+
 # 
 # npm run build
 # npx cap sync --deployment android
