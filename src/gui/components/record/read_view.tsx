@@ -40,6 +40,9 @@ export default function RecordReadView(props: RecordReadViewProps) {
    */
   return (
     <Box style={{border: 'solid 1px red'}} mb={2}>
+      <Typography variant={'overline'} component={'div'}>
+      Record data
+      </Typography>
       <RecordForm
         project_id={props.project_id}
         record_id={props.record_id}

@@ -79,6 +79,14 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
 export default function Record() {
+  /**
+   * Record Page. Comprises multiple tab components;
+   * View - displays child records and a read-only view of the record.
+   * Edit
+   * Revisions
+   * Meta
+   * Conflict
+   */
   const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
@@ -342,141 +350,147 @@ export default function Record() {
               return <CircularProgress size={12} thickness={4} />;
             } else {
               return (
-                <React.Fragment>
-                  <TabPanel value="0" style={{padding: theme.spacing(2)}}>
-                    <Box>
-                      <ChildRecordView />
-                      <RecordReadView
-                        project_id={project_id}
-                        record_id={record_id}
-                        revision_id={updatedrevision_id}
-                        ui_specification={uiSpec}
-                        draft_id={draft_id}
-                        metaSection={metaSection}
-                      />
-                    </Box>
-                  </TabPanel>
+                  <React.Fragment>
+                    <TabPanel value="0" style={{padding: theme.spacing(2)}}>
+                      <Box>
+                        <ChildRecordView parentRecords={[
+                          {title: 'Type: Parent ID', route: 'parent_route'},
+                          {title: 'Water: Snow-1234', route: 'parent_route'},
+                        ]}/>
+                        <Box style={{border: 'solid 1px red'}} mb={2}>
+                          {/*  TODO This should be a disabled component. At some point all data types should have a display view */}
+                          <RecordReadView
+                              project_id={project_id}
+                              record_id={record_id}
+                              revision_id={updatedrevision_id}
+                              ui_specification={uiSpec}
+                              draft_id={draft_id}
+                              metaSection={metaSection}
+                          />
+                        </Box>
+                      </Box>
+                    </TabPanel>
 
-                  <TabPanel value="1" style={{padding: theme.spacing(2)}}>
-                    <Box pl={0}>
-                      {conflicts !== null &&
-                      conflicts['available_heads'] !== undefined &&
-                      Object.keys(conflicts['available_heads']).length > 1 ? (
-                        <Box pl={0}>
-                          <Box bgcolor={grey[200]} py={10} pl={0}>
-                            <Grid
-                              container
-                              justifyContent="flex-start"
-                              alignItems="center"
-                            >
-                              <Grid
-                                item
-                                md={5}
-                                xs={12}
-                                container
-                                justifyContent="center"
-                                alignItems="center"
-                              >
-                                {draft_id !== undefined ? (
-                                  <Typography>
-                                    <strong>Current Edit Revision:</strong>{' '}
-                                    <br />
-                                    {updatedrevision_id}
-                                  </Typography>
-                                ) : (
-                                  <EditDroplist
-                                    label={'edit'}
-                                    headerlist={conflicts['available_heads']}
-                                    revision={selectrevision ?? ''}
-                                    index={0}
-                                    setRevision={setRevision}
-                                    disablerevision={''}
-                                    isalerting={isalerting}
-                                  />
-                                )}
-                              </Grid>
-                              <Grid
-                                item
-                                md={7}
-                                xs={12}
-                                container
-                                justifyContent="center"
-                                alignItems="center"
-                              >
-                                <Alert
-                                  severity="warning"
-                                  icon={<InfoOutlinedIcon />}
+                    <TabPanel value="1" style={{padding: theme.spacing(2)}}>
+                      <Box pl={0}>
+                        {conflicts !== null &&
+                        conflicts['available_heads'] !== undefined &&
+                        Object.keys(conflicts['available_heads']).length > 1 ? (
+                            <Box pl={0}>
+                              <Box bgcolor={grey[200]} py={10} pl={0}>
+                                <Grid
+                                    container
+                                    justifyContent="flex-start"
+                                    alignItems="center"
                                 >
-                                  Edits have been made to this record by
-                                  different users that cannot be automatically
-                                  merged. Resolve the conflicting fields before
-                                  editing to prevent creating further versions
-                                  of this record.{' '}
-                                  <Typography>
-                                    <ResolveButton
-                                      handleChange={handleChange}
-                                    />
-                                    {isalerting && draft_id === undefined && (
-                                      <>
-                                        Or select version and {'  '}
-                                        <Button
-                                          variant="text"
-                                          style={{
-                                            color: '#f29c3e',
-                                            paddingLeft: 0,
-                                          }}
-                                          onClick={() => setIsalerting(false)}
-                                        >
-                                          {'  '}Edit anyway
-                                        </Button>
-                                      </>
+                                  <Grid
+                                      item
+                                      md={5}
+                                      xs={12}
+                                      container
+                                      justifyContent="center"
+                                      alignItems="center"
+                                  >
+                                    {draft_id !== undefined ? (
+                                        <Typography>
+                                          <strong>Current Edit Revision:</strong>{' '}
+                                          <br/>
+                                          {updatedrevision_id}
+                                        </Typography>
+                                    ) : (
+                                        <EditDroplist
+                                            label={'edit'}
+                                            headerlist={conflicts['available_heads']}
+                                            revision={selectrevision ?? ''}
+                                            index={0}
+                                            setRevision={setRevision}
+                                            disablerevision={''}
+                                            isalerting={isalerting}
+                                        />
                                     )}
-                                  </Typography>
-                                </Alert>
-                              </Grid>
-                            </Grid>
-                          </Box>
-                          <Box px={not_xs ? 30 : 0}>
-                            {(isalerting === false ||
-                              draft_id !== undefined) && (
-                              <RecordForm
+                                  </Grid>
+                                  <Grid
+                                      item
+                                      md={7}
+                                      xs={12}
+                                      container
+                                      justifyContent="center"
+                                      alignItems="center"
+                                  >
+                                    <Alert
+                                        severity="warning"
+                                        icon={<InfoOutlinedIcon/>}
+                                    >
+                                      Edits have been made to this record by
+                                      different users that cannot be automatically
+                                      merged. Resolve the conflicting fields before
+                                      editing to prevent creating further versions
+                                      of this record.{' '}
+                                      <Typography>
+                                        <ResolveButton
+                                            handleChange={handleChange}
+                                        />
+                                        {isalerting && draft_id === undefined && (
+                                            <>
+                                              Or select version and {'  '}
+                                              <Button
+                                                  variant="text"
+                                                  style={{
+                                                    color: '#f29c3e',
+                                                    paddingLeft: 0,
+                                                  }}
+                                                  onClick={() => setIsalerting(false)}
+                                              >
+                                                {'  '}Edit anyway
+                                              </Button>
+                                            </>
+                                        )}
+                                      </Typography>
+                                    </Alert>
+                                  </Grid>
+                                </Grid>
+                              </Box>
+                              <Box px={not_xs ? 30 : 0}>
+                                {(isalerting === false ||
+                                    draft_id !== undefined) && (
+                                    <RecordForm
+                                        project_id={project_id}
+                                        record_id={record_id}
+                                        revision_id={
+                                          selectrevision !== null
+                                              ? selectrevision
+                                              : updatedrevision_id
+                                        }
+                                        ui_specification={uiSpec}
+                                        draft_id={draft_id}
+                                        metaSection={metaSection}
+                                        conflictfields={conflictfields}
+                                        handleChangeTab={handleChange}
+                                        isSyncing={isSyncing.toString()}
+                                    />
+                                )}
+                              </Box>
+                            </Box>
+                        ) : (
+                            <RecordForm
                                 project_id={project_id}
                                 record_id={record_id}
-                                revision_id={
-                                  selectrevision !== null
-                                    ? selectrevision
-                                    : updatedrevision_id
-                                }
+                                revision_id={updatedrevision_id}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
                                 metaSection={metaSection}
-                                conflictfields={conflictfields}
-                                handleChangeTab={handleChange}
                                 isSyncing={isSyncing.toString()}
-                              />
-                            )}
-                          </Box>
-                        </Box>
-                      ) : (
-                        <RecordForm
-                          project_id={project_id}
-                          record_id={record_id}
-                          revision_id={updatedrevision_id}
-                          ui_specification={uiSpec}
-                          draft_id={draft_id}
-                          metaSection={metaSection}
-                          isSyncing={isSyncing.toString()}
-                        />
-                      )}
-                    </Box>
-                  </TabPanel>
-                </React.Fragment>
+                            />
+                        )}
+                      </Box>
+                    </TabPanel>
+                  </React.Fragment>
               );
             }
           })()}
 
           <TabPanel value="2" style={{padding: theme.spacing(2)}}>
-            <Box p={2} />
+            <Box />
             <BoxTab title={'record revisions'} />
             <Box
               bgcolor={grey[200]}

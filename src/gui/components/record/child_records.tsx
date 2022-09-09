@@ -19,16 +19,26 @@
  */
 
 import React from 'react';
-import {Box, Typography} from '@mui/material';
-import {useHistory} from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  Link,
+  Grid,
+} from '@mui/material';
+import {useHistory, NavLink} from 'react-router-dom';
+
 import {
   DataGrid,
   GridColDef,
-  GridToolbarExport,
   GridToolbarContainer,
   GridToolbarFilterButton,
+  GridPagination,
   GridEventListener,
 } from '@mui/x-data-grid';
+import * as ROUTES from '../../../constants/routes';
 
 const columns: GridColDef[] = [
   {field: 'id', headerName: 'ID', flex: 0.2, minWidth: 70},
@@ -98,21 +108,39 @@ const rows = [
   },
   {
     id: 7,
-    recordName: 'Snow',
+    recordName: 'Soil',
     lastUpdatedBy: '10/12/2020 11:09am by John Smith',
     recordRoute: 'go to record 2!',
-    recordType: 'Water',
+    recordType: 'Rock',
   },
 ];
 function CustomToolbar() {
   return (
-    <GridToolbarContainer>
-      <GridToolbarFilterButton />
-      <GridToolbarExport />
-    </GridToolbarContainer>
+    <Grid
+      container
+      direction="row"
+      justifyContent="space-between"
+      alignItems="center"
+    >
+      <Grid item>
+        <GridToolbarContainer>
+          <GridToolbarFilterButton />
+        </GridToolbarContainer>
+      </Grid>
+      <Grid item>
+        <GridPagination />
+      </Grid>
+    </Grid>
   );
 }
-interface ChildRecordViewProps {}
+
+interface ParentRecordProps {
+  title: string;
+  route: string;
+}
+interface ChildRecordViewProps {
+  parentRecords: Array<ParentRecordProps> | null;
+}
 
 export default function ChildRecordView(props: ChildRecordViewProps) {
   /**
@@ -133,13 +161,40 @@ export default function ChildRecordView(props: ChildRecordViewProps) {
 
   return (
     <Box style={{border: 'solid 1px red'}} mb={2}>
+      {props.parentRecords !== null ? (
+        <React.Fragment>
+          <Typography variant={'overline'}>Parent Records</Typography>
+          {props.parentRecords.length > 1 ? (
+            <Typography variant={'caption'} component={'div'}>
+              This record is linked to multiple parent records
+            </Typography>
+          ) : (
+            ''
+          )}
+          <List dense={true} sx={{p: 0}}>
+            {props.parentRecords.map((value, index) => (
+              <ListItem key={'parent_record_link' + index}>
+                <ListItemText>
+                  <NavLink to={value.route} component={Link}>
+                    {value.title}
+                  </NavLink>
+                </ListItemText>
+              </ListItem>
+            ))}
+          </List>
+        </React.Fragment>
+      ) : (
+        ''
+      )}
+
       <Typography variant={'overline'}>Child Records</Typography>
       <Box sx={{width: '100%'}}>
         <DataGrid
           autoHeight
           components={{
-            Toolbar: CustomToolbar,
+            Footer: CustomToolbar,
           }}
+          hideFooterSelectedRowCount
           initialState={{
             columns: {
               columnVisibilityModel: {
