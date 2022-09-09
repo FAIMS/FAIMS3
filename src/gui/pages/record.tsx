@@ -48,7 +48,7 @@ import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 import RecordForm from '../components/record/form';
-import ChildRecordView from '../components/record/child_records';
+import RelationshipsComponent from '../components/record/relationships';
 import RecordReadView from '../components/record/read_view';
 import DraftSyncStatus from '../components/record/sync_status';
 import ConflictForm from '../components/record/conflict/conflictform';
@@ -301,6 +301,8 @@ export default function Record() {
               aria-label="Record Form Tab"
               indicatorColor="secondary"
               textColor="inherit"
+              variant="scrollable"
+              scrollButtons="auto"
               centered={not_xs ? false : true}
             >
               <Tab label="View" value="0" />
@@ -350,141 +352,235 @@ export default function Record() {
               return <CircularProgress size={12} thickness={4} />;
             } else {
               return (
-                  <React.Fragment>
-                    <TabPanel value="0" style={{padding: theme.spacing(2)}}>
-                      <Box>
-                        <ChildRecordView parentRecords={[
-                          {title: 'Type: Parent ID', route: 'parent_route'},
-                          {title: 'Water: Snow-1234', route: 'parent_route'},
-                        ]}/>
-                        <Box style={{border: 'solid 1px red'}} mb={2}>
-                          {/*  TODO This should be a disabled component. At some point all data types should have a display view */}
-                          <RecordReadView
-                              project_id={project_id}
-                              record_id={record_id}
-                              revision_id={updatedrevision_id}
-                              ui_specification={uiSpec}
-                              draft_id={draft_id}
-                              metaSection={metaSection}
-                          />
-                        </Box>
+                <React.Fragment>
+                  <TabPanel value="0" style={{padding: theme.spacing(2)}}>
+                    <Box>
+                      <RelationshipsComponent
+                        parentRecords={[
+                          {
+                            id: 'CBC123',
+                            title: 'Type: Parent ID',
+                            route: 'parent_route',
+                          },
+                          {
+                            id: 'CBC123',
+                            title: 'Water: Snow-1234',
+                            route: 'parent_route',
+                          },
+                        ]}
+                        childRecords={[
+                          {
+                            id: 1,
+                            title: 'Snow',
+                            lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
+                            route: 'go to record 1!',
+                            type: 'Water',
+                            children: [
+                              {
+                                id: '12345',
+                                title: 'title',
+                                route: 'child_route',
+                              },
+                              {
+                                id: 'abcdef',
+                                title: 'title2',
+                                route: 'child_route2',
+                              },
+                            ],
+                          },
+                          {
+                            id: 2,
+                            title: 'Snow',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                            route: 'go to record 2!',
+                            type: 'Water',
+                            children: [],
+                          },
+                          {
+                            id: 5,
+                            title: 'Snow',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                            route: 'go to record 2!',
+                            type: 'Water',
+                            children: [
+                              {
+                                id: '12345',
+                                title: 'title',
+                                route: 'child_route',
+                              },
+                              {
+                                id: 'abcdef',
+                                title: 'title2',
+                                route: 'child_route2',
+                              },
+                              {
+                                id: 'abcdef',
+                                title: 'title3',
+                                route: 'child_route2',
+                              },
+                              {
+                                id: 'abcdef',
+                                title: 'title4',
+                                route: 'child_route2',
+                              },
+                              {
+                                id: 'abcdef',
+                                title: 'title5',
+                                route: 'child_route2',
+                              },
+                              {
+                                id: 'abcdef',
+                                title: 'title6',
+                                route: 'child_route2',
+                              },
+                            ],
+                          },
+                          {
+                            id: 6,
+                            title: 'Snow',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                            route: 'go to record 2!',
+                            type: 'Water',
+                            children: [],
+                          },
+                          {
+                            id: 7,
+                            title: 'Soil',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                            route: 'go to record 2!',
+                            type: 'Rock',
+                            children: [],
+                          },
+                        ]}
+                      />
+                      <Box style={{border: 'solid 1px red'}} mb={2}>
+                        {/*  TODO This should be a disabled component. At some point all data types should have a display view */}
+                        <RecordReadView
+                          project_id={project_id}
+                          record_id={record_id}
+                          revision_id={updatedrevision_id}
+                          ui_specification={uiSpec}
+                          draft_id={draft_id}
+                          metaSection={metaSection}
+                        />
                       </Box>
-                    </TabPanel>
+                    </Box>
+                  </TabPanel>
 
-                    <TabPanel value="1" style={{padding: theme.spacing(2)}}>
-                      <Box pl={0}>
-                        {conflicts !== null &&
-                        conflicts['available_heads'] !== undefined &&
-                        Object.keys(conflicts['available_heads']).length > 1 ? (
-                            <Box pl={0}>
-                              <Box bgcolor={grey[200]} py={10} pl={0}>
-                                <Grid
-                                    container
-                                    justifyContent="flex-start"
-                                    alignItems="center"
-                                >
-                                  <Grid
-                                      item
-                                      md={5}
-                                      xs={12}
-                                      container
-                                      justifyContent="center"
-                                      alignItems="center"
-                                  >
-                                    {draft_id !== undefined ? (
-                                        <Typography>
-                                          <strong>Current Edit Revision:</strong>{' '}
-                                          <br/>
-                                          {updatedrevision_id}
-                                        </Typography>
-                                    ) : (
-                                        <EditDroplist
-                                            label={'edit'}
-                                            headerlist={conflicts['available_heads']}
-                                            revision={selectrevision ?? ''}
-                                            index={0}
-                                            setRevision={setRevision}
-                                            disablerevision={''}
-                                            isalerting={isalerting}
-                                        />
-                                    )}
-                                  </Grid>
-                                  <Grid
-                                      item
-                                      md={7}
-                                      xs={12}
-                                      container
-                                      justifyContent="center"
-                                      alignItems="center"
-                                  >
-                                    <Alert
-                                        severity="warning"
-                                        icon={<InfoOutlinedIcon/>}
-                                    >
-                                      Edits have been made to this record by
-                                      different users that cannot be automatically
-                                      merged. Resolve the conflicting fields before
-                                      editing to prevent creating further versions
-                                      of this record.{' '}
-                                      <Typography>
-                                        <ResolveButton
-                                            handleChange={handleChange}
-                                        />
-                                        {isalerting && draft_id === undefined && (
-                                            <>
-                                              Or select version and {'  '}
-                                              <Button
-                                                  variant="text"
-                                                  style={{
-                                                    color: '#f29c3e',
-                                                    paddingLeft: 0,
-                                                  }}
-                                                  onClick={() => setIsalerting(false)}
-                                              >
-                                                {'  '}Edit anyway
-                                              </Button>
-                                            </>
-                                        )}
-                                      </Typography>
-                                    </Alert>
-                                  </Grid>
-                                </Grid>
-                              </Box>
-                              <Box px={not_xs ? 30 : 0}>
-                                {(isalerting === false ||
-                                    draft_id !== undefined) && (
-                                    <RecordForm
-                                        project_id={project_id}
-                                        record_id={record_id}
-                                        revision_id={
-                                          selectrevision !== null
-                                              ? selectrevision
-                                              : updatedrevision_id
-                                        }
-                                        ui_specification={uiSpec}
-                                        draft_id={draft_id}
-                                        metaSection={metaSection}
-                                        conflictfields={conflictfields}
-                                        handleChangeTab={handleChange}
-                                        isSyncing={isSyncing.toString()}
-                                    />
+                  <TabPanel value="1" style={{padding: theme.spacing(2)}}>
+                    <Box pl={0}>
+                      {conflicts !== null &&
+                      conflicts['available_heads'] !== undefined &&
+                      Object.keys(conflicts['available_heads']).length > 1 ? (
+                        <Box pl={0}>
+                          <Box bgcolor={grey[200]} py={10} pl={0}>
+                            <Grid
+                              container
+                              justifyContent="flex-start"
+                              alignItems="center"
+                            >
+                              <Grid
+                                item
+                                md={5}
+                                xs={12}
+                                container
+                                justifyContent="center"
+                                alignItems="center"
+                              >
+                                {draft_id !== undefined ? (
+                                  <Typography>
+                                    <strong>Current Edit Revision:</strong>{' '}
+                                    <br />
+                                    {updatedrevision_id}
+                                  </Typography>
+                                ) : (
+                                  <EditDroplist
+                                    label={'edit'}
+                                    headerlist={conflicts['available_heads']}
+                                    revision={selectrevision ?? ''}
+                                    index={0}
+                                    setRevision={setRevision}
+                                    disablerevision={''}
+                                    isalerting={isalerting}
+                                  />
                                 )}
-                              </Box>
-                            </Box>
-                        ) : (
-                            <RecordForm
+                              </Grid>
+                              <Grid
+                                item
+                                md={7}
+                                xs={12}
+                                container
+                                justifyContent="center"
+                                alignItems="center"
+                              >
+                                <Alert
+                                  severity="warning"
+                                  icon={<InfoOutlinedIcon />}
+                                >
+                                  Edits have been made to this record by
+                                  different users that cannot be automatically
+                                  merged. Resolve the conflicting fields before
+                                  editing to prevent creating further versions
+                                  of this record.{' '}
+                                  <Typography>
+                                    <ResolveButton
+                                      handleChange={handleChange}
+                                    />
+                                    {isalerting && draft_id === undefined && (
+                                      <>
+                                        Or select version and {'  '}
+                                        <Button
+                                          variant="text"
+                                          style={{
+                                            color: '#f29c3e',
+                                            paddingLeft: 0,
+                                          }}
+                                          onClick={() => setIsalerting(false)}
+                                        >
+                                          {'  '}Edit anyway
+                                        </Button>
+                                      </>
+                                    )}
+                                  </Typography>
+                                </Alert>
+                              </Grid>
+                            </Grid>
+                          </Box>
+                          <Box px={not_xs ? 30 : 0}>
+                            {(isalerting === false ||
+                              draft_id !== undefined) && (
+                              <RecordForm
                                 project_id={project_id}
                                 record_id={record_id}
-                                revision_id={updatedrevision_id}
+                                revision_id={
+                                  selectrevision !== null
+                                    ? selectrevision
+                                    : updatedrevision_id
+                                }
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
                                 metaSection={metaSection}
+                                conflictfields={conflictfields}
+                                handleChangeTab={handleChange}
                                 isSyncing={isSyncing.toString()}
-                            />
-                        )}
-                      </Box>
-                    </TabPanel>
-                  </React.Fragment>
+                              />
+                            )}
+                          </Box>
+                        </Box>
+                      ) : (
+                        <RecordForm
+                          project_id={project_id}
+                          record_id={record_id}
+                          revision_id={updatedrevision_id}
+                          ui_specification={uiSpec}
+                          draft_id={draft_id}
+                          metaSection={metaSection}
+                          isSyncing={isSyncing.toString()}
+                        />
+                      )}
+                    </Box>
+                  </TabPanel>
+                </React.Fragment>
               );
             }
           })()}
