@@ -25,7 +25,6 @@ import {
   AppBar,
   Tab,
   Box,
-  Container,
   Typography,
   Paper,
   CircularProgress,
@@ -53,26 +52,11 @@ import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
 import RecordDelete from '../components/record/delete';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
-const useStyles = makeStyles(theme => ({
-  NoPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 5,
-      paddingRight: 5,
-    },
-  },
-  LeftPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 5,
-      paddingRight: 5,
-    },
-  },
-}));
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -149,7 +133,11 @@ function DraftEdit(props: DraftEditProps) {
 
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
-  const classes = useStyles();
+
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
+  const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
+  const [draftError, setDraftError] = useState(null as string | null);
+
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
@@ -185,7 +173,7 @@ function DraftEdit(props: DraftEditProps) {
     // Loaded, variant picked, show form:
     return (
       <React.Fragment>
-        <Box mb={2} className={classes.NoPadding}>
+        <Box mb={2}>
           <Typography variant={'h2'} component={'h1'}>
             {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
           </Typography>
@@ -217,6 +205,9 @@ function DraftEdit(props: DraftEditProps) {
                   ui_specification={uiSpec}
                   record_id={record_id}
                   metaSection={metaSection}
+                  handleSetIsDraftSaving={setIsDraftSaving}
+                  handleSetDraftLastSaved={setDraftLastSaved}
+                  handleSetDraftError={setDraftError}
                 />
               </Box>
             </TabPanel>
@@ -270,11 +261,9 @@ export default function RecordCreate() {
     {title: 'Draft'},
   ];
 
-  const classes = useStyles();
-
   return (
     <React.Fragment>
-      <Container maxWidth="lg" className={classes.NoPadding}>
+      <Box>
         <Breadcrumbs data={breadcrumbs} />
         {draft_id === undefined ? (
           <DraftCreate project_id={project_id} type_name={type_name} />
@@ -287,7 +276,7 @@ export default function RecordCreate() {
             record_id={generateFAIMSDataID()}
           />
         )}
-      </Container>
+      </Box>
     </React.Fragment>
   );
 }

@@ -28,7 +28,6 @@ import {Button, Grid, Box, ButtonGroup, Typography} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
 
-import AutoSave from './autosave';
 import {ViewComponent} from './view';
 import BoxTab from '../ui/boxTab';
 
@@ -69,7 +68,10 @@ type RecordFormProps = {
   handleChangeTab?: any;
   metaSection?: any;
   isSyncing?: string;
-  disabled?: boolean
+  disabled?: boolean;
+  handleSetIsDraftSaving: Function;
+  handleSetDraftLastSaved: Function;
+  handleSetDraftError: Function;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -99,15 +101,12 @@ type RecordFormProps = {
 );
 
 type RecordFormState = {
-  draftError: string | null;
   // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   activeStep: number;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
-  is_saving: boolean;
-  last_saved: Date;
   annotation: {[field_name: string]: Annotations};
   /**
    * Set only by newDraftListener, but this is only non-null
@@ -115,7 +114,6 @@ type RecordFormState = {
    * letting them redirect to the draft's URL
    */
   draft_created: string | null;
-  error_view: boolean;
   description: string | null;
 };
 
@@ -148,7 +146,6 @@ class RecordForm extends React.Component<
         activeStep: 0,
         revision_cached: null,
         annotation: {},
-        error_view: false,
         description: null,
       });
       // Re-initialize basically everything.
@@ -163,17 +160,13 @@ class RecordForm extends React.Component<
     super(props);
     this.draftState = new RecordDraftState(this.props);
     this.state = {
-      draftError: null,
       type_cached: this.props.type ?? null,
       view_cached: null,
       activeStep: 0,
       revision_cached: null,
       initialValues: null,
-      is_saving: false,
-      last_saved: new Date(),
       draft_created: null,
       annotation: {},
-      error_view: false,
       description: null,
     };
     this.setState = this.setState.bind(this);
@@ -196,10 +189,11 @@ class RecordForm extends React.Component<
   saveListener(val: boolean | {}) {
     if (val === true) {
       // Start saving
-      this.setState({is_saving: true});
+      this.props.handleSetIsDraftSaving(true);
     } else if (val === false) {
       // Finished saving successfully
-      this.setState({is_saving: false, last_saved: new Date()});
+      this.props.handleSetIsDraftSaving(false);
+      this.props.handleSetDraftLastSaved(new Date());
     } else {
       // Error occurred while saving
       // Heuristically determine a nice user-facing error
@@ -209,7 +203,8 @@ class RecordForm extends React.Component<
         console.log('saveListener', val);
       }
 
-      this.setState({is_saving: false, draftError: error_message});
+      this.props.handleSetIsDraftSaving(false);
+      this.props.handleSetDraftError(error_message);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -218,8 +213,6 @@ class RecordForm extends React.Component<
         },
       });
     }
-    console.log('is_saving value' + this.state.is_saving);
-    console.log('is_saving value called' + val + new Date());
   }
 
   async formChanged(draft_saving_started_already: boolean) {
@@ -232,9 +225,9 @@ class RecordForm extends React.Component<
           this.props.revision_id
         );
         if (latest_record === null) {
-          this.setState({
-            draftError: `Could not find data for record ${this.props.record_id}`,
-          });
+          this.props.handleSetDraftError(
+            `Could not find data for record ${this.props.record_id}`
+          );
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -841,13 +834,6 @@ class RecordForm extends React.Component<
                 return (
                   <Form>
                     <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <AutoSave
-                          last_saved={this.state.last_saved}
-                          is_saving={this.state.is_saving}
-                          error={this.state.draftError}
-                        />
-                      </Grid>
                       <Grid item sm={12} xs={12}>
                         <ViewComponent
                           viewName={viewName}

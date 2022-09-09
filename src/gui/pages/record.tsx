@@ -119,6 +119,9 @@ export default function Record() {
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [revisions, setRevisions] = React.useState([] as string[]);
   const [error, setError] = useState(null as null | {});
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
+  const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
+  const [draftError, setDraftError] = useState(null as string | null);
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
@@ -332,9 +335,9 @@ export default function Record() {
             </TabList>
           </AppBar>
           <DraftSyncStatus
-            last_saved={new Date()}
-            is_saving={false}
-            error={null}
+            last_saved={draftLastSaved}
+            is_saving={isDraftSaving}
+            error={draftError}
           />
           {(() => {
             if (error !== null) {
@@ -454,7 +457,6 @@ export default function Record() {
                         ]}
                       />
                       <Box style={{border: 'solid 1px red'}} mb={2}>
-                        {/*  TODO This should be a disabled component. At some point all data types should have a display view */}
                         <RecordReadView
                           project_id={project_id}
                           record_id={record_id}
@@ -462,6 +464,9 @@ export default function Record() {
                           ui_specification={uiSpec}
                           draft_id={draft_id}
                           metaSection={metaSection}
+                          handleSetIsDraftSaving={setIsDraftSaving}
+                          handleSetDraftLastSaved={setDraftLastSaved}
+                          handleSetDraftError={setDraftError}
                         />
                       </Box>
                     </Box>
@@ -563,6 +568,9 @@ export default function Record() {
                                 conflictfields={conflictfields}
                                 handleChangeTab={handleChange}
                                 isSyncing={isSyncing.toString()}
+                                handleSetIsDraftSaving={setIsDraftSaving}
+                                handleSetDraftLastSaved={setDraftLastSaved}
+                                handleSetDraftError={setDraftError}
                               />
                             )}
                           </Box>
@@ -576,6 +584,9 @@ export default function Record() {
                           draft_id={draft_id}
                           metaSection={metaSection}
                           isSyncing={isSyncing.toString()}
+                          handleSetIsDraftSaving={setIsDraftSaving}
+                          handleSetDraftLastSaved={setDraftLastSaved}
+                          handleSetDraftError={setDraftError}
                         />
                       )}
                     </Box>

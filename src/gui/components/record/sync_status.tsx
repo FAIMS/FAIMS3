@@ -4,9 +4,10 @@ import {useTheme} from '@mui/material/styles';
 import moment from 'moment';
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import 'animate.css';
 interface DraftSyncStatusProps {
-  last_saved: Date;
+  last_saved: Date | null;
   is_saving: boolean;
   error: string | null;
 }
@@ -21,9 +22,7 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
     <Box
       sx={{
         width: '100%',
-
         textAlign: 'right',
-        border: 'solid 1px red',
       }}
     >
       {props.error ? (
@@ -60,9 +59,13 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
               }}
             >
               <Typography variant={'body2'} sx={{mr: 1}}>
-                Local draft last saved {moment(props.last_saved).fromNow()}{' '}
+                {props.last_saved !== null
+                  ? `Local draft last saved ${moment(
+                      props.last_saved
+                    ).fromNow()}`
+                  : 'Initializing draft save'}
               </Typography>
-              <CheckIcon />
+              {props.last_saved !== null ? <CheckIcon /> : <AccessTimeIcon />}
             </div>
           )}
         </Box>

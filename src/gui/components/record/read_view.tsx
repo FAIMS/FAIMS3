@@ -33,15 +33,21 @@ interface RecordReadViewProps {
   handleChangeTab?: any;
   metaSection?: any;
   draft_id?: string;
+  handleSetIsDraftSaving: Function;
+  handleSetDraftLastSaved: Function;
+  handleSetDraftError: Function;
 }
 export default function RecordReadView(props: RecordReadViewProps) {
   /**
    * Record read-only view.
+   * TODO Kate - this is just a placeholder.
+   * RecordForm is overkill here (as we're in a read-only state and don't need all the functionality that RecordForm provides).
+   * A quick read-only view of the form data is needed (no draft, state and submitting logic)
    */
   return (
     <Box style={{border: 'solid 1px red'}} mb={2}>
       <Typography variant={'overline'} component={'div'}>
-      Record data
+        Record data
       </Typography>
       <RecordForm
         project_id={props.project_id}
@@ -51,6 +57,9 @@ export default function RecordReadView(props: RecordReadViewProps) {
         draft_id={props.draft_id}
         metaSection={props.metaSection}
         disabled={true}
+        handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+        handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+        handleSetDraftError={props.handleSetDraftError}
       />
     </Box>
   );
