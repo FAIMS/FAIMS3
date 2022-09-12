@@ -123,3 +123,8 @@ export type ProjectRole = string;
 export interface ClusterProjectRoles {
   [key: string]: Array<ProjectRole>;
 }
+
+export interface SyncStatusCallbacks {
+  sync_up: () => void;
+  sync_down: () => void;
+}

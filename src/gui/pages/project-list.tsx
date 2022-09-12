@@ -85,7 +85,7 @@ export default function ProjectList(props: ProjectProps) {
 
   return (
     <Container maxWidth="lg" className={classes.NoPadding}>
-      <Breadcrumbs data={breadcrumbs}/>
+      <Breadcrumbs data={breadcrumbs} />
       <div className={classes.gridRoot}>
         <Grid container spacing={1}>
           {pouchProjectList === null ? (
