@@ -38,7 +38,7 @@ import {
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
-import {RecordDataGridToolbar} from './datagrid_toolbar';
+import {NotebookDataGridToolbar} from './datagrid_toolbar'
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -253,7 +253,7 @@ function RecordsTable(props: RecordsTableProps) {
         rowsPerPageOptions={[10, 25, 50, 100]}
         density={not_xs ? 'standard' : 'comfortable'}
         components={{
-          Toolbar: RecordDataGridToolbar,
+          Toolbar: NotebookDataGridToolbar,
         }}
         initialState={{
           sorting: {

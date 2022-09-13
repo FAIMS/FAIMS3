@@ -19,6 +19,7 @@
  */
 
 import React from 'react';
+
 import {
   GridToolbarContainer,
   GridToolbarColumnsButton,
@@ -26,7 +27,7 @@ import {
   GridToolbarDensitySelector,
 } from '@mui/x-data-grid';
 
-export default function CustomToolbar() {
+export function RecordDataGridToolbar() {
   return (
     <GridToolbarContainer>
       <GridToolbarColumnsButton />

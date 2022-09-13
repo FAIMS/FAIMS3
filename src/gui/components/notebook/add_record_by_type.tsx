@@ -64,46 +64,44 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const visible_types = ui_spec.value.visible_types;
 
   return (
-    <React.Fragment>
-      <Box p={1}>
-        {/*If the list of views hasn't loaded yet*/}
-        {/*we can still show this button, except it will*/}
-        {/*redirect to the Record creation without known type*/}
-        {visible_types.length === 1 ? (
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<AddIcon />}
-            component={RouterLink}
-            to={
-              ROUTES.PROJECT + project_id + ROUTES.RECORD_CREATE + visible_types
-            }
-          >
-            New Record
-          </Button>
-        ) : (
-          <ButtonGroup>
-            {visible_types.map(
-              viewset_name =>
-                viewsets[viewset_name].is_visible !== false && (
-                  <Button
-                    component={RouterLink}
-                    to={
-                      ROUTES.PROJECT +
-                      project.project_id +
-                      ROUTES.RECORD_CREATE +
-                      viewset_name
-                    }
-                    key={viewset_name}
-                    startIcon={<AddIcon />}
-                  >
-                    {viewsets[viewset_name].label || viewset_name}
-                  </Button>
-                )
-            )}
-          </ButtonGroup>
-        )}
-      </Box>
-    </React.Fragment>
+    <Box>
+      {/*If the list of views hasn't loaded yet*/}
+      {/*we can still show this button, except it will*/}
+      {/*redirect to the Record creation without known type*/}
+      {visible_types.length === 1 ? (
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<AddIcon />}
+          component={RouterLink}
+          to={
+            ROUTES.PROJECT + project_id + ROUTES.RECORD_CREATE + visible_types
+          }
+        >
+          New Record
+        </Button>
+      ) : (
+        <ButtonGroup>
+          {visible_types.map(
+            viewset_name =>
+              viewsets[viewset_name].is_visible !== false && (
+                <Button
+                  component={RouterLink}
+                  to={
+                    ROUTES.PROJECT +
+                    project.project_id +
+                    ROUTES.RECORD_CREATE +
+                    viewset_name
+                  }
+                  key={viewset_name}
+                  startIcon={<AddIcon />}
+                >
+                  {viewsets[viewset_name].label || viewset_name}
+                </Button>
+              )
+          )}
+        </ButtonGroup>
+      )}
+    </Box>
   );
 }

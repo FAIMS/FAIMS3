@@ -45,7 +45,7 @@ import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import makeStyles from '@mui/styles/makeStyles';
 import {ProjectInformation} from '../../../datamodel/ui';
-import DraftsTable from '../record/draft_table';
+import DraftsTable from '../notebook/draft_table';
 import {RecordsBrowseTable, RecordsSearchTable} from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';

@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {
-  Avatar,
+  Button,
+  ButtonGroup,
   Tabs,
   Tab,
   Typography,
@@ -13,35 +14,38 @@ import {
   TableRow,
   TableCell,
   TableContainer,
+  IconButton,
 } from '@mui/material';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {useTheme} from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectInformation} from '../../../datamodel/ui';
-import DraftsTable from '../record/draft_table';
-import {RecordsBrowseTable} from '../record/table';
-import ProjectCardHeaderAction from '../project/cardHeaderAction';
+import DraftsTable from './draft_table';
+import {RecordsBrowseTable} from './table';
 import RangeHeader from '../project/RangeHeader';
 import MetadataRenderer from '../metadataRenderer';
-import AddRecordButtons from "./add_record_types";
+import AddRecordButtons from './add_record_by_type';
+import {Link as RouterLink} from 'react-router-dom';
+import SearchIcon from '@mui/icons-material/Search';
+import NotebookSettings from './settings';
 
 interface TabPanelProps {
   children?: React.ReactNode;
+  id: string;
   index: number;
   value: number;
 }
 
 function TabPanel(props: TabPanelProps) {
-  const {children, value, index, ...other} = props;
+  const {children, id, value, index, ...other} = props;
 
   return (
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
+      id={`${id}-${index}`}
+      aria-labelledby={`${id}-${index}`}
       {...other}
     >
       {value === index && <Box>{children}</Box>}
@@ -49,13 +53,13 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-function a11yProps(index: number) {
+function a11yProps(index: number, id: string) {
   /**
    * Accessibility props
    */
   return {
-    id: `notebook-tab-${index}`,
-    'aria-controls': `notebook-tabpanel-${index}`,
+    id: `${id}-tab-${index}`,
+    'aria-controls': `${id}-tabpanel-${index}`,
   };
 }
 
@@ -66,10 +70,21 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   /**
    *
    */
-  const [value, setValue] = React.useState(0);
+  const [notebookTabValue, setNotebookTabValue] = React.useState(0);
+  const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
+  const handleRecordDraftTabChange = (
+    event: React.SyntheticEvent,
+    newValue: number
+  ) => {
+    setRecordDraftTabValue(newValue);
+  };
+
+  const handleNotebookTabChange = (
+    event: React.SyntheticEvent,
+    newValue: number
+  ) => {
+    setNotebookTabValue(newValue);
   };
 
   const {project} = props;
@@ -109,96 +124,172 @@ export default function NotebookComponent(props: NotebookComponentProps) {
         <CircularProgress size={12} thickness={4} />
       ) : (
         <React.Fragment>
-          <Grid container spacing={3}>
+          <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
             <Grid item md={6} sm={12} xs={12}>
               <Typography variant={'h4'} gutterBottom>
-                {project.name}
-              </Typography>
-              <Typography variant="body2" color="textPrimary" gutterBottom>
-                {project.description}
+                <Grid
+                  container
+                  direction="row"
+                  justifyContent="flex-start"
+                  alignItems="center"
+                >
+                  <Grid item>{project.name}</Grid>
+                  <Grid item>
+                    <IconButton
+                      component={RouterLink}
+                      to={
+                        ROUTES.PROJECT +
+                        project.project_id +
+                        ROUTES.PROJECT_SEARCH
+                      }
+                    >
+                      <SearchIcon />
+                    </IconButton>
+                  </Grid>
+                </Grid>
               </Typography>
             </Grid>
             <Grid item md={6} sm={12} xs={12}>
-              <AddRecordButtons project={project}/>
-              <ProjectCardHeaderAction project={project} />
-            </Grid>
-            <Grid item md={4} sm={6} xs={12}>
-              <TableContainer
-                component={Paper}
-                elevation={0}
-                variant={'outlined'}
-              >
-                <Table size={'small'}>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell><Typography variant={'h6'}>Status</Typography></TableCell>
-                      <TableCell>
-                        <MetadataRenderer
-                          project_id={project.project_id}
-                          metadata_key={'project_status'}
-                          chips={false}
-                        />
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><Typography variant={'h6'}>Lead Institution</Typography></TableCell>
-                      <TableCell>
-                        <MetadataRenderer
-                          project_id={project.project_id}
-                          metadata_key={'lead_institution'}
-                          chips={false}
-                        />
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><Typography variant={'h6'}>Project Lead</Typography></TableCell>
-                      <TableCell>
-                        <MetadataRenderer
-                          project_id={project.project_id}
-                          metadata_key={'project_lead'}
-                          chips={false}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Grid>
-            <Grid item md={8} sm={6} xs={12}>
-              <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
-                <Typography variant={'body2'}>
-                  <RangeHeader project={project} />
-                </Typography>
+              <Box sx={{float: 'right'}}>
+                <AddRecordButtons project={project} />
               </Box>
             </Grid>
           </Grid>
 
-          {/* Records/Drafts */}
           <Box mt={2}>
-            <Box>
+            <Box mb={1}>
               <Tabs
-                value={value}
-                onChange={handleChange}
+                value={notebookTabValue}
+                onChange={handleNotebookTabChange}
                 aria-label="notebook tabs"
               >
-                <Tab label="Records" {...a11yProps(0)} />
-                <Tab label="Drafts" {...a11yProps(1)} />
+                <Tab label="Info" {...a11yProps(0, 'notebook')} />
+                <Tab label="Settings" {...a11yProps(1, 'notebook')} />
               </Tabs>
             </Box>
-            <TabPanel value={value} index={0}>
-              <RecordsBrowseTable
-                project_id={project.project_id}
-                maxRows={25}
-                viewsets={viewsets}
-                filter_deleted={true}
-              />
+            <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
+              <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box
+                    component={Paper}
+                    elevation={0}
+                    variant={'outlined'}
+                    p={2}
+                  >
+                    <Typography
+                      variant="body2"
+                      color="textPrimary"
+                      gutterBottom
+                    >
+                      {project.description}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TableContainer
+                    component={Paper}
+                    elevation={0}
+                    variant={'outlined'}
+                  >
+                    <Table size={'small'}>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>
+                            <Typography variant={'h6'}>Status</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <MetadataRenderer
+                              project_id={project.project_id}
+                              metadata_key={'project_status'}
+                              chips={false}
+                            />
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>
+                            <Typography variant={'h6'}>
+                              Lead Institution
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <MetadataRenderer
+                              project_id={project.project_id}
+                              metadata_key={'lead_institution'}
+                              chips={false}
+                            />
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>
+                            <Typography variant={'h6'}>Project Lead</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <MetadataRenderer
+                              project_id={project.project_id}
+                              metadata_key={'project_lead'}
+                              chips={false}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box
+                    component={Paper}
+                    elevation={0}
+                    variant={'outlined'}
+                    p={2}
+                  >
+                    <Typography variant={'body2'}>
+                      <RangeHeader project={project} />
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+              {/* Records/Drafts */}
+              <Box mt={2}>
+                <Box mb={1}>
+                  <Tabs
+                    value={recordDraftTabValue}
+                    onChange={handleRecordDraftTabChange}
+                    aria-label="notebook-records"
+                  >
+                    <Tab
+                      label="Records"
+                      {...a11yProps(0, 'notebook-records')}
+                    />
+                    <Tab label="Drafts" {...a11yProps(1, 'notebook-records')} />
+                  </Tabs>
+                </Box>
+                <TabPanel
+                  value={recordDraftTabValue}
+                  index={0}
+                  id={'records-drafts-'}
+                >
+                  <RecordsBrowseTable
+                    project_id={project.project_id}
+                    maxRows={25}
+                    viewsets={viewsets}
+                    filter_deleted={true}
+                  />
+                </TabPanel>
+                <TabPanel
+                  value={recordDraftTabValue}
+                  index={1}
+                  id={'records-drafts-'}
+                >
+                  <DraftsTable
+                    project_id={project.project_id}
+                    maxRows={25}
+                    viewsets={viewsets}
+                  />
+                </TabPanel>
+              </Box>
             </TabPanel>
-            <TabPanel value={value} index={1}>
-              <DraftsTable
-                project_id={project.project_id}
-                maxRows={25}
-                viewsets={viewsets}
-              />
+            <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
+              <NotebookSettings />
             </TabPanel>
           </Box>
         </React.Fragment>
