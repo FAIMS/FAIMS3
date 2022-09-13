@@ -46,22 +46,17 @@ type RecordsTableProps = {
   rows: RecordMetadata[];
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
+  // query: string;
+  handleQueryFunction: Function;
 };
 
 type RecordsBrowseTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
-  filter_deleted: boolean;
   viewsets?: ProjectUIViewsets | null;
+  filter_deleted: boolean;
 };
 
-type RecordsSearchTableProps = {
-  project_id: ProjectID;
-  maxRows: number | null;
-  query: string;
-  filter_deleted: boolean;
-  viewsets?: ProjectUIViewsets | null;
-};
 
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
@@ -255,6 +250,11 @@ function RecordsTable(props: RecordsTableProps) {
         components={{
           Toolbar: NotebookDataGridToolbar,
         }}
+        componentsProps={{
+          toolbar: {
+            handleQueryFunction: props.handleQueryFunction,
+          },
+        }}
         initialState={{
           sorting: {
             sortModel: [{field: 'updated', sort: 'desc'}],
@@ -277,72 +277,32 @@ function RecordsTable(props: RecordsTableProps) {
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   const {project_id, maxRows, filter_deleted} = props;
+  const [query, setQuery] = React.useState('');
 
   if (DEBUG_APP) {
-    console.debug('Filter deleted:', filter_deleted);
+    console.debug('Filter deleted?:', filter_deleted);
   }
-  const rows = useEventedPromise(
-    async (project_id: ProjectID) => {
-      if (DEBUG_APP) {
-        console.log('RecordsBrowseTable updating', project_id);
-      }
-      const metadata = await getMetadataForAllRecords(
-        project_id,
-        filter_deleted
-      );
-      return metadata;
-    },
-    constantArgsSplit(
-      listenDataDB,
-      [project_id, {since: 'now', live: true}],
-      [project_id]
-    ),
-    false,
-    [project_id],
-    project_id
-  );
-
-  if (DEBUG_APP) {
-    console.debug('New records:', rows);
-  }
-  return (
-    <RecordsTable
-      project_id={project_id}
-      maxRows={maxRows}
-      rows={rows.value ?? []}
-      loading={rows.loading !== undefined}
-      viewsets={props.viewsets}
-    />
-  );
-}
-RecordsBrowseTable.defaultProps = {
-  maxRows: null,
-  filter_deleted: true,
-};
-
-export function RecordsSearchTable(props: RecordsSearchTableProps) {
-  const {project_id, maxRows, query, filter_deleted} = props;
 
   const rows = useEventedPromise(
     async (project_id: ProjectID, query: string) => {
       if (DEBUG_APP) {
-        console.log('RecordsSearchTable updating', project_id);
+        console.log('RecordsTable updating', project_id);
       }
       const metadata = await getRecordsWithRegex(
-        project_id,
+        props.project_id,
         query,
-        filter_deleted
+        props.filter_deleted
       );
       return metadata;
     },
     constantArgsSplit(
       listenDataDB,
-      [project_id, {since: 'now', live: true}],
-      [project_id, query]
+      [props.project_id, {since: 'now', live: true}],
+      [props.project_id, query]
     ),
     false,
-    [project_id, query],
-    project_id,
+    [props.project_id, query],
+    props.project_id,
     query
   );
 
@@ -356,10 +316,11 @@ export function RecordsSearchTable(props: RecordsSearchTableProps) {
       rows={rows.value ?? []}
       loading={rows.loading !== undefined}
       viewsets={props.viewsets}
+      // query={query}
+      handleQueryFunction={setQuery}
     />
   );
 }
-RecordsSearchTable.defaultProps = {
+RecordsBrowseTable.defaultProps = {
   maxRows: null,
-  filter_deleted: true,
 };

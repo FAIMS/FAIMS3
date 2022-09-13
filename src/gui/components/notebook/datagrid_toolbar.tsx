@@ -18,8 +18,8 @@
  *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
-import React from 'react';
-import {InputAdornment, IconButton, Box, Grid, TextField} from '@mui/material';
+import React, {useEffect} from 'react';
+import {Button, IconButton, Box, Grid, TextField} from '@mui/material';
 import {
   GridToolbarContainer,
   GridToolbarColumnsButton,
@@ -27,29 +27,41 @@ import {
   GridToolbarDensitySelector,
 } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
+interface ToolbarProps {
+  handleQueryFunction: any;
+}
 
-export function GridToolbarSearchRecordDataButton(props: {}) {
+export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
+  /**
+   * Only hoist query value when user presses submit or clear
+   */
+  const [value, setValue] = React.useState('');
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(event.target.value);
+  };
+  const handleSubmit = () => {
+    props.handleQueryFunction(value);
+  };
+  const handleClear = () => {
+    setValue('');
+    handleSubmit();
+  };
   return (
     <Box sx={{display: 'flex', alignItems: 'flex-end'}}>
       <TextField
         id="notebook-record-data-search"
         label="Search record data"
         size="small"
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton edge="end" color="primary">
-                <SearchIcon />
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
+        value={value}
+        onChange={handleChange}
       />
+      <Button onClick={handleSubmit}>submit</Button>
+      <Button onClick={handleClear}>clear</Button>
     </Box>
   );
 }
 
-export function NotebookDataGridToolbar() {
+export function NotebookDataGridToolbar(props: ToolbarProps) {
   return (
     <GridToolbarContainer>
       <Grid
@@ -64,7 +76,9 @@ export function NotebookDataGridToolbar() {
           <GridToolbarDensitySelector />
         </Grid>
         <Grid item>
-          <GridToolbarSearchRecordDataButton />
+          <GridToolbarSearchRecordDataButton
+            handleQueryFunction={props.handleQueryFunction}
+          />
         </Grid>
       </Grid>
     </GridToolbarContainer>

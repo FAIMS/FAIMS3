@@ -264,7 +264,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                     project_id={project.project_id}
                     maxRows={25}
                     viewsets={viewsets}
-                    filter_deleted={true}
+                    filter_deleted={false} //todo attach to a switch?
                   />
                 </TabPanel>
                 <TabPanel
