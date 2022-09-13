@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {Box, Grid} from '@mui/material';
+import {Box} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';

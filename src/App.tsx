@@ -37,8 +37,6 @@ import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
-import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
-import AutoIncrementEdit from './gui/pages/autoincrement-edit';
 import NotFound404 from './gui/pages/404';
 import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
@@ -147,11 +145,11 @@ export default function App() {
                   extraProps={{token: token}}
                 />
                 <PrivateRoute
-                    exact
-                    path={ROUTES.NOTEBOOK + ':project_id'}
-                    component={Notebook}
-                    token={token}
-                    extraProps={{token: token}}
+                  exact
+                  path={ROUTES.NOTEBOOK + ':project_id'}
+                  component={Notebook}
+                  token={token}
+                  extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact
@@ -234,27 +232,6 @@ export default function App() {
                     ':draft_id'
                   }
                   component={Record}
-                  token={token}
-                  extraProps={{token: token}}
-                />
-                <PrivateRoute
-                  exact
-                  path={
-                    ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST
-                  }
-                  component={AutoIncrementBrowse}
-                  token={token}
-                  extraProps={{token: token}}
-                />
-                <PrivateRoute
-                  exact
-                  path={
-                    ROUTES.PROJECT +
-                    ':project_id' +
-                    ROUTES.AUTOINCREMENT +
-                    ':form_id/:field_id/:label'
-                  }
-                  component={AutoIncrementEdit}
                   token={token}
                   extraProps={{token: token}}
                 />

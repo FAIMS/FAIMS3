@@ -27,7 +27,6 @@ import {
   Typography,
   Grid,
   Paper,
-  Divider,
   CircularProgress,
   FormControlLabel,
   Switch,
@@ -183,11 +182,13 @@ export default function NotebookSettings() {
           </Box>
         </Grid>
         {loading ? (
-          <Grid item>Loading AutoIncrementer info</Grid>
+          <Grid item>
+            <CircularProgress size={'small'} /> Loading AutoIncrementer info
+          </Grid>
         ) : (
-            <Grid item xs={12} sm={12} md={6} lg={8}>
-          <AutoIncrementerSettingsList project_info={project_info} />
-            </Grid>
+          <Grid item xs={12} sm={12} md={6} lg={8}>
+            <AutoIncrementerSettingsList project_info={project_info} />
+          </Grid>
         )}
       </Grid>
       <Grid container>

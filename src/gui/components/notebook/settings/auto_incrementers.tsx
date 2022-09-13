@@ -1,13 +1,5 @@
-import React, {useContext, useEffect, useState} from 'react';
-import {useParams, Link as RouterLink} from 'react-router-dom';
-import {
-  Box,
-  Grid,
-  Typography,
-  Paper,
-  CircularProgress,
-  Button,
-} from '@mui/material';
+import React, {useEffect} from 'react';
+import {Box, Grid, Typography, Paper} from '@mui/material';
 import {ProjectInformation} from '../../../../datamodel/ui';
 import {get_autoincrement_references_for_project} from '../../../../datamodel/autoincrement';
 import {AutoIncrementReference} from '../../../../datamodel/database';
@@ -40,12 +32,7 @@ export default function AutoIncrementerSettingsList(
             <Typography variant={'overline'}>
               Edit Allocations for {label}
             </Typography>
-            <Box
-              component={Paper}
-              variant={'outlined'}
-              p={2}
-              elevation={0}
-            >
+            <Box component={Paper} variant={'outlined'} p={2} elevation={0}>
               <AutoIncrementEditForm
                 project_id={props.project_info.project_id}
                 form_id={ai.form_id}

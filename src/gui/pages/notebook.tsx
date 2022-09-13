@@ -19,7 +19,7 @@
  */
 import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
-import {Container, Box} from '@mui/material';
+import {Box} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
@@ -63,9 +63,7 @@ export default function Notebook() {
   return project_info ? (
     <Box>
       <Breadcrumbs data={breadcrumbs} />
-      <NotebookComponent
-      project={project_info}
-      />
+      <NotebookComponent project={project_info} />
     </Box>
   ) : (
     <CircularProgress />

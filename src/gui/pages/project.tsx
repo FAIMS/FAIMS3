@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
-import {Container, Box} from '@mui/material';
+import {Box} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
@@ -30,21 +30,11 @@ import {ProjectID} from '../../datamodel/core';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@mui/material';
 import {ProjectInformation} from '../../datamodel/ui';
-import makeStyles from '@mui/styles/makeStyles';
-
-const useStyles = makeStyles(theme => ({
-  NoPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 5,
-      paddingRight: 5,
-    },
-  },
-}));
 
 export default function Project() {
   const {project_id} = useParams<{project_id: ProjectID}>();
   let project_info: ProjectInformation | null;
-  const classes = useStyles();
+
   try {
     project_info = useEventedPromise(
       getProjectInfo,

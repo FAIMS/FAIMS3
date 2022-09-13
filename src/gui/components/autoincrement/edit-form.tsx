@@ -26,7 +26,8 @@ import {
   Alert,
   Button,
   LinearProgress,
-  Grid, Divider,
+  Grid,
+  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {TextField} from 'formik-mui';
@@ -188,7 +189,11 @@ export default class BasicAutoIncrementer extends React.Component<
                 spacing={2}
               >
                 <Grid item xs={12} sm={6}>
-                  <Field size={'small'} component={TextField} {...start_props} />
+                  <Field
+                    size={'small'}
+                    component={TextField}
+                    {...start_props}
+                  />
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Field size={'small'} component={TextField} {...stop_props} />
@@ -196,7 +201,12 @@ export default class BasicAutoIncrementer extends React.Component<
               </Grid>
 
               <Grid item xs>
-                <ButtonGroup fullWidth={true} sx={{mt:1}} variant={'outlined'} size={'small'}>
+                <ButtonGroup
+                  fullWidth={true}
+                  sx={{mt: 1}}
+                  variant={'outlined'}
+                  size={'small'}
+                >
                   <Button
                     color="error"
                     disabled={range.using || range.fully_used}
@@ -219,7 +229,7 @@ export default class BasicAutoIncrementer extends React.Component<
               </Grid>
             </Form>
             {isSubmitting && <LinearProgress />}
-            <Divider sx={{m:1}}/>
+            <Divider sx={{m: 1}} />
           </Box>
         )}
       </Formik>

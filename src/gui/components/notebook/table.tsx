@@ -38,7 +38,7 @@ import {
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
-import {NotebookDataGridToolbar} from './datagrid_toolbar'
+import {NotebookDataGridToolbar} from './datagrid_toolbar';
 
 type RecordsTableProps = {
   project_id: ProjectID;

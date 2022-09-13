@@ -1,7 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import {
-  Button,
-  ButtonGroup,
   Tabs,
   Tab,
   Typography,
@@ -18,12 +16,11 @@ import {
 } from '@mui/material';
 import * as ROUTES from '../../../constants/routes';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
-import {useTheme} from '@mui/material/styles';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectInformation} from '../../../datamodel/ui';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './table';
-import RangeHeader from '../project/RangeHeader';
+import RangeHeader from './range_header';
 import MetadataRenderer from '../metadataRenderer';
 import AddRecordButtons from './add_record_by_type';
 import {Link as RouterLink} from 'react-router-dom';
@@ -90,9 +87,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const {project} = props;
 
   const [loading, setLoading] = useState(true);
-  const project_url = ROUTES.PROJECT + project.project_id;
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
-  const theme = useTheme();
 
   useEffect(() => {
     let isactive = true;
@@ -170,6 +165,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
             <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
               <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
                 <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant={'overline'}>Description</Typography>
                   <Box
                     component={Paper}
                     elevation={0}
@@ -186,6 +182,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant={'overline'}>About</Typography>
                   <TableContainer
                     component={Paper}
                     elevation={0}
@@ -235,17 +232,12 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                     </Table>
                   </TableContainer>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Box
-                    component={Paper}
-                    elevation={0}
-                    variant={'outlined'}
-                    p={2}
-                  >
-                    <Typography variant={'body2'}>
-                      <RangeHeader project={project} />
-                    </Typography>
-                  </Box>
+                <Grid item xs={12} sm={6} md={4} lg={4}>
+                  <Typography variant={'overline'}>Range Indices</Typography>
+                  <RangeHeader
+                    project={project}
+                    handleAIEdit={handleNotebookTabChange}
+                  />
                 </Grid>
               </Grid>
               {/* Records/Drafts */}

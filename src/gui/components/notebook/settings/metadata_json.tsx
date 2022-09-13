@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, Typography} from '@mui/material';
+import {Box} from '@mui/material';
 import {grey} from '@mui/material/colors';
 interface MetaDataJsonComponentProps {
   value: any;
@@ -9,7 +9,6 @@ export default function MetaDataJsonComponent(
 ) {
   return (
     <React.Fragment>
-
       <Box
         bgcolor={grey[100]}
         px={2}

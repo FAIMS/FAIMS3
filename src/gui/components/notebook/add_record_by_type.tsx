@@ -1,18 +1,9 @@
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Menu,
-  MenuItem,
-  CircularProgress,
-} from '@mui/material';
+import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import SettingsIcon from '@mui/icons-material/Settings';
 
 import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
@@ -27,18 +18,6 @@ type AddRecordButtonsProps = {
 export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const {project} = props;
   const project_id = project.project_id;
-
-  const [createAnchor, setCreateAnchor] = React.useState<null | HTMLElement>(
-    null
-  );
-
-  const handleCreateClose = () => {
-    setCreateAnchor(null);
-  };
-
-  const handleCreateClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setCreateAnchor(event.currentTarget);
-  };
 
   const ui_spec = useEventedPromise(
     getUiSpecForProject,
