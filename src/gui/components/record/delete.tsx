@@ -87,7 +87,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             severity: 'success',
           },
         });
-        history.push(ROUTES.PROJECT + project_id);
+        history.push(ROUTES.NOTEBOOK + project_id);
       })
       .catch(err => {
         console.log('Could not delete record: ' + record_id, err);

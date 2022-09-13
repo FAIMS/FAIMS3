@@ -45,7 +45,7 @@ export default function DashboardActions(props: DashboardActionProps) {
   const classes = useStyles();
   const options = pouchProjectList.map(project_info => ({
     title: project_info.name,
-    url: ROUTES.PROJECT + project_info.project_id,
+    url: ROUTES.NOTEBOOK + project_info.project_id,
     value: project_info.project_id,
   }));
   const [value, setValue] = React.useState<any | null>(null);
@@ -146,7 +146,7 @@ export default function DashboardActions(props: DashboardActionProps) {
                         key={viewset_name + 'viewset'}
                         component={RouterLink}
                         to={
-                          ROUTES.PROJECT +
+                          ROUTES.NOTEBOOK +
                           value.value +
                           ROUTES.RECORD_CREATE +
                           viewset_name

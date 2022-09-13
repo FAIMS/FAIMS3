@@ -683,10 +683,10 @@ class RecordForm extends React.Component<
             // scroll to top of page, seems to be needed on mobile devices
           }
           if (search === '') {
-            this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button
+            this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
           } else {
             this.props.history.push({
-              pathname: ROUTES.PROJECT + redirecturl,
+              pathname: ROUTES.NOTEBOOK + redirecturl,
               search: search,
               state: state_pa,
             });
@@ -747,7 +747,7 @@ class RecordForm extends React.Component<
               <Link
                 component={RouterLink}
                 to={
-                  ROUTES.PROJECT +
+                  ROUTES.NOTEBOOK +
                   this.props.project_id +
                   ROUTES.RECORD_EXISTING +
                   this.props.record_id! +

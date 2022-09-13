@@ -153,7 +153,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + project_info.project_id,
+      to: ROUTES.NOTEBOOK + project_info.project_id,
       disabled: false,
     });
   });
@@ -161,7 +161,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     title: 'Notebooks',
     icon: <AccountTree />,
     nested: projectListItems,
-    to: ROUTES.PROJECT_LIST,
+    to: ROUTES.NOTEBOOK_LIST,
     disabled: false,
   };
 }

@@ -67,13 +67,6 @@ export default function RangeHeader(props: {
       variant={'outlined'}
       sx={{maxHeight: '200px', overflowY: 'scroll'}}
     >
-      <Typography variant={'body1'}>
-        {status !== undefined && status.length > 0 ? (
-          ''
-        ) : (
-          <Alert severity={'info'}>No range indices defined</Alert>
-        )}
-      </Typography>
       <Table size={'small'}>
         <TableHead>
           <TableRow>
@@ -84,7 +77,7 @@ export default function RangeHeader(props: {
               <Typography variant={'h6'}>Last Used</Typography>
             </TableCell>
             <TableCell>
-              <Typography variant={'h6'}>End</Typography>
+              <Typography variant={'h6'}>Range End</Typography>
             </TableCell>
             <TableCell>
               <Typography variant={'h6'}>Edit</Typography>
@@ -95,16 +88,8 @@ export default function RangeHeader(props: {
           {status?.map((sta, index) => (
             <TableRow key={index}>
               <TableCell>{sta.label}</TableCell>
-              <TableCell>
-                {sta.last_used === null ? 'Not in use' : sta.last_used}
-              </TableCell>
-              <TableCell>
-                {sta.end === null ? (
-                  ''
-                ) : (
-                  <Chip size={'small'} label={sta.end} variant="outlined" />
-                )}
-              </TableCell>
+              <TableCell>{sta.last_used}</TableCell>
+              <TableCell>{sta.end}</TableCell>
               <TableCell>
                 <IconButton
                   onClick={e => props.handleAIEdit(e, 1)}
@@ -117,6 +102,11 @@ export default function RangeHeader(props: {
           ))}
         </TableBody>
       </Table>
+      {status !== undefined && status.length > 0 ? (
+        ''
+      ) : (
+        <Alert severity={'info'}>No range indices defined</Alert>
+      )}
     </TableContainer>
   );
 }

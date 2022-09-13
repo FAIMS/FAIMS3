@@ -54,7 +54,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
           startIcon={<AddIcon />}
           component={RouterLink}
           to={
-            ROUTES.PROJECT + project_id + ROUTES.RECORD_CREATE + visible_types
+            ROUTES.NOTEBOOK + project_id + ROUTES.RECORD_CREATE + visible_types
           }
         >
           New Record
@@ -67,7 +67,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                 <Button
                   component={RouterLink}
                   to={
-                    ROUTES.PROJECT +
+                    ROUTES.NOTEBOOK +
                     project.project_id +
                     ROUTES.RECORD_CREATE +
                     viewset_name

@@ -124,7 +124,7 @@ export default function Card(props: ProjectCardProps) {
   const {project, showRecords, showDrafts, listView, dashboard} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
-  const project_url = ROUTES.PROJECT + project.project_id;
+  const project_url = ROUTES.NOTEBOOK + project.project_id;
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));

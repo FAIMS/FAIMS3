@@ -141,9 +141,9 @@ export default function Record() {
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
+    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
-      link: ROUTES.PROJECT + project_id,
+      link: ROUTES.NOTEBOOK + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: hrid ?? record_id},

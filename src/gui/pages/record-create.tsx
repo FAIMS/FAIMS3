@@ -105,7 +105,7 @@ function DraftCreate(props: DraftCreateProps) {
     return (
       <Redirect
         to={
-          ROUTES.PROJECT +
+          ROUTES.NOTEBOOK +
           project_id +
           ROUTES.RECORD_CREATE +
           type_name +
@@ -253,9 +253,9 @@ export default function RecordCreate() {
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
+    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
-      link: ROUTES.PROJECT + project_id,
+      link: ROUTES.NOTEBOOK + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: 'Draft'},

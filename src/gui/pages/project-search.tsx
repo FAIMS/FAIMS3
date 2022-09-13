@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: project.tsx
+ * Filename: project-search.tsx
  * Description:
  *   TODO
  */
@@ -63,7 +63,7 @@ export default function ProjectSearch() {
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.PROJECT_LIST, title: 'Notebook'},
+    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebook'},
     {title: project_info !== null ? project_info.name : ''},
   ];
   return project_info ? (

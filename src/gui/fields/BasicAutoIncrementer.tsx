@@ -188,7 +188,7 @@ export class BasicAutoIncrementer extends React.Component<
           <Link
             component={RouterLink}
             to={
-              ROUTES.PROJECT +
+              ROUTES.NOTEBOOK +
               this.props.form.values['_project_id'] +
               ROUTES.AUTOINCREMENT +
               this.props.form_id +

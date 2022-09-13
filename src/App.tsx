@@ -28,10 +28,8 @@ import {SignIn} from './gui/pages/signin';
 import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';
 import Workspace from './gui/pages/workspace';
-import ProjectList from './gui/pages/project-list';
-import Project from './gui/pages/project';
+import NoteBookList from './gui/pages/notebook_list';
 import Notebook from './gui/pages/notebook';
-import ProjectSettings from './gui/pages/project-settings';
 import ProjectSearch from './gui/pages/project-search';
 import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
@@ -118,8 +116,8 @@ export default function App() {
                 />
                 <PrivateRoute
                   exact
-                  path={ROUTES.PROJECT_LIST}
-                  component={ProjectList}
+                  path={ROUTES.NOTEBOOK_LIST}
+                  component={NoteBookList}
                   token={token}
                   extraProps={{token: token}}
                 />
@@ -139,13 +137,6 @@ export default function App() {
                 />
                 <PrivateRoute
                   exact
-                  path={ROUTES.PROJECT + ':project_id'}
-                  component={Project}
-                  token={token}
-                  extraProps={{token: token}}
-                />
-                <PrivateRoute
-                  exact
                   path={ROUTES.NOTEBOOK + ':project_id'}
                   component={Notebook}
                   token={token}
@@ -153,17 +144,8 @@ export default function App() {
                 />
                 <PrivateRoute
                   exact
-                  path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SEARCH}
+                  path={ROUTES.NOTEBOOK + ':project_id' + ROUTES.PROJECT_SEARCH}
                   component={ProjectSearch}
-                  token={token}
-                  extraProps={{token: token}}
-                />
-                <PrivateRoute
-                  exact
-                  path={
-                    ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS
-                  }
-                  component={ProjectSettings}
                   token={token}
                   extraProps={{token: token}}
                 />
@@ -174,7 +156,7 @@ export default function App() {
                 <PrivateRoute
                   exact
                   path={
-                    ROUTES.PROJECT +
+                    ROUTES.NOTEBOOK +
                     ':project_id' +
                     ROUTES.RECORD_CREATE +
                     ':type_name' +
@@ -188,7 +170,7 @@ export default function App() {
                 <PrivateRoute
                   exact
                   path={
-                    ROUTES.PROJECT +
+                    ROUTES.NOTEBOOK +
                     ':project_id' +
                     ROUTES.RECORD_CREATE +
                     ':type_name'
@@ -208,7 +190,7 @@ export default function App() {
                 <PrivateRoute
                   exact
                   path={
-                    ROUTES.PROJECT +
+                    ROUTES.NOTEBOOK +
                     ':project_id' +
                     ROUTES.RECORD_EXISTING +
                     ':record_id' +
@@ -222,7 +204,7 @@ export default function App() {
                 <PrivateRoute
                   exact
                   path={
-                    ROUTES.PROJECT +
+                    ROUTES.NOTEBOOK +
                     ':project_id' +
                     ROUTES.RECORD_EXISTING +
                     ':record_id' +

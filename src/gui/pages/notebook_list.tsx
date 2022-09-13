@@ -32,7 +32,7 @@ type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
 
-export default function ProjectList(props: ProjectProps) {
+export default function NoteBookList(props: ProjectProps) {
   const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,

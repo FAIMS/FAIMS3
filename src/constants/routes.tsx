@@ -24,26 +24,27 @@ export const INDEX = '/';
 export const SIGN_UP = '/signup';
 export const SIGN_IN = '/signin/';
 export const SIGN_IN_RETURN = '/signin-return';
-export const FORGOT_PASSWORD = '/forgot-password';
+
 export const NOT_FOUND = '/not-found';
 export const WORKSPACE = '/workspace';
-export const PROJECT_LIST = '/projects';
-export const PROJECT = '/projects/';
-export const PROJECT_SEARCH = '/search';
-export const PROJECT_SETTINGS = '/settings';
-export const NOTEBOOK_LIST = '/notebooks/';
+
 export const NOTEBOOK = '/notebooks/';
+export const NOTEBOOK_LIST = '/notebooks';
+
+export const PROJECT_SEARCH = '/search'; // TODO remove in favour of notebook settings
+
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';
 export const RECORD_CREATE = '/new/';
 export const RECORD_DRAFT = '/draft/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
-export const AUTOINCREMENT_LIST = '/autoincrements';
 export const AUTOINCREMENT = '/autoincrements/';
+
 export const PROJECT_CREATE = '/new-notebook';
 export const PROJECT_DESIGN = '/notebook/';
 export const PROJECT_ATTACHMENT = '/attachment/';
+
 export function getRecordRoute(
   project_id: ProjectID,
   record_id: RecordID,
@@ -51,7 +52,7 @@ export function getRecordRoute(
 ) {
   if (!!project_id && !!record_id && !!revision_id) {
     return (
-      PROJECT +
+      NOTEBOOK +
       project_id +
       RECORD_EXISTING +
       record_id +
@@ -73,7 +74,7 @@ export function getDraftRoute(
 ) {
   if (existing !== null)
     return (
-      PROJECT +
+      NOTEBOOK +
       project_id +
       RECORD_EXISTING +
       // existing+
@@ -85,7 +86,12 @@ export function getDraftRoute(
     );
   else {
     return (
-      PROJECT + project_id + RECORD_CREATE + type_name + RECORD_DRAFT + draft_id
+      NOTEBOOK +
+      project_id +
+      RECORD_CREATE +
+      type_name +
+      RECORD_DRAFT +
+      draft_id
     );
   }
 }

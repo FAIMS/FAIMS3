@@ -133,7 +133,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                     <IconButton
                       component={RouterLink}
                       to={
-                        ROUTES.PROJECT +
+                        ROUTES.NOTEBOOK +
                         project.project_id +
                         ROUTES.PROJECT_SEARCH
                       }
@@ -232,7 +232,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                     </Table>
                   </TableContainer>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4} lg={4}>
+                <Grid item xs={12} sm={12} md={4} lg={4}>
                   <Typography variant={'overline'}>Range Indices</Typography>
                   <RangeHeader
                     project={project}

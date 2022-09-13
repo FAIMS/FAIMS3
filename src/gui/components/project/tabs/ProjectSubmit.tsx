@@ -155,7 +155,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
               color="primary"
               component={RouterLink}
               onClick={onButtonClick}
-              to={ROUTES.PROJECT + project_id}
+              to={ROUTES.NOTEBOOK + project_id}
             >
               Check Notebook
             </Button>

@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {Box, Grid, Typography, Paper} from '@mui/material';
+import {Box, Grid, Typography, Paper, Alert} from '@mui/material';
 import {ProjectInformation} from '../../../../datamodel/ui';
 import {get_autoincrement_references_for_project} from '../../../../datamodel/autoincrement';
 import {AutoIncrementReference} from '../../../../datamodel/database';
@@ -24,7 +24,18 @@ export default function AutoIncrementerSettingsList(
 
   return (
     <Grid container spacing={2}>
-      {references.length === 0 ? 'This project has no Auto-Incrementers' : ''}
+      {references.length === 0 ? (
+        <Grid item xs={12} sm={6} md={6}>
+          <Typography variant={'overline'}>Edit Allocations</Typography>
+          <Box component={Paper} variant={'outlined'} elevation={0}>
+            <Alert severity={'info'}>
+              This project has no Auto-Incrementers
+            </Alert>
+          </Box>
+        </Grid>
+      ) : (
+        ''
+      )}
       {references.map(ai => {
         const label = ai.label ?? ai.form_id;
         return (
