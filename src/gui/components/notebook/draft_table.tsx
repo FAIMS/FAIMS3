@@ -32,7 +32,7 @@ import {DraftMetadata} from '../../../datamodel/drafts';
 import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
-import CustomToolbar from './customtoolbar';
+import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -188,7 +188,7 @@ function DraftRecord(props: DraftsRecordProps) {
       rowHeight={not_xs ? 52 : 100}
       density={not_xs ? 'standard' : 'comfortable'}
       components={{
-        Toolbar: CustomToolbar,
+        Toolbar: NotebookDraftDataGridToolbar,
       }}
       initialState={{
         sorting: {
@@ -235,18 +235,16 @@ export default function DraftsTable(props: DraftsTableProps) {
   }, [project_id, rows]);
 
   return (
-      <Box
-          component={Paper} elevation={0}
-      >
-          <DraftRecord
-              project_id={project_id}
-              maxRows={maxRows}
-              rows={rows}
-              loading={loading}
-              viewsets={props.viewsets}
-              not_xs={not_xs}
-          />
-      </Box>
+    <Box component={Paper} elevation={0}>
+      <DraftRecord
+        project_id={project_id}
+        maxRows={maxRows}
+        rows={rows}
+        loading={loading}
+        viewsets={props.viewsets}
+        not_xs={not_xs}
+      />
+    </Box>
   );
 }
 DraftsTable.defaultProps = {

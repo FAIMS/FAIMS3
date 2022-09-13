@@ -116,11 +116,11 @@ export default function ProjectSettings() {
         <Button
           color="primary"
           size="large"
-          component={RouterLink}
           startIcon={<EditIcon />}
-          to={ROUTES.PROJECT + project_id + ROUTES.AUTOINCREMENT_LIST}
+          disabled={true}
         >
-          Edit AutoIncrement Allocations
+          Edit AutoIncrement Allocations (superceeded by notebook settings
+          dashboard)
         </Button>
         <br />
         <Button

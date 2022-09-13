@@ -287,7 +287,7 @@ export default function AppBar(props: NavbarProps) {
             </NavLink>
             <div>
               {/*{isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}*/}
-              {isAuthenticated ? <SyncStatus token={props.token} /> : ''}
+              {isAuthenticated ? <SyncStatus /> : ''}
               <AppBarAuth token={props.token} />
             </div>
           </Toolbar>

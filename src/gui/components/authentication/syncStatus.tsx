@@ -29,14 +29,9 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ErrorIcon from '@mui/icons-material/Error';
 import 'animate.css';
 
-import {TokenContents} from '../../../datamodel/core';
 import {store} from '../../../context/store';
 
-interface SyncStatusProps {
-  token?: null | undefined | TokenContents;
-}
-
-export default function SyncStatus(props: SyncStatusProps) {
+export default function SyncStatus() {
   /**
    * sync_up(), sync_down() and sync_both()
    * States: isSyncingUp, isSyncingDown, isSynced
