@@ -49,6 +49,8 @@
     "@awesome-cordova-plugins/in-app-browser": "5.43.0",
     "@capacitor/android": "4.1.0",
     "@capacitor/app": "4.0.1",
+    "@capacitor/app-launcher": "4.0.1",
+    "@capacitor/browser": "4.0.1",
     "@capacitor/camera": "4.1.0",
     "@capacitor/core": "4.1.0",
     "@capacitor/geolocation": "4.0.1",
