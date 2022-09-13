@@ -20,25 +20,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
-import {App as CapacitorApp} from '@capacitor/app';
 
 import './index.css';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import {addNativeHooks} from './native_hooks';
 // import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
 
-CapacitorApp.addListener('appStateChange', ({isActive}) => {
-  console.log('App state changed. Is active?', isActive);
-});
-
-CapacitorApp.addListener('appUrlOpen', data => {
-  console.log('App opened with URL:', data);
-});
-
-CapacitorApp.addListener('appRestoredResult', data => {
-  console.log('Restored state:', data);
-});
+addNativeHooks();
 
 ReactDOM.render(
   <React.StrictMode>
