@@ -18,8 +18,8 @@
  *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
-import React, {useEffect} from 'react';
-import {Button, IconButton, Box, Grid, TextField} from '@mui/material';
+import React from 'react';
+import {IconButton, InputBase, Paper, Box, Grid} from '@mui/material';
 import {
   GridToolbarContainer,
   GridToolbarColumnsButton,
@@ -27,6 +27,7 @@ import {
   GridToolbarDensitySelector,
 } from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 interface ToolbarProps {
   handleQueryFunction: any;
 }
@@ -48,15 +49,31 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   };
   return (
     <Box sx={{display: 'flex', alignItems: 'flex-end'}}>
-      <TextField
-        id="notebook-record-data-search"
-        label="Search record data"
-        size="small"
-        value={value}
-        onChange={handleChange}
-      />
-      <Button onClick={handleSubmit}>submit</Button>
-      <Button onClick={handleClear}>clear</Button>
+      <Paper
+        component="form"
+        elevation={0}
+        variant={'outlined'}
+        sx={{p: '2px 4px', display: 'flex', alignItems: 'center'}}
+      >
+        <IconButton sx={{p: '10px'}} aria-label="menu" onClick={handleClear}>
+          <ClearIcon />
+        </IconButton>
+        <InputBase
+          id="notebook-record-data-search"
+          inputProps={{'aria-label': 'Search record data'}}
+          size="small"
+          value={value}
+          onChange={handleChange}
+        />
+        <IconButton
+          type="button"
+          sx={{p: '10px'}}
+          aria-label="search"
+          onClick={handleSubmit}
+        >
+          <SearchIcon />
+        </IconButton>
+      </Paper>
     </Box>
   );
 }
