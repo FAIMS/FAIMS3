@@ -2,7 +2,9 @@ import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
+import {useTheme} from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 
 import * as ROUTES from '../../../constants/routes';
@@ -18,6 +20,8 @@ type AddRecordButtonsProps = {
 export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const {project} = props;
   const project_id = project.project_id;
+  const theme = useTheme();
+  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
   const ui_spec = useEventedPromise(
     getUiSpecForProject,
@@ -60,7 +64,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
           New Record
         </Button>
       ) : (
-        <ButtonGroup>
+        <ButtonGroup fullWidth={mq_above_md ? false : true}>
           {visible_types.map(
             viewset_name =>
               viewsets[viewset_name].is_visible !== false && (

@@ -110,28 +110,41 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
-            <Box sx={{p: 1, display: 'flex'}}>
-              <FiberManualRecordIcon
-                fontSize="small"
-                sx={{
-                  mr: 1,
-                  color: project_info.status === 'live' ? '#4caf50' : '#d9182e',
-                }}
-              />
-              {project_info.status}
-            </Box>
-
-            {project_info.status !== 'live' && (
-              <Button
-                color="primary"
-                variant={'outlined'}
-                startIcon={<EditIcon />}
-                component={RouterLink}
-                to={ROUTES.PROJECT_DESIGN + project_id}
-              >
-                Edit Notebook Design
-              </Button>
-            )}
+            <Grid
+              container
+              direction="row"
+              justifyContent="flex-start"
+              alignItems="center"
+              spacing={2}
+            >
+              <Grid item xs={6}>
+                <Box sx={{p: 1, display: 'flex'}}>
+                  <FiberManualRecordIcon
+                    fontSize="small"
+                    sx={{
+                      mr: 1,
+                      color:
+                        project_info.status === 'live' ? '#4caf50' : '#d9182e',
+                    }}
+                  />
+                  {project_info.status}
+                </Box>
+              </Grid>
+              <Grid item xs={6}>
+                {project_info.status !== 'live' && (
+                  <Button
+                    color="primary"
+                    variant={'outlined'}
+                    startIcon={<EditIcon />}
+                    component={RouterLink}
+                    to={ROUTES.PROJECT_DESIGN + project_id}
+                    style={{float: 'right'}}
+                  >
+                    Edit Notebook Design
+                  </Button>
+                )}
+              </Grid>
+            </Grid>
           </Box>
 
           <Typography variant={'overline'}>
