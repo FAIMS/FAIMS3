@@ -20,7 +20,7 @@
  */
 
 import React, {useState} from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {Link as RouterLink, NavLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
   CircularProgress,
@@ -43,19 +43,24 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
-// import NotificationsIcon from '@mui/icons-material/Notifications';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import AccountTree from '@mui/icons-material/AccountTree';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemText from '@mui/material/ListItemText';
 
 import * as ROUTES from '../../constants/routes';
 import {SHOW_NEW_NOTEBOOK} from '../../buildconfig';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
-import SystemAlert from './alert';
+import SystemAlert from '../components/alert';
 import {ProjectInformation} from '../../datamodel/ui';
 import {useEventedPromise} from '../pouchHook';
+import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '../../datamodel/core';
+import {checkToken} from '../../utils/helpers';
+// import ConnectedStatus from '../components/authentication/connectedStatus';
+import SyncStatus from '../components/authentication/syncStatus';
+
 // type NavBarState = {
 //   topMenuItems: any;
 //   bottomMenuItems: any;
@@ -82,12 +87,14 @@ const drawerWidth = 240;
 const useStyles = makeStyles(theme => ({
   root: {
     display: 'flex',
+    boxShadow: 'none',
   },
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
+    boxShadow: 'none',
   },
   appBarShift: {
     width: `calc(100% - ${drawerWidth}px)`,
@@ -146,7 +153,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     projectListItems.push({
       title: project_info.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.PROJECT + project_info.project_id,
+      to: ROUTES.NOTEBOOK + project_info.project_id,
       disabled: false,
     });
   });
@@ -154,7 +161,7 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
     title: 'Notebooks',
     icon: <AccountTree />,
     nested: projectListItems,
-    to: ROUTES.PROJECT_LIST,
+    to: ROUTES.NOTEBOOK_LIST,
     disabled: false,
   };
 }
@@ -162,15 +169,12 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
 type NavbarProps = {
   token?: null | undefined | TokenContents;
 };
-export default function Navbar(props: NavbarProps) {
+export default function AppBar(props: NavbarProps) {
   const classes = useStyles();
   // const globalState = useContext(store);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const isSyncing = false;
-  // const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  // const [projectList, setProjectList] = useState<ProjectsList>({});
-  // const [error, setError] = useState<string | null>(null);
+  const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
   const pouchProjectList = useEventedPromise(
@@ -184,8 +188,14 @@ export default function Navbar(props: NavbarProps) {
     {
       title: 'Home',
       icon: <HomeIcon />,
-      to: ROUTES.HOME,
+      to: ROUTES.INDEX,
       disabled: false,
+    },
+    {
+      title: 'WorkSpace',
+      icon: <DashboardIcon />,
+      to: ROUTES.WORKSPACE,
+      disabled: !isAuthenticated,
     },
     pouchProjectList === null
       ? {
@@ -194,7 +204,7 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         }
-      : props.token !== undefined && props.token !== null
+      : isAuthenticated
       ? getNestedProjects(pouchProjectList)
       : {
           title: 'Notebooks',
@@ -208,18 +218,6 @@ export default function Navbar(props: NavbarProps) {
       to: ROUTES.PROJECT_CREATE,
       disabled: !SHOW_NEW_NOTEBOOK,
     },
-    // {
-    //   title: 'Tools',
-    //   icon: <BuildIcon />,
-    //   to: '/',
-    //   disabled: true,
-    // },
-    // {
-    //   title: 'Notifications',
-    //   icon: <NotificationsIcon />,
-    //   to: '/',
-    //   disabled: true,
-    // },
     {
       title: 'About Build',
       icon: <SettingsIcon />,
@@ -228,7 +226,7 @@ export default function Navbar(props: NavbarProps) {
     },
   ];
   const bottomMenuItems: Array<MenuItemProps> = [
-    props.token !== undefined && props.token !== null
+    isAuthenticated
       ? {
           title: 'Profile',
           icon: <AccountCircleIcon />,
@@ -241,13 +239,7 @@ export default function Navbar(props: NavbarProps) {
           to: '/',
           disabled: true,
         },
-    // {
-    //   title: 'Messages',
-    //   icon: <MessageIcon />,
-    //   to: '/',
-    //   disabled: true,
-    // },
-    props.token !== undefined && props.token !== null
+    isAuthenticated
       ? {
           title: 'Settings',
           icon: <SettingsIcon />,
@@ -287,19 +279,17 @@ export default function Navbar(props: NavbarProps) {
             >
               <MenuIcon />
             </IconButton>
-            <img
-              src="/static/logo/Faims-white-small.png"
-              style={{maxWidth: '70px', flex: 1}}
-            />
-            {isSyncing ? (
-              <CircularProgress
-                color={'secondary'}
-                size={'1rem'}
-                thickness={5}
+            <NavLink style={{flexGrow: 1}} to={ROUTES.INDEX}>
+              <img
+                src="/static/logo/Faims-white-small.png"
+                style={{maxWidth: '70px', flex: 1}}
               />
-            ) : (
-              ''
-            )}
+            </NavLink>
+            <div>
+              {/*{isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}*/}
+              {isAuthenticated ? <SyncStatus /> : ''}
+              <AppBarAuth token={props.token} />
+            </div>
           </Toolbar>
         </MuiAppBar>
         <Drawer

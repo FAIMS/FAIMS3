@@ -17,8 +17,8 @@
  * Description:
  *   This is the file is to set the values for persistent state
  */
-import {LocationState} from '../../../datamodel/core';
-import {Relationship} from '../../../datamodel/ui';
+import {LocationState} from '../../../../datamodel/core';
+import {Relationship} from '../../../../datamodel/ui';
 
 export function getparentlinkinfo(
   hrid: string,

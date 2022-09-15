@@ -36,11 +36,10 @@ import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
 import {get_logic_fields, get_logic_views} from './branchingLogic';
 
-import AutoSave from './autosave';
 import {ViewComponent} from './view';
 import BoxTab from '../ui/boxTab';
 
-import {ActionType} from '../../../actions';
+import {ActionType} from '../../../context/actions';
 
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -52,7 +51,7 @@ import {
 import {ProjectUIModel, Relationship} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldsForViewSet,
@@ -71,7 +70,7 @@ import {
   getparentlinkinfo,
   getParentInfo,
   getChildInfo,
-} from './RelatedInfomation';
+} from './relationships/RelatedInfomation';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -82,6 +81,10 @@ type RecordFormProps = {
   handleChangeTab?: any;
   metaSection?: any;
   isSyncing?: string;
+  disabled?: boolean;
+  handleSetIsDraftSaving: Function;
+  handleSetDraftLastSaved: Function;
+  handleSetDraftError: Function;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -111,15 +114,12 @@ type RecordFormProps = {
 );
 
 type RecordFormState = {
-  draftError: string | null;
   // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   activeStep: number;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
-  is_saving: boolean;
-  last_saved: Date;
   annotation: {[field_name: string]: Annotations};
   /**
    * Set only by newDraftListener, but this is only non-null
@@ -127,7 +127,6 @@ type RecordFormState = {
    * letting them redirect to the draft's URL
    */
   draft_created: string | null;
-  error_view: boolean;
   description: string | null;
   ugc_comment: string | null;
 };
@@ -161,7 +160,6 @@ class RecordForm extends React.Component<
         activeStep: 0,
         revision_cached: null,
         annotation: {},
-        error_view: false,
         description: null,
       });
       // Re-initialize basically everything.
@@ -176,17 +174,13 @@ class RecordForm extends React.Component<
     super(props);
     this.draftState = new RecordDraftState(this.props);
     this.state = {
-      draftError: null,
       type_cached: this.props.type ?? null,
       view_cached: null,
       activeStep: 0,
       revision_cached: null,
       initialValues: null,
-      is_saving: false,
-      last_saved: new Date(),
       draft_created: null,
       annotation: {},
-      error_view: false,
       description: null,
       ugc_comment: null,
     };
@@ -210,10 +204,11 @@ class RecordForm extends React.Component<
   saveListener(val: boolean | {}) {
     if (val === true) {
       // Start saving
-      this.setState({is_saving: true});
+      this.props.handleSetIsDraftSaving(true);
     } else if (val === false) {
       // Finished saving successfully
-      this.setState({is_saving: false, last_saved: new Date()});
+      this.props.handleSetIsDraftSaving(false);
+      this.props.handleSetDraftLastSaved(new Date());
     } else {
       // Error occurred while saving
       // Heuristically determine a nice user-facing error
@@ -223,7 +218,8 @@ class RecordForm extends React.Component<
         console.log('saveListener', val);
       }
 
-      this.setState({is_saving: false, draftError: error_message});
+      this.props.handleSetIsDraftSaving(false);
+      this.props.handleSetDraftError(error_message);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -232,8 +228,6 @@ class RecordForm extends React.Component<
         },
       });
     }
-    console.log('is_saving value' + this.state.is_saving);
-    console.log('is_saving value called' + val + new Date());
   }
 
   async formChanged(draft_saving_started_already: boolean) {
@@ -246,9 +240,9 @@ class RecordForm extends React.Component<
           this.props.revision_id
         );
         if (latest_record === null) {
-          this.setState({
-            draftError: `Could not find data for record ${this.props.record_id}`,
-          });
+          this.props.handleSetDraftError(
+            `Could not find data for record ${this.props.record_id}`
+          );
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -658,10 +652,10 @@ class RecordForm extends React.Component<
             this.props.record_id
           );
           if (is_direct === false) {
-            this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button
+            this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
           } else {
             this.props.history.push({
-              pathname: ROUTES.PROJECT + state_parent.parent_link,
+              pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
               state: state_parent,
             });
           }
@@ -721,7 +715,7 @@ class RecordForm extends React.Component<
               <Link
                 component={RouterLink}
                 to={
-                  ROUTES.PROJECT +
+                  ROUTES.NOTEBOOK +
                   this.props.project_id +
                   ROUTES.RECORD_EXISTING +
                   this.props.record_id! +
@@ -822,13 +816,6 @@ class RecordForm extends React.Component<
                     <br />
                     <Form>
                       <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <AutoSave
-                            last_saved={this.state.last_saved}
-                            is_saving={this.state.is_saving}
-                            error={this.state.draftError}
-                          />
-                        </Grid>
                         <Grid item sm={12} xs={12}>
                           <ViewComponent
                             viewName={viewName}
@@ -845,6 +832,7 @@ class RecordForm extends React.Component<
                           <br />
 
                           <br />
+
                           <ButtonGroup
                             color="primary"
                             aria-label="contained primary button group"

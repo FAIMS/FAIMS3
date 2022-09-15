@@ -1,6 +1,6 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
 import React from 'react';
-import {Button} from '@mui/material';
+import {Button, ButtonProps} from '@mui/material';
 import {InAppBrowser} from '@awesome-cordova-plugins/in-app-browser';
 
 import {TokenContents} from '../../../datamodel/core';
@@ -14,6 +14,8 @@ export type LoginButtonProps = {
   listing_name: string;
   setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
   is_refresh: boolean;
+  label?: string;
+  size?: ButtonProps['size'];
 };
 
 /**
@@ -23,8 +25,9 @@ export type LoginButtonProps = {
 export function LoginButton(props: LoginButtonProps) {
   return (
     <Button
-      variant="contained"
+      variant="outlined"
       color="primary"
+      size={props.size}
       onClick={() => {
         window.addEventListener(
           'message',
@@ -88,11 +91,7 @@ export function LoginButton(props: LoginButtonProps) {
         }
       }}
     >
-      {!props.is_refresh ? (
-        <> Sign-in for {props.listing_name} </>
-      ) : (
-        <> Reconnect with {props.listing_name} </>
-      )}
+      {!props.is_refresh ? <> Sign In </> : <> {props.label} </>}
     </Button>
   );
 }

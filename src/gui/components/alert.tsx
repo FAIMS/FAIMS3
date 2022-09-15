@@ -22,8 +22,8 @@ import React, {useContext} from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import makeStyles from '@mui/styles/makeStyles';
-import {store} from '../../store';
-import {ActionType} from '../../actions';
+import {store} from '../../context/store';
+import {ActionType} from '../../context/actions';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({

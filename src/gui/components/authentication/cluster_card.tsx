@@ -13,26 +13,28 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: projectCard.tsx
+ * Filename: cluster_card.tsx
  * Description:
  *   TODO
  */
-
+import React from 'react';
 import {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 
 import {
+  Autocomplete,
   Button,
-  Card as MuiCard,
-  CardActions,
-  CardContent,
-  CardHeader,
-  MenuItem,
-  Select,
+  Grid,
+  Box,
+  Typography,
+  Chip,
+  Table,
+  TableCell,
+  TableRow,
+  TableBody,
+  TextField,
 } from '@mui/material';
-
-import makeStyles from '@mui/styles/makeStyles';
-
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import {LoginButton} from './login_form';
 import {
   getTokenContentsForCluster,
@@ -43,7 +45,7 @@ import {
 import {reprocess_listing} from '../../../sync/process-initialization';
 import {TokenContents} from '../../../datamodel/core';
 import * as ROUTES from '../../../constants/routes';
-
+import MainCard from '../ui/main-card';
 type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
@@ -57,12 +59,6 @@ type UserSwitcherProps = {
   current_username: string;
 };
 
-const useStyles = makeStyles(() => ({
-  cardHeader: {
-    alignItems: 'flex-start',
-  },
-}));
-
 function UserSwitcher(props: UserSwitcherProps) {
   const [userList, setUserList] = useState([] as TokenContents[]);
   useEffect(() => {
@@ -75,22 +71,23 @@ function UserSwitcher(props: UserSwitcherProps) {
     return <p>No logged in users</p>;
   }
   return (
-    <Select
-      id={`user-switcher-${props.listing_id}`}
-      label="Switch User"
-      onChange={event => {
-        return switchUsername(props.listing_id, event.target.value as string);
-      }}
-    >
-      {userList.map(info => (
-        <MenuItem value={info.username}>{info.name}</MenuItem>
-      ))}
-    </Select>
+    <React.Fragment>
+      <Autocomplete
+        disablePortal
+        id={`user-switcher-${props.listing_id}`}
+        getOptionLabel={option => (option.name ? option.name : option.username)}
+        options={userList}
+        sx={{width: 300}}
+        onChange={(e, value) =>
+          switchUsername(props.listing_id, value?.username as string)
+        }
+        renderInput={params => <TextField {...params} label="Switch User" />}
+      />
+    </React.Fragment>
   );
 }
 
 export default function ClusterCard(props: ClusterCardProps) {
-  const classes = useStyles();
   const [token, setToken] = useState(undefined as undefined | TokenContents);
   const history = useHistory();
 
@@ -112,66 +109,124 @@ export default function ClusterCard(props: ClusterCardProps) {
   }, [token]);
 
   return (
-    <MuiCard>
-      <CardHeader className={classes.cardHeader} title={props.listing_name} />
-      <CardContent style={{paddingTop: 0}}>
-        <p>{props.listing_description}</p>
-        {token === undefined ? (
-          <LoginButton
-            key={props.listing_id}
-            listing_id={props.listing_id}
-            listing_name={props.listing_name}
-            conductor_url={props.conductor_url}
-            setToken={setToken}
-            is_refresh={false}
-          />
-        ) : (
-          <>
-            <p>Currently logged in as: {token.name}</p>
-            Roles are
-            <ul>
-              {token.roles.map((group, index) => {
-                return <li key={index}>{group}</li>;
-              })}
-            </ul>
-            <br />
-            <UserSwitcher
-              listing_id={props.listing_id}
-              current_username={token.username}
-            />
-            <Button
-              color="primary"
-              variant="contained"
-              size="large"
-              onClick={() => history.push(ROUTES.WORKSPACE)}
-            >
-              Go Back To Workspace
-            </Button>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={() =>
-                forgetCurrentToken(props.listing_id).then(() => {
-                  setToken(undefined);
-                  reprocess_listing(props.listing_id);
-                })
-              }
-            >
-              Logout Current User
-            </Button>
-            <LoginButton
-              key={props.listing_id}
-              listing_id={props.listing_id}
-              listing_name={props.listing_name}
-              conductor_url={props.conductor_url}
-              setToken={setToken}
-              is_refresh={true}
-            />
-          </>
-        )}
-      </CardContent>
+    <MainCard
+      title={props.listing_name}
+      content={true}
+      secondary={
+        <Button
+          color="primary"
+          variant="text"
+          onClick={() => history.push(ROUTES.WORKSPACE)}
+          startIcon={<DashboardIcon />}
+        >
+          Workspace
+        </Button>
+      }
+    >
+      <Typography variant={'body2'}>{props.listing_description}</Typography>
 
-      <CardActions></CardActions>
-    </MuiCard>
+      {token === undefined ? (
+        <LoginButton
+          key={props.listing_id}
+          listing_id={props.listing_id}
+          listing_name={props.listing_name}
+          conductor_url={props.conductor_url}
+          setToken={setToken}
+          is_refresh={false}
+        />
+      ) : (
+        <React.Fragment>
+          <Table size={'small'} sx={{mb: 2}}>
+            <colgroup>
+              <col style={{width: '20%'}} />
+              <col style={{width: '60%'}} />
+              <col style={{width: '20%'}} />
+            </colgroup>
+            <TableBody>
+              <TableRow>
+                <TableCell align="left" sx={{pl: 0}}>
+                  Current User{' '}
+                </TableCell>
+                <TableCell align="left">
+                  <code style={{fontWeight: 'bold'}}>{token.username}</code>
+                </TableCell>
+                <TableCell sx={{pr: 0}} align="right">
+                  <Button
+                    size={'small'}
+                    variant={'outlined'}
+                    onClick={() =>
+                      forgetCurrentToken(props.listing_id).then(() => {
+                        setToken(undefined);
+                        reprocess_listing(props.listing_id);
+                      })
+                    }
+                  >
+                    Logout
+                  </Button>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell align="left" sx={{pl: 0}}>
+                  Roles
+                </TableCell>
+                <TableCell align="left">
+                  <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
+                    {token.roles.map((group, index) => {
+                      return <Chip key={index} label={group} />;
+                    })}
+                  </Box>
+                </TableCell>
+                <TableCell sx={{pr: 0}} align="right">
+                  <LoginButton
+                    key={props.listing_id}
+                    listing_id={props.listing_id}
+                    listing_name={props.listing_name}
+                    conductor_url={props.conductor_url}
+                    setToken={setToken}
+                    is_refresh={true}
+                    label={'refresh'}
+                    size={'small'}
+                  />
+                  <Typography variant={'caption'}>
+                    Sign in again to refresh roles
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+
+          {token.username ? (
+            <React.Fragment>
+              <Grid
+                container
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Grid item>
+                  <UserSwitcher
+                    listing_id={props.listing_id}
+                    current_username={token.username}
+                  />
+                </Grid>
+                <Grid item>
+                  <LoginButton
+                    key={props.listing_id}
+                    listing_id={props.listing_id}
+                    listing_name={props.listing_name}
+                    conductor_url={props.conductor_url}
+                    setToken={setToken}
+                    is_refresh={true}
+                    label={'add user'}
+                    size={'small'}
+                  />
+                </Grid>
+              </Grid>
+            </React.Fragment>
+          ) : (
+            ''
+          )}
+        </React.Fragment>
+      )}
+    </MainCard>
   );
 }

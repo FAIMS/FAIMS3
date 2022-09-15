@@ -59,7 +59,7 @@ const useStyles = makeStyles(theme => ({
 
 export default function RecordList() {
   const classes = useStyles();
-  const breadcrumbs = [{link: ROUTES.HOME, title: 'Home'}, {title: 'Records'}];
+  const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Records'}];
   // const pouchRecordList = {};
 
   return (

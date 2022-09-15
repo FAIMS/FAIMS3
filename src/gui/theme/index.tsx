@@ -27,18 +27,29 @@ declare module '@mui/styles/defaultTheme' {
 }
 
 const theme = createTheme({
-  spacing: 2,
+  // spacing: 2,
   palette: {
+    background: {
+      default: '#FAFAFB',
+    },
     primary: {
       main: '#1B3E93',
-      light: '#42a5f5',
-      dark: '#1565c0',
-      contrastText: '#fff',
+      light: '#5768c4',
+      dark: '#001964',
     },
+    // secondary: {
+    //   100: colors.grey[100],
+    //   200: colors.grey[200],
+    //   light: colors.grey[300],
+    //   400: colors.grey[400],
+    //   main: colors.grey[500],
+    //   600: colors.grey[600],
+    //   dark: colors.grey[700],
+    //   800: colors.grey[800],
+    // },
     secondary: {
-      // main: '#F68E1E',
-      main: '#fff',
-      contrastText: '#1b7993',
+      main: '#DA9449',
+      contrastText: '#fff',
     },
     text: {
       primary: colors.blueGrey[900],
@@ -54,6 +65,11 @@ const theme = createTheme({
   components: {
     MuiAppBar: {
       styleOverrides: {
+        root: {
+          '&.MuiAppBar-root': {
+            boxShadow: 'none',
+          },
+        },
         colorPrimary: {
           backgroundColor: '#1B3E93',
           color: '#fff',
@@ -62,6 +78,33 @@ const theme = createTheme({
           indicatorColor: '#fff',
           text: {
             primary: '#fff',
+          },
+        },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          '&.MuiTabs-root': {
+            boxShadow: 'none',
+            fontWeight: 'bold',
+          },
+          '&.MuiTab-root': {
+            fontWeight: '700 !important',
+          },
+          '&.Mui-selected': {
+            fontWeight: '700 !important',
+            color: 'white',
+            backgroundColor: '#DA9449',
+          },
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          '&.MuiTab-root': {
+            fontWeight: 'bold',
           },
         },
       },

@@ -553,8 +553,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   return (
-    <div className={classes.root}>
-      <AppBar position="static" color="primary">
+    <div>
+      <AppBar position="static" color="primary" sx={{boxShadow: 'none'}}>
         <TabTab
           not_xs={not_xs}
           tabs={projecttabs}

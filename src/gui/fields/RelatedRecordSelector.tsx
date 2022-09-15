@@ -145,7 +145,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           component={Link}
           to={{
             pathname:
-              ROUTES.PROJECT +
+              ROUTES.NOTEBOOK +
               project_id +
               ROUTES.RECORD_CREATE +
               props.related_type,

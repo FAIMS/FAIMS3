@@ -13,13 +13,14 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: footer.tsx
+ * Filename: index.tsx
  * Description:
  *   Brian,please add html here
  */
 import React from 'react';
 // Brian,please replace below html here and in envrionmnet file REACT_APP_SERVICES=XXX
-import {Container, Paper} from '@mui/material';
+import {Container, Typography, Link, Box} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
 
 // const html = `
 // <hr/>
@@ -39,41 +40,43 @@ import {Container, Paper} from '@mui/material';
 // </div>
 // `;
 
-export function EHTML(props: {not_xs: boolean}) {
+export function EHTML() {
+  const theme = useTheme();
   return (
-    <>
-      <hr />
-      <Paper
-        style={
-          props.not_xs
-            ? {fontSize: '75%'}
-            : {fontSize: '75%', paddingLeft: '20%', paddingRight: '20%'}
-        }
-      >
+    <React.Fragment>
+      <Box sx={{p: 1, backgroundColor: theme.palette.grey[300]}}>
         <Container>
-          The{' '}
-          <a href="https://faims.edu.au/">
-            FAIMS 3.0 Electronic Field Notebooks project
-          </a>{' '}
-          received investment (
-          <a href="https://dx.doi.org/10.47486/PL110">doi: 10.47486/PL110</a>)
-          from the{' '}
-          <a href="https://ardc.edu.au/">
-            Australian Research Data Commons (ARDC)
-          </a>
-          , <a href="https://www.mq.edu.au/">Macquarie University</a>,{' '}
-          <a href="https://www.csiro.au/en/about/people/business-units/mineral-resources">
-            CSIRO
-          </a>
-          , <a href="https://www.unsw.edu.au/">UNSW Sydney</a>,{' '}
-          <a href="https://www.latrobe.edu.au/">La Trobe University</a>, and{' '}
-          <a href="https://international.au.dk/">Aarhus University</a>. We are
-          proud to collaborate with more than a dozen other{' '}
-          <a href="https://faims.edu.au/partners/">partners</a>. Contribute to
-          this <a href="https://github.com/FAIMS/FAIMS3">project on GitHub!</a>
+          <Typography variant={'caption'}>
+            The{' '}
+            <Link href="https://faims.edu.au/">
+              FAIMS 3.0 Electronic Field Notebooks project
+            </Link>{' '}
+            received investment (
+            <Link href="https://dx.doi.org/10.47486/PL110">
+              doi: 10.47486/PL110
+            </Link>
+            ) from the{' '}
+            <Link href="https://ardc.edu.au/">
+              Australian Research Data Commons (ARDC)
+            </Link>
+            , <Link href="https://www.mq.edu.au/">Macquarie University</Link>,{' '}
+            <Link href="https://www.csiro.au/en/about/people/business-units/mineral-resources">
+              CSIRO
+            </Link>
+            , <Link href="https://www.unsw.edu.au/">UNSW Sydney</Link>,{' '}
+            <Link href="https://www.latrobe.edu.au/">La Trobe University</Link>,
+            and{' '}
+            <Link href="https://international.au.dk/">Aarhus University</Link>.
+            We are proud to collaborate with more than a dozen other{' '}
+            <Link href="https://faims.edu.au/partners/">partners</Link>.
+            Contribute to this{' '}
+            <Link href="https://github.com/FAIMS/FAIMS3">
+              project on GitHub!
+            </Link>
+          </Typography>
         </Container>
-      </Paper>
-    </>
+      </Box>
+    </React.Fragment>
   );
 }
 
