@@ -48,9 +48,11 @@ export function addNativeHooks() {
 }
 
 async function getListingForConductorUrl(conductor_url: string) {
+  const origin = new URL(conductor_url).origin;
   const listings = await getSyncableListingsInfo();
   for (const l of listings) {
-    if (l.conductor_url === conductor_url) {
+    const possible_origin = new URL(l.conductor_url).origin;
+    if (possible_origin === origin) {
       return l.id;
     }
   }
