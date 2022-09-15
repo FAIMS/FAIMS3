@@ -41,8 +41,9 @@ import {
   RecordID,
   RevisionID,
   Annotations,
+  Relationship,
 } from '../../../datamodel/core';
-import {ProjectUIModel, Relationship} from '../../../datamodel/ui';
+import {ProjectUIModel} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';

@@ -115,10 +115,7 @@ export async function getFullRecordData(
     created_by: record.created_by,
     annotations: form_data.annotations,
     field_types: form_data.types,
-    relationship: {
-      // parent: {},
-      linked: [],
-    },
+    relationship: revision.relationship,
   };
 }
 
