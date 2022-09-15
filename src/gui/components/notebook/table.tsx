@@ -114,7 +114,12 @@ function RecordsTable(props: RecordsTableProps) {
             </Link>
           ),
         },
-        {field: 'updated', headerName: 'Last Updated', type: 'dateTime', width: 200},
+        {
+          field: 'updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          width: 200,
+        },
         {
           field: 'updated_by',
           headerName: 'Last Updated By',

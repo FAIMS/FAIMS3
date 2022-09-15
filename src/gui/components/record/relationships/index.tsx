@@ -185,6 +185,11 @@ export default function RelationshipsComponent(
             ) : (
               ''
             )}
+            {props.linkRecords !== null ? (
+              <Tab label="Linked Records" {...a11yProps(2)} />
+            ) : (
+              ''
+            )}
           </Tabs>
         </Box>
         {props.childRecords !== null ? (
@@ -244,6 +249,36 @@ export default function RelationshipsComponent(
                 </ListItem>
               ))}
             </List>
+          </TabPanel>
+        ) : (
+          ''
+        )}
+        {props.linkRecords !== null ? (
+          <TabPanel value={value} index={2}>
+            <DataGrid
+              autoHeight
+              components={{
+                Footer: CustomToolbar,
+              }}
+              hideFooterSelectedRowCount
+              initialState={{
+                columns: {
+                  columnVisibilityModel: {
+                    // Hide column route, the other columns will remain visible
+                    route: false,
+                  },
+                },
+              }}
+              getRowHeight={() => 'auto'}
+              density={'compact'}
+              rows={props.linkRecords}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5]}
+              disableSelectionOnClick
+              // sx={{cursor: 'pointer'}}
+              sx={{borderRadius: '0'}}
+            />
           </TabPanel>
         ) : (
           ''

@@ -364,8 +364,6 @@ class RecordForm extends React.Component<
             this.props.record_id,
             this.props.revision_id
           )) || {};
-    console.log('++++get initial db');
-    console.log(fromdb);
 
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
@@ -701,7 +699,6 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    console.log(this.props.conflictfields);
     if (this.state.draft_created !== null) {
       // If a draft was created, that implies this form started from
       // a non draft, so it must have been an existing record (see props
@@ -765,6 +762,7 @@ class RecordForm extends React.Component<
           {/* add padding for form only */}
           <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
             <Formik
+              // enableReinitialize
               initialValues={initialValues}
               validationSchema={validationSchema}
               validateOnMount={true}
@@ -828,6 +826,7 @@ class RecordForm extends React.Component<
                             conflictfields={this.props.conflictfields}
                             handleChangeTab={this.props.handleChangeTab}
                             fieldNames={fieldNames}
+                            disabled={this.props.disabled}
                           />
                           <br />
 
@@ -837,7 +836,7 @@ class RecordForm extends React.Component<
                             color="primary"
                             aria-label="contained primary button group"
                           >
-                            {is_final_view ? (
+                            {is_final_view && this.props.disabled !== true ? (
                               <Button
                                 type="submit"
                                 color={
@@ -878,7 +877,7 @@ class RecordForm extends React.Component<
                               ''
                             )}
                           </ButtonGroup>
-                          {!is_final_view && (
+                          {!is_final_view && this.props.disabled !== true && (
                             <ButtonGroup
                               color="primary"
                               aria-label="contained primary button group"

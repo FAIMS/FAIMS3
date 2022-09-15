@@ -23,6 +23,7 @@ import {Box, Typography} from '@mui/material';
 import RecordForm from './form';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
+
 interface RecordReadViewProps {
   project_id: ProjectID;
   record_id: RecordID;

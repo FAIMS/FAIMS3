@@ -17,4 +17,5 @@ export interface RecordProps {
 export interface RelationshipsComponentProps {
   parentRecords: Array<RecordProps> | null;
   childRecords: Array<RecordProps> | null;
+  linkRecords: Array<RecordProps> | null;
 }

@@ -42,6 +42,7 @@ type ViewProps = {
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
   fieldNames: string[]; //add for branching logic
+  disabled?: boolean; // add for view tab or edit tab
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -54,6 +55,7 @@ type SingleComponentProps = {
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
   isSyncing?: string;
+  disabled?: boolean; // add for view tab or edit tab
 };
 
 function SingleComponent(props: SingleComponentProps) {
@@ -87,7 +89,8 @@ function SingleComponent(props: SingleComponentProps) {
             fields[fieldName],
             fieldName,
             props.formProps,
-            props.isSyncing
+            props.isSyncing,
+            props.disabled
           )}
         </Grid>
         <Grid
@@ -185,6 +188,7 @@ export function ViewComponent(props: ViewProps) {
           isSyncing={props.isSyncing}
           conflictfields={props.conflictfields}
           handleChangeTab={props.handleChangeTab}
+          disabled={props.disabled}
         />
       ))}
       {!props.formProps.isValid && error !== false && (

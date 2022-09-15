@@ -53,6 +53,7 @@ interface Props {
   InputLabelProps: {label: string};
   required: boolean;
   helperText?: string;
+  disabled?: boolean;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -98,8 +99,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     parent_link: location.pathname.replace('/projects/', ''), // current form link
     parent: {},
   };
+  const disbaled = props.disabled ?? false;
   const location_state: any = location.state;
-  if (location_state !== undefined) {
+  if (location_state !== undefined && location_state !== null) {
     if (location_state.parent_record_id !== props.form.values._id)
       newState['parent'] = location.state;
     else if (location_state.parent !== undefined) {
@@ -124,6 +126,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         getOptionLabel={(option: RecordReference) => option.record_label}
         options={options}
         defaultValue={undefined}
+        disabled={disbaled}
         // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
         renderInput={(params: any) => (
           <TextField
@@ -137,27 +140,30 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           />
         )}
       />
-      {project_id !== undefined && (
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<AddIcon />}
-          component={Link}
-          to={{
-            pathname:
-              ROUTES.NOTEBOOK +
-              project_id +
-              ROUTES.RECORD_CREATE +
-              props.related_type,
-            state: newState,
-            search:
-              '?field_id=' + props.id + '&link=' + location.pathname + search,
-          }}
-        >
-          New Record
-        </Button>
+      {project_id !== undefined &&
+        disbaled === false && ( //update for eid or view
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<AddIcon />}
+            component={Link}
+            to={{
+              pathname:
+                ROUTES.NOTEBOOK +
+                project_id +
+                ROUTES.RECORD_CREATE +
+                props.related_type,
+              state: newState,
+              search:
+                '?field_id=' + props.id + '&link=' + location.pathname + search,
+            }}
+          >
+            New Record
+          </Button>
+        )}
+      {disbaled === false && ( //update for eid or view
+        <Typography variant="caption">{props.helperText}</Typography>
       )}
-      <Typography variant="caption">{props.helperText}</Typography>
     </div>
   );
 }

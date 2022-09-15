@@ -234,7 +234,6 @@ export default function DraftsTable(props: DraftsTableProps) {
     return destroyListener; // destroyListener called when this component unmounts.
   }, [project_id, rows]);
 
-
   return (
     <Box component={Paper} elevation={0}>
       <DraftRecord

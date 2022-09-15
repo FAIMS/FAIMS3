@@ -77,7 +77,8 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
-
+import {getDetailRelatedInfommation} from '../components/record/relationships/RelatedInfomation';
+import {RelationshipsComponentProps} from '../components/record/relationships/types';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -138,6 +139,11 @@ export default function Record() {
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const [open, setOpen] = React.useState(false);
   const [pressedvalue, setpressedvalue] = useState(value);
+  const [relatedRecords, setRelatedRecords] = useState({
+    parentRecords: [],
+    childRecords: [],
+    linkRecords: [],
+  } as RelationshipsComponentProps);
 
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
@@ -221,6 +227,26 @@ export default function Record() {
     };
     getType();
   }, [project_id, record_id, updatedrevision_id]);
+
+  useEffect(() => {
+    // this is function to get child information
+    const getrelatedInfo = async () => {
+      if (uiSpec !== null && type !== null) {
+        const latest_record = await getFullRecordData(
+          project_id,
+          record_id,
+          updatedrevision_id
+        );
+        if (latest_record !== null) {
+          setRelatedRecords(
+            await getDetailRelatedInfommation(uiSpec, type, latest_record.data)
+          );
+        }
+        setValue('1');
+      }
+    };
+    getrelatedInfo();
+  }, [uiSpec, type]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
@@ -371,90 +397,8 @@ export default function Record() {
                             route: 'parent_route',
                           },
                         ]}
-                        childRecords={[
-                          {
-                            id: 1,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
-                            route: 'go to record 1!',
-                            type: 'Water',
-                            children: [
-                              {
-                                id: '12345',
-                                title: 'title',
-                                route: 'child_route',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title2',
-                                route: 'child_route2',
-                              },
-                            ],
-                          },
-                          {
-                            id: 2,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Water',
-                            children: [],
-                          },
-                          {
-                            id: 5,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Water',
-                            children: [
-                              {
-                                id: '12345',
-                                title: 'title',
-                                route: 'child_route',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title2',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title3',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title4',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title5',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title6',
-                                route: 'child_route2',
-                              },
-                            ],
-                          },
-                          {
-                            id: 6,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Water',
-                            children: [],
-                          },
-                          {
-                            id: 7,
-                            title: 'Soil',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Rock',
-                            children: [],
-                          },
-                        ]}
+                        childRecords={relatedRecords.childRecords}
+                        linkRecords={relatedRecords.linkRecords}
                       />
                       <Box style={{border: 'solid 1px red'}} mb={2}>
                         <RecordReadView
