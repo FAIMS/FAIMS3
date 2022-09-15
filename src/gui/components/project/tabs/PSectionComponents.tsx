@@ -38,13 +38,8 @@ type SectionComponentsProps = {
 };
 
 export default function SectionComponents(props: SectionComponentsProps) {
-  const {
-    designvalidate,
-    formcomponents,
-    formuiview,
-    initialValues,
-    ...others
-  } = props;
+  const {designvalidate, formcomponents, formuiview, initialValues, ...others} =
+    props;
   const submithandler = (values: any) => {};
   return (
     <Formik

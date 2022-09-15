@@ -23,7 +23,14 @@ import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {Button, Grid, Box, ButtonGroup, Typography} from '@mui/material';
+import {
+  Button,
+  Grid,
+  Box,
+  ButtonGroup,
+  Typography,
+  TextField,
+} from '@mui/material';
 
 import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
@@ -122,6 +129,7 @@ type RecordFormState = {
   draft_created: string | null;
   error_view: boolean;
   description: string | null;
+  ugc_comment: string | null;
 };
 
 class RecordForm extends React.Component<
@@ -180,6 +188,7 @@ class RecordForm extends React.Component<
       annotation: {},
       error_view: false,
       description: null,
+      ugc_comment: null,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -343,9 +352,7 @@ class RecordForm extends React.Component<
     await this.draftState.forceSave();
     this._isMounted = false;
     for (const timeout_id of this.timeouts) {
-      clearTimeout(
-        (timeout_id as unknown) as Parameters<typeof clearTimeout>[0]
-      );
+      clearTimeout(timeout_id as unknown as Parameters<typeof clearTimeout>[0]);
     }
     this.draftState.stop();
   }
@@ -369,10 +376,8 @@ class RecordForm extends React.Component<
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
-    const [
-      staged_data,
-      staged_annotations,
-    ] = await this.draftState.getInitialValues();
+    const [staged_data, staged_annotations] =
+      await this.draftState.getInitialValues();
     if (DEBUG_APP) {
       console.debug('Staged values', staged_data, staged_annotations);
     }
@@ -546,9 +551,10 @@ class RecordForm extends React.Component<
           activeStepIndex
         ]
       );
-      const viewname = this.props.ui_specification.viewsets[
-        this.state.type_cached
-      ].views[activeStepIndex];
+      const viewname =
+        this.props.ui_specification.viewsets[this.state.type_cached].views[
+          activeStepIndex
+        ];
       this.setState({
         view_cached: viewname,
         activeStep: activeStepIndex,
@@ -588,6 +594,7 @@ class RecordForm extends React.Component<
               ui_specification,
               viewsetName
             ),
+            ugc_comment: this.state.ugc_comment || '',
             relationship: relation,
           };
           if (DEBUG_APP) {
@@ -761,7 +768,6 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           {/* remove the tab for edit ---Jira 530 */}
-          Record_id{this.props.record_id}
           {/* add padding for form only */}
           <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
             <Formik
@@ -987,6 +993,16 @@ class RecordForm extends React.Component<
                 );
               }}
             </Formik>
+          </div>
+          <div>
+            <TextField
+              id="ugc-comment"
+              label="Report Content"
+              helperText="Report Content"
+              onChange={event => {
+                this.setState({ugc_comment: event.target.value});
+              }}
+            />
           </div>
         </React.Fragment>
       );

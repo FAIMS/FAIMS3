@@ -140,8 +140,8 @@ export function listenSyncingProjectAttachments(
 }
 
 export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
-  console.error(data_dbs);
-  console.error(active_db);
+  console.debug('current data_dbs', data_dbs);
+  console.debug('current active_db', active_db);
   return data_dbs[active_id]!.is_sync_attachments;
 }
 

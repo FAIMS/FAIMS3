@@ -40,13 +40,8 @@ type ProjectSubmitProps = {
 };
 
 export default function ProjectSubmitTab(props: ProjectSubmitProps) {
-  const {
-    projectvalue,
-    setProjectValue,
-    project_id,
-    formuiSpec,
-    ...others
-  } = props;
+  const {projectvalue, setProjectValue, project_id, formuiSpec, ...others} =
+    props;
   const [isSubmitting, setisSubmitting] = useState(false);
   const [state, seState] = useState(false);
   const [issubmit, setissubmit] = useState(projectvalue.ispublic ?? false);

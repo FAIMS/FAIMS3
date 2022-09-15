@@ -89,6 +89,7 @@ export interface Record {
   updated_by: string;
   field_types: {[field_name: string]: FAIMSTypeName};
   annotations: {[field_name: string]: Annotations};
+  ugc_comment?: string;
   /*
   created{_by} are optional as we don't need to track them with the actual data.
   If you need creation information, then use record metadata

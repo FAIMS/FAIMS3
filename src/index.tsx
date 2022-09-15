@@ -24,8 +24,11 @@ import {defineCustomElements} from '@ionic/pwa-elements/loader';
 import './index.css';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import {addNativeHooks} from './native_hooks';
 // import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
+
+addNativeHooks();
 
 ReactDOM.render(
   <React.StrictMode>

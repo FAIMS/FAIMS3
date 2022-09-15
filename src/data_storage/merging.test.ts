@@ -93,7 +93,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -141,7 +143,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -157,7 +161,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -173,7 +179,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -189,7 +197,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -237,7 +247,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -253,7 +265,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -269,7 +283,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -285,7 +301,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -342,7 +360,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -358,7 +378,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -374,7 +396,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -390,7 +414,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -437,7 +463,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -453,7 +481,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -469,7 +499,9 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -485,7 +517,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -535,7 +570,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -554,7 +592,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -573,7 +614,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -623,7 +667,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -642,7 +689,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -661,7 +711,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -680,7 +733,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -731,7 +787,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -751,7 +811,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -771,7 +835,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -791,7 +859,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -811,7 +883,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -983,7 +1059,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -1021,7 +1100,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -1073,7 +1155,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -1092,7 +1177,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
@@ -1111,7 +1199,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
-      annotations: {},
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
       field_types: {field_name: fulltype},
     };
 
