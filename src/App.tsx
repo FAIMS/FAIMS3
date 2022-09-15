@@ -174,7 +174,9 @@ export default function App() {
                   ROUTES.RECORD_CREATE +
                   ':type_name' +
                   ROUTES.RECORD_DRAFT + //
-                  ':draft_id'
+                  ':draft_id' +
+                  ROUTES.RECORD_RECORD +
+                  ':record_id'
                 }
                 component={RecordCreate}
                 token={token}

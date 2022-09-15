@@ -42,7 +42,7 @@ import {
   RevisionID,
   Annotations,
 } from '../../../datamodel/core';
-import {ProjectUIModel} from '../../../datamodel/ui';
+import {ProjectUIModel, Relationship} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../store';
@@ -60,6 +60,11 @@ import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
+import {
+  getparentlinkinfo,
+  getParentInfo,
+  getChildInfo,
+} from './RelatedInfomation';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -422,18 +427,13 @@ class RecordForm extends React.Component<
       ]);
     });
 
-    const child_state: any = this.props.location.state;
-    if (child_state !== undefined && child_state.record_id !== undefined) {
-      //save the sub_record id into initial value
-      const field_id = child_state.field_id.replace('?', '');
-      const sub_record_id = child_state.record_id;
-      const hrid = child_state.hrid ?? sub_record_id;
-      const new_record = {
-        project_id: this.props.project_id,
-        record_id: sub_record_id,
-        record_label: hrid,
-      };
+    // save child/link information into the parent/linked record when back to upper level
+    const {field_id, new_record, is_related} = getChildInfo(
+      this.props.location.state,
+      this.props.project_id
+    );
 
+    if (is_related && new_record !== null) {
       if (
         this.props.ui_specification['fields'][field_id]['component-parameters'][
           'multiple'
@@ -569,6 +569,9 @@ class RecordForm extends React.Component<
       ui_specification
     );
 
+    let relation: Relationship = {}; // this should update later TODO
+    relation = getParentInfo(this.props.location.state, relation);
+
     return (
       getCurrentUserId(this.props.project_id)
         .then(userid => {
@@ -585,6 +588,7 @@ class RecordForm extends React.Component<
               ui_specification,
               viewsetName
             ),
+            relationship: relation,
           };
           if (DEBUG_APP) {
             console.log(doc);
@@ -637,67 +641,21 @@ class RecordForm extends React.Component<
           });
         })
         .then(result => {
-          let redirecturl = this.props.project_id;
-          let search = '';
-          let state_pa = {};
-
           if (this.props.revision_id === undefined && is_final_view) {
             // check if last page and draft
-            const ori_search = window.location.search;
-            const url_split = ori_search.split('&');
-            const pathname = window.location.pathname;
-            redirecturl =
-              this.props.project_id +
-              ROUTES.RECORD_CREATE +
-              this.state.type_cached;
-
-            if (url_split.length > 1 && ori_search.includes('link=')) {
-              const fieldid = url_split[0];
-
-              search = ori_search.replace(
-                url_split[0] + '&' + url_split[1] + '&',
-                ''
-              );
-              if (url_split.length > 3 && url_split[0] === url_split[2])
-                search = ori_search.replace(
-                  url_split[2] + '&' + url_split[3],
-                  ''
-                );
-              const url_split_re = search.split('&');
-              if (
-                url_split_re.length > 1 &&
-                url_split_re[1].replace(
-                  'link=/projects/' + this.props.project_id,
-                  ''
-                ) ===
-                  pathname.replace(
-                    '/projects/' +
-                      pathname.replace('/projects/', '').split('/')[0],
-                    ''
-                  )
-              )
-                search = search.replace(
-                  url_split_re[0] + '&' + url_split_re[1],
-                  ''
-                );
-              state_pa = {
-                field_id: fieldid.replace('?field_id=', ''),
-                record_id: this.props.record_id,
-                hrid: result,
-                parent_link: search,
-              };
-              if (search !== '')
-                redirecturl = url_split[1].replace('link=/projects/', '');
-            }
             // scroll to top of page, seems to be needed on mobile devices
           }
-          if (search === '') {
+          const {state_parent, is_direct} = getparentlinkinfo(
+            result,
+            this.props.location.state,
+            this.props.record_id
+          );
+          if (is_direct === false) {
             this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button
           } else {
             this.props.history.push({
-              pathname: ROUTES.PROJECT + redirecturl,
-              search: search,
-              state: state_pa,
+              pathname: ROUTES.PROJECT + state_parent.parent_link,
+              state: state_parent,
             });
           }
           window.scrollTo(0, 0);
@@ -803,7 +761,7 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           {/* remove the tab for edit ---Jira 530 */}
-
+          Record_id{this.props.record_id}
           {/* add padding for form only */}
           <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
             <Formik

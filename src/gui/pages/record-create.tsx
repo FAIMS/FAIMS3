@@ -77,6 +77,7 @@ const useStyles = makeStyles(theme => ({
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
+  state?: any;
 }
 
 function DraftCreate(props: DraftCreateProps) {
@@ -121,15 +122,19 @@ function DraftCreate(props: DraftCreateProps) {
   } else {
     return (
       <Redirect
-        to={
-          ROUTES.PROJECT +
-          project_id +
-          ROUTES.RECORD_CREATE +
-          type_name +
-          ROUTES.RECORD_DRAFT +
-          draft_id +
-          useLocation().search
-        }
+        to={{
+          pathname:
+            ROUTES.PROJECT +
+            project_id +
+            ROUTES.RECORD_CREATE +
+            type_name +
+            ROUTES.RECORD_DRAFT +
+            draft_id +
+            ROUTES.RECORD_RECORD +
+            generateFAIMSDataID(),
+          // useLocation().search,// update for get record_id persistence for the draft
+          state: props.state,
+        }}
       />
     );
   }
@@ -241,13 +246,16 @@ type RecordCreateProps = {
 };
 
 export default function RecordCreate(props: RecordCreateProps) {
-  const {project_id, type_name, draft_id} = useParams<{
+  const {project_id, type_name, draft_id, record_id} = useParams<{
     project_id: ProjectID;
     type_name: string;
     draft_id?: string;
+    record_id?: string;
   }>();
 
   let project_info: ProjectInformation | null;
+  const location = useLocation();
+  console.log(location);
   try {
     project_info = useEventedPromise(
       getProjectInfo,
@@ -280,15 +288,19 @@ export default function RecordCreate(props: RecordCreateProps) {
     <React.Fragment>
       <Container maxWidth="lg" className={classes.NoPadding}>
         <Breadcrumbs data={breadcrumbs} token={props.token} />
-        {draft_id === undefined ? (
-          <DraftCreate project_id={project_id} type_name={type_name} />
+        {draft_id === undefined || record_id === undefined ? (
+          <DraftCreate
+            project_id={project_id}
+            type_name={type_name}
+            state={location.state}
+          />
         ) : (
           <DraftEdit
             project_info={project_info}
             project_id={project_id}
             type_name={type_name}
             draft_id={draft_id}
-            record_id={generateFAIMSDataID()}
+            record_id={record_id}
           />
         )}
       </Container>

@@ -27,7 +27,7 @@ import {Field, FieldProps} from 'formik';
 import {Autocomplete} from 'formik-mui';
 
 import * as ROUTES from '../../constants/routes';
-import {FAIMSTypeName} from '../../datamodel/core';
+import {FAIMSTypeName, LocationState} from '../../datamodel/core';
 import {RecordReference} from '../../datamodel/ui';
 import {getRecordsByType} from '../../data_storage';
 import {
@@ -89,6 +89,24 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
   if (!isactive) return <></>;
+  //to reset the method to pass state value between the link and record
+  //to pass information in state to child/link record
+  const newState: LocationState = {
+    parent_record_id: props.form.values._id, //current form record id
+    field_id: props.id,
+    type: props.relation_type.replace('faims-core::', ''), //type of this relation
+    parent_link: location.pathname.replace('/projects/', ''), // current form link
+    parent: {},
+  };
+  const location_state: any = location.state;
+  if (location_state !== undefined) {
+    if (location_state.parent_record_id !== props.form.values._id)
+      newState['parent'] = location.state;
+    else if (location_state.parent !== undefined) {
+      //when the record is the parent record, the record should be the one returned from child, so should get the parent infonmation
+      newState['parent'] = location_state.parent;
+    }
+  }
   return (
     <div>
       <Field
@@ -131,7 +149,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               project_id +
               ROUTES.RECORD_CREATE +
               props.related_type,
-            state: location.state,
+            state: newState,
             search:
               '?field_id=' + props.id + '&link=' + location.pathname + search,
           }}

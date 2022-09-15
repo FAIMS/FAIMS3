@@ -19,6 +19,7 @@
  *   Do not use with sync code; UI code only.
  */
 
+import {string} from 'yup/lib/locale';
 import {
   ProjectID,
   RecordID,
@@ -74,6 +75,10 @@ export type RecordMetadataList = {
 };
 
 // This is used within the form/ui subsystem, do not use with pouch
+export interface Relationship {
+  parent?: RecordID; // has single parent
+  linked?: RecordID[]; // has multiple link
+}
 export interface Record {
   project_id?: ProjectID;
   record_id: RecordID;
@@ -90,6 +95,8 @@ export interface Record {
   */
   created?: Date;
   created_by?: string;
+  /**add for relationship*/
+  relationship?: Relationship; // added for save relation to child/linked record
 }
 
 export interface FieldMergeInformation {
