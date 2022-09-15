@@ -32,7 +32,7 @@ const SlimFooter = (props: SlimFooterProps) => {
             color={theme.palette.grey[900]}
             component="span"
           >
-            &copy; FAIMS {new Date().getFullYear()}&nbsp;
+            {/*&copy; FAIMS {new Date().getFullYear()}&nbsp;*/}
           </Typography>
 
           <Stack

@@ -43,7 +43,7 @@ export default function FullFooter(props: FullFooterProps) {
               }}
             />
             <Typography variant="caption" display="block" gutterBottom>
-              Copyright © FAIMS {new Date().getFullYear()}
+              {/*Copyright © FAIMS {new Date().getFullYear()}*/}
             </Typography>
           </Box>
         </Grid>

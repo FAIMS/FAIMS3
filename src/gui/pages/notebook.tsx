@@ -19,7 +19,7 @@
  */
 import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
-import {Box} from '@mui/material';
+import {Box, Grid, Typography} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
@@ -30,6 +30,8 @@ import {CircularProgress} from '@mui/material';
 import {ProjectInformation} from '../../datamodel/ui';
 
 import NotebookComponent from '../components/notebook';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 export default function Notebook() {
   /**
@@ -59,10 +61,27 @@ export default function Notebook() {
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {title: project_info !== null ? project_info.name : ''},
   ];
-
+  const theme = useTheme();
+  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   return project_info ? (
     <Box>
-      <Breadcrumbs data={breadcrumbs} />
+      <Grid
+        container
+        direction="row"
+        justifyContent="flex-start"
+        alignItems="center"
+        spacing={2}
+      >
+        <Grid item xs={'auto'}>
+          <Typography variant={mq_above_md ? 'h3' : 'h4'}>
+            {project_info.name}
+          </Typography>
+        </Grid>
+        <Grid item xs>
+          <Breadcrumbs data={breadcrumbs} />
+        </Grid>
+      </Grid>
+
       <NotebookComponent project={project_info} />
     </Box>
   ) : (

@@ -79,6 +79,23 @@ function RecordsTable(props: RecordsTableProps) {
   const columns: GridColDef[] = not_xs
     ? [
         {
+          field: 'type',
+          headerName: 'Kind',
+          type: 'string',
+          width: 200,
+          renderCell: (params: GridCellParams) => (
+            <>
+              {props.viewsets !== null &&
+              props.viewsets !== undefined &&
+              params.value !== null &&
+              params.value !== undefined &&
+              props.viewsets[params.value.toString()] !== undefined
+                ? props.viewsets[params.value.toString()].label ?? params.value
+                : params.value}
+            </>
+          ),
+        },
+        {
           field: 'hrid',
           headerName: 'HRID/UUID',
           description: 'Human Readable Record ID',
@@ -97,35 +114,10 @@ function RecordsTable(props: RecordsTableProps) {
             </Link>
           ),
         },
-        // {field: 'hrid', headerName: 'HRID/UUID', type: 'string', width: 200},
-        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-        {
-          field: 'created_by',
-          headerName: 'Created by',
-          type: 'string',
-          width: 200,
-        },
-        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
-        {
-          field: 'type',
-          headerName: 'Kind',
-          type: 'string',
-          width: 200,
-          renderCell: (params: GridCellParams) => (
-            <>
-              {props.viewsets !== null &&
-              props.viewsets !== undefined &&
-              params.value !== null &&
-              params.value !== undefined &&
-              props.viewsets[params.value.toString()] !== undefined
-                ? props.viewsets[params.value.toString()].label ?? params.value
-                : params.value}
-            </>
-          ),
-        },
+        {field: 'updated', headerName: 'Last Updated', type: 'dateTime', width: 200},
         {
           field: 'updated_by',
-          headerName: 'Last updated by',
+          headerName: 'Last Updated By',
           type: 'string',
           width: 200,
         },
@@ -135,6 +127,14 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'boolean',
           width: 200,
         },
+        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+        {
+          field: 'created_by',
+          headerName: 'Created By',
+          type: 'string',
+          width: 200,
+        },
+
         {
           field: 'record_id',
           headerName: 'UUID',
