@@ -166,11 +166,19 @@ function RecordsTable(props: RecordsTableProps) {
       ]
     : [
         {
+          field: 'type',
+          headerName: 'Kind',
+          type: 'string',
+          filterable: true,
+          hide: true,
+        },
+        {
           field: 'hrid',
-          headerName: 'Record',
+          headerName: 'HRID/UUID',
           description: 'Human Readable Record ID',
           type: 'string',
           flex: 1,
+          filterable: true,
           renderCell: (params: GridCellParams) => {
             return (
               <Box sx={{width: '100%'}}>
@@ -241,6 +249,49 @@ function RecordsTable(props: RecordsTableProps) {
               </Box>
             );
           },
+        },
+        {
+          field: 'updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'updated_by',
+          headerName: 'Last Updated By',
+          type: 'string',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'conflicts',
+          headerName: 'Conflicts',
+          type: 'boolean',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'created',
+          headerName: 'Created',
+          type: 'dateTime',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'created_by',
+          headerName: 'Created By',
+          type: 'string',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'record_id',
+          headerName: 'UUID',
+          description: 'UUID Record ID',
+          type: 'string',
+          filterable: true,
+          hide: true,
         },
       ];
 
