@@ -96,7 +96,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     parent_record_id: props.form.values._id, //current form record id
     field_id: props.id,
     type: props.relation_type.replace('faims-core::', ''), //type of this relation
-    parent_link: location.pathname.replace('/projects/', ''), // current form link
+    parent_link: location.pathname.replace('/notebooks/', ''), // current form link
     parent: {},
   };
   const disbaled = props.disabled ?? false;
