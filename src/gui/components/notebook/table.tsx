@@ -22,7 +22,8 @@ import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 
 import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
-import {Typography, Box, Paper} from '@mui/material';
+import {Typography, Box, Paper, Alert} from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -68,13 +69,6 @@ function RecordsTable(props: RecordsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  // const newrows:any=[];
-  // rows.map((r:any,index:number)=>
-  //   props.viewsets !== null &&
-  //   props.viewsets !== undefined &&
-  //   r.type !== null &&
-  //   r.type !== undefined &&
-  //   props.viewsets[r.type] !== undefined? newrows[index]={...r,type_label:props.viewsets[r.type].label?? r.type }:newrows[index]={...r})
 
   const columns: GridColDef[] = not_xs
     ? [
@@ -114,7 +108,12 @@ function RecordsTable(props: RecordsTableProps) {
             </Link>
           ),
         },
-        {field: 'updated', headerName: 'Last Updated', type: 'dateTime', width: 200},
+        {
+          field: 'updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          width: 200,
+        },
         {
           field: 'updated_by',
           headerName: 'Last Updated By',
@@ -125,7 +124,16 @@ function RecordsTable(props: RecordsTableProps) {
           field: 'conflicts',
           headerName: 'Conflicts',
           type: 'boolean',
-          width: 200,
+          width: 120,
+          renderCell: (params: GridCellParams) => (
+            <div>
+              {params.row.conflicts ? (
+                <WarningAmberIcon color={'warning'} />
+              ) : (
+                ''
+              )}
+            </div>
+          ),
         },
         {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
         {
@@ -162,83 +170,78 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: 'Record',
           description: 'Human Readable Record ID',
           type: 'string',
-          width: 300,
-          renderCell: (params: GridCellParams) => (
-            <div>
-              <Typography>
-                {' '}
-                <Link
-                  component={RouterLink}
-                  to={ROUTES.getRecordRoute(
-                    project_id || 'dummy',
-                    (params.row.record_id || '').toString(),
-                    (params.row.revision_id || '').toString()
-                  )}
-                >
-                  {params.value}
-                </Link>
-              </Typography>
-              <Typography color="textSecondary">
-                {' '}
-                Kind:{' '}
-                {props.viewsets !== null &&
-                props.viewsets !== undefined &&
-                params.row.type !== null &&
-                params.row.type !== undefined &&
-                props.viewsets[(params.row.type || '').toString()] !== undefined
-                  ? props.viewsets[(params.row.type || '').toString()].label ??
-                    params.row.type
-                  : params.row.type}
-              </Typography>
-              <Typography
-                color="textSecondary"
-                variant="subtitle2"
-                gutterBottom
-                component="div"
-              >
-                Created at{' '}
-                {params.row.created !== undefined &&
-                  params.row.created !== '' &&
-                  JSON.stringify(params.row.created)
-                    .replaceAll('"', '')
-                    .replaceAll('T', ' ')
-                    .slice(0, 19)}
-              </Typography>
-              <Typography
-                color="textSecondary"
-                variant="subtitle2"
-                gutterBottom
-                component="div"
-              >
-                Created By {params.row.created_by}
-              </Typography>
-              <Typography
-                color="textSecondary"
-                variant="subtitle2"
-                gutterBottom
-                component="div"
-              >
-                Updated By {params.row.updated_by}
-              </Typography>
-
-              {params.row.conflicts === true && (
-                <Typography
-                  color="error"
-                  variant="subtitle2"
-                  gutterBottom
-                  component="div"
-                >
-                  Conflict
+          flex: 1,
+          renderCell: (params: GridCellParams) => {
+            return (
+              <Box sx={{width: '100%'}}>
+                <Typography>
+                  {' '}
+                  <Link
+                    component={RouterLink}
+                    to={ROUTES.getRecordRoute(
+                      project_id || 'dummy',
+                      (params.row.record_id || '').toString(),
+                      (params.row.revision_id || '').toString()
+                    )}
+                  >
+                    {params.value}
+                  </Link>
                 </Typography>
-              )}
+                <Typography color="textSecondary">
+                  {' '}
+                  Kind:{' '}
+                  {props.viewsets !== null &&
+                  props.viewsets !== undefined &&
+                  params.row.type !== null &&
+                  params.row.type !== undefined &&
+                  props.viewsets[(params.row.type || '').toString()] !==
+                    undefined
+                    ? props.viewsets[(params.row.type || '').toString()]
+                        .label ?? params.row.type
+                    : params.row.type}
+                </Typography>
+                {/*  If updated isn't present, then show created meta */}
+                {params.row.updated === undefined ? (
+                  <Typography
+                    color="textSecondary"
+                    variant="subtitle2"
+                    gutterBottom
+                    component="div"
+                  >
+                    Created{' '}
+                    {params.row.created !== undefined &&
+                      params.row.created !== '' &&
+                      JSON.stringify(params.row.created)
+                        .replaceAll('"', '')
+                        .replaceAll('T', ' ')
+                        .slice(0, 19)}{' '}
+                    by {params.row.created_by}
+                  </Typography>
+                ) : (
+                  <Typography
+                    color="textSecondary"
+                    variant="subtitle2"
+                    gutterBottom
+                    component="div"
+                  >
+                    Updated{' '}
+                    {params.row.updated !== undefined &&
+                      params.row.updated !== '' &&
+                      JSON.stringify(params.row.updated)
+                        .replaceAll('"', '')
+                        .replaceAll('T', ' ')
+                        .slice(0, 19)}{' '}
+                    by {params.row.updated_by}
+                  </Typography>
+                )}
 
-              {/* <Typography>
-                <br />{' '}
-              </Typography> */}
-            </div>
-          ),
+                {params.row.conflicts === true && (
+                  <Alert severity={'warning'}>Record has conflicts</Alert>
+                )}
+              </Box>
+            );
+          },
         },
-        // {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200}, // Only one column for mobile
       ];
 
   return (
@@ -251,7 +254,10 @@ function RecordsTable(props: RecordsTableProps) {
         autoHeight
         rowHeight={not_xs ? 52 : 130}
         rowsPerPageOptions={[10, 25, 50, 100]}
-        density={not_xs ? 'standard' : 'comfortable'}
+        density={'standard'}
+        getRowClassName={params => {
+          return `${params.row.conflicts ? 'bg-warning' : ''}`;
+        }}
         components={{
           Toolbar: NotebookDataGridToolbar,
         }}
@@ -316,50 +322,6 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   );
 }
 RecordsBrowseTable.defaultProps = {
-  maxRows: null,
-  filter_deleted: true,
-};
-
-export function RecordsSearchTable(props: RecordsSearchTableProps) {
-  const {project_id, maxRows, query, filter_deleted} = props;
-
-  const rows = useEventedPromise(
-    async (project_id: ProjectID, query: string) => {
-      if (DEBUG_APP) {
-        console.log('RecordsSearchTable updating', project_id);
-      }
-      const metadata = await getRecordsWithRegex(
-        project_id,
-        query,
-        filter_deleted
-      );
-      return metadata;
-    },
-    constantArgsSplit(
-      listenDataDB,
-      [project_id, {since: 'now', live: true}],
-      [project_id, query]
-    ),
-    false,
-    [project_id, query],
-    project_id,
-    query
-  );
-
-  if (DEBUG_APP) {
-    console.debug('New records:', rows);
-  }
-  return (
-    <RecordsTable
-      project_id={project_id}
-      maxRows={maxRows}
-      rows={rows.value ?? []}
-      loading={rows.loading !== undefined}
-      viewsets={props.viewsets}
-    />
-  );
-}
-RecordsSearchTable.defaultProps = {
   maxRows: null,
   filter_deleted: true,
 };

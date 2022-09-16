@@ -3,7 +3,6 @@ import {Badge, CircularProgress} from '@mui/material';
 import {listenDrafts} from '../../../drafts';
 import _ from 'lodash';
 import {ProjectID} from '../../../datamodel/core';
-import {DraftMetadata} from '../../../datamodel/drafts';
 
 export default function DraftTabBadge(props: {project_id: ProjectID}) {
   const {project_id} = props;
@@ -30,7 +29,7 @@ export default function DraftTabBadge(props: {project_id: ProjectID}) {
 
   return (
     <Badge
-      badgeContent={isLoading ? <CircularProgress size={20} /> : draftCount}
+      badgeContent={isLoading ? <CircularProgress size={10} sx={{color:'white'}} thickness={6}/> : draftCount}
       color="primary"
     >
       <span style={{paddingRight: '10px'}}>Drafts{'  '}</span>
