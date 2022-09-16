@@ -159,6 +159,26 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.bool']],
       initialValue: false,
     },
+    //to display value in parent or not
+    displayParent: {
+      'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+      'component-name': 'Checkbox',
+      'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+      'component-parameters': {
+        name: 'displayParent',
+        id: 'displayParent',
+        required: false,
+        type: 'checkbox',
+        FormControlLabelProps: {
+          label: 'Select if value display in Parent Record',
+        },
+        FormHelperTextProps: {
+          children: '',
+        },
+      },
+      validationSchema: [['yup.bool']],
+      initialValue: false,
+    },
     field_type: {
       'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
       'component-name': 'Select',
@@ -281,7 +301,7 @@ const uiSettingOthers: ProjectUIModel = {
       label: 'access',
     },
     FormParamater: {
-      fields: ['required', 'persistent'],
+      fields: ['required', 'persistent', 'displayParent'],
       uidesign: 'form',
       label: 'FormParamater',
     },
@@ -401,7 +421,7 @@ const getvalue = (
   const name = field.replace(fieldName, '');
   if (view === 'FormParamater') {
     //this is for persistent, it's for developing/testing only, not ready for production yet
-    if (name === 'persistent') return fieldui[name];
+    if (name === 'persistent' || name === 'displayParent') return fieldui[name];
     return fieldui['component-parameters'][name];
   }
   if (name === 'options' && view === 'ElementProps') {
@@ -1003,7 +1023,7 @@ export function ResetComponentProperties(props: resetprops) {
         //not update value here
         // newvalues['fields'][fieldName]['component-parameters'][name] =
         // event.target.checked;
-      } else if (name === 'persistent') {
+      } else if (name === 'persistent' || name === 'displayParent') {
         //set persistent value
         newvalues['fields'][fieldName][name] = event.target.checked;
       } else {

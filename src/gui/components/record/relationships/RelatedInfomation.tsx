@@ -25,7 +25,7 @@ import {now} from 'lodash';
 import {listFAIMSRecordRevisions} from '../../../../data_storage';
 import * as ROUTES from '../../../../constants/routes';
 import {RelationshipsComponentProps, RecordProps} from './types';
-
+import {getUiSpecForProject} from '../../../../uiSpecification';
 export function getparentlinkinfo(
   hrid: string,
   RelationState: any,
@@ -119,20 +119,19 @@ export function getChildInfo(child_state: any, project_id: string) {
   return {field_id, new_record, is_related};
 }
 
-async function getChildInformation(
-  childrecord: SubRelatedRecord,
-) {
+async function getChildInformation(childrecord: SubRelatedRecord) {
   const revisions = await listFAIMSRecordRevisions(
     childrecord.project_id,
     childrecord.record_id
   );
-  const revision_id = revisions[0]; // this need to be updated
+  const index = revisions.length > 0 ? revisions.length - 1 : 0;
+  const revision_id = revisions[index]; // this need to be updated
   const latest_record = await getFullRecordData(
     childrecord.project_id,
     childrecord.record_id,
     revision_id
   );
-  return {latest_record,revision_id};
+  return {latest_record, revision_id};
 }
 
 type fieldSet = {
@@ -165,53 +164,104 @@ function get_related_fields(
   ui_specification: ProjectUIModel,
   form_type: string,
   values: {[field_name: string]: any}
-){
+) {
   const fields_child: fieldSet[] = [];
   const fields_linked: fieldSet[] = [];
-  try{
+  try {
     ui_specification['viewsets'][form_type]['views'].map((view: string) =>
-    ui_specification['views'][view]['fields'].map((field: string) => {
-      if (ui_specification['fields'][field]['component-name'] ==='RelatedRecordSelector') {
-        //value should be Child or Linked
-        const relation_type = ui_specification['fields'][field]['component-parameters']['relation_type'].replace('faims-core::', '');
-        if (relation_type === 'Child') {
-          get_related_field(ui_specification, field, values, fields_child);
-        } else {
-          get_related_field(ui_specification, field, values, fields_linked);
+      ui_specification['views'][view]['fields'].map((field: string) => {
+        if (
+          ui_specification['fields'][field]['component-name'] ===
+          'RelatedRecordSelector'
+        ) {
+          //value should be Child or Linked
+          const relation_type = ui_specification['fields'][field][
+            'component-parameters'
+          ]['relation_type'].replace('faims-core::', '');
+          if (relation_type === 'Child') {
+            get_related_field(ui_specification, field, values, fields_child);
+          } else {
+            get_related_field(ui_specification, field, values, fields_linked);
+          }
         }
-      }
-    })
-  );
-  }catch (err) {
+      })
+    );
+  } catch (err) {
     console.error(err);
   }
-  return {fields_child,fields_linked}
+  return {fields_child, fields_linked};
 }
 
-async function addRelatedField(
+// this is the function to get list of fields
+function get_dispalyed_fields(
+  ui_specification: ProjectUIModel,
+  form_type: string
+) {
+  const fields: string[] = [];
+  try {
+    ui_specification['viewsets'][form_type]['views'].map((view: string) =>
+      ui_specification['views'][view]['fields'].map((field: string) => {
+        if (ui_specification['fields'][field]['displayParent']) {
+          fields.push(field);
+        }
+      })
+    );
+  } catch (err) {
+    console.error(err);
+  }
+  return fields;
+}
+export async function get_RelatedFields_for_field(
+  project_id: string,
+  field: string,
+  values: {[field_name: string]: any}
+) {
+  const ui_specification = await getUiSpecForProject(project_id);
+  let fields: fieldSet[] = [];
+  fields = get_related_field(ui_specification, field, values, fields);
+  const type =
+    ui_specification['fields'][field]['component-parameters']['related_type'];
+  const dispalyFields = get_dispalyed_fields(ui_specification, type);
+  const records = await addRelatedFields(
+    ui_specification,
+    fields,
+    [],
+    true,
+    dispalyFields
+  );
+  return records;
+}
+async function addRelatedFields(
   ui_specification: ProjectUIModel,
   fields: fieldSet[],
-  newfields: Array<RecordProps>
+  newfields: Array<any>,
+  is_dispaly = false,
+  dispalyFields: string[] = []
 ) {
   for (const index in fields) {
     const field = fields[index]['field'];
-    const {latest_record,revision_id} = await getChildInformation(
-      fields[index]['value'],
+    const {latest_record, revision_id} = await getChildInformation(
+      fields[index]['value']
     );
-    const type=ui_specification['fields'][field]['component-parameters']['related_type']
+    const type =
+      ui_specification['fields'][field]['component-parameters']['related_type'];
 
-    let children:Array<RecordProps> = []
-    if(latest_record!==null){
+    let children: Array<RecordProps> = [];
+    if (latest_record !== null) {
       //get children
-      const {fields_child,fields_linked} = get_related_fields(ui_specification,type,latest_record?.data)
-      children = await addRelatedField(
+      const {fields_child, fields_linked} = get_related_fields(
+        ui_specification,
+        type,
+        latest_record?.data
+      );
+      children = await addRelatedFields(
         ui_specification,
         fields_child,
         children
-      )
+      );
     }
-    
-    const child = {
+
+    const child: {[field_name: string]: any} = {
       id: parseInt(index) + 1,
       title: fields[index]['value'].record_label,
       lastUpdatedBy: latest_record?.updated_by ?? '',
@@ -223,6 +273,13 @@ async function addRelatedField(
       type: type,
       children: children,
     };
+    if (is_dispaly && latest_record !== null) {
+      //add information to child
+      dispalyFields.map(
+        (fieldName: string) =>
+          (child[fieldName] = latest_record.data[fieldName])
+      );
+    }
     newfields.push(child);
   }
   return newfields;
@@ -238,19 +295,22 @@ export async function getDetailRelatedInfommation(
     childRecords: [],
     linkRecords: [],
   };
-  
 
   // get fields that are related field
-  const {fields_child,fields_linked} = get_related_fields(ui_specification,form_type,values)
+  const {fields_child, fields_linked} = get_related_fields(
+    ui_specification,
+    form_type,
+    values
+  );
 
   if (childrecords['childRecords'] !== null && fields_child.length > 0)
-    childrecords['childRecords'] = await addRelatedField(
+    childrecords['childRecords'] = await addRelatedFields(
       ui_specification,
       fields_child,
       childrecords['childRecords']
     );
   if (childrecords['linkRecords'] !== null && fields_linked.length > 0)
-    childrecords['linkRecords'] = await addRelatedField(
+    childrecords['linkRecords'] = await addRelatedFields(
       ui_specification,
       fields_linked,
       childrecords['linkRecords']

@@ -43,7 +43,14 @@ import {
 } from '../../datamodel/ui';
 import {useLocation, Link} from 'react-router-dom';
 import {Typography} from '@mui/material';
-
+import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInfomation';
+import {
+  DataGrid,
+  GridColDef,
+  GridToolbarContainer,
+  GridToolbarFilterButton,
+  GridPagination,
+} from '@mui/x-data-grid';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -67,9 +74,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     ? location.search.replace('?', '')
     : '';
   const [isactive, setIsactive] = React.useState(false);
+  const [recordsInformation, setRecordsInformation] = React.useState<
+    Array<{[field_name: string]: any}>
+  >([]);
 
   const url_split = search.split('&');
-
+  const [columns, Setcolumns] = React.useState<GridColDef[]>([]);
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -81,8 +91,27 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (project_id !== undefined) {
       (async () => {
         const records = await getRecordsByType(project_id, props.related_type);
+        const records_info = await get_RelatedFields_for_field(
+          project_id,
+          props.id,
+          props.form.values
+        );
         setOptions(records);
+        setRecordsInformation(records_info);
         setIsactive(true);
+        const newColumns: GridColDef[] = [];
+        if (records_info.length > 0) {
+          Object.keys(records_info[0]).map((key: string) =>
+            ['id', 'children', 'route', 'type'].includes(key)
+              ? key
+              : newColumns.push({
+                  field: key,
+                  flex: 0.2,
+                  minWidth: 100,
+                })
+          );
+        }
+        Setcolumns(newColumns);
       })();
     }
   }, []);
@@ -163,6 +192,30 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         )}
       {disbaled === false && ( //update for eid or view
         <Typography variant="caption">{props.helperText}</Typography>
+      )}
+      <br />
+      {recordsInformation.length > 0 && (
+        <DataGrid
+          autoHeight
+          hideFooterSelectedRowCount
+          initialState={{
+            columns: {
+              columnVisibilityModel: {
+                // Hide column route, the other columns will remain visible
+                route: false,
+              },
+            },
+          }}
+          getRowHeight={() => 'auto'}
+          density={'compact'}
+          rows={recordsInformation}
+          columns={columns}
+          pageSize={5}
+          rowsPerPageOptions={[5]}
+          disableSelectionOnClick
+          // sx={{cursor: 'pointer'}}
+          sx={{borderRadius: '0'}}
+        />
       )}
     </div>
   );

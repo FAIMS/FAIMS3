@@ -153,6 +153,7 @@ export default function App() {
                 This is to keep it stable until the user navigates away. So the
                 draft_id is optional, and when RecordCreate is instantiated
                 without one, it immediately mints a UUID and redirects to it */}
+
                 <PrivateRoute
                   exact
                   path={
