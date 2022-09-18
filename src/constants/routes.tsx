@@ -71,7 +71,8 @@ export function getDraftRoute(
   project_id: ProjectID,
   draft_id: string,
   existing: null | {record_id: RecordID; revision_id: RevisionID},
-  type_name: string
+  type_name: string,
+  record_id: string
 ) {
   if (existing !== null)
     return (
@@ -92,7 +93,9 @@ export function getDraftRoute(
       RECORD_CREATE +
       type_name +
       RECORD_DRAFT +
-      draft_id
+      draft_id +
+      RECORD_RECORD +
+      record_id
     );
   }
 }

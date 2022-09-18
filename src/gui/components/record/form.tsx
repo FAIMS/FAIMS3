@@ -47,8 +47,9 @@ import {
   RecordID,
   RevisionID,
   Annotations,
+  Relationship,
 } from '../../../datamodel/core';
-import {ProjectUIModel, Relationship} from '../../../datamodel/ui';
+import {ProjectUIModel} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {store} from '../../../context/store';
@@ -759,6 +760,7 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           {/* remove the tab for edit ---Jira 530 */}
+          {this.props.record_id}
           {/* add padding for form only */}
           <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
             <Formik

@@ -29,6 +29,7 @@ import {
   ProjectID,
   FAIMSTypeName,
   Annotations,
+  Relationship,
 } from './core';
 import {
   FAIMSConstantCollection,
@@ -212,6 +213,7 @@ export interface Revision {
   type: FAIMSTypeName;
   deleted?: boolean;
   ugc_comment?: string;
+  relationship?: Relationship; // added for save relation to child/linked record
 }
 
 export interface AttributeValuePair {

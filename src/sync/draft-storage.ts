@@ -92,7 +92,8 @@ export async function newStagedData(
     revision_id: RevisionID;
   },
   type: string,
-  field_types: {[field_name: string]: FAIMSTypeName}
+  field_types: {[field_name: string]: FAIMSTypeName},
+  record_id: string
 ): Promise<PouchDB.Core.DocumentId> {
   const _id = 'drf-' + uuidv4();
   const date = new Date();
@@ -109,6 +110,7 @@ export async function newStagedData(
       existing: existing,
       type: type,
       field_types: field_types,
+      record_id: record_id,
     })
   ).id;
 }
@@ -266,6 +268,7 @@ export async function listDraftMetadata(
         updated: new Date(record.updated),
         type: record.type,
         hrid: getDraftHRID(record) ?? record._id,
+        record_id: record.record_id,
       };
     });
     return out;

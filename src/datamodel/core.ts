@@ -131,3 +131,8 @@ export type LocationState = {
   record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
   hrid?: string; // child/linked record HIRD, this is the value dispalyed in field, set in child/linked record, should be pass back to parent
 };
+
+export interface Relationship {
+  parent?: RecordID; // has single parent
+  linked?: RecordID[]; // has multiple link
+}

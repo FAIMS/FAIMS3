@@ -73,6 +73,7 @@ function DraftCreate(props: DraftCreateProps) {
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+  const record_id = generateFAIMSDataID();
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -81,7 +82,7 @@ function DraftCreate(props: DraftCreateProps) {
   useEffect(() => {
     if (uiSpec !== null) {
       const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
-      newStagedData(project_id, null, type_name, field_types).then(
+      newStagedData(project_id, null, type_name, field_types, record_id).then(
         setDraft_id,
         setError
       );
@@ -115,7 +116,7 @@ function DraftCreate(props: DraftCreateProps) {
             ROUTES.RECORD_DRAFT +
             draft_id +
             ROUTES.RECORD_RECORD +
-            generateFAIMSDataID(), // update for get record_id persistence for the draft
+            record_id, // update for get record_id persistence for the draft
           state: props.state,
         }}
       />

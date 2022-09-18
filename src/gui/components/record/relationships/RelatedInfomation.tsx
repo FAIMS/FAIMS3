@@ -17,8 +17,7 @@
  * Description:
  *   This is the file is to set the values for persistent state
  */
-import {LocationState} from '../../../../datamodel/core';
-import {Relationship} from '../../../../datamodel/ui';
+import {LocationState, Relationship} from '../../../../datamodel/core';
 import {getFullRecordData} from '../../../../data_storage';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {now} from 'lodash';

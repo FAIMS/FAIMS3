@@ -38,6 +38,7 @@ export interface EncodedDraft {
   updated: string;
   type: string;
   field_types: {[field_name: string]: FAIMSTypeName};
+  record_id: RecordID;
 }
 
 //to get the metadata for the draft, for draft_table
@@ -53,6 +54,7 @@ export interface DraftMetadata {
   updated: Date;
   type: string;
   hrid: string | null;
+  record_id: string;
 }
 
 export type DraftMetadataList = {

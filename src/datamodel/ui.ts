@@ -28,6 +28,7 @@ import {
   ListingID,
   FAIMSTypeName,
   Annotations,
+  Relationship,
 } from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
@@ -75,10 +76,6 @@ export type RecordMetadataList = {
 };
 
 // This is used within the form/ui subsystem, do not use with pouch
-export interface Relationship {
-  parent?: RecordID; // has single parent
-  linked?: RecordID[]; // has multiple link
-}
 export interface Record {
   project_id?: ProjectID;
   record_id: RecordID;

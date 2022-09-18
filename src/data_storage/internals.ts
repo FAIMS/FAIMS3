@@ -384,6 +384,7 @@ export async function addNewRevisionFromForm(
     created_by: record.updated_by,
     type: record.type,
     ugc_comment: record.ugc_comment,
+    relationship: record.relationship,
   };
   await datadb.put(new_revision);
 }

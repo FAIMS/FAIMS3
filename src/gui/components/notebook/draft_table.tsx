@@ -75,7 +75,8 @@ function DraftRecord(props: DraftsRecordProps) {
                 project_id ?? 'dummy',
                 params.row._id as DraftMetadata['_id'],
                 params.row.existing! as DraftMetadata['existing'],
-                params.row.type! as DraftMetadata['type']
+                params.row.type! as DraftMetadata['type'],
+                params.row.record_id as DraftMetadata['record_id']
               )}
             >
               {params.value}
@@ -114,7 +115,8 @@ function DraftRecord(props: DraftsRecordProps) {
                 project_id ?? 'dummy',
                 params.row._id as DraftMetadata['_id'],
                 params.row.existing! as DraftMetadata['existing'],
-                params.row.type! as DraftMetadata['type']
+                params.row.type! as DraftMetadata['type'],
+                params.row.record_id as DraftMetadata['record_id']
               )}
             >
               {params.value}
@@ -142,7 +144,8 @@ function DraftRecord(props: DraftsRecordProps) {
                     project_id ?? 'dummy',
                     params.row._id as DraftMetadata['_id'],
                     params.row.existing! as DraftMetadata['existing'],
-                    params.row.type! as DraftMetadata['type']
+                    params.row.type! as DraftMetadata['type'],
+                    params.row.record_id as DraftMetadata['record_id']
                   )}
                 >
                   {params.value}

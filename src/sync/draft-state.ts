@@ -349,7 +349,8 @@ class RecordDraftState {
               record_id: this.props.record_id!,
             },
             this.data.type,
-            this.data.field_types
+            this.data.field_types,
+            this.props.record_id
           ),
         };
         this.data.draft_id
