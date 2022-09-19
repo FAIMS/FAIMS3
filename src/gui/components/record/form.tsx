@@ -130,6 +130,7 @@ type RecordFormState = {
   draft_created: string | null;
   description: string | null;
   ugc_comment: string | null;
+  realatioship: Relationship | null;
 };
 
 class RecordForm extends React.Component<
@@ -184,6 +185,7 @@ class RecordForm extends React.Component<
       annotation: {},
       description: null,
       ugc_comment: null,
+      realatioship: null,
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -365,7 +367,6 @@ class RecordForm extends React.Component<
             this.props.record_id,
             this.props.revision_id
           )) || {};
-
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
@@ -452,7 +453,11 @@ class RecordForm extends React.Component<
       }
     }
 
-    this.setState({initialValues: initialValues, annotation: annotations});
+    this.setState({
+      initialValues: initialValues,
+      annotation: annotations,
+      realatioship: fromdb.relationship,
+    });
   }
 
   /**
@@ -568,7 +573,7 @@ class RecordForm extends React.Component<
       ui_specification
     );
 
-    let relation: Relationship = {}; // this should update later TODO
+    let relation: Relationship = this.state.realatioship ?? {}; // this should update later TODO
     relation = getParentInfo(this.props.location.state, relation);
 
     return (

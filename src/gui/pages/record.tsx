@@ -237,9 +237,16 @@ export default function Record() {
           record_id,
           updatedrevision_id
         );
+        console.error(latest_record);
         if (latest_record !== null) {
           setRelatedRecords(
-            await getDetailRelatedInfommation(uiSpec, type, latest_record.data)
+            await getDetailRelatedInfommation(
+              uiSpec,
+              type,
+              latest_record.data,
+              project_id,
+              latest_record.relationship ?? null
+            )
           );
         }
         setValue('1');
@@ -385,18 +392,7 @@ export default function Record() {
                   <TabPanel value="0" style={{padding: theme.spacing(2)}}>
                     <Box>
                       <RelationshipsComponent
-                        parentRecords={[
-                          {
-                            id: 'CBC123',
-                            title: 'Type: Parent ID',
-                            route: 'parent_route',
-                          },
-                          {
-                            id: 'CBC123',
-                            title: 'Water: Snow-1234',
-                            route: 'parent_route',
-                          },
-                        ]}
+                        parentRecords={relatedRecords.parentRecords}
                         childRecords={relatedRecords.childRecords}
                         linkRecords={relatedRecords.linkRecords}
                       />
