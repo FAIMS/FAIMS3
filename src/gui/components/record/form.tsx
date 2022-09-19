@@ -816,6 +816,8 @@ class RecordForm extends React.Component<
               initialValues={initialValues}
               validationSchema={validationSchema}
               validateOnMount={true}
+              validateOnChange={false}
+              validateOnBlur={true}
               onSubmit={values => {
                 this.setTimeout(() => {
                   // console.log('is saving submitting called');
