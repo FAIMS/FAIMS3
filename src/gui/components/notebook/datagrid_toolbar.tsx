@@ -88,9 +88,9 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
         alignItems="center"
       >
         <Grid item>
-          <GridToolbarColumnsButton />
+          {/*<GridToolbarColumnsButton />*/}
           <GridToolbarFilterButton />
-          <GridToolbarDensitySelector />
+          {/*<GridToolbarDensitySelector />*/}
         </Grid>
         <Grid item>
           <GridToolbarSearchRecordDataButton
@@ -111,9 +111,9 @@ export function NotebookDraftDataGridToolbar() {
         alignItems="center"
       >
         <Grid item>
-          <GridToolbarColumnsButton />
+          {/*<GridToolbarColumnsButton />*/}
           <GridToolbarFilterButton />
-          <GridToolbarDensitySelector />
+          {/*<GridToolbarDensitySelector />*/}
         </Grid>
       </Grid>
     </GridToolbarContainer>

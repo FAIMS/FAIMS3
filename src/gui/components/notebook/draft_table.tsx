@@ -20,10 +20,15 @@
 
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
-import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
-import {Typography, Box, Paper} from '@mui/material';
-import {Link as RouterLink} from 'react-router-dom';
-import Link from '@mui/material/Link';
+import {
+  DataGrid,
+  GridColDef,
+  GridCellParams,
+  GridEventListener,
+} from '@mui/x-data-grid';
+import {Typography, Box, Paper, Grid} from '@mui/material';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import {useHistory} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -33,6 +38,7 @@ import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
+
 type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -52,34 +58,41 @@ function DraftRecord(props: DraftsRecordProps) {
   const {project_id, maxRows, rows, loading, not_xs} = props;
   // const newrows: any = rows;
   const defaultMaxRowsMobile = 25;
-
-  // newrows.map((r:any)=>
-  //   props.viewsets !== null &&
-  //   props.viewsets !== undefined &&
-  //   r.type !== null &&
-  //   r.type !== undefined &&
-  //   props.viewsets[r.type] !== undefined?r.type_label=props.viewsets[r.type].label ?? r.type:r.type)
-
+  const history = useHistory();
+  const handleRowClick: GridEventListener<'rowClick'> = params => {
+    history.push(
+      ROUTES.getDraftRoute(
+        project_id ?? 'dummy',
+        params.row._id as DraftMetadata['_id'],
+        params.row.existing! as DraftMetadata['existing'],
+        params.row.type! as DraftMetadata['type']
+      )
+    );
+  };
   const columns: GridColDef[] = not_xs
     ? [
         {
-          field: 'hrid',
-          headerName: 'ID',
+          field: '_id',
+          headerName: 'Draft ID',
           description: 'Draft ID',
           type: 'string',
-          width: not_xs ? 300 : 100,
+          flex: 0.5,
+          minWidth: 400,
           renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getDraftRoute(
-                project_id ?? 'dummy',
-                params.row._id as DraftMetadata['_id'],
-                params.row.existing! as DraftMetadata['existing'],
-                params.row.type! as DraftMetadata['type']
-              )}
+            <Grid
+              container
+              direction="row"
+              justifyContent="flex-start"
+              alignItems="center"
+              spacing={0}
             >
-              {params.value}
-            </Link>
+              <Grid item>
+                <ArticleOutlinedIcon
+                  sx={{verticalAlign: 'middle', marginRight: '4px', my: 2}}
+                />
+              </Grid>
+              <Grid item>{params.value}</Grid>
+            </Grid>
           ),
         },
         {
@@ -99,82 +112,73 @@ function DraftRecord(props: DraftsRecordProps) {
             </>
           ),
         },
-        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
         {
-          field: '_id',
-          headerName: 'UUID',
-          description: 'Draft ID',
+          field: 'hrid',
+          headerName: 'HRID/UUID',
+          description: 'Human Readable Record ID',
           type: 'string',
-          width: not_xs ? 300 : 100,
-          renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getDraftRoute(
-                project_id ?? 'dummy',
-                params.row._id as DraftMetadata['_id'],
-                params.row.existing! as DraftMetadata['existing'],
-                params.row.type! as DraftMetadata['type']
-              )}
-            >
-              {params.value}
-            </Link>
-          ),
+          width: 300,
+          renderCell: (params: GridCellParams) => <span>{params.value}</span>,
         },
+        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
       ]
     : [
         {
-          field: 'hrid',
-          headerName: 'Draft',
+          field: '_id',
+          headerName: 'Draft ID',
           description: 'Draft ID',
           type: 'string',
-          width: 300,
+          flex: 1,
           renderCell: (params: GridCellParams) => (
-            <div>
-              <Typography>
-                <br />{' '}
-              </Typography>
-              <Typography variant="subtitle2" gutterBottom component="div">
-                {' '}
-                <Link
-                  component={RouterLink}
-                  to={ROUTES.getDraftRoute(
-                    project_id ?? 'dummy',
-                    params.row._id as DraftMetadata['_id'],
-                    params.row.existing! as DraftMetadata['existing'],
-                    params.row.type! as DraftMetadata['type']
-                  )}
-                >
-                  {params.value}
-                </Link>
-              </Typography>
+            <Box sx={{width: '100%', my: 1}}>
+              <Grid
+                container
+                direction="row"
+                justifyContent="flex-start"
+                alignItems="center"
+                spacing={0}
+              >
+                <Grid item>
+                  <ArticleOutlinedIcon
+                    fontSize={'small'}
+                    sx={{verticalAlign: 'middle', marginRight: '4px'}}
+                  />
+                </Grid>
+                <Grid item>
+                  <Typography>
+                    Kind:{'  '}
+                    {props.viewsets !== null &&
+                    props.viewsets !== undefined &&
+                    params.row.type !== null &&
+                    params.row.type !== undefined &&
+                    props.viewsets[(params.row.type || '').toString()] !==
+                      undefined
+                      ? props.viewsets[(params.row.type || '').toString()]
+                          .label ?? params.row.type
+                      : params.row.type}
+                  </Typography>
+                </Grid>
+              </Grid>
 
               <Typography color="textSecondary">
-                Kind:{'  '}
-                {props.viewsets !== null &&
-                props.viewsets !== undefined &&
-                params.row.type !== null &&
-                params.row.type !== undefined &&
-                props.viewsets[(params.row.type || '').toString()] !== undefined
-                  ? props.viewsets[(params.row.type || '').toString()].label ??
-                    params.row.type
-                  : params.row.type}
+                Draft ID: {params.value}
               </Typography>
+              <Typography color="textSecondary">
+                HRID/UUID: {params.row.hrid}
+              </Typography>
+
               <Typography
                 color="textSecondary"
                 variant="subtitle2"
                 gutterBottom
                 component="div"
               >
-                Created: {(params.row.created || '').toString()}
+                Updated: {(params.row.updated || '').toString()}
               </Typography>
-              <Typography>
-                <br />{' '}
-              </Typography>
-            </div>
+            </Box>
           ),
         },
-        // {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},// Only one column for mobile
       ];
 
   return (
@@ -185,8 +189,10 @@ function DraftRecord(props: DraftsRecordProps) {
       getRowId={r => r._id}
       columns={columns}
       autoHeight
-      rowHeight={not_xs ? 52 : 100}
-      density={not_xs ? 'standard' : 'comfortable'}
+      sx={{cursor: 'pointer'}}
+      getRowHeight={() => 'auto'}
+      disableSelectionOnClick
+      onRowClick={handleRowClick}
       components={{
         Toolbar: NotebookDraftDataGridToolbar,
       }}

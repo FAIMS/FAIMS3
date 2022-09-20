@@ -19,11 +19,17 @@
  */
 
 import React from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 
-import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
-import {Typography, Box, Paper} from '@mui/material';
-import Link from '@mui/material/Link';
+import {
+  DataGrid,
+  GridColDef,
+  GridCellParams,
+  GridEventListener,
+} from '@mui/x-data-grid';
+import {Typography, Box, Paper, Alert, Grid} from '@mui/material';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ArticleIcon from '@mui/icons-material/Article';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -61,46 +67,33 @@ type RecordsBrowseTableProps = {
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
   const theme = useTheme();
+  const history = useHistory();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
-  // const newrows:any=[];
-  // rows.map((r:any,index:number)=>
-  //   props.viewsets !== null &&
-  //   props.viewsets !== undefined &&
-  //   r.type !== null &&
-  //   r.type !== undefined &&
-  //   props.viewsets[r.type] !== undefined? newrows[index]={...r,type_label:props.viewsets[r.type].label?? r.type }:newrows[index]={...r})
 
+  // The entire row is clickable to the record
+  const handleRowClick: GridEventListener<'rowClick'> = params => {
+    history.push(
+      ROUTES.getRecordRoute(
+        project_id || 'dummy',
+        (params.row.record_id || '').toString(),
+        (params.row.revision_id || '').toString()
+      )
+    );
+  };
   const columns: GridColDef[] = not_xs
     ? [
         {
-          field: 'hrid',
-          headerName: 'HRID/UUID',
-          description: 'Human Readable Record ID',
+          field: 'record_id',
+          headerName: '',
           type: 'string',
-          width: not_xs ? 300 : 100,
-          renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getRecordRoute(
-                project_id || 'dummy',
-                (params.row.record_id || '').toString(),
-                (params.row.revision_id || '').toString()
-              )}
-            >
-              {params.value}
-            </Link>
-          ),
+          width: 40,
+          renderCell: (params: GridCellParams) => <ArticleIcon sx={{my: 2}} />,
+          hide: false,
+          sortable: false,
+          filterable: false,
+          disableColumnMenu: true,
         },
-        // {field: 'hrid', headerName: 'HRID/UUID', type: 'string', width: 200},
-        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-        {
-          field: 'created_by',
-          headerName: 'Created by',
-          type: 'string',
-          width: 200,
-        },
-        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
         {
           field: 'type',
           headerName: 'Kind',
@@ -119,8 +112,34 @@ function RecordsTable(props: RecordsTableProps) {
           ),
         },
         {
+          field: 'hrid',
+          headerName: 'HRID/UUID',
+          description: 'Human Readable Record ID',
+          type: 'string',
+          width: 200,
+          minWidth:200,
+          renderCell: (params: GridCellParams) => params.value,
+          //   <Link
+          //     component={RouterLink}
+          //     to={ROUTES.getRecordRoute(
+          //       project_id || 'dummy',
+          //       (params.row.record_id || '').toString(),
+          //       (params.row.revision_id || '').toString()
+          //     )}
+          //   >
+          //     {params.value}
+          //   </Link>
+          // ),
+        },
+        {
+          field: 'updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          width: 200,
+        },
+        {
           field: 'updated_by',
-          headerName: 'Last updated by',
+          headerName: 'Last Updated By',
           type: 'string',
           width: 200,
         },
@@ -128,112 +147,157 @@ function RecordsTable(props: RecordsTableProps) {
           field: 'conflicts',
           headerName: 'Conflicts',
           type: 'boolean',
+          width: 120,
+          renderCell: (params: GridCellParams) => (
+            <div>
+              {params.row.conflicts ? (
+                <WarningAmberIcon color={'warning'} />
+              ) : (
+                ''
+              )}
+            </div>
+          ),
+        },
+        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+        {
+          field: 'created_by',
+          headerName: 'Created By',
+          type: 'string',
           width: 200,
+        },
+      ]
+    : [
+        {
+          field: 'type',
+          headerName: 'Kind',
+          type: 'string',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'hrid',
+          headerName: 'HRID/UUID',
+          description: 'Human Readable Record ID',
+          type: 'string',
+          flex: 1,
+          filterable: true,
+          renderCell: (params: GridCellParams) => {
+            return (
+              <Box sx={{width: '100%', my: 1}}>
+                <Grid
+                  container
+                  direction="row"
+                  justifyContent="flex-start"
+                  alignItems="center"
+                  spacing={0}
+                >
+                  <Grid item>
+                    <ArticleIcon fontSize={'small'} sx={{verticalAlign:'middle', marginRight:'4px'}}/>
+                  </Grid>
+                  <Grid item>
+                    <Typography>
+                      Kind:{' '}
+                      {props.viewsets !== null &&
+                      props.viewsets !== undefined &&
+                      params.row.type !== null &&
+                      params.row.type !== undefined &&
+                      props.viewsets[(params.row.type || '').toString()] !==
+                        undefined
+                        ? props.viewsets[(params.row.type || '').toString()]
+                            .label ?? params.row.type
+                        : params.row.type}
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                <Typography color="textSecondary">
+                  HRID/UUID: {params.value}
+                </Typography>
+                {/*  If updated isn't present, then show created meta */}
+                {params.row.updated === undefined ? (
+                  <Typography
+                    color="textSecondary"
+                    variant="subtitle2"
+                    gutterBottom
+                    component="div"
+                  >
+                    Created{' '}
+                    {params.row.created !== undefined &&
+                      params.row.created !== '' &&
+                      JSON.stringify(params.row.created)
+                        .replaceAll('"', '')
+                        .replaceAll('T', ' ')
+                        .slice(0, 19)}{' '}
+                    by {params.row.created_by}
+                  </Typography>
+                ) : (
+                  <Typography
+                    color="textSecondary"
+                    variant="subtitle2"
+                    gutterBottom
+                    component="div"
+                  >
+                    Updated{' '}
+                    {params.row.updated !== undefined &&
+                      params.row.updated !== '' &&
+                      JSON.stringify(params.row.updated)
+                        .replaceAll('"', '')
+                        .replaceAll('T', ' ')
+                        .slice(0, 19)}{' '}
+                    by {params.row.updated_by}
+                  </Typography>
+                )}
+
+                {params.row.conflicts === true && (
+                  <Alert severity={'warning'}>Record has conflicts</Alert>
+                )}
+              </Box>
+            );
+          },
+        },
+        {
+          field: 'updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'updated_by',
+          headerName: 'Last Updated By',
+          type: 'string',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'conflicts',
+          headerName: 'Conflicts',
+          type: 'boolean',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'created',
+          headerName: 'Created',
+          type: 'dateTime',
+          filterable: true,
+          hide: true,
+        },
+        {
+          field: 'created_by',
+          headerName: 'Created By',
+          type: 'string',
+          filterable: true,
+          hide: true,
         },
         {
           field: 'record_id',
           headerName: 'UUID',
           description: 'UUID Record ID',
           type: 'string',
-          width: not_xs ? 300 : 100,
-          renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getRecordRoute(
-                project_id || 'dummy',
-                (params.row.record_id || '').toString(),
-                (params.row.revision_id || '').toString()
-              )}
-            >
-              {params.row.hrid}
-            </Link>
-          ),
+          filterable: true,
           hide: true,
         },
-      ]
-    : [
-        {
-          field: 'hrid',
-          headerName: 'Record',
-          description: 'Human Readable Record ID',
-          type: 'string',
-          width: 300,
-          renderCell: (params: GridCellParams) => (
-            <div>
-              <Typography>
-                {' '}
-                <Link
-                  component={RouterLink}
-                  to={ROUTES.getRecordRoute(
-                    project_id || 'dummy',
-                    (params.row.record_id || '').toString(),
-                    (params.row.revision_id || '').toString()
-                  )}
-                >
-                  {params.value}
-                </Link>
-              </Typography>
-              <Typography color="textSecondary">
-                {' '}
-                Kind:{' '}
-                {props.viewsets !== null &&
-                props.viewsets !== undefined &&
-                params.row.type !== null &&
-                params.row.type !== undefined &&
-                props.viewsets[(params.row.type || '').toString()] !== undefined
-                  ? props.viewsets[(params.row.type || '').toString()].label ??
-                    params.row.type
-                  : params.row.type}
-              </Typography>
-              <Typography
-                color="textSecondary"
-                variant="subtitle2"
-                gutterBottom
-                component="div"
-              >
-                Created at{' '}
-                {params.row.created !== undefined &&
-                  params.row.created !== '' &&
-                  JSON.stringify(params.row.created)
-                    .replaceAll('"', '')
-                    .replaceAll('T', ' ')
-                    .slice(0, 19)}
-              </Typography>
-              <Typography
-                color="textSecondary"
-                variant="subtitle2"
-                gutterBottom
-                component="div"
-              >
-                Created By {params.row.created_by}
-              </Typography>
-              <Typography
-                color="textSecondary"
-                variant="subtitle2"
-                gutterBottom
-                component="div"
-              >
-                Updated By {params.row.updated_by}
-              </Typography>
-
-              {params.row.conflicts === true && (
-                <Typography
-                  color="error"
-                  variant="subtitle2"
-                  gutterBottom
-                  component="div"
-                >
-                  Conflict
-                </Typography>
-              )}
-
-              {/* <Typography>
-                <br />{' '}
-              </Typography> */}
-            </div>
-          ),
-        },
-        // {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200}, // Only one column for mobile
       ];
 
   return (
@@ -244,9 +308,15 @@ function RecordsTable(props: RecordsTableProps) {
         getRowId={r => r.record_id}
         columns={columns}
         autoHeight
-        rowHeight={not_xs ? 52 : 130}
+        sx={{cursor: 'pointer'}}
+        getRowHeight={() => 'auto'}
         rowsPerPageOptions={[10, 25, 50, 100]}
-        density={not_xs ? 'standard' : 'comfortable'}
+        density={'standard'}
+        disableSelectionOnClick
+        onRowClick={handleRowClick}
+        getRowClassName={params => {
+          return `${params.row.conflicts ? 'bg-warning' : ''}`;
+        }}
         components={{
           Toolbar: NotebookDataGridToolbar,
         }}
