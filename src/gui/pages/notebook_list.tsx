@@ -19,7 +19,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Link as RouterLink, useHistory} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 import {Box, Paper, Typography, Grid, Alert} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
@@ -30,12 +30,10 @@ import {
   GridEventListener,
 } from '@mui/x-data-grid';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import ProjectCard from '../components/project/card';
 import * as ROUTES from '../../constants/routes';
 import {getProjectList, listenProjectList} from '../../databaseAccess';
 import {useEventedPromise} from '../pouchHook';
 import {TokenContents} from '../../datamodel/core';
-import {ProjectInformation} from '../../datamodel/ui';
 import CircularLoading from '../components/ui/circular_loading';
 
 type NoteBookListProps = {

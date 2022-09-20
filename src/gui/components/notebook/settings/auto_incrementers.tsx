@@ -39,7 +39,7 @@ export default function AutoIncrementerSettingsList(
       {references.map(ai => {
         const label = ai.label ?? ai.form_id;
         return (
-          <Grid item xs={12} sm={6} md={6} lg={4}>
+          <Grid item xs={12} sm={6} md={6} lg={4} key={'autoincrementer_range_'+ai.form_id + ai.field_id+ai.label}>
             <Typography variant={'overline'}>
               Edit Allocations for {label}
             </Typography>

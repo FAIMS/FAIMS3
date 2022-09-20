@@ -19,12 +19,17 @@
  */
 
 import React from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 
-import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
-import {Typography, Box, Paper, Alert} from '@mui/material';
+import {
+  DataGrid,
+  GridColDef,
+  GridCellParams,
+  GridEventListener,
+} from '@mui/x-data-grid';
+import {Typography, Box, Paper, Alert, Grid} from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import Link from '@mui/material/Link';
+import ArticleIcon from '@mui/icons-material/Article';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -56,22 +61,36 @@ type RecordsBrowseTableProps = {
   viewsets?: ProjectUIViewsets | null;
 };
 
-type RecordsSearchTableProps = {
-  project_id: ProjectID;
-  maxRows: number | null;
-  query: string;
-  filter_deleted: boolean;
-  viewsets?: ProjectUIViewsets | null;
-};
-
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
   const theme = useTheme();
+  const history = useHistory();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
 
+  // The entire row is clickable to the record
+  const handleRowClick: GridEventListener<'rowClick'> = params => {
+    history.push(
+      ROUTES.getRecordRoute(
+        project_id || 'dummy',
+        (params.row.record_id || '').toString(),
+        (params.row.revision_id || '').toString()
+      )
+    );
+  };
   const columns: GridColDef[] = not_xs
     ? [
+        {
+          field: 'record_id',
+          headerName: '',
+          type: 'string',
+          width: 40,
+          renderCell: (params: GridCellParams) => <ArticleIcon sx={{my: 2}} />,
+          hide: false,
+          sortable: false,
+          filterable: false,
+          disableColumnMenu: true,
+        },
         {
           field: 'type',
           headerName: 'Kind',
@@ -94,19 +113,20 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: 'HRID/UUID',
           description: 'Human Readable Record ID',
           type: 'string',
-          width: not_xs ? 300 : 100,
-          renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getRecordRoute(
-                project_id || 'dummy',
-                (params.row.record_id || '').toString(),
-                (params.row.revision_id || '').toString()
-              )}
-            >
-              {params.value}
-            </Link>
-          ),
+          width: 200,
+          minWidth:200,
+          renderCell: (params: GridCellParams) => params.value,
+          //   <Link
+          //     component={RouterLink}
+          //     to={ROUTES.getRecordRoute(
+          //       project_id || 'dummy',
+          //       (params.row.record_id || '').toString(),
+          //       (params.row.revision_id || '').toString()
+          //     )}
+          //   >
+          //     {params.value}
+          //   </Link>
+          // ),
         },
         {
           field: 'updated',
@@ -142,27 +162,6 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'string',
           width: 200,
         },
-
-        {
-          field: 'record_id',
-          headerName: 'UUID',
-          description: 'UUID Record ID',
-          type: 'string',
-          width: not_xs ? 300 : 100,
-          renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getRecordRoute(
-                project_id || 'dummy',
-                (params.row.record_id || '').toString(),
-                (params.row.revision_id || '').toString()
-              )}
-            >
-              {params.row.hrid}
-            </Link>
-          ),
-          hide: true,
-        },
       ]
     : [
         {
@@ -181,32 +180,35 @@ function RecordsTable(props: RecordsTableProps) {
           filterable: true,
           renderCell: (params: GridCellParams) => {
             return (
-              <Box sx={{width: '100%'}}>
-                <Typography>
-                  {' '}
-                  <Link
-                    component={RouterLink}
-                    to={ROUTES.getRecordRoute(
-                      project_id || 'dummy',
-                      (params.row.record_id || '').toString(),
-                      (params.row.revision_id || '').toString()
-                    )}
-                  >
-                    {params.value}
-                  </Link>
-                </Typography>
+              <Box sx={{width: '100%', my: 1}}>
+                <Grid
+                  container
+                  direction="row"
+                  justifyContent="flex-start"
+                  alignItems="center"
+                  spacing={0}
+                >
+                  <Grid item>
+                    <ArticleIcon fontSize={'small'} sx={{verticalAlign:'middle', marginRight:'4px'}}/>
+                  </Grid>
+                  <Grid item>
+                    <Typography>
+                      Kind:{' '}
+                      {props.viewsets !== null &&
+                      props.viewsets !== undefined &&
+                      params.row.type !== null &&
+                      params.row.type !== undefined &&
+                      props.viewsets[(params.row.type || '').toString()] !==
+                        undefined
+                        ? props.viewsets[(params.row.type || '').toString()]
+                            .label ?? params.row.type
+                        : params.row.type}
+                    </Typography>
+                  </Grid>
+                </Grid>
+
                 <Typography color="textSecondary">
-                  {' '}
-                  Kind:{' '}
-                  {props.viewsets !== null &&
-                  props.viewsets !== undefined &&
-                  params.row.type !== null &&
-                  params.row.type !== undefined &&
-                  props.viewsets[(params.row.type || '').toString()] !==
-                    undefined
-                    ? props.viewsets[(params.row.type || '').toString()]
-                        .label ?? params.row.type
-                    : params.row.type}
+                  HRID/UUID: {params.value}
                 </Typography>
                 {/*  If updated isn't present, then show created meta */}
                 {params.row.updated === undefined ? (
@@ -303,9 +305,12 @@ function RecordsTable(props: RecordsTableProps) {
         getRowId={r => r.record_id}
         columns={columns}
         autoHeight
-        rowHeight={not_xs ? 52 : 130}
+        sx={{cursor: 'pointer'}}
+        getRowHeight={() => 'auto'}
         rowsPerPageOptions={[10, 25, 50, 100]}
         density={'standard'}
+        disableSelectionOnClick
+        onRowClick={handleRowClick}
         getRowClassName={params => {
           return `${params.row.conflicts ? 'bg-warning' : ''}`;
         }}

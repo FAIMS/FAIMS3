@@ -27,6 +27,7 @@ import NotebookSettings from './settings';
 import {useTheme} from '@mui/material/styles';
 import DraftTabBadge from './draft_tab_badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import CircularLoading from "../ui/circular_loading";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -118,7 +119,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   return (
     <Box>
       {loading ? (
-        <CircularProgress size={12} thickness={4} />
+          <CircularLoading label={'Notebook is loading'}/>
       ) : (
         <Box>
           <Box
@@ -144,9 +145,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
-                centered={mq_above_md ? false : true}
+                // centered={mq_above_md ? false : true}
               >
-                <Tab label="Notebook" {...a11yProps(0, 'notebook')} />
+                <Tab label="Records" {...a11yProps(0, 'notebook')} />
                 <Tab label="Info" {...a11yProps(1, 'notebook')} />
                 <Tab label="Settings" {...a11yProps(2, 'notebook')} />
               </Tabs>
