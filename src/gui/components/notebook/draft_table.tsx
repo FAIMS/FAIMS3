@@ -73,7 +73,7 @@ function DraftRecord(props: DraftsRecordProps) {
     ? [
         {
           field: '_id',
-          headerName: 'UUID',
+          headerName: 'Draft ID',
           description: 'Draft ID',
           type: 'string',
           flex: 0.5,
@@ -114,8 +114,8 @@ function DraftRecord(props: DraftsRecordProps) {
         },
         {
           field: 'hrid',
-          headerName: 'ID',
-          description: 'Draft ID',
+          headerName: 'HRID/UUID',
+          description: 'Human Readable Record ID',
           type: 'string',
           width: 300,
           renderCell: (params: GridCellParams) => <span>{params.value}</span>,
@@ -129,7 +129,7 @@ function DraftRecord(props: DraftsRecordProps) {
           headerName: 'Draft ID',
           description: 'Draft ID',
           type: 'string',
-          flex:1,
+          flex: 1,
           renderCell: (params: GridCellParams) => (
             <Box sx={{width: '100%', my: 1}}>
               <Grid
@@ -163,6 +163,9 @@ function DraftRecord(props: DraftsRecordProps) {
 
               <Typography color="textSecondary">
                 Draft ID: {params.value}
+              </Typography>
+              <Typography color="textSecondary">
+                HRID/UUID: {params.row.hrid}
               </Typography>
 
               <Typography
