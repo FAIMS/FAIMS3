@@ -69,8 +69,36 @@ function DraftRecord(props: DraftsRecordProps) {
       )
     );
   };
+  function getRowType(params: GridCellParams) {
+    // The type (or Kind) is prettified and should be filterable as such.
+    return props.viewsets !== null &&
+      props.viewsets !== undefined &&
+      params.row.type !== null &&
+      params.row.type !== undefined &&
+      props.viewsets[(params.row.type || '').toString()] !== undefined
+      ? props.viewsets[(params.row.type || '').toString()].label ??
+          params.row.type
+      : params.row.type;
+  }
   const columns: GridColDef[] = not_xs
-    ? [
+    ? [{
+          field: 'draft_icon',
+          headerName: '',
+          type: 'string',
+          width: 40,
+          renderCell: (params: GridCellParams) => <ArticleOutlinedIcon sx={{my: 2}} />,
+          hide: false,
+          sortable: false,
+          filterable: false,
+          disableColumnMenu: true,
+      },
+        {
+          field: 'type',
+          headerName: 'Kind',
+          type: 'string',
+          width: 200,
+          valueGetter: getRowType,
+      },
         {
           field: '_id',
           headerName: 'Draft ID',
@@ -95,23 +123,7 @@ function DraftRecord(props: DraftsRecordProps) {
             </Grid>
           ),
         },
-        {
-          field: 'type',
-          headerName: 'Kind',
-          type: 'string',
-          width: 200,
-          renderCell: (params: GridCellParams) => (
-            <>
-              {props.viewsets !== null &&
-              props.viewsets !== undefined &&
-              params.value !== null &&
-              params.value !== undefined &&
-              props.viewsets[params.value.toString()] !== undefined
-                ? props.viewsets[params.value.toString()].label ?? params.value
-                : params.value}
-            </>
-          ),
-        },
+
         {
           field: 'hrid',
           headerName: 'HRID/UUID',
@@ -148,15 +160,7 @@ function DraftRecord(props: DraftsRecordProps) {
                 <Grid item>
                   <Typography>
                     Kind:{'  '}
-                    {props.viewsets !== null &&
-                    props.viewsets !== undefined &&
-                    params.row.type !== null &&
-                    params.row.type !== undefined &&
-                    props.viewsets[(params.row.type || '').toString()] !==
-                      undefined
-                      ? props.viewsets[(params.row.type || '').toString()]
-                          .label ?? params.row.type
-                      : params.row.type}
+                    {getRowType(params)}
                   </Typography>
                 </Grid>
               </Grid>

@@ -29,7 +29,13 @@ export default function DraftTabBadge(props: {project_id: ProjectID}) {
 
   return (
     <Badge
-      badgeContent={isLoading ? <CircularProgress size={10} sx={{color:'white'}} thickness={6}/> : draftCount}
+      badgeContent={
+        isLoading ? (
+          <CircularProgress size={10} sx={{color: 'white'}} thickness={6} />
+        ) : (
+          draftCount
+        )
+      }
       color="primary"
     >
       <span style={{paddingRight: '10px'}}>Drafts{'  '}</span>

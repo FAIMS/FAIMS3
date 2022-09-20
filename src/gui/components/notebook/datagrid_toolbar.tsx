@@ -18,16 +18,12 @@
  *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
-import React from 'react';
-import {IconButton, InputBase, Paper, Box, Grid} from '@mui/material';
-import {
-  GridToolbarContainer,
-  GridToolbarColumnsButton,
-  GridToolbarFilterButton,
-  GridToolbarDensitySelector,
-} from '@mui/x-data-grid';
+import React, {useEffect} from 'react';
+import {IconButton, Divider, Box, Grid, TextField} from '@mui/material';
+import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import {usePrevious} from '../../../utils/custom_hooks';
 interface ToolbarProps {
   handleQueryFunction: any;
 }
@@ -37,43 +33,47 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
    * Only hoist query value when user presses submit or clear
    */
   const [value, setValue] = React.useState('');
+  const prevValue = usePrevious(value);
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Controlled state: user has keyed in a value
     setValue(event.target.value);
   };
   const handleSubmit = () => {
+    // Send value up to query function
     props.handleQueryFunction(value);
   };
   const handleClear = () => {
+    //  Clear the local query string
     setValue('');
-    handleSubmit();
   };
+  useEffect(() => {
+    // if the value has changed AND it now is an empty string - submit with empty query (i.e., reset)
+    if (prevValue !== value && value === '') {
+      handleSubmit();
+    }
+  }, [value]);
+
   return (
-    <Box sx={{display: 'flex', alignItems: 'flex-end'}}>
-      <Paper
-        component="form"
-        elevation={0}
-        variant={'outlined'}
-        sx={{p: '2px 4px', display: 'flex', alignItems: 'center'}}
-      >
-        <IconButton sx={{p: '10px'}} aria-label="menu" onClick={handleClear}>
-          <ClearIcon />
-        </IconButton>
-        <InputBase
-          id="notebook-record-data-search"
-          inputProps={{'aria-label': 'Search record data'}}
-          size="small"
-          value={value}
-          onChange={handleChange}
-        />
-        <IconButton
-          type="button"
-          sx={{p: '10px'}}
-          aria-label="search"
-          onClick={handleSubmit}
-        >
-          <SearchIcon />
-        </IconButton>
-      </Paper>
+    <Box mt={1} mr={1}>
+      <TextField
+        size={'small'}
+        label="Search record data (case sensitive)"
+        value={value}
+        sx={{p: 0}}
+        onChange={handleChange}
+        InputProps={{
+          startAdornment: (
+            <IconButton onClick={handleClear}>
+              <ClearIcon fontSize={'small'} />
+            </IconButton>
+          ),
+          endAdornment: (
+            <IconButton onClick={handleSubmit}>
+              <SearchIcon />
+            </IconButton>
+          ),
+        }}
+      />
     </Box>
   );
 }
@@ -83,19 +83,22 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
     <GridToolbarContainer>
       <Grid
         container
-        spacing={2}
+        spacing={1}
         justifyContent="space-between"
         alignItems="center"
       >
         <Grid item>
           {/*<GridToolbarColumnsButton />*/}
-          <GridToolbarFilterButton />
+          <GridToolbarFilterButton sx={{ml: 1}} />
           {/*<GridToolbarDensitySelector />*/}
         </Grid>
         <Grid item>
           <GridToolbarSearchRecordDataButton
             handleQueryFunction={props.handleQueryFunction}
           />
+        </Grid>
+        <Grid item xs={12}>
+          <Divider />
         </Grid>
       </Grid>
     </GridToolbarContainer>

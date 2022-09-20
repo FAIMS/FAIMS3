@@ -15,7 +15,7 @@ export default function CircularLoading(props: {label: string}) {
       </Grid>
       <Grid item>
         <Typography variant="body2" color="text.secondary">
-            {props.label}
+          {props.label}
         </Typography>
       </Grid>
     </Grid>

@@ -22,7 +22,8 @@ import React, {useContext, useEffect, useState} from 'react';
 import {useHistory, useParams, Redirect} from 'react-router-dom';
 
 import {
-  AppBar, Alert,
+  AppBar,
+  Alert,
   Box,
   Grid,
   Typography,
@@ -79,7 +80,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import CircularLoading from "../components/ui/circular_loading";
+import CircularLoading from '../components/ui/circular_loading';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -258,7 +259,7 @@ export default function Record() {
         spacing={2}
       >
         <Grid item xs={'auto'}>
-          <Typography  component={'div'}>
+          <Typography component={'div'}>
             <Grid
               container
               direction="row"
@@ -284,14 +285,23 @@ export default function Record() {
                   {uiSpec !== null &&
                   type !== null &&
                   uiSpec['visible_types'][0] !== ''
-                      ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
-                      : ''}{' '}
-                  {draft_id !== undefined && <span style={{textDecorationLine:'underline', textDecorationStyle:'double'}}>[Draft]</span>}
+                    ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
+                    : ''}{' '}
+                  {draft_id !== undefined && (
+                    <span
+                      style={{
+                        textDecorationLine: 'underline',
+                        textDecorationStyle: 'double',
+                      }}
+                    >
+                      [Draft]
+                    </span>
+                  )}
                 </Typography>
                 {recordInfo !== null && (
-                    <Typography variant={'caption'} gutterBottom>
-                      Last Updated by {recordInfo}
-                    </Typography>
+                  <Typography variant={'caption'} gutterBottom>
+                    Last Updated by {recordInfo}
+                  </Typography>
                 )}
               </Grid>
             </Grid>
@@ -301,10 +311,20 @@ export default function Record() {
           <Breadcrumbs data={breadcrumbs} />
         </Grid>
       </Grid>
-      {draft_id !== undefined && <Alert severity={'warning'}>This record is currently a draft. The data is stored locally on your device only.</Alert>}
-      <Typography variant={'subtitle1'} color={'textSecondary'} gutterBottom sx={{mt:1}}>
-        Edit data for this record. If you need to, you can also revisit
-        previous revisions and resolve conflicts.
+      {draft_id !== undefined && (
+        <Alert severity={'warning'}>
+          This record is currently a draft. The data is stored locally on your
+          device only.
+        </Alert>
+      )}
+      <Typography
+        variant={'subtitle1'}
+        color={'textSecondary'}
+        gutterBottom
+        sx={{mt: 1}}
+      >
+        Edit data for this record. If you need to, you can also revisit previous
+        revisions and resolve conflicts.
       </Typography>
 
       <Box mb={2} pr={1}>
@@ -388,7 +408,7 @@ export default function Record() {
               history.goBack();
               return <React.Fragment />;
             } else if (uiSpec === null || type === null || isSyncing === null) {
-              return <CircularLoading label={'Loading...'}/>;
+              return <CircularLoading label={'Loading...'} />;
             } else {
               return (
                 <React.Fragment>

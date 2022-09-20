@@ -17,7 +17,7 @@ import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectInformation} from '../../../datamodel/ui';
 import DraftsTable from './draft_table';
-import {RecordsBrowseTable} from './table';
+import {RecordsBrowseTable} from './record_table';
 import RangeHeader from './range_header';
 import MetadataRenderer from '../metadataRenderer';
 import AddRecordButtons from './add_record_by_type';
@@ -25,7 +25,7 @@ import NotebookSettings from './settings';
 import {useTheme} from '@mui/material/styles';
 import DraftTabBadge from './draft_tab_badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import CircularLoading from "../ui/circular_loading";
+import CircularLoading from '../ui/circular_loading';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -118,7 +118,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   return (
     <Box>
       {loading ? (
-          <CircularLoading label={'Notebook is loading'}/>
+        <CircularLoading label={'Notebook is loading'} />
       ) : (
         <Box>
           <Box

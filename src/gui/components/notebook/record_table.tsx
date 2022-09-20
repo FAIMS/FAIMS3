@@ -63,7 +63,6 @@ type RecordsBrowseTableProps = {
   filter_deleted: boolean;
 };
 
-
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
   const theme = useTheme();
@@ -81,10 +80,21 @@ function RecordsTable(props: RecordsTableProps) {
       )
     );
   };
+
+  function getRowType(params: GridCellParams) {
+    // The type (or Kind) is prettified and should be filterable as such.
+    return props.viewsets !== null &&
+      props.viewsets !== undefined &&
+      params.row.type !== null &&
+      params.row.type !== undefined &&
+      props.viewsets[params.row.type.toString()] !== undefined
+      ? props.viewsets[params.row.type.toString()].label ?? params.row.type
+      : params.row.type;
+  }
   const columns: GridColDef[] = not_xs
     ? [
         {
-          field: 'record_id',
+          field: 'article_icon',
           headerName: '',
           type: 'string',
           width: 40,
@@ -99,17 +109,7 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: 'Kind',
           type: 'string',
           width: 200,
-          renderCell: (params: GridCellParams) => (
-            <>
-              {props.viewsets !== null &&
-              props.viewsets !== undefined &&
-              params.value !== null &&
-              params.value !== undefined &&
-              props.viewsets[params.value.toString()] !== undefined
-                ? props.viewsets[params.value.toString()].label ?? params.value
-                : params.value}
-            </>
-          ),
+          valueGetter: getRowType,
         },
         {
           field: 'hrid',
@@ -117,19 +117,8 @@ function RecordsTable(props: RecordsTableProps) {
           description: 'Human Readable Record ID',
           type: 'string',
           width: 200,
-          minWidth:200,
+          minWidth: 200,
           renderCell: (params: GridCellParams) => params.value,
-          //   <Link
-          //     component={RouterLink}
-          //     to={ROUTES.getRecordRoute(
-          //       project_id || 'dummy',
-          //       (params.row.record_id || '').toString(),
-          //       (params.row.revision_id || '').toString()
-          //     )}
-          //   >
-          //     {params.value}
-          //   </Link>
-          // ),
         },
         {
           field: 'updated',
@@ -173,6 +162,7 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'string',
           filterable: true,
           hide: true,
+          valueGetter: getRowType,
         },
         {
           field: 'hrid',
@@ -192,26 +182,18 @@ function RecordsTable(props: RecordsTableProps) {
                   spacing={0}
                 >
                   <Grid item>
-                    <ArticleIcon fontSize={'small'} sx={{verticalAlign:'middle', marginRight:'4px'}}/>
+                    <ArticleIcon
+                      fontSize={'small'}
+                      sx={{verticalAlign: 'middle', marginRight: '4px'}}
+                    />
                   </Grid>
                   <Grid item>
-                    <Typography>
-                      Kind:{' '}
-                      {props.viewsets !== null &&
-                      props.viewsets !== undefined &&
-                      params.row.type !== null &&
-                      params.row.type !== undefined &&
-                      props.viewsets[(params.row.type || '').toString()] !==
-                        undefined
-                        ? props.viewsets[(params.row.type || '').toString()]
-                            .label ?? params.row.type
-                        : params.row.type}
-                    </Typography>
+                    <Typography>Kind: {getRowType(params)}</Typography>
                   </Grid>
                 </Grid>
 
                 <Typography color="textSecondary">
-                  HRID/UUID: {params.value}
+                  HRID/UUID: {JSON.stringify(params.value)}
                 </Typography>
                 {/*  If updated isn't present, then show created meta */}
                 {params.row.updated === undefined ? (
@@ -299,7 +281,7 @@ function RecordsTable(props: RecordsTableProps) {
           hide: true,
         },
       ];
-
+  console.log(rows);
   return (
     <Box component={Paper} elevation={0}>
       <DataGrid
@@ -346,11 +328,11 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
-  const {project_id, maxRows, filter_deleted} = props;
+  // const {project_id, maxRows, filter_deleted} = props;
   const [query, setQuery] = React.useState('');
 
   if (DEBUG_APP) {
-    console.debug('Filter deleted?:', filter_deleted);
+    console.debug('Filter deleted?:', props.filter_deleted);
   }
 
   const rows = useEventedPromise(
@@ -358,12 +340,18 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       if (DEBUG_APP) {
         console.log('RecordsTable updating', project_id);
       }
-      const metadata = await getRecordsWithRegex(
-        props.project_id,
-        query,
-        props.filter_deleted
-      );
-      return metadata;
+      if (query.length === 0) {
+        return await getMetadataForAllRecords(
+          props.project_id,
+          props.filter_deleted
+        );
+      } else {
+        return await getRecordsWithRegex(
+          props.project_id,
+          query,
+          props.filter_deleted
+        );
+      }
     },
     constantArgsSplit(
       listenDataDB,
@@ -381,8 +369,8 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   }
   return (
     <RecordsTable
-      project_id={project_id}
-      maxRows={maxRows}
+      project_id={props.project_id}
+      maxRows={props.maxRows}
       rows={rows.value ?? []}
       loading={rows.loading !== undefined}
       viewsets={props.viewsets}
