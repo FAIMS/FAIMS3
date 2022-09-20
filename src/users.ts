@@ -47,7 +47,7 @@ interface SplitCouchDBRole {
   project_role: ProjectRole;
 }
 
-const ADMIN_ROLE = 'admin';
+export const ADMIN_ROLE = 'admin';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
