@@ -81,24 +81,27 @@ function DraftRecord(props: DraftsRecordProps) {
       : params.row.type;
   }
   const columns: GridColDef[] = not_xs
-    ? [{
+    ? [
+        {
           field: 'draft_icon',
           headerName: '',
           type: 'string',
           width: 40,
-          renderCell: (params: GridCellParams) => <ArticleOutlinedIcon sx={{my: 2}} />,
+          renderCell: (params: GridCellParams) => (
+            <ArticleOutlinedIcon sx={{my: 2}} />
+          ),
           hide: false,
           sortable: false,
           filterable: false,
           disableColumnMenu: true,
-      },
+        },
         {
           field: 'type',
           headerName: 'Kind',
           type: 'string',
           width: 200,
           valueGetter: getRowType,
-      },
+        },
         {
           field: '_id',
           headerName: 'Draft ID',
@@ -106,22 +109,7 @@ function DraftRecord(props: DraftsRecordProps) {
           type: 'string',
           flex: 0.5,
           minWidth: 400,
-          renderCell: (params: GridCellParams) => (
-            <Grid
-              container
-              direction="row"
-              justifyContent="flex-start"
-              alignItems="center"
-              spacing={0}
-            >
-              <Grid item>
-                <ArticleOutlinedIcon
-                  sx={{verticalAlign: 'middle', marginRight: '4px', my: 2}}
-                />
-              </Grid>
-              <Grid item>{params.value}</Grid>
-            </Grid>
-          ),
+          renderCell: (params: GridCellParams) => params.value,
         },
 
         {
