@@ -237,7 +237,6 @@ export default function Record() {
           record_id,
           updatedrevision_id
         );
-        console.error(latest_record);
         if (latest_record !== null) {
           setRelatedRecords(
             await getDetailRelatedInfommation(
@@ -395,6 +394,7 @@ export default function Record() {
                         parentRecords={relatedRecords.parentRecords}
                         childRecords={relatedRecords.childRecords}
                         linkRecords={relatedRecords.linkRecords}
+                        ui_specification={uiSpec}
                       />
                       <Box style={{border: 'solid 1px red'}} mb={2}>
                         <RecordReadView

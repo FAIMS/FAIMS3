@@ -71,6 +71,7 @@ import {
   getparentlinkinfo,
   getParentInfo,
   getChildInfo,
+  updateChildRecords,
 } from './relationships/RelatedInfomation';
 type RecordFormProps = {
   project_id: ProjectID;
@@ -347,6 +348,23 @@ class RecordForm extends React.Component<
 
   async componentWillUnmount() {
     await this.draftState.forceSave();
+    // add to save the information for relationship
+    //get all touched relationship fields and save child or linked record information
+    const initialValues = this.requireInitialValues();
+    const ui_specification = this.props.ui_specification;
+    if (
+      this.draftState.data.state !== 'uninitialized' &&
+      this.props.type !== undefined &&
+      this.draftState.data['fields'] !== null
+    )
+      await updateChildRecords(
+        ui_specification,
+        this.props.type,
+        this.props.record_id,
+        initialValues,
+        this.draftState.data['fields']
+      );
+    //end of update values
     this._isMounted = false;
     for (const timeout_id of this.timeouts) {
       clearTimeout(timeout_id as unknown as Parameters<typeof clearTimeout>[0]);
@@ -574,7 +592,11 @@ class RecordForm extends React.Component<
     );
 
     let relation: Relationship = this.state.realatioship ?? {}; // this should update later TODO
-    relation = getParentInfo(this.props.location.state, relation);
+    relation = getParentInfo(
+      this.props.location.state,
+      relation,
+      this.props.record_id
+    );
 
     return (
       getCurrentUserId(this.props.project_id)
@@ -602,6 +624,22 @@ class RecordForm extends React.Component<
         })
         .then(doc => {
           return upsertFAIMSData(this.props.project_id, doc).then(() => {
+            // add to save the information for relationship when form saved,  TODO: need to be defined if it's saved when form been save
+            try {
+              const initialValues = this.requireInitialValues();
+              const type = this.requireViewsetName();
+              if (type !== undefined) {
+                updateChildRecords(
+                  ui_specification,
+                  type,
+                  this.props.record_id,
+                  initialValues,
+                  values
+                );
+              }
+            } catch (error) {
+              console.error('update child Error', error);
+            }
             return (
               doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
             );

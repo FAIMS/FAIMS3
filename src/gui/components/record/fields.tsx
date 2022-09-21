@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useRef} from 'react';
 import {Field, FormikProps} from 'formik';
 
 import {getComponentByName} from '../../component_registry';
@@ -59,10 +59,6 @@ export function getComponentFromFieldConfig(
       InputLabelProps={{shrink: true}} //e.g, TextField label for Date and email and number
       onWheel={(event: any) => event.target.blur()}
       disabled={disabled}
-      // onChange={(event: any) => {
-      //   formProps.handleChange(event);
-      //   console.log(event.target.value + 'changed');
-      // }}
     />
   ) : (
     <Field
@@ -77,10 +73,6 @@ export function getComponentFromFieldConfig(
       onWheel={(event: any) => event.target.blur()}
       issyncing={isSyncing}
       disabled={disabled}
-      // onChange={(event: any) => {
-      //   formProps.handleChange(event);
-      //   console.log(event.target.value + 'changed');
-      // }}
     />
   );
 }

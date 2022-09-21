@@ -35,7 +35,7 @@ type ViewProps = {
   viewName: string;
   ui_specification: ProjectUIModel;
   formProps: FormikProps<{[key: string]: unknown}>;
-  draftState: RecordDraftState;
+  draftState?: RecordDraftState;
   annotation: any;
   handerannoattion: any;
   isSyncing?: string;
@@ -51,7 +51,7 @@ type SingleComponentProps = {
   formProps: FormikProps<{[key: string]: unknown}>;
   annotation: any;
   handerannoattion: any;
-  draftState: RecordDraftState;
+  draftState?: RecordDraftState;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
   isSyncing?: string;
@@ -62,7 +62,9 @@ function SingleComponent(props: SingleComponentProps) {
   const conflictfields = props.conflictfields;
   const fieldName = props.fieldName;
   const fields = props.fields;
-  const [isclicked, setIsClick] = useState(false);
+  const [isclicked, setIsClick] = useState(
+    props.disabled === true ? true : false
+  );
   const fieldConfig = fields[fieldName];
   const label =
     fieldConfig['component-parameters']['InputLabelProps'] !== undefined
@@ -106,6 +108,7 @@ function SingleComponent(props: SingleComponentProps) {
         >
           <Grid item style={{paddingLeft: '5px'}}>
             {props.annotation !== undefined &&
+              props.disabled !== true && //added for show annotation directly
               fields[fieldName].meta !== undefined &&
               fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
               fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
@@ -144,6 +147,7 @@ function SingleComponent(props: SingleComponentProps) {
                 annotation={props.annotation}
                 handerannoattion={props.handerannoattion}
                 isclicked={isclicked}
+                disabled={props.disabled ?? false}
               />
             </Grid>
           )}

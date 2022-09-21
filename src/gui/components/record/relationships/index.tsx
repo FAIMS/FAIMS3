@@ -43,7 +43,8 @@ import {
 } from '@mui/x-data-grid';
 
 import {TabPanelProps, RecordProps, RelationshipsComponentProps} from './types';
-
+import {Formik, Form} from 'formik';
+import {ViewComponent} from '../view';
 function TabPanel(props: TabPanelProps) {
   const {children, value, index, ...other} = props;
 
@@ -88,6 +89,36 @@ function a11yProps(index: number) {
     id: `child-parent-tab-${index}`,
     'aria-controls': `child-parent-tabpanel-${index}`,
   };
+}
+
+function ParentForm(props: any) {
+  const {values, viewName, ui_specification, annotation, fieldNames} = props;
+  const updateannotation = () => {
+    return;
+  };
+  return (
+    <Formik
+      initialValues={values}
+      validateOnMount={false}
+      onSubmit={() => console.log('')}
+    >
+      {formProps => {
+        return (
+          <Form>
+            <ViewComponent
+              viewName={viewName}
+              ui_specification={ui_specification}
+              formProps={formProps}
+              annotation={annotation}
+              handerannoattion={updateannotation}
+              fieldNames={fieldNames}
+              disabled={true}
+            />
+          </Form>
+        );
+      }}
+    </Formik>
+  );
 }
 
 export default function RelationshipsComponent(
@@ -192,7 +223,7 @@ export default function RelationshipsComponent(
             )}
           </Tabs>
         </Box>
-        {props.childRecords !== null ? (
+        {props.childRecords !== null && props.childRecords.length > 0 ? (
           <TabPanel value={value} index={0}>
             <DataGrid
               autoHeight
@@ -222,7 +253,7 @@ export default function RelationshipsComponent(
         ) : (
           ''
         )}
-        {props.parentRecords !== null ? (
+        {props.parentRecords !== null && props.parentRecords.length > 0 ? (
           <TabPanel value={value} index={1}>
             {props.parentRecords.length > 1 ? (
               <Typography
@@ -249,6 +280,25 @@ export default function RelationshipsComponent(
                 </ListItem>
               ))}
             </List>
+            {props.parentRecords[0] !== undefined &&
+            props.parentRecords[0]['persistentData'] !== undefined ? (
+              <>
+                <h2>Persistent Data in {props.parentRecords[0]['title']}</h2>
+                <ParentForm
+                  values={props.parentRecords[0]['persistentData'].data}
+                  viewName={props.parentRecords[0].type}
+                  ui_specification={props.ui_specification}
+                  annotation={
+                    props.parentRecords[0]['persistentData'].annotations
+                  }
+                  fieldNames={Object.keys(
+                    props.parentRecords[0]['persistentData'].data
+                  )}
+                />
+              </>
+            ) : (
+              ''
+            )}
           </TabPanel>
         ) : (
           ''

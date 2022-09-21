@@ -44,13 +44,7 @@ import {
 import {useLocation, Link} from 'react-router-dom';
 import {Typography} from '@mui/material';
 import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInfomation';
-import {
-  DataGrid,
-  GridColDef,
-  GridToolbarContainer,
-  GridToolbarFilterButton,
-  GridPagination,
-} from '@mui/x-data-grid';
+import {DataGrid, GridColDef} from '@mui/x-data-grid';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -91,16 +85,24 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (project_id !== undefined) {
       (async () => {
         const records = await getRecordsByType(project_id, props.related_type);
+        setOptions(records);
+        setIsactive(true);
+      })();
+    }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (project_id !== undefined && mounted) {
         const records_info = await get_RelatedFields_for_field(
           project_id,
-          props.id,
+          props.field.name,
           props.form.values
         );
-        setOptions(records);
         setRecordsInformation(records_info);
-        setIsactive(true);
         const newColumns: GridColDef[] = [];
-        if (records_info.length > 0) {
+        if (records_info.length > 0 && columns.length === 0) {
           Object.keys(records_info[0]).map((key: string) =>
             ['id', 'children', 'route', 'type'].includes(key)
               ? key
@@ -110,11 +112,17 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
                   minWidth: 100,
                 })
           );
+          Setcolumns(newColumns);
         }
-        Setcolumns(newColumns);
-      })();
-    }
-  }, []);
+      }
+    })();
+
+    return () => {
+      // executed when unmount
+      mounted = false;
+    };
+  }, [props.form.values[props.field.name]]);
+
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
@@ -152,10 +160,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           option.project_id === value.project_id &&
           option.record_id === value.record_id
         }
-        getOptionLabel={(option: RecordReference) => option.record_label}
+        getOptionLabel={(option: RecordReference) => option.record_label ?? ''}
         options={options}
         defaultValue={undefined}
         disabled={disbaled}
+        // onChange={(evant:any,value: any) => {
+        //   props.form.setFieldValue(props.field.name, value)
+        // }}
         // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
         renderInput={(params: any) => (
           <TextField
