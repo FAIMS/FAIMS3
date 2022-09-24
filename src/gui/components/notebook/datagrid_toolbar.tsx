@@ -19,7 +19,7 @@
  */
 
 import React, {useEffect} from 'react';
-import {IconButton, Divider, Box, Grid, TextField} from '@mui/material';
+import {IconButton, Divider, Box, Grid, TextField, Button} from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -54,26 +54,29 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   }, [value]);
 
   return (
-    <Box mt={1} mr={1}>
-      <TextField
-        size={'small'}
-        label="Search record data (case sensitive)"
-        value={value}
-        sx={{p: 0}}
-        onChange={handleChange}
-        InputProps={{
-          startAdornment: (
-            <IconButton onClick={handleClear}>
-              <ClearIcon fontSize={'small'} />
-            </IconButton>
-          ),
-          endAdornment: (
-            <IconButton onClick={handleSubmit}>
-              <SearchIcon />
-            </IconButton>
-          ),
-        }}
-      />
+    <Box style={{marginTop: '4px'}} mr={1}>
+      <Grid container spacing={1}>
+        <Grid item alignItems="stretch" style={{display: 'flex'}}>
+          <Button variant="text" size={'small'} onClick={handleClear}>
+            reset
+          </Button>
+        </Grid>
+        <Grid item>
+          <TextField
+            label="Search record data (case sensitive)"
+            value={value}
+            sx={{p: 0}}
+            onChange={handleChange}
+            variant="outlined"
+            size={'small'}
+          />
+        </Grid>
+        <Grid item alignItems="stretch" style={{display: 'flex'}}>
+          <Button variant="outlined" size={'small'} onClick={handleSubmit}>
+            <SearchIcon />
+          </Button>
+        </Grid>
+      </Grid>
     </Box>
   );
 }
@@ -87,7 +90,7 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
         justifyContent="space-between"
         alignItems="center"
       >
-        <Grid item>
+        <Grid item alignItems={'stretch'}>
           {/*<GridToolbarColumnsButton />*/}
           <GridToolbarFilterButton sx={{ml: 1}} />
           {/*<GridToolbarDensitySelector />*/}

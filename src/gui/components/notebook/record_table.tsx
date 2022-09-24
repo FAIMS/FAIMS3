@@ -147,12 +147,25 @@ function RecordsTable(props: RecordsTableProps) {
             </div>
           ),
         },
-        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+        {
+          field: 'created',
+          headerName: 'Created',
+          type: 'dateTime',
+          width: 200,
+        },
         {
           field: 'created_by',
           headerName: 'Created By',
           type: 'string',
           width: 200,
+        },
+        {
+          field: 'record_id',
+          headerName: 'UUID',
+          description: 'UUID Record ID',
+          type: 'string',
+          filterable: true,
+          hide: true,
         },
       ]
     : [
@@ -281,7 +294,7 @@ function RecordsTable(props: RecordsTableProps) {
           hide: true,
         },
       ];
-  console.log(rows);
+
   return (
     <Box component={Paper} elevation={0}>
       <DataGrid
