@@ -31,7 +31,7 @@ platform :android do
     sh("echo", FIP_CLOSED_LANE)
     sh("../bin/changelog.sh", VERSION)
     gradle(task: "assemble",
-           build_type: "Release",
+           build_type: "Debug",
            properties: {
               "versionCode" => VERSION,
               "versionName" => VERSION_NAME,
