@@ -27,6 +27,7 @@ import {useTheme} from '@mui/material/styles';
 import DraftTabBadge from './draft_tab_badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
+import ProjectStatus from './settings/status';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -203,22 +204,26 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           </TabPanel>
           <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
             <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} md={6} lg={4}>
                 <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
-                  <Typography variant={'h6'}  sx={{mb:2}}>Description</Typography>
+                  <Typography variant={'h6'} sx={{mb: 2}}>
+                    Description
+                  </Typography>
 
                   <Typography variant="body2" color="textPrimary" gutterBottom>
                     {project.description}
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} md={6} lg={4}>
                 <TableContainer
                   component={Paper}
                   elevation={0}
                   variant={'outlined'}
                 >
-                  <Typography variant={'h6'} sx={{m:2}} gutterBottom>About</Typography>
+                  <Typography variant={'h6'} sx={{m: 2}} gutterBottom>
+                    About
+                  </Typography>
                   <Table size={'small'}>
                     <TableBody>
                       <TableRow>
@@ -279,7 +284,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   </Table>
                 </TableContainer>
               </Grid>
-              <Grid item xs={12} sm={12} md={4} lg={4}>
+              <Grid item xs={12} sm={12} md={12} lg={4}>
                 <RangeHeader
                   project={project}
                   handleAIEdit={handleNotebookTabChange}

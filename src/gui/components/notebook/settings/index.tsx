@@ -66,6 +66,7 @@ import {
 } from '../../../../users';
 import {listenDataDB} from '../../../../sync';
 import CircularLoading from '../../ui/circular_loading';
+import ProjectStatus from './status';
 
 export default function NotebookSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -156,21 +157,13 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
-            <Typography variant={'h6'} sx={{mb:2}}>
+            <Typography variant={'h6'} sx={{mb: 2}}>
               Notebook Status
             </Typography>
             <Grid container spacing={1}>
               <Grid item xs={12}>
-                <Box sx={{p: 1, display: 'flex'}}>
-                  <FiberManualRecordIcon
-                    fontSize="small"
-                    sx={{
-                      mr: 1,
-                      color:
-                        project_info.status === 'live' ? '#4caf50' : '#d9182e',
-                    }}
-                  />
-                  {project_info.status}
+                <Box>
+                  <ProjectStatus status={project_info.status} />
                 </Box>
               </Grid>
               {role_info.value?.can_edit_notebook_on_device ||
@@ -221,7 +214,7 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
-            <Typography variant={'h6'}  sx={{mb:2}}>
+            <Typography variant={'h6'} sx={{mb: 2}}>
               Get attachments from other devices
             </Typography>
             {isSyncing !== null ? (
@@ -280,7 +273,7 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
-            <Typography variant={'h6'}  sx={{mb:2}}>
+            <Typography variant={'h6'} sx={{mb: 2}}>
               Metadata DB contents
             </Typography>
             {loading ? (
