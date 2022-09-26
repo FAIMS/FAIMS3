@@ -18,7 +18,12 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   return (
     <Box display="flex" flexDirection="row-reverse" sx={{p: 1, m: 1}}>
-      <MuiBreadcrumbs aria-label="breadcrumb" maxItems={not_xs ? 4 : 2}>
+      <MuiBreadcrumbs
+        aria-label="breadcrumb"
+        maxItems={not_xs ? 4 : 2}
+        itemsAfterCollapse={2}
+        itemsBeforeCollapse={0}
+      >
         {data.map(item => {
           return item.link !== undefined ? (
             <Link

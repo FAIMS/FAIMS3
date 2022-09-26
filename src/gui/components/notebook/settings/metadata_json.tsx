@@ -45,7 +45,6 @@ export default function MetaDataJsonComponent(
             }
             startIcon={<ContentCopyIcon />}
             variant={'outlined'}
-            sx={{m: 1}}
           >
             Copy to Clipboard
           </Button>

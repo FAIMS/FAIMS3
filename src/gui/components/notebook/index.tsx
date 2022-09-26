@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {
+  Divider,
   Tabs,
   Tab,
   Typography,
@@ -122,7 +123,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
       ) : (
         <Box>
           <Box
-            mb={1}
+            mb={2}
             sx={{
               marginLeft: {sm: '-16px', md: 0},
               marginRight: {sm: '-16px', md: 0},
@@ -155,7 +156,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             {/* Add Record Buttons */}
             <Box>
-              <Typography variant={'overline'}>Add New Record</Typography>
+              <Typography variant={'overline'} sx={{marginTop: '-8px'}}>
+                Add New Record
+              </Typography>
               <AddRecordButtons project={project} />
             </Box>
             {/* Records/Drafts */}
@@ -201,25 +204,26 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
             <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant={'overline'}>Description</Typography>
                 <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
+                  <Typography variant={'h6'}  sx={{mb:2}}>Description</Typography>
+
                   <Typography variant="body2" color="textPrimary" gutterBottom>
                     {project.description}
                   </Typography>
                 </Box>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant={'overline'}>About</Typography>
                 <TableContainer
                   component={Paper}
                   elevation={0}
                   variant={'outlined'}
                 >
+                  <Typography variant={'h6'} sx={{m:2}} gutterBottom>About</Typography>
                   <Table size={'small'}>
                     <TableBody>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>Status</Typography>
+                          <Typography variant={'overline'}>Status</Typography>
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
@@ -231,7 +235,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                       </TableRow>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>
+                          <Typography variant={'overline'}>
                             Lead Institution
                           </Typography>
                         </TableCell>
@@ -245,7 +249,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                       </TableRow>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>Project Lead</Typography>
+                          <Typography variant={'overline'}>
+                            Project Lead
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
@@ -257,7 +263,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                       </TableRow>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>Last Updated</Typography>
+                          <Typography variant={'overline'}>
+                            Last Updated
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
@@ -272,7 +280,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 </TableContainer>
               </Grid>
               <Grid item xs={12} sm={12} md={4} lg={4}>
-                <Typography variant={'overline'}>Range Indices</Typography>
                 <RangeHeader
                   project={project}
                   handleAIEdit={handleNotebookTabChange}

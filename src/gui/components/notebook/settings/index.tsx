@@ -65,6 +65,7 @@ import {
   ADMIN_ROLE,
 } from '../../../../users';
 import {listenDataDB} from '../../../../sync';
+import CircularLoading from '../../ui/circular_loading';
 
 export default function NotebookSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -148,7 +149,6 @@ export default function NotebookSettings() {
     <Box>
       <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
         <Grid item xs={12} sm={12} md={6} lg={4}>
-          <Typography variant={'overline'}>Notebook Status</Typography>
           <Box
             component={Paper}
             variant={'outlined'}
@@ -156,6 +156,9 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
+            <Typography variant={'h6'} sx={{mb:2}}>
+              Notebook Status
+            </Typography>
             <Grid container spacing={1}>
               <Grid item xs={12}>
                 <Box sx={{p: 1, display: 'flex'}}>
@@ -211,9 +214,6 @@ export default function NotebookSettings() {
             </Grid>
           </Box>
 
-          <Typography variant={'overline'}>
-            Get attachments from other devices
-          </Typography>
           <Box
             component={Paper}
             variant={'outlined'}
@@ -221,6 +221,9 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
+            <Typography variant={'h6'}  sx={{mb:2}}>
+              Get attachments from other devices
+            </Typography>
             {isSyncing !== null ? (
               <Box>
                 <FormControlLabel
@@ -270,10 +273,18 @@ export default function NotebookSettings() {
       </Grid>
       <Grid container>
         <Grid item xs={12} sm={12} md={8}>
-          <Typography variant={'overline'}>Metadata DB contents</Typography>
-          <Box mb={1} component={Paper} variant={'outlined'} elevation={0}>
+          <Box
+            component={Paper}
+            variant={'outlined'}
+            elevation={0}
+            p={2}
+            mb={2}
+          >
+            <Typography variant={'h6'}  sx={{mb:2}}>
+              Metadata DB contents
+            </Typography>
             {loading ? (
-              'Loading...'
+              <CircularLoading label={'Loading...'} />
             ) : (
               <MetaDataJsonComponentProps value={metadbContents} />
             )}
