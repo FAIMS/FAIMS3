@@ -27,7 +27,16 @@ import {
   GridCellParams,
   GridEventListener,
 } from '@mui/x-data-grid';
-import {Typography, Box, Paper, Alert, Grid} from '@mui/material';
+import {
+  Typography,
+  Box,
+  Paper,
+  Alert,
+  Grid,
+  FormGroup,
+  FormControlLabel,
+  Switch,
+} from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArticleIcon from '@mui/icons-material/Article';
 import {useTheme} from '@mui/material/styles';
@@ -65,10 +74,26 @@ type RecordsBrowseTableProps = {
 
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
+
+  // default for mobileView is on (collapsed table)
+  const [mobileViewSwitchValue, setMobileViewSwitchValue] = React.useState(
+    true
+  );
+
   const theme = useTheme();
   const history = useHistory();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+
+  // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
+  const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
+
   const defaultMaxRowsMobile = 10;
+
+  const handleToggleMobileView = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setMobileViewSwitchValue(event.target.checked);
+  };
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
@@ -91,7 +116,7 @@ function RecordsTable(props: RecordsTableProps) {
       ? props.viewsets[params.row.type.toString()].label ?? params.row.type
       : params.row.type;
   }
-  const columns: GridColDef[] = not_xs
+  const columns: GridColDef[] = !mobileView
     ? [
         {
           field: 'article_icon',
@@ -296,47 +321,65 @@ function RecordsTable(props: RecordsTableProps) {
       ];
 
   return (
-    <Box component={Paper} elevation={0}>
-      <DataGrid
-        rows={rows}
-        loading={loading}
-        getRowId={r => r.record_id}
-        columns={columns}
-        autoHeight
-        sx={{cursor: 'pointer'}}
-        getRowHeight={() => 'auto'}
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        density={'standard'}
-        disableSelectionOnClick
-        onRowClick={handleRowClick}
-        getRowClassName={params => {
-          return `${params.row.conflicts ? 'bg-warning' : ''}`;
-        }}
-        components={{
-          Toolbar: NotebookDataGridToolbar,
-        }}
-        componentsProps={{
-          toolbar: {
-            handleQueryFunction: props.handleQueryFunction,
-          },
-        }}
-        initialState={{
-          sorting: {
-            sortModel: [{field: 'updated', sort: 'desc'}],
-          },
-          pagination: {
-            pageSize:
-              maxRows !== null
-                ? not_xs
-                  ? maxRows
-                  : defaultMaxRowsMobile
-                : not_xs
-                ? 25
-                : defaultMaxRowsMobile,
-          },
-        }}
-      />
-    </Box>
+    <React.Fragment>
+      <Box component={Paper} elevation={0}>
+        <DataGrid
+          rows={rows}
+          loading={loading}
+          getRowId={r => r.record_id}
+          columns={columns}
+          autoHeight
+          sx={{cursor: 'pointer'}}
+          getRowHeight={() => 'auto'}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          density={'standard'}
+          disableSelectionOnClick
+          onRowClick={handleRowClick}
+          getRowClassName={params => {
+            return `${params.row.conflicts ? 'bg-warning' : ''}`;
+          }}
+          components={{
+            Toolbar: NotebookDataGridToolbar,
+          }}
+          componentsProps={{
+            toolbar: {
+              handleQueryFunction: props.handleQueryFunction,
+            },
+          }}
+          initialState={{
+            sorting: {
+              sortModel: [{field: 'updated', sort: 'desc'}],
+            },
+            pagination: {
+              pageSize:
+                maxRows !== null
+                  ? not_xs
+                    ? maxRows
+                    : defaultMaxRowsMobile
+                  : not_xs
+                  ? 25
+                  : defaultMaxRowsMobile,
+            },
+          }}
+        />
+      </Box>
+      {not_xs ? (
+        ''
+      ) : (
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                defaultChecked
+                checked={mobileView}
+                onChange={handleToggleMobileView}
+              />
+            }
+            label={'Toggle Mobile View'}
+          />
+        </FormGroup>
+      )}
+    </React.Fragment>
   );
 }
 

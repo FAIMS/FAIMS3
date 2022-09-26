@@ -26,7 +26,15 @@ import {
   GridCellParams,
   GridEventListener,
 } from '@mui/x-data-grid';
-import {Typography, Box, Paper, Grid} from '@mui/material';
+import {
+  Typography,
+  Box,
+  Paper,
+  Grid,
+  FormGroup,
+  FormControlLabel,
+  Switch,
+} from '@mui/material';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useHistory} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
@@ -51,14 +59,32 @@ type DraftsRecordProps = {
   rows: any;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
-  not_xs: boolean;
 };
 
 function DraftRecord(props: DraftsRecordProps) {
-  const {project_id, maxRows, rows, loading, not_xs} = props;
-  // const newrows: any = rows;
-  const defaultMaxRowsMobile = 25;
+  const {project_id, maxRows, rows, loading} = props;
+
+  // default for mobileView is on (collapsed table)
+  const [mobileViewSwitchValue, setMobileViewSwitchValue] = React.useState(
+    true
+  );
+
+  const theme = useTheme();
   const history = useHistory();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+
+  // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
+  const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
+
+  const defaultMaxRowsMobile = 10;
+
+  const handleToggleMobileView = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setMobileViewSwitchValue(event.target.checked);
+  };
+
+  // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     history.push(
       ROUTES.getDraftRoute(
@@ -69,6 +95,7 @@ function DraftRecord(props: DraftsRecordProps) {
       )
     );
   };
+
   function getRowType(params: GridCellParams) {
     // The type (or Kind) is prettified and should be filterable as such.
     return props.viewsets !== null &&
@@ -80,7 +107,7 @@ function DraftRecord(props: DraftsRecordProps) {
           params.row.type
       : params.row.type;
   }
-  const columns: GridColDef[] = not_xs
+  const columns: GridColDef[] = !mobileView
     ? [
         {
           field: 'draft_icon',
@@ -174,43 +201,61 @@ function DraftRecord(props: DraftsRecordProps) {
       ];
 
   return (
-    <DataGrid
-      key={'drafttable'}
-      rows={rows}
-      loading={loading}
-      getRowId={r => r._id}
-      columns={columns}
-      autoHeight
-      sx={{cursor: 'pointer'}}
-      getRowHeight={() => 'auto'}
-      disableSelectionOnClick
-      onRowClick={handleRowClick}
-      components={{
-        Toolbar: NotebookDraftDataGridToolbar,
-      }}
-      initialState={{
-        sorting: {
-          sortModel: [{field: 'updated', sort: 'desc'}],
-        },
-        pagination: {
-          pageSize:
-            maxRows !== null
-              ? not_xs
-                ? maxRows
-                : defaultMaxRowsMobile
-              : not_xs
-              ? 25
-              : defaultMaxRowsMobile,
-        },
-      }}
-    />
+    <React.Fragment>
+      <Box component={Paper} elevation={0}>
+        <DataGrid
+          key={'drafttable'}
+          rows={rows}
+          loading={loading}
+          getRowId={r => r._id}
+          columns={columns}
+          autoHeight
+          sx={{cursor: 'pointer'}}
+          getRowHeight={() => 'auto'}
+          disableSelectionOnClick
+          onRowClick={handleRowClick}
+          components={{
+            Toolbar: NotebookDraftDataGridToolbar,
+          }}
+          initialState={{
+            sorting: {
+              sortModel: [{field: 'updated', sort: 'desc'}],
+            },
+            pagination: {
+              pageSize:
+                maxRows !== null
+                  ? not_xs
+                    ? maxRows
+                    : defaultMaxRowsMobile
+                  : not_xs
+                  ? 25
+                  : defaultMaxRowsMobile,
+            },
+          }}
+        />
+      </Box>
+      {not_xs ? (
+        ''
+      ) : (
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                defaultChecked
+                checked={mobileView}
+                onChange={handleToggleMobileView}
+              />
+            }
+            label={'Toggle Mobile View'}
+          />
+        </FormGroup>
+      )}
+    </React.Fragment>
   );
 }
 export default function DraftsTable(props: DraftsTableProps) {
   const {project_id, maxRows} = props;
   const [loading, setLoading] = useState(true);
-  const theme = useTheme();
-  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [rows, setRows] = useState<Array<DraftMetadata>>([]);
 
@@ -233,16 +278,13 @@ export default function DraftsTable(props: DraftsTableProps) {
   }, [project_id, rows]);
 
   return (
-    <Box component={Paper} elevation={0}>
-      <DraftRecord
-        project_id={project_id}
-        maxRows={maxRows}
-        rows={rows}
-        loading={loading}
-        viewsets={props.viewsets}
-        not_xs={not_xs}
-      />
-    </Box>
+    <DraftRecord
+      project_id={project_id}
+      maxRows={maxRows}
+      rows={rows}
+      loading={loading}
+      viewsets={props.viewsets}
+    />
   );
 }
 DraftsTable.defaultProps = {
