@@ -1,12 +1,9 @@
 import React from 'react';
 import {
   Button,
-  Divider,
   Grid,
-  Typography,
   TextField,
   Autocomplete,
-  Box,
   SelectChangeEvent,
   FormControl,
   InputLabel,
@@ -41,12 +38,16 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
      * Submit relationship // TODO
      */
     setSubmitting(true);
-    const timer = setTimeout(() => setSubmitting(false), 3000);
+    const timer = setTimeout(() => {
+      setSubmitting(false);
+      setRelationship('');
+      setValue(options[0]);
+      setInputValue('');
+    }, 3000);
     return () => {
       clearTimeout(timer);
     };
   };
-
 
   return (
     <Grid container spacing={1} direction="row" justifyContent="space-between">
@@ -61,7 +62,9 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             onChange={handleChange}
           >
             {props.relationships.map(r => (
-              <MenuItem value={r.link} key={r.link}>{r.link}</MenuItem>
+              <MenuItem value={r.link} key={r.link}>
+                {r.link}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>

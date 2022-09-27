@@ -36,12 +36,20 @@ export default function RelationshipsComponent(
    *
    *
    */
-
+  // TODO these are defined... on the notebook?
+  const relationship_types = [
+    {link: 'is below', reciprocal: 'is above'},
+    {link: 'is above', reciprocal: 'is below'},
+    {link: 'is related to', reciprocal: 'is related to'},
+  ];
   return (
     <Box mb={2}>
       <ChildRecords child_records={props.child_records} />
       <ParentRecords parent_records={props.parent_records} />
-      <LinkedRecords linked_records={props.linked_records} />
+      <LinkedRecords
+        linked_records={props.linked_records}
+        relationships={relationship_types}
+      />
     </Box>
   );
 }

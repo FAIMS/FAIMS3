@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, Grid, Typography, Chip, ChipProps} from '@mui/material';
+import {Box, Chip, ChipProps} from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
