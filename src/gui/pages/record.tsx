@@ -432,7 +432,6 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 1,
-
                           lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
                           route: 'go to record 1!',
                           type: 'Water',
@@ -440,7 +439,6 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 2,
-
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
@@ -448,7 +446,6 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 5,
-
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
@@ -456,7 +453,6 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 6,
-
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
@@ -464,7 +460,6 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 7,
-
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Rock',

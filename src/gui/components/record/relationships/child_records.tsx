@@ -54,7 +54,6 @@ export default function ChildRecords(props: ChildRecordProps) {
       headerName: 'UUID',
       description: 'UUID Record ID',
       type: 'string',
-      filterable: true,
       hide: true,
     },
   ];
@@ -86,6 +85,7 @@ export default function ChildRecords(props: ChildRecordProps) {
                 columnVisibilityModel: {
                   // Hide column route, the other columns will remain visible
                   route: false,
+                  record_id: false
                 },
               },
             }}

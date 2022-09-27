@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useContext} from 'react';
 import {
   Button,
   Grid,
@@ -11,6 +11,8 @@ import {
   MenuItem,
 } from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
+import {ActionType} from '../../../../context/actions';
+import {store} from '../../../../context/store';
 
 export interface RelationshipType {
   link: string;
@@ -29,20 +31,42 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
   const options = ['Record 1', 'Record 2'];
   const [value, setValue] = React.useState<string | null>(options[0]);
   const [inputValue, setInputValue] = React.useState('');
-
+  const {dispatch} = useContext(store);
   const handleChange = (event: SelectChangeEvent) => {
     setRelationship(event.target.value as string);
   };
   const handleSubmit = () => {
     /**
-     * Submit relationship // TODO
+     * Submit relationship to couchDB
+     * TODO replace setTimeout with actual request to couchDB
      */
     setSubmitting(true);
+    // mimic sending request to couch
     const timer = setTimeout(() => {
+      // reset local state of component
       setSubmitting(false);
       setRelationship('');
       setValue(options[0]);
       setInputValue('');
+
+      // response error
+      dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message:
+            'Relationship between record A and B could not be added. Contact support.',
+          severity: 'error',
+        },
+      });
+
+      // response success
+      dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: 'Relationship between record A and B added',
+          severity: 'success',
+        },
+      });
     }, 3000);
     return () => {
       clearTimeout(timer);

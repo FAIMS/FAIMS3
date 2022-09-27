@@ -92,7 +92,6 @@ export default function LinkedRecords(props: LinkedRecordProps) {
       headerName: 'UUID',
       description: 'UUID Record ID',
       type: 'string',
-      filterable: true,
       hide: true,
     },
   ];
@@ -142,6 +141,7 @@ export default function LinkedRecords(props: LinkedRecordProps) {
                   columnVisibilityModel: {
                     // Hide column route, the other columns will remain visible
                     route: false,
+                    record_id: false
                   },
                 },
               }}
