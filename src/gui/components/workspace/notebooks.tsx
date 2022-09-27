@@ -46,6 +46,7 @@ type NoteBookListProps = {
 
 export default function NoteBooks(props: NoteBookListProps) {
   const [loading, setLoading] = useState<boolean>(false);
+  const [counter, setCounter] = React.useState(5);
   const history = useHistory();
   const pouchProjectList = useEventedPromise(
     getProjectList,
@@ -105,12 +106,19 @@ export default function NoteBooks(props: NoteBookListProps) {
     },
   ];
 
+  // if the counter changes, add a new timeout, but only if > 0
+  useEffect(() => {
+    counter > 0 && setTimeout(() => setCounter(counter - 1), 1000);
+  }, [counter]);
+
   return (
     <Box>
       {pouchProjectList === null ? (
         <CircularLoading label={'Loading notebooks'} />
       ) : Object.keys(pouchProjectList).length === 0 ? (
-        <Alert severity={'info'}>No notebooks found</Alert>
+        <Alert severity={'info'}>
+          No notebooks found. Checking again in {counter} seconds.
+        </Alert>
       ) : (
         <Box component={Paper} elevation={0}>
           <DataGrid

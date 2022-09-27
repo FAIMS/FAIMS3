@@ -241,7 +241,6 @@ function DraftRecord(props: DraftsRecordProps) {
           <FormControlLabel
             control={
               <Switch
-                defaultChecked
                 checked={mobileView}
                 onChange={handleToggleMobileView}
               />

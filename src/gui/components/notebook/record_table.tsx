@@ -18,7 +18,7 @@
  *   Components for displaying record metadata in a table.
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {useHistory} from 'react-router-dom';
 
 import {
@@ -61,7 +61,6 @@ type RecordsTableProps = {
   rows: RecordMetadata[];
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
-  // query: string;
   handleQueryFunction: Function;
 };
 
@@ -369,11 +368,7 @@ function RecordsTable(props: RecordsTableProps) {
         <FormGroup>
           <FormControlLabel
             control={
-              <Switch
-                defaultChecked
-                checked={mobileView}
-                onChange={handleToggleMobileView}
-              />
+              <Switch checked={mobileView} onChange={handleToggleMobileView} />
             }
             label={'Toggle Mobile View'}
           />
@@ -384,14 +379,13 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
-  // const {project_id, maxRows, filter_deleted} = props;
   const [query, setQuery] = React.useState('');
 
   if (DEBUG_APP) {
     console.debug('Filter deleted?:', props.filter_deleted);
   }
 
-  const rows = useEventedPromise(
+  const pouchData = useEventedPromise(
     async (project_id: ProjectID, query: string) => {
       if (DEBUG_APP) {
         console.log('RecordsTable updating', project_id);
@@ -420,17 +414,23 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
     query
   );
 
+  useEffect(() => {
+    if (pouchData !== undefined) {
+      console.log('pouchData.value changed', pouchData.value?.length);
+    }
+  }, [pouchData.value]);
+
   if (DEBUG_APP) {
-    console.debug('New records:', rows);
+    console.debug('New records:', pouchData);
   }
+
   return (
     <RecordsTable
       project_id={props.project_id}
       maxRows={props.maxRows}
-      rows={rows.value ?? []}
-      loading={rows.loading !== undefined}
+      rows={pouchData.value ?? []}
+      loading={pouchData.loading !== undefined}
       viewsets={props.viewsets}
-      // query={query}
       handleQueryFunction={setQuery}
     />
   );
