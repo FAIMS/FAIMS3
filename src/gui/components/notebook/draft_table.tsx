@@ -33,7 +33,7 @@ import {
   Grid,
   FormGroup,
   FormControlLabel,
-  Switch,
+  Switch, Link,
 } from '@mui/material';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useHistory} from 'react-router-dom';
@@ -145,7 +145,7 @@ function DraftRecord(props: DraftsRecordProps) {
           description: 'Human Readable Record ID',
           type: 'string',
           width: 300,
-          renderCell: (params: GridCellParams) => <span>{params.value}</span>,
+          renderCell:(params:GridCellParams) => <Link underline={'none'} sx={{fontWeight:'bold'}}>{params.value}</Link>
         },
         {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
         {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},

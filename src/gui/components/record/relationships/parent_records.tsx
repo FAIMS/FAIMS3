@@ -1,5 +1,5 @@
 import React from 'react';
-import {Divider, Grid, Typography} from '@mui/material';
+import {Divider, Grid, Link, Typography} from '@mui/material';
 import {RecordProps} from './types';
 import {
   DataGrid,
@@ -40,11 +40,12 @@ export default function ParentRecords(props: ParentRecordProps) {
       headerName: 'HRID',
       flex: 0.2,
       minWidth: 70,
+      renderCell:(params:GridCellParams) => <Link underline={'none'} sx={{fontWeight:'bold'}}>{params.value}</Link>
     },
     {
       field: 'lastUpdatedBy',
       headerName: 'Last Updated',
-      flex: 0.2,
+      flex: 0.6,
       minWidth: 300,
     },
     {field: 'route', hide: true, filterable: false},

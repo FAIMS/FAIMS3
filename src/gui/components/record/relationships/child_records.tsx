@@ -1,5 +1,5 @@
 import React from 'react';
-import {Divider, Button, Grid, Typography} from '@mui/material';
+import {Divider, Button, Grid, Typography, Link} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {RecordProps} from './types';
 import {
@@ -41,11 +41,16 @@ export default function ChildRecords(props: ChildRecordProps) {
       headerName: 'HRID',
       flex: 0.2,
       minWidth: 70,
+      renderCell: (params: GridCellParams) => (
+        <Link underline={'none'} sx={{fontWeight: 'bold'}}>
+          {params.value}
+        </Link>
+      ),
     },
     {
       field: 'lastUpdatedBy',
       headerName: 'Last Updated',
-      flex: 0.2,
+      flex: 0.6,
       minWidth: 300,
     },
     {field: 'route', hide: true, filterable: false},
@@ -85,7 +90,7 @@ export default function ChildRecords(props: ChildRecordProps) {
                 columnVisibilityModel: {
                   // Hide column route, the other columns will remain visible
                   route: false,
-                  record_id: false
+                  record_id: false,
                 },
               },
             }}

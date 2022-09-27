@@ -431,28 +431,28 @@ export default function Record() {
                       child_records={[
                         {
                           record_id: uuidv4(),
-                          hrid: 1,
+                          hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:44',
                           lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
                           route: 'go to record 1!',
                           type: 'Water',
                         },
                         {
                           record_id: uuidv4(),
-                          hrid: 2,
+                          hrid: 'Mundi-V3.4',
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
                         },
                         {
                           record_id: uuidv4(),
-                          hrid: 5,
+                          hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:45',
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
                         },
                         {
                           record_id: uuidv4(),
-                          hrid: 6,
+                          hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:4987',
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',

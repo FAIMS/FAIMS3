@@ -6,6 +6,7 @@ import {
   Typography,
   ButtonProps,
   Collapse,
+  Link,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {styled} from '@mui/material/styles';
@@ -73,18 +74,23 @@ export default function LinkedRecords(props: LinkedRecordProps) {
       headerName: 'HRID',
       flex: 0.2,
       minWidth: 70,
+      renderCell: (params: GridCellParams) => (
+        <Link underline={'none'} sx={{fontWeight: 'bold'}}>
+          {params.value}
+        </Link>
+      ),
+    },
+    {
+      field: 'lastUpdatedBy',
+      headerName: 'Last Updated',
+      flex: 0.4,
+      minWidth: 300,
     },
     {
       field: 'description',
       headerName: 'relationship',
       flex: 0.2,
       minWidth: 100,
-    },
-    {
-      field: 'lastUpdatedBy',
-      headerName: 'Last Updated',
-      flex: 0.2,
-      minWidth: 300,
     },
     {field: 'route', hide: true, filterable: false},
     {
@@ -141,7 +147,7 @@ export default function LinkedRecords(props: LinkedRecordProps) {
                   columnVisibilityModel: {
                     // Hide column route, the other columns will remain visible
                     route: false,
-                    record_id: false
+                    record_id: false,
                   },
                 },
               }}
