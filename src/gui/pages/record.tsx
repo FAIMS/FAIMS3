@@ -418,14 +418,12 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 'CBC123',
-                          title: 'Bucket',
                           type: 'Container',
                           route: 'parent_route',
                         },
                         {
                           record_id: uuidv4(),
                           hrid: 'CBC123',
-                          title: 'Bowl',
                           type: 'Container',
                           route: 'parent_route',
                         },
@@ -434,7 +432,7 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 1,
-                          title: 'Snow',
+
                           lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
                           route: 'go to record 1!',
                           type: 'Water',
@@ -442,7 +440,7 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 2,
-                          title: 'Snow',
+
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
@@ -450,7 +448,7 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 5,
-                          title: 'Snow',
+
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
@@ -458,7 +456,7 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 6,
-                          title: 'Snow',
+
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
@@ -466,7 +464,7 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 7,
-                          title: 'Soil',
+
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Rock',
@@ -476,7 +474,6 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 13,
-                          title: 'Snow',
                           lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
                           route: 'go to record 1!',
                           type: 'Water',
@@ -485,7 +482,7 @@ export default function Record() {
                         {
                           record_id: uuidv4(),
                           hrid: 23,
-                          title: 'Rain',
+
                           lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
                           route: 'go to record 1!',
                           type: 'Water',

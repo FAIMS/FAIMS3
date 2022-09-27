@@ -4,7 +4,6 @@ import {RecordID} from '../../../../datamodel/core';
 export interface RecordProps {
   record_id: RecordID;
   hrid: string | number;
-  title: string;
   route: string;
   lastUpdatedBy?: string;
   type?: string;

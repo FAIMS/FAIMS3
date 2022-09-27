@@ -37,22 +37,16 @@ export default function LinkedRecords(props: LinkedRecordProps) {
       minWidth: 100,
     },
     {
-      field: 'title',
-      headerName: 'Title',
+      field: 'hrid',
+      headerName: 'HRID',
       flex: 0.2,
-      minWidth: 100,
+      minWidth: 70,
     },
     {
       field: 'description',
       headerName: 'relationship',
       flex: 0.2,
       minWidth: 100,
-    },
-    {
-      field: 'hrid',
-      headerName: 'HRID',
-      flex: 0.2,
-      minWidth: 70,
     },
     {
       field: 'lastUpdatedBy',

@@ -36,12 +36,6 @@ export default function ParentRecords(props: ParentRecordProps) {
       minWidth: 100,
     },
     {
-      field: 'title',
-      headerName: 'Title',
-      flex: 0.2,
-      minWidth: 100,
-    },
-    {
       field: 'hrid',
       headerName: 'HRID',
       flex: 0.2,
