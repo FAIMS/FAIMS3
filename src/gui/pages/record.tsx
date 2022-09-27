@@ -20,7 +20,7 @@
 
 import React, {useContext, useEffect, useState} from 'react';
 import {useHistory, useParams, Redirect} from 'react-router-dom';
-
+import {v4 as uuidv4} from 'uuid';
 import {
   AppBar,
   Alert,
@@ -365,7 +365,7 @@ export default function Record() {
               scrollButtons="auto"
               centered={not_xs ? false : true}
             >
-              <Tab label="View" value="0" />
+              <Tab label="Links" value="0" />
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
               <Tab label="Meta" value="3" />
@@ -413,121 +413,87 @@ export default function Record() {
               return (
                 <React.Fragment>
                   <TabPanel value="0" style={{padding: theme.spacing(2)}}>
-                    <Box>
-                      <RelationshipsComponent
-                        parentRecords={[
-                          {
-                            id: 'CBC123',
-                            title: 'Type: Parent ID',
-                            route: 'parent_route',
-                          },
-                          {
-                            id: 'CBC123',
-                            title: 'Water: Snow-1234',
-                            route: 'parent_route',
-                          },
-                        ]}
-                        childRecords={[
-                          {
-                            id: 1,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
-                            route: 'go to record 1!',
-                            type: 'Water',
-                            children: [
-                              {
-                                id: '12345',
-                                title: 'title',
-                                route: 'child_route',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title2',
-                                route: 'child_route2',
-                              },
-                            ],
-                          },
-                          {
-                            id: 2,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Water',
-                            children: [],
-                          },
-                          {
-                            id: 5,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Water',
-                            children: [
-                              {
-                                id: '12345',
-                                title: 'title',
-                                route: 'child_route',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title2',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title3',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title4',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title5',
-                                route: 'child_route2',
-                              },
-                              {
-                                id: 'abcdef',
-                                title: 'title6',
-                                route: 'child_route2',
-                              },
-                            ],
-                          },
-                          {
-                            id: 6,
-                            title: 'Snow',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Water',
-                            children: [],
-                          },
-                          {
-                            id: 7,
-                            title: 'Soil',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                            route: 'go to record 2!',
-                            type: 'Rock',
-                            children: [],
-                          },
-                        ]}
-                      />
-                      <Box style={{border: 'solid 1px red'}} mb={2}>
-                        <RecordReadView
-                          project_id={project_id}
-                          record_id={record_id}
-                          revision_id={updatedrevision_id}
-                          ui_specification={uiSpec}
-                          draft_id={draft_id}
-                          metaSection={metaSection}
-                          handleSetIsDraftSaving={setIsDraftSaving}
-                          handleSetDraftLastSaved={setDraftLastSaved}
-                          handleSetDraftError={setDraftError}
-                        />
-                      </Box>
-                    </Box>
+                    <RelationshipsComponent
+                      parent_records={[
+                        {
+                          record_id: uuidv4(),
+                          hrid: 'CBC123',
+                          title: 'Bucket',
+                          type: 'Container',
+                          route: 'parent_route',
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 'CBC123',
+                          title: 'Bowl',
+                          type: 'Container',
+                          route: 'parent_route',
+                        },
+                      ]}
+                      child_records={[
+                        {
+                          record_id: uuidv4(),
+                          hrid: 1,
+                          title: 'Snow',
+                          lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
+                          route: 'go to record 1!',
+                          type: 'Water',
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 2,
+                          title: 'Snow',
+                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          route: 'go to record 2!',
+                          type: 'Water',
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 5,
+                          title: 'Snow',
+                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          route: 'go to record 2!',
+                          type: 'Water',
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 6,
+                          title: 'Snow',
+                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          route: 'go to record 2!',
+                          type: 'Water',
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 7,
+                          title: 'Soil',
+                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          route: 'go to record 2!',
+                          type: 'Rock',
+                        },
+                      ]}
+                      linked_records={[
+                        {
+                          record_id: uuidv4(),
+                          hrid: 13,
+                          title: 'Snow',
+                          lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
+                          route: 'go to record 1!',
+                          type: 'Water',
+                          description: 'is below',
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 23,
+                          title: 'Rain',
+                          lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
+                          route: 'go to record 1!',
+                          type: 'Water',
+                          description: 'is next to',
+                        },
+                      ]}
+                    />
                   </TabPanel>
-
                   <TabPanel value="1" style={{padding: theme.spacing(2)}}>
                     <Box pl={0}>
                       {conflicts !== null &&
