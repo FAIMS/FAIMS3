@@ -37,7 +37,7 @@ export class ActionButton extends React.Component<
   render() {
     return (
       <div>
-        <p>{this.props.helperText}</p>
+        <span>{this.props.helperText}</span>
         <Button
           variant="outlined"
           color={'primary'}

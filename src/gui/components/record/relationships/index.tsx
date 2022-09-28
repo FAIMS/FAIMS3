@@ -121,6 +121,11 @@ function ParentForm(props: any) {
   );
 }
 
+function getColumns(columns: GridColDef[]){
+  columns[5]={field: 'relation_type_vocabPair', headerName:'Relation Type Label',flex: 0.2}
+  return columns;
+}
+
 export default function RelationshipsComponent(
   props: RelationshipsComponentProps
 ) {
@@ -165,7 +170,7 @@ export default function RelationshipsComponent(
     {
       field: 'type',
       headerName: 'Record Type',
-      flex: 0.2,
+      flex: 0.1,
       minWidth: 100,
     },
     {
@@ -194,7 +199,7 @@ export default function RelationshipsComponent(
           ))}
         </List>
       ),
-    },
+    }
   ];
 
   return (
@@ -322,7 +327,7 @@ export default function RelationshipsComponent(
               getRowHeight={() => 'auto'}
               density={'compact'}
               rows={props.linkRecords}
-              columns={columns}
+              columns={getColumns(columns)}
               pageSize={5}
               rowsPerPageOptions={[5]}
               disableSelectionOnClick

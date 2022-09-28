@@ -24,7 +24,7 @@ import {
   getFirstRecordHead,
 } from '../../../../data_storage';
 import {ProjectUIModel} from '../../../../datamodel/ui';
-import {listFAIMSRecordRevisions} from '../../../../data_storage';
+import {LinkedRelation,DEFAULT_REALTION_LINK_VOCAB} from '../../../../datamodel/core';
 import * as ROUTES from '../../../../constants/routes';
 import {RelationshipsComponentProps, RecordProps} from './types';
 import {getUiSpecForProject} from '../../../../uiSpecification';
@@ -48,6 +48,7 @@ export function getparentlinkinfo(
     parent_link: RelationState.parent_link,
     parent_record_id: RelationState.parent_record_id,
     type: RelationState.type,
+    relation_type_vocabPair:RelationState.relation_type_vocabPair
   };
   //check if the parent is exist
   if (
@@ -66,6 +67,7 @@ export function getparentlinkinfo(
         parent_link: RelationState.parent.parent_link,
         parent_record_id: RelationState.parent.parent_record_id,
         type: RelationState.parent.type,
+        relation_type_vocabPair:RelationState.parent.relation_type_vocabPair
       };
     }
   }
@@ -77,6 +79,17 @@ export function getparentlinkinfo(
     is_direct = false;
 
   return {state_parent, is_direct};
+}
+
+const check_if_link_exist=(linkRecords:Array<LinkedRelation>,parent_record_id:string,field_id:string)=>{
+  //get all linked record_id
+  if(linkRecords.length===0) return false;
+  let is_linked=false
+  linkRecords.map(
+    (linkRecord:LinkedRelation)=>
+      linkRecord.record_id===parent_record_id&&linkRecord.field_id===field_id?is_linked=true:linkRecord
+  )
+  return is_linked;
 }
 
 //function to get parent/to be linked information to save in the child
@@ -92,9 +105,9 @@ export function getParentInfo(
     return {...parent, parent: RelationState.parent_record_id};
   if (RelationState.type === 'Linked') {
     if (parent['linked'] === undefined)
-      parent['linked'] = [RelationState.parent_record_id];
-    else if (!parent['linked'].includes(RelationState.parent_record_id))
-      parent['linked'].push(RelationState.parent_record_id);
+      parent['linked'] = [{record_id:RelationState.parent_record_id,field_id:RelationState.field_id,relation_type_vocabPair:RelationState.relation_type_vocabPair}];
+    else if (!check_if_link_exist(parent['linked'],RelationState.parent_record_id,RelationState.field_id))
+      parent['linked'].push({record_id:RelationState.parent_record_id,field_id:RelationState.field_id,relation_type_vocabPair:RelationState.relation_type_vocabPair});
     //get parnet
     if (
       RelationState.parent !== undefined &&
@@ -109,6 +122,7 @@ type SubRelatedRecord = {
   project_id: string;
   record_id: string;
   record_label: string;
+  relation_type_vocabPair?:string[]|null
 };
 //function to get child/linked information to save in parent
 export function getChildInfo(child_state: any, project_id: string) {
@@ -126,6 +140,7 @@ export function getChildInfo(child_state: any, project_id: string) {
       project_id: project_id,
       record_id: child_state.record_id,
       record_label: child_state.hrid ?? child_state.record_id,
+      relation_type_vocabPair:child_state.relation_type_vocabPair??null
     };
     is_related = true;
     return {field_id, new_record, is_related};
@@ -137,11 +152,6 @@ async function getRecordInformation(childrecord: SubRelatedRecord) {
   let latest_record = null;
   let revision_id;
   try {
-    // const revisions = await listFAIMSRecordRevisions(
-    //   childrecord.project_id,
-    //   childrecord.record_id
-    // );
-    // revision_id = revisions[0]; // this need to be updated, should get the latest revision ID
     revision_id = await getFirstRecordHead(
       childrecord.project_id,
       childrecord.record_id
@@ -305,6 +315,10 @@ async function addRelatedFields(
         children
       );
 
+      const childRecord = fields[index]['value']
+
+      const linked_vocab = childRecord['relation_type_vocabPair']!==null&&childRecord['relation_type_vocabPair']!==undefined &&childRecord['relation_type_vocabPair'].length>1?childRecord['relation_type_vocabPair'][1]:null
+
       const child: {[field_name: string]: any} = {
         id: parseInt(index) + 1,
         title: fields[index]['value'].record_label,
@@ -316,6 +330,7 @@ async function addRelatedFields(
         ),
         type: ui_specification.viewsets[type]['label'],
         children: children,
+        relation_type_vocabPair:linked_vocab
       };
       // get the displayed information for the child or link item, this is used by field
       if (is_dispaly && latest_record !== null) {
@@ -348,11 +363,12 @@ export async function addLinkedRecord(
     parent.linked.length > 0
   ) {
     for (const index in parent.linked) {
-      const record_id = parent.linked[index];
+      const record_id = parent.linked[index]['record_id'];
+      const linked_vocab = parent.linked[index]!==null&&parent.linked[index]['relation_type_vocabPair']!==undefined&&parent.linked[index]['relation_type_vocabPair'].length>0?parent.linked[index]['relation_type_vocabPair'][0]:null
       const {latest_record, revision_id} = await getRecordInformation({
         project_id: project_id,
         record_id: record_id,
-        record_label: parent.linked[index],
+        record_label: record_id,
       });
       let type = latest_record?.type;
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
@@ -367,6 +383,7 @@ export async function addLinkedRecord(
         ),
         type: type,
         children: [],
+        relation_type_vocabPair:linked_vocab
       };
       newfields.push(child);
     }
@@ -426,14 +443,6 @@ export async function getDetailRelatedInfommation(
       let hrid =
         latest_record.data['hrid' + latest_record?.type] ?? parent.parent;
       if (hrid === ' ') hrid = parent.parent;
-      // Object.keys(persistentvalue.data).map((key: string, index: number) => {
-      //   const persistentData = {
-      //     id: index + 1,
-      //     title: key,
-      //     value: persistentvalue.data[key],
-      //   };
-      //   data.push(persistentData);
-      // });
 
       childrecords['parentRecords'] = [
         {
@@ -475,7 +484,8 @@ export async function updateChildRecords(
       currentValues[field],
       is_mulptile,
       record_id,
-      relation_type
+      relation_type,
+      field
     );
   }
 }
@@ -484,10 +494,11 @@ async function updateChildRecord(
   currentValue: any,
   is_multiple: boolean,
   record_id: string,
-  relation_type: string
+  relation_type: string,
+  field_id:string,
 ) {
   if (!is_multiple && preValue !== currentValue)
-    return await updateRecords(currentValue, record_id, relation_type, true);
+    return await updateRecords(currentValue, record_id, relation_type, true,field_id);
   if (!is_multiple && preValue === currentValue) return record_id;
   if (is_multiple && JSON.stringify(preValue) === JSON.stringify(currentValue))
     return record_id;
@@ -512,7 +523,8 @@ async function updateChildRecord(
             updated_value,
             record_id,
             relation_type,
-            is_added
+            is_added,
+            field_id
           );
       }
     }
@@ -525,7 +537,8 @@ async function updateChildRecord(
             updated_value,
             record_id,
             relation_type,
-            is_added
+            is_added,
+            field_id
           );
       }
     }
@@ -537,7 +550,8 @@ async function updateRecords(
   child_record: SubRelatedRecord,
   record_id: string,
   relation_type: string,
-  is_added: boolean
+  is_added: boolean,
+  field_id:string,
 ) {
   const {latest_record, revision_id} = await getRecordInformation(child_record);
 
@@ -551,16 +565,18 @@ async function updateRecords(
     else delete parent['parent'];
   else if (relation_type === 'Linked') {
     if (parent['linked'] === undefined) {
-      if (is_added) parent['linked'] = [record_id];
-    } else if (!parent['linked'].includes(record_id) && is_added) {
+      if (is_added) parent['linked'] = [{record_id:record_id,field_id:field_id,relation_type_vocabPair:child_record.relation_type_vocabPair??[DEFAULT_REALTION_LINK_VOCAB,DEFAULT_REALTION_LINK_VOCAB]}];
+    } else if (!check_if_link_exist(parent['linked'],record_id,field_id) && is_added) {
       //add the link item if not in record
-      parent['linked'].push(record_id);
-    } else if (parent['linked'].includes(record_id) && !is_added) {
+      parent['linked'].push({record_id:record_id,field_id:field_id,relation_type_vocabPair:child_record.relation_type_vocabPair??[DEFAULT_REALTION_LINK_VOCAB,DEFAULT_REALTION_LINK_VOCAB]});
+    } else if (check_if_link_exist(parent['linked'],record_id,field_id) && !is_added ) {
       // remove the link item if it's in record
-      const index = parent['linked'].indexOf(record_id);
-      if (index > -1) {
-        parent['linked'].splice(index, 1);
-      }
+      parent['linked'].map(
+        (linkRecord:LinkedRelation,index:number)=>{
+          if(linkRecord.record_id===record_id&&linkRecord.field_id===field_id&& parent!==undefined&&parent['linked']!==undefined ) 
+          parent['linked'].splice(index, 1);
+        }
+      )
     }
   }
 

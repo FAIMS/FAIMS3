@@ -28,6 +28,7 @@ import {
   ProjectID,
   RevisionID,
   FAIMSTypeName,
+  DEFAULT_REALTION_LINK_VOCAB
 } from '../datamodel/core';
 import {Revision} from '../datamodel/database';
 import {Record, RecordMetadata, RecordReference} from '../datamodel/ui';
@@ -312,9 +313,17 @@ export async function getHRIDforRecordID(
 
 export async function getRecordsByType(
   project_id: ProjectID,
-  type: FAIMSTypeName
+  type: FAIMSTypeName,
+  relation_type:string,
+  relation_linked_vocabPair:string[]|null=null
 ): Promise<RecordReference[]> {
   try {
+    let relation_vocab:string[]|null=null
+    if(relation_type!=='faims-core::Child'){
+      relation_vocab=[DEFAULT_REALTION_LINK_VOCAB,DEFAULT_REALTION_LINK_VOCAB] //default value of the linked items
+      if(relation_linked_vocabPair!==null&&relation_linked_vocabPair.length>0)
+        relation_vocab=relation_linked_vocabPair //get the name from relation_linked_vocabPair
+    }
     const records: RecordReference[] = [];
     await listRecordMetadata(project_id).then(record_list => {
       for (const key in record_list) {
@@ -323,10 +332,19 @@ export async function getRecordsByType(
           console.debug('Records', key, metadata);
         }
         if (!metadata.deleted && metadata.type === type) {
+          //
+          if(relation_vocab===null)
           records.push({
             project_id: project_id,
             record_id: metadata.record_id,
-            record_label: metadata.hrid, // TODO: decide how we're getting HRIDs from db
+            record_label: metadata.hrid, 
+          });
+          else
+          records.push({
+            project_id: project_id,
+            record_id: metadata.record_id,
+            record_label: metadata.hrid, 
+            relation_type_vocabPair:relation_vocab // pass the value of the vocab
           });
           if (DEBUG_APP) {
             console.debug('Not deleted Records', key, metadata);
