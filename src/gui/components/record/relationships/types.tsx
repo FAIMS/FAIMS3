@@ -5,6 +5,9 @@ export interface RecordProps {
   record_id: RecordID;
   hrid: string | number;
   route: string;
+  section?:string;
+  field_id?: string;
+  field_name?: string;
   lastUpdatedBy?: string;
   type?: string;
   description?: string;

@@ -435,6 +435,8 @@ export default function Record() {
                           lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
                           route: 'go to record 1!',
                           type: 'Water',
+                          field_id: uuidv4(),
+                          field_name: 'Field PH',
                         },
                         {
                           record_id: uuidv4(),
@@ -442,6 +444,8 @@ export default function Record() {
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
+                          field_id: uuidv4(),
+                          field_name: 'Field PH',
                         },
                         {
                           record_id: uuidv4(),
@@ -456,6 +460,8 @@ export default function Record() {
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
                           type: 'Water',
+                          field_id: uuidv4(),
+                          field_name: 'Field C',
                         },
                         {
                           record_id: uuidv4(),

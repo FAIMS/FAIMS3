@@ -9,6 +9,7 @@ import {
   GridEventListener,
 } from '@mui/x-data-grid';
 import ArticleIcon from '@mui/icons-material/Article';
+import CreateNewChildRecord from './create_child_record';
 interface ChildRecordProps {
   child_records: Array<RecordProps> | null;
 }
@@ -48,6 +49,13 @@ export default function ChildRecords(props: ChildRecordProps) {
       ),
     },
     {
+      field: 'field',
+      headerName: 'Field',
+      flex: 0.2,
+      minWidth: 70,
+
+    },
+    {
       field: 'lastUpdatedBy',
       headerName: 'Last Updated',
       flex: 0.6,
@@ -71,15 +79,13 @@ export default function ChildRecords(props: ChildRecordProps) {
       spacing={1}
     >
       <Grid item xs={'auto'}>
-        <Typography variant={'h6'}>Child records</Typography>
+        <Typography variant={'h6'}>Child records/fields</Typography>
       </Grid>
       <Grid item xs>
         <Divider />
       </Grid>
       <Grid item xs={'auto'}>
-        <Button disableElevation startIcon={<AddIcon />} size={'small'}>
-          new child record
-        </Button>
+        <CreateNewChildRecord />
       </Grid>
       {props.child_records !== null && (
         <Grid item xs={12}>

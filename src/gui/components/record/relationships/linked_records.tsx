@@ -111,7 +111,7 @@ export default function LinkedRecords(props: LinkedRecordProps) {
         spacing={1}
       >
         <Grid item xs={'auto'}>
-          <Typography variant={'h6'}>Linked records</Typography>
+          <Typography variant={'h6'}>Linked records/fields</Typography>
         </Grid>
         <Grid item xs>
           <Divider />
