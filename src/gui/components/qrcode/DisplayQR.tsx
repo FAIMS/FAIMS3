@@ -24,6 +24,7 @@ import './DisplayQR.css';
 import Dialog from '@mui/material/Dialog';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
 import Toolbar from '@mui/material/Toolbar';
 
 export function DisplayQR({content}: {content: string}): JSX.Element {
@@ -75,7 +76,7 @@ export function DisplayQRModal({
             onClick={handleClose}
             aria-label="close"
           >
-            X
+            <CloseIcon />
           </IconButton>
         </Toolbar>
 
