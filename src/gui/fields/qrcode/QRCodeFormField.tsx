@@ -53,8 +53,7 @@ export function QRCodeFormField({
   const startScan = async () => {
     BarcodeScanner.checkPermission({force: true})
       .then(permissions => {
-        if (permissions.granted) {
-          console.log('have permission');
+        if (permissions.granted) { 
           // hide the main app so we can overlay the viewfinder
           // relies on knowing the root id of the page
           //
@@ -69,6 +68,9 @@ export function QRCodeFormField({
           // and everything else too
           document.getElementsByTagName('body')[0].style.backgroundColor =
             'transparent';
+
+          // scroll to top to so that our viewfinder etc is visible
+          window.scrollTo(0, 0);
 
           setScanning(true);
 
@@ -125,7 +127,7 @@ export function QRCodeFormField({
           <div className={styles.barcodeContainer}>
             <div className={styles.relative}>
               <p>Aim your camera at a barcode</p>
-              <Button variant="outlined" onClick={stopScan}>
+              <Button color="primary" variant="contained" onClick={stopScan}>
                 Stop Scan
               </Button>
             </div>
