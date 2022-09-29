@@ -159,10 +159,14 @@ export default function Record() {
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
     if (project_id !== null) {
-      getProjectMetadata(project_id, 'sections').then(res =>
-        setMetaSection(res)
-      );
-      setIsSyncing(isSyncingProjectAttachments(project_id));
+      getProjectMetadata(project_id, 'sections')
+        .then(res => setMetaSection(res))
+        .catch(console.error /*TODO*/);
+      try {
+        setIsSyncing(isSyncingProjectAttachments(project_id));
+      } catch (error) {
+        console.error('Error to set IsSyncing', error);
+      }
     }
   }, [project_id]);
 
@@ -183,14 +187,16 @@ export default function Record() {
   // below function is to get conflicts headers when loading record or after user save the conflict resolve button
   useEffect(() => {
     const getconflicts = async () => {
-      getInitialMergeDetails(project_id, record_id).then(result => {
-        setConflicts(result);
-        if (result !== null && result['available_heads'] !== undefined) {
-          setrevision_id(result['initial_head']); //reset revision id after conflict
-          if (Object.keys(result['available_heads']).length > 1)
-            setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
-        }
-      });
+      getInitialMergeDetails(project_id, record_id)
+        .then(result => {
+          setConflicts(result);
+          if (result !== null && result['available_heads'] !== undefined) {
+            setrevision_id(result['initial_head']); //reset revision id after conflict
+            if (Object.keys(result['available_heads']).length > 1)
+              setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
+          }
+        })
+        .catch(console.error /*TODO*/);
     };
 
     getconflicts();
@@ -198,31 +204,40 @@ export default function Record() {
 
   useEffect(() => {
     const getConflictList = async () => {
-      if (selectrevision !== null)
-        setConflictfields(
-          await findConflictingFields(project_id, record_id, selectrevision)
-        );
+      try {
+        if (selectrevision !== null)
+          setConflictfields(
+            await findConflictingFields(project_id, record_id, selectrevision)
+          );
+      } catch (error) {
+        console.error('Error to get Conflict List', error);
+      }
     };
     getConflictList();
   }, [selectrevision]);
 
   useEffect(() => {
     const getType = async () => {
-      const latest_record = await getFullRecordData(
-        project_id,
-        record_id,
-        updatedrevision_id
-      );
-      if (latest_record !== null) {
-        setType(latest_record.type);
-        setRecordinfo(
-          JSON.stringify(latest_record.updated)
-            .replaceAll('"', '')
-            .replaceAll('T', ' ')
-            .slice(0, 19) +
-            ' ' +
-            latest_record.updated_by
+      try {
+        const latest_record = await getFullRecordData(
+          project_id,
+          record_id,
+          updatedrevision_id
         );
+
+        if (latest_record !== null) {
+          setType(latest_record.type);
+          setRecordinfo(
+            JSON.stringify(latest_record.updated)
+              .replaceAll('"', '')
+              .replaceAll('T', ' ')
+              .slice(0, 19) +
+              ' ' +
+              latest_record.updated_by
+          );
+        }
+      } catch (error) {
+        console.error('Error to get Type', error);
       }
     };
     getType();
@@ -230,25 +245,30 @@ export default function Record() {
 
   useEffect(() => {
     // this is function to get child information
+
     const getrelatedInfo = async () => {
-      if (uiSpec !== null && type !== null) {
-        const latest_record = await getFullRecordData(
-          project_id,
-          record_id,
-          updatedrevision_id
-        );
-        if (latest_record !== null) {
-          setRelatedRecords(
-            await getDetailRelatedInfommation(
-              uiSpec,
-              type,
-              latest_record.data,
-              project_id,
-              latest_record.relationship ?? null
-            )
+      try {
+        if (uiSpec !== null && type !== null) {
+          const latest_record = await getFullRecordData(
+            project_id,
+            record_id,
+            updatedrevision_id
           );
+          if (latest_record !== null) {
+            setRelatedRecords(
+              await getDetailRelatedInfommation(
+                uiSpec,
+                type,
+                latest_record.data,
+                project_id,
+                latest_record.relationship ?? null
+              )
+            );
+          }
+          setValue('1');
         }
-        setValue('1');
+      } catch (error) {
+        console.error('Error to get child information', error);
       }
     };
     getrelatedInfo();

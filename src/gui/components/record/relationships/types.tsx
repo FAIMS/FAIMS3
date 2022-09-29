@@ -13,7 +13,7 @@ export interface RecordProps {
   type?: string;
   children?: Array<RecordProps>;
   persistentData?: {[field_name: string]: any};
-  relation_type_vocabPair?:string[]|null
+  relation_type_vocabPair?: string[] | null;
 }
 
 export interface RelationshipsComponentProps {

@@ -28,7 +28,10 @@ import {
 } from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
-import {HRID_STRING} from '../../../../datamodel/core';
+import {
+  HRID_STRING,
+  DEFAULT_REALTION_LINK_VOCAB,
+} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {option} from '../../../../datamodel/typesystem';
 const uiSettingOthers: ProjectUIModel = {
@@ -422,6 +425,20 @@ const getvalue = (
   if (view === 'FormParamater') {
     //this is for persistent, it's for developing/testing only, not ready for production yet
     if (name === 'persistent' || name === 'displayParent') return fieldui[name];
+    if (name === 'relation_linked_vocabPair_to') {
+      try {
+        return fieldui['component-parameters']['relation_linked_vocabPair'][1];
+      } catch (error) {
+        return DEFAULT_REALTION_LINK_VOCAB;
+      }
+    }
+    if (name === 'relation_linked_vocabPair_from') {
+      try {
+        return fieldui['component-parameters']['relation_linked_vocabPair'][0];
+      } catch (error) {
+        return DEFAULT_REALTION_LINK_VOCAB;
+      }
+    }
     return fieldui['component-parameters'][name];
   }
   if (name === 'options' && view === 'ElementProps') {
@@ -445,6 +462,9 @@ const getvalue = (
   }
   if (view === 'meta' && fieldui['meta'] === undefined) {
     return false;
+  }
+  if (view === 'logic' && fieldui['logic_select'] === undefined) {
+    return fieldui['logic_select'];
   }
   try {
     return (
@@ -1004,9 +1024,7 @@ export function ResetComponentProperties(props: resetprops) {
       newvalues['fields'][fieldName]['component-parameters']['hrid'] === true
     ) {
       //set newvalue for hird
-
       ishird = true;
-      console.log('++++++++++++++' + newfieldname);
     }
     if (newvalues['fields'][fieldName] === undefined) {
       newvalues['fields'][fieldName] = generatenewname(fieldui, fieldName);

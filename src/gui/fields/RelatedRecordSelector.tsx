@@ -55,7 +55,7 @@ interface Props {
   required: boolean;
   helperText?: string;
   disabled?: boolean;
-  relation_linked_vocabPair?:Array<string>;
+  relation_linked_vocabPair?: Array<string>;
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -85,7 +85,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
-        const records = await getRecordsByType(project_id, props.related_type,props.relation_type,props.relation_linked_vocabPair);
+        const records = await getRecordsByType(
+          project_id,
+          props.related_type,
+          props.relation_type,
+          props.relation_linked_vocabPair
+        );
         setOptions(records);
         setIsactive(true);
       })();
@@ -136,7 +141,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     type: props.relation_type.replace('faims-core::', ''), //type of this relation
     parent_link: location.pathname.replace('/notebooks/', ''), // current form link
     parent: {},
-    relation_type_vocabPair:props.relation_linked_vocabPair //pass the value of vocalPair 
+    relation_type_vocabPair: props.relation_linked_vocabPair, //pass the value of vocalPair
   };
   const disbaled = props.disabled ?? false;
   const location_state: any = location.state;
@@ -372,7 +377,7 @@ const uiSetting = () => {
     'relation_type',
     'relation_linked_vocabPair_from',
     'relation_linked_vocabPair_to',
-    'related_type'
+    'related_type',
   ];
   newuiSetting['viewsets'] = {
     settings: {
@@ -408,21 +413,29 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
     );
     // get the list of form
     const newvalues = uiSetting;
-    if(fields.length>0 && newvalues['fields']['related_type' + props.fieldName] !== undefined )
-      newvalues['fields']['related_type' + props.fieldName]['component-parameters']['ElementProps']['options'] = fields;
-    if(props.uiSpec['fields'][props.fieldName]['component-parameters']['relation_type']==='faims-core::Child') 
-    newvalues['views']['FormParamater']['fields'] = [
-      'helperText'+ props.fieldName,
-      'multiple'+ props.fieldName,
-      'relation_type'+ props.fieldName,
-      'related_type'+ props.fieldName
-    ]
+    if (
+      fields.length > 0 &&
+      newvalues['fields']['related_type' + props.fieldName] !== undefined
+    )
+      newvalues['fields']['related_type' + props.fieldName][
+        'component-parameters'
+      ]['ElementProps']['options'] = fields;
+    if (
+      props.uiSpec['fields'][props.fieldName]['component-parameters'][
+        'relation_type'
+      ] === 'faims-core::Child'
+    )
+      newvalues['views']['FormParamater']['fields'] = [
+        'helperText' + props.fieldName,
+        'multiple' + props.fieldName,
+        'relation_type' + props.fieldName,
+        'related_type' + props.fieldName,
+      ];
     setuiSetting({...newvalues});
-    
   };
 
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
-    const name = event.target.name.replace(props.fieldName, '')
+    const name = event.target.name.replace(props.fieldName, '');
     if (name === 'multiple') {
       const newvalues = props.uiSpec;
       newvalues['fields'][props.fieldName]['component-parameters']['multiple'] =
@@ -431,35 +444,42 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
         newvalues['fields'][props.fieldName]['initialValue'] = [];
       else newvalues['fields'][props.fieldName]['initialValue'] = '';
       props.setuiSpec({...newvalues});
-    }else if(name === 'relation_type'){
+    } else if (name === 'relation_type') {
       const newvalues = uiSetting;
-      if(event.target.value==='faims-core::Linked')
+      if (event.target.value === 'faims-core::Linked')
         newvalues['views']['FormParamater']['fields'] = [
-          'helperText'+ props.fieldName,
-          'multiple'+ props.fieldName,
-          'relation_type'+ props.fieldName,
-          'relation_linked_vocabPair_from'+ props.fieldName,
-          'relation_linked_vocabPair_to'+ props.fieldName,
-          'related_type'+ props.fieldName,
-        ]
+          'helperText' + props.fieldName,
+          'multiple' + props.fieldName,
+          'relation_type' + props.fieldName,
+          'relation_linked_vocabPair_from' + props.fieldName,
+          'relation_linked_vocabPair_to' + props.fieldName,
+          'related_type' + props.fieldName,
+        ];
       else
-      newvalues['views']['FormParamater']['fields'] = [
-        'helperText'+ props.fieldName,
-        'multiple'+ props.fieldName,
-        'relation_type'+ props.fieldName,
-        'related_type'+ props.fieldName,
-      ]
-      setuiSetting({...newvalues})
-      
-    }else if( name === 'relation_linked_vocabPair_from'){
+        newvalues['views']['FormParamater']['fields'] = [
+          'helperText' + props.fieldName,
+          'multiple' + props.fieldName,
+          'relation_type' + props.fieldName,
+          'related_type' + props.fieldName,
+        ];
+      setuiSetting({...newvalues});
+    } else if (name === 'relation_linked_vocabPair_from') {
       const newvalues = props.uiSpec;
-      const relation_linked_vocabPair = newvalues['fields'][props.fieldName]['component-parameters']['relation_linked_vocabPair']??['','']
-      newvalues['fields'][props.fieldName]['component-parameters']['relation_linked_vocabPair'] = [event.target.value,relation_linked_vocabPair[1]]
+      const relation_linked_vocabPair = newvalues['fields'][props.fieldName][
+        'component-parameters'
+      ]['relation_linked_vocabPair'] ?? ['', ''];
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'relation_linked_vocabPair'
+      ] = [event.target.value, relation_linked_vocabPair[1]];
       props.setuiSpec({...newvalues});
-    }else if( name === 'relation_linked_vocabPair_to'){
+    } else if (name === 'relation_linked_vocabPair_to') {
       const newvalues = props.uiSpec;
-      const relation_linked_vocabPair = newvalues['fields'][props.fieldName]['component-parameters']['relation_linked_vocabPair']??['','']
-      newvalues['fields'][props.fieldName]['component-parameters']['relation_linked_vocabPair'] = [relation_linked_vocabPair[0],event.target.value]
+      const relation_linked_vocabPair = newvalues['fields'][props.fieldName][
+        'component-parameters'
+      ]['relation_linked_vocabPair'] ?? ['', ''];
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'relation_linked_vocabPair'
+      ] = [relation_linked_vocabPair[0], event.target.value];
       props.setuiSpec({...newvalues});
     }
   };

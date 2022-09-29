@@ -105,7 +105,7 @@ export type Annotations = any;
 
 export const HRID_STRING = 'hrid';
 
-export const DEFAULT_REALTION_LINK_VOCAB = 'is related to'
+export const DEFAULT_REALTION_LINK_VOCAB = 'is related to';
 
 export interface TokenInfo {
   token: string;
@@ -132,12 +132,12 @@ export type LocationState = {
   parent?: any; // parent to save upper level information for nest related, for example, grandparent
   record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
   hrid?: string; // child/linked record HIRD, this is the value dispalyed in field, set in child/linked record, should be pass back to parent
-  relation_type_vocabPair?:string[]|null//pass the parent information to child
+  relation_type_vocabPair?: string[] | null; //pass the parent information to child
 };
-export interface LinkedRelation{
-  record_id:RecordID;
-  field_id:string;
-  relation_type_vocabPair:string[]
+export interface LinkedRelation {
+  record_id: RecordID;
+  field_id: string;
+  relation_type_vocabPair: string[];
 }
 export interface Relationship {
   parent?: RecordID; // has single parent

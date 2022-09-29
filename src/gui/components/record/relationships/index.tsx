@@ -29,7 +29,6 @@ import {
   Tab,
   ListItemIcon,
   Button,
-  Link,
   Grid,
 } from '@mui/material';
 import {NavLink} from 'react-router-dom';
@@ -121,8 +120,12 @@ function ParentForm(props: any) {
   );
 }
 
-function getColumns(columns: GridColDef[]){
-  columns[5]={field: 'relation_type_vocabPair', headerName:'Relation Type Label',flex: 0.2}
+function getColumns(columns: GridColDef[]) {
+  columns[6] = {
+    field: 'relation_type_vocabPair',
+    headerName: 'Relation Type Label',
+    flex: 0.2,
+  };
   return columns;
 }
 
@@ -190,16 +193,16 @@ export default function RelationshipsComponent(
                   <SubdirectoryArrowRightIcon fontSize={'small'} />
                 </ListItemIcon>
                 <ListItemText>
-                  <NavLink to={value.route} component={Link}>
+                  <Button component={NavLink} to={value.route} variant={'text'}>
                     {value.title}
-                  </NavLink>
+                  </Button>
                 </ListItemText>
               </ListItem>
             </React.Fragment>
           ))}
         </List>
       ),
-    }
+    },
   ];
 
   return (
@@ -278,9 +281,13 @@ export default function RelationshipsComponent(
               {props.parentRecords.map((value, index) => (
                 <ListItem key={'parent_record_link' + index}>
                   <ListItemText>
-                    <NavLink to={value.route} component={Link}>
+                    <Button
+                      component={NavLink}
+                      to={value.route}
+                      variant={'text'}
+                    >
                       {value.title}
-                    </NavLink>
+                    </Button>
                   </ListItemText>
                 </ListItem>
               ))}
