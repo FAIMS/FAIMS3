@@ -53,7 +53,7 @@ export function QRCodeFormField({
   const startScan = async () => {
     BarcodeScanner.checkPermission({force: true})
       .then(permissions => {
-        if (permissions.granted) { 
+        if (permissions.granted) {
           // hide the main app so we can overlay the viewfinder
           // relies on knowing the root id of the page
           //
