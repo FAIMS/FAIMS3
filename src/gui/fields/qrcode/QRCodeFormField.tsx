@@ -22,7 +22,10 @@ import React, {useState} from 'react';
 import styles from './QRCodeFormField.module.css';
 import Button from '@mui/material/Button';
 
-import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
+// import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
+// workaround for a misconfiguration bug in the plugin
+// https://github.com/capacitor-community/barcode-scanner/issues/67
+import {BarcodeScanner} from '@capacitor-community/barcode-scanner/dist/plugin.cjs';
 
 import {FieldProps} from 'formik';
 import ReactDOM from 'react-dom';
