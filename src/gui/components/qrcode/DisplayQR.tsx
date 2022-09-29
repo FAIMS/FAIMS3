@@ -18,69 +18,69 @@
  *   Component to display QR codes
  */
 
-import React, { useState } from 'react'
-import QRCode from 'qrcode'
-import './DisplayQR.css'
+import React, {useState} from 'react';
+import QRCode from 'qrcode';
+import './DisplayQR.css';
 import Dialog from '@mui/material/Dialog';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Toolbar from '@mui/material/Toolbar';
 
 export function DisplayQR({content}: {content: string}): JSX.Element {
+  const [url, setUrl] = useState('');
 
-    const [url, setUrl] = useState('')
+  QRCode.toDataURL(content)
+    .then((url: any) => {
+      console.log(url);
+      setUrl(url);
+    })
+    .catch((err: any) => {
+      console.error(err);
+    });
 
-    QRCode.toDataURL(content)
-      .then((url: any) => {
-        console.log(url)
-        setUrl(url)
-      })
-      .catch((err: any) => {
-        console.error(err)
-      });
-
-      return (
-        <div className="qrcode">
-            <img src={url} alt={content} />
-        </div>
-      )
+  return (
+    <div className="qrcode">
+      <img src={url} alt={content} />
+    </div>
+  );
 }
 
+export function DisplayQRModal({
+  content,
+  label,
+}: {
+  content: string;
+  label: string;
+}): JSX.Element {
+  const [open, setOpen] = useState(false);
 
-export function DisplayQRModal({content}: {content: string}): JSX.Element {
+  const handleOpen = () => {
+    setOpen(true);
+  };
 
-    const [open, setOpen] = useState(false)
+  const handleClose = () => {
+    setOpen(false);
+  };
 
-    const handleOpen = () => {
-        setOpen(true)
-    }
+  return (
+    <div>
+      <Button color="primary" variant="outlined" onClick={handleOpen}>
+        {label}
+      </Button>
+      <Dialog fullScreen open={open} onClose={handleClose}>
+        <Toolbar>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={handleClose}
+            aria-label="close"
+          >
+            X
+          </IconButton>
+        </Toolbar>
 
-    const handleClose = () => {
-        setOpen(false)
-    }
-
-    return (
-        <div>
-            <Button onClick={handleOpen}>{content}</Button>
-            <Dialog
-                fullScreen
-                open={open}
-                onClose={handleClose}
-                >
-            <Toolbar>
-                <IconButton
-                edge="start"
-                color="inherit"
-                onClick={handleClose}
-                aria-label="close"
-                >
-                    X
-                </IconButton>
-            </Toolbar>
-
-                <DisplayQR content={content} />
-            </Dialog>
-        </div>
-    )
+        <DisplayQR content={content} />
+      </Dialog>
+    </div>
+  );
 }
-

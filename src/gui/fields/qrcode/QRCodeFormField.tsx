@@ -55,17 +55,20 @@ export function QRCodeFormField({
       .then(permissions => {
         if (permissions.granted) {
           console.log('have permission');
-          // hide the form so we can overlay the viewfinder
-          const formcontainer = document.getElementById('demoformcontainer');
-          if (formcontainer) {
-            formcontainer.classList.add('hidden');
+          // hide the main app so we can overlay the viewfinder
+          // relies on knowing the root id of the page
+          //
+          const rootcontainer = document.getElementById('root');
+          if (rootcontainer) {
+            rootcontainer.style.visibility = 'hidden';
           }
 
           // make background of WebView transparent
           BarcodeScanner.hideBackground();
 
           // and everything else too
-          document.getElementsByTagName('body')[0].classList.add('transparent');
+          document.getElementsByTagName('body')[0].style.backgroundColor =
+            'transparent';
 
           setScanning(true);
 
@@ -89,9 +92,9 @@ export function QRCodeFormField({
   const stopScan = () => {
     BarcodeScanner.showBackground()
       .then(() => {
-        const formcontainer = document.getElementById('demoformcontainer');
-        if (formcontainer) {
-          formcontainer.classList.remove('hidden');
+        const rootcontainer = document.getElementById('root');
+        if (rootcontainer) {
+          rootcontainer.style.visibility = 'visible';
         }
         BarcodeScanner.stopScan()
           .then(() => {
