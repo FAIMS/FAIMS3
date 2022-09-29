@@ -48,7 +48,7 @@ export async function shareStringAsFileOnApp(
   ).uri;
   await Share.share({
     title: title,
-    text: s,
+    text: dialogTitle,
     url: url,
     dialogTitle: dialogTitle,
   });
