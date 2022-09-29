@@ -11,15 +11,15 @@ import {
   MenuItem,
 } from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
-import {ActionType} from '../../../../context/actions';
-import {store} from '../../../../context/store';
+import {ActionType} from '../../../../../context/actions';
+import {store} from '../../../../../context/store';
 
 export interface RelationshipType {
   link: string;
   reciprocal: string;
 }
 interface CreateRecordLinkProps {
-  relationships: Array<RelationshipType>;
+  relationship_types: Array<RelationshipType>;
 }
 export function CreateRecordLink(props: CreateRecordLinkProps) {
   /**
@@ -75,7 +75,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
 
   return (
     <Grid container spacing={1} direction="row" justifyContent="space-between">
-      <Grid item xs={12} sm={5} md={4}>
+      <Grid item xs={12} sm={5} md={3}>
         <FormControl fullWidth>
           <InputLabel id="demo-simple-select-label">Relationship</InputLabel>
           <Select
@@ -85,7 +85,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             label="Relationship"
             onChange={handleChange}
           >
-            {props.relationships.map(r => (
+            {props.relationship_types.map(r => (
               <MenuItem value={r.link} key={r.link}>
                 {r.link}
               </MenuItem>
@@ -93,7 +93,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
           </Select>
         </FormControl>
       </Grid>
-      <Grid item xs={12} sm={5} md={6}>
+      <Grid item xs={12} sm={5} md={3}>
         <Autocomplete
           fullWidth
           value={value}
@@ -104,9 +104,25 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
           onInputChange={(event, newInputValue) => {
             setInputValue(newInputValue);
           }}
-          id="create-record-relationship-records"
+          id="create-record-relationship-record"
           options={options}
           renderInput={params => <TextField {...params} label="Record" />}
+        />
+      </Grid>
+      <Grid item xs={12} sm={5} md={3}>
+        <Autocomplete
+          fullWidth
+          value={value}
+          onChange={(event: any, newValue: string | null) => {
+            setValue(newValue);
+          }}
+          inputValue={inputValue}
+          onInputChange={(event, newInputValue) => {
+            setInputValue(newInputValue);
+          }}
+          id="create-record-relationship-record-field"
+          options={options}
+          renderInput={params => <TextField {...params} label="Field" />}
         />
       </Grid>
       <Grid

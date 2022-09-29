@@ -19,263 +19,94 @@
  */
 
 import React from 'react';
-import {Box, Divider, Grid, Link, Typography} from '@mui/material';
-import {
-  DataGrid,
-  GridCellParams,
-  GridColDef,
-  GridEventListener,
-  GridToolbarContainer,
-  GridToolbarFilterButton,
-} from '@mui/x-data-grid';
-import {RelationshipsComponentProps} from './types';
-import LinkedRecords from './linked_records';
-import ChildRecords from './child_records';
-import ArticleIcon from '@mui/icons-material/Article';
-import {v4 as uuidv4} from 'uuid';
 
-export function DataGridToolbar() {
-  return (
-    <GridToolbarContainer>
-      <Grid
-        container
-        spacing={2}
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Grid item>
-          <GridToolbarFilterButton />
-        </Grid>
-      </Grid>
-    </GridToolbarContainer>
-  );
-}
-export default function RelationshipsComponent(
+import {Box, Divider} from '@mui/material';
+import Tab from '@mui/material/Tab';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
+
+import {RelationshipsComponentProps} from './types';
+
+import {CreateRecordLink} from './create_links/create_record_link';
+import ParentLinkComponent from './parent_links';
+import RelatedLinksComponent from './related_links';
+import ChildLinksComponent from './child_links';
+import BoxTab from '../../ui/boxTab';
+import {grey} from '@mui/material/colors';
+import CreateLinkComponent from './create_links';
+const relationship_types = [
+  {link: 'is below', reciprocal: 'is above'},
+  {link: 'is above', reciprocal: 'is below'},
+  {link: 'is related to', reciprocal: 'is related to'},
+];
+
+export default function RelationshipsViewComponent(
   props: RelationshipsComponentProps
 ) {
   /**
-   * Display the child records associated with a records in a MUI Data Grid.
+   * Display the parent, child and related records associated with the current record
    * Row click to go to child record
    * Data Grid is set to autoHeight (grid will size according to its content) up to 5 rows
    *
    *
    */
-  // TODO these are defined... on the notebook?
-  const relationship_types = [
-    {link: 'is below', reciprocal: 'is above'},
-    {link: 'is above', reciprocal: 'is below'},
-    {link: 'is related to', reciprocal: 'is related to'},
-  ];
-  const data = [
-    {
-      section: 'core 1',
-      field_id: uuidv4(),
-      field_name: 'Field PH',
+  const [value, setValue] = React.useState('1');
 
-      record_id: uuidv4(),
-      type: 'Water',
-      hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:44',
-      lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
-      link_type: 'has child',
-    },
-    {
-      section: 'core 1',
-      field_id: uuidv4(),
-      field_name: 'Field PH',
-
-      record_id: uuidv4(),
-      hrid: 'Mundi-V3.4',
-      type: 'Water',
-      lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-      route: 'go to record 2!',
-      link_type: 'has child',
-    },
-    {
-      section: 'core 2',
-      field_id: uuidv4(),
-      field_name: 'Field PH',
-
-      record_id: uuidv4(),
-      hrid: 'Mundi-V3.4',
-      type: 'Water',
-      lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-      route: 'go to record 2!',
-      link_type: 'has child',
-    },
-    {
-      section: 'core 2',
-      field_id: uuidv4(),
-      field_name: 'Field EH',
-
-      record_id: uuidv4(),
-      hrid: 'Mundi-V3.4',
-      type: 'Water',
-      lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-      route: 'go to record 2!',
-      link_type: 'has child',
-    },
-    {
-      section: 'core 2',
-      field_id: uuidv4(),
-      field_name: 'Field EH',
-
-      record_id: uuidv4(),
-      hrid: 'Mundi-V3.4',
-      type: 'Water',
-      lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-      route: 'go to record 2!',
-      link_type: 'is above',
-    },
-    {
-      section: 'core 2',
-      field_id: uuidv4(),
-      field_name: 'Field EH',
-
-      record_id: uuidv4(),
-      hrid: 'Mundi-V3.4',
-      type: 'Water',
-      lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-      route: 'go to record 2!',
-      link_type: 'is next to',
-    },
-    {
-      section: 'core 1',
-      field_id: uuidv4(),
-      field_name: 'Field EH',
-
-      record_id: uuidv4(),
-      hrid: 'Mundi-V3.4',
-      type: 'Water',
-      lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-      route: 'go to record 2!',
-      link_type: 'is related to',
-    },
-  ];
-  const columns: GridColDef[] = [
-    {
-      field: 'section',
-      headerName: 'Section',
-      type: 'string',
-      renderCell: (params: GridCellParams) => (
-        <Typography variant={'h6'} sx={{textTransform: 'capitalise'}}>
-          {params.value}
-        </Typography>
-      ),
-      minWidth: 200,
-    },
-    {
-      field: 'field_name',
-      headerName: 'Field',
-      minWidth: 200,
-    },
-    {field: 'link_type', headerName: 'relationship', minWidth: 200},
-    {
-      field: 'record_id',
-      headerName: 'UUID',
-      description: 'UUID Record ID',
-      type: 'string',
-      hide: true,
-    },
-    {
-      field: 'type',
-      headerName: 'Kind',
-      minWidth: 200,
-    },
-    // {
-    //     field: 'article_icon',
-    //     headerName: '',
-    //     type: 'string',
-    //     width: 30,
-    //     renderCell: (params: GridCellParams) => <ArticleIcon sx={{my: 2}} />,
-    //     hide: false,
-    //     sortable: false,
-    //     filterable: false,
-    //     disableColumnMenu: true,
-    // },
-    {
-      field: 'hrid',
-      headerName: 'HRID',
-      minWidth: 300,
-      renderCell: (params: GridCellParams) => (
-        <Link underline={'none'} sx={{fontWeight: 'bold'}}>
-          {params.value}
-        </Link>
-      ),
-    },
-    {
-      field: 'lastUpdatedBy',
-      headerName: 'Last Updated',
-      minWidth: 300,
-    },
-    {field: 'route', hide: true, filterable: false},
-  ];
+  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+    setValue(newValue);
+  };
   return (
     <Box mb={2}>
-      <Grid
-        container
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={1}
-      >
-        <Grid item xs={'auto'}>
-          <Typography variant={'h6'}>Parent record </Typography>
-        </Grid>
-        <Grid item xs>
-          <Divider />
-        </Grid>
-      </Grid>
-      <Typography variant={'body2'} gutterBottom>
-        <Link underline={'none'} sx={{fontWeight: 'bold'}}>
-          {uuidv4()}
-        </Link>
-      </Typography>
-
-      <Grid
-        container
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={1}
-      >
-        <Grid item xs={'auto'}>
-          <Typography variant={'h6'}>Linked records</Typography>
-        </Grid>
-        <Grid item xs>
-          <Divider />
-        </Grid>
-      </Grid>
-      {props.child_records !== null && (
-        <DataGrid
-          autoHeight
-          initialState={{
-            columns: {
-              columnVisibilityModel: {
-                // Hide column route, the other columns will remain visible
-                route: false,
-                record_id: false,
-                field_id: false,
-              },
-            },
-          }}
-          getRowId={r => r.record_id}
-          density={'compact'}
-          rows={data}
-          columns={columns}
-          pageSize={10}
-          rowsPerPageOptions={[5]}
-          disableSelectionOnClick
-          components={{
-            Toolbar: DataGridToolbar,
-          }}
-          sx={{borderRadius: '0', cursor: 'pointer', border: 'none'}}
-        />
-      )}
-      <ChildRecords child_records={props.child_records} />
-      <LinkedRecords
-        linked_records={props.linked_records}
-        relationships={relationship_types}
+      <ParentLinkComponent parent_links={props.parent_links} />
+      <ChildLinksComponent
+        child_links={props.child_links}
+        show_title={true}
+        show_link_type={true}
+        show_section={true}
+        show_field={true}
       />
+      <RelatedLinksComponent
+        related_links={props.related_links}
+        show_title={true}
+        show_link_type={true}
+        show_section={true}
+        show_field={true}
+      />
+
+      <BoxTab
+        title={'Field-level links interface (to be moved)'}
+        bgcolor={grey[100]}
+      />
+      <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}}>
+        <CreateLinkComponent relationship_types={relationship_types} />
+        <TabContext value={value}>
+          <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+            <TabList onChange={handleChange} aria-label="lab API tabs example">
+              <Tab label="Children" value="1" />
+              <Tab label="Related" value="2" />
+            </TabList>
+          </Box>
+          <TabPanel value="1">
+            <ChildLinksComponent
+              child_links={props.child_links}
+              show_title={false}
+              show_link_type={false}
+              show_section={false}
+              show_field={false}
+            />
+          </TabPanel>
+          <TabPanel value="2">
+            <RelatedLinksComponent
+              related_links={props.related_links}
+              show_title={false}
+              show_link_type={false}
+              show_section={false}
+              show_field={false}
+            />
+          </TabPanel>
+        </TabContext>
+      </Box>
     </Box>
   );
 }

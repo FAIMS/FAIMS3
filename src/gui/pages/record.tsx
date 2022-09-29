@@ -49,7 +49,7 @@ import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 import RecordForm from '../components/record/form';
-import RelationshipsComponent from '../components/record/relationships';
+import RelationshipsViewComponent from '../components/record/relationships';
 import RecordReadView from '../components/record/read_view';
 import DraftSyncStatus from '../components/record/sync_status';
 import ConflictForm from '../components/record/conflict/conflictform';
@@ -81,6 +81,7 @@ import {useTheme} from '@mui/material/styles';
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
+
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -413,81 +414,111 @@ export default function Record() {
               return (
                 <React.Fragment>
                   <TabPanel value="0" style={{padding: theme.spacing(2)}}>
-                    <RelationshipsComponent
-                      parent_records={[
+                    <RelationshipsViewComponent
+                      parent_links={[
                         {
                           record_id: uuidv4(),
                           hrid: 'CBC123',
                           type: 'Container',
                           route: 'parent_route',
-                        },
-                        {
-                          record_id: uuidv4(),
-                          hrid: 'CBC123',
-                          type: 'Container',
-                          route: 'parent_route',
+                          field_id: uuidv4(),
+                          field_name: 'bucket',
+                          link_type: 'parent',
+                          link_id: uuidv4(),
                         },
                       ]}
-                      child_records={[
+                      related_links={[
                         {
-                          record_id: uuidv4(),
-                          hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:44',
-                          lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
-                          route: 'go to record 1!',
-                          type: 'Water',
+                          section: 'core 2',
                           field_id: uuidv4(),
-                          field_name: 'Field PH',
-                        },
-                        {
+                          field_name: 'Field EH',
+
                           record_id: uuidv4(),
                           hrid: 'Mundi-V3.4',
+                          type: 'Water',
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
-                          type: 'Water',
+                          link_type: 'is above',
+                          link_id: uuidv4(),
+                        },
+                        {
+                          section: 'core 2',
                           field_id: uuidv4(),
-                          field_name: 'Field PH',
-                        },
-                        {
+                          field_name: 'Field EH',
+
                           record_id: uuidv4(),
-                          hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:45',
+                          hrid: 'Mundi-V3.4',
+                          type: 'Water',
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
-                          type: 'Water',
+                          link_type: 'is next to',
+                          link_id: uuidv4(),
                         },
                         {
-                          record_id: uuidv4(),
-                          hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:4987',
-                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          route: 'go to record 2!',
-                          type: 'Water',
+                          section: 'core 1',
                           field_id: uuidv4(),
-                          field_name: 'Field C',
-                        },
-                        {
+                          field_name: 'Field EH',
+
                           record_id: uuidv4(),
-                          hrid: 7,
+                          hrid: 'Mundi-V3.4',
+                          type: 'Water',
                           lastUpdatedBy: '10/12/2020 11:09am by John Smith',
                           route: 'go to record 2!',
-                          type: 'Rock',
+                          link_type: 'is related to',
+                          link_id: uuidv4(),
                         },
                       ]}
-                      linked_records={[
+                      child_links={[
                         {
+                          section: 'core 1',
+                          field_id: uuidv4(),
+                          field_name: 'Field PH',
+                          route: 'go to route',
                           record_id: uuidv4(),
-                          hrid: 13,
-                          lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
-                          route: 'go to record 1!',
                           type: 'Water',
-                          description: 'is below',
+                          hrid: 'Eh (99) TEST 499 V.3 44444-04-04T04:44',
+                          lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
+                          link_type: 'has child',
+                          link_id: uuidv4(),
                         },
                         {
-                          record_id: uuidv4(),
-                          hrid: 23,
+                          section: 'core 1',
+                          field_id: uuidv4(),
+                          field_name: 'Field PH',
 
-                          lastUpdatedBy: '10/12/2020 10:53pm by Joe Blogs',
-                          route: 'go to record 1!',
+                          record_id: uuidv4(),
+                          hrid: 'Mundi-V3.4',
                           type: 'Water',
-                          description: 'is next to',
+                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          route: 'go to record 2!',
+                          link_type: 'has child',
+                          link_id: uuidv4(),
+                        },
+                        {
+                          section: 'core 2',
+                          field_id: uuidv4(),
+                          field_name: 'Field PH',
+
+                          record_id: uuidv4(),
+                          hrid: 'Mundi-V3.4',
+                          type: 'Water',
+                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          route: 'go to record 2!',
+                          link_type: 'has child',
+                          link_id: uuidv4(),
+                        },
+                        {
+                          section: 'core 2',
+                          field_id: uuidv4(),
+                          field_name: 'Field EH',
+
+                          record_id: uuidv4(),
+                          hrid: 'Mundi-V3.4',
+                          type: 'Water',
+                          lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          route: 'go to record 2!',
+                          link_type: 'has child',
+                          link_id: uuidv4(),
                         },
                       ]}
                     />
