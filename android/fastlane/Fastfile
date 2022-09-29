@@ -76,7 +76,7 @@ platform :android do
            }
            )
     upload_to_play_store(track: FIP_CLOSED_LANE,
-                         release_status: 'draft',
+                         release_status: 'completed',
                          skip_upload_metadata: true,
                          skip_upload_images: true,
                          skip_upload_screenshots: true

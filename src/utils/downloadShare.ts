@@ -15,8 +15,10 @@
  *
  * Filename: utils.ts
  * Description:
- *   Contains utility functions which lack a better location.
+ *   Contains utility functions related to downloading and sharing
  */
+import {Filesystem, Directory, Encoding} from '@capacitor/filesystem';
+import {Share} from '@capacitor/share';
 
 /// Downloads a blob as a file onto a user's device
 export function downloadBlob(b: Blob, filename: string) {
@@ -28,4 +30,26 @@ export function downloadBlob(b: Blob, filename: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(u);
+}
+
+export async function shareStringAsFileOnApp(
+  s: string,
+  title: string,
+  dialogTitle: string,
+  filename: string
+) {
+  const url = (
+    await Filesystem.writeFile({
+      path: filename,
+      data: s,
+      directory: Directory.Cache,
+      encoding: Encoding.UTF8,
+    })
+  ).uri;
+  await Share.share({
+    title: title,
+    text: dialogTitle,
+    url: url,
+    dialogTitle: dialogTitle,
+  });
 }

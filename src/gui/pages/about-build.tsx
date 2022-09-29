@@ -21,10 +21,14 @@
 import React from 'react';
 import {Box, Container} from '@mui/material';
 import Button from '@mui/material/Button';
+
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
-import {downloadBlob} from '../../utils';
-import {getFullDBSystemDump} from '../../sync/data-dump';
+import {downloadBlob, shareStringAsFileOnApp} from '../../utils/downloadShare';
+import {
+  getFullDBSystemDump,
+  getFullDBSystemDumpAsBlob,
+} from '../../sync/data-dump';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -119,12 +123,28 @@ export default function AboutBuild() {
         variant="outlined"
         color={'primary'}
         onClick={async () => {
-          const b = await getFullDBSystemDump();
+          const b = await getFullDBSystemDumpAsBlob();
           downloadBlob(b, 'faims3-dump.json');
         }}
         style={{marginRight: '10px'}}
       >
-        Download local database contents
+        Download local database contents (browsers only)
+      </Button>
+      <Button
+        variant="outlined"
+        color={'primary'}
+        onClick={async () => {
+          const s = await getFullDBSystemDump();
+          await shareStringAsFileOnApp(
+            s,
+            'FAIMS Database Dump',
+            'Share all the FAIMS data on your device',
+            'faims3-dump.json'
+          );
+        }}
+        style={{marginRight: '10px'}}
+      >
+        Share local database contents (apps and some browsers)
       </Button>
     </Container>
   );
