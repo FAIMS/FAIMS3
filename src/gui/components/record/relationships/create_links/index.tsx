@@ -9,14 +9,10 @@ import {
   ButtonGroup,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import AddIcon from '@mui/icons-material/Add';
 import {styled} from '@mui/material/styles';
-import {LinkProps} from '../types';
 
 import {CreateRecordLink, RelationshipType} from './create_record_link';
-interface LinkedRecordProps {
-  linked_records: Array<LinkProps> | null;
-  relationships: Array<RelationshipType>;
-}
 interface ExpandMoreProps extends ButtonProps {
   expand: boolean;
 }
@@ -35,6 +31,9 @@ const ExpandMoreButton = styled((props: ExpandMoreProps) => {
 }));
 export default function CreateLinkComponent(props: {
   relationship_types: Array<RelationshipType>;
+  record_hrid: string;
+  record_type: string;
+  field_label: string;
 }) {
   // is the new link functionality visible
   const [expanded, setExpanded] = React.useState(false);
@@ -60,7 +59,7 @@ export default function CreateLinkComponent(props: {
         </Grid>
         <Grid item>
           <ButtonGroup variant={'outlined'} size={'medium'}>
-            <Button>Create Child Record</Button>
+            <Button startIcon={<AddIcon />}>Add Child Record</Button>
             <ExpandMoreButton
               disableElevation
               expand={expanded}
@@ -77,7 +76,12 @@ export default function CreateLinkComponent(props: {
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
-            <CreateRecordLink relationship_types={props.relationship_types} />
+            <CreateRecordLink
+              relationship_types={props.relationship_types}
+              record_hrid={props.record_hrid}
+              record_type={props.record_type}
+              field_label={props.field_label}
+            />
           </Collapse>
         </Grid>
       </Grid>

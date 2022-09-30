@@ -23,6 +23,9 @@ export interface RelationshipType {
 }
 interface CreateRecordLinkProps {
   relationship_types: Array<RelationshipType>;
+  record_hrid: string;
+  record_type: string;
+  field_label: string;
 }
 export function CreateRecordLink(props: CreateRecordLinkProps) {
   /**
@@ -56,8 +59,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message:
-            'Relationship between record A and B could not be added. Contact support.',
+          message: `Link between record ${props.record_type} ${props.record_hrid} and ${value} could not be added. Contact support.`,
           severity: 'error',
         },
       });
@@ -66,7 +68,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: 'Relationship between record A and B added',
+          message: `Link between record ${props.record_type} ${props.record_hrid} and ${value} added`,
           severity: 'success',
         },
       });
@@ -77,36 +79,22 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
   };
 
   return (
-    <Box>
-      <Grid
-        container
-        spacing={1}
-        direction="row"
-        justifyContent="space-between"
-      >
-        <Grid
-          item
-          xs={12}
-          sm={5}
-          md={2}
-          alignItems="stretch"
-          style={{display: 'flex'}}
-        >
-          <Box
-            component={Paper}
-            elevation={0}
-            variant={'outlined'}
-            p={1}
-            sx={{width: '100%'}}
-          >
-            <Typography variant={'subtitle2'}>
-              Add a link from Water Eh Record Eh (99) <strong>PH</strong> to
-              another record.
-            </Typography>
-          </Box>
-        </Grid>
-        <Grid item xs={12} sm={5} md={4}>
-          <FormControl fullWidth>
+    <Box
+      component={Paper}
+      elevation={0}
+      variant={'outlined'}
+      p={{xs: 1, sm: 1, md: 2}}
+      sx={{width: '100%'}}
+    >
+      <Box>
+        <Typography variant={'subtitle2'} sx={{mb: 1}}>
+          Add a link from {props.record_type} {props.record_hrid}{' '}
+          <strong>{props.field_label}</strong> to an existing record.
+        </Typography>
+      </Box>
+      <Grid container spacing={1} direction="row" justifyContent="flex-start">
+        <Grid item xs={12} sm={12} md={3} lg={3}>
+          <FormControl fullWidth size={'small'}>
             <InputLabel id="demo-simple-select-label">Relationship</InputLabel>
             <Select
               labelId="demo-simple-select-label"
@@ -123,9 +111,10 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={5} md={4}>
+        <Grid item xs={12} sm={12} md={3} lg={3}>
           <Autocomplete
             fullWidth
+            size={'small'}
             value={value}
             onChange={(event: any, newValue: string | null) => {
               setValue(newValue);
@@ -142,9 +131,10 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
         <Grid
           item
           xs={12}
-          sm={2}
-          md={2}
-          alignItems="stretch"
+          sm={12}
+          md={1}
+          lg={1}
+          alignItems={'stretch'}
           style={{display: 'flex'}}
         >
           {submitting ? (
@@ -152,17 +142,17 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
               loading
               variant={'contained'}
               fullWidth
-              size={'large'}
+              size={'medium'}
             />
           ) : (
             <Button
               variant={'contained'}
               disableElevation
               fullWidth
-              size={'large'}
+              size={'medium'}
               onClick={handleSubmit}
             >
-              Add
+              Link
             </Button>
           )}
         </Grid>

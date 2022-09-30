@@ -49,7 +49,7 @@ export default function ParentLinkComponent(props: ParentLinksComponentProps) {
                 <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
                 <Typography variant={'body2'} fontWeight={'bold'}>
                   {p.type} {p.hrid} [field:
-                  {p.field_name}]
+                  {p.field_label}]
                 </Typography>
               </Grid>
             </Link>
