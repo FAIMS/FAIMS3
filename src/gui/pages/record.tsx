@@ -48,7 +48,10 @@ import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 import RecordForm from '../components/record/form';
-import RelationshipsComponent from '../components/record/relationships';
+import {
+  RelationshipsComponent,
+  ParentForm,
+} from '../components/record/relationships';
 import RecordReadView from '../components/record/read_view';
 import DraftSyncStatus from '../components/record/sync_status';
 import ConflictForm from '../components/record/conflict/conflictform';
@@ -145,7 +148,7 @@ export default function Record() {
     linkRecords: [],
   } as RelationshipsComponentProps);
 
-  const breadcrumbs = [
+  const [breadcrumbs, setBreadcrumbs] = useState([
     {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
@@ -154,7 +157,7 @@ export default function Record() {
     },
     {title: hrid ?? record_id},
     // {title: recordInfo},
-  ];
+  ]);
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -255,15 +258,33 @@ export default function Record() {
             updatedrevision_id
           );
           if (latest_record !== null) {
-            setRelatedRecords(
-              await getDetailRelatedInfommation(
-                uiSpec,
-                type,
-                latest_record.data,
-                project_id,
-                latest_record.relationship ?? null
-              )
+            const newRelationship = await getDetailRelatedInfommation(
+              uiSpec,
+              type,
+              latest_record.data,
+              project_id,
+              latest_record.relationship ?? null
             );
+            setRelatedRecords(newRelationship);
+            if (
+              newRelationship.parentRecords !== null &&
+              newRelationship.parentRecords.length > 0
+            ) {
+              const newBreadcrumbs = [
+                {link: ROUTES.INDEX, title: 'Home'},
+                {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+                {
+                  link: ROUTES.NOTEBOOK + project_id,
+                  title: project_info !== null ? project_info.name : project_id,
+                },
+                {
+                  link: newRelationship.parentRecords[0]['route'],
+                  title: newRelationship.parentRecords[0]['title'],
+                },
+                {title: hrid ?? record_id},
+              ];
+              setBreadcrumbs(newBreadcrumbs);
+            }
           }
           setValue('1');
         }
@@ -512,6 +533,11 @@ export default function Record() {
                             </Grid>
                           </Box>
                           <Box px={not_xs ? 30 : 0}>
+                            {/* Add the component for inherit data from parent */}
+                            <ParentForm
+                              parentRecords={relatedRecords.parentRecords}
+                              ui_specification={uiSpec}
+                            />
                             {(isalerting === false ||
                               draft_id !== undefined) && (
                               <RecordForm
@@ -536,18 +562,25 @@ export default function Record() {
                           </Box>
                         </Box>
                       ) : (
-                        <RecordForm
-                          project_id={project_id}
-                          record_id={record_id}
-                          revision_id={updatedrevision_id}
-                          ui_specification={uiSpec}
-                          draft_id={draft_id}
-                          metaSection={metaSection}
-                          isSyncing={isSyncing.toString()}
-                          handleSetIsDraftSaving={setIsDraftSaving}
-                          handleSetDraftLastSaved={setDraftLastSaved}
-                          handleSetDraftError={setDraftError}
-                        />
+                        <>
+                          {/* Add the component for inherit data from parent */}
+                          <ParentForm
+                            parentRecords={relatedRecords.parentRecords}
+                            ui_specification={uiSpec}
+                          />
+                          <RecordForm
+                            project_id={project_id}
+                            record_id={record_id}
+                            revision_id={updatedrevision_id}
+                            ui_specification={uiSpec}
+                            draft_id={draft_id}
+                            metaSection={metaSection}
+                            isSyncing={isSyncing.toString()}
+                            handleSetIsDraftSaving={setIsDraftSaving}
+                            handleSetDraftLastSaved={setDraftLastSaved}
+                            handleSetDraftError={setDraftError}
+                          />
+                        </>
                       )}
                     </Box>
                   </TabPanel>

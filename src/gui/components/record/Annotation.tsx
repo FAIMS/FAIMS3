@@ -171,7 +171,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
             InputLabelProps={{shrink: true}}
             disabled={disabled}
             fullWidth
-            style={{padding: '15px 0px'}}
+            // style={{padding: '15px 0px'}} //comment to fix the annotation label position error?? TODO: testing
           />
         </Grid>
       )}

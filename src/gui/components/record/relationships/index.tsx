@@ -44,6 +44,7 @@ import {
 import {TabPanelProps, RecordProps, RelationshipsComponentProps} from './types';
 import {Formik, Form} from 'formik';
 import {ViewComponent} from '../view';
+import {ProjectUIModel} from '../../../../datamodel/ui';
 function TabPanel(props: TabPanelProps) {
   const {children, value, index, ...other} = props;
 
@@ -89,9 +90,19 @@ function a11yProps(index: number) {
     'aria-controls': `child-parent-tabpanel-${index}`,
   };
 }
+type ParentFormProps = {
+  parentRecords: Array<RecordProps> | null;
+  ui_specification: ProjectUIModel;
+};
 
-function ParentForm(props: any) {
-  const {values, viewName, ui_specification, annotation, fieldNames} = props;
+export function ParentForm(props: any) {
+  const {ui_specification, parentRecords} = props;
+  if (parentRecords === null || parentRecords.length === 0) return <></>;
+  const values = parentRecords[0]['persistentData'].data;
+  const viewName = parentRecords[0].type;
+  const annotation = parentRecords[0]['persistentData'].annotations;
+  const fieldNames = Object.keys(parentRecords[0]['persistentData'].data);
+
   const updateannotation = () => {
     return;
   };
@@ -129,9 +140,7 @@ function getColumns(columns: GridColDef[]) {
   return columns;
 }
 
-export default function RelationshipsComponent(
-  props: RelationshipsComponentProps
-) {
+export function RelationshipsComponent(props: RelationshipsComponentProps) {
   /**
    * Display the child records associated with a records in a MUI Data Grid.
    * Row click to go to child record
@@ -297,15 +306,8 @@ export default function RelationshipsComponent(
               <>
                 <h2>Persistent Data in {props.parentRecords[0]['title']}</h2>
                 <ParentForm
-                  values={props.parentRecords[0]['persistentData'].data}
-                  viewName={props.parentRecords[0].type}
+                  parentRecords={props.parentRecords}
                   ui_specification={props.ui_specification}
-                  annotation={
-                    props.parentRecords[0]['persistentData'].annotations
-                  }
-                  fieldNames={Object.keys(
-                    props.parentRecords[0]['persistentData'].data
-                  )}
                 />
               </>
             ) : (

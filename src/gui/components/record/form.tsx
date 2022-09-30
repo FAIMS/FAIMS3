@@ -803,7 +803,6 @@ class RecordForm extends React.Component<
       return (
         <React.Fragment>
           {/* remove the tab for edit ---Jira 530 */}
-          {this.props.record_id}
           {/* add padding for form only */}
           <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
             <Formik

@@ -81,7 +81,7 @@ function SingleComponent(props: SingleComponentProps) {
       mb={3}
       key={fieldName + props.index}
       sx={{
-        boxShadow: isclicked ? 8 : 0,
+        boxShadow: isclicked && props.disabled !== true ? 8 : 0,
         padding: isclicked ? '10px 5px' : '3px 0px',
       }}
     >

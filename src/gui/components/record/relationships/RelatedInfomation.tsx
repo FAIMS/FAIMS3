@@ -528,6 +528,7 @@ export async function updateChildRecords(
     );
   }
 }
+
 async function updateChildRecord(
   preValue: any,
   currentValue: any,
@@ -599,7 +600,6 @@ async function updateRecords(
   field_id: string
 ) {
   const {latest_record, revision_id} = await getRecordInformation(child_record);
-
   let parent = latest_record?.relationship;
   if (parent === undefined) parent = {};
   if (relation_type === 'Child')
@@ -657,4 +657,43 @@ async function updateRecords(
     await upsertFAIMSData(child_record.project_id, new_doc);
   }
   return record_id;
+}
+
+export async function deleteLinkedRecord(
+  child_record: SubRelatedRecord,
+  record_id: string,
+  relation_type: string,
+  field_id: string
+) {
+  const {latest_record, revision_id} = await getRecordInformation(child_record);
+  const parent = latest_record?.relationship;
+  if (
+    parent === undefined ||
+    parent['linked'] === undefined ||
+    latest_record === null
+  )
+    return true; // return when the link is not exist
+  // remove the link for linked record
+  const if_exist = check_if_link_exist(parent['linked'], record_id, field_id);
+  if (!if_exist) return true; // return when the link is not exist
+  if (parent['linked'] !== undefined && if_exist) {
+    // remove the link item if it's in record
+    parent['linked'].map((linkRecord: LinkedRelation, index: number) => {
+      if (
+        linkRecord.record_id === record_id &&
+        linkRecord.field_id === field_id &&
+        parent !== undefined &&
+        parent['linked'] !== undefined
+      )
+        parent['linked'].splice(index, 1);
+    });
+
+    const new_doc = latest_record;
+    new_doc['relationship'] = parent;
+    await upsertFAIMSData(child_record.project_id, new_doc);
+  }
+
+  //remove the information from current form field??
+
+  return true;
 }
