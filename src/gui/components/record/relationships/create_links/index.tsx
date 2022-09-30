@@ -59,7 +59,7 @@ export default function CreateLinkComponent(props: {
           <Divider />
         </Grid>
         <Grid item>
-          <ButtonGroup variant={'outlined'}>
+          <ButtonGroup variant={'outlined'} size={'medium'}>
             <Button>Create Child Record</Button>
             <ExpandMoreButton
               disableElevation

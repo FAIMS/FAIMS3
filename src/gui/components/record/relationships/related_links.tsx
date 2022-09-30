@@ -133,7 +133,7 @@ export default function RelatedLinksComponent(
     },
   ];
   return (
-    <Box mb={2}>
+    <Box>
       {props.show_title ? (
         <Grid
           container

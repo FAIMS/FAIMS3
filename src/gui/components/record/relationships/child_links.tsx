@@ -131,7 +131,7 @@ export default function ChildLinksComponent(props: ChildLinksComponentProps) {
     },
   ];
   return (
-    <Box mb={2}>
+    <Box>
       {props.show_title ? (
         <Grid
           container

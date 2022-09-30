@@ -28,7 +28,6 @@ import TabPanel from '@mui/lab/TabPanel';
 
 import {RelationshipsComponentProps} from './types';
 
-import {CreateRecordLink} from './create_links/create_record_link';
 import ParentLinkComponent from './parent_links';
 import RelatedLinksComponent from './related_links';
 import ChildLinksComponent from './child_links';
@@ -39,6 +38,7 @@ const relationship_types = [
   {link: 'is below', reciprocal: 'is above'},
   {link: 'is above', reciprocal: 'is below'},
   {link: 'is related to', reciprocal: 'is related to'},
+  {link: 'is parent of', reciprocal: 'is child of'},
 ];
 
 export default function RelationshipsViewComponent(
@@ -82,12 +82,15 @@ export default function RelationshipsViewComponent(
         <CreateLinkComponent relationship_types={relationship_types} />
         <TabContext value={value}>
           <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-            <TabList onChange={handleChange} aria-label="lab API tabs example">
+            <TabList
+              onChange={handleChange}
+              aria-label="Field children related tab"
+            >
               <Tab label="Children" value="1" />
               <Tab label="Related" value="2" />
             </TabList>
           </Box>
-          <TabPanel value="1">
+          <TabPanel value="1" sx={{p: 0}}>
             <ChildLinksComponent
               child_links={props.child_links}
               show_title={false}
@@ -96,7 +99,7 @@ export default function RelationshipsViewComponent(
               show_field={false}
             />
           </TabPanel>
-          <TabPanel value="2">
+          <TabPanel value="2" sx={{p: 0}}>
             <RelatedLinksComponent
               related_links={props.related_links}
               show_title={false}

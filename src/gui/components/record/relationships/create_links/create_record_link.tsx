@@ -2,6 +2,9 @@ import React, {useContext} from 'react';
 import {
   Button,
   Grid,
+  Box,
+  Paper,
+  Typography,
   TextField,
   Autocomplete,
   SelectChangeEvent,
@@ -74,84 +77,96 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
   };
 
   return (
-    <Grid container spacing={1} direction="row" justifyContent="space-between">
-      <Grid item xs={12} sm={5} md={3}>
-        <FormControl fullWidth>
-          <InputLabel id="demo-simple-select-label">Relationship</InputLabel>
-          <Select
-            labelId="demo-simple-select-label"
-            id="create-record-relationship-type"
-            value={relationship}
-            label="Relationship"
-            onChange={handleChange}
-          >
-            {props.relationship_types.map(r => (
-              <MenuItem value={r.link} key={r.link}>
-                {r.link}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs={12} sm={5} md={3}>
-        <Autocomplete
-          fullWidth
-          value={value}
-          onChange={(event: any, newValue: string | null) => {
-            setValue(newValue);
-          }}
-          inputValue={inputValue}
-          onInputChange={(event, newInputValue) => {
-            setInputValue(newInputValue);
-          }}
-          id="create-record-relationship-record"
-          options={options}
-          renderInput={params => <TextField {...params} label="Record" />}
-        />
-      </Grid>
-      <Grid item xs={12} sm={5} md={3}>
-        <Autocomplete
-          fullWidth
-          value={value}
-          onChange={(event: any, newValue: string | null) => {
-            setValue(newValue);
-          }}
-          inputValue={inputValue}
-          onInputChange={(event, newInputValue) => {
-            setInputValue(newInputValue);
-          }}
-          id="create-record-relationship-record-field"
-          options={options}
-          renderInput={params => <TextField {...params} label="Field" />}
-        />
-      </Grid>
+    <Box>
       <Grid
-        item
-        xs={12}
-        sm={2}
-        md={2}
-        alignItems="stretch"
-        style={{display: 'flex'}}
+        container
+        spacing={1}
+        direction="row"
+        justifyContent="space-between"
       >
-        {submitting ? (
-          <LoadingButton
-            loading
-            variant={'contained'}
-            fullWidth
-            size={'large'}
-          />
-        ) : (
-          <Button
-            variant={'contained'}
-            disableElevation
-            fullWidth
-            size={'large'}
-            onClick={handleSubmit}
+        <Grid
+          item
+          xs={12}
+          sm={5}
+          md={2}
+          alignItems="stretch"
+          style={{display: 'flex'}}
+        >
+          <Box
+            component={Paper}
+            elevation={0}
+            variant={'outlined'}
+            p={1}
+            sx={{width: '100%'}}
           >
-            Add
-          </Button>
-        )}
+            <Typography variant={'subtitle2'}>
+              Add a link from Water Eh Record Eh (99) <strong>PH</strong> to
+              another record.
+            </Typography>
+          </Box>
+        </Grid>
+        <Grid item xs={12} sm={5} md={4}>
+          <FormControl fullWidth>
+            <InputLabel id="demo-simple-select-label">Relationship</InputLabel>
+            <Select
+              labelId="demo-simple-select-label"
+              id="create-record-relationship-type"
+              value={relationship}
+              label="Relationship"
+              onChange={handleChange}
+            >
+              {props.relationship_types.map(r => (
+                <MenuItem value={r.link} key={r.link}>
+                  {r.link}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm={5} md={4}>
+          <Autocomplete
+            fullWidth
+            value={value}
+            onChange={(event: any, newValue: string | null) => {
+              setValue(newValue);
+            }}
+            inputValue={inputValue}
+            onInputChange={(event, newInputValue) => {
+              setInputValue(newInputValue);
+            }}
+            id="create-record-relationship-record"
+            options={options}
+            renderInput={params => <TextField {...params} label="Record" />}
+          />
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          sm={2}
+          md={2}
+          alignItems="stretch"
+          style={{display: 'flex'}}
+        >
+          {submitting ? (
+            <LoadingButton
+              loading
+              variant={'contained'}
+              fullWidth
+              size={'large'}
+            />
+          ) : (
+            <Button
+              variant={'contained'}
+              disableElevation
+              fullWidth
+              size={'large'}
+              onClick={handleSubmit}
+            >
+              Add
+            </Button>
+          )}
+        </Grid>
       </Grid>
-    </Grid>
+    </Box>
   );
 }
