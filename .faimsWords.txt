@@ -515,6 +515,8 @@ barcodescanner
 classpath
 capacitorjs
 applauncher
+posttest
+jsonpointer
 
 # TODO FIX
 Ramdom
