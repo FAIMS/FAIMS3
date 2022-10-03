@@ -44,7 +44,7 @@ async function dumpDatabase(db: PouchDB.Database<any>): Promise<unknown> {
   });
 }
 
-export async function getFullDBSystemDump(): Promise<Blob> {
+export async function getFullDBSystemDump(): Promise<string> {
   const dump: DumpObject = {};
   dump['directory'] = await dumpDatabase(directory_db.local);
   dump['active'] = await dumpDatabase(active_db);
@@ -64,5 +64,10 @@ export async function getFullDBSystemDump(): Promise<Blob> {
     dump['data' + name] = await dumpDatabase(db.local);
   }
 
-  return new Blob([JSON.stringify(dump)], {type: 'application/json'});
+  return JSON.stringify(dump);
+}
+
+export async function getFullDBSystemDumpAsBlob(): Promise<Blob> {
+  const dump = await getFullDBSystemDump();
+  return new Blob([dump], {type: 'application/json'});
 }
