@@ -23,7 +23,7 @@ import styles from './QRCodeFormField.module.css';
 import Button from '@mui/material/Button';
 
 import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
-// requires a workaround for jest - see mock in src/jest/__mocks__ 
+// requires a workaround for jest - see mock in src/jest/__mocks__
 // https://github.com/capacitor-community/barcode-scanner/issues/67
 
 import {FieldProps} from 'formik';
