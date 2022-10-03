@@ -201,6 +201,7 @@ export async function listRecordMetadata(
       record_ids === null
         ? await getAllRecords(project_id)
         : recordToRecordMap(await getRecords(project_id, record_ids));
+    console.error('REcords',records)
     const revision_ids: RevisionID[] = [];
     records.forEach(o => {
       revision_ids.push(o.heads[0]);

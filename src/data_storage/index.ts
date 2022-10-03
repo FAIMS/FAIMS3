@@ -332,6 +332,7 @@ export async function getRecordsByType(
     }
     const records: RecordReference[] = [];
     await listRecordMetadata(project_id).then(record_list => {
+      console.error('list of record',record_list)
       for (const key in record_list) {
         const metadata = record_list[key];
         if (DEBUG_APP) {
