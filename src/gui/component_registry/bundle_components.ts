@@ -109,6 +109,7 @@ import {
   file_data_to_attachments,
   file_attachments_to_data,
 } from '../../data_storage/attachments';
+import {QRCodeFormField, QRCodeFieldBuilderSettings} from '../fields/qrcode';
 
 /*
  * This should be enough to make typescript/the build system happy
@@ -399,6 +400,21 @@ registerComponent(
     getLinkedBuilderIcon()
   )
 );
+
+registerComponent(
+  'qrcode',
+  'QRCodeFormField',
+  setupComponentProperties(
+    'QR Code Scanning',
+    'Scan a QR/Bar code',
+    'QRCode',
+    QRCodeFormField,
+    QRCodeFieldBuilderSettings[1],
+    QRCodeFieldBuilderSettings,
+    Defaultcomponentsetting
+  )
+);
+
 // Mapping Plugin registration
 
 registerComponent(

@@ -41,6 +41,7 @@ import {ProjectInformation} from '../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../uiSpecification';
 import {ProjectID} from '../../datamodel/core';
 import {TokenContents} from '../../datamodel/core';
+import {DisplayQRModal} from '../components/qrcode/DisplayQR';
 type ProjectProps = {
   token?: null | undefined | TokenContents;
 };
@@ -136,6 +137,8 @@ export default function ProjectSettings(props: ProjectProps) {
         >
           SHOW/DOWNLOAD EXTERNAL ATTACHMENTS
         </Button>
+        <br />
+        <DisplayQRModal label="Show Project QR Code" content={project_id} />
       </Paper>
       <Box mb={1}>
         <Typography variant={'subtitle1'}>
