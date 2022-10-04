@@ -89,7 +89,7 @@ export function QRCodeFormField({
         }
       })
       .catch(() => {
-        setCanScanMsg('Scanning not supported');
+        setCanScanMsg('Scanning not supported in web browsers, mobile only');
       });
   };
 
