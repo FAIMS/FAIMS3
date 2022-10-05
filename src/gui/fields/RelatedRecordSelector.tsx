@@ -50,6 +50,13 @@ import {DataGrid, GridCellParams, GridColDef} from '@mui/x-data-grid';
 import {NavLink} from 'react-router-dom';
 import ArticleIcon from '@mui/icons-material/Article';
 import {Grid} from '@mui/material';
+import {
+  SelectChangeEvent,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -60,7 +67,24 @@ interface Props {
   required: boolean;
   helperText?: string;
   disabled?: boolean;
-  relation_linked_vocabPair?: Array<string>;
+  relation_linked_vocabPair?: Array<Array<string>>;
+}
+
+function get_dafault_relation_label(multiple: boolean, value: any) {
+  if (value === null || value === undefined) return [];
+  if (!multiple && value !== undefined && value['relation_type_vocabPair'])
+    return value['relation_type_vocabPair'];
+
+  const length = value.length;
+  if (
+    multiple &&
+    length > 0 &&
+    value[length - 1] !== undefined &&
+    value[length - 1]['relation_type_vocabPair'] !== undefined
+  )
+    return value[length - 1]['relation_type_vocabPair'];
+
+  return [];
 }
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
@@ -77,7 +101,15 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [recordsInformation, setRecordsInformation] = React.useState<
     LinkProps[]
   >([]);
-
+  const lastvaluePair = get_dafault_relation_label(
+    multiple,
+    props.form.values[field_name]
+  );
+  const [relationshipLabel, setRelationshipLabel] = React.useState<string>(
+    lastvaluePair[0]
+  );
+  const [relationshipPair, setRelationshipPair] =
+    React.useState<Array<string>>(lastvaluePair);
   const url_split = search.split('&');
   const [columns, Setcolumns] = React.useState<GridColDef[]>([]);
   if (
@@ -93,11 +125,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           project_id,
           props.related_type,
           props.relation_type,
-          props.relation_linked_vocabPair
+          relationshipPair
         );
         setOptions(records);
         setIsactive(true);
       })();
+    } else {
+      setIsactive(true);
     }
   }, []);
 
@@ -147,7 +181,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         ];
 
         if (records_info.length > 0 && columns.length === 0) {
-          // this is the code to dispaly the values from child
+          // this is the code to dispaly the values from child, TO TO: disucssed in detail about how to display it
           //   Object.keys(records_info[0]).map((key: string) =>
           //     key.includes('newfield')
           //        ?newColumns.push({
@@ -173,13 +207,14 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   if (!isactive) return <></>;
   //to reset the method to pass state value between the link and record
   //to pass information in state to child/link record
+  const type = props.relation_type.replace('faims-core::', '');
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
     field_id: props.id,
-    type: props.relation_type.replace('faims-core::', ''), //type of this relation
+    type: type, //type of this relation
     parent_link: location.pathname.replace('/notebooks/', ''), // current form link
     parent: {},
-    relation_type_vocabPair: props.relation_linked_vocabPair, //pass the value of vocalPair
+    relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
   const disbaled = props.disabled ?? false;
   const location_state: any = location.state;
@@ -191,76 +226,149 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       newState['parent'] = location_state.parent;
     }
   }
+  const handleChange = (event: SelectChangeEvent) => {
+    const value: string = event.target.value;
+    setRelationshipLabel(value);
+    //get the value of relation Pair
+    if (props.relation_linked_vocabPair !== undefined) {
+      let valuePair: string[] = [];
+      props.relation_linked_vocabPair.map((r: string[]) =>
+        r[0] === value ? (valuePair = r) : r
+      );
+      setRelationshipPair(valuePair);
+      //reset the value of the record list
+      const relations: string[] = multiple
+        ? []
+        : [props.form.values[field_name].record_id];
+      if (multiple)
+        props.form.values[field_name].map((record: RecordReference) =>
+          relations.push(record.record_id)
+        );
+      const records = options;
+      records.map(record =>
+        relations.includes(record.record_id)
+          ? record
+          : (record['relation_type_vocabPair'] = valuePair)
+      );
+      setOptions(records);
+    }
+  };
+
   return (
-    <div>
-      <Field
-        multiple={multiple}
-        id={props.id ?? 'asynchronous-demo'}
-        name={field_name}
-        component={Autocomplete}
-        isOptionEqualToValue={(
-          option: RecordReference,
-          value: RecordReference
-        ) =>
-          option.project_id === value.project_id &&
-          option.record_id === value.record_id
-        }
-        getOptionLabel={(option: RecordReference) => option.record_label ?? ''}
-        options={options}
-        defaultValue={undefined}
-        disabled={disbaled}
-        // onChange={(evant:any,value: any) => {
-        //   props.form.setFieldValue(props.field.name, value)
-        // }}
-        // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
-        renderInput={(params: any) => (
-          <TextField
-            {...params}
-            label={props.InputLabelProps.label}
-            error={props.form.errors[props.id] === undefined ? false : true}
-            variant="outlined"
-            InputProps={{
-              ...params.InputProps,
-            }}
-          />
-        )}
-      />
+    <Grid container spacing={1} direction="row" justifyContent="flex-start">
+      {type === 'Linked' && props.relation_linked_vocabPair !== undefined && (
+        <Grid item xs={12} sm={12} md={3} lg={3}>
+          <FormControl fullWidth size={'small'}>
+            <InputLabel id={'demo-simple-select-label' + field_name}>
+              Relationship
+            </InputLabel>
+            <Select
+              labelId={'demo-simple-select-label' + field_name}
+              id={'create-record-relationship-type' + field_name}
+              value={relationshipLabel}
+              label="Relationship"
+              onChange={handleChange}
+              name={'create-relation-type' + field_name}
+            >
+              {props.relation_linked_vocabPair.map(
+                (r: string[], index: number) => (
+                  <MenuItem value={r[0]} key={index}>
+                    {r[0]}
+                  </MenuItem>
+                )
+              )}
+            </Select>
+          </FormControl>
+        </Grid>
+      )}
+      <Grid
+        item
+        xs={12}
+        sm={12}
+        md={type === 'Linked' ? 6 : 9}
+        lg={type === 'Linked' ? 6 : 9}
+      >
+        <Field
+          size={'small'}
+          multiple={multiple}
+          id={props.id ?? 'asynchronous-demo'}
+          name={field_name}
+          component={Autocomplete}
+          isOptionEqualToValue={(
+            option: RecordReference,
+            value: RecordReference
+          ) =>
+            option.project_id === value.project_id &&
+            option.record_id === value.record_id
+          }
+          getOptionLabel={(option: RecordReference) =>
+            option.record_label ?? ''
+          }
+          options={options}
+          defaultValue={undefined}
+          disabled={disbaled}
+          // onChange={(evant:any,value: any) => {
+          //   props.form.setFieldValue(props.field.name, value)
+          // }}
+          // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
+          renderInput={(params: any) => (
+            <TextField
+              {...params}
+              label={props.InputLabelProps.label}
+              error={props.form.errors[props.id] === undefined ? false : true}
+              variant="outlined"
+              InputProps={{
+                ...params.InputProps,
+              }}
+            />
+          )}
+        />
+      </Grid>
       {project_id !== undefined &&
         disbaled === false && ( //update for eid or view
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<AddIcon />}
-            component={Link}
-            to={{
-              pathname:
-                ROUTES.NOTEBOOK +
-                project_id +
-                ROUTES.RECORD_CREATE +
-                props.related_type,
-              state: newState,
-              search:
-                '?field_id=' + props.id + '&link=' + location.pathname + search,
-            }}
-          >
-            New Record
-          </Button>
+          <Grid item xs={12} sm={12} md={3} lg={3}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<AddIcon />}
+              component={Link}
+              to={{
+                pathname:
+                  ROUTES.NOTEBOOK +
+                  project_id +
+                  ROUTES.RECORD_CREATE +
+                  props.related_type,
+                state: newState,
+                search:
+                  '?field_id=' +
+                  props.id +
+                  '&link=' +
+                  location.pathname +
+                  search,
+              }}
+            >
+              New Record
+            </Button>
+          </Grid>
         )}
-      {disbaled === false && ( //update for eid or view
-        <Typography variant="caption">{props.helperText}</Typography>
-      )}
-      <br />
-      {recordsInformation.length > 0 && (
-        <DataGridLinksComponent
-          links={recordsInformation}
-          show_title={false}
-          show_link_type={false}
-          show_section={false}
-          show_field={false}
-          field_label={'Field'}
-        />
-      )}
-    </div>
+      <Grid item xs={12} sm={12} md={12} lg={12}>
+        {disbaled === false && ( //update for eid or view
+          <Typography variant="caption">{props.helperText}</Typography>
+        )}
+      </Grid>
+      <Grid item xs={12} sm={12} md={12} lg={12}>
+        {recordsInformation.length > 0 && (
+          <DataGridLinksComponent
+            links={recordsInformation}
+            show_title={false}
+            show_link_type={true}
+            show_section={false}
+            show_field={false}
+            field_label={'Field'}
+          />
+        )}
+      </Grid>
+    </Grid>
   );
 }
 
@@ -341,7 +449,7 @@ const uiSetting = () => {
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: 'faims-core::Child',
   };
-  newuiSetting['fields']['relation_linked_vocabPair_from'] = {
+  newuiSetting['fields']['relation_linked_vocabPair'] = {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Integer',
@@ -350,23 +458,7 @@ const uiSetting = () => {
         label: 'Number of Line',
       },
       fullWidth: false,
-      helperText: '',
-      variant: 'outlined',
-      required: false,
-    },
-    validationSchema: [['yup.string']],
-    initialValue: 'is related to',
-  };
-  newuiSetting['fields']['relation_linked_vocabPair_to'] = {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Integer',
-    'component-parameters': {
-      InputLabelProps: {
-        label: 'Number of Line',
-      },
-      fullWidth: false,
-      helperText: '',
+      helperText: "Add relation type Pair, use ','to seperate pair",
       variant: 'outlined',
       required: false,
     },
@@ -400,8 +492,7 @@ const uiSetting = () => {
     'helperText',
     'multiple',
     'relation_type',
-    'relation_linked_vocabPair_from',
-    'relation_linked_vocabPair_to',
+    'relation_linked_vocabPair',
     'related_type',
   ];
   newuiSetting['viewsets'] = {
@@ -476,8 +567,7 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
           'helperText' + props.fieldName,
           'multiple' + props.fieldName,
           'relation_type' + props.fieldName,
-          'relation_linked_vocabPair_from' + props.fieldName,
-          'relation_linked_vocabPair_to' + props.fieldName,
+          'relation_linked_vocabPair' + props.fieldName,
           'related_type' + props.fieldName,
         ];
       else
@@ -488,23 +578,16 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
           'related_type' + props.fieldName,
         ];
       setuiSetting({...newvalues});
-    } else if (name === 'relation_linked_vocabPair_from') {
+    } else if (name === 'relation_linked_vocabPair') {
       const newvalues = props.uiSpec;
-      const relation_linked_vocabPair = newvalues['fields'][props.fieldName][
-        'component-parameters'
-      ]['relation_linked_vocabPair'] ?? ['', ''];
+      const pair_value = [
+        ['is_above', 'is below'],
+        ['is related', 'is related to'],
+      ];
+      //TO DO
       newvalues['fields'][props.fieldName]['component-parameters'][
         'relation_linked_vocabPair'
-      ] = [event.target.value, relation_linked_vocabPair[1]];
-      props.setuiSpec({...newvalues});
-    } else if (name === 'relation_linked_vocabPair_to') {
-      const newvalues = props.uiSpec;
-      const relation_linked_vocabPair = newvalues['fields'][props.fieldName][
-        'component-parameters'
-      ]['relation_linked_vocabPair'] ?? ['', ''];
-      newvalues['fields'][props.fieldName]['component-parameters'][
-        'relation_linked_vocabPair'
-      ] = [relation_linked_vocabPair[0], event.target.value];
+      ] = pair_value;
       props.setuiSpec({...newvalues});
     }
   };
