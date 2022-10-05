@@ -30,6 +30,7 @@ import {
   CircularProgress,
   FormControlLabel,
   Switch,
+  Alert,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -37,10 +38,18 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import * as ROUTES from '../../../../constants/routes';
 
 import {getProjectInfo, listenProjectInfo} from '../../../../databaseAccess';
-import {useEventedPromise, constantArgsShared} from '../../../pouchHook';
+import {
+  useEventedPromise,
+  constantArgsShared,
+  constantArgsSplit,
+} from '../../../pouchHook';
 import {ProjectInformation} from '../../../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../../../uiSpecification';
-import {ProjectID} from '../../../../datamodel/core';
+import {
+  ClusterProjectRoles,
+  ProjectID,
+  split_full_project_id,
+} from '../../../../datamodel/core';
 import MetaDataJsonComponentProps from './metadata_json';
 import {
   isSyncingProjectAttachments,
@@ -50,6 +59,14 @@ import {
 import {ActionType} from '../../../../context/actions';
 import {store} from '../../../../context/store';
 import AutoIncrementerSettingsList from './auto_incrementers';
+import {
+  getUserProjectRolesForCluster,
+  isClusterAdmin,
+  ADMIN_ROLE,
+} from '../../../../users';
+import {listenDataDB} from '../../../../sync';
+import CircularLoading from '../../ui/circular_loading';
+import ProjectStatus from './status';
 
 export default function NotebookSettings() {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -60,6 +77,37 @@ export default function NotebookSettings() {
   // TODO: remove these once we can send new project up
   const [loading, setLoading] = useState(true);
   const [metadbContents, setMetadbContents] = useState<object[]>([]);
+
+  // What rights does the user have on this notebook?
+  const role_info = useEventedPromise(
+    async (project_id: ProjectID) => {
+      const split_id = await split_full_project_id(project_id);
+      const roles = await getUserProjectRolesForCluster(split_id.listing_id);
+      const is_admin = await isClusterAdmin(split_id.listing_id);
+
+      let can_edit_notebook_on_server = false;
+      const can_edit_notebook_on_device = false;
+      for (const role in roles) {
+        if (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) {
+          can_edit_notebook_on_server = true;
+        }
+      }
+      return {
+        can_edit_notebook_on_device: can_edit_notebook_on_device,
+        can_edit_notebook_on_server: can_edit_notebook_on_server,
+        is_admin: is_admin,
+        roles: roles,
+      };
+    },
+    constantArgsSplit(
+      listenDataDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id]
+    ),
+    false,
+    [project_id],
+    project_id
+  );
 
   useEffect(() => {
     try {
@@ -102,7 +150,6 @@ export default function NotebookSettings() {
     <Box>
       <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
         <Grid item xs={12} sm={12} md={6} lg={4}>
-          <Typography variant={'overline'}>Notebook Status</Typography>
           <Box
             component={Paper}
             variant={'outlined'}
@@ -110,46 +157,56 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
-            <Grid
-              container
-              direction="row"
-              justifyContent="flex-start"
-              alignItems="center"
-              spacing={2}
-            >
-              <Grid item xs={6}>
-                <Box sx={{p: 1, display: 'flex'}}>
-                  <FiberManualRecordIcon
-                    fontSize="small"
-                    sx={{
-                      mr: 1,
-                      color:
-                        project_info.status === 'live' ? '#4caf50' : '#d9182e',
-                    }}
-                  />
-                  {project_info.status}
+            <Typography variant={'h6'} sx={{mb: 2}}>
+              Notebook Status
+            </Typography>
+            <Grid container spacing={1}>
+              <Grid item xs={12}>
+                <Box>
+                  <ProjectStatus status={project_info.status} />
                 </Box>
               </Grid>
-              <Grid item xs={6}>
-                {project_info.status !== 'live' && (
+              {role_info.value?.can_edit_notebook_on_device ||
+              role_info.value?.can_edit_notebook_on_server ? (
+                <Grid item xs={12}>
                   <Button
                     color="primary"
                     variant={'outlined'}
                     startIcon={<EditIcon />}
                     component={RouterLink}
                     to={ROUTES.PROJECT_DESIGN + project_id}
-                    style={{float: 'right'}}
                   >
                     Edit Notebook Design
                   </Button>
-                )}
-              </Grid>
+                </Grid>
+              ) : (
+                ''
+              )}
+              {role_info.value?.can_edit_notebook_on_device ? (
+                <Grid item xs={12}>
+                  <Alert severity={'info'}>
+                    You may edit the notebook, but your changes will only be
+                    saved locally to your device. Contact the FAIMS team to
+                    publish your notebook.
+                  </Alert>
+                </Grid>
+              ) : (
+                ''
+              )}
+              {role_info.value?.can_edit_notebook_on_device ||
+              role_info.value?.can_edit_notebook_on_server ? (
+                <Grid item xs={12}>
+                  <Alert severity={'warning'}>
+                    If this notebook already has records saved, editing the
+                    notebook may cause issues. Proceed with caution.
+                  </Alert>
+                </Grid>
+              ) : (
+                ''
+              )}
             </Grid>
           </Box>
 
-          <Typography variant={'overline'}>
-            Get attachments from other devices
-          </Typography>
           <Box
             component={Paper}
             variant={'outlined'}
@@ -157,6 +214,9 @@ export default function NotebookSettings() {
             p={2}
             mb={2}
           >
+            <Typography variant={'h6'} sx={{mb: 2}}>
+              Get attachments from other devices
+            </Typography>
             {isSyncing !== null ? (
               <Box>
                 <FormControlLabel
@@ -206,10 +266,18 @@ export default function NotebookSettings() {
       </Grid>
       <Grid container>
         <Grid item xs={12} sm={12} md={8}>
-          <Typography variant={'overline'}>Metadata DB contents</Typography>
-          <Box mb={1} component={Paper} variant={'outlined'} elevation={0}>
+          <Box
+            component={Paper}
+            variant={'outlined'}
+            elevation={0}
+            p={2}
+            mb={2}
+          >
+            <Typography variant={'h6'} sx={{mb: 2}}>
+              Metadata DB contents
+            </Typography>
             {loading ? (
-              'Loading...'
+              <CircularLoading label={'Loading...'} />
             ) : (
               <MetaDataJsonComponentProps value={metadbContents} />
             )}

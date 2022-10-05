@@ -47,7 +47,7 @@ interface SplitCouchDBRole {
   project_role: ProjectRole;
 }
 
-const ADMIN_ROLE = 'admin';
+export const ADMIN_ROLE = 'admin';
 
 export async function getFriendlyUserName(
   project_id: ProjectID
@@ -401,30 +401,30 @@ export async function shouldDisplayRecord(
   const split_id = split_full_project_id(full_proj_id);
   const user_id = await getCurrentUserId(full_proj_id);
   if (split_id.listing_id === LOCALLY_CREATED_PROJECT_PREFIX) {
-    console.info('See record as local project', record_metadata.record_id);
+    // console.info('See record as local project', record_metadata.record_id);
     return true;
   }
   if (record_metadata.created_by === user_id) {
-    console.info('See record as user created', record_metadata.record_id);
+    // console.info('See record as user created', record_metadata.record_id);
     return true;
   }
   const is_admin = await isClusterAdmin(split_id.listing_id);
   if (is_admin) {
-    console.info('See record as cluster admin', record_metadata.record_id);
+    // console.info('See record as cluster admin', record_metadata.record_id);
     return true;
   }
   const roles = await getUserProjectRolesForCluster(split_id.listing_id);
   if (roles === undefined) {
-    console.info('Not see record as not in cluster', record_metadata.record_id);
+    // console.info('Not see record as not in cluster', record_metadata.record_id);
     return false;
   }
   for (const role in roles) {
     if (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) {
-      console.info('See record as notebook admin', record_metadata.record_id);
+      // console.info('See record as notebook admin', record_metadata.record_id);
       return true;
     }
   }
-  console.info('Not see record hit fallback', record_metadata.record_id);
+  // console.info('Not see record hit fallback', record_metadata.record_id);
   return false;
 }
 

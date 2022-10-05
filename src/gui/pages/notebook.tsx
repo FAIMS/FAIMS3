@@ -20,6 +20,7 @@
 import React from 'react';
 import {useParams, Redirect} from 'react-router-dom';
 import {Box, Grid, Typography} from '@mui/material';
+import FolderIcon from '@mui/icons-material/Folder';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
@@ -73,8 +74,23 @@ export default function Notebook() {
         spacing={2}
       >
         <Grid item xs={'auto'}>
-          <Typography variant={mq_above_md ? 'h3' : 'h4'}>
-            {project_info.name}
+          <Typography variant={mq_above_md ? 'h3' : 'h4'} component={'div'}>
+            <Grid
+              container
+              direction="row"
+              justifyContent="flex-start"
+              alignItems="center"
+              spacing={1}
+            >
+              <Grid item>
+                <FolderIcon
+                  color={'secondary'}
+                  fontSize={mq_above_md ? 'large' : 'medium'}
+                  style={{verticalAlign: 'middle'}}
+                />
+              </Grid>
+              <Grid item>{project_info.name}</Grid>
+            </Grid>
           </Typography>
         </Grid>
         <Grid item xs>

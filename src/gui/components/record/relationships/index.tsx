@@ -19,334 +19,105 @@
  */
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Tabs,
-  Tab,
-  ListItemIcon,
-  Button,
-  Grid,
-} from '@mui/material';
-import {NavLink} from 'react-router-dom';
-import SubdirectoryArrowRightIcon from '@mui/icons-material/SubdirectoryArrowRight';
-import {
-  DataGrid,
-  GridColDef,
-  GridToolbarContainer,
-  GridToolbarFilterButton,
-  GridPagination,
-} from '@mui/x-data-grid';
 
-import {TabPanelProps, RecordProps, RelationshipsComponentProps} from './types';
-import {Formik, Form} from 'formik';
-import {ViewComponent} from '../view';
-import {ProjectUIModel} from '../../../../datamodel/ui';
-function TabPanel(props: TabPanelProps) {
-  const {children, value, index, ...other} = props;
+import {Box, Paper} from '@mui/material';
+import Tab from '@mui/material/Tab';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
 
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`child-parent-tabpanel-${index}`}
-      aria-labelledby={`child-parent-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box>
-          <Typography>{children}</Typography>
-        </Box>
-      )}
-    </div>
-  );
-}
-function CustomToolbar() {
-  return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-    >
-      <Grid item>
-        <GridToolbarContainer>
-          <GridToolbarFilterButton />
-        </GridToolbarContainer>
-      </Grid>
-      <Grid item>
-        <GridPagination />
-      </Grid>
-    </Grid>
-  );
-}
+import {RelationshipsComponentProps} from './types';
+import ParentLinkComponent from './parent_links';
+import BoxTab from '../../ui/boxTab';
+import {grey} from '@mui/material/colors';
+import CreateLinkComponent from './create_links';
+import DataGridLinksComponent from './link_datagrid';
+const relationship_types = [
+  {link: 'is below', reciprocal: 'is above'},
+  {link: 'is above', reciprocal: 'is below'},
+  {link: 'is related to', reciprocal: 'is related to'},
+  {link: 'has child', reciprocal: 'is child of'},
+];
 
-function a11yProps(index: number) {
-  return {
-    id: `child-parent-tab-${index}`,
-    'aria-controls': `child-parent-tabpanel-${index}`,
-  };
-}
-type ParentFormProps = {
-  parentRecords: Array<RecordProps> | null;
-  ui_specification: ProjectUIModel;
-};
-
-export function ParentForm(props: any) {
-  const {ui_specification, parentRecords} = props;
-  if (parentRecords === null || parentRecords.length === 0) return <></>;
-  const values = parentRecords[0]['persistentData'].data;
-  const viewName = parentRecords[0].type;
-  const annotation = parentRecords[0]['persistentData'].annotations;
-  const fieldNames = Object.keys(parentRecords[0]['persistentData'].data);
-
-  const updateannotation = () => {
-    return;
-  };
-  return (
-    <Formik
-      initialValues={values}
-      validateOnMount={false}
-      onSubmit={() => console.log('')}
-    >
-      {formProps => {
-        return (
-          <Form>
-            <ViewComponent
-              viewName={viewName}
-              ui_specification={ui_specification}
-              formProps={formProps}
-              annotation={annotation}
-              handerannoattion={updateannotation}
-              fieldNames={fieldNames}
-              disabled={true}
-            />
-          </Form>
-        );
-      }}
-    </Formik>
-  );
-}
-
-function getColumns(columns: GridColDef[]) {
-  columns[6] = {
-    field: 'relation_type_vocabPair',
-    headerName: 'Relation Type Label',
-    flex: 0.2,
-  };
-  return columns;
-}
-
-export function RelationshipsComponent(props: RelationshipsComponentProps) {
+export default function RelationshipsViewComponent(
+  props: RelationshipsComponentProps
+) {
   /**
-   * Display the child records associated with a records in a MUI Data Grid.
+   * Display the parent, child and related records associated with the current record
    * Row click to go to child record
    * Data Grid is set to autoHeight (grid will size according to its content) up to 5 rows
-   * Notes for Kate
-   *  TODO hopefully it's easy to spot that the
+   *
    *
    */
-  const [value, setValue] = React.useState(0);
+  const [value, setValue] = React.useState('1');
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     setValue(newValue);
   };
-  const columns: GridColDef[] = [
-    {
-      field: 'id',
-      headerName: 'ID',
-      flex: 0.2,
-      minWidth: 70,
-      renderCell: cellValues => (
-        <Button component={NavLink} to={cellValues.row.route} variant={'text'}>
-          {cellValues.row.id}
-        </Button>
-      ),
-    },
-    {
-      field: 'title',
-      headerName: 'Record title',
-      flex: 0.2,
-      minWidth: 100,
-    },
-    {
-      field: 'lastUpdatedBy',
-      headerName: 'Last Updated',
-      flex: 0.2,
-      minWidth: 300,
-    },
-    {field: 'route', hide: true, filterable: false},
-    {
-      field: 'type',
-      headerName: 'Record Type',
-      flex: 0.1,
-      minWidth: 100,
-    },
-    {
-      field: 'children',
-      headerName: 'Child Records',
-      flex: 0.2,
-      minWidth: 200,
-      renderCell: cellValues => (
-        <List
-          dense={true}
-          sx={{p: 0, maxHeight: '100px', overflowY: 'scroll', width: '100%'}}
-        >
-          {cellValues.row.children.map((value: RecordProps, index: number) => (
-            <React.Fragment>
-              <ListItem key={'child_record_link' + index} sx={{p: 0}}>
-                <ListItemIcon sx={{minWidth: '30px'}}>
-                  <SubdirectoryArrowRightIcon fontSize={'small'} />
-                </ListItemIcon>
-                <ListItemText>
-                  <Button component={NavLink} to={value.route} variant={'text'}>
-                    {value.title}
-                  </Button>
-                </ListItemText>
-              </ListItem>
-            </React.Fragment>
-          ))}
-        </List>
-      ),
-    },
-  ];
-
+  const field_label = 'FIELD LABEL';
   return (
-    <Box style={{border: 'solid 1px red'}} mb={2}>
-      <Box sx={{width: '100%'}}>
-        <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            aria-label="basic tabs example"
-          >
-            {props.childRecords !== null ? (
-              <Tab label="Child Records" {...a11yProps(0)} />
-            ) : (
-              ''
-            )}
-            {props.parentRecords !== null ? (
-              <Tab label="Parent Records" {...a11yProps(1)} />
-            ) : (
-              ''
-            )}
-            {props.linkRecords !== null ? (
-              <Tab label="Linked Records" {...a11yProps(2)} />
-            ) : (
-              ''
-            )}
-          </Tabs>
-        </Box>
-        {props.childRecords !== null && props.childRecords.length > 0 ? (
-          <TabPanel value={value} index={0}>
-            <DataGrid
-              autoHeight
-              components={{
-                Footer: CustomToolbar,
-              }}
-              hideFooterSelectedRowCount
-              initialState={{
-                columns: {
-                  columnVisibilityModel: {
-                    // Hide column route, the other columns will remain visible
-                    route: false,
-                  },
-                },
-              }}
-              getRowHeight={() => 'auto'}
-              density={'compact'}
-              rows={props.childRecords}
-              columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5]}
-              disableSelectionOnClick
-              // sx={{cursor: 'pointer'}}
-              sx={{borderRadius: '0'}}
-            />
-          </TabPanel>
-        ) : (
-          ''
-        )}
-        {props.parentRecords !== null && props.parentRecords.length > 0 ? (
-          <TabPanel value={value} index={1}>
-            {props.parentRecords.length > 1 ? (
-              <Typography
-                variant={'caption'}
-                component={'div'}
-                sx={{mt: 2, ml: 2}}
-              >
-                This record is linked to multiple parent records
-              </Typography>
-            ) : (
-              ''
-            )}
-            <List
-              dense={true}
-              sx={{p: 0, maxHeight: '400px', overflowY: 'scroll'}}
+    <Box mb={2}>
+      <ParentLinkComponent parent_links={props.parent_links} />
+      <DataGridLinksComponent
+        links={props.child_links}
+        title={'Children'}
+        show_title={true}
+        show_link_type={true}
+        show_section={true}
+        show_field={true}
+      />
+      <DataGridLinksComponent
+        links={props.related_links}
+        title={'Related'}
+        show_title={true}
+        show_link_type={true}
+        show_section={true}
+        show_field={true}
+      />
+
+      <BoxTab
+        title={'Field-level links interface (to be moved)'}
+        bgcolor={grey[100]}
+      />
+      <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>
+        <CreateLinkComponent
+          relationship_types={relationship_types}
+          record_hrid={props.record_hrid}
+          record_type={props.record_type}
+          field_label={'FIELD LABEL'}
+        />
+        <TabContext value={value}>
+          {/*<Box sx={{borderBottom: 1, borderColor: 'divider'}}>*/}
+          <Box mb={1}>
+            <TabList
+              onChange={handleChange}
+              aria-label="Field children related tab"
             >
-              {props.parentRecords.map((value, index) => (
-                <ListItem key={'parent_record_link' + index}>
-                  <ListItemText>
-                    <Button
-                      component={NavLink}
-                      to={value.route}
-                      variant={'text'}
-                    >
-                      {value.title}
-                    </Button>
-                  </ListItemText>
-                </ListItem>
-              ))}
-            </List>
-            {props.parentRecords[0] !== undefined &&
-            props.parentRecords[0]['persistentData'] !== undefined ? (
-              <>
-                <h2>Persistent Data in {props.parentRecords[0]['title']}</h2>
-                <ParentForm
-                  parentRecords={props.parentRecords}
-                  ui_specification={props.ui_specification}
-                />
-              </>
-            ) : (
-              ''
-            )}
-          </TabPanel>
-        ) : (
-          ''
-        )}
-        {props.linkRecords !== null ? (
-          <TabPanel value={value} index={2}>
-            <DataGrid
-              autoHeight
-              components={{
-                Footer: CustomToolbar,
-              }}
-              hideFooterSelectedRowCount
-              initialState={{
-                columns: {
-                  columnVisibilityModel: {
-                    // Hide column route, the other columns will remain visible
-                    route: false,
-                  },
-                },
-              }}
-              getRowHeight={() => 'auto'}
-              density={'compact'}
-              rows={props.linkRecords}
-              columns={getColumns(columns)}
-              pageSize={5}
-              rowsPerPageOptions={[5]}
-              disableSelectionOnClick
-              // sx={{cursor: 'pointer'}}
-              sx={{borderRadius: '0'}}
+              <Tab label="Children" value="1" />
+              <Tab label="Related" value="2" />
+            </TabList>
+          </Box>
+          <TabPanel value="1" sx={{p: 0}}>
+            <DataGridLinksComponent
+              links={props.child_links}
+              show_title={false}
+              show_link_type={false}
+              show_section={false}
+              show_field={false}
+              field_label={field_label}
             />
           </TabPanel>
-        ) : (
-          ''
-        )}
+          <TabPanel value="2" sx={{p: 0}}>
+            <DataGridLinksComponent
+              links={props.related_links}
+              show_title={false}
+              show_link_type={false}
+              show_section={false}
+              show_field={false}
+              field_label={field_label}
+            />
+          </TabPanel>
+        </TabContext>
       </Box>
     </Box>
   );

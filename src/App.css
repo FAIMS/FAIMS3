@@ -11,3 +11,10 @@
 .bg-primary-gradient{
     background: linear-gradient(0deg, rgba(0,159,253,1) 0%, rgba(34,63,142,1) 58%);
 }
+/* class for conflict warnings */
+.bg-warning{
+    background-color: #FDF4E7;
+}
+
+/* MUI datagrid pagination: bold for total row count emphasis */
+.MuiTablePagination-displayedRows {font-weight: 600}

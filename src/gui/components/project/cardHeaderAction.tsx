@@ -12,7 +12,6 @@ import {
 
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
-import SettingsIcon from '@mui/icons-material/Settings';
 
 import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';

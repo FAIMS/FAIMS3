@@ -1,12 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import {
+  Divider,
   Tabs,
   Tab,
   Typography,
   Box,
   Paper,
   Grid,
-  CircularProgress,
   Table,
   TableBody,
   TableRow,
@@ -14,12 +14,11 @@ import {
   AppBar,
   TableContainer,
 } from '@mui/material';
-import TabList from '@mui/lab/TabList';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectInformation} from '../../../datamodel/ui';
 import DraftsTable from './draft_table';
-import {RecordsBrowseTable} from './table';
+import {RecordsBrowseTable} from './record_table';
 import RangeHeader from './range_header';
 import MetadataRenderer from '../metadataRenderer';
 import AddRecordButtons from './add_record_by_type';
@@ -27,6 +26,8 @@ import NotebookSettings from './settings';
 import {useTheme} from '@mui/material/styles';
 import DraftTabBadge from './draft_tab_badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import CircularLoading from '../ui/circular_loading';
+import ProjectStatus from './settings/status';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -71,6 +72,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
    */
   const [notebookTabValue, setNotebookTabValue] = React.useState(0);
   const [recordDraftTabValue, setRecordDraftTabValue] = React.useState(0);
+
   const handleRecordDraftTabChange = (
     event: React.SyntheticEvent,
     newValue: number
@@ -118,11 +120,11 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   return (
     <Box>
       {loading ? (
-        <CircularProgress size={12} thickness={4} />
+        <CircularLoading label={'Notebook is loading'} />
       ) : (
         <Box>
           <Box
-            mb={1}
+            mb={2}
             sx={{
               marginLeft: {sm: '-16px', md: 0},
               marginRight: {sm: '-16px', md: 0},
@@ -144,9 +146,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 textColor="inherit"
                 variant="scrollable"
                 scrollButtons="auto"
-                centered={mq_above_md ? false : true}
+                // centered={mq_above_md ? false : true}
               >
-                <Tab label="Notebook" {...a11yProps(0, 'notebook')} />
+                <Tab label="Records" {...a11yProps(0, 'notebook')} />
                 <Tab label="Info" {...a11yProps(1, 'notebook')} />
                 <Tab label="Settings" {...a11yProps(2, 'notebook')} />
               </Tabs>
@@ -155,7 +157,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           <TabPanel value={notebookTabValue} index={0} id={'notebook'}>
             {/* Add Record Buttons */}
             <Box>
-              <Typography variant={'overline'}>Add New Record</Typography>
+              <Typography variant={'overline'} sx={{marginTop: '-8px'}}>
+                Add New Record
+              </Typography>
               <AddRecordButtons project={project} />
             </Box>
             {/* Records/Drafts */}
@@ -200,9 +204,11 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           </TabPanel>
           <TabPanel value={notebookTabValue} index={1} id={'notebook'}>
             <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant={'overline'}>Description</Typography>
+              <Grid item xs={12} sm={6} md={6} lg={4}>
                 <Box component={Paper} elevation={0} variant={'outlined'} p={2}>
+                  <Typography variant={'h6'} sx={{mb: 2}}>
+                    Description
+                  </Typography>
                   <Typography variant="body2" color="textPrimary" gutterBottom>
                     {project.description}
                   </Typography>
@@ -215,11 +221,14 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   elevation={0}
                   variant={'outlined'}
                 >
+                  <Typography variant={'h6'} sx={{m: 2}} gutterBottom>
+                    About
+                  </Typography>
                   <Table size={'small'}>
                     <TableBody>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>Status</Typography>
+                          <Typography variant={'overline'}>Status</Typography>
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
@@ -231,7 +240,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                       </TableRow>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>
+                          <Typography variant={'overline'}>
                             Lead Institution
                           </Typography>
                         </TableCell>
@@ -245,7 +254,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                       </TableRow>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>Project Lead</Typography>
+                          <Typography variant={'overline'}>
+                            Project Lead
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
@@ -257,7 +268,9 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                       </TableRow>
                       <TableRow>
                         <TableCell>
-                          <Typography variant={'h6'}>Last Updated</Typography>
+                          <Typography variant={'overline'}>
+                            Last Updated
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <MetadataRenderer
@@ -271,8 +284,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   </Table>
                 </TableContainer>
               </Grid>
-              <Grid item xs={12} sm={12} md={4} lg={4}>
-                <Typography variant={'overline'}>Range Indices</Typography>
+              <Grid item xs={12} sm={12} md={12} lg={4}>
                 <RangeHeader
                   project={project}
                   handleAIEdit={handleNotebookTabChange}

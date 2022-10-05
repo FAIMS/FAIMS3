@@ -19,23 +19,12 @@
  */
 
 import React from 'react';
-import {Typography, Grid, Stack, Box, CircularProgress} from '@mui/material';
-import ProjectCard from '../components/project/card';
+import {Typography, Grid} from '@mui/material';
+import Notebooks from '../components/workspace/notebooks';
 import * as ROUTES from '../../constants/routes';
-// import {store} from '../../store';
-import {getProjectList, listenProjectList} from '../../databaseAccess';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {useEventedPromise} from '../pouchHook';
-import MainCard from '../components/ui/main-card';
 
 export default function Workspace() {
-  const pouchProjectList = useEventedPromise(
-    getProjectList,
-    listenProjectList,
-    true,
-    []
-  ).expect();
-
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
     {title: 'Workspace'},
@@ -50,42 +39,12 @@ export default function Workspace() {
             Workspace
           </Typography>
         </Grid>
-        {/* Recent Projects */}
+
         <Grid item xs={12} md={12} lg={8}>
-          <MainCard divider={true} content={true}>
-            <Stack spacing={0.5}>
-              <Typography variant="h6" color="textSecondary">
-                My Notebooks
-              </Typography>
-              <Box>
-                {pouchProjectList === null ? (
-                  <CircularProgress />
-                ) : Object.keys(pouchProjectList).length === 0 ? (
-                  <span>No notebooks found</span>
-                ) : (
-                  pouchProjectList.map(project_info => {
-                    const project_id = project_info.project_id;
-                    if (project_info !== null) {
-                      return (
-                        <Box key={'project-list' + project_id}>
-                          <ProjectCard
-                            project={project_info}
-                            dashboard={true}
-                          />
-                        </Box>
-                      );
-                    } else {
-                      return (
-                        <Box key={'project-list' + project_id}>
-                          Project could not be loaded
-                        </Box>
-                      );
-                    }
-                  })
-                )}
-              </Box>
-            </Stack>
-          </MainCard>
+          <Typography variant="h6" color="textSecondary">
+            My Notebooks
+          </Typography>
+          <Notebooks sortModel={{field: 'updated', sort: 'desc'}} />
         </Grid>
       </Grid>
     </React.Fragment>

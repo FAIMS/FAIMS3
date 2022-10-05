@@ -20,9 +20,10 @@
 
 import React, {useContext, useEffect, useState} from 'react';
 import {useHistory, useParams, Redirect} from 'react-router-dom';
-
+import {v4 as uuidv4} from 'uuid';
 import {
   AppBar,
+  Alert,
   Box,
   Grid,
   Typography,
@@ -48,10 +49,14 @@ import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 import RecordForm from '../components/record/form';
-import {
-  RelationshipsComponent,
-  ParentForm,
-} from '../components/record/relationships';
+
+// import {
+//
+//   RelationshipsViewComponent
+// } from '../components/record/relationships';
+import RelationshipsViewComponent from '../components/record/relationships';
+import ParentPanel from '../components/record/relationships/parent_panel';
+
 import RecordReadView from '../components/record/read_view';
 import DraftSyncStatus from '../components/record/sync_status';
 import ConflictForm from '../components/record/conflict/conflictform';
@@ -69,7 +74,7 @@ import {
   getInitialMergeDetails,
   findConflictingFields,
 } from '../../data_storage/merging';
-import Alert from '@mui/material/Alert';
+
 import {
   ConflictHelpDialog,
   BasicDialog,
@@ -80,8 +85,17 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
+
 import {getDetailRelatedInfommation} from '../components/record/relationships/RelatedInfomation';
-import {RelationshipsComponentProps} from '../components/record/relationships/types';
+import {
+  RelationshipsComponentProps,
+  RelatedType,
+} from '../components/record/relationships/types';
+
+import ArticleIcon from '@mui/icons-material/Article';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import CircularLoading from '../components/ui/circular_loading';
+
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -140,13 +154,14 @@ export default function Record() {
   const [recordInfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [open, setOpen] = React.useState(false);
   const [pressedvalue, setpressedvalue] = useState(value);
   const [relatedRecords, setRelatedRecords] = useState({
     parentRecords: [],
     childRecords: [],
     linkRecords: [],
-  } as RelationshipsComponentProps);
+  } as RelatedType);
 
   const [breadcrumbs, setBreadcrumbs] = useState([
     {link: ROUTES.INDEX, title: 'Home'},
@@ -263,7 +278,8 @@ export default function Record() {
               type,
               latest_record.data,
               project_id,
-              latest_record.relationship ?? null
+              latest_record.relationship ?? null,
+              record_id
             );
             setRelatedRecords(newRelationship);
             if (
@@ -279,7 +295,19 @@ export default function Record() {
                 },
                 {
                   link: newRelationship.parentRecords[0]['route'],
-                  title: newRelationship.parentRecords[0]['title'],
+                  title: newRelationship.parentRecords[0]['hrid'],
+                },
+                {title: hrid ?? record_id},
+              ];
+              console.error('link', newBreadcrumbs);
+              setBreadcrumbs(newBreadcrumbs);
+            } else {
+              const newBreadcrumbs = [
+                {link: ROUTES.INDEX, title: 'Home'},
+                {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+                {
+                  link: ROUTES.NOTEBOOK + project_id,
+                  title: project_info !== null ? project_info.name : project_id,
                 },
                 {title: hrid ?? record_id},
               ];
@@ -318,32 +346,89 @@ export default function Record() {
 
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
     return <CircularProgress size={12} thickness={4} />;
+  const record_type =
+    uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
+      ? '' + uiSpec.viewsets[type]['label']
+      : '';
   return (
     <Box>
-      <Breadcrumbs data={breadcrumbs} />
-      {recordInfo !== null && (
-        <Box
-          justifyContent="flex-end"
-          alignItems="flex-end"
-          display="flex"
-          style={{paddingRight: 3}}
-        >
-          <Typography variant={'caption'} gutterBottom>
-            Last Updated {recordInfo}
+      <Grid
+        container
+        direction="row"
+        justifyContent="flex-start"
+        alignItems="center"
+        spacing={2}
+      >
+        <Grid item xs={'auto'}>
+          <Typography component={'div'}>
+            <Grid
+              container
+              direction="row"
+              justifyContent="flex-start"
+              alignItems="flex-start"
+              spacing={1}
+            >
+              <Grid item>
+                {draft_id ? (
+                  <ArticleOutlinedIcon
+                    fontSize={mq_above_md ? 'large' : 'medium'}
+                    style={{verticalAlign: 'top'}}
+                  />
+                ) : (
+                  <ArticleIcon
+                    fontSize={mq_above_md ? 'large' : 'medium'}
+                    style={{verticalAlign: 'top'}}
+                  />
+                )}
+              </Grid>
+              <Grid item>
+                <Typography variant={mq_above_md ? 'h3' : 'h4'}>
+                  {uiSpec !== null &&
+                  type !== null &&
+                  uiSpec['visible_types'][0] !== ''
+                    ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
+                    : ''}{' '}
+                  {draft_id !== undefined && (
+                    <span
+                      style={{
+                        textDecorationLine: 'underline',
+                        textDecorationStyle: 'double',
+                      }}
+                    >
+                      [Draft]
+                    </span>
+                  )}
+                </Typography>
+                {recordInfo !== null && (
+                  <Typography variant={'caption'} gutterBottom>
+                    Last Updated by {recordInfo}
+                  </Typography>
+                )}
+              </Grid>
+            </Grid>
           </Typography>
-        </Box>
+        </Grid>
+        <Grid item xs>
+          <Breadcrumbs data={breadcrumbs} />
+        </Grid>
+      </Grid>
+      {draft_id !== undefined && (
+        <Alert severity={'warning'}>
+          This record is currently a draft. The data is stored locally on your
+          device only.
+        </Alert>
       )}
+      <Typography
+        variant={'subtitle1'}
+        color={'textSecondary'}
+        gutterBottom
+        sx={{mt: 1}}
+      >
+        Edit data for this record. If you need to, you can also revisit previous
+        revisions and resolve conflicts.
+      </Typography>
+
       <Box mb={2} pr={1}>
-        <Typography variant={'h2'} component={'h1'}>
-          {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
-            ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
-            : ''}{' '}
-          {draft_id !== undefined && ' Draft '}
-        </Typography>
-        <Typography variant={'subtitle1'} gutterBottom>
-          Edit data for this record. If you need to, you can also revisit
-          previous revisions and resolve conflicts.
-        </Typography>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
           Object.keys(conflicts['available_heads']).length > 1 && (
@@ -381,7 +466,7 @@ export default function Record() {
               scrollButtons="auto"
               centered={not_xs ? false : true}
             >
-              <Tab label="View" value="0" />
+              <Tab label="Links" value="0" />
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
               <Tab label="Meta" value="3" />
@@ -424,35 +509,19 @@ export default function Record() {
               history.goBack();
               return <React.Fragment />;
             } else if (uiSpec === null || type === null || isSyncing === null) {
-              // Loading
-              return <CircularProgress size={12} thickness={4} />;
+              return <CircularLoading label={'Loading...'} />;
             } else {
               return (
                 <React.Fragment>
                   <TabPanel value="0" style={{padding: theme.spacing(2)}}>
-                    <Box>
-                      <RelationshipsComponent
-                        parentRecords={relatedRecords.parentRecords}
-                        childRecords={relatedRecords.childRecords}
-                        linkRecords={relatedRecords.linkRecords}
-                        ui_specification={uiSpec}
-                      />
-                      <Box style={{border: 'solid 1px red'}} mb={2}>
-                        <RecordReadView
-                          project_id={project_id}
-                          record_id={record_id}
-                          revision_id={updatedrevision_id}
-                          ui_specification={uiSpec}
-                          draft_id={draft_id}
-                          metaSection={metaSection}
-                          handleSetIsDraftSaving={setIsDraftSaving}
-                          handleSetDraftLastSaved={setDraftLastSaved}
-                          handleSetDraftError={setDraftError}
-                        />
-                      </Box>
-                    </Box>
+                    <RelationshipsViewComponent
+                      parent_links={relatedRecords.parentRecords}
+                      related_links={relatedRecords.linkRecords}
+                      child_links={relatedRecords.childRecords}
+                      record_hrid={hrid}
+                      record_type={record_type}
+                    />
                   </TabPanel>
-
                   <TabPanel value="1" style={{padding: theme.spacing(2)}}>
                     <Box pl={0}>
                       {conflicts !== null &&
@@ -534,7 +603,7 @@ export default function Record() {
                           </Box>
                           <Box px={not_xs ? 30 : 0}>
                             {/* Add the component for inherit data from parent */}
-                            <ParentForm
+                            <ParentPanel
                               parentRecords={relatedRecords.parentRecords}
                               ui_specification={uiSpec}
                             />
@@ -564,7 +633,7 @@ export default function Record() {
                       ) : (
                         <>
                           {/* Add the component for inherit data from parent */}
-                          <ParentForm
+                          <ParentPanel
                             parentRecords={relatedRecords.parentRecords}
                             ui_specification={uiSpec}
                           />
@@ -625,7 +694,7 @@ export default function Record() {
                 handleOpen={() => setOpen(true)}
                 handleConfirm={handleConfirm}
                 content={`This record has
-                ${Object.keys(conflicts['available_heads']).length} 
+                ${Object.keys(conflicts['available_heads']).length}
                 conflicting instances. Resolve these conflicts before
                 continuing`}
                 continue={'continue'}

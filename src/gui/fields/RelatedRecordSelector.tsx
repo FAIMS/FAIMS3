@@ -44,7 +44,12 @@ import {
 import {useLocation, Link} from 'react-router-dom';
 import {Typography} from '@mui/material';
 import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInfomation';
-import {DataGrid, GridColDef} from '@mui/x-data-grid';
+import DataGridLinksComponent from '../components/record/relationships/link_datagrid';
+import {LinkProps} from '../components/record/relationships/types';
+import {DataGrid, GridCellParams, GridColDef} from '@mui/x-data-grid';
+import {NavLink} from 'react-router-dom';
+import ArticleIcon from '@mui/icons-material/Article';
+import {Grid} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -70,7 +75,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     : '';
   const [isactive, setIsactive] = React.useState(false);
   const [recordsInformation, setRecordsInformation] = React.useState<
-    Array<{[field_name: string]: any}>
+    LinkProps[]
   >([]);
 
   const url_split = search.split('&');
@@ -81,7 +86,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   )
     search = search.replace(url_split[0] + '&' + url_split[1], '');
   if (search !== '') search = '&' + search;
-
   useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
@@ -104,20 +108,54 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         const records_info = await get_RelatedFields_for_field(
           project_id,
           props.field.name,
-          props.form.values
+          props.form.values,
+          props.form.values['_id']
         );
         setRecordsInformation(records_info);
-        const newColumns: GridColDef[] = [];
+        const newColumns: GridColDef[] = [
+          {
+            field: 'recordB_type',
+            headerName: 'Kind',
+            minWidth: 100,
+          },
+          {
+            field: 'recordB_hrid',
+            headerName: 'HRID',
+            minWidth: 365,
+            renderCell: (params: GridCellParams) => (
+              <Button
+                component={NavLink}
+                to={params.row.recordB_route}
+                variant={'text'}
+              >
+                <Grid
+                  container
+                  direction="row"
+                  alignItems="center"
+                  spacing={'4px'}
+                >
+                  <ArticleIcon fontSize={'inherit'} /> {params.value}
+                </Grid>
+              </Button>
+            ),
+          },
+          {
+            field: 'recordB_lastUpdatedBy',
+            headerName: 'Last Updated',
+            minWidth: 300,
+          },
+        ];
+
         if (records_info.length > 0 && columns.length === 0) {
-          Object.keys(records_info[0]).map((key: string) =>
-            ['id', 'children', 'route', 'type'].includes(key)
-              ? key
-              : newColumns.push({
-                  field: key,
-                  flex: 0.2,
-                  minWidth: 100,
-                })
-          );
+          // this is the code to dispaly the values from child
+          //   Object.keys(records_info[0]).map((key: string) =>
+          //     key.includes('newfield')
+          //        ?newColumns.push({
+          //           field: key,
+          //           flex: 0.2,
+          //           minWidth: 100,
+          //         }):key
+          //   );
           Setcolumns(newColumns);
         }
       }
@@ -213,26 +251,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       )}
       <br />
       {recordsInformation.length > 0 && (
-        <DataGrid
-          autoHeight
-          hideFooterSelectedRowCount
-          initialState={{
-            columns: {
-              columnVisibilityModel: {
-                // Hide column route, the other columns will remain visible
-                route: false,
-              },
-            },
-          }}
-          getRowHeight={() => 'auto'}
-          density={'compact'}
-          rows={recordsInformation}
-          columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5]}
-          disableSelectionOnClick
-          // sx={{cursor: 'pointer'}}
-          sx={{borderRadius: '0'}}
+        <DataGridLinksComponent
+          links={recordsInformation}
+          show_title={false}
+          show_link_type={false}
+          show_section={false}
+          show_field={false}
+          field_label={'Field'}
         />
       )}
     </div>

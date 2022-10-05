@@ -20,10 +20,24 @@
 
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
-import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
-import {Typography, Box, Paper} from '@mui/material';
-import {Link as RouterLink} from 'react-router-dom';
-import Link from '@mui/material/Link';
+import {
+  DataGrid,
+  GridColDef,
+  GridCellParams,
+  GridEventListener,
+} from '@mui/x-data-grid';
+import {
+  Typography,
+  Box,
+  Paper,
+  Grid,
+  FormGroup,
+  FormControlLabel,
+  Switch,
+  Link,
+} from '@mui/material';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import {useHistory} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -33,6 +47,7 @@ import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
+
 type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -45,177 +60,202 @@ type DraftsRecordProps = {
   rows: any;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
-  not_xs: boolean;
 };
 
 function DraftRecord(props: DraftsRecordProps) {
-  const {project_id, maxRows, rows, loading, not_xs} = props;
-  // const newrows: any = rows;
-  const defaultMaxRowsMobile = 25;
+  const {project_id, maxRows, rows, loading} = props;
 
-  // newrows.map((r:any)=>
-  //   props.viewsets !== null &&
-  //   props.viewsets !== undefined &&
-  //   r.type !== null &&
-  //   r.type !== undefined &&
-  //   props.viewsets[r.type] !== undefined?r.type_label=props.viewsets[r.type].label ?? r.type:r.type)
+  // default for mobileView is on (collapsed table)
+  const [mobileViewSwitchValue, setMobileViewSwitchValue] =
+    React.useState(true);
 
-  const columns: GridColDef[] = not_xs
+  const theme = useTheme();
+  const history = useHistory();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+
+  // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
+  const mobileView: boolean = not_xs ? false : mobileViewSwitchValue;
+
+  const defaultMaxRowsMobile = 10;
+
+  const handleToggleMobileView = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setMobileViewSwitchValue(event.target.checked);
+  };
+
+  // The entire row is clickable to the record
+  const handleRowClick: GridEventListener<'rowClick'> = params => {
+    history.push(
+      ROUTES.getDraftRoute(
+        project_id ?? 'dummy',
+        params.row._id as DraftMetadata['_id'],
+        params.row.existing! as DraftMetadata['existing'],
+        params.row.type! as DraftMetadata['type'],
+        params.row.record_id as DraftMetadata['record_id']
+      )
+    );
+  };
+
+  function getRowType(params: GridCellParams) {
+    // The type (or Kind) is prettified and should be filterable as such.
+    return props.viewsets !== null &&
+      props.viewsets !== undefined &&
+      params.row.type !== null &&
+      params.row.type !== undefined &&
+      props.viewsets[(params.row.type || '').toString()] !== undefined
+      ? props.viewsets[(params.row.type || '').toString()].label ??
+          params.row.type
+      : params.row.type;
+  }
+  const columns: GridColDef[] = !mobileView
     ? [
         {
-          field: 'hrid',
-          headerName: 'ID',
-          description: 'Draft ID',
+          field: 'draft_icon',
+          headerName: '',
           type: 'string',
-          width: not_xs ? 300 : 100,
+          width: 40,
           renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getDraftRoute(
-                project_id ?? 'dummy',
-                params.row._id as DraftMetadata['_id'],
-                params.row.existing! as DraftMetadata['existing'],
-                params.row.type! as DraftMetadata['type'],
-                params.row.record_id as DraftMetadata['record_id']
-              )}
-            >
-              {params.value}
-            </Link>
+            <ArticleOutlinedIcon sx={{my: 2}} />
           ),
+          hide: false,
+          sortable: false,
+          filterable: false,
+          disableColumnMenu: true,
         },
         {
           field: 'type',
           headerName: 'Kind',
           type: 'string',
           width: 200,
-          renderCell: (params: GridCellParams) => (
-            <>
-              {props.viewsets !== null &&
-              props.viewsets !== undefined &&
-              params.value !== null &&
-              params.value !== undefined &&
-              props.viewsets[params.value.toString()] !== undefined
-                ? props.viewsets[params.value.toString()].label ?? params.value
-                : params.value}
-            </>
-          ),
+          valueGetter: getRowType,
         },
-        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
-        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
         {
           field: '_id',
-          headerName: 'UUID',
+          headerName: 'Draft ID',
           description: 'Draft ID',
           type: 'string',
-          width: not_xs ? 300 : 100,
+          flex: 0.5,
+          minWidth: 400,
+          renderCell: (params: GridCellParams) => params.value,
+        },
+        {
+          field: 'hrid',
+          headerName: 'HRID/UUID',
+          description: 'Human Readable Record ID',
+          type: 'string',
+          width: 300,
           renderCell: (params: GridCellParams) => (
-            <Link
-              component={RouterLink}
-              to={ROUTES.getDraftRoute(
-                project_id ?? 'dummy',
-                params.row._id as DraftMetadata['_id'],
-                params.row.existing! as DraftMetadata['existing'],
-                params.row.type! as DraftMetadata['type'],
-                params.row.record_id as DraftMetadata['record_id']
-              )}
-            >
+            <Link underline={'none'} sx={{fontWeight: 'bold'}}>
               {params.value}
             </Link>
           ),
         },
+        {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
+        {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
       ]
     : [
         {
-          field: 'hrid',
-          headerName: 'Draft',
+          field: '_id',
+          headerName: 'Draft ID',
           description: 'Draft ID',
           type: 'string',
-          width: 300,
+          flex: 1,
           renderCell: (params: GridCellParams) => (
-            <div>
-              <Typography>
-                <br />{' '}
-              </Typography>
-              <Typography variant="subtitle2" gutterBottom component="div">
-                {' '}
-                <Link
-                  component={RouterLink}
-                  to={ROUTES.getDraftRoute(
-                    project_id ?? 'dummy',
-                    params.row._id as DraftMetadata['_id'],
-                    params.row.existing! as DraftMetadata['existing'],
-                    params.row.type! as DraftMetadata['type'],
-                    params.row.record_id as DraftMetadata['record_id']
-                  )}
-                >
-                  {params.value}
-                </Link>
-              </Typography>
+            <Box sx={{width: '100%', my: 1}}>
+              <Grid
+                container
+                direction="row"
+                justifyContent="flex-start"
+                alignItems="center"
+                spacing={0}
+              >
+                <Grid item>
+                  <ArticleOutlinedIcon
+                    fontSize={'small'}
+                    sx={{verticalAlign: 'middle', marginRight: '4px'}}
+                  />
+                </Grid>
+                <Grid item>
+                  <Typography>
+                    Kind:{'  '}
+                    {getRowType(params)}
+                  </Typography>
+                </Grid>
+              </Grid>
 
               <Typography color="textSecondary">
-                Kind:{'  '}
-                {props.viewsets !== null &&
-                props.viewsets !== undefined &&
-                params.row.type !== null &&
-                params.row.type !== undefined &&
-                props.viewsets[(params.row.type || '').toString()] !== undefined
-                  ? props.viewsets[(params.row.type || '').toString()].label ??
-                    params.row.type
-                  : params.row.type}
+                Draft ID: {params.value}
               </Typography>
+              <Typography color="textSecondary">
+                HRID/UUID: {params.row.hrid}
+              </Typography>
+
               <Typography
                 color="textSecondary"
                 variant="subtitle2"
                 gutterBottom
                 component="div"
               >
-                Created: {(params.row.created || '').toString()}
+                Updated: {(params.row.updated || '').toString()}
               </Typography>
-              <Typography>
-                <br />{' '}
-              </Typography>
-            </div>
+            </Box>
           ),
         },
-        // {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},// Only one column for mobile
       ];
 
   return (
-    <DataGrid
-      key={'drafttable'}
-      rows={rows}
-      loading={loading}
-      getRowId={r => r._id}
-      columns={columns}
-      autoHeight
-      rowHeight={not_xs ? 52 : 100}
-      density={not_xs ? 'standard' : 'comfortable'}
-      components={{
-        Toolbar: NotebookDraftDataGridToolbar,
-      }}
-      initialState={{
-        sorting: {
-          sortModel: [{field: 'updated', sort: 'desc'}],
-        },
-        pagination: {
-          pageSize:
-            maxRows !== null
-              ? not_xs
-                ? maxRows
-                : defaultMaxRowsMobile
-              : not_xs
-              ? 25
-              : defaultMaxRowsMobile,
-        },
-      }}
-    />
+    <React.Fragment>
+      <Box component={Paper} elevation={0}>
+        <DataGrid
+          key={'drafttable'}
+          rows={rows}
+          loading={loading}
+          getRowId={r => r._id}
+          columns={columns}
+          autoHeight
+          sx={{cursor: 'pointer'}}
+          getRowHeight={() => 'auto'}
+          disableSelectionOnClick
+          onRowClick={handleRowClick}
+          components={{
+            Toolbar: NotebookDraftDataGridToolbar,
+          }}
+          initialState={{
+            sorting: {
+              sortModel: [{field: 'updated', sort: 'desc'}],
+            },
+            pagination: {
+              pageSize:
+                maxRows !== null
+                  ? not_xs
+                    ? maxRows
+                    : defaultMaxRowsMobile
+                  : not_xs
+                  ? 25
+                  : defaultMaxRowsMobile,
+            },
+          }}
+        />
+      </Box>
+      {not_xs ? (
+        ''
+      ) : (
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch checked={mobileView} onChange={handleToggleMobileView} />
+            }
+            label={'Toggle Mobile View'}
+          />
+        </FormGroup>
+      )}
+    </React.Fragment>
   );
 }
 export default function DraftsTable(props: DraftsTableProps) {
   const {project_id, maxRows} = props;
   const [loading, setLoading] = useState(true);
-  const theme = useTheme();
-  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [rows, setRows] = useState<Array<DraftMetadata>>([]);
 
@@ -238,16 +278,13 @@ export default function DraftsTable(props: DraftsTableProps) {
   }, [project_id, rows]);
 
   return (
-    <Box component={Paper} elevation={0}>
-      <DraftRecord
-        project_id={project_id}
-        maxRows={maxRows}
-        rows={rows}
-        loading={loading}
-        viewsets={props.viewsets}
-        not_xs={not_xs}
-      />
-    </Box>
+    <DraftRecord
+      project_id={project_id}
+      maxRows={maxRows}
+      rows={rows}
+      loading={loading}
+      viewsets={props.viewsets}
+    />
   );
 }
 DraftsTable.defaultProps = {
