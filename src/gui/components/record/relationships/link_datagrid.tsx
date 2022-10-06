@@ -252,6 +252,7 @@ export default function DataGridLinksComponent(
                   recordB_id: false,
                   recordB_route: false,
                   relation_type_vocabPair: props.show_link_type,
+                  actions: props.show_actions,
                 },
               },
             }}

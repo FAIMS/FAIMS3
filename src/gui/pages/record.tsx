@@ -419,19 +419,195 @@ export default function Record() {
                 <React.Fragment>
                   <TabPanel value="0" style={{padding: theme.spacing(2)}}>
                     <RelationshipsViewComponent
-                      parent_links={[
+                      related_records={[
                         {
                           record_id: uuidv4(),
                           hrid: 'CBC123',
+                          type: 'Parent record',
+                          route: 'parent_route',
+                          field_id: uuidv4(),
+                          field_label: 'cup',
+                          section: 'section A',
+                          relation_type_vocabPair: ['is parent', 'is child of'],
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 'CBC12345',
                           type: 'Container',
                           route: 'parent_route',
                           field_id: uuidv4(),
-                          field_label: 'bucket',
-                          link_type: 'parent',
-                          link_id: uuidv4(),
+                          field_label: 'box',
+                          section: 'section B',
+                          relation_type_vocabPair: [
+                            'is related to',
+                            'is related to',
+                          ],
+                        },
+                        {
+                          record_id: uuidv4(),
+                          hrid: 'CBD13423',
+                          type: 'Container',
+                          route: 'parent_route',
+                          field_id: uuidv4(),
+                          field_label: 'box',
+                          section: 'Section C',
+                          relation_type_vocabPair: [
+                            'is contained by',
+                            'contains',
+                          ],
+                        },
+                      ]}
+                      new_related_links={[
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'section B',
+                          field_id: uuidv4(),
+                          field_label: 'box',
+                          relation_type_vocabPair: [
+                            'is related to',
+                            'is related to',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'Mundi-V3.4',
+                            type: 'Water',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 2',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'is above',
+                            'is below',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'Mundi-V33.4',
+                            type: 'Ice',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 2',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'is above',
+                            'is below',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'Mundi-V33.43',
+                            type: 'Ice',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 2',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'has child',
+                            'is parent of',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'TV33.43',
+                            type: 'Water',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 1',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'has child',
+                            'is parent of',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'TV33.43',
+                            type: 'Water',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
                         },
                       ]}
                       related_links={[
+                        {
+                          recordA_id: record_id,
+                          recordA_hrid: hrid,
+                          recordA_type: record_type,
+                          recordA_section: 'core 2',
+                          recordA_field_id: uuidv4(),
+                          recordA_field_label: 'Field EH',
+
+                          recordB_id: uuidv4(),
+                          recordB_hrid: 'Mundi-V3.4',
+                          recordB_type: 'Water',
+                          recordB_lastUpdatedBy:
+                            '10/12/2020 11:09am by John Smith',
+                          recordB_route: 'go to record 2!',
+                          relation_type_vocabPair: ['is above', 'is below'],
+                        },
+                        {
+                          recordA_id: record_id,
+                          recordA_hrid: hrid,
+                          recordA_type: record_type,
+                          recordA_section: 'core 1',
+                          recordA_field_id: uuidv4(),
+                          recordA_field_label: 'Field PH',
+
+                          recordB_id: uuidv4(),
+                          recordB_hrid: 'Mundi-V3.4',
+                          recordB_type: 'Water',
+                          recordB_lastUpdatedBy:
+                            '10/12/2020 11:09am by John Smith',
+                          recordB_route: 'go to record 2!',
+                          relation_type_vocabPair: ['is above', 'is below'],
+                        },
+                        {
+                          recordA_id: record_id,
+                          recordA_hrid: hrid,
+                          recordA_type: record_type,
+                          recordA_section: 'core 1',
+                          recordA_field_id: uuidv4(),
+                          recordA_field_label: 'Field PH',
+
+                          recordB_id: uuidv4(),
+                          recordB_hrid: 'Mundi-V3.4',
+                          recordB_type: 'Water',
+                          recordB_lastUpdatedBy:
+                            '10/12/2020 11:09am by John Smith',
+                          recordB_route: 'go to record 2!',
+                          relation_type_vocabPair: ['is above', 'is below'],
+                        },
                         {
                           recordA_id: record_id,
                           recordA_hrid: hrid,
@@ -462,7 +638,7 @@ export default function Record() {
                           recordB_hrid: 'Andor-V3.4',
                           recordB_type: 'Water',
                           recordB_lastUpdatedBy:
-                              '10/12/2020 11:09am by John Smith',
+                            '10/12/2020 11:09am by John Smith',
                           recordB_route: 'go to record 2!',
                           relation_type_vocabPair: ['has child', 'is child of'],
                         },
@@ -478,7 +654,7 @@ export default function Record() {
                           recordB_hrid: 'Kenobi-V2.4',
                           recordB_type: 'Water',
                           recordB_lastUpdatedBy:
-                              '10/12/2020 11:09am by John Smith',
+                            '10/12/2020 11:09am by John Smith',
                           recordB_route: 'go to record 2!',
                           relation_type_vocabPair: ['has child', 'is child of'],
                         },

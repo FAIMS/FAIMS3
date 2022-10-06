@@ -20,7 +20,7 @@
 
 import React from 'react';
 
-import {Box, Paper} from '@mui/material';
+import {Alert, Box, Divider, Grid, Paper, Typography} from '@mui/material';
 import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
@@ -28,17 +28,13 @@ import TabPanel from '@mui/lab/TabPanel';
 
 import {RelationshipsComponentProps} from './types';
 
-import ParentLinkComponent from './parent_links';
+import RecordLinkComponent from './record_links';
 import BoxTab from '../../ui/boxTab';
 import {grey} from '@mui/material/colors';
-import CreateLinkComponent from './create_links';
+
 import DataGridLinksComponent from './link_datagrid';
-const relationship_types = [
-  {link: 'is below', reciprocal: 'is above'},
-  {link: 'is above', reciprocal: 'is below'},
-  {link: 'is related to', reciprocal: 'is related to'},
-  {link: 'has child', reciprocal: 'is child of'},
-];
+import FieldRelationshipComponent from './field_relationships';
+import LinkIcon from '@mui/icons-material/Link';
 
 export default function RelationshipsViewComponent(
   props: RelationshipsComponentProps
@@ -50,75 +46,82 @@ export default function RelationshipsViewComponent(
    *
    *
    */
-  const [value, setValue] = React.useState('1');
-
-  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
-    setValue(newValue);
-  };
-  const field_label = 'FIELD LABEL';
   return (
     <Box mb={2}>
-      <ParentLinkComponent parent_links={props.parent_links} />
-      <DataGridLinksComponent
-        links={props.child_links}
-        title={'Children'}
-        show_title={true}
-        show_link_type={true}
-        show_section={true}
-        show_field={true}
-      />
-      <DataGridLinksComponent
-        links={props.related_links}
-        title={'Related'}
-        show_title={true}
-        show_link_type={true}
-        show_section={true}
-        show_field={true}
-      />
+      <Grid
+        container
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        spacing={1}
+      >
+        <Grid item xs={'auto'}>
+          <Grid
+            container
+            spacing={1}
+            justifyContent={'center'}
+            alignItems={'flex-start'}
+          >
+            <Grid item>
+              <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
+            </Grid>
+            <Grid item>
+              <Typography variant={'h6'}>Links to this record</Typography>
+            </Grid>
+          </Grid>
+        </Grid>
+        <Grid item xs>
+          {/*<Divider />*/}
+        </Grid>
+      </Grid>
+      <Box component={Paper} elevation={0} mb={2}>
+        <RecordLinkComponent record_links={props.related_records}  is_field={false}/>
+      </Box>
 
+      <Grid
+        container
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        spacing={1}
+      >
+        <Grid item xs={'auto'}>
+          <Grid
+            container
+            spacing={1}
+            justifyContent={'center'}
+            alignItems={'flex-start'}
+          >
+            <Grid item>
+              <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
+            </Grid>
+            <Grid item>
+              <Typography variant={'h6'}>Links to fields within this record</Typography>
+            </Grid>
+          </Grid>
+        </Grid>
+        <Grid item xs>
+          {/*<Divider />*/}
+        </Grid>
+      </Grid>
+      <Box component={Paper} elevation={0} mb={2}>
+        <RecordLinkComponent record_links={props.new_related_links} is_field={true}/>
+      </Box>
+      <Alert severity={'info'}>
+        To add/remove a link, go to the record &gt; field and edit directly.
+      </Alert>
       <BoxTab
-        title={'Field-level links interface (to be moved)'}
+        title={'Field-level links widget (to be moved)'}
         bgcolor={grey[100]}
       />
       <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>
-        <CreateLinkComponent
-          relationship_types={relationship_types}
+        <FieldRelationshipComponent
+          child_links={props.child_links}
+          related_links={props.related_links}
           record_hrid={props.record_hrid}
           record_type={props.record_type}
-          field_label={'FIELD LABEL'}
+          field_label={'FIELD: PH'}
         />
-        <TabContext value={value}>
-          {/*<Box sx={{borderBottom: 1, borderColor: 'divider'}}>*/}
-          <Box mb={1}>
-            <TabList
-              onChange={handleChange}
-              aria-label="Field children related tab"
-            >
-              <Tab label="Children" value="1" />
-              <Tab label="Related" value="2" />
-            </TabList>
-          </Box>
-          <TabPanel value="1" sx={{p: 0}}>
-            <DataGridLinksComponent
-              links={props.child_links}
-              show_title={false}
-              show_link_type={false}
-              show_section={false}
-              show_field={false}
-              field_label={field_label}
-            />
-          </TabPanel>
-          <TabPanel value="2" sx={{p: 0}}>
-            <DataGridLinksComponent
-              links={props.related_links}
-              show_title={false}
-              show_link_type={false}
-              show_section={false}
-              show_field={false}
-              field_label={field_label}
-            />
-          </TabPanel>
-        </TabContext>
       </Box>
     </Box>
   );
