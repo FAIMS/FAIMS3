@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Alert,
   Box,
-  Table,
+  Chip,
   Grid,
   Link,
   TableBody,
@@ -53,6 +53,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
       return row.record_id + row.field_id + row.relation_type_vocabPair[0];
     }
   }
+  const PARENT_CHILD_VOCAB = ['has child', 'is parent'];
+
   if (props.record_links !== null) {
     const columns = props.is_field
       ? [
@@ -99,6 +101,17 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             minWidth: 100,
             flex: 0.2,
             valueGetter: (params: GridCellParams) => params.value[0],
+            renderCell: (params: GridCellParams) => (
+              <Chip
+                label={params.value}
+                size={'small'}
+                color={
+                  PARENT_CHILD_VOCAB.includes(params.value)
+                    ? 'secondary'
+                    : 'default'
+                }
+              />
+            ),
           },
           {
             field: 'linked_record',
@@ -146,6 +159,17 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             minWidth: 100,
             flex: 0.2,
             valueGetter: (params: GridCellParams) => params.value[0],
+            renderCell: (params: GridCellParams) => (
+              <Chip
+                label={params.value}
+                size={'small'}
+                color={
+                  PARENT_CHILD_VOCAB.includes(params.value)
+                    ? 'secondary'
+                    : 'default'
+                }
+              />
+            ),
           },
           {
             field: 'hrid',
