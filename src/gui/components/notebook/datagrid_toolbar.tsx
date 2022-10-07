@@ -19,10 +19,9 @@
  */
 
 import React, {useEffect} from 'react';
-import {IconButton, Divider, Box, Grid, TextField, Button} from '@mui/material';
+import {Divider, Box, Grid, TextField, Button} from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
 import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import {usePrevious} from '../../../utils/custom_hooks';
 interface ToolbarProps {
   handleQueryFunction: any;

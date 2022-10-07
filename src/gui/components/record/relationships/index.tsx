@@ -20,16 +20,15 @@
 
 import React from 'react';
 
-import {Alert, Box, Grid, Paper, Typography} from '@mui/material';
+import {Box} from '@mui/material';
 
 import {RelationshipsComponentProps} from './types';
 
 import RecordLinkComponent from './record_links';
-import BoxTab from '../../ui/boxTab';
-import {grey} from '@mui/material/colors';
-
-import FieldRelationshipComponent from './field_level_links';
-import LinkIcon from '@mui/icons-material/Link';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import Tab from '@mui/material/Tab';
+import TabPanel from '@mui/lab/TabPanel';
 
 export default function RelationshipsViewComponent(
   props: RelationshipsComponentProps
@@ -41,91 +40,36 @@ export default function RelationshipsViewComponent(
    *
    *
    */
+  const [value, setValue] = React.useState('1');
+
+  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+    setValue(newValue);
+  };
   return (
-    <Box mb={2}>
-      <Grid
-        container
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={1}
-      >
-        <Grid item xs={'auto'}>
-          <Grid
-            container
-            spacing={1}
-            justifyContent={'center'}
-            alignItems={'flex-start'}
+    <Box>
+      <TabContext value={value}>
+        <Box>
+          <TabList
+            onChange={handleChange}
+            aria-label={'Field children links tabs'}
           >
-            <Grid item>
-              <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
-            </Grid>
-            <Grid item>
-              <Typography variant={'h6'}>Links to this record</Typography>
-            </Grid>
-          </Grid>
-        </Grid>
-        <Grid item xs>
-          {/*<Divider />*/}
-        </Grid>
-      </Grid>
-      <Box component={Paper} elevation={0} mb={2}>
-        <RecordLinkComponent
-          record_links={props.related_records}
-          is_field={false}
-        />
-      </Box>
-
-      <Grid
-        container
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={1}
-      >
-        <Grid item xs={'auto'}>
-          <Grid
-            container
-            spacing={1}
-            justifyContent={'center'}
-            alignItems={'flex-start'}
-          >
-            <Grid item>
-              <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
-            </Grid>
-            <Grid item>
-              <Typography variant={'h6'}>
-                Links to fields within this record
-              </Typography>
-            </Grid>
-          </Grid>
-        </Grid>
-        <Grid item xs>
-          {/*<Divider />*/}
-        </Grid>
-      </Grid>
-      <Box component={Paper} elevation={0} mb={2}>
-        <RecordLinkComponent
-          record_links={props.related_links_from_fields}
-          is_field={true}
-        />
-      </Box>
-      <Alert severity={'info'}>
-        To add/remove a link, go to the record &gt; field and edit directly.
-      </Alert>
-
-      <BoxTab
-        title={'Field-level links widget (to be moved)'}
-        bgcolor={grey[100]}
-      />
-      <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>
-        <FieldRelationshipComponent
-          field_level_links={props.field_level_links}
-          record_hrid={props.record_hrid}
-          record_type={props.record_type}
-          field_label={'FIELD: PH'}
-        />
-      </Box>
+            <Tab label={'Links to record'} value={'1'} />
+            <Tab label={'Links to fields within record'} value={'2'} />
+          </TabList>
+        </Box>
+        <TabPanel value={'1'} sx={{p: 0}}>
+          <RecordLinkComponent
+            record_links={props.related_records}
+            is_field={false}
+          />
+        </TabPanel>
+        <TabPanel value={'2'} sx={{p: 0}}>
+          <RecordLinkComponent
+            record_links={props.related_links_from_fields}
+            is_field={true}
+          />
+        </TabPanel>
+      </TabContext>
     </Box>
   );
 }

@@ -1,8 +1,14 @@
 import React from 'react';
-import {Box, Chip, Grid, Link, Typography} from '@mui/material';
-import {DataGrid, GridCellParams} from '@mui/x-data-grid';
+import {Box, Paper, Chip, Grid, Link, Typography} from '@mui/material';
+import {
+  DataGrid,
+  GridActionsCellItem,
+  GridCellParams,
+  GridRowParams,
+} from '@mui/x-data-grid';
 import {NavLink} from 'react-router-dom';
 import ArticleIcon from '@mui/icons-material/Article';
+import EditIcon from '@mui/icons-material/Edit';
 import {RecordLinksComponentProps, PARENT_CHILD_VOCAB} from './types';
 import {RecordLinksToolbar} from './toolbars';
 
@@ -31,7 +37,6 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
       return row.record_id + row.field_id + row.relation_type_vocabPair[0];
     }
   }
-
 
   if (props.record_links !== null) {
     const columns = props.is_field
@@ -96,7 +101,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             field: 'linked_record',
             headerName: 'Linked Record',
             headerClassName: 'faims-record-link--header',
-            minWidth: 300,
+            minWidth: 200,
             flex: 0.2,
             valueGetter: (params: GridCellParams) =>
               params.row.link.type + ' ' + params.row.link.hrid,
@@ -124,10 +129,28 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             field: 'lastUpdatedBy',
             headerName: 'Last Updated By',
             headerClassName: 'faims-record-link--header',
-            minWidth: 100,
+            minWidth: 300,
             valueGetter: (params: GridCellParams) =>
               params.row.link.lastUpdatedBy,
             flex: 0.2,
+          },
+          {
+            field: 'actions',
+            type: 'actions',
+            headerName: 'Actions',
+            headerClassName: 'faims-record-link--header',
+            flex: 0.1,
+            minWidth: 100,
+            getActions: (params: GridRowParams) => [
+              <GridActionsCellItem
+                icon={<EditIcon color={'primary'} />}
+                onClick={() => {
+                  alert('go to record>section>field');
+                }}
+                label="Edit link"
+                showInMenu
+              />,
+            ],
           },
         ]
       : [
@@ -179,10 +202,12 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                       </Grid>
                     </Link>
                   </Grid>
-                  <Grid item>
-                    {params.row.section ? (
-                      <span>
-                        &nbsp;&gt;&nbsp;
+                  {params.row.section ? (
+                    <React.Fragment>
+                      <Grid item sx={{mx: 1}}>
+                        &gt;
+                      </Grid>
+                      <Grid item>
                         <Link
                           component={NavLink}
                           to={params.row.route}
@@ -190,34 +215,61 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                         >
                           {params.row.section}
                         </Link>
-                      </span>
-                    ) : (
-                      ''
-                    )}
-                  </Grid>
-                  <Grid item>
-                    {params.row.field_label ? (
-                      <span>
-                        &nbsp;&gt;&nbsp;
+                      </Grid>
+                    </React.Fragment>
+                  ) : (
+                    ''
+                  )}
+                  {params.row.field_label ? (
+                    <React.Fragment>
+                      <Grid item sx={{mx: 1}}>
+                        &gt;
+                      </Grid>
+                      <Grid item>
                         <Link
                           component={NavLink}
                           to={params.row.route}
                           underline={'none'}
                         >
-                          {params.row.field_label}
+                          <Grid
+                            container
+                            direction="row"
+                            alignItems="center"
+                            component={'span'}
+                          >
+                            {params.row.field_label}
+                          </Grid>
                         </Link>
-                      </span>
-                    ) : (
-                      ''
-                    )}
-                  </Grid>
+                      </Grid>
+                    </React.Fragment>
+                  ) : (
+                    ''
+                  )}
                 </Grid>
               </Typography>
             ),
           },
+          {
+            field: 'actions',
+            type: 'actions',
+            headerName: 'Actions',
+            headerClassName: 'faims-record-link--header',
+            flex: 0.1,
+            minWidth: 100,
+            getActions: (params: GridRowParams) => [
+              <GridActionsCellItem
+                icon={<EditIcon color={'primary'} />}
+                onClick={() => {
+                  alert('go to record>section>field');
+                }}
+                label="Edit link"
+                showInMenu
+              />,
+            ],
+          },
         ];
     return (
-      <Box>
+      <Box component={Paper} elevation={0}>
         <DataGrid
           autoHeight
           density={'compact'}
@@ -232,11 +284,17 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             sorting: {
               sortModel: props.is_field
                 ? [{field: 'section', sort: 'asc'}]
-                : [{field: 'relation_type_vocabPair', sort: 'asc'}],
+                : undefined,
             },
           }}
           rows={props.record_links}
           getRowId={getRowId}
+          sx={{
+            borderLeft: 'none',
+            borderRight: 'none',
+            borderTop: 'none',
+            borderRadius: '0',
+          }}
         />
       </Box>
     );

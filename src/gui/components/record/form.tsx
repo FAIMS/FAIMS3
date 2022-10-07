@@ -58,6 +58,7 @@ import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
+import CircularLoading from "../ui/circular_loading";
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -784,8 +785,7 @@ class RecordForm extends React.Component<
       const description = this.requireDescription(viewName);
 
       return (
-        <React.Fragment>
-          {/* remove the tab for edit ---Jira 530 */}
+        <Box sx={{p: 1}}>
           <RecordStepper
             view_index={view_index}
             ui_specification={ui_specification}
@@ -1006,13 +1006,13 @@ class RecordForm extends React.Component<
               }}
             </Formik>
           </div>
-        </React.Fragment>
+        </Box>
       );
     } else {
       return (
-        <div>
-          <CircularProgress size={20} thickness={5} />
-        </div>
+        <Box sx={{m:1}}>
+          <CircularLoading label={'Loading record data'} />
+        </Box>
       );
     }
   }

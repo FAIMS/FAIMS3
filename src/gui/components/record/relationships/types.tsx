@@ -22,7 +22,6 @@ export interface SortedDataType {
 export interface RelationshipsComponentProps {
   related_records: Array<LinkProps> | null;
   related_links_from_fields: Array<LinkProps> | null;
-  field_level_links: Array<LinkProps> | null;
   record_hrid: string;
   record_type: string;
 }

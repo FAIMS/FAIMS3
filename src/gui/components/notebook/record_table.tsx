@@ -28,14 +28,15 @@ import {
   GridEventListener,
 } from '@mui/x-data-grid';
 import {
-    Typography,
-    Box,
-    Paper,
-    Alert,
-    Grid,
-    FormGroup,
-    FormControlLabel,
-    Switch, Link,
+  Typography,
+  Box,
+  Paper,
+  Alert,
+  Grid,
+  FormGroup,
+  FormControlLabel,
+  Switch,
+  Link,
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -142,7 +143,11 @@ function RecordsTable(props: RecordsTableProps) {
           type: 'string',
           width: 200,
           minWidth: 200,
-            renderCell:(params:GridCellParams) => <Link underline={'none'} sx={{fontWeight:'bold'}}>{params.value}</Link>
+          renderCell: (params: GridCellParams) => (
+            <Link underline={'none'} sx={{fontWeight: 'bold'}}>
+              {params.value}
+            </Link>
+          ),
         },
         {
           field: 'updated',
