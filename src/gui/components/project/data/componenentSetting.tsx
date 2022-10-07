@@ -425,14 +425,7 @@ const getvalue = (
   if (view === 'FormParamater') {
     //this is for persistent, it's for developing/testing only, not ready for production yet
     if (name === 'persistent' || name === 'displayParent') return fieldui[name];
-    if (name === 'relation_linked_vocabPair_to') {
-      try {
-        return fieldui['component-parameters']['relation_linked_vocabPair'][1];
-      } catch (error) {
-        return DEFAULT_REALTION_LINK_VOCAB;
-      }
-    }
-    if (name === 'relation_linked_vocabPair_from') {
+    if (name === 'relation_linked_vocabPair') {
       try {
         return fieldui['component-parameters']['relation_linked_vocabPair'][0];
       } catch (error) {
@@ -785,7 +778,7 @@ const definelogicvalue = (
   pur_fieldname: string
 ) => {
   if (value === undefined) {
-    console.error(value);
+    console.error('Error to get values for define logic');
     return value;
   }
   if (value['is_logic'] === undefined)
@@ -1041,6 +1034,8 @@ export function ResetComponentProperties(props: resetprops) {
         //not update value here
         // newvalues['fields'][fieldName]['component-parameters'][name] =
         // event.target.checked;
+      } else if (name === 'relation_linked_vocabPair') {
+        // not update value here
       } else if (name === 'persistent' || name === 'displayParent') {
         //set persistent value
         newvalues['fields'][fieldName][name] = event.target.checked;

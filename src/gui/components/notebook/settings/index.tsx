@@ -167,7 +167,8 @@ export default function NotebookSettings() {
                 </Box>
               </Grid>
               {role_info.value?.can_edit_notebook_on_device ||
-              role_info.value?.can_edit_notebook_on_server ? (
+              role_info.value?.can_edit_notebook_on_server ||
+              String(process.env.REACT_APP_SERVER) === 'developers' ? (
                 <Grid item xs={12}>
                   <Button
                     color="primary"

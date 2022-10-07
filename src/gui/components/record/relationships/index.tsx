@@ -74,51 +74,6 @@ export default function RelationshipsViewComponent(
         show_section={true}
         show_field={true}
       />
-
-      <BoxTab
-        title={'Field-level links interface (to be moved)'}
-        bgcolor={grey[100]}
-      />
-      <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>
-        <CreateLinkComponent
-          relationship_types={relationship_types}
-          record_hrid={props.record_hrid}
-          record_type={props.record_type}
-          field_label={'FIELD LABEL'}
-        />
-        <TabContext value={value}>
-          {/*<Box sx={{borderBottom: 1, borderColor: 'divider'}}>*/}
-          <Box mb={1}>
-            <TabList
-              onChange={handleChange}
-              aria-label="Field children related tab"
-            >
-              <Tab label="Children" value="1" />
-              <Tab label="Related" value="2" />
-            </TabList>
-          </Box>
-          <TabPanel value="1" sx={{p: 0}}>
-            <DataGridLinksComponent
-              links={props.child_links}
-              show_title={false}
-              show_link_type={false}
-              show_section={false}
-              show_field={false}
-              field_label={field_label}
-            />
-          </TabPanel>
-          <TabPanel value="2" sx={{p: 0}}>
-            <DataGridLinksComponent
-              links={props.related_links}
-              show_title={false}
-              show_link_type={false}
-              show_section={false}
-              show_field={false}
-              field_label={field_label}
-            />
-          </TabPanel>
-        </TabContext>
-      </Box>
     </Box>
   );
 }

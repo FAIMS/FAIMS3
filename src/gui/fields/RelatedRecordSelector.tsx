@@ -57,6 +57,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import {v4 as uuidv4} from 'uuid';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -87,12 +88,56 @@ function get_dafault_relation_label(multiple: boolean, value: any) {
   return [];
 }
 
+function excludes_related_record(
+  multiple: boolean,
+  value: any,
+  all_records: RecordReference[]
+) {
+  const relations: string[] = multiple ? [] : [value.record_id];
+  const records: RecordReference[] = [];
+  if (multiple)
+    value.map((record: RecordReference) => relations.push(record.record_id));
+
+  all_records.map((record: RecordReference) =>
+    relations.includes(record.record_id) ? record : records.push(record)
+  );
+  return records;
+}
+
+const defaultColumns: GridColDef[] = [
+  {
+    field: 'recordB_type',
+    headerName: 'Kind',
+    minWidth: 100,
+  },
+  {
+    field: 'recordB_hrid',
+    headerName: 'HRID',
+    minWidth: 365,
+    renderCell: (params: GridCellParams) => (
+      <Button
+        component={NavLink}
+        to={params.row.recordB_route}
+        variant={'text'}
+      >
+        <Grid container direction="row" alignItems="center" spacing={'4px'}>
+          <ArticleIcon fontSize={'inherit'} /> {params.value}
+        </Grid>
+      </Button>
+    ),
+  },
+  {
+    field: 'recordB_lastUpdatedBy',
+    headerName: 'Last Updated',
+    minWidth: 300,
+  },
+];
+
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
-  const multiple =
-    options.length > 0 && props.multiple !== undefined ? props.multiple : false;
+  const multiple = props.multiple !== undefined ? props.multiple : false;
   const location = useLocation();
   let search = location.search.includes('link=')
     ? location.search.replace('?', '')
@@ -110,22 +155,34 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   );
   const [relationshipPair, setRelationshipPair] =
     React.useState<Array<string>>(lastvaluePair);
+  const [selectedRecord, SetSelectedRecord] =
+    React.useState<RecordReference | null>(null);
   const url_split = search.split('&');
-  const [columns, Setcolumns] = React.useState<GridColDef[]>([]);
+  const [columns, Setcolumns] = React.useState<GridColDef[]>(defaultColumns);
+  const [fieldValue, setFieldValue] = React.useState(
+    props.form.values[field_name]
+  );
+  const [updated, SetUpdated] = React.useState(uuidv4());
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
   )
     search = search.replace(url_split[0] + '&' + url_split[1], '');
   if (search !== '') search = '&' + search;
+
   useEffect(() => {
     if (project_id !== undefined) {
       (async () => {
-        const records = await getRecordsByType(
+        const all_records = await getRecordsByType(
           project_id,
           props.related_type,
           props.relation_type,
           relationshipPair
+        );
+        const records = excludes_related_record(
+          multiple,
+          props.form.values[field_name],
+          all_records
         );
         setOptions(records);
         setIsactive(true);
@@ -146,41 +203,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.form.values['_id']
         );
         setRecordsInformation(records_info);
-        const newColumns: GridColDef[] = [
-          {
-            field: 'recordB_type',
-            headerName: 'Kind',
-            minWidth: 100,
-          },
-          {
-            field: 'recordB_hrid',
-            headerName: 'HRID',
-            minWidth: 365,
-            renderCell: (params: GridCellParams) => (
-              <Button
-                component={NavLink}
-                to={params.row.recordB_route}
-                variant={'text'}
-              >
-                <Grid
-                  container
-                  direction="row"
-                  alignItems="center"
-                  spacing={'4px'}
-                >
-                  <ArticleIcon fontSize={'inherit'} /> {params.value}
-                </Grid>
-              </Button>
-            ),
-          },
-          {
-            field: 'recordB_lastUpdatedBy',
-            headerName: 'Last Updated',
-            minWidth: 300,
-          },
-        ];
 
         if (records_info.length > 0 && columns.length === 0) {
+          const newColumns = columns;
           // this is the code to dispaly the values from child, TO TO: disucssed in detail about how to display it
           //   Object.keys(records_info[0]).map((key: string) =>
           //     key.includes('newfield')
@@ -199,7 +224,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       // executed when unmount
       mounted = false;
     };
-  }, [props.form.values[props.field.name]]);
+  }, [updated]);
 
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
@@ -237,21 +262,65 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       );
       setRelationshipPair(valuePair);
       //reset the value of the record list
-      const relations: string[] = multiple
-        ? []
-        : [props.form.values[field_name].record_id];
-      if (multiple)
-        props.form.values[field_name].map((record: RecordReference) =>
-          relations.push(record.record_id)
-        );
       const records = options;
-      records.map(record =>
-        relations.includes(record.record_id)
-          ? record
-          : (record['relation_type_vocabPair'] = valuePair)
-      );
+      records.map(record => (record['relation_type_vocabPair'] = valuePair));
       setOptions(records);
     }
+  };
+
+  const add_related_child = () => {
+    let newValue = props.form.values[field_name];
+    if (multiple) newValue.push(selectedRecord);
+    else newValue = selectedRecord;
+    setFieldValue(newValue);
+
+    const records = excludes_related_record(
+      multiple,
+      props.form.values[field_name],
+      options
+    );
+    setOptions(records);
+    //set the form value
+    props.form.setFieldValue(props.field.name, newValue);
+    SetUpdated(uuidv4());
+    //call the function to trigger the child to be updated??To be coninued
+  };
+
+  const remove_related_child = (
+    record_id: string,
+    hrid: string,
+    field: string,
+    current_record_id: string
+  ) => {
+    if (record_id === null) return;
+    const child_record = {
+      project_id: project_id,
+      record_id: record_id,
+      record_label: hrid,
+      relation_type_vocabPair: relationshipPair,
+    };
+    let newValue = props.form.values[field_name];
+    if (multiple) {
+      let child_record_index = -1;
+      newValue.map((record: RecordReference, index: number) =>
+        record.record_id === child_record.record_id
+          ? (child_record_index = index)
+          : record
+      );
+      if (child_record_index > -1) {
+        // only splice array when item is found
+        newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
+      }
+    } else newValue = '';
+    setFieldValue(newValue);
+
+    const records = options;
+    records.push(child_record);
+    setOptions(records);
+    //set the form value
+    props.form.setFieldValue(props.field.name, newValue);
+    SetUpdated(uuidv4());
+    //call the function to trigger the child to be updated??To be coninued
   };
 
   return (
@@ -290,7 +359,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       >
         <Field
           size={'small'}
-          multiple={multiple}
+          // multiple={multiple}
           id={props.id ?? 'asynchronous-demo'}
           name={field_name}
           component={Autocomplete}
@@ -298,8 +367,10 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             option: RecordReference,
             value: RecordReference
           ) =>
-            option.project_id === value.project_id &&
-            option.record_id === value.record_id
+            value !== undefined
+              ? option.project_id === value.project_id &&
+                option.record_id === value.record_id
+              : false
           }
           getOptionLabel={(option: RecordReference) =>
             option.record_label ?? ''
@@ -307,10 +378,10 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           options={options}
           defaultValue={undefined}
           disabled={disbaled}
-          // onChange={(evant:any,value: any) => {
-          //   props.form.setFieldValue(props.field.name, value)
-          // }}
-          // value={multiple?props.form.values[props.field.name]:props.form.values[props.field.name]}
+          onChange={(event: any) => {
+            SetSelectedRecord(options[event.target.value]);
+          }}
+          value={selectedRecord}
           renderInput={(params: any) => (
             <TextField
               {...params}
@@ -349,6 +420,22 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             >
               New Record
             </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => add_related_child()}
+            >
+              Link
+            </Button>
+            {/* <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => remove_related_child(selectedRecord?.record_id,selectedRecord?.record_label,field_name,props.form.values['_id'])}
+            >
+              Remove
+            </Button> */}
           </Grid>
         )}
       <Grid item xs={12} sm={12} md={12} lg={12}>
@@ -365,6 +452,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             show_section={false}
             show_field={false}
             field_label={'Field'}
+            handleUnlink={remove_related_child}
           />
         )}
       </Grid>

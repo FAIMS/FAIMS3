@@ -37,6 +37,7 @@ import {
   RevisionID,
   Annotations,
   FAIMSTypeName,
+  Relationship,
 } from '../datamodel/core';
 import {DEBUG_APP} from '../buildconfig';
 
@@ -121,6 +122,7 @@ class RecordDraftState {
         fields: StagedData | null;
         annotations: StagedData | null;
         field_types: {[field_name: string]: FAIMSTypeName};
+        relationship?: Relationship;
       }
     | {
         state: 'edited';
@@ -134,6 +136,7 @@ class RecordDraftState {
         annotations: StagedData;
         type: string;
         field_types: {[field_name: string]: FAIMSTypeName};
+        relationship?: Relationship;
         // Same as props.draft_id, EXCEPT this can also be set to non-null
         // when changes are made to a revision that hasn't been edited yet
         //
@@ -241,7 +244,8 @@ class RecordDraftState {
    */
   renderHook(
     values: FormikValues,
-    annotations: {[field_name: string]: Annotations}
+    annotations: {[field_name: string]: Annotations},
+    relationship: Relationship
   ) {
     if (DEBUG_APP) {
       console.debug('Render hook', values, annotations);
@@ -281,6 +285,12 @@ class RecordDraftState {
         this.data.annotations = JSON.parse(JSON.stringify(annotations));
       }
 
+      // 1st call to renderHook establishes the 'default' initial annotations
+      console.debug(
+        'Setting initial annotations for draft',
+        stable_stringify(annotations)
+      );
+      this.data.relationship = JSON.parse(JSON.stringify(relationship));
       // Don't compare things that are in the staging area
       // but are completely absent from the form
       // as those components are just not in the current view
@@ -352,6 +362,7 @@ class RecordDraftState {
             this.data.field_types,
             this.props.record_id
           ),
+          relationship: relationship,
         };
         this.data.draft_id
           .then(async new_draft_id => {
@@ -368,7 +379,8 @@ class RecordDraftState {
                 new_draft_id,
                 this.data.fields,
                 this.data.annotations,
-                this.data.field_types
+                this.data.field_types,
+                this.data.relationship ?? {}
               ).then(() => {
                 if (this.newDraftListener !== null) {
                   this.newDraftListener(new_draft_id);
@@ -386,6 +398,7 @@ class RecordDraftState {
           ...this.data,
           fields: {...this.data.fields, ...values},
           annotations: {...this.data.annotations, ...annotations},
+          relationship: relationship,
         };
       }
     } else if (this.data === null) {
@@ -446,6 +459,7 @@ class RecordDraftState {
           type: result.type,
           field_types: result.field_types,
           draft_id: Promise.resolve(this.props.draft_id),
+          relationship: result.relationship,
         };
         // Resolve any promises waiting for data
         const data_listeners = this.data_listeners;
@@ -469,6 +483,7 @@ class RecordDraftState {
         field_types: loadedprops.field_types,
         fields: null,
         annotations: null,
+        relationship: {},
       };
       // this.draft_id hasn't needed to be created yet, keep as null
     }
@@ -534,7 +549,8 @@ class RecordDraftState {
         await this.data.draft_id,
         data_to_save,
         annotations_to_save,
-        this.data.field_types
+        this.data.field_types,
+        this.data.relationship ?? {}
       );
 
       if (result.ok) {

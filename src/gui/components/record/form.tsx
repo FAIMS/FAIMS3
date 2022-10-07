@@ -164,6 +164,7 @@ class RecordForm extends React.Component<
         revision_cached: null,
         annotation: {},
         description: null,
+        realatioship: {},
       });
       // Re-initialize basically everything.
       this.formChanged(true);
@@ -186,7 +187,7 @@ class RecordForm extends React.Component<
       annotation: {},
       description: null,
       ugc_comment: null,
-      realatioship: null,
+      realatioship: {},
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -348,22 +349,6 @@ class RecordForm extends React.Component<
 
   async componentWillUnmount() {
     await this.draftState.forceSave();
-    // add to save the information for relationship
-    //get all touched relationship fields and save child or linked record information
-    const initialValues = this.requireInitialValues();
-    const ui_specification = this.props.ui_specification;
-    if (
-      this.draftState.data.state !== 'uninitialized' &&
-      this.props.type !== undefined &&
-      this.draftState.data['fields'] !== null
-    )
-      await updateChildRecords(
-        ui_specification,
-        this.props.type,
-        this.props.record_id,
-        initialValues,
-        this.draftState.data['fields']
-      );
     //end of update values
     this._isMounted = false;
     for (const timeout_id of this.timeouts) {
@@ -470,11 +455,47 @@ class RecordForm extends React.Component<
         initialValues[field_id] = new_record;
       }
     }
+    const related: Relationship = {};
+    let parent = null;
+    if (
+      this.draftState.data.state !== 'uninitialized' &&
+      this.draftState.data.relationship !== undefined
+    )
+      parent = firstDefinedFromList([
+        this.draftState.data.relationship.parent,
+        fromdb.relationship?.parent,
+        null,
+      ]);
+    if (
+      parent !== null &&
+      parent !== undefined &&
+      typeof parent === 'string' &&
+      parent !== ''
+    )
+      related['parent'] = parent;
 
+    let linked = null;
+    if (
+      this.draftState.data.state !== 'uninitialized' &&
+      this.draftState.data.relationship !== undefined
+    )
+      linked = firstDefinedFromList([
+        this.draftState.data.relationship.linked,
+        fromdb.relationship?.linked,
+        null,
+      ]);
+    if (linked !== null && linked !== undefined && linked.length > 0)
+      related['linked'] = linked;
+
+    const relationship = getParentInfo(
+      this.props.location.state,
+      related,
+      this.props.record_id
+    );
     this.setState({
       initialValues: initialValues,
       annotation: annotations,
-      realatioship: fromdb.relationship,
+      realatioship: relationship,
     });
   }
 
@@ -591,12 +612,12 @@ class RecordForm extends React.Component<
       ui_specification
     );
 
-    let relation: Relationship = this.state.realatioship ?? {}; // this should update later TODO
-    relation = getParentInfo(
-      this.props.location.state,
-      relation,
-      this.props.record_id
-    );
+    // let relation: Relationship = this.state.realatioship ?? {}; // this should update later TODO
+    // relation = getParentInfo(
+    //   this.props.location.state,
+    //   relation,
+    //   this.props.record_id
+    // );
 
     return (
       getCurrentUserId(this.props.project_id)
@@ -615,7 +636,7 @@ class RecordForm extends React.Component<
               viewsetName
             ),
             ugc_comment: this.state.ugc_comment || '',
-            relationship: relation,
+            relationship: this.state.realatioship ?? {},
           };
           if (DEBUG_APP) {
             console.log(doc);
@@ -835,7 +856,8 @@ class RecordForm extends React.Component<
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
                   formProps.values,
-                  this.state.annotation
+                  this.state.annotation,
+                  this.state.realatioship ?? {}
                 );
                 return (
                   <>

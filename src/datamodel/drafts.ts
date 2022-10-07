@@ -18,7 +18,13 @@
  *   TODO
  */
 
-import {ProjectID, RecordID, RevisionID, FAIMSTypeName} from './core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  FAIMSTypeName,
+  Relationship,
+} from './core';
 
 export interface EncodedDraft {
   _id: string;
@@ -39,6 +45,7 @@ export interface EncodedDraft {
   type: string;
   field_types: {[field_name: string]: FAIMSTypeName};
   record_id: RecordID;
+  relationship?: Relationship;
 }
 
 //to get the metadata for the draft, for draft_table

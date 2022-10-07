@@ -100,7 +100,13 @@ export default function DataGridLinksComponent(
     []
   );
   function handleUnlink() {
-    alert('delete ' + modalLink.link_id);
+    props.handleUnlink(
+      modalLink.recordB_id,
+      modalLink.hrid,
+      modalLink.field,
+      modalLink.recordA_id
+    );
+    setModalOpen(false);
   }
   const columns: GridColumns = [
     {
@@ -254,6 +260,7 @@ export default function DataGridLinksComponent(
                   recordB_id: false,
                   recordB_route: false,
                   relation_type_vocabPair: props.show_link_type,
+                  actions: props.handleUnlink === undefined ? false : true,
                 },
               },
             }}

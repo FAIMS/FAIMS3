@@ -105,7 +105,7 @@ export function getParentInfo(
   RelationState: any,
   parent: Relationship,
   record_id: string
-) {
+): Relationship {
   let Relate_perant = RelationState;
   if (Relate_perant === undefined || Relate_perant === null) return parent;
   if (record_id === RelationState.parent_record_id)
@@ -288,7 +288,7 @@ function get_displayed_fields(
       })
     );
   } catch (err) {
-    console.error('get list of fields from child ', err);
+    console.error('Error get list of fields from child ', err);
   }
   return fields;
 }
@@ -690,6 +690,10 @@ async function updateChildRecord(
     }
   }
   return record_id;
+}
+
+async function AddParent(relation: any, record_id: string) {
+  return {...relation, parent: [record_id]};
 }
 
 async function updateRecords(

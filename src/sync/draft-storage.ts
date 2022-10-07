@@ -27,6 +27,7 @@ import {
   RevisionID,
   FAIMSTypeName,
   HRID_STRING,
+  Relationship,
 } from '../datamodel/core';
 import {DEBUG_APP} from '../buildconfig';
 import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
@@ -126,14 +127,19 @@ export async function setStagedData(
   draft_id: PouchDB.Core.DocumentId,
   new_data: {[key: string]: unknown},
   new_annotations: {[key: string]: unknown},
-  field_types: {[field_name: string]: FAIMSTypeName}
+  field_types: {[field_name: string]: FAIMSTypeName},
+  relationship: Relationship
 ): Promise<PouchDB.Core.Response> {
   const existing = await draft_db.get(draft_id);
   if (DEBUG_APP) {
     console.debug('Saving draft values:', new_data, new_annotations);
   }
-
-  const encoded_info = encodeStagedData(new_data, new_annotations, field_types);
+  const encoded_info = encodeStagedData(
+    new_data,
+    new_annotations,
+    field_types,
+    relationship
+  );
 
   return await draft_db.put({
     ...existing,
@@ -145,7 +151,8 @@ export async function setStagedData(
 function encodeStagedData(
   new_data: {[key: string]: unknown},
   new_annotations: {[key: string]: unknown},
-  field_types: {[field_name: string]: FAIMSTypeName}
+  field_types: {[field_name: string]: FAIMSTypeName},
+  relationship: Relationship
 ) {
   // TODO: work out what we need to do specially for annotations, probably
   // nothing
@@ -186,6 +193,7 @@ function encodeStagedData(
     annotations: encoded_annotations,
     attachments: attachment_metadata,
     _attachments: encoded_attachments,
+    relationship: relationship,
   };
 }
 

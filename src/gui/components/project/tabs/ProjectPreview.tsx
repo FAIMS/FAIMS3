@@ -44,7 +44,7 @@ import {useTheme} from '@mui/material/styles';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
+import {ViewComponent} from '../../record/view';
 const useStyles = makeStyles(theme => ({
   newfield: {
     // backgroundColor:'#e1e4e8',
@@ -176,6 +176,8 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
     console.log(fieldNames);
   };
 
+  const updateannotation = () => {};
+
   return (
     <>
       <TabTab
@@ -306,14 +308,15 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                   {formProps => {
                     return (
                       <Form>
-                        {fieldNames.map((fieldName: string) =>
-                          getComponentFromField(
-                            formuiSpec,
-                            fieldName,
-                            formProps,
-                            handleChangeForm
-                          )
-                        )}
+                        <ViewComponent
+                          viewName={formvariants + view_name}
+                          ui_specification={formuiSpec}
+                          formProps={formProps}
+                          annotation={{}}
+                          handerannoattion={updateannotation}
+                          fieldNames={fieldNames}
+                          disabled={true}
+                        />
                       </Form>
                     );
                   }}
