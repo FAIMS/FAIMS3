@@ -1,33 +1,10 @@
 import React from 'react';
-import {
-  Alert,
-  Box,
-  Chip,
-  Grid,
-  Link,
-  TableBody,
-  TableHead,
-  TableCell,
-  TableRow,
-  Typography,
-} from '@mui/material';
-import LinkIcon from '@mui/icons-material/Link';
-import {
-  DataGrid,
-  GridActionsCellItem,
-  GridCellParams,
-  GridColumns,
-  GridRowId,
-  GridRow,
-  GridRowParams,
-  GridToolbarContainer,
-  GridToolbarFilterButton,
-  GridPagination,
-} from '@mui/x-data-grid';
+import {Box, Chip, Grid, Link, Typography} from '@mui/material';
+import {DataGrid, GridCellParams} from '@mui/x-data-grid';
 import {NavLink} from 'react-router-dom';
 import ArticleIcon from '@mui/icons-material/Article';
 import {RecordLinksComponentProps} from './types';
-
+import {RecordLinksToolbar} from './toolbars';
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
    * This component has two 'views' depending on whether the data is from record to field, or field to record.
@@ -104,6 +81,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             renderCell: (params: GridCellParams) => (
               <Chip
                 label={params.value}
+                component={'span'}
                 size={'small'}
                 color={
                   PARENT_CHILD_VOCAB.includes(params.value)
@@ -163,6 +141,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
               <Chip
                 label={params.value}
                 size={'small'}
+                component={'span'}
                 color={
                   PARENT_CHILD_VOCAB.includes(params.value)
                     ? 'secondary'
@@ -263,24 +242,4 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   } else {
     return <Box></Box>;
   }
-}
-export function RecordLinksToolbar() {
-  return (
-    <GridToolbarContainer>
-      <Grid
-        container
-        spacing={2}
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Grid item>
-          <GridToolbarFilterButton />
-        </Grid>
-        <Grid item>
-          <GridPagination />
-        </Grid>
-      </Grid>
-    </GridToolbarContainer>
-  );
 }

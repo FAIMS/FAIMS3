@@ -15,6 +15,9 @@ export interface RecordLinkProps {
 
   link?: RecordLinkProps;
 }
+export interface SortedDataType {
+  [key: string]: Array<RecordLinkProps>;
+}
 
 // each link is RecordAFieldB---->RecordC
 export interface LinkProps {
@@ -41,6 +44,7 @@ export interface LinkProps {
 export interface RelationshipsComponentProps {
   related_records: Array<RecordLinkProps> | null;
   new_related_links: Array<RecordLinkProps> | null;
+  new_field_level_links: Array<RecordLinkProps> | null;
   child_links: Array<LinkProps> | null;
   related_links: Array<LinkProps> | null;
   record_hrid: string;
@@ -48,6 +52,7 @@ export interface RelationshipsComponentProps {
 }
 
 export interface FieldRelationshipComponentProps {
+  field_level_links: Array<RecordLinkProps> | null;
   child_links: Array<LinkProps> | null;
   related_links: Array<LinkProps> | null;
   record_hrid: string;
@@ -60,13 +65,6 @@ export interface RecordLinksComponentProps {
 }
 
 export interface DataGridLinksComponentProps {
-  links: Array<LinkProps> | null;
-  title?: string;
-  show_title: boolean;
-  show_link_type: boolean;
-  show_section: boolean;
-  show_field: boolean;
+  links: Array<RecordLinkProps> | null;
   show_actions: boolean;
-  record_title?: string;
-  field_label?: string;
 }

@@ -559,6 +559,88 @@ export default function Record() {
                           },
                         },
                       ]}
+                      new_field_level_links={[
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 1',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'has child',
+                            'is parent of',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'TV33.43',
+                            type: 'Water',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 1',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'has child',
+                            'is parent of',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'MP24.43',
+                            type: 'Ice',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 1',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'has child',
+                            'is parent of',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'PL87.87',
+                            type: 'Water',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                        {
+                          record_id: record_id,
+                          hrid: hrid,
+                          type: record_type,
+                          route: 'route',
+                          section: 'Core 1',
+                          field_id: uuidv4(),
+                          field_label: 'Field EH',
+                          relation_type_vocabPair: [
+                            'is related to',
+                            'is related to',
+                          ],
+                          link: {
+                            record_id: uuidv4(),
+                            hrid: 'TR23.9',
+                            type: 'Water',
+                            route: 'linked record route',
+                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
+                          },
+                        },
+                      ]}
                       related_links={[
                         {
                           recordA_id: record_id,

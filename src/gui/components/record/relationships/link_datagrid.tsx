@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: relationships/index.tsx
+ * Filename: relationships/link_datagrid.tsx
  * Description:
  *   TODO
  */
@@ -25,7 +25,6 @@ import {
   Box,
   ButtonGroup,
   Button,
-  Divider,
   Grid,
   Link,
   Typography,
@@ -37,16 +36,14 @@ import {
   GridActionsCellItem,
   GridCellParams,
   GridColumns,
-  GridRowId,
   GridRow,
   GridRowParams,
-  GridToolbarContainer,
-  GridToolbarFilterButton,
 } from '@mui/x-data-grid';
 import {DataGridLinksComponentProps} from './types';
 import ArticleIcon from '@mui/icons-material/Article';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
+import {RecordLinksToolbar} from './toolbars';
 
 const style = {
   position: 'absolute' as const,
@@ -58,23 +55,7 @@ const style = {
   p: 1,
 };
 
-export function DataGridToolbar() {
-  return (
-    <GridToolbarContainer>
-      <Grid
-        container
-        spacing={2}
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Grid item>
-          <GridToolbarFilterButton />
-        </Grid>
-      </Grid>
-    </GridToolbarContainer>
-  );
-}
-export default function DataGridLinksComponent(
+export default function DataGridFieldLinksComponent(
   props: DataGridLinksComponentProps
 ) {
   /**
@@ -87,7 +68,17 @@ export default function DataGridLinksComponent(
   const [modalLink, setModalLink] = React.useState(
     null as null | GridRowParams['row']
   );
-
+  function getRowId(row: any) {
+    /***
+     * Provide a unique row id for each row
+     */
+    return (
+      row.record_id +
+      row.field_id +
+      row.relation_type_vocabPair[0] +
+      row.link.record_id
+    );
+  }
   const handleModalClose = () => {
     // Close the modal, remove the focused link
     setModalOpen(false);
@@ -106,54 +97,48 @@ export default function DataGridLinksComponent(
   }
   const columns: GridColumns = [
     {
-      field: 'recordA_section',
-      headerName: 'Section',
-      type: 'string',
+      field: 'linked_record',
+      headerName: 'Linked Record',
+      headerClassName: 'faims-record-link--header',
+      minWidth: 300,
+      flex: 0.4,
+      valueGetter: (params: GridCellParams) =>
+        params.row.link.type + ' ' + params.row.link.hrid,
       renderCell: (params: GridCellParams) => (
-        <Typography variant={'h6'} sx={{textTransform: 'capitalise'}}>
-          {params.value}
+        <Typography variant={'body2'} fontWeight={'bold'}>
+          <Link
+            component={NavLink}
+            to={params.row.link.route}
+            underline={'none'}
+          >
+            <Grid
+              container
+              direction="row"
+              alignItems="center"
+              component={'span'}
+            >
+              <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />
+              {params.value}
+            </Grid>
+          </Link>
         </Typography>
       ),
+    },
+    {
+      field: 'lastUpdatedBy',
+      headerName: 'Last Updated By',
+      headerClassName: 'faims-record-link--header',
       minWidth: 100,
+      valueGetter: (params: GridCellParams) => params.row.link.lastUpdatedBy,
+      flex: 0.4,
     },
-    {
-      field: 'recordA_field_label',
-      headerName: 'Field',
-      minWidth: 100,
-    },
-    {
-      field: 'relation_type_vocabPair',
-      headerName: 'relationship',
-      minWidth: 100,
-      valueGetter: (params: GridCellParams) => params.value[0],
-    },
-    {
-      field: 'recordB_type',
-      headerName: 'Kind',
-      minWidth: 100,
-    },
-    {
-      field: 'recordB_hrid',
-      headerName: 'HRID',
-      minWidth: 300,
-      renderCell: (params: GridCellParams) => (
-        <Link underline={'none'} sx={{fontWeight: 'bold'}}>
-          <Grid container direction="row" alignItems="center" spacing={'4px'}>
-            <ArticleIcon fontSize={'inherit'} /> {params.value}
-          </Grid>
-        </Link>
-      ),
-    },
-    {
-      field: 'recordB_lastUpdatedBy',
-      headerName: 'Last Updated',
-      minWidth: 300,
-    },
-    {field: 'recordB_route', hide: true, filterable: false},
+
     {
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
+      headerClassName: 'faims-record-link--header',
+      flex: 0.2,
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
           icon={<LinkOffIcon color={'error'} />}
@@ -166,36 +151,6 @@ export default function DataGridLinksComponent(
   ];
   return (
     <Box component={Paper} elevation={0}>
-      {props.show_title ? (
-        <Grid
-          container
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          spacing={1}
-        >
-          <Grid item xs={'auto'}>
-            <Grid
-              container
-              spacing={1}
-              justifyContent={'center'}
-              alignItems={'flex-start'}
-            >
-              <Grid item>
-                <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
-              </Grid>
-              <Grid item>
-                <Typography variant={'h6'}>{props.title}</Typography>
-              </Grid>
-            </Grid>
-          </Grid>
-          <Grid item xs>
-            <Divider />
-          </Grid>
-        </Grid>
-      ) : (
-        ''
-      )}
       {props.links !== null && (
         <Box>
           <Modal
@@ -240,35 +195,21 @@ export default function DataGridLinksComponent(
           </Modal>
           <DataGrid
             autoHeight
-            initialState={{
-              columns: {
-                columnVisibilityModel: {
-                  recordA_id: false,
-                  recordA_hrid: false,
-                  recordA_type: false,
-                  recordA_field_id: false,
-                  recordA_section: props.show_section,
-                  recordA_field_label: props.show_field,
-                  recordB_id: false,
-                  recordB_route: false,
-                  relation_type_vocabPair: props.show_link_type,
-                  actions: props.show_actions,
-                },
-              },
-            }}
-            getRowId={r =>
-              r.recordA_id + r.relation_type_vocabPair[0] + r.recordB_id
-            }
             density={'compact'}
-            rows={props.links}
-            columns={columns}
             pageSize={5}
             rowsPerPageOptions={[5]}
             disableSelectionOnClick
             components={{
-              Toolbar: DataGridToolbar,
+              Footer: RecordLinksToolbar,
             }}
-            sx={{cursor: 'pointer', borderWidth: props.show_title ? 0 : '1px'}}
+            columns={columns}
+            initialState={{
+              sorting: {
+                sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
+              },
+            }}
+            rows={props.links}
+            getRowId={getRowId}
           />
         </Box>
       )}

@@ -110,13 +110,15 @@ export default function RelationshipsViewComponent(
       <Alert severity={'info'}>
         To add/remove a link, go to the record &gt; field and edit directly.
       </Alert>
+
       <BoxTab
         title={'Field-level links widget (to be moved)'}
         bgcolor={grey[100]}
       />
       <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>
         <FieldRelationshipComponent
-          child_links={props.child_links}
+          field_level_links={props.new_field_level_links}
+            child_links={props.child_links}
           related_links={props.related_links}
           record_hrid={props.record_hrid}
           record_type={props.record_type}
