@@ -81,7 +81,7 @@ import {useTheme} from '@mui/material/styles';
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
-
+import {related_records, related_links_from_fields,field_level_links} from '../../utils/fixtures'
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -370,7 +370,6 @@ export default function Record() {
               scrollButtons="auto"
               centered={not_xs ? false : true}
             >
-              <Tab label="Links" value="0" />
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
               <Tab label="Meta" value="3" />
@@ -417,334 +416,6 @@ export default function Record() {
             } else {
               return (
                 <React.Fragment>
-                  <TabPanel value="0" style={{padding: theme.spacing(2)}}>
-                    <RelationshipsViewComponent
-                      related_records={[
-                        {
-                          record_id: uuidv4(),
-                          hrid: 'CBC123',
-                          type: 'Parent record',
-                          route: 'parent_route',
-                          field_id: uuidv4(),
-                          field_label: 'cup',
-                          section: 'section A',
-                          relation_type_vocabPair: ['is parent', 'is child of'],
-                        },
-                        {
-                          record_id: uuidv4(),
-                          hrid: 'CBC12345',
-                          type: 'Container',
-                          route: 'parent_route',
-                          field_id: uuidv4(),
-                          field_label: 'box',
-                          section: 'section B',
-                          relation_type_vocabPair: [
-                            'is related to',
-                            'is related to',
-                          ],
-                        },
-                        {
-                          record_id: uuidv4(),
-                          hrid: 'CBD13423',
-                          type: 'Container',
-                          route: 'parent_route',
-                          field_id: uuidv4(),
-                          field_label: 'box',
-                          section: 'Section C',
-                          relation_type_vocabPair: [
-                            'is contained by',
-                            'contains',
-                          ],
-                        },
-                      ]}
-                      new_related_links={[
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'section B',
-                          field_id: uuidv4(),
-                          field_label: 'box',
-                          relation_type_vocabPair: [
-                            'is related to',
-                            'is related to',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'Mundi-V3.4',
-                            type: 'Water',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 2',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'is above',
-                            'is below',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'Mundi-V33.4',
-                            type: 'Ice',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 2',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'is above',
-                            'is below',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'Mundi-V33.43',
-                            type: 'Ice',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 2',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'has child',
-                            'is parent of',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'TV33.43',
-                            type: 'Water',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 1',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'has child',
-                            'is parent of',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'TV33.43',
-                            type: 'Water',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                      ]}
-                      new_field_level_links={[
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 1',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'has child',
-                            'is parent of',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'TV33.43',
-                            type: 'Water',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 1',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'has child',
-                            'is parent of',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'MP24.43',
-                            type: 'Ice',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 1',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'has child',
-                            'is parent of',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'PL87.87',
-                            type: 'Water',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                        {
-                          record_id: record_id,
-                          hrid: hrid,
-                          type: record_type,
-                          route: 'route',
-                          section: 'Core 1',
-                          field_id: uuidv4(),
-                          field_label: 'Field EH',
-                          relation_type_vocabPair: [
-                            'is related to',
-                            'is related to',
-                          ],
-                          link: {
-                            record_id: uuidv4(),
-                            hrid: 'TR23.9',
-                            type: 'Water',
-                            route: 'linked record route',
-                            lastUpdatedBy: '10/12/2020 11:09am by John Smith',
-                          },
-                        },
-                      ]}
-                      related_links={[
-                        {
-                          recordA_id: record_id,
-                          recordA_hrid: hrid,
-                          recordA_type: record_type,
-                          recordA_section: 'core 2',
-                          recordA_field_id: uuidv4(),
-                          recordA_field_label: 'Field EH',
-
-                          recordB_id: uuidv4(),
-                          recordB_hrid: 'Mundi-V3.4',
-                          recordB_type: 'Water',
-                          recordB_lastUpdatedBy:
-                            '10/12/2020 11:09am by John Smith',
-                          recordB_route: 'go to record 2!',
-                          relation_type_vocabPair: ['is above', 'is below'],
-                        },
-                        {
-                          recordA_id: record_id,
-                          recordA_hrid: hrid,
-                          recordA_type: record_type,
-                          recordA_section: 'core 1',
-                          recordA_field_id: uuidv4(),
-                          recordA_field_label: 'Field PH',
-
-                          recordB_id: uuidv4(),
-                          recordB_hrid: 'Mundi-V3.4',
-                          recordB_type: 'Water',
-                          recordB_lastUpdatedBy:
-                            '10/12/2020 11:09am by John Smith',
-                          recordB_route: 'go to record 2!',
-                          relation_type_vocabPair: ['is above', 'is below'],
-                        },
-                        {
-                          recordA_id: record_id,
-                          recordA_hrid: hrid,
-                          recordA_type: record_type,
-                          recordA_section: 'core 1',
-                          recordA_field_id: uuidv4(),
-                          recordA_field_label: 'Field PH',
-
-                          recordB_id: uuidv4(),
-                          recordB_hrid: 'Mundi-V3.4',
-                          recordB_type: 'Water',
-                          recordB_lastUpdatedBy:
-                            '10/12/2020 11:09am by John Smith',
-                          recordB_route: 'go to record 2!',
-                          relation_type_vocabPair: ['is above', 'is below'],
-                        },
-                        {
-                          recordA_id: record_id,
-                          recordA_hrid: hrid,
-                          recordA_type: record_type,
-                          recordA_section: 'core 2',
-                          recordA_field_id: uuidv4(),
-                          recordA_field_label: 'Field EH',
-
-                          recordB_id: uuidv4(),
-                          recordB_hrid: 'Mundi-V3.4',
-                          recordB_type: 'Water',
-                          recordB_lastUpdatedBy:
-                            '10/12/2020 11:09am by John Smith',
-                          recordB_route: 'go to record 2!',
-                          relation_type_vocabPair: ['is above', 'is below'],
-                        },
-                      ]}
-                      child_links={[
-                        {
-                          recordA_id: record_id,
-                          recordA_hrid: hrid,
-                          recordA_type: record_type,
-                          recordA_section: 'core 1',
-                          recordA_field_id: uuidv4(),
-                          recordA_field_label: 'Field PH',
-
-                          recordB_id: uuidv4(),
-                          recordB_hrid: 'Andor-V3.4',
-                          recordB_type: 'Water',
-                          recordB_lastUpdatedBy:
-                            '10/12/2020 11:09am by John Smith',
-                          recordB_route: 'go to record 2!',
-                          relation_type_vocabPair: ['has child', 'is child of'],
-                        },
-                        {
-                          recordA_id: record_id,
-                          recordA_hrid: hrid,
-                          recordA_type: record_type,
-                          recordA_section: 'core 2',
-                          recordA_field_id: uuidv4(),
-                          recordA_field_label: 'Field EH',
-
-                          recordB_id: uuidv4(),
-                          recordB_hrid: 'Kenobi-V2.4',
-                          recordB_type: 'Water',
-                          recordB_lastUpdatedBy:
-                            '10/12/2020 11:09am by John Smith',
-                          recordB_route: 'go to record 2!',
-                          relation_type_vocabPair: ['has child', 'is child of'],
-                        },
-                      ]}
-                      record_hrid={hrid}
-                      record_type={record_type}
-                    />
-                  </TabPanel>
                   <TabPanel value="1" style={{padding: theme.spacing(2)}}>
                     <Box pl={0}>
                       {conflicts !== null &&
@@ -827,40 +498,58 @@ export default function Record() {
                           <Box px={not_xs ? 30 : 0}>
                             {(isalerting === false ||
                               draft_id !== undefined) && (
-                              <RecordForm
-                                project_id={project_id}
-                                record_id={record_id}
-                                revision_id={
-                                  selectrevision !== null
-                                    ? selectrevision
-                                    : updatedrevision_id
-                                }
-                                ui_specification={uiSpec}
-                                draft_id={draft_id}
-                                metaSection={metaSection}
-                                conflictfields={conflictfields}
-                                handleChangeTab={handleChange}
-                                isSyncing={isSyncing.toString()}
-                                handleSetIsDraftSaving={setIsDraftSaving}
-                                handleSetDraftLastSaved={setDraftLastSaved}
-                                handleSetDraftError={setDraftError}
-                              />
+                              <React.Fragment>
+                                <RelationshipsViewComponent
+                                  related_records={related_records()}
+                                  related_links_from_fields={related_links_from_fields(record_id,hrid,record_type)}
+                                  field_level_links={field_level_links(record_id,hrid,record_type)}
+                                  record_hrid={hrid}
+                                  record_type={record_type}
+                                />
+                                <RecordForm
+                                  project_id={project_id}
+                                  record_id={record_id}
+                                  revision_id={
+                                    selectrevision !== null
+                                      ? selectrevision
+                                      : updatedrevision_id
+                                  }
+                                  ui_specification={uiSpec}
+                                  draft_id={draft_id}
+                                  metaSection={metaSection}
+                                  conflictfields={conflictfields}
+                                  handleChangeTab={handleChange}
+                                  isSyncing={isSyncing.toString()}
+                                  handleSetIsDraftSaving={setIsDraftSaving}
+                                  handleSetDraftLastSaved={setDraftLastSaved}
+                                  handleSetDraftError={setDraftError}
+                                />
+                              </React.Fragment>
                             )}
                           </Box>
                         </Box>
                       ) : (
-                        <RecordForm
-                          project_id={project_id}
-                          record_id={record_id}
-                          revision_id={updatedrevision_id}
-                          ui_specification={uiSpec}
-                          draft_id={draft_id}
-                          metaSection={metaSection}
-                          isSyncing={isSyncing.toString()}
-                          handleSetIsDraftSaving={setIsDraftSaving}
-                          handleSetDraftLastSaved={setDraftLastSaved}
-                          handleSetDraftError={setDraftError}
-                        />
+                        <React.Fragment>
+                          <RelationshipsViewComponent
+                              related_records={related_records()}
+                              related_links_from_fields={related_links_from_fields(record_id,hrid,record_type)}
+                              field_level_links={field_level_links(record_id,hrid,record_type)}
+                              record_hrid={hrid}
+                              record_type={record_type}
+                          />
+                          <RecordForm
+                            project_id={project_id}
+                            record_id={record_id}
+                            revision_id={updatedrevision_id}
+                            ui_specification={uiSpec}
+                            draft_id={draft_id}
+                            metaSection={metaSection}
+                            isSyncing={isSyncing.toString()}
+                            handleSetIsDraftSaving={setIsDraftSaving}
+                            handleSetDraftLastSaved={setDraftLastSaved}
+                            handleSetDraftError={setDraftError}
+                          />
+                        </React.Fragment>
                       )}
                     </Box>
                   </TabPanel>

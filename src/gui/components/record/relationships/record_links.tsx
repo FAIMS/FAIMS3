@@ -3,8 +3,9 @@ import {Box, Chip, Grid, Link, Typography} from '@mui/material';
 import {DataGrid, GridCellParams} from '@mui/x-data-grid';
 import {NavLink} from 'react-router-dom';
 import ArticleIcon from '@mui/icons-material/Article';
-import {RecordLinksComponentProps} from './types';
+import {RecordLinksComponentProps, PARENT_CHILD_VOCAB} from './types';
 import {RecordLinksToolbar} from './toolbars';
+
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
    * This component has two 'views' depending on whether the data is from record to field, or field to record.
@@ -30,7 +31,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
       return row.record_id + row.field_id + row.relation_type_vocabPair[0];
     }
   }
-  const PARENT_CHILD_VOCAB = ['has child', 'is parent'];
+
 
   if (props.record_links !== null) {
     const columns = props.is_field

@@ -20,11 +20,7 @@
 
 import React from 'react';
 
-import {Alert, Box, Divider, Grid, Paper, Typography} from '@mui/material';
-import Tab from '@mui/material/Tab';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
+import {Alert, Box, Grid, Paper, Typography} from '@mui/material';
 
 import {RelationshipsComponentProps} from './types';
 
@@ -32,8 +28,7 @@ import RecordLinkComponent from './record_links';
 import BoxTab from '../../ui/boxTab';
 import {grey} from '@mui/material/colors';
 
-import DataGridLinksComponent from './link_datagrid';
-import FieldRelationshipComponent from './field_relationships';
+import FieldRelationshipComponent from './field_level_links';
 import LinkIcon from '@mui/icons-material/Link';
 
 export default function RelationshipsViewComponent(
@@ -75,7 +70,10 @@ export default function RelationshipsViewComponent(
         </Grid>
       </Grid>
       <Box component={Paper} elevation={0} mb={2}>
-        <RecordLinkComponent record_links={props.related_records}  is_field={false}/>
+        <RecordLinkComponent
+          record_links={props.related_records}
+          is_field={false}
+        />
       </Box>
 
       <Grid
@@ -96,7 +94,9 @@ export default function RelationshipsViewComponent(
               <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
             </Grid>
             <Grid item>
-              <Typography variant={'h6'}>Links to fields within this record</Typography>
+              <Typography variant={'h6'}>
+                Links to fields within this record
+              </Typography>
             </Grid>
           </Grid>
         </Grid>
@@ -105,7 +105,10 @@ export default function RelationshipsViewComponent(
         </Grid>
       </Grid>
       <Box component={Paper} elevation={0} mb={2}>
-        <RecordLinkComponent record_links={props.new_related_links} is_field={true}/>
+        <RecordLinkComponent
+          record_links={props.related_links_from_fields}
+          is_field={true}
+        />
       </Box>
       <Alert severity={'info'}>
         To add/remove a link, go to the record &gt; field and edit directly.
@@ -117,9 +120,7 @@ export default function RelationshipsViewComponent(
       />
       <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>
         <FieldRelationshipComponent
-          field_level_links={props.new_field_level_links}
-            child_links={props.child_links}
-          related_links={props.related_links}
+          field_level_links={props.field_level_links}
           record_hrid={props.record_hrid}
           record_type={props.record_type}
           field_label={'FIELD: PH'}

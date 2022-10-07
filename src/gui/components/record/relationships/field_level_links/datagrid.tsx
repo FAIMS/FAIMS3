@@ -39,11 +39,11 @@ import {
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
-import {DataGridLinksComponentProps} from './types';
+import {DataGridLinksComponentProps} from '../types';
 import ArticleIcon from '@mui/icons-material/Article';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
-import {RecordLinksToolbar} from './toolbars';
+import {RecordLinksToolbar} from '../toolbars';
 
 const style = {
   position: 'absolute' as const,

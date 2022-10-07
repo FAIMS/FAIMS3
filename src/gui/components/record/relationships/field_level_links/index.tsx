@@ -1,13 +1,17 @@
 import React, {useEffect} from 'react';
-import CreateLinkComponent from './create_links';
+import CreateLinkComponent from '../create_links';
 import TabContext from '@mui/lab/TabContext';
 import {Box} from '@mui/material';
 import TabList from '@mui/lab/TabList';
 import Tab from '@mui/material/Tab';
 import TabPanel from '@mui/lab/TabPanel';
 
-import {FieldRelationshipComponentProps, SortedDataType} from './types';
-import DataGridFieldLinksComponent from './link_datagrid';
+import {
+  FieldRelationshipComponentProps,
+  SortedDataType,
+  PARENT_CHILD_VOCAB,
+} from '../types';
+import DataGridFieldLinksComponent from './datagrid';
 const relationship_types = [
   {link: 'is below', reciprocal: 'is above'},
   {link: 'is above', reciprocal: 'is below'},
@@ -44,9 +48,14 @@ export default function FieldRelationshipComponent(
       });
       setSortedData(dummySortObject);
 
-      // set the first array value as active (TODO set children if present)
+      // set the first array value as active
+      // (if has child is present, set as active tab)
       if (Object.keys(dummySortObject).length > 0) {
-        setValue(Object.keys(dummySortObject)[0]);
+        if (Object.keys(dummySortObject).includes(PARENT_CHILD_VOCAB[0])) {
+          setValue(PARENT_CHILD_VOCAB[0]);
+        } else {
+          setValue(Object.keys(dummySortObject)[0]);
+        }
       }
     }
   }, [props.field_level_links]);
