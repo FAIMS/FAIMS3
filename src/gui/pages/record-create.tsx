@@ -57,15 +57,15 @@ import {TokenContents} from '../../datamodel/core';
 import RecordDelete from '../components/record/delete';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
-
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
   state?: any;
+  record_id: string;
 }
 
 function DraftCreate(props: DraftCreateProps) {
-  const {project_id, type_name} = props;
+  const {project_id, type_name, record_id} = props;
 
   const {dispatch} = useContext(store);
   const history = useHistory();
@@ -73,7 +73,6 @@ function DraftCreate(props: DraftCreateProps) {
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
-  const record_id = generateFAIMSDataID();
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -130,6 +129,7 @@ interface DraftEditProps {
   draft_id: string;
   project_info: ProjectInformation | null;
   record_id: RecordID;
+  state?: any;
 }
 
 function DraftEdit(props: DraftEditProps) {
@@ -244,10 +244,12 @@ export default function RecordCreate(props: RecordCreateProps) {
     draft_id?: string;
     record_id?: string;
   }>();
+  let draft_record_id = generateFAIMSDataID();
+  if (record_id !== undefined) draft_record_id = record_id;
 
   let project_info: ProjectInformation | null;
-  const location = useLocation();
-  console.log(location);
+  const location: any = useLocation();
+
   try {
     project_info = useEventedPromise(
       getProjectInfo,
@@ -263,8 +265,7 @@ export default function RecordCreate(props: RecordCreateProps) {
       return <Redirect to="/404" />;
     }
   }
-
-  const breadcrumbs = [
+  let breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
@@ -273,6 +274,30 @@ export default function RecordCreate(props: RecordCreateProps) {
     },
     {title: 'Draft'},
   ];
+
+  // add parent link back for the parent or linked record
+  if (
+    location.state !== undefined &&
+    location.state.parent_record_id !== record_id
+  ) {
+    const type =
+      location.state.type === 'Child'
+        ? 'Parent'
+        : location.state.relation_type_vocabPair[0];
+    breadcrumbs = [
+      {link: ROUTES.INDEX, title: 'Home'},
+      {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+      {
+        link: ROUTES.NOTEBOOK + project_id,
+        title: project_info !== null ? project_info.name : project_id,
+      },
+      {
+        link: ROUTES.NOTEBOOK + location.state.parent_link,
+        title: type + ':' + location.state.parent_record_id,
+      },
+      {title: 'Draft'},
+    ];
+  }
 
   return (
     <React.Fragment>
@@ -283,6 +308,7 @@ export default function RecordCreate(props: RecordCreateProps) {
             project_id={project_id}
             type_name={type_name}
             state={location.state}
+            record_id={draft_record_id}
           />
         ) : (
           <DraftEdit
@@ -291,6 +317,7 @@ export default function RecordCreate(props: RecordCreateProps) {
             type_name={type_name}
             draft_id={draft_id}
             record_id={record_id}
+            state={location.state}
           />
         )}
       </Box>
