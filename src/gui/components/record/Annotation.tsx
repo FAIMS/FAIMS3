@@ -13,10 +13,10 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: Annotatio.tsx
+ * Filename: Annotation.tsx
  * Description:
  *   This is the file about the Annoation Tag, which is part of Form Field, check view.tsx file
- *    - Annottaion Icon , user can click to fold or unfold Annotation Field
+ *    - Annotation Icon , user can click to fold or unfold Annotation Field
  *    - Annotation Field(which will been unfold after user click)
  */
 
@@ -57,7 +57,6 @@ export function Annotation(props: any) {
         height: 32,
         borderRadius: '30px',
         backgroundColor: '#e8f4fd',
-        boxShadow: 3,
       }}
     >
       <IconButton
@@ -112,8 +111,8 @@ type AnnotationFieldProp = {
 
 export function AnnotationField(props: AnnotationFieldProp) {
   const {field, fieldName, handerannoattion, isclicked} = props;
-  const disabled = props.disabled ?? false; // this is diabled on conflcit tab , ddefault value is false
-  const isxs = props.isxs ?? true; // this is enabled on conflcit tab , ddefault value is true
+  const disabled = props.disabled ?? false; // this is disabled on conflict tab , default value is false
+  const isxs = props.isxs ?? true; // this is enabled on conflict tab , default value is true
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
       ? props.annotation[fieldName] !== undefined
@@ -156,9 +155,9 @@ export function AnnotationField(props: AnnotationFieldProp) {
     field['meta']['uncertainty']['include'] &&
     isclicked;
   return (
-    <Grid>
-      {isannotationshow && isxs && (
-        <Grid item sm={10} xs={12} style={{padding: '15px 0px'}}>
+    <Grid container spacing={1}>
+      {isannotationshow && (
+        <Grid item xs={12}>
           <Field
             component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
             name={fieldName + 'annotation'}
@@ -166,38 +165,17 @@ export function AnnotationField(props: AnnotationFieldProp) {
             value={annotation}
             variant="outlined"
             onChange={handlerchangesAnnotation}
-            InputProps={{type: 'text'}}
+            InputProps={{type: 'text', multiline: true, minRows: 4}}
             label={field['meta']['annotation_label']}
             InputLabelProps={{shrink: true}}
             disabled={disabled}
             fullWidth
-            style={{padding: '15px 0px'}}
+            sx={{backgroundColor: 'white'}}
           />
         </Grid>
       )}
-      {isannotationshow && !isxs && (
-        <Field
-          component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
-          name={fieldName + 'annotation'}
-          id={props.fieldName + 'annotation'}
-          value={annotation}
-          variant="outlined"
-          onChange={handlerchangesAnnotation}
-          InputProps={{type: 'text'}}
-          label={field['meta']['annotation_label']}
-          InputLabelProps={{shrink: true}}
-          disabled={disabled}
-          fullWidth
-        />
-      )}
-
       {isuncertityshow && (
-        <Grid
-          item
-          sm={isannotationshow && isxs ? 2 : 12}
-          xs={12}
-          style={{padding: '5px 15px'}}
-        >
+        <Grid item xs={12} sm={12}>
           <Field
             component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
             name={props.fieldName + 'uncertainty'}
@@ -213,7 +191,6 @@ export function AnnotationField(props: AnnotationFieldProp) {
           />
         </Grid>
       )}
-      <br />
     </Grid>
   );
 }

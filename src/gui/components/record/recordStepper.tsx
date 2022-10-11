@@ -72,7 +72,7 @@ export default function RecordStepper(props: RecordStepperProps) {
     <>
       <Box
         display={{xs: 'none', sm: 'block'}}
-        style={{paddingTop: '3px', paddingBottom: '3px'}}
+        py={1}
       >
         <div style={{overflowX: 'hidden'}}>
           <Stepper

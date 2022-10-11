@@ -80,6 +80,7 @@ import {useTheme} from '@mui/material/styles';
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
+import UnpublishedWarning from '../components/record/unpublished_warning';
 import {
   related_records,
   related_links_from_fields,
@@ -117,6 +118,7 @@ function RecordData(props: RecordDataTypes) {
   };
   return (
     <Box bgcolor={grey[100]}>
+      <UnpublishedWarning />
       <DraftSyncStatus
         last_saved={props.draftLastSaved}
         is_saving={props.isDraftSaving}
@@ -140,20 +142,36 @@ function RecordData(props: RecordDataTypes) {
             <Tab label={'Field-level links component'} value={'3'} />
           </TabList>
           <TabPanel value={'1'} sx={{p: 0}}>
-            <Box component={Paper} elevation={0}>
-              <RecordForm
-                project_id={props.project_id}
-                record_id={props.record_id}
-                revision_id={props.revision_id}
-                ui_specification={props.ui_specification}
-                draft_id={props.draft_id}
-                metaSection={props.metaSection}
-                isSyncing={props.isSyncing}
-                handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                handleSetDraftError={props.handleSetDraftError}
-              />
-            </Box>
+            <Grid
+              container
+              direction="row"
+              justifyContent="flex-start"
+              alignItems="stretch"
+            >
+              <Grid item lg={8}>
+                <Box
+                  component={Paper}
+                  elevation={0}
+                  p={{xs: 0, sm: 1, md: 2, lg: 2}}
+                >
+                  <RecordForm
+                    project_id={props.project_id}
+                    record_id={props.record_id}
+                    revision_id={props.revision_id}
+                    ui_specification={props.ui_specification}
+                    draft_id={props.draft_id}
+                    metaSection={props.metaSection}
+                    isSyncing={props.isSyncing}
+                    handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+                    handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+                    handleSetDraftError={props.handleSetDraftError}
+                  />
+                </Box>
+              </Grid>
+              <Grid item>
+                <Box component={Paper} elevation={0} bgcolor={grey[100]}></Box>
+              </Grid>
+            </Grid>
           </TabPanel>
           <TabPanel value={'2'} sx={{p: 0}}>
             <Box component={Paper} elevation={0} sx={{p: 1}}>

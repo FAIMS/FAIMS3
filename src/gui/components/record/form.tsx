@@ -23,7 +23,17 @@ import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {Button, Grid, Box, ButtonGroup, Typography} from '@mui/material';
+import {
+  Button,
+  Grid,
+  Box,
+  ButtonGroup,
+  Typography,
+  Alert,
+  AlertTitle,
+  Divider,
+  Container,
+} from '@mui/material';
 
 import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
@@ -58,7 +68,7 @@ import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
-import CircularLoading from "../ui/circular_loading";
+import CircularLoading from '../ui/circular_loading';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -684,7 +694,7 @@ class RecordForm extends React.Component<
             // scroll to top of page, seems to be needed on mobile devices
           }
           if (search === '') {
-            this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
+            this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for publish and close button
           } else {
             this.props.history.push({
               pathname: ROUTES.NOTEBOOK + redirecturl,
@@ -785,7 +795,7 @@ class RecordForm extends React.Component<
       const description = this.requireDescription(viewName);
 
       return (
-        <Box sx={{p: 1}}>
+        <Box>
           <RecordStepper
             view_index={view_index}
             ui_specification={ui_specification}
@@ -793,7 +803,6 @@ class RecordForm extends React.Component<
             activeStep={this.state.activeStep}
             onChangeStepper={this.onChangeStepper}
           />
-
           {description !== '' && (
             <Box
               bgcolor={'#fafafa'}
@@ -803,9 +812,8 @@ class RecordForm extends React.Component<
               <Typography>{description}</Typography>
             </Box>
           )}
-          <br />
           {/* add padding for form only */}
-          <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
+          <div>
             <Formik
               initialValues={initialValues}
               validationSchema={validationSchema}
@@ -834,7 +842,7 @@ class RecordForm extends React.Component<
                 return (
                   <Form>
                     <Grid container spacing={2}>
-                      <Grid item sm={12} xs={12}>
+                      <Grid item sm={12} xs={12} md={12}>
                         <ViewComponent
                           viewName={viewName}
                           ui_specification={ui_specification}
@@ -846,116 +854,137 @@ class RecordForm extends React.Component<
                           conflictfields={this.props.conflictfields}
                           handleChangeTab={this.props.handleChangeTab}
                         />
-                        <br />
-
-                        <br />
-                        <ButtonGroup
-                          color="primary"
-                          aria-label="contained primary button group"
-                        >
-                          {is_final_view ? (
-                            <Button
-                              type="submit"
-                              color={
-                                formProps.isSubmitting ? undefined : 'primary'
-                              }
-                              variant="contained"
-                              disableElevation
-                              disabled={formProps.isSubmitting}
-                            >
-                              {formProps.isSubmitting
-                                ? !(this.props.revision_id === undefined)
-                                  ? 'Working...'
-                                  : 'Working...'
-                                : !(this.props.revision_id === undefined)
-                                ? 'Save and Close'
-                                : window.location.search.includes('link=')
-                                ? // &&
-                                  //   ui_specification.viewsets[viewsetName]
-                                  //     .submit_label !== undefined
-                                  'Save and Close'
-                                : // ui_specification.viewsets[viewsetName]
-                                  //     .submit_label
-                                  'Save and Close'}
-                              {formProps.isSubmitting && (
-                                <CircularProgress
-                                  size={24}
-                                  style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    marginTop: -12,
-                                    marginLeft: -12,
-                                  }}
-                                />
-                              )}
-                            </Button>
-                          ) : (
-                            ''
-                          )}
-                        </ButtonGroup>
-                        {this.state.activeStep <
-                          ui_specification.viewsets[viewsetName].views.length -
-                            1 && (
-                          <ButtonGroup
-                            color="primary"
-                            aria-label="contained primary button group"
-                          >
-                            <Button
-                              variant="outlined"
+                      </Grid>
+                      <Grid item sm={12} xs={12} md={12}>
+                        <Grid container spacing={2}>
+                          <Grid item md={12}>
+                            <ButtonGroup
                               color="primary"
-                              onClick={() => {
-                                if (DEBUG_APP) {
-                                  console.log(this.state.activeStep);
-                                }
-                                const stepnum = this.state.activeStep + 1;
-                                if (DEBUG_APP) {
-                                  console.log(
-                                    ui_specification.viewsets[viewsetName]
-                                      .views[stepnum]
-                                  );
-                                }
-
-                                this.setState({
-                                  activeStep: stepnum,
-                                  view_cached:
-                                    ui_specification.viewsets[viewsetName]
-                                      .views[stepnum],
-                                });
-                              }}
-                            >
-                              {'  '}
-                              Continue{' '}
-                            </Button>
-                            <Button
-                              type="submit"
-                              color={
-                                formProps.isSubmitting ? undefined : 'primary'
-                              }
-                              variant="outlined"
                               disableElevation
-                              disabled={formProps.isSubmitting}
+                              aria-label="contained primary button group"
                             >
-                              {formProps.isSubmitting
-                                ? !(this.props.revision_id === undefined)
-                                  ? 'Working...'
-                                  : 'Working...'
-                                : 'Save and Close'}
-                              {formProps.isSubmitting && (
-                                <CircularProgress
-                                  size={24}
-                                  style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    marginTop: -12,
-                                    marginLeft: -12,
-                                  }}
-                                />
+                              <Button variant="contained">Publish</Button>
+                              {is_final_view ? (
+                                <Button
+                                  type="submit"
+                                  color={
+                                    formProps.isSubmitting
+                                      ? undefined
+                                      : 'primary'
+                                  }
+                                  disableElevation
+                                  disabled={formProps.isSubmitting}
+                                >
+                                  {formProps.isSubmitting
+                                    ? !(this.props.revision_id === undefined)
+                                      ? 'Working...'
+                                      : 'Working...'
+                                    : !(this.props.revision_id === undefined)
+                                    ? 'Publish and Close'
+                                    : window.location.search.includes('link=')
+                                    ? // &&
+                                      //   ui_specification.viewsets[viewsetName]
+                                      //     .submit_label !== undefined
+                                      'Publish and Close'
+                                    : // ui_specification.viewsets[viewsetName]
+                                      //     .submit_label
+                                      'Publish and Close'}
+                                  {formProps.isSubmitting && (
+                                    <CircularProgress
+                                      size={24}
+                                      style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        marginTop: -12,
+                                        marginLeft: -12,
+                                      }}
+                                    />
+                                  )}
+                                </Button>
+                              ) : (
+                                ''
                               )}
-                            </Button>
-                          </ButtonGroup>
-                        )}
+                            </ButtonGroup>
+                            {this.state.activeStep <
+                              ui_specification.viewsets[viewsetName].views
+                                .length -
+                                1 && (
+                              <ButtonGroup
+                                color="primary"
+                                aria-label="contained primary button group"
+                              >
+                                <Button
+                                  variant="outlined"
+                                  color="primary"
+                                  onClick={() => {
+                                    if (DEBUG_APP) {
+                                      console.log(this.state.activeStep);
+                                    }
+                                    const stepnum = this.state.activeStep + 1;
+                                    if (DEBUG_APP) {
+                                      console.log(
+                                        ui_specification.viewsets[viewsetName]
+                                          .views[stepnum]
+                                      );
+                                    }
+
+                                    this.setState({
+                                      activeStep: stepnum,
+                                      view_cached:
+                                        ui_specification.viewsets[viewsetName]
+                                          .views[stepnum],
+                                    });
+                                  }}
+                                >
+                                  {'  '}
+                                  Continue{' '}
+                                </Button>
+                                <Button
+                                  type="submit"
+                                  color={
+                                    formProps.isSubmitting
+                                      ? undefined
+                                      : 'primary'
+                                  }
+                                  variant="outlined"
+                                  disableElevation
+                                  disabled={formProps.isSubmitting}
+                                >
+                                  {formProps.isSubmitting
+                                    ? !(this.props.revision_id === undefined)
+                                      ? 'Working...'
+                                      : 'Working...'
+                                    : 'Publish and Close'}
+                                  {formProps.isSubmitting && (
+                                    <CircularProgress
+                                      size={24}
+                                      style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        marginTop: -12,
+                                        marginLeft: -12,
+                                      }}
+                                    />
+                                  )}
+                                </Button>
+                              </ButtonGroup>
+                            )}
+                          </Grid>
+                          <Grid item md={12}>
+                            <Alert severity={'info'} variant="outlined">
+                              <AlertTitle>
+                                What does publishing mean?
+                              </AlertTitle>
+                              The data you capture are being saved to your
+                              device constantly in a draft state. When you click
+                              publish, the record will be queued for syncing to
+                              the remote server when the app detects a wifi
+                              connection.
+                            </Alert>
+                          </Grid>
+                        </Grid>
                       </Grid>
                       {String(process.env.REACT_APP_SERVER) ===
                         'developers' && (
@@ -989,7 +1018,7 @@ class RecordForm extends React.Component<
                                 <Typography variant="button">
                                   <b>
                                     {this.props.revision_id === undefined
-                                      ? 'save and close'
+                                      ? 'publish and close'
                                       : 'update'}
                                   </b>
                                 </Typography>{' '}
@@ -1010,7 +1039,7 @@ class RecordForm extends React.Component<
       );
     } else {
       return (
-        <Box sx={{m:1}}>
+        <Box sx={{m: 1}}>
           <CircularLoading label={'Loading record data'} />
         </Box>
       );

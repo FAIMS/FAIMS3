@@ -5,6 +5,7 @@ import moment from 'moment';
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import {grey} from '@mui/material/colors';
 import 'animate.css';
 interface DraftSyncStatusProps {
   last_saved: Date | null;
@@ -23,6 +24,7 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
       sx={{
         width: '100%',
         textAlign: 'right',
+        borderBottom: 'solid 1px ' + grey[300],
       }}
     >
       {props.error ? (

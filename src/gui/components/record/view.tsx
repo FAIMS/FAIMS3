@@ -21,14 +21,13 @@
 
 import React, {useEffect, useState} from 'react';
 import {FormikProps} from 'formik';
-import Alert from '@mui/material/Alert';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import RecordDraftState from '../../../sync/draft-state';
 import {getComponentFromFieldConfig} from './fields';
 import {Annotation, AnnotationField} from './Annotation';
-import {Grid} from '@mui/material';
-import {Box} from '@mui/material';
+import {Box, Grid, Divider, Paper, Alert} from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
+import AnnotationComponent from './new_annotation';
 // import makeStyles from '@mui/styles/makeStyles';
 // import {useTheme} from '@mui/material/styles';
 type ViewProps = {
@@ -72,16 +71,9 @@ function SingleComponent(props: SingleComponentProps) {
       : fieldName;
 
   return (
-    <Box
-      mb={3}
-      key={fieldName + props.index}
-      sx={{
-        boxShadow: isclicked ? 8 : 0,
-        padding: isclicked ? '10px 5px' : '3px 0px',
-      }}
-    >
-      <Grid container>
-        <Grid item xs={12} sm={10} md={10} lg={11}>
+    <Box key={fieldName + props.index} mt={2} mb={6}>
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={12} md={8}>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
@@ -89,53 +81,25 @@ function SingleComponent(props: SingleComponentProps) {
             props.isSyncing
           )}
         </Grid>
-        <Grid
-          item
-          lg={1}
-          md={2}
-          sm={2}
-          xs={12}
-          style={{marginTop: '0.5em', paddingLeft: '0.5em'}}
-          container
-          justifyContent="flex-start"
-          alignItems="flex-start"
-        >
-          <Grid item style={{paddingLeft: '5px'}}>
-            {props.annotation !== undefined &&
-              fields[fieldName].meta !== undefined &&
-              fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-              fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
-              fields[fieldName]['component-name'] !== 'RandomStyle' && (
-                <Annotation
-                  key={'annotation' + fieldName + 'box'}
-                  setIsClick={setIsClick}
-                  isclicked={isclicked}
-                  field={fields[fieldName]}
-                />
-              )}
-          </Grid>
-          <Grid item style={{paddingLeft: '5px'}}>
-            {' '}
-            {conflictfields !== null &&
-              conflictfields !== undefined &&
-              conflictfields.includes(fieldName) && (
-                <EditConflictDialog
-                  label={label}
-                  handleChangeTab={props.handleChangeTab}
-                />
-              )}{' '}
-          </Grid>
-        </Grid>
+        {conflictfields !== null &&
+          conflictfields !== undefined &&
+          conflictfields.includes(fieldName) && (
+            <Grid item xs={12} sm={12} md={4}>
+              <EditConflictDialog
+                label={label}
+                handleChangeTab={props.handleChangeTab}
+              />
+            </Grid>
+          )}
         {props.annotation !== undefined &&
           fields[fieldName].meta !== undefined &&
           fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
           fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
           fields[fieldName]['component-name'] !== 'RandomStyle' && (
-            <Grid item sm={12} xs={12} style={{margin: '0 0 1em 0'}}>
-              <AnnotationField
+            <Grid item sm={12} xs={12} md={4}>
+              <AnnotationComponent
                 key={'annotation' + fieldName + 'box'}
                 fieldName={fieldName}
-                // formProps={this.props.formProps}
                 field={fields[fieldName]}
                 annotation={props.annotation}
                 handerannoattion={props.handerannoattion}

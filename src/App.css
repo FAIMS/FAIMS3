@@ -21,5 +21,6 @@
 
 /* Record links table header*/
 .faims-record-link--header{
-    background-color: #F5F5F5;
+    background-color: #e0e0e0;
+    border-radius: 0;
 }
