@@ -30,6 +30,7 @@ import {
   Typography,
   Modal,
   Paper,
+  Chip,
 } from '@mui/material';
 import {
   DataGrid,
@@ -39,11 +40,12 @@ import {
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
-import {DataGridLinksComponentProps} from '../types';
+import {DataGridLinksComponentProps, PARENT_CHILD_VOCAB} from '../types';
 import ArticleIcon from '@mui/icons-material/Article';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
+import {RecordID} from '../../../../../datamodel/core';
 
 const style = {
   position: 'absolute' as const,
@@ -74,9 +76,9 @@ export default function DataGridFieldLinksComponent(
      */
     return (
       row.record_id +
-      row.field_id +
       row.relation_type_vocabPair[0] +
-      row.link.record_id
+      row.link.record_id +
+      row.link.field_id
     );
   }
   const handleModalClose = () => {
@@ -95,33 +97,69 @@ export default function DataGridFieldLinksComponent(
   function handleUnlink() {
     alert('delete ' + modalLink.link_id);
   }
+  function recordDisplay(
+    current_record_id: RecordID,
+    record_id: RecordID,
+    type: string,
+    hrid: string,
+    route: any
+  ) {
+    return record_id === current_record_id ? (
+      <Typography variant={'body2'}>
+        <Grid container direction="row" alignItems="center" component={'span'}>
+          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} /> This record
+        </Grid>
+      </Typography>
+    ) : (
+      <Typography variant={'body2'} fontWeight={'bold'}>
+        <Link component={NavLink} to={route} underline={'none'}>
+          <Grid
+            container
+            direction="row"
+            alignItems="center"
+            component={'span'}
+          >
+            <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
+            {type + ' ' + hrid}
+          </Grid>
+        </Link>
+      </Typography>
+    );
+  }
   const columns: GridColumns = [
     {
-      field: 'linked_record',
-      headerName: 'Linked Record',
+      field: 'record',
+      headerName: 'Record',
       headerClassName: 'faims-record-link--header',
-      minWidth: 300,
-      flex: 0.4,
+      minWidth: 200,
+      flex: 0.2,
       valueGetter: (params: GridCellParams) =>
-        params.row.link.type + ' ' + params.row.link.hrid,
+        params.row.type + ' ' + params.row.hrid,
+      renderCell: (params: GridCellParams) =>
+        recordDisplay(
+          props.record_id,
+          params.row.record_id,
+          params.row.type,
+          params.row.hrid,
+          params.row.route
+        ),
+    },
+    {
+      field: 'relation_type_vocabPair',
+      headerName: 'Relationship to ' + props.field_label,
+      headerClassName: 'faims-record-link--header',
+      minWidth: 200,
+      flex: 0.2,
+      valueGetter: (params: GridCellParams) => params.value[0],
       renderCell: (params: GridCellParams) => (
-        <Typography variant={'body2'} fontWeight={'bold'}>
-          <Link
-            component={NavLink}
-            to={params.row.link.route}
-            underline={'none'}
-          >
-            <Grid
-              container
-              direction="row"
-              alignItems="center"
-              component={'span'}
-            >
-              <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />
-              {params.value}
-            </Grid>
-          </Link>
-        </Typography>
+        <Chip
+          label={params.value}
+          component={'span'}
+          size={'small'}
+          color={
+            PARENT_CHILD_VOCAB.includes(params.value) ? 'secondary' : 'default'
+          }
+        />
       ),
     },
     {
@@ -129,7 +167,7 @@ export default function DataGridFieldLinksComponent(
       headerName: 'Last Updated By',
       headerClassName: 'faims-record-link--header',
       minWidth: 100,
-      valueGetter: (params: GridCellParams) => params.row.link.lastUpdatedBy,
+      valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
       flex: 0.4,
     },
 
@@ -169,17 +207,47 @@ export default function DataGridFieldLinksComponent(
                     sx={{mb: 1}}
                     icon={<LinkOffIcon />}
                   >
-                    Do you wish to remove the link <br />
-                    <Typography
-                      variant="body2"
-                      fontStyle={'italics'}
-                      component={'span'}
-                    >
-                      {modalLink.recordA_type} {modalLink.recordA_hrid}{' '}
-                      <strong>{modalLink.recordA_field_label}</strong>{' '}
-                      <i>{modalLink.relation_type_vocabPair[0]}</i>{' '}
-                      {modalLink.recordB_hrid}?
-                    </Typography>
+                    <Box sx={{overflowX: 'scroll'}}>
+                      Do you wish to remove the link <br />
+                      <br />
+                      <Typography variant={'body2'} fontWeight={'bold'}>
+                        <Grid
+                          container
+                          direction="row"
+                          alignItems="center"
+                          component={'span'}
+                        >
+                          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
+                          {modalLink.type} {modalLink.hrid}
+                        </Grid>
+                      </Typography>
+                      <Chip
+                        component={'span'}
+                        size={'small'}
+                        color={
+                          PARENT_CHILD_VOCAB.includes(
+                            modalLink.relation_type_vocabPair[0]
+                          )
+                            ? 'secondary'
+                            : 'default'
+                        }
+                        sx={{m: 1}}
+                        label={modalLink.relation_type_vocabPair[0]}
+                      />
+                      <Typography variant={'body2'} fontWeight={'bold'}>
+                        <Grid
+                          container
+                          direction="row"
+                          alignItems="center"
+                          component={'span'}
+                        >
+                          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />
+                          &nbsp;
+                          {modalLink.link.type}&nbsp;{modalLink.link.hrid}
+                          &nbsp;&gt;&nbsp;{modalLink.link.field_label}?
+                        </Grid>
+                      </Typography>
+                    </Box>
                   </Alert>
                   <ButtonGroup fullWidth disableElevation>
                     <Button onClick={handleUnlink} variant={'contained'}>

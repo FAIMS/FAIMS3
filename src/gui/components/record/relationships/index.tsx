@@ -25,10 +25,9 @@ import {Box} from '@mui/material';
 import {RelationshipsComponentProps} from './types';
 
 import RecordLinkComponent from './record_links';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import Tab from '@mui/material/Tab';
-import TabPanel from '@mui/lab/TabPanel';
+import Typography from '@mui/material/Typography';
+import {Accordion, AccordionSummary, AccordionDetails} from '../accordion';
+import LinkIcon from '@mui/icons-material/Link';
 
 export default function RelationshipsViewComponent(
   props: RelationshipsComponentProps
@@ -40,36 +39,26 @@ export default function RelationshipsViewComponent(
    *
    *
    */
-  const [value, setValue] = React.useState('1');
 
-  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
-    setValue(newValue);
-  };
   return (
     <Box>
-      <TabContext value={value}>
-        <Box>
-          <TabList
-            onChange={handleChange}
-            aria-label={'Field children links tabs'}
-          >
-            <Tab label={'Links to record'} value={'1'} />
-            <Tab label={'Links to fields within record'} value={'2'} />
-          </TabList>
-        </Box>
-        <TabPanel value={'1'} sx={{p: 0}}>
-          <RecordLinkComponent
-            record_links={props.related_records}
-            is_field={false}
-          />
-        </TabPanel>
-        <TabPanel value={'2'} sx={{p: 0}}>
-          <RecordLinkComponent
-            record_links={props.related_links_from_fields}
-            is_field={true}
-          />
-        </TabPanel>
-      </TabContext>
+      <Accordion>
+        <AccordionSummary
+          aria-controls="links-accordion-content"
+          id="links-accordion"
+        >
+          <LinkIcon sx={{mr: 1}} />
+          <Typography>Links</Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{p: 0}}>
+          <Box>
+            <RecordLinkComponent
+              record_links={props.record_to_field_links}
+              record_id={props.record_id}
+            />
+          </Box>
+        </AccordionDetails>
+      </Accordion>
     </Box>
   );
 }

@@ -11,6 +11,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import EditIcon from '@mui/icons-material/Edit';
 import {RecordLinksComponentProps, PARENT_CHILD_VOCAB} from './types';
 import {RecordLinksToolbar} from './toolbars';
+import {RecordID} from '../../../../datamodel/core';
 
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
@@ -26,248 +27,155 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
     /***
      * Provide a unique row id for each row
      */
-    if (props.is_field) {
-      return (
-        row.record_id +
-        row.field_id +
-        row.relation_type_vocabPair[0] +
-        row.link.record_id
-      );
-    } else {
-      return row.record_id + row.field_id + row.relation_type_vocabPair[0];
-    }
+    return (
+      row.record_id +
+      row.relation_type_vocabPair[0] +
+      row.link.record_id +
+      row.link.field_id
+    );
+  }
+  function recordDisplay(
+    current_record_id: RecordID,
+    record_id: RecordID,
+    type: string,
+    hrid: string,
+    route: any
+  ) {
+    return record_id === current_record_id ? (
+      <Typography variant={'body2'}>
+        <Grid container direction="row" alignItems="center" component={'span'}>
+          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} /> This record
+        </Grid>
+      </Typography>
+    ) : (
+      <Typography variant={'body2'} fontWeight={'bold'}>
+        <Link component={NavLink} to={route} underline={'none'}>
+          <Grid
+            container
+            direction="row"
+            alignItems="center"
+            component={'span'}
+          >
+            <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
+            {type + ' ' + hrid}
+          </Grid>
+        </Link>
+      </Typography>
+    );
   }
 
   if (props.record_links !== null) {
-    const columns = props.is_field
-      ? [
-          {
-            field: 'section',
-            headerName: 'Section',
-            headerClassName: 'faims-record-link--header',
-            minWidth: 100,
-            flex: 0.2,
-            renderCell: (params: GridCellParams) => (
-              <Typography variant={'body2'} fontWeight={'bold'}>
-                <Link
-                  component={NavLink}
-                  to={params.row.route}
-                  underline={'none'}
-                >
-                  {params.value}
-                </Link>
-              </Typography>
-            ),
-          },
-          {
-            field: 'field_label',
-            headerName: 'Field',
-            headerClassName: 'faims-record-link--header',
-            minWidth: 100,
-            flex: 0.2,
-            renderCell: (params: GridCellParams) => (
-              <Typography variant={'body2'} fontWeight={'bold'}>
-                <Link
-                  component={NavLink}
-                  to={params.row.route}
-                  underline={'none'}
-                >
-                  {params.value}
-                </Link>
-              </Typography>
-            ),
-          },
-          {
-            field: 'relation_type_vocabPair',
-            headerName: 'Relationship',
-            headerClassName: 'faims-record-link--header',
-            minWidth: 100,
-            flex: 0.2,
-            valueGetter: (params: GridCellParams) => params.value[0],
-            renderCell: (params: GridCellParams) => (
-              <Chip
-                label={params.value}
-                component={'span'}
-                size={'small'}
-                color={
-                  PARENT_CHILD_VOCAB.includes(params.value)
-                    ? 'secondary'
-                    : 'default'
-                }
-              />
-            ),
-          },
-          {
-            field: 'linked_record',
-            headerName: 'Linked Record',
-            headerClassName: 'faims-record-link--header',
-            minWidth: 200,
-            flex: 0.2,
-            valueGetter: (params: GridCellParams) =>
-              params.row.link.type + ' ' + params.row.link.hrid,
-            renderCell: (params: GridCellParams) => (
-              <Typography variant={'body2'} fontWeight={'bold'}>
-                <Link
-                  component={NavLink}
-                  to={params.row.link.route}
-                  underline={'none'}
-                >
-                  <Grid
-                    container
-                    direction="row"
-                    alignItems="center"
-                    component={'span'}
-                  >
-                    <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />
-                    {params.value}
-                  </Grid>
-                </Link>
-              </Typography>
-            ),
-          },
-          {
-            field: 'lastUpdatedBy',
-            headerName: 'Last Updated By',
-            headerClassName: 'faims-record-link--header',
-            minWidth: 300,
-            valueGetter: (params: GridCellParams) =>
-              params.row.link.lastUpdatedBy,
-            flex: 0.2,
-          },
-          {
-            field: 'actions',
-            type: 'actions',
-            headerName: 'Actions',
-            headerClassName: 'faims-record-link--header',
-            flex: 0.1,
-            minWidth: 100,
-            getActions: (params: GridRowParams) => [
-              <GridActionsCellItem
-                icon={<EditIcon color={'primary'} />}
-                onClick={() => {
-                  alert('go to record>section>field');
-                }}
-                label="Edit link"
-                showInMenu
-              />,
-            ],
-          },
-        ]
-      : [
-          {
-            field: 'relation_type_vocabPair',
-            headerName: 'Relationship',
-            headerClassName: 'faims-record-link--header',
-            minWidth: 100,
-            flex: 0.2,
-            valueGetter: (params: GridCellParams) => params.value[0],
-            renderCell: (params: GridCellParams) => (
-              <Chip
-                label={params.value}
-                size={'small'}
-                component={'span'}
-                color={
-                  PARENT_CHILD_VOCAB.includes(params.value)
-                    ? 'secondary'
-                    : 'default'
-                }
-              />
-            ),
-          },
-          {
-            field: 'hrid',
-            headerName: 'Record',
-            headerClassName: 'faims-record-link--header',
-            minWidth: 300,
-            flex: 0.8,
-            valueGetter: (params: GridCellParams) =>
-              params.row.type + params.row.hrid,
-            renderCell: (params: GridCellParams) => (
-              <Typography variant={'body2'} fontWeight={'bold'}>
-                <Grid container>
-                  <Grid item>
-                    <Link
-                      component={NavLink}
-                      to={params.row.route}
-                      underline={'none'}
-                    >
-                      <Grid
-                        container
-                        direction="row"
-                        alignItems="center"
-                        component={'span'}
-                      >
-                        <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />
-                        {params.row.type} {params.row.hrid}
-                      </Grid>
-                    </Link>
-                  </Grid>
-                  {params.row.section ? (
-                    <React.Fragment>
-                      <Grid item sx={{mx: 1}}>
-                        &gt;
-                      </Grid>
-                      <Grid item>
-                        <Link
-                          component={NavLink}
-                          to={params.row.route}
-                          underline={'none'}
-                        >
-                          {params.row.section}
-                        </Link>
-                      </Grid>
-                    </React.Fragment>
-                  ) : (
-                    ''
-                  )}
-                  {params.row.field_label ? (
-                    <React.Fragment>
-                      <Grid item sx={{mx: 1}}>
-                        &gt;
-                      </Grid>
-                      <Grid item>
-                        <Link
-                          component={NavLink}
-                          to={params.row.route}
-                          underline={'none'}
-                        >
-                          <Grid
-                            container
-                            direction="row"
-                            alignItems="center"
-                            component={'span'}
-                          >
-                            {params.row.field_label}
-                          </Grid>
-                        </Link>
-                      </Grid>
-                    </React.Fragment>
-                  ) : (
-                    ''
-                  )}
-                </Grid>
-              </Typography>
-            ),
-          },
-          {
-            field: 'actions',
-            type: 'actions',
-            headerName: 'Actions',
-            headerClassName: 'faims-record-link--header',
-            flex: 0.1,
-            minWidth: 100,
-            getActions: (params: GridRowParams) => [
-              <GridActionsCellItem
-                icon={<EditIcon color={'primary'} />}
-                onClick={() => {
-                  alert('go to record>section>field');
-                }}
-                label="Edit link"
-                showInMenu
-              />,
-            ],
-          },
-        ];
+    const columns = [
+      {
+        field: 'record',
+        headerName: 'Record',
+        headerClassName: 'faims-record-link--header',
+        minWidth: 200,
+        flex: 0.2,
+        valueGetter: (params: GridCellParams) =>
+          params.row.type + ' ' + params.row.hrid,
+        renderCell: (params: GridCellParams) =>
+          recordDisplay(
+            props.record_id,
+            params.row.record_id,
+            params.row.type,
+            params.row.hrid,
+            params.row.route
+          ),
+      },
+      {
+        field: 'relation_type_vocabPair',
+        headerName: 'Relationship',
+        headerClassName: 'faims-record-link--header',
+        minWidth: 200,
+        flex: 0.2,
+        valueGetter: (params: GridCellParams) => props.record_id === params.row.record_id ? params.value[0] : params.value[1],
+        renderCell: (params: GridCellParams) => (
+          <Chip
+            label={params.value}
+            component={'span'}
+            size={'small'}
+            color={
+              PARENT_CHILD_VOCAB.includes(params.value)
+                ? 'secondary'
+                : 'default'
+            }
+          />
+        ),
+      },
+      {
+        field: 'linked_record',
+        headerName: 'Linked record',
+        headerClassName: 'faims-record-link--header',
+        minWidth: 150,
+        flex: 0.2,
+        valueGetter: (params: GridCellParams) =>
+          params.row.link.type + params.row.link.hrid,
+        renderCell: (params: GridCellParams) =>
+          recordDisplay(
+            props.record_id,
+            params.row.link.record_id,
+            params.row.link.type,
+            params.row.link.hrid,
+            params.row.link.route
+          ),
+      },
+      {
+        field: 'linked_section',
+        headerName: 'Section',
+        headerClassName: 'faims-record-link--header',
+        minWidth: 150,
+        flex: 0.15,
+        valueGetter: (params: GridCellParams) => params.row.link.section,
+        renderCell: (params: GridCellParams) => (
+          <Typography variant={'body2'} fontWeight={'bold'}>
+            <Link component={NavLink} to={params.row.route} underline={'none'}>
+              {params.value}
+            </Link>
+          </Typography>
+        ),
+      },
+      {
+        field: 'linked_field',
+        headerName: 'Field',
+        headerClassName: 'faims-record-link--header',
+        minWidth: 150,
+        flex: 0.15,
+        valueGetter: (params: GridCellParams) => params.row.link.field_label,
+        renderCell: (params: GridCellParams) => (
+          <Typography variant={'body2'} fontWeight={'bold'}>
+            <Link component={NavLink} to={params.row.route} underline={'none'}>
+              {params.value}
+            </Link>
+          </Typography>
+        ),
+      },
+      {
+        field: 'lastUpdatedBy',
+        headerName: 'Last Updated By',
+        headerClassName: 'faims-record-link--header',
+        minWidth: 300,
+        flex: 0.2,
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        headerName: 'Actions',
+        headerClassName: 'faims-record-link--header',
+        flex: 0.1,
+        minWidth: 100,
+        getActions: (params: GridRowParams) => [
+          <GridActionsCellItem
+            icon={<EditIcon color={'primary'} />}
+            onClick={() => {
+              alert('go to record>section>field');
+            }}
+            label="Edit link"
+            showInMenu
+          />,
+        ],
+      },
+    ];
     return (
       <Box component={Paper} elevation={0}>
         <DataGrid
@@ -280,20 +188,21 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             Footer: RecordLinksToolbar,
           }}
           columns={columns}
-          initialState={{
-            sorting: {
-              sortModel: props.is_field
-                ? [{field: 'section', sort: 'asc'}]
-                : undefined,
-            },
-          }}
+          // initialState={{
+          //   sorting: {
+          //     sortModel: [{field: 'lastUpdatedBy', sort: 'asc'}],
+          //   },
+          // }}
           rows={props.record_links}
           getRowId={getRowId}
+          className={'test'}
           sx={{
             borderLeft: 'none',
             borderRight: 'none',
             borderTop: 'none',
-            borderRadius: '0',
+            '& .MuiDataGrid-columnHeaders': {
+              borderRadius: 0,
+            },
           }}
         />
       </Box>

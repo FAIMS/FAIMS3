@@ -1,44 +1,58 @@
 import React from 'react';
 import {RecordID} from '../../../../datamodel/core';
 
-export interface LinkProps {
-  relation_type_vocabPair?: string[];
+export interface FieldLinkProps {
   record_id: RecordID;
   hrid: string | number;
   type: string;
   route: string;
-
-  section?: string;
-  field_id?: string;
-  field_label?: string;
+  section: string;
+  field_id: string;
+  field_label: string;
+}
+// model as RECORD --> FIELD
+export interface RecordLinkProps {
+  record_id: RecordID;
+  hrid: string | number;
+  type: string;
+  route: string;
+  relation_type_vocabPair?: string[];
+  link: FieldLinkProps;
   lastUpdatedBy?: string;
-
-  link?: LinkProps;
 }
 export interface SortedDataType {
-  [key: string]: Array<LinkProps>;
+  [key: string]: Array<RecordLinkProps>;
 }
 
 export interface RelationshipsComponentProps {
-  related_records: Array<LinkProps> | null;
-  related_links_from_fields: Array<LinkProps> | null;
+  record_to_field_links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
   record_hrid: string;
   record_type: string;
 }
 
 export interface FieldRelationshipComponentProps {
-  field_level_links: Array<LinkProps> | null;
+  field_level_links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
   record_hrid: string;
   record_type: string;
   field_label: string;
 }
 export interface RecordLinksComponentProps {
-  record_links: Array<LinkProps> | null;
-  is_field: boolean;
+  record_links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
 }
 
 export interface DataGridLinksComponentProps {
-  links: Array<LinkProps> | null;
-  show_actions: boolean;
+  links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
+  record_hrid: string;
+  record_type: string;
+  field_label: string;
 }
-export const PARENT_CHILD_VOCAB = ['has child', 'is parent'];
+export const PARENT_CHILD_VOCAB = [
+  'is child of',
+  'has child',
+  'is parent of',
+  'has parent',
+];

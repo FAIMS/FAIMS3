@@ -79,13 +79,18 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import CircularLoading from '../components/ui/circular_loading';
 import UnpublishedWarning from '../components/record/unpublished_warning';
+import {related_records, related_links_from_fields, field_level_links} from '../../utils/fixtures';
+import InheritedDataComponent from '../components/record/inherited_data';
 import {
-  related_records,
-  related_links_from_fields,
-  field_level_links,
-} from '../../utils/fixtures';
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+} from '../components/record/accordion';
+import LinkIcon from '@mui/icons-material/Link';
+import RecordLinkComponent from '../components/record/relationships/record_links';
 
 interface RecordDataTypes {
   project_id: ProjectID;
@@ -118,90 +123,95 @@ function RecordData(props: RecordDataTypes) {
   };
   return (
     <Box bgcolor={grey[100]}>
-      <UnpublishedWarning />
-      <DraftSyncStatus
-        last_saved={props.draftLastSaved}
-        is_saving={props.isDraftSaving}
-        error={props.draftError}
-      />
-      <RelationshipsViewComponent
-        related_records={related_records()}
-        related_links_from_fields={related_links_from_fields(
-          props.record_id,
-          props.hrid,
-          props.record_type
-        )}
-        record_hrid={props.hrid}
-        record_type={props.record_type}
-      />
-      <Box sx={{mt: 2}}>
-        <TabContext value={dataTab}>
-          <TabList onChange={handleDataTabChange}>
-            <Tab label={'Data'} value={'1'} />
-            <Tab label={'Inherited Data'} value={'2'} />
-            <Tab label={'Field-level links component'} value={'3'} />
-          </TabList>
-          <TabPanel value={'1'} sx={{p: 0}}>
-            <Grid
-              container
-              direction="row"
-              justifyContent="flex-start"
-              alignItems="stretch"
+      <TabContext value={dataTab}>
+        <TabList onChange={handleDataTabChange}>
+          <Tab label={'Data'} value={'1'} />
+          <Tab label={'Review'} value={'2'} />
+          <Tab label={'Form-field widgets'} value={'3'} />
+        </TabList>
+        <TabPanel value={'1'} sx={{px: 0}}>
+          <UnpublishedWarning />
+          <DraftSyncStatus
+            last_saved={props.draftLastSaved}
+            is_saving={props.isDraftSaving}
+            error={props.draftError}
+          />
+          <RelationshipsViewComponent
+            record_to_field_links={related_links_from_fields(
+              props.record_id,
+              props.hrid,
+              props.record_type
+            )}
+            record_id={props.record_id}
+            record_hrid={props.hrid}
+            record_type={props.record_type}
+          />
+          <Accordion defaultExpanded={true}>
+            <AccordionSummary
+              aria-controls="form-accordion-content"
+              id="form-accordion"
             >
-              <Grid item lg={8}>
-                <Box
-                  component={Paper}
-                  elevation={0}
-                  p={{xs: 0, sm: 1, md: 2, lg: 2}}
-                >
-                  <RecordForm
-                    project_id={props.project_id}
-                    record_id={props.record_id}
-                    revision_id={props.revision_id}
-                    ui_specification={props.ui_specification}
-                    draft_id={props.draft_id}
-                    metaSection={props.metaSection}
-                    isSyncing={props.isSyncing}
-                    handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                    handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                    handleSetDraftError={props.handleSetDraftError}
-                  />
-                </Box>
-              </Grid>
-              <Grid item>
-                <Box component={Paper} elevation={0} bgcolor={grey[100]}></Box>
-              </Grid>
-            </Grid>
-          </TabPanel>
-          <TabPanel value={'2'} sx={{p: 0}}>
-            <Box component={Paper} elevation={0} sx={{p: 1}}>
-              <CircularLoading label={'loading data inherited from parent'} />
-            </Box>
-          </TabPanel>
-          <TabPanel value={'3'} sx={{p: 0}}>
-            <Box component={Paper} elevation={0} sx={{p: 1}}>
-              <Box
-                bgcolor={grey[100]}
-                p={1}
-                m={1}
-                component={Paper}
-                variant={'outlined'}
+              <ListAltIcon sx={{mr: 1}} />
+              <Typography>Form</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid
+                container
+                direction="row"
+                justifyContent="flex-start"
+                alignItems="stretch"
               >
-                <FieldRelationshipComponent
-                  field_level_links={field_level_links(
-                    props.record_id,
-                    props.hrid,
-                    props.record_type
-                  )}
-                  record_hrid={props.hrid}
-                  record_type={props.record_type}
-                  field_label={'FIELD: PH'}
-                />
-              </Box>
-            </Box>
-          </TabPanel>
-        </TabContext>
-      </Box>
+                <Grid item lg={8}>
+                  <Box
+                    component={Paper}
+                    elevation={0}
+                    p={{xs: 0, sm: 1, md: 2, lg: 2}}
+                  >
+                    <RecordForm
+                      project_id={props.project_id}
+                      record_id={props.record_id}
+                      revision_id={props.revision_id}
+                      ui_specification={props.ui_specification}
+                      draft_id={props.draft_id}
+                      metaSection={props.metaSection}
+                      isSyncing={props.isSyncing}
+                      handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+                      handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+                      handleSetDraftError={props.handleSetDraftError}
+                    />
+                  </Box>
+                </Grid>
+                <Grid item>
+                  <Box
+                    component={Paper}
+                    elevation={0}
+                    bgcolor={grey[100]}
+                  ></Box>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </TabPanel>
+        <TabPanel value={'2'} sx={{p: 0}}>
+          TBD
+        </TabPanel>
+        <TabPanel value={'3'} sx={{p: 2}}>
+          <Box component={Paper} elevation={0} sx={{p: 1, mb: 3}}>
+            <InheritedDataComponent />
+          </Box>
+          <FieldRelationshipComponent
+            field_level_links={field_level_links(
+              props.record_id,
+              props.hrid,
+              props.record_type
+            )}
+            record_id={props.record_id}
+            record_hrid={props.hrid}
+            record_type={props.record_type}
+            field_label={'FIELD: EH'}
+          />
+        </TabPanel>
+      </TabContext>
     </Box>
   );
 }
