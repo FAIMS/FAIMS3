@@ -135,6 +135,7 @@ const defaultColumns: GridColDef[] = [
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
+  const record_id=props.form.values['_id']
   const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple = props.multiple !== undefined ? props.multiple : false;
@@ -177,6 +178,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           project_id,
           props.related_type,
           props.relation_type,
+          record_id,
           relationshipPair
         );
         const records = excludes_related_record(
@@ -196,25 +198,26 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     let mounted = true;
     (async () => {
       if (project_id !== undefined && mounted) {
+        
         const records_info = await get_RelatedFields_for_field(
           project_id,
           props.field.name,
           props.form.values,
-          props.form.values['_id']
+          record_id
         );
         setRecordsInformation(records_info);
 
         if (records_info.length > 0 && columns.length === 0) {
           const newColumns = columns;
           // this is the code to dispaly the values from child, TO TO: disucssed in detail about how to display it
-          //   Object.keys(records_info[0]).map((key: string) =>
-          //     key.includes('newfield')
-          //        ?newColumns.push({
-          //           field: key,
-          //           flex: 0.2,
-          //           minWidth: 100,
-          //         }):key
-          //   );
+            // Object.keys(records_info[0]).map((key: string) =>
+            //   key.includes('newfield')
+            //      ?newColumns.push({
+            //         field: key,
+            //         flex: 0.2,
+            //         minWidth: 100,
+            //       }):key
+            // );
           Setcolumns(newColumns);
         }
       }
@@ -282,17 +285,17 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     setOptions(records);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
+    SetSelectedRecord(null)
     SetUpdated(uuidv4());
     //call the function to trigger the child to be updated??To be coninued
   };
 
   const remove_related_child = (
-    record_id: string,
-    hrid: string,
-    field: string,
-    current_record_id: string
+    record_id: string |null|undefined,
+    hrid: string |null|undefined,
   ) => {
-    if (record_id === null) return;
+    if (record_id === null || record_id === undefined) return;
+    if (hrid === null || hrid === undefined) hrid=record_id
     const child_record = {
       project_id: project_id,
       record_id: record_id,
@@ -316,9 +319,15 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
 
     const records = options;
     records.push(child_record);
+    // records=excludes_related_record(
+    //   multiple,
+    //   props.form.values[field_name],
+    //   records
+    // )
     setOptions(records);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
+    SetSelectedRecord(null)
     SetUpdated(uuidv4());
     //call the function to trigger the child to be updated??To be coninued
   };
@@ -361,7 +370,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           size={'small'}
           // multiple={multiple}
           id={props.id ?? 'asynchronous-demo'}
-          name={field_name}
+          name={field_name+'select'}
           component={Autocomplete}
           isOptionEqualToValue={(
             option: RecordReference,
@@ -378,8 +387,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           options={options}
           defaultValue={undefined}
           disabled={disbaled}
-          onChange={(event: any) => {
-            SetSelectedRecord(options[event.target.value]);
+          onChange={(event: any,values:any) => {
+            console.error('select',values)
+            SetSelectedRecord(values);
           }}
           value={selectedRecord}
           renderInput={(params: any) => (
@@ -432,7 +442,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               variant="outlined"
               color="primary"
               startIcon={<AddIcon />}
-              onClick={() => remove_related_child(selectedRecord?.record_id,selectedRecord?.record_label,field_name,props.form.values['_id'])}
+              onClick={() => remove_related_child(multiple?props.form.values[field_name][0].record_id:props.form.values[field_name].record_id,multiple?props.form.values[field_name][0].record_label:props.form.values[field_name].record_label)}
             >
               Remove
             </Button> */}

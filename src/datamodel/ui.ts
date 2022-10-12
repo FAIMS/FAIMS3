@@ -69,6 +69,7 @@ export interface RecordMetadata {
   deleted: boolean;
   hrid: string;
   type: FAIMSTypeName;
+  relationship?: Relationship;
 }
 
 export type RecordMetadataList = {

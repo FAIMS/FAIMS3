@@ -100,11 +100,12 @@ export default function DataGridLinksComponent(
     []
   );
   function handleUnlink() {
+    console.error('Unlink',modalLink)
     props.handleUnlink(
       modalLink.recordB_id,
-      modalLink.hrid,
-      modalLink.field,
-      modalLink.recordA_id
+      modalLink.recordB_hrid
+      // modalLink.field,
+      // modalLink.recordA_id
     );
     setModalOpen(false);
   }
