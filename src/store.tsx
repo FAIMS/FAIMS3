@@ -168,10 +168,14 @@ const StateProvider = (props: any) => {
   useEffect(() => {
     initialize()
       .then(() =>
-        dispatch({
-          type: ActionType.INITIALIZED,
-          payload: undefined,
-        })
+        setTimeout(
+          () =>
+            dispatch({
+              type: ActionType.INITIALIZED,
+              payload: undefined,
+            }),
+          10000
+        )
       )
       .catch(err => {
         console.log('Could not initialize: ', err);
