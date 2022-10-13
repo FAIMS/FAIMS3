@@ -172,7 +172,7 @@ export function UserRoleList(props: any) {
                 </ListItemSecondaryAction>
               )}
             </ListItem>
-            <Divider />
+            <Divider key={user + index + 'divider'} />
           </>
         ))}
       </List>
@@ -197,7 +197,7 @@ export function UserLists(props: any) {
               <ListItemText secondary={user} />
               {select ? <AddIcon /> : <DeleteIcon />}
             </ListItem>
-            <Divider />
+            <Divider key={user + index + 'divider'} />
           </>
         ))}
       </List>
