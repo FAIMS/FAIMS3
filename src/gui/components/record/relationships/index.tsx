@@ -28,6 +28,7 @@ import RecordLinkComponent from './record_links';
 import Typography from '@mui/material/Typography';
 import {Accordion, AccordionSummary, AccordionDetails} from '../accordion';
 import LinkIcon from '@mui/icons-material/Link';
+import {grey} from "@mui/material/colors";
 
 export default function RelationshipsViewComponent(
   props: RelationshipsComponentProps
@@ -41,24 +42,20 @@ export default function RelationshipsViewComponent(
    */
 
   return (
-    <Box>
       <Accordion>
         <AccordionSummary
-          aria-controls="links-accordion-content"
-          id="links-accordion"
+            aria-controls="links-accordion-content"
+            id="links-accordion"
         >
           <LinkIcon sx={{mr: 1}} />
           <Typography>Links</Typography>
         </AccordionSummary>
-        <AccordionDetails sx={{p: 0}}>
-          <Box>
+        <AccordionDetails sx={{backgroundColor:grey[100]}}>
             <RecordLinkComponent
-              record_links={props.record_to_field_links}
-              record_id={props.record_id}
+                record_links={props.record_to_field_links}
+                record_id={props.record_id}
             />
-          </Box>
         </AccordionDetails>
       </Accordion>
-    </Box>
   );
 }

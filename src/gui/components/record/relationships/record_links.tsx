@@ -181,12 +181,12 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           getRowId={getRowId}
           className={'test'}
           sx={{
-            borderLeft: 'none',
-            borderRight: 'none',
-            borderTop: 'none',
-            '& .MuiDataGrid-columnHeaders': {
-              borderRadius: 0,
-            },
+            // borderLeft: 'none',
+            // borderRight: 'none',
+            // borderTop: 'none',
+            // '& .MuiDataGrid-columnHeaders': {
+            //   borderRadius: 0,
+            // },
           }}
         />
       </Box>

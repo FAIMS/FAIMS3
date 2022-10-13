@@ -25,9 +25,18 @@ import {ProjectUIModel} from '../../../datamodel/ui';
 import RecordDraftState from '../../../sync/draft-state';
 import {getComponentFromFieldConfig} from './fields';
 import {Annotation, AnnotationField} from './Annotation';
-import {Box, Grid, Divider, Paper, Alert} from '@mui/material';
+import {
+  Box,
+  Grid,
+  Divider,
+  Paper,
+  Alert,
+  IconButton,
+  Collapse,
+} from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
-import AnnotationComponent from './new_annotation';
+import NoteIcon from '@mui/icons-material/Note';
+import {grey} from '@mui/material/colors';
 // import makeStyles from '@mui/styles/makeStyles';
 // import {useTheme} from '@mui/material/styles';
 type ViewProps = {
@@ -69,11 +78,15 @@ function SingleComponent(props: SingleComponentProps) {
         undefined
       ? fieldConfig['component-parameters']['FormControlLabelProps']['children']
       : fieldName;
+  const [expanded, setExpanded] = React.useState(false);
 
+  const handleExpandClick = () => {
+    setExpanded(!expanded);
+  };
   return (
-    <Box key={fieldName + props.index} mt={2} mb={6}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={12} md={8}>
+    <Box key={fieldName + props.index} mt={4} mb={2}>
+      <Grid container spacing={1}>
+        <Grid item xs>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
@@ -81,31 +94,53 @@ function SingleComponent(props: SingleComponentProps) {
             props.isSyncing
           )}
         </Grid>
+
         {conflictfields !== null &&
           conflictfields !== undefined &&
           conflictfields.includes(fieldName) && (
-            <Grid item xs={12} sm={12} md={4}>
+            <Grid item xs={'auto'}>
               <EditConflictDialog
                 label={label}
                 handleChangeTab={props.handleChangeTab}
               />
             </Grid>
           )}
+
         {props.annotation !== undefined &&
           fields[fieldName].meta !== undefined &&
           fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
           fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
           fields[fieldName]['component-name'] !== 'RandomStyle' && (
-            <Grid item sm={12} xs={12} md={4}>
-              <AnnotationComponent
-                key={'annotation' + fieldName + 'box'}
-                fieldName={fieldName}
-                field={fields[fieldName]}
-                annotation={props.annotation}
-                handerannoattion={props.handerannoattion}
-                isclicked={isclicked}
-              />
-            </Grid>
+            <React.Fragment>
+              <Grid item xs={'auto'}>
+                <IconButton
+                  color={'info'}
+                  size={'large'}
+                  onClick={handleExpandClick}
+                >
+                  <NoteIcon />
+                </IconButton>
+              </Grid>
+              <Grid item xs={12}>
+                <Collapse in={expanded} timeout="auto" unmountOnExit>
+                  <Box
+                    variant={'outlined'}
+                    component={Paper}
+                    elevation={0}
+                    sx={{p: 2}}
+                    bgcolor={grey[100]}
+                  >
+                    <AnnotationField
+                      key={'annotation-' + props.fieldName + '-box'}
+                      fieldName={fieldName}
+                      field={fields[fieldName]}
+                      annotation={props.annotation}
+                      handerannoattion={props.handerannoattion}
+                    />
+                  </Box>
+                </Collapse>{' '}
+              </Grid>
+            </React.Fragment>
           )}
       </Grid>
     </Box>

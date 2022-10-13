@@ -82,7 +82,10 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import CircularLoading from '../components/ui/circular_loading';
 import UnpublishedWarning from '../components/record/unpublished_warning';
-import {related_links_from_fields, field_level_links} from '../../utils/fixtures';
+import {
+  related_links_from_fields,
+  field_level_links,
+} from '../../utils/fixtures';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {
   Accordion,
@@ -127,7 +130,7 @@ function RecordData(props: RecordDataTypes) {
           <Tab label={'Review'} value={'2'} />
           <Tab label={'Form-field widgets'} value={'3'} />
         </TabList>
-        <TabPanel value={'1'} sx={{px: 0}}>
+        <TabPanel value={'1'} sx={{p: 0}}>
           <UnpublishedWarning />
           <DraftSyncStatus
             last_saved={props.draftLastSaved}
@@ -152,7 +155,7 @@ function RecordData(props: RecordDataTypes) {
               <ListAltIcon sx={{mr: 1}} />
               <Typography>Form</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{backgroundColor: grey[100]}}>
               <Grid
                 container
                 direction="row"
@@ -164,6 +167,7 @@ function RecordData(props: RecordDataTypes) {
                     component={Paper}
                     elevation={0}
                     p={{xs: 0, sm: 1, md: 2, lg: 2}}
+                    variant={'outlined'}
                   >
                     <RecordForm
                       project_id={props.project_id}
@@ -179,13 +183,14 @@ function RecordData(props: RecordDataTypes) {
                     />
                   </Box>
                 </Grid>
-                <Grid item>
-                  <Box
-                    component={Paper}
-                    elevation={0}
-                    bgcolor={grey[100]}
-                  ></Box>
-                </Grid>
+                {/*<Grid item lg={4}>*/}
+                {/*  <Box*/}
+                {/*      component={Paper}*/}
+                {/*      elevation={0}*/}
+                {/*      bgcolor={grey[100]}*/}
+                {/*      height={'100%'}*/}
+                {/*  ></Box>*/}
+                {/*</Grid>*/}
               </Grid>
             </AccordionDetails>
           </Accordion>

@@ -247,7 +247,6 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
                   handerannoattion={() => {
                     console.log('annotation');
                   }}
-                  isclicked={true}
                   disabled={true}
                   isxs={false}
                 />

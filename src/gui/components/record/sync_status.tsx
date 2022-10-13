@@ -24,7 +24,6 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
       sx={{
         width: '100%',
         textAlign: 'right',
-        borderBottom: 'solid 1px ' + grey[300],
       }}
     >
       {props.error ? (
@@ -32,7 +31,7 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
           A local draft could not be saved to your device: {props.error}
         </Alert>
       ) : (
-        <Box sx={{backgroundColor: theme.palette.grey[200]}} p={1}>
+        <Box sx={{backgroundColor: theme.palette.primary.main, color:'white'}} p={1}>
           {props.is_saving ? (
             <div
               style={{

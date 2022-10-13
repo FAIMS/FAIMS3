@@ -27,10 +27,9 @@ import NoteIcon from '@mui/icons-material/Note';
 
 import {UpButton, DownButton} from '../project/tabs/ProjectButton';
 import {getComponentByName} from '../../component_registry';
-import {Grid} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 export function Annotation(props: any) {
-  const {field, isclicked, setIsClick} = props;
+  const {field, setIsClick} = props;
   const [subisclicked, setIsclicks] = useState(false);
 
   useEffect(() => {
@@ -99,7 +98,6 @@ export function Annotation(props: any) {
 }
 
 type AnnotationFieldProp = {
-  isclicked: boolean;
   fieldName: string;
   field: any;
   handerannoattion: any;
@@ -110,7 +108,7 @@ type AnnotationFieldProp = {
 };
 
 export function AnnotationField(props: AnnotationFieldProp) {
-  const {field, fieldName, handerannoattion, isclicked} = props;
+  const {field, fieldName, handerannoattion} = props;
   const disabled = props.disabled ?? false; // this is disabled on conflict tab , default value is false
   const isxs = props.isxs ?? true; // this is enabled on conflict tab , default value is true
   const [annotation, setAnnotation] = useState(
@@ -148,49 +146,44 @@ export function AnnotationField(props: AnnotationFieldProp) {
   };
 
   const isannotationshow =
-    isclicked && field.meta !== undefined && field.meta.annotation !== false;
+    field.meta !== undefined && field.meta.annotation !== false;
   const isuncertityshow =
     field.meta !== undefined &&
     field.meta['uncertainty'] !== undefined &&
-    field['meta']['uncertainty']['include'] &&
-    isclicked;
+    field['meta']['uncertainty']['include'] ;
   return (
-    <Grid container spacing={1}>
+    <Box>
       {isannotationshow && (
-        <Grid item xs={12}>
           <Field
-            component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
-            name={fieldName + 'annotation'}
-            id={props.fieldName + 'annotation'}
-            value={annotation}
-            variant="outlined"
-            onChange={handlerchangesAnnotation}
-            InputProps={{type: 'text', multiline: true, minRows: 4}}
-            label={field['meta']['annotation_label']}
-            InputLabelProps={{shrink: true}}
-            disabled={disabled}
-            fullWidth
-            sx={{backgroundColor: 'white'}}
+              component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
+              name={fieldName + 'annotation'}
+              id={props.fieldName + 'annotation'}
+              value={annotation}
+              variant="outlined"
+              onChange={handlerchangesAnnotation}
+              InputProps={{type: 'text', multiline: true, minRows: 4}}
+              label={field['meta']['annotation_label']}
+              InputLabelProps={{shrink: true}}
+              disabled={disabled}
+              fullWidth
+              sx={{backgroundColor: 'white'}}
           />
-        </Grid>
       )}
       {isuncertityshow && (
-        <Grid item xs={12} sm={12}>
           <Field
-            component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
-            name={props.fieldName + 'uncertainty'}
-            id={props.fieldName + 'uncertainty'}
-            type="checkbox"
-            value={uncertainty}
-            variant="outlined"
-            FormControlLabelProps={{
-              label: field['meta']['uncertainty']['label'],
-            }}
-            onChange={handlerchangesUncertainty}
-            disabled={disabled}
+              component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
+              name={props.fieldName + 'uncertainty'}
+              id={props.fieldName + 'uncertainty'}
+              type="checkbox"
+              value={uncertainty}
+              variant="outlined"
+              FormControlLabelProps={{
+                label: field['meta']['uncertainty']['label'],
+              }}
+              onChange={handlerchangesUncertainty}
+              disabled={disabled}
           />
-        </Grid>
       )}
-    </Grid>
+    </Box>
   );
 }
