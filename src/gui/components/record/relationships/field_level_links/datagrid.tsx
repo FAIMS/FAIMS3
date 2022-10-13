@@ -41,11 +41,10 @@ import {
   GridRowParams,
 } from '@mui/x-data-grid';
 import {DataGridLinksComponentProps, PARENT_CHILD_VOCAB} from '../types';
-import ArticleIcon from '@mui/icons-material/Article';
-import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
 import {RecordID} from '../../../../../datamodel/core';
+import RecordRouteDisplay from '../../../ui/record_link';
 
 const style = {
   position: 'absolute' as const,
@@ -105,24 +104,10 @@ export default function DataGridFieldLinksComponent(
     route: any
   ) {
     return record_id === current_record_id ? (
-      <Typography variant={'body2'}>
-        <Grid container direction="row" alignItems="center" component={'span'}>
-          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} /> This record
-        </Grid>
-      </Typography>
+        <RecordRouteDisplay>This record</RecordRouteDisplay>
     ) : (
       <Typography variant={'body2'} fontWeight={'bold'}>
-        <Link component={NavLink} to={route} underline={'none'}>
-          <Grid
-            container
-            direction="row"
-            alignItems="center"
-            component={'span'}
-          >
-            <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
-            {type + ' ' + hrid}
-          </Grid>
-        </Link>
+        <RecordRouteDisplay link={route}>{type + ' ' + hrid}</RecordRouteDisplay>
       </Typography>
     );
   }
@@ -207,20 +192,19 @@ export default function DataGridFieldLinksComponent(
                     sx={{mb: 1}}
                     icon={<LinkOffIcon />}
                   >
-                    <Box sx={{overflowX: 'scroll'}}>
+                    <Box
+                      sx={{
+                        overflowX: 'scroll',
+                        width: '100%',
+                        mb: 2,
+                        whitespace: 'nowrap',
+                      }}
+                    >
                       Do you wish to remove the link <br />
                       <br />
-                      <Typography variant={'body2'} fontWeight={'bold'}>
-                        <Grid
-                          container
-                          direction="row"
-                          alignItems="center"
-                          component={'span'}
-                        >
-                          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
-                          {modalLink.type} {modalLink.hrid}
-                        </Grid>
-                      </Typography>
+                      <RecordRouteDisplay>
+                        {modalLink.type} {modalLink.hrid}
+                      </RecordRouteDisplay>
                       <Chip
                         component={'span'}
                         size={'small'}
@@ -234,19 +218,10 @@ export default function DataGridFieldLinksComponent(
                         sx={{m: 1}}
                         label={modalLink.relation_type_vocabPair[0]}
                       />
-                      <Typography variant={'body2'} fontWeight={'bold'}>
-                        <Grid
-                          container
-                          direction="row"
-                          alignItems="center"
-                          component={'span'}
-                        >
-                          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />
-                          &nbsp;
-                          {modalLink.link.type}&nbsp;{modalLink.link.hrid}
-                          &nbsp;&gt;&nbsp;{modalLink.link.field_label}?
-                        </Grid>
-                      </Typography>
+                      <RecordRouteDisplay>
+                        {modalLink.link.type}&nbsp;{modalLink.link.hrid}
+                        &nbsp;&gt;&nbsp;{modalLink.link.field_label}
+                      </RecordRouteDisplay>
                     </Box>
                   </Alert>
                   <ButtonGroup fullWidth disableElevation>

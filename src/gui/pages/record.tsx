@@ -82,15 +82,13 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import CircularLoading from '../components/ui/circular_loading';
 import UnpublishedWarning from '../components/record/unpublished_warning';
-import {related_records, related_links_from_fields, field_level_links} from '../../utils/fixtures';
+import {related_links_from_fields, field_level_links} from '../../utils/fixtures';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
 } from '../components/record/accordion';
-import LinkIcon from '@mui/icons-material/Link';
-import RecordLinkComponent from '../components/record/relationships/record_links';
 
 interface RecordDataTypes {
   project_id: ProjectID;

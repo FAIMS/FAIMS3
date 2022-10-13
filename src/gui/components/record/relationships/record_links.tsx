@@ -7,11 +7,11 @@ import {
   GridRowParams,
 } from '@mui/x-data-grid';
 import {NavLink} from 'react-router-dom';
-import ArticleIcon from '@mui/icons-material/Article';
 import EditIcon from '@mui/icons-material/Edit';
 import {RecordLinksComponentProps, PARENT_CHILD_VOCAB} from './types';
 import {RecordLinksToolbar} from './toolbars';
 import {RecordID} from '../../../../datamodel/core';
+import RecordRouteDisplay from "../../ui/record_link";
 
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
@@ -42,25 +42,9 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
     route: any
   ) {
     return record_id === current_record_id ? (
-      <Typography variant={'body2'}>
-        <Grid container direction="row" alignItems="center" component={'span'}>
-          <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} /> This record
-        </Grid>
-      </Typography>
+        <RecordRouteDisplay>This record</RecordRouteDisplay>
     ) : (
-      <Typography variant={'body2'} fontWeight={'bold'}>
-        <Link component={NavLink} to={route} underline={'none'}>
-          <Grid
-            container
-            direction="row"
-            alignItems="center"
-            component={'span'}
-          >
-            <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
-            {type + ' ' + hrid}
-          </Grid>
-        </Link>
-      </Typography>
+        <RecordRouteDisplay link={route}>{type + ' ' + hrid}</RecordRouteDisplay>
     );
   }
 

@@ -2,11 +2,7 @@ import React, {useEffect} from 'react';
 import CreateLinkComponent from '../create_links';
 import {Box} from '@mui/material';
 
-
-import {
-  FieldRelationshipComponentProps,
-  SortedDataType,
-} from '../types';
+import {FieldRelationshipComponentProps} from '../types';
 import DataGridFieldLinksComponent from './datagrid';
 const relationship_types = [
   {link: 'is below', reciprocal: 'is above'},

@@ -32,9 +32,10 @@ import {
   Alert,
   AlertTitle,
   Divider,
-  Container,
+  MobileStepper,
 } from '@mui/material';
-
+import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
 
@@ -856,6 +857,65 @@ class RecordForm extends React.Component<
                         />
                       </Grid>
                       <Grid item sm={12} xs={12} md={12}>
+                        <MobileStepper
+                          variant="text"
+                          steps={
+                            ui_specification.viewsets[viewsetName].views.length
+                          }
+                          position="static"
+                          sx={{
+                            borderTop: 'solid 1px #eee',
+                            borderBottom: 'solid 1px #eee',
+                          }}
+                          activeStep={this.state.activeStep}
+                          nextButton={
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                if (DEBUG_APP) {
+                                  console.log(this.state.activeStep);
+                                }
+                                const stepnum = this.state.activeStep + 1;
+                                if (DEBUG_APP) {
+                                  console.log(
+                                    ui_specification.viewsets[viewsetName]
+                                      .views[stepnum]
+                                  );
+                                }
+                                this.setState({
+                                  activeStep: stepnum,
+                                  view_cached:
+                                    ui_specification.viewsets[viewsetName]
+                                      .views[stepnum],
+                                });
+                              }}
+                              disabled={is_final_view}
+                            >
+                              Next
+                              <KeyboardArrowRight />
+                            </Button>
+                          }
+                          backButton={
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                const stepnum = this.state.activeStep - 1;
+                                this.setState({
+                                  activeStep: stepnum,
+                                  view_cached:
+                                    ui_specification.viewsets[viewsetName]
+                                      .views[stepnum],
+                                });
+                              }}
+                              disabled={this.state.activeStep === 0}
+                            >
+                              <KeyboardArrowLeft />
+                              Back
+                            </Button>
+                          }
+                        />
+                      </Grid>
+                      <Grid item sm={12} xs={12} md={12}>
                         <Grid container spacing={2}>
                           <Grid item md={12}>
                             <ButtonGroup
@@ -863,114 +923,36 @@ class RecordForm extends React.Component<
                               disableElevation
                               aria-label="contained primary button group"
                             >
-                              <Button variant="contained">Publish</Button>
-                              {is_final_view ? (
-                                <Button
-                                  type="submit"
-                                  color={
-                                    formProps.isSubmitting
-                                      ? undefined
-                                      : 'primary'
-                                  }
-                                  disableElevation
-                                  disabled={formProps.isSubmitting}
-                                >
-                                  {formProps.isSubmitting
-                                    ? !(this.props.revision_id === undefined)
-                                      ? 'Working...'
-                                      : 'Working...'
-                                    : !(this.props.revision_id === undefined)
-                                    ? 'Publish and Close'
-                                    : window.location.search.includes('link=')
-                                    ? // &&
-                                      //   ui_specification.viewsets[viewsetName]
-                                      //     .submit_label !== undefined
-                                      'Publish and Close'
-                                    : // ui_specification.viewsets[viewsetName]
-                                      //     .submit_label
-                                      'Publish and Close'}
-                                  {formProps.isSubmitting && (
-                                    <CircularProgress
-                                      size={24}
-                                      style={{
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        marginTop: -12,
-                                        marginLeft: -12,
-                                      }}
-                                    />
-                                  )}
-                                </Button>
-                              ) : (
-                                ''
-                              )}
-                            </ButtonGroup>
-                            {this.state.activeStep <
-                              ui_specification.viewsets[viewsetName].views
-                                .length -
-                                1 && (
-                              <ButtonGroup
-                                color="primary"
-                                aria-label="contained primary button group"
+                              <Button color="primary">
+                                Publish and continue editing
+                              </Button>
+                              <Button
+                                type="submit"
+                                color={
+                                  formProps.isSubmitting ? undefined : 'primary'
+                                }
+                                variant={'contained'}
+                                disableElevation
+                                disabled={formProps.isSubmitting}
                               >
-                                <Button
-                                  variant="outlined"
-                                  color="primary"
-                                  onClick={() => {
-                                    if (DEBUG_APP) {
-                                      console.log(this.state.activeStep);
-                                    }
-                                    const stepnum = this.state.activeStep + 1;
-                                    if (DEBUG_APP) {
-                                      console.log(
-                                        ui_specification.viewsets[viewsetName]
-                                          .views[stepnum]
-                                      );
-                                    }
-
-                                    this.setState({
-                                      activeStep: stepnum,
-                                      view_cached:
-                                        ui_specification.viewsets[viewsetName]
-                                          .views[stepnum],
-                                    });
-                                  }}
-                                >
-                                  {'  '}
-                                  Continue{' '}
-                                </Button>
-                                <Button
-                                  type="submit"
-                                  color={
-                                    formProps.isSubmitting
-                                      ? undefined
-                                      : 'primary'
-                                  }
-                                  variant="outlined"
-                                  disableElevation
-                                  disabled={formProps.isSubmitting}
-                                >
-                                  {formProps.isSubmitting
-                                    ? !(this.props.revision_id === undefined)
-                                      ? 'Working...'
-                                      : 'Working...'
-                                    : 'Publish and Close'}
-                                  {formProps.isSubmitting && (
-                                    <CircularProgress
-                                      size={24}
-                                      style={{
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        marginTop: -12,
-                                        marginLeft: -12,
-                                      }}
-                                    />
-                                  )}
-                                </Button>
-                              </ButtonGroup>
-                            )}
+                                {formProps.isSubmitting
+                                  ? 'Working'
+                                  : 'Publish and Close Record'}
+                                {formProps.isSubmitting && (
+                                  <CircularProgress
+                                    size={24}
+                                    style={{
+                                      position: 'absolute',
+                                      top: '50%',
+                                      left: '50%',
+                                      marginTop: -12,
+                                      marginLeft: -12,
+                                    }}
+                                  />
+                                )}
+                              </Button>
+                              <Divider />
+                            </ButtonGroup>
                           </Grid>
                           <Grid item md={12}>
                             <Alert severity={'info'} variant="outlined">

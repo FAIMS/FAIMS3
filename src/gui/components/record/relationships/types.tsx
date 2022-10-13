@@ -20,9 +20,6 @@ export interface RecordLinkProps {
   link: FieldLinkProps;
   lastUpdatedBy?: string;
 }
-export interface SortedDataType {
-  [key: string]: Array<RecordLinkProps>;
-}
 
 export interface RelationshipsComponentProps {
   record_to_field_links: Array<RecordLinkProps> | null;
