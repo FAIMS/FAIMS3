@@ -164,11 +164,11 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
       ? data['fields'][fieldName]['annotations']
       : null;
   const isannotationshow =
-      fieldConfig.meta !== undefined && fieldConfig.meta.annotation !== false;
+    fieldConfig.meta !== undefined && fieldConfig.meta.annotation !== false;
   const isuncertityshow =
-      fieldConfig.meta !== undefined &&
-      fieldConfig.meta['uncertainty'] !== undefined &&
-      fieldConfig['meta']['uncertainty']['include'];
+    fieldConfig.meta !== undefined &&
+    fieldConfig.meta['uncertainty'] !== undefined &&
+    fieldConfig['meta']['uncertainty']['include'];
 
   return ['warning', 'delete', 'clear', 'automerge'].includes(styletype) ? (
     <Box pb={8} pl={10} pr={10} minHeight="470px" maxHeight="470px">
