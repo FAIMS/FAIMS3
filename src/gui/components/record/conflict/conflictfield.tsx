@@ -163,6 +163,13 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
     data['fields'][fieldName] !== undefined
       ? data['fields'][fieldName]['annotations']
       : null;
+  const isannotationshow =
+      fieldConfig.meta !== undefined && fieldConfig.meta.annotation !== false;
+  const isuncertityshow =
+      fieldConfig.meta !== undefined &&
+      fieldConfig.meta['uncertainty'] !== undefined &&
+      fieldConfig['meta']['uncertainty']['include'];
+
   return ['warning', 'delete', 'clear', 'automerge'].includes(styletype) ? (
     <Box pb={8} pl={10} pr={10} minHeight="470px" maxHeight="470px">
       <Grid
@@ -239,7 +246,6 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
                 <AnnotationField
                   key={'annotation' + fieldName + 'box'}
                   fieldName={fieldName}
-                  // formProps={this.props.formProps}
                   field={fieldConfig}
                   annotation={{
                     [fieldName]: {...annoataion},
@@ -249,6 +255,8 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
                   }}
                   disabled={true}
                   isxs={false}
+                  isannotationshow={isannotationshow}
+                  isuncertityshow={isuncertityshow}
                 />
               )}
           </Grid>

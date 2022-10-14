@@ -122,6 +122,9 @@ function RecordData(props: RecordDataTypes) {
   ) => {
     setDataTab(newValue);
   };
+  const theme = useTheme();
+  const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
+
   return (
     <Box bgcolor={grey[100]}>
       <TabContext value={dataTab}>
@@ -155,7 +158,9 @@ function RecordData(props: RecordDataTypes) {
               <ListAltIcon sx={{mr: 1}} />
               <Typography>Form</Typography>
             </AccordionSummary>
-            <AccordionDetails sx={{backgroundColor: grey[100]}}>
+            <AccordionDetails
+              sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
+            >
               <Grid
                 container
                 direction="row"
@@ -166,8 +171,8 @@ function RecordData(props: RecordDataTypes) {
                   <Box
                     component={Paper}
                     elevation={0}
-                    p={{xs: 0, sm: 1, md: 2, lg: 2}}
-                    variant={'outlined'}
+                    p={{xs: 1, sm: 1, md: 2, lg: 2}}
+                    variant={is_mobile ? undefined : 'outlined'}
                   >
                     <RecordForm
                       project_id={props.project_id}
@@ -176,6 +181,7 @@ function RecordData(props: RecordDataTypes) {
                       ui_specification={props.ui_specification}
                       draft_id={props.draft_id}
                       metaSection={props.metaSection}
+                      conflictfields={props.conflictfields}
                       isSyncing={props.isSyncing}
                       handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
@@ -183,14 +189,6 @@ function RecordData(props: RecordDataTypes) {
                     />
                   </Box>
                 </Grid>
-                {/*<Grid item lg={4}>*/}
-                {/*  <Box*/}
-                {/*      component={Paper}*/}
-                {/*      elevation={0}*/}
-                {/*      bgcolor={grey[100]}*/}
-                {/*      height={'100%'}*/}
-                {/*  ></Box>*/}
-                {/*</Grid>*/}
               </Grid>
             </AccordionDetails>
           </Accordion>
@@ -393,64 +391,46 @@ export default function Record() {
       : '';
   return (
     <Box>
-      <Grid
-        container
-        direction="row"
-        justifyContent="flex-start"
-        alignItems="center"
-        spacing={2}
-      >
-        <Grid item xs={'auto'}>
-          <Typography component={'div'}>
-            <Grid
-              container
-              direction="row"
-              justifyContent="flex-start"
-              alignItems="flex-start"
-              spacing={1}
-            >
-              <Grid item>
-                {draft_id ? (
-                  <ArticleOutlinedIcon
-                    fontSize={mq_above_md ? 'large' : 'medium'}
-                    style={{verticalAlign: 'top'}}
-                  />
-                ) : (
-                  <ArticleIcon
-                    fontSize={mq_above_md ? 'large' : 'medium'}
-                    style={{verticalAlign: 'top'}}
-                  />
-                )}
-              </Grid>
-              <Grid item>
-                <Typography variant={mq_above_md ? 'h3' : 'h4'}>
-                  {uiSpec !== null &&
-                  type !== null &&
-                  uiSpec['visible_types'][0] !== ''
-                    ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
-                    : ''}{' '}
-                  {draft_id !== undefined && (
-                    <span
-                      style={{
-                        textDecorationLine: 'underline',
-                        textDecorationStyle: 'double',
-                      }}
-                    >
-                      [Draft]
-                    </span>
-                  )}
-                </Typography>
-                {recordInfo !== null && (
-                  <Typography variant={'caption'} gutterBottom>
-                    Last Updated by {recordInfo}
-                  </Typography>
-                )}
-              </Grid>
-            </Grid>
-          </Typography>
+      <Grid container wrap="nowrap" spacing={2}>
+        <Grid item>
+          {draft_id ? (
+            <ArticleOutlinedIcon
+              fontSize={mq_above_md ? 'large' : 'medium'}
+              style={{verticalAlign: 'top'}}
+            />
+          ) : (
+            <ArticleIcon
+              fontSize={mq_above_md ? 'large' : 'medium'}
+              style={{verticalAlign: 'top'}}
+            />
+          )}
         </Grid>
-        <Grid item xs>
-          <Breadcrumbs data={breadcrumbs} />
+        <Grid item xs zeroMinWidth>
+          <Typography
+            variant={mq_above_md ? 'h3' : 'h4'}
+            style={{overflowWrap: 'break-word'}}
+          >
+            {uiSpec !== null &&
+            type !== null &&
+            uiSpec['visible_types'][0] !== ''
+              ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
+              : ''}{' '}
+            {draft_id !== undefined && (
+              <span
+                style={{
+                  textDecorationLine: 'underline',
+                  textDecorationStyle: 'double',
+                }}
+              >
+                [Draft]
+              </span>
+            )}
+          </Typography>
+          {recordInfo !== null && (
+            <Typography variant={'caption'} gutterBottom>
+              Last Updated by {recordInfo}
+            </Typography>
+          )}
         </Grid>
       </Grid>
       {draft_id !== undefined && (

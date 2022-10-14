@@ -67,7 +67,6 @@ function SingleComponent(props: SingleComponentProps) {
   const conflictfields = props.conflictfields;
   const fieldName = props.fieldName;
   const fields = props.fields;
-  const [isclicked, setIsClick] = useState(false);
   const fieldConfig = fields[fieldName];
   const label =
     fieldConfig['component-parameters']['InputLabelProps'] !== undefined
@@ -83,15 +82,56 @@ function SingleComponent(props: SingleComponentProps) {
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
+  const isHiddenField =
+    fieldConfig['component-name'] === 'BasicAutoIncrementer';
+
+  const isannotationshow =
+    fieldConfig.meta !== undefined && fieldConfig.meta.annotation !== false;
+  const isuncertityshow =
+    fieldConfig.meta !== undefined &&
+    fieldConfig.meta['uncertainty'] !== undefined &&
+    fieldConfig['meta']['uncertainty']['include'];
+  const show_annotation =
+    props.annotation !== undefined &&
+    fields[fieldName].meta !== undefined &&
+    fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
+    fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
+    fields[fieldName]['component-name'] !== 'RandomStyle' &&
+    (isannotationshow || isuncertityshow);
   return (
-    <Box key={fieldName + props.index} mt={4} mb={2}>
-      <Grid container spacing={1}>
+    <Box
+      key={fieldName + props.index}
+      mt={isHiddenField ? 0 : 2}
+      mb={isHiddenField ? 0 : 2}
+    >
+      <Grid container spacing={isHiddenField ? 0 : 1}>
         <Grid item xs>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
             props.formProps,
             props.isSyncing
+          )}
+          {show_annotation && (
+            <Collapse in={expanded} timeout="auto" unmountOnExit>
+              <Box
+                variant={'outlined'}
+                component={Paper}
+                elevation={0}
+                sx={{p: 2, ml: 2, my: 1}}
+                bgcolor={grey[100]}
+              >
+                <AnnotationField
+                  key={'annotation-' + props.fieldName + '-box'}
+                  fieldName={fieldName}
+                  field={fields[fieldName]}
+                  annotation={props.annotation}
+                  handerannoattion={props.handerannoattion}
+                  isannotationshow={isannotationshow}
+                  isuncertityshow={isuncertityshow}
+                />
+              </Box>
+            </Collapse>
           )}
         </Grid>
 
@@ -106,42 +146,19 @@ function SingleComponent(props: SingleComponentProps) {
             </Grid>
           )}
 
-        {props.annotation !== undefined &&
-          fields[fieldName].meta !== undefined &&
-          fields[fieldName]['component-name'] !== 'BasicAutoIncrementer' &&
-          fields[fieldName]['component-name'] !== 'TemplatedStringField' &&
-          fields[fieldName]['component-name'] !== 'RandomStyle' && (
-            <React.Fragment>
-              <Grid item xs={'auto'}>
-                <IconButton
-                  color={'info'}
-                  size={'large'}
-                  onClick={handleExpandClick}
-                >
-                  <NoteIcon />
-                </IconButton>
-              </Grid>
-              <Grid item xs={12}>
-                <Collapse in={expanded} timeout="auto" unmountOnExit>
-                  <Box
-                    variant={'outlined'}
-                    component={Paper}
-                    elevation={0}
-                    sx={{p: 2}}
-                    bgcolor={grey[100]}
-                  >
-                    <AnnotationField
-                      key={'annotation-' + props.fieldName + '-box'}
-                      fieldName={fieldName}
-                      field={fields[fieldName]}
-                      annotation={props.annotation}
-                      handerannoattion={props.handerannoattion}
-                    />
-                  </Box>
-                </Collapse>{' '}
-              </Grid>
-            </React.Fragment>
-          )}
+        {show_annotation && (
+          <React.Fragment>
+            <Grid item xs={'auto'}>
+              <IconButton
+                color={'info'}
+                size={'large'}
+                onClick={handleExpandClick}
+              >
+                <NoteIcon />
+              </IconButton>
+            </Grid>
+          </React.Fragment>
+        )}
       </Grid>
     </Box>
   );
@@ -168,7 +185,7 @@ export function ViewComponent(props: ViewProps) {
       isactive = false;
     }; // cleanup toggles value,
   }, [props.formProps]);
-  console.log(props.conflictfields);
+
   return (
     <React.Fragment>
       {fieldNames.map((fieldName, index) => (

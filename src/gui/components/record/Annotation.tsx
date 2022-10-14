@@ -104,13 +104,14 @@ type AnnotationFieldProp = {
   annotation: any;
   disabled?: boolean;
   isxs?: boolean;
+  isannotationshow: boolean;
+  isuncertityshow: boolean;
   // formProps:any
 };
 
 export function AnnotationField(props: AnnotationFieldProp) {
   const {field, fieldName, handerannoattion} = props;
   const disabled = props.disabled ?? false; // this is disabled on conflict tab , default value is false
-  const isxs = props.isxs ?? true; // this is enabled on conflict tab , default value is true
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
       ? props.annotation[fieldName] !== undefined
@@ -145,15 +146,9 @@ export function AnnotationField(props: AnnotationFieldProp) {
     );
   };
 
-  const isannotationshow =
-    field.meta !== undefined && field.meta.annotation !== false;
-  const isuncertityshow =
-    field.meta !== undefined &&
-    field.meta['uncertainty'] !== undefined &&
-    field['meta']['uncertainty']['include'];
   return (
     <Box>
-      {isannotationshow && (
+      {props.isannotationshow && (
         <Field
           component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
           name={fieldName + 'annotation'}
@@ -169,7 +164,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
           sx={{backgroundColor: 'white'}}
         />
       )}
-      {isuncertityshow && (
+      {props.isuncertityshow && (
         <Field
           component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
           name={props.fieldName + 'uncertainty'}
