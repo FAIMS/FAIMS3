@@ -95,6 +95,7 @@ import {
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
+import {useLocation} from 'react-router-dom';
 
 export default function Record() {
   /**
@@ -162,6 +163,8 @@ export default function Record() {
     childRecords: [],
     linkRecords: [],
   } as RelatedType);
+  const location: any = useLocation();
+  console.debug('Location', location.state);
 
   const [breadcrumbs, setBreadcrumbs] = useState([
     {link: ROUTES.INDEX, title: 'Home'},
@@ -282,11 +285,20 @@ export default function Record() {
               record_id
             );
             setRelatedRecords(newRelationship);
+            let newBreadcrumbs = [
+              {link: ROUTES.INDEX, title: 'Home'},
+              {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+              {
+                link: ROUTES.NOTEBOOK + project_id,
+                title: project_info !== null ? project_info.name : project_id,
+              },
+              {title: hrid ?? record_id},
+            ];
             if (
               newRelationship.parentRecords !== null &&
               newRelationship.parentRecords.length > 0
             ) {
-              const newBreadcrumbs = [
+              newBreadcrumbs = [
                 {link: ROUTES.INDEX, title: 'Home'},
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
                 {
@@ -299,20 +311,8 @@ export default function Record() {
                 },
                 {title: hrid ?? record_id},
               ];
-              console.error('link', newBreadcrumbs);
-              setBreadcrumbs(newBreadcrumbs);
-            } else {
-              const newBreadcrumbs = [
-                {link: ROUTES.INDEX, title: 'Home'},
-                {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
-                {
-                  link: ROUTES.NOTEBOOK + project_id,
-                  title: project_info !== null ? project_info.name : project_id,
-                },
-                {title: hrid ?? record_id},
-              ];
-              setBreadcrumbs(newBreadcrumbs);
             }
+            setBreadcrumbs(newBreadcrumbs);
           }
           setValue('1');
         }

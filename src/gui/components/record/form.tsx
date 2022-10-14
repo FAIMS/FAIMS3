@@ -73,6 +73,7 @@ import {
   getChildInfo,
   updateChildRecords,
 } from './relationships/RelatedInfomation';
+
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -155,6 +156,12 @@ class RecordForm extends React.Component<
         this.state.revision_cached !== this.props.revision_id) ||
       prevProps.draft_id !== this.props.draft_id //add this to reload the form when user jump back to previous record
     ) {
+      console.error(
+        'initial set up ',
+        prevProps.revision_id,
+        this.state.revision_cached,
+        this.props.revision_id
+      );
       // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({
         initialValues: null,
@@ -167,7 +174,8 @@ class RecordForm extends React.Component<
         realatioship: {},
       });
       // Re-initialize basically everything.
-      this.formChanged(true);
+      if (this.props.revision_id !== undefined)
+        this.formChanged(true, this.props.revision_id);
     }
     if (prevState.view_cached !== this.state.view_cached) {
       window.scrollTo(0, 0);
@@ -181,7 +189,7 @@ class RecordForm extends React.Component<
       type_cached: this.props.type ?? null,
       view_cached: null,
       activeStep: 0,
-      revision_cached: null,
+      revision_cached: this.props.revision_id ?? null,
       initialValues: null,
       draft_created: null,
       annotation: {},
@@ -198,8 +206,11 @@ class RecordForm extends React.Component<
 
   componentDidMount() {
     // On mount, draftState.start() must be called, so give this false:
+    console.error('did Mount');
     this._isMounted = true;
-    if (this._isMounted) this.formChanged(false);
+    if (this._isMounted)
+      if (this.state.revision_cached !== null)
+        this.formChanged(false, this.state.revision_cached); //need to check later to see if pop correctly
   }
 
   newDraftListener(draft_id: string) {
@@ -235,15 +246,20 @@ class RecordForm extends React.Component<
     }
   }
 
-  async formChanged(draft_saving_started_already: boolean) {
+  async formChanged(
+    draft_saving_started_already: boolean,
+    revision_id: string
+  ) {
+    console.error('revision id+++++', revision_id);
     try {
       let this_type;
       if (this.props.type === undefined) {
         const latest_record = await getFullRecordData(
           this.props.project_id,
           this.props.record_id,
-          this.props.revision_id
+          revision_id
         );
+        console.error('get latest_record', revision_id, latest_record);
         if (latest_record === null) {
           this.props.handleSetDraftError(
             `Could not find data for record ${this.props.record_id}`
@@ -283,7 +299,7 @@ class RecordForm extends React.Component<
       await this.setState({
         type_cached: this_type,
         view_cached: this.props.ui_specification.viewsets[this_type].views[0],
-        revision_cached: this.props.revision_id || null,
+        revision_cached: revision_id || null,
       });
     } catch (err: any) {
       console.warn('setUISpec/setLastRev error', err);
@@ -327,7 +343,7 @@ class RecordForm extends React.Component<
       console.error('rare draft error', err);
     }
     try {
-      await this.setInitialValues();
+      await this.setInitialValues(revision_id);
     } catch (err: any) {
       console.error('setInitialValues error', err);
       this.context.dispatch({
@@ -357,19 +373,21 @@ class RecordForm extends React.Component<
     this.draftState.stop();
   }
 
-  async setInitialValues() {
+  async setInitialValues(revision_id: string | undefined | null) {
     /***
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
+    console.error('current revision id', revision_id);
     const fromdb: any =
-      this.props.revision_id === undefined
+      revision_id === undefined || revision_id === null
         ? {}
         : (await getFullRecordData(
             this.props.project_id,
             this.props.record_id,
-            this.props.revision_id
+            revision_id
           )) || {};
+    console.error('current revision id', fromdb);
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
@@ -396,7 +414,7 @@ class RecordForm extends React.Component<
     const initialValues: {[key: string]: any} = {
       _id: this.props.record_id!,
       _project_id: this.props.project_id,
-      _current_revision_id: this.props.revision_id,
+      _current_revision_id: revision_id,
     };
     const annotations: {[key: string]: any} = {};
 
@@ -469,8 +487,7 @@ class RecordForm extends React.Component<
     if (
       parent !== null &&
       parent !== undefined &&
-      typeof parent === 'string' &&
-      parent !== ''
+      parent.record_id !== undefined
     )
       related['parent'] = parent;
 
@@ -497,6 +514,7 @@ class RecordForm extends React.Component<
       annotation: annotations,
       realatioship: relationship,
     });
+    console.error('current revision id', initialValues);
   }
 
   /**
@@ -599,7 +617,12 @@ class RecordForm extends React.Component<
     }
   }
 
-  save(values: object, is_final_view: boolean) {
+  save(
+    values: object,
+    is_final_view: boolean,
+    is_close: boolean,
+    setSubmitting: any
+  ) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
@@ -618,14 +641,18 @@ class RecordForm extends React.Component<
     //   relation,
     //   this.props.record_id
     // );
-
+    console.error(
+      'current revision id',
+      this.state.revision_cached,
+      this.props.revision_id
+    );
     return (
       getCurrentUserId(this.props.project_id)
         .then(userid => {
           const now = new Date();
           const doc = {
             record_id: this.props.record_id,
-            revision_id: this.props.revision_id ?? null,
+            revision_id: this.state.revision_cached ?? null,
             type: this.state.type_cached!,
             data: this.filterValues(values),
             updated_by: userid,
@@ -644,36 +671,39 @@ class RecordForm extends React.Component<
           return doc;
         })
         .then(doc => {
-          return upsertFAIMSData(this.props.project_id, doc).then(() => {
-            // add to save the information for relationship when form saved,  TODO: need to be defined if it's saved when form been save
-            try {
-              const initialValues = this.requireInitialValues();
-              const type = this.requireViewsetName();
-              if (type !== undefined) {
-                updateChildRecords(
-                  ui_specification,
-                  type,
-                  this.props.record_id,
-                  initialValues,
-                  values
-                );
+          return upsertFAIMSData(this.props.project_id, doc).then(
+            revision_id => {
+              // add to save the information for relationship when form saved,  TODO: need to be defined if it's saved when form been save
+              try {
+                const initialValues = this.requireInitialValues();
+                const type = this.requireViewsetName();
+                if (type !== undefined) {
+                  updateChildRecords(
+                    ui_specification,
+                    type,
+                    this.props.record_id,
+                    initialValues,
+                    values
+                  );
+                }
+                console.error('get new revision id++++' + revision_id);
+                this.setState({revision_cached: revision_id});
+                this.formChanged(true, revision_id);
+              } catch (error) {
+                console.error('update child Error', error);
               }
-            } catch (error) {
-              console.error('update child Error', error);
+              return (
+                doc.data['hrid' + this.state.type_cached] ??
+                this.props.record_id
+              );
             }
-            return (
-              doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
-            );
-          });
+          );
         })
         .then(result => {
           if (DEBUG_APP) {
             console.log(result);
           }
-          const message =
-            this.props.revision_id === undefined
-              ? 'Record successfully created'
-              : 'Record successfully updated';
+          const message = 'Record successfully saved';
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -685,10 +715,7 @@ class RecordForm extends React.Component<
           return result;
         })
         .catch(err => {
-          const message =
-            this.props.revision_id === undefined
-              ? 'Could not create record'
-              : 'Could not update record';
+          const message = 'Could not save record';
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -705,24 +732,24 @@ class RecordForm extends React.Component<
           });
         })
         .then(result => {
-          if (this.props.revision_id === undefined && is_final_view) {
-            // check if last page and draft
-            // scroll to top of page, seems to be needed on mobile devices
-          }
-          const {state_parent, is_direct} = getparentlinkinfo(
-            result,
-            this.props.location.state,
-            this.props.record_id
-          );
-          if (is_direct === false) {
-            this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
+          if (is_close) {
+            const {state_parent, is_direct} = getparentlinkinfo(
+              result,
+              this.props.location.state,
+              this.props.record_id
+            );
+            if (is_direct === false) {
+              this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
+            } else {
+              this.props.history.push({
+                pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
+                state: state_parent,
+              });
+            }
+            window.scrollTo(0, 0);
           } else {
-            this.props.history.push({
-              pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
-              state: state_parent,
-            });
+            setSubmitting(false);
           }
-          window.scrollTo(0, 0);
         })
     );
   }
@@ -767,7 +794,7 @@ class RecordForm extends React.Component<
     if (this.state.draft_created !== null) {
       // If a draft was created, that implies this form started from
       // a non draft, so it must have been an existing record (see props
-      // as it's got a type {existing record} | {draft already created})
+      // as it's got a type {existing record} | {draft already created}
       this.context.dispatch({
         type: ActionType.ADD_CUSTOM_ALERT,
         payload: {
@@ -823,6 +850,7 @@ class RecordForm extends React.Component<
       const description = this.requireDescription(viewName);
       return (
         <React.Fragment>
+          {this.state.revision_cached}
           {/* remove the tab for edit ---Jira 530 */}
           {/* add padding for form only */}
           <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
@@ -833,11 +861,12 @@ class RecordForm extends React.Component<
               validateOnMount={true}
               validateOnChange={false}
               validateOnBlur={true}
-              onSubmit={values => {
+              onSubmit={(values, {setSubmitting}) => {
+                setSubmitting(true);
                 this.setTimeout(() => {
                   // console.log('is saving submitting called');
-                  // setSubmitting(false); remove setsubmiting function, after click save, user should not be able to save again
-                  this.save(values, is_final_view);
+                  //remove setsubmiting function, after click save, user should not be able to save again
+                  this.save(values, is_final_view, true, setSubmitting);
                 }, 500);
               }}
             >
@@ -904,30 +933,43 @@ class RecordForm extends React.Component<
                             color="primary"
                             aria-label="contained primary button group"
                           >
-                            {is_final_view && this.props.disabled !== true ? (
+                            {!is_final_view && this.props.disabled !== true && (
                               <Button
-                                type="submit"
+                                variant="outlined"
+                                color="primary"
+                                onClick={() =>
+                                  this.onChangeStepper(viewName, view_index + 1)
+                                }
+                              >
+                                {'  '}
+                                Continue{' '}
+                              </Button>
+                            )}
+                            {this.props.disabled !== true && (
+                              <Button
+                                type="button"
                                 color={
                                   formProps.isSubmitting ? undefined : 'primary'
                                 }
-                                variant="contained"
+                                variant={'outlined'}
                                 disableElevation
                                 disabled={formProps.isSubmitting}
+                                onClick={() => {
+                                  console.error('Save');
+                                  formProps.setSubmitting(true);
+                                  this.setTimeout(() => {
+                                    this.save(
+                                      formProps.values,
+                                      is_final_view,
+                                      false,
+                                      formProps.setSubmitting
+                                    );
+                                  }, 500);
+                                }}
                               >
                                 {formProps.isSubmitting
-                                  ? !(this.props.revision_id === undefined)
-                                    ? 'Working...'
-                                    : 'Working...'
-                                  : !(this.props.revision_id === undefined)
-                                  ? 'Save and Close'
-                                  : window.location.search.includes('link=')
-                                  ? // &&
-                                    //   ui_specification.viewsets[viewsetName]
-                                    //     .submit_label !== undefined
-                                    'Save and Close'
-                                  : // ui_specification.viewsets[viewsetName]
-                                    //     .submit_label
-                                    'Save and Close'}
+                                  ? 'Working...'
+                                  : 'Save and Continue'}
                                 {formProps.isSubmitting && (
                                   <CircularProgress
                                     size={24}
@@ -941,46 +983,21 @@ class RecordForm extends React.Component<
                                   />
                                 )}
                               </Button>
-                            ) : (
-                              ''
                             )}
-                          </ButtonGroup>
-                          {!is_final_view && this.props.disabled !== true && (
-                            <ButtonGroup
-                              color="primary"
-                              aria-label="contained primary button group"
-                            >
-                              <Button
-                                variant="outlined"
-                                color="primary"
-                                onClick={() => {
-                                  if (DEBUG_APP) {
-                                    console.log(this.state.activeStep);
-                                  }
-                                  const stepnum = view_index + 1;
-
-                                  this.setState({
-                                    activeStep: stepnum,
-                                    view_cached: views[stepnum],
-                                  });
-                                }}
-                              >
-                                {'  '}
-                                Continue{' '}
-                              </Button>
+                            {this.props.disabled !== true && (
                               <Button
                                 type="submit"
                                 color={
                                   formProps.isSubmitting ? undefined : 'primary'
                                 }
-                                variant="outlined"
+                                variant={
+                                  is_final_view ? 'contained' : 'outlined'
+                                }
                                 disableElevation
                                 disabled={formProps.isSubmitting}
                               >
                                 {formProps.isSubmitting
-                                  ? !(this.props.revision_id === undefined)
-                                    ? 'Working...'
-                                    : 'Working...'
+                                  ? 'Working...'
                                   : 'Save and Close'}
                                 {formProps.isSubmitting && (
                                   <CircularProgress
@@ -995,12 +1012,12 @@ class RecordForm extends React.Component<
                                   />
                                 )}
                               </Button>
-                            </ButtonGroup>
-                          )}
+                            )}
+                          </ButtonGroup>
                         </Grid>
                         {String(process.env.REACT_APP_SERVER) ===
                           'developers' && (
-                          <Grid item sm={6} xs={12}>
+                          <Grid item sm={12} xs={12}>
                             <BoxTab title={'Developer tool: form state'} />
                             <Box
                               bgcolor={grey[200]}
@@ -1028,11 +1045,7 @@ class RecordForm extends React.Component<
                                 <p>
                                   Once you are ready, click the{' '}
                                   <Typography variant="button">
-                                    <b>
-                                      {this.props.revision_id === undefined
-                                        ? 'save and close'
-                                        : 'update'}
-                                    </b>
+                                    <b>save and close</b>
                                   </Typography>{' '}
                                   button. This will firstly validate the data,
                                   and if valid, sync the record to the remote

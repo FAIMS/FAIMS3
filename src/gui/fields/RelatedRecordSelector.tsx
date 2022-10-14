@@ -71,7 +71,12 @@ interface Props {
   relation_linked_vocabPair?: Array<Array<string>>;
 }
 
-function get_dafault_relation_label(multiple: boolean, value: any) {
+function get_dafault_relation_label(
+  multiple: boolean,
+  value: any,
+  type: string
+) {
+  if (type === 'Child') return ['Child', 'Parent'];
   if (value === null || value === undefined) return [];
   if (!multiple && value !== undefined && value['relation_type_vocabPair'])
     return value['relation_type_vocabPair'];
@@ -135,7 +140,7 @@ const defaultColumns: GridColDef[] = [
 
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
-  const record_id=props.form.values['_id']
+  const record_id = props.form.values['_id'];
   const field_name = props.field.name;
   const [options, setOptions] = React.useState<RecordReference[]>([]);
   const multiple = props.multiple !== undefined ? props.multiple : false;
@@ -147,9 +152,11 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [recordsInformation, setRecordsInformation] = React.useState<
     LinkProps[]
   >([]);
+  const type = props.relation_type.replace('faims-core::', '');
   const lastvaluePair = get_dafault_relation_label(
     multiple,
-    props.form.values[field_name]
+    props.form.values[field_name],
+    type
   );
   const [relationshipLabel, setRelationshipLabel] = React.useState<string>(
     lastvaluePair[0]
@@ -164,6 +171,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     props.form.values[field_name]
   );
   const [updated, SetUpdated] = React.useState(uuidv4());
+  const [is_enabled, setIsenabled] = React.useState(multiple ? true : false);
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -188,6 +196,11 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         );
         setOptions(records);
         setIsactive(true);
+        if (
+          !multiple &&
+          props.form.values[field_name]['record_id'] === undefined
+        )
+          setIsenabled(true);
       })();
     } else {
       setIsactive(true);
@@ -198,7 +211,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     let mounted = true;
     (async () => {
       if (project_id !== undefined && mounted) {
-        
         const records_info = await get_RelatedFields_for_field(
           project_id,
           props.field.name,
@@ -210,14 +222,14 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         if (records_info.length > 0 && columns.length === 0) {
           const newColumns = columns;
           // this is the code to dispaly the values from child, TO TO: disucssed in detail about how to display it
-            // Object.keys(records_info[0]).map((key: string) =>
-            //   key.includes('newfield')
-            //      ?newColumns.push({
-            //         field: key,
-            //         flex: 0.2,
-            //         minWidth: 100,
-            //       }):key
-            // );
+          // Object.keys(records_info[0]).map((key: string) =>
+          //   key.includes('newfield')
+          //      ?newColumns.push({
+          //         field: key,
+          //         flex: 0.2,
+          //         minWidth: 100,
+          //       }):key
+          // );
           Setcolumns(newColumns);
         }
       }
@@ -235,7 +247,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   if (!isactive) return <></>;
   //to reset the method to pass state value between the link and record
   //to pass information in state to child/link record
-  const type = props.relation_type.replace('faims-core::', '');
+
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
     field_id: props.id,
@@ -283,19 +295,20 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       options
     );
     setOptions(records);
+    if (!multiple) setIsenabled(false);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
-    SetSelectedRecord(null)
+    if (multiple) SetSelectedRecord(null);
     SetUpdated(uuidv4());
     //call the function to trigger the child to be updated??To be coninued
   };
 
   const remove_related_child = (
-    record_id: string |null|undefined,
-    hrid: string |null|undefined,
+    record_id: string | null | undefined,
+    hrid: string | null | undefined
   ) => {
     if (record_id === null || record_id === undefined) return;
-    if (hrid === null || hrid === undefined) hrid=record_id
+    if (hrid === null || hrid === undefined) hrid = record_id;
     const child_record = {
       project_id: project_id,
       record_id: record_id,
@@ -325,148 +338,157 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     //   records
     // )
     setOptions(records);
+    if (!multiple) setIsenabled(true);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
-    SetSelectedRecord(null)
+    SetSelectedRecord(null);
     SetUpdated(uuidv4());
     //call the function to trigger the child to be updated??To be coninued
   };
 
   return (
-    <Grid container spacing={1} direction="row" justifyContent="flex-start">
-      {type === 'Linked' && props.relation_linked_vocabPair !== undefined && (
-        <Grid item xs={12} sm={12} md={3} lg={3}>
-          <FormControl fullWidth size={'small'}>
-            <InputLabel id={'demo-simple-select-label' + field_name}>
-              Relationship
-            </InputLabel>
-            <Select
-              labelId={'demo-simple-select-label' + field_name}
-              id={'create-record-relationship-type' + field_name}
-              value={relationshipLabel}
-              label="Relationship"
-              onChange={handleChange}
-              name={'create-relation-type' + field_name}
-            >
-              {props.relation_linked_vocabPair.map(
-                (r: string[], index: number) => (
-                  <MenuItem value={r[0]} key={index}>
-                    {r[0]}
-                  </MenuItem>
-                )
-              )}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      <Grid
-        item
-        xs={12}
-        sm={12}
-        md={type === 'Linked' ? 6 : 9}
-        lg={type === 'Linked' ? 6 : 9}
-      >
-        <Field
-          size={'small'}
-          // multiple={multiple}
-          id={props.id ?? 'asynchronous-demo'}
-          name={field_name+'select'}
-          component={Autocomplete}
-          isOptionEqualToValue={(
-            option: RecordReference,
-            value: RecordReference
-          ) =>
-            value !== undefined
-              ? option.project_id === value.project_id &&
-                option.record_id === value.record_id
-              : false
-          }
-          getOptionLabel={(option: RecordReference) =>
-            option.record_label ?? ''
-          }
-          options={options}
-          defaultValue={undefined}
-          disabled={disbaled}
-          onChange={(event: any,values:any) => {
-            console.error('select',values)
-            SetSelectedRecord(values);
-          }}
-          value={selectedRecord}
-          renderInput={(params: any) => (
-            <TextField
-              {...params}
-              label={props.InputLabelProps.label}
-              error={props.form.errors[props.id] === undefined ? false : true}
-              variant="outlined"
-              InputProps={{
-                ...params.InputProps,
-              }}
-            />
-          )}
-        />
-      </Grid>
-      {project_id !== undefined &&
-        disbaled === false && ( //update for eid or view
+    <div id={field_name}>
+      <Grid container spacing={1} direction="row" justifyContent="flex-start">
+        {type === 'Linked' && props.relation_linked_vocabPair !== undefined && (
           <Grid item xs={12} sm={12} md={3} lg={3}>
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<AddIcon />}
-              component={Link}
-              to={{
-                pathname:
-                  ROUTES.NOTEBOOK +
-                  project_id +
-                  ROUTES.RECORD_CREATE +
-                  props.related_type,
-                state: newState,
-                search:
-                  '?field_id=' +
-                  props.id +
-                  '&link=' +
-                  location.pathname +
-                  search,
-              }}
-            >
-              New Record
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<AddIcon />}
-              onClick={() => add_related_child()}
-            >
-              Link
-            </Button>
-            {/* <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<AddIcon />}
-              onClick={() => remove_related_child(multiple?props.form.values[field_name][0].record_id:props.form.values[field_name].record_id,multiple?props.form.values[field_name][0].record_label:props.form.values[field_name].record_label)}
-            >
-              Remove
-            </Button> */}
+            <FormControl fullWidth size={'small'}>
+              <InputLabel id={'demo-simple-select-label' + field_name}>
+                Relationship
+              </InputLabel>
+              <Select
+                labelId={'demo-simple-select-label' + field_name}
+                id={'create-record-relationship-type' + field_name}
+                value={relationshipLabel}
+                label="Relationship"
+                onChange={handleChange}
+                name={'create-relation-type' + field_name}
+              >
+                {props.relation_linked_vocabPair.map(
+                  (r: string[], index: number) => (
+                    <MenuItem value={r[0]} key={index}>
+                      {r[0]}
+                    </MenuItem>
+                  )
+                )}
+              </Select>
+            </FormControl>
           </Grid>
         )}
-      <Grid item xs={12} sm={12} md={12} lg={12}>
-        {disbaled === false && ( //update for eid or view
-          <Typography variant="caption">{props.helperText}</Typography>
-        )}
-      </Grid>
-      <Grid item xs={12} sm={12} md={12} lg={12}>
-        {recordsInformation.length > 0 && (
-          <DataGridLinksComponent
-            links={recordsInformation}
-            show_title={false}
-            show_link_type={true}
-            show_section={false}
-            show_field={false}
-            field_label={'Field'}
-            handleUnlink={remove_related_child}
+        <Grid
+          item
+          xs={12}
+          sm={12}
+          md={type === 'Linked' ? 6 : 9}
+          lg={type === 'Linked' ? 6 : 9}
+        >
+          <Field
+            size={'small'}
+            // multiple={multiple}
+            id={props.id ?? 'asynchronous-demo'}
+            name={field_name + 'select'}
+            component={Autocomplete}
+            isOptionEqualToValue={(
+              option: RecordReference,
+              value: RecordReference
+            ) =>
+              value !== undefined
+                ? option.project_id === value.project_id &&
+                  option.record_id === value.record_id
+                : false
+            }
+            getOptionLabel={(option: RecordReference) =>
+              option.record_label ?? ''
+            }
+            options={options}
+            defaultValue={undefined}
+            disabled={disbaled}
+            onChange={(event: any, values: any) => {
+              console.error('select', values);
+              SetSelectedRecord(values);
+            }}
+            value={selectedRecord}
+            required={false}
+            renderInput={(params: any) => (
+              <TextField
+                {...params}
+                label={props.InputLabelProps.label}
+                error={props.form.errors[props.id] === undefined ? false : true}
+                variant="outlined"
+                InputProps={{
+                  ...params.InputProps,
+                }}
+              />
+            )}
           />
-        )}
+        </Grid>
+        {project_id !== undefined &&
+          disbaled === false && ( //update for eid or view
+            <Grid item xs={12} sm={12} md={3} lg={3}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<AddIcon />}
+                component={Link}
+                disabled={!is_enabled}
+                to={{
+                  pathname:
+                    ROUTES.NOTEBOOK +
+                    project_id +
+                    ROUTES.RECORD_CREATE +
+                    props.related_type,
+                  state: newState,
+                  search:
+                    '?field_id=' +
+                    props.id +
+                    '&link=' +
+                    location.pathname +
+                    search,
+                }}
+              >
+                New Record
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={() => add_related_child()}
+                disabled={!is_enabled}
+              >
+                Link
+              </Button>
+              {project_id !== undefined &&
+                disbaled === false &&
+                !is_enabled && ( //update for eid or view
+                  <Typography variant="caption">
+                    {' '}
+                    <br />
+                    To enable Add record or Link, remove the link firstly
+                  </Typography>
+                )}
+            </Grid>
+          )}
+
+        <Grid item xs={12} sm={12} md={12} lg={12}>
+          {disbaled === false && ( //update for eid or view
+            <Typography variant="caption">{props.helperText}</Typography>
+          )}
+        </Grid>
+        <Grid item xs={12} sm={12} md={12} lg={12}>
+          {recordsInformation.length > 0 && (
+            <DataGridLinksComponent
+              links={recordsInformation}
+              show_title={false}
+              show_link_type={true}
+              show_section={false}
+              show_field={false}
+              field_label={'Field'}
+              handleUnlink={remove_related_child}
+              state={newState}
+            />
+          )}
+        </Grid>
       </Grid>
-    </Grid>
+    </div>
   );
 }
 

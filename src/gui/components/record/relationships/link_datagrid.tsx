@@ -45,7 +45,6 @@ import {DataGridLinksComponentProps} from './types';
 import ArticleIcon from '@mui/icons-material/Article';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
-
 const style = {
   position: 'absolute' as const,
   top: '50%',
@@ -100,7 +99,7 @@ export default function DataGridLinksComponent(
     []
   );
   function handleUnlink() {
-    console.error('Unlink',modalLink)
+    console.error('Unlink', modalLink);
     props.handleUnlink(
       modalLink.recordB_id,
       modalLink.recordB_hrid
@@ -144,7 +143,10 @@ export default function DataGridLinksComponent(
       renderCell: (params: GridCellParams) => (
         <Button
           component={NavLink}
-          to={params.row.recordB_route}
+          to={{
+            pathname: params.row.recordB_route, // update for get record_id persistence for the draft
+            state: props.state,
+          }}
           variant={'text'}
         >
           <Grid container direction="row" alignItems="center" spacing={'4px'}>

@@ -242,7 +242,7 @@ export async function listRecordMetadata(
         deleted: revision.deleted ? true : false,
         hrid: hrid,
         type: record.type,
-        relationship:revision.relationship
+        relationship: revision.relationship,
       };
     }
     if (DEBUG_APP) {

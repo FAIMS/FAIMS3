@@ -140,6 +140,6 @@ export interface LinkedRelation {
   relation_type_vocabPair: string[];
 }
 export interface Relationship {
-  parent?: RecordID; // has single parent
+  parent?: LinkedRelation; // has single parent
   linked?: Array<LinkedRelation>; // has multiple link
 }

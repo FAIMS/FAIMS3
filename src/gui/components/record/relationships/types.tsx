@@ -77,4 +77,5 @@ export interface DataGridLinksComponentProps {
   record_title?: string;
   field_label?: string;
   handleUnlink?: any;
+  state?: any;
 }

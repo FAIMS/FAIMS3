@@ -4,7 +4,7 @@ import LinkIcon from '@mui/icons-material/Link';
 import {NavLink} from 'react-router-dom';
 import ArticleIcon from '@mui/icons-material/Article';
 import {ParentLinksComponentProps} from './types';
-
+import {HashLink} from 'react-router-hash-link';
 export default function ParentLinkComponent(props: ParentLinksComponentProps) {
   if (props.parent_links !== null) {
     return (
@@ -39,21 +39,30 @@ export default function ParentLinkComponent(props: ParentLinksComponentProps) {
         </Grid>
         <Box m={1}>
           {props.parent_links.map(p => (
-            <Link
-              key={p.record_id}
-              underline={'none'}
-              to={p.route}
-              component={NavLink}
-            >
-              <Grid container direction="row" alignItems="center">
-                <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
-                <Typography variant={'body2'} fontWeight={'bold'}>
-                  {p.type} {p.hrid}
-                  {/* [field:
+            <>
+              <Link
+                key={p.record_id}
+                underline={'none'}
+                to={p.route}
+                component={NavLink}
+              >
+                <Grid container direction="row" alignItems="center">
+                  <ArticleIcon fontSize={'inherit'} sx={{mr: '3px'}} />{' '}
+                  <Typography variant={'body2'} fontWeight={'bold'}>
+                    {p.type} {p.hrid}
+                    {/* [field:
                   {p.field_label}] */}
-                </Typography>
-              </Grid>
-            </Link>
+                  </Typography>
+                </Grid>
+              </Link>
+              <HashLink
+                to={{
+                  pathname: p.route + '#' + p.field_id, // update for get record_id persistence for the draft
+                }}
+              >
+                {p.type} {p.hrid} {p.field_label}
+              </HashLink>
+            </>
           ))}
           <Alert severity={'info'} sx={{mt: 1}}>
             To change the parent of this record, go to the parent record itself

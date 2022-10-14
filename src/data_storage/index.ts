@@ -315,7 +315,7 @@ export async function getRecordsByType(
   project_id: ProjectID,
   type: FAIMSTypeName,
   relation_type: string,
-  record_id:string,
+  record_id: string,
   relation_linked_vocabPair: string[] | null = null
 ): Promise<RecordReference[]> {
   try {
@@ -334,17 +334,24 @@ export async function getRecordsByType(
     const records: RecordReference[] = [];
     await listRecordMetadata(project_id).then(record_list => {
       for (const key in record_list) {
-        
         const metadata = record_list[key];
         if (DEBUG_APP) {
           console.debug('Records', key, metadata);
         }
-        
-        let is_parent=false
-        const realtionship = metadata['relationship']
-        if(relation_type==='faims-core::Child'&&realtionship!==undefined&&realtionship['parent']!==undefined&&realtionship['parent']!==null&&realtionship['parent']!==record_id) 
-          is_parent=true
-        if (!metadata.deleted && metadata.type === type&&!is_parent) {
+
+        let is_parent = false;
+        const realtionship = metadata['relationship'];
+        if (
+          relation_type === 'faims-core::Child' &&
+          realtionship !== undefined &&
+          realtionship['parent'] !== undefined &&
+          realtionship['parent'] !== null &&
+          realtionship['parent'].record_id !== undefined &&
+          realtionship['parent'].record_id !== record_id
+        )
+          is_parent = true;
+        // console.error('record',metadata.hrid,metadata.type,realtionship?.parent?.record_id,metadata,is_parent)
+        if (!metadata.deleted && metadata.type === type && !is_parent) {
           //
           if (relation_vocab === null)
             records.push({
