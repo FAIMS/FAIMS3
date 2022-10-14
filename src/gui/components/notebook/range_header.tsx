@@ -31,7 +31,7 @@ import {
   TableCell,
   Alert,
   IconButton,
-  Paper, Divider,
+  Paper,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import {
@@ -66,7 +66,9 @@ export default function RangeHeader(props: {
       variant={'outlined'}
       sx={{maxHeight: '80vh', overflowY: 'scroll'}}
     >
-      <Typography variant={'h6'} sx={{m:2}} gutterBottom>Range Indices</Typography>
+      <Typography variant={'h6'} sx={{m: 2}} gutterBottom>
+        Range Indices
+      </Typography>
       <Table size={'small'}>
         <TableHead>
           <TableRow>

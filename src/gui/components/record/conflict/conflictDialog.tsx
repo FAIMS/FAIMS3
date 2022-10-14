@@ -541,7 +541,12 @@ function ConflictChildDialog(props: any) {
 
   return (
     <Grid container>
-      <Button onClick={handleOpen} color={'primary'} variant={'contained'} disableElevation={true}>
+      <Button
+        onClick={handleOpen}
+        color={'primary'}
+        variant={'contained'}
+        disableElevation={true}
+      >
         Resolve Conflicts
       </Button>
       <BasicDialog

@@ -104,10 +104,12 @@ export default function DataGridFieldLinksComponent(
     route: any
   ) {
     return record_id === current_record_id ? (
-        <RecordRouteDisplay>This record</RecordRouteDisplay>
+      <RecordRouteDisplay>This record</RecordRouteDisplay>
     ) : (
       <Typography variant={'body2'} fontWeight={'bold'}>
-        <RecordRouteDisplay link={route}>{type + ' ' + hrid}</RecordRouteDisplay>
+        <RecordRouteDisplay link={route}>
+          {type + ' ' + hrid}
+        </RecordRouteDisplay>
       </Typography>
     );
   }

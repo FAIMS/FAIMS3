@@ -150,39 +150,39 @@ export function AnnotationField(props: AnnotationFieldProp) {
   const isuncertityshow =
     field.meta !== undefined &&
     field.meta['uncertainty'] !== undefined &&
-    field['meta']['uncertainty']['include'] ;
+    field['meta']['uncertainty']['include'];
   return (
     <Box>
       {isannotationshow && (
-          <Field
-              component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
-              name={fieldName + 'annotation'}
-              id={props.fieldName + 'annotation'}
-              value={annotation}
-              variant="outlined"
-              onChange={handlerchangesAnnotation}
-              InputProps={{type: 'text', multiline: true, minRows: 4}}
-              label={field['meta']['annotation_label']}
-              InputLabelProps={{shrink: true}}
-              disabled={disabled}
-              fullWidth
-              sx={{backgroundColor: 'white'}}
-          />
+        <Field
+          component={getComponentByName('formik-material-ui', 'TextField')} //e.g, TextField (default <input>)
+          name={fieldName + 'annotation'}
+          id={props.fieldName + 'annotation'}
+          value={annotation}
+          variant="outlined"
+          onChange={handlerchangesAnnotation}
+          InputProps={{type: 'text', multiline: true, minRows: 4}}
+          label={field['meta']['annotation_label']}
+          InputLabelProps={{shrink: true}}
+          disabled={disabled}
+          fullWidth
+          sx={{backgroundColor: 'white'}}
+        />
       )}
       {isuncertityshow && (
-          <Field
-              component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
-              name={props.fieldName + 'uncertainty'}
-              id={props.fieldName + 'uncertainty'}
-              type="checkbox"
-              value={uncertainty}
-              variant="outlined"
-              FormControlLabelProps={{
-                label: field['meta']['uncertainty']['label'],
-              }}
-              onChange={handlerchangesUncertainty}
-              disabled={disabled}
-          />
+        <Field
+          component={getComponentByName('faims-custom', 'Checkbox')} //e.g, TextField (default <input>)
+          name={props.fieldName + 'uncertainty'}
+          id={props.fieldName + 'uncertainty'}
+          type="checkbox"
+          value={uncertainty}
+          variant="outlined"
+          FormControlLabelProps={{
+            label: field['meta']['uncertainty']['label'],
+          }}
+          onChange={handlerchangesUncertainty}
+          disabled={disabled}
+        />
       )}
     </Box>
   );

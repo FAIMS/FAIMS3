@@ -33,7 +33,8 @@ import {
   Grid,
   FormGroup,
   FormControlLabel,
-  Switch, Link,
+  Switch,
+  Link,
 } from '@mui/material';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import {useHistory} from 'react-router-dom';
@@ -145,7 +146,11 @@ function DraftRecord(props: DraftsRecordProps) {
           description: 'Human Readable Record ID',
           type: 'string',
           width: 300,
-          renderCell:(params:GridCellParams) => <Link underline={'none'} sx={{fontWeight:'bold'}}>{params.value}</Link>
+          renderCell: (params: GridCellParams) => (
+            <Link underline={'none'} sx={{fontWeight: 'bold'}}>
+              {params.value}
+            </Link>
+          ),
         },
         {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
         {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
@@ -240,10 +245,7 @@ function DraftRecord(props: DraftsRecordProps) {
         <FormGroup>
           <FormControlLabel
             control={
-              <Switch
-                checked={mobileView}
-                onChange={handleToggleMobileView}
-              />
+              <Switch checked={mobileView} onChange={handleToggleMobileView} />
             }
             label={'Toggle Mobile View'}
           />

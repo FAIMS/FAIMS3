@@ -11,7 +11,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import {RecordLinksComponentProps, PARENT_CHILD_VOCAB} from './types';
 import {RecordLinksToolbar} from './toolbars';
 import {RecordID} from '../../../../datamodel/core';
-import RecordRouteDisplay from "../../ui/record_link";
+import RecordRouteDisplay from '../../ui/record_link';
 
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
@@ -42,9 +42,9 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
     route: any
   ) {
     return record_id === current_record_id ? (
-        <RecordRouteDisplay>This record</RecordRouteDisplay>
+      <RecordRouteDisplay>This record</RecordRouteDisplay>
     ) : (
-        <RecordRouteDisplay link={route}>{type + ' ' + hrid}</RecordRouteDisplay>
+      <RecordRouteDisplay link={route}>{type + ' ' + hrid}</RecordRouteDisplay>
     );
   }
 
@@ -73,7 +73,10 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
         headerClassName: 'faims-record-link--header',
         minWidth: 200,
         flex: 0.2,
-        valueGetter: (params: GridCellParams) => props.record_id === params.row.record_id ? params.value[0] : params.value[1],
+        valueGetter: (params: GridCellParams) =>
+          props.record_id === params.row.record_id
+            ? params.value[0]
+            : params.value[1],
         renderCell: (params: GridCellParams) => (
           <Chip
             label={params.value}
@@ -180,14 +183,16 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           rows={props.record_links}
           getRowId={getRowId}
           className={'test'}
-          sx={{
-            // borderLeft: 'none',
-            // borderRight: 'none',
-            // borderTop: 'none',
-            // '& .MuiDataGrid-columnHeaders': {
-            //   borderRadius: 0,
-            // },
-          }}
+          sx={
+            {
+              // borderLeft: 'none',
+              // borderRight: 'none',
+              // borderTop: 'none',
+              // '& .MuiDataGrid-columnHeaders': {
+              //   borderRadius: 0,
+              // },
+            }
+          }
         />
       </Box>
     );
