@@ -44,7 +44,7 @@ import {
 import {useLocation, Link} from 'react-router-dom';
 import {Typography} from '@mui/material';
 import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInfomation';
-import DataGridLinksComponent from '../components/record/relationships/link_datagrid';
+import DataGridLinksComponent from '../components/record/relationships/field_level_links/datagrid';
 import {LinkProps} from '../components/record/relationships/types';
 import {DataGrid, GridCellParams, GridColDef} from '@mui/x-data-grid';
 import {NavLink} from 'react-router-dom';
@@ -475,16 +475,17 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         </Grid>
         <Grid item xs={12} sm={12} md={12} lg={12}>
           {recordsInformation.length > 0 && (
-            <DataGridLinksComponent
-              links={recordsInformation}
-              show_title={false}
-              show_link_type={true}
-              show_section={false}
-              show_field={false}
-              field_label={'Field'}
-              handleUnlink={remove_related_child}
-              state={newState}
-            />
+            // <DataGridLinksComponent
+            //   links={recordsInformation}
+            //   show_title={false}
+            //   show_link_type={true}
+            //   show_section={false}
+            //   show_field={false}
+            //   field_label={'Field'}
+            //   handleUnlink={remove_related_child}
+            //   state={newState}
+            // />
+            <>Field Data</>
           )}
         </Grid>
       </Grid>

@@ -18,3 +18,9 @@
 
 /* MUI datagrid pagination: bold for total row count emphasis */
 .MuiTablePagination-displayedRows {font-weight: 600}
+
+/* Record links table header*/
+.faims-record-link--header{
+    background-color: #e0e0e0;
+    font-weight:700
+}

@@ -3,9 +3,11 @@ import {Alert, Box, Divider, Grid, Link, Typography} from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
 import {NavLink} from 'react-router-dom';
 import ArticleIcon from '@mui/icons-material/Article';
-import {ParentLinksComponentProps} from './types';
+import {ParentLinkProps} from './types';
 import {HashLink} from 'react-router-hash-link';
-export default function ParentLinkComponent(props: ParentLinksComponentProps) {
+export default function ParentLinkComponent(props: {
+  parent_links: Array<ParentLinkProps> | null;
+}) {
   if (props.parent_links !== null) {
     return (
       <Box mb={2}>

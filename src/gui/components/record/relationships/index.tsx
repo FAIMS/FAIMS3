@@ -20,24 +20,16 @@
 
 import React from 'react';
 
-import {Box, Paper} from '@mui/material';
-import Tab from '@mui/material/Tab';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
+import {Box} from '@mui/material';
 
 import {RelationshipsComponentProps} from './types';
-import ParentLinkComponent from './parent_links';
-import BoxTab from '../../ui/boxTab';
+
+import RecordLinkComponent from './record_links';
+import Typography from '@mui/material/Typography';
+import {Accordion, AccordionSummary, AccordionDetails} from '../accordion';
+import LinkIcon from '@mui/icons-material/Link';
+
 import {grey} from '@mui/material/colors';
-import CreateLinkComponent from './create_links';
-import DataGridLinksComponent from './link_datagrid';
-const relationship_types = [
-  {link: 'is below', reciprocal: 'is above'},
-  {link: 'is above', reciprocal: 'is below'},
-  {link: 'is related to', reciprocal: 'is related to'},
-  {link: 'has child', reciprocal: 'is child of'},
-];
 
 export default function RelationshipsViewComponent(
   props: RelationshipsComponentProps
@@ -49,31 +41,22 @@ export default function RelationshipsViewComponent(
    *
    *
    */
-  const [value, setValue] = React.useState('1');
 
-  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
-    setValue(newValue);
-  };
-  const field_label = 'FIELD LABEL';
   return (
-    <Box mb={2}>
-      <ParentLinkComponent parent_links={props.parent_links} />
-      <DataGridLinksComponent
-        links={props.child_links}
-        title={'Children'}
-        show_title={true}
-        show_link_type={true}
-        show_section={true}
-        show_field={true}
-      />
-      <DataGridLinksComponent
-        links={props.related_links}
-        title={'Related'}
-        show_title={true}
-        show_link_type={true}
-        show_section={true}
-        show_field={true}
-      />
-    </Box>
+    <Accordion>
+      <AccordionSummary
+        aria-controls="links-accordion-content"
+        id="links-accordion"
+      >
+        <LinkIcon sx={{mr: 1}} />
+        <Typography>Links</Typography>
+      </AccordionSummary>
+      <AccordionDetails sx={{backgroundColor: grey[100], p: {xs: 1, sm: 2}}}>
+        <RecordLinkComponent
+          record_links={props.record_to_field_links}
+          record_id={props.record_id}
+        />
+      </AccordionDetails>
+    </Accordion>
   );
 }

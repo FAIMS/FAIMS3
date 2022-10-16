@@ -31,8 +31,11 @@ import {DiscardDialog} from './conflictDialog';
 export function ResolveButton(props: any) {
   return (
     <Button
-      variant="text"
-      style={{color: '#f29c3e', paddingLeft: 0}}
+      // variant="contained"
+      color={'primary'}
+      variant={'outlined'}
+      size={'small'}
+      disableElevation={true}
       onClick={event => props.handleChange(event, '4')}
     >
       RESOLVE CONFLICTS

@@ -67,10 +67,7 @@ export default function RecordStepper(props: RecordStepperProps) {
   // Client didn't want the absence of the stepper in sm-md resolutions, so reverted md->sm and am making text changes
   return (
     <>
-      <Box
-        display={{xs: 'none', sm: 'block'}}
-        style={{paddingTop: '3px', paddingBottom: '3px'}}
-      >
+      <Box display={{xs: 'none', sm: 'block'}} py={1}>
         <div style={{overflowX: 'hidden'}}>
           <Stepper
             nonLinear

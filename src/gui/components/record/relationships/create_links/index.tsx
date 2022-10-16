@@ -13,6 +13,7 @@ import AddIcon from '@mui/icons-material/Add';
 import {styled} from '@mui/material/styles';
 
 import {CreateRecordLink, RelationshipType} from './create_record_link';
+import LinkIcon from '@mui/icons-material/Link';
 interface ExpandMoreProps extends ButtonProps {
   expand: boolean;
 }
@@ -51,8 +52,11 @@ export default function CreateLinkComponent(props: {
         alignItems="center"
         spacing={1}
       >
+        <Grid item>
+          <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
+        </Grid>
         <Grid item xs={'auto'}>
-          <Typography variant={'h6'}>Links</Typography>
+          <Typography variant={'h6'}>Links from {props.field_label}</Typography>
         </Grid>
         <Grid item xs>
           <Divider />

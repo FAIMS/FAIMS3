@@ -23,21 +23,12 @@ import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  TextField,
-} from '@mui/material';
+import {Grid, Box, Typography, TextField} from '@mui/material';
 
-import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
 import {get_logic_fields, get_logic_views} from './branchingLogic';
 
 import {ViewComponent} from './view';
-import BoxTab from '../ui/boxTab';
 
 import {ActionType} from '../../../context/actions';
 
@@ -63,16 +54,19 @@ import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
-import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
+
 import {
   getparentlinkinfo,
   getParentInfo,
   getChildInfo,
   updateChildRecords,
 } from './relationships/RelatedInfomation';
+
+import CircularLoading from '../ui/circular_loading';
+import FormButtonGroup, {DevTool} from './formButton';
 
 type RecordFormProps = {
   project_id: ProjectID;
@@ -747,6 +741,7 @@ class RecordForm extends React.Component<
               });
             }
             window.scrollTo(0, 0);
+            // scroll to top of page, seems to be needed on mobile devices
           } else {
             setSubmitting(false);
           }
@@ -849,11 +844,11 @@ class RecordForm extends React.Component<
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
       return (
-        <React.Fragment>
+        <Box>
           {this.state.revision_cached}
           {/* remove the tab for edit ---Jira 530 */}
           {/* add padding for form only */}
-          <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
+          <div>
             <Formik
               // enableReinitialize
               initialValues={initialValues}
@@ -889,7 +884,7 @@ class RecordForm extends React.Component<
                   this.state.realatioship ?? {}
                 );
                 return (
-                  <>
+                  <Form>
                     {
                       <RecordStepper
                         view_index={view_index}
@@ -909,155 +904,47 @@ class RecordForm extends React.Component<
                       </Box>
                     )}
                     <br />
-                    <Form>
-                      <Grid container spacing={2}>
-                        <Grid item sm={12} xs={12}>
-                          <ViewComponent
-                            viewName={viewName}
-                            ui_specification={ui_specification}
-                            formProps={formProps}
-                            draftState={this.draftState}
-                            annotation={this.state.annotation}
-                            handerannoattion={this.updateannotation}
-                            isSyncing={this.props.isSyncing}
-                            conflictfields={this.props.conflictfields}
-                            handleChangeTab={this.props.handleChangeTab}
-                            fieldNames={fieldNames}
-                            disabled={this.props.disabled}
-                          />
-                          <br />
 
-                          <br />
-
-                          <ButtonGroup
-                            color="primary"
-                            aria-label="contained primary button group"
-                          >
-                            {!is_final_view && this.props.disabled !== true && (
-                              <Button
-                                variant="outlined"
-                                color="primary"
-                                onClick={() =>
-                                  this.onChangeStepper(viewName, view_index + 1)
-                                }
-                              >
-                                {'  '}
-                                Continue{' '}
-                              </Button>
-                            )}
-                            {this.props.disabled !== true && (
-                              <Button
-                                type="button"
-                                color={
-                                  formProps.isSubmitting ? undefined : 'primary'
-                                }
-                                variant={'outlined'}
-                                disableElevation
-                                disabled={formProps.isSubmitting}
-                                onClick={() => {
-                                  console.error('Save');
-                                  formProps.setSubmitting(true);
-                                  this.setTimeout(() => {
-                                    this.save(
-                                      formProps.values,
-                                      is_final_view,
-                                      false,
-                                      formProps.setSubmitting
-                                    );
-                                  }, 500);
-                                }}
-                              >
-                                {formProps.isSubmitting
-                                  ? 'Working...'
-                                  : 'Save and Continue'}
-                                {formProps.isSubmitting && (
-                                  <CircularProgress
-                                    size={24}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '50%',
-                                      left: '50%',
-                                      marginTop: -12,
-                                      marginLeft: -12,
-                                    }}
-                                  />
-                                )}
-                              </Button>
-                            )}
-                            {this.props.disabled !== true && (
-                              <Button
-                                type="submit"
-                                color={
-                                  formProps.isSubmitting ? undefined : 'primary'
-                                }
-                                variant={
-                                  is_final_view ? 'contained' : 'outlined'
-                                }
-                                disableElevation
-                                disabled={formProps.isSubmitting}
-                              >
-                                {formProps.isSubmitting
-                                  ? 'Working...'
-                                  : 'Save and Close'}
-                                {formProps.isSubmitting && (
-                                  <CircularProgress
-                                    size={24}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '50%',
-                                      left: '50%',
-                                      marginTop: -12,
-                                      marginLeft: -12,
-                                    }}
-                                  />
-                                )}
-                              </Button>
-                            )}
-                          </ButtonGroup>
-                        </Grid>
-                        {String(process.env.REACT_APP_SERVER) ===
-                          'developers' && (
-                          <Grid item sm={12} xs={12}>
-                            <BoxTab title={'Developer tool: form state'} />
-                            <Box
-                              bgcolor={grey[200]}
-                              pl={2}
-                              pr={2}
-                              style={{overflowX: 'scroll'}}
-                            >
-                              <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                              <pre>{JSON.stringify(this.state, null, 2)}</pre>
-                            </Box>
-                            <Box mt={3}>
-                              <BoxTab
-                                title={
-                                  'Alpha info: Autosave, validation and syncing'
-                                }
-                              />
-                              <Box bgcolor={grey[200]} p={2}>
-                                <p>
-                                  The data in this form are auto-saved locally
-                                  within the app every 5 seconds. The data do
-                                  not need to be valid, and you can return to
-                                  this page to complete this record on this
-                                  device at any time.
-                                </p>
-                                <p>
-                                  Once you are ready, click the{' '}
-                                  <Typography variant="button">
-                                    <b>save and close</b>
-                                  </Typography>{' '}
-                                  button. This will firstly validate the data,
-                                  and if valid, sync the record to the remote
-                                  server.
-                                </p>
-                              </Box>
-                            </Box>
-                          </Grid>
-                        )}
+                    <Grid container spacing={2}>
+                      <Grid item sm={12} xs={12}>
+                        <ViewComponent
+                          viewName={viewName}
+                          ui_specification={ui_specification}
+                          formProps={formProps}
+                          draftState={this.draftState}
+                          annotation={this.state.annotation}
+                          handerannoattion={this.updateannotation}
+                          isSyncing={this.props.isSyncing}
+                          conflictfields={this.props.conflictfields}
+                          handleChangeTab={this.props.handleChangeTab}
+                          fieldNames={fieldNames}
+                          disabled={this.props.disabled}
+                        />
                       </Grid>
-                    </Form>
-                  </>
+                      <br />
+                      <FormButtonGroup
+                        is_final_view={is_final_view}
+                        disabled={this.props.disabled}
+                        onChangeStepper={this.onChangeStepper}
+                        viewName={viewName}
+                        view_index={view_index}
+                        formProps={formProps}
+                        handleFormSubmit={(is_close: boolean) => {
+                          console.error('Save');
+                          formProps.setSubmitting(true);
+                          this.setTimeout(() => {
+                            this.save(
+                              formProps.values,
+                              is_final_view,
+                              is_close,
+                              formProps.setSubmitting
+                            );
+                          }, 500);
+                        }}
+                      />
+                      <DevTool formProps={formProps} state={this.state} />
+                    </Grid>
+                  </Form>
                 );
               }}
             </Formik>
@@ -1072,13 +959,13 @@ class RecordForm extends React.Component<
               }}
             />
           </div>
-        </React.Fragment>
+        </Box>
       );
     } else {
       return (
-        <div>
-          <CircularProgress size={20} thickness={5} />
-        </div>
+        <Box sx={{m: 1}}>
+          <CircularLoading label={'Loading record data'} />
+        </Box>
       );
     }
   }

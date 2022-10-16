@@ -12,6 +12,26 @@ export interface RecordProps {
   title: string;
 }
 
+export interface FieldLinkProps {
+  record_id: RecordID;
+  hrid: string | number;
+  type: string;
+  route: string;
+  section: string;
+  field_id: string;
+  field_label: string;
+}
+// model as RECORD --> FIELD
+export interface RecordLinkProps {
+  record_id: RecordID;
+  hrid: string | number;
+  type: string;
+  route: string;
+  relation_type_vocabPair?: string[];
+  link: FieldLinkProps;
+  lastUpdatedBy?: string;
+}
+/**************need to be updated later */
 export interface ParentLinkProps {
   record_id: RecordID;
   hrid: string;
@@ -27,15 +47,6 @@ export interface ParentLinkProps {
   link_type?: string;
   link_id?: string;
 }
-
-export interface RelatedType {
-  parentRecords: Array<ParentLinkProps> | null;
-  childRecords: Array<LinkProps> | null;
-  linkRecords: Array<LinkProps> | null;
-  ui_specification?: ProjectUIModel;
-}
-
-// each link is RecordAFieldB---->RecordC
 export interface LinkProps {
   relation_type_vocabPair?: string[] | null; // [field, record] e.g., ['has child', 'is child of']
 
@@ -56,26 +67,43 @@ export interface LinkProps {
   recordB_lastUpdatedBy?: string;
 }
 
+export interface RelatedType {
+  parentRecords: Array<ParentLinkProps> | null;
+  childRecords: Array<LinkProps> | null;
+  linkRecords: Array<LinkProps> | null;
+  ui_specification?: ProjectUIModel;
+}
+/**************need to be updated later */
 export interface RelationshipsComponentProps {
-  parent_links: Array<ParentLinkProps> | null;
-  child_links: Array<LinkProps> | null;
-  related_links: Array<LinkProps> | null;
+  record_to_field_links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
   record_hrid: string;
   record_type: string;
 }
-export interface ParentLinksComponentProps {
-  parent_links: Array<ParentLinkProps> | null;
+
+export interface FieldRelationshipComponentProps {
+  field_level_links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
+  record_hrid: string;
+  record_type: string;
+  field_label: string;
+}
+export interface RecordLinksComponentProps {
+  record_links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
 }
 
 export interface DataGridLinksComponentProps {
-  links: Array<LinkProps> | null;
-  title?: string;
-  show_title: boolean;
-  show_link_type: boolean;
-  show_section: boolean;
-  show_field: boolean;
-  record_title?: string;
-  field_label?: string;
+  links: Array<RecordLinkProps> | null;
+  record_id: RecordID;
+  record_hrid: string;
+  record_type: string;
+  field_label: string;
   handleUnlink?: any;
-  state?: any;
 }
+export const PARENT_CHILD_VOCAB = [
+  'is child of',
+  'has child',
+  'is parent of',
+  'has parent',
+];

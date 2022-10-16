@@ -5,6 +5,7 @@ import moment from 'moment';
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import {grey} from '@mui/material/colors';
 import 'animate.css';
 interface DraftSyncStatusProps {
   last_saved: Date | null;
@@ -30,7 +31,10 @@ export default function DraftSyncStatus(props: DraftSyncStatusProps) {
           A local draft could not be saved to your device: {props.error}
         </Alert>
       ) : (
-        <Box sx={{backgroundColor: theme.palette.grey[200]}} p={1}>
+        <Box
+          sx={{backgroundColor: theme.palette.primary.main, color: 'white'}}
+          p={1}
+        >
           {props.is_saving ? (
             <div
               style={{

@@ -26,7 +26,6 @@
  */
 
 import * as React from 'react';
-import Button from '@mui/material/Button';
 import {styled} from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -34,11 +33,20 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
+import WarningIcon from '@mui/icons-material/Warning';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {FieldButton, iconstyle} from './conflictbutton';
 import DoneIcon from '@mui/icons-material/Done';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import {Grid, Box, IconButton, Typography} from '@mui/material';
+import {
+  Alert,
+  Grid,
+  Button,
+  Box,
+  IconButton,
+  Typography,
+  AlertTitle,
+} from '@mui/material';
 import {cardsstyles} from './conflictstyle';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
@@ -533,7 +541,14 @@ function ConflictChildDialog(props: any) {
 
   return (
     <Grid container>
-      <Button onClick={handleOpen}>Resolve Conflicts</Button>
+      <Button
+        onClick={handleOpen}
+        color={'primary'}
+        variant={'contained'}
+        disableElevation={true}
+      >
+        Resolve Conflicts
+      </Button>
       <BasicDialog
         handleClose={handleClose}
         handleOpen={handleOpen}
@@ -614,10 +629,10 @@ export function BasicDialog(props: BasicDialogProps) {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={props.handleConfirm}>{props.continue}</Button>
         <Button onClick={props.handleClose} autoFocus>
           {props.cancel}
         </Button>
+        <Button onClick={props.handleConfirm}>{props.continue}</Button>
       </DialogActions>
     </Dialog>
   );
@@ -633,47 +648,23 @@ export function EditConflictDialog(props: any) {
   const handleClose = () => {
     setOpen(false);
   };
-
   return (
-    <Grid
-      container
-      sx={{
-        width: 89,
-        height: 32,
-      }}
-    >
-      <Button
-        variant="contained"
-        style={{
-          textTransform: 'none',
-          backgroundColor: '#f9dbaf',
-          borderRadius: 35,
-          color: '#f29c3e',
-        }}
-        startIcon={
-          <InfoOutlinedIcon style={{paddingLeft: 0, paddingRight: 0}} />
-        }
-        onClick={handleClickOpen}
-        size="small"
-      >
-        Conflict
-      </Button>
+    <Box>
+      <IconButton color={'warning'} onClick={handleClickOpen} size={'large'}>
+        <WarningIcon />
+      </IconButton>
       <Dialog
         open={open}
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          {label} field is in Conflict
-        </DialogTitle>
-        <DialogContent style={{width: '600px', height: '100px'}}>
-          <DialogContentText id="alert-dialog-description">
-            This record contains conflicting data for the {label} field. If you
-            wish to resolve the conflicting data, go to the conflicts tab (you
-            will lose any changes you have made here).
-          </DialogContentText>
-        </DialogContent>
+        <Alert severity={'warning'}>
+          <AlertTitle> {label} field is in Conflict</AlertTitle>
+          This record contains conflicting data for the {label} field. If you
+          wish to resolve the conflicting data, go to the conflicts tab (you
+          will lose any changes you have made here).
+        </Alert>
         <DialogActions>
           <ConflictChildDialog
             handleparentClose={handleClose}
@@ -684,6 +675,6 @@ export function EditConflictDialog(props: any) {
           </Button>
         </DialogActions>
       </Dialog>
-    </Grid>
+    </Box>
   );
 }
