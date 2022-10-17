@@ -67,7 +67,7 @@ import {
 
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
-
+import UGCReport from './UGCReport';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -942,6 +942,7 @@ class RecordForm extends React.Component<
                           }, 500);
                         }}
                       />
+
                       <DevTool formProps={formProps} state={this.state} />
                     </Grid>
                   </Form>
@@ -950,11 +951,9 @@ class RecordForm extends React.Component<
             </Formik>
           </div>
           <div>
-            <TextField
-              id="ugc-comment"
-              label="Report Content"
-              helperText="Report Content"
-              onChange={event => {
+            <UGCReport
+              handleUGCReport={(event: any) => {
+                console.error(event.target.value);
                 this.setState({ugc_comment: event.target.value});
               }}
             />

@@ -129,7 +129,7 @@ export default function RecordData(props: RecordDataTypes) {
                 justifyContent="flex-start"
                 alignItems="stretch"
               >
-                <Grid item lg={8}>
+                <Grid item lg={12}>
                   <Box
                     component={Paper}
                     elevation={0}

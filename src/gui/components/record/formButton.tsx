@@ -1,3 +1,25 @@
+/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: formBuuton.tsx
+ * Description:
+ *   Form Button:
+ *  - Continue
+ *  - Publish and continue editing(TBD)
+ *  - Publish and Close Record(TBD)
+ */
 import React from 'react';
 
 import {
@@ -113,7 +135,7 @@ type DevToolProps = {
 };
 export function DevTool(props: DevToolProps) {
   const {formProps, state} = props;
-  return String(process.env.REACT_APP_SERVER) === 'developers' ? (
+  return String(process.env.REACT_APP_SERVER) === 'developer' ? (
     <Grid item sm={12} xs={12}>
       <BoxTab title={'Developer tool: form state'} />
       <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
