@@ -603,5 +603,7 @@ definelogic
 Seting
 definelogicvalue
 splitid
+mrviews
+Unckeck
 # TODO FIX
 Ramdom
