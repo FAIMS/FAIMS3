@@ -394,6 +394,9 @@ export default function Record() {
           )}
         </Grid>
       </Grid>
+      <Grid item xs>
+        <Breadcrumbs data={breadcrumbs} />
+      </Grid>
       {draft_id !== undefined && (
         <Alert severity={'warning'}>
           This record is currently a draft. The data is stored locally on your

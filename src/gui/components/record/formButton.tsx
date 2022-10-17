@@ -83,6 +83,8 @@ export default function FormButtonGroup(props: any) {
   } = props;
   return (
     <Grid item sm={12} xs={12} md={12}>
+      {/* show mobile stepper for multiple section form ONLY */}
+      { views.length >1 &&
       <Grid item>
         <CustomMobileStepper
           views={views}
@@ -90,7 +92,7 @@ export default function FormButtonGroup(props: any) {
           onChangeStepper={onChangeStepper}
           ui_specification={ui_specification}
         />
-      </Grid>
+      </Grid>}
       <Grid container spacing={2}>
         <Grid item md={12}>
           <br />
@@ -98,6 +100,7 @@ export default function FormButtonGroup(props: any) {
             color="primary"
             aria-label="contained primary button group"
           >
+            {/* show mobile stepper for multiple section and not last page ONLY  */}
             {!is_final_view && disabled !== true && (
               <Button
                 variant="outlined"

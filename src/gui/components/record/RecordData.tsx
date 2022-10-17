@@ -96,6 +96,7 @@ export default function RecordData(props: RecordDataTypes) {
           <Tab label={'Form-field widgets'} value={'3'} />
         </TabList>
         <TabPanel value={'1'} sx={{p: 0}}>
+           {/* Show UnpublishWarning for unsaved revision ONLY  TODO*/}
           <UnpublishedWarning />
           <DraftSyncStatus
             last_saved={props.draftLastSaved}
