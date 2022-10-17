@@ -59,7 +59,7 @@ import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
 
 import {
-  getparentlinkinfo,
+  getParentlinkInfo,
   getParentInfo,
   getChildInfo,
   updateChildRecords,
@@ -127,7 +127,7 @@ type RecordFormState = {
   draft_created: string | null;
   description: string | null;
   ugc_comment: string | null;
-  realatioship: Relationship | null;
+  relationship: Relationship | null;
 };
 
 class RecordForm extends React.Component<
@@ -172,7 +172,7 @@ class RecordForm extends React.Component<
         revision_cached: null,
         annotation: {},
         description: null,
-        realatioship: {},
+        relationship: {},
       });
       // Re-initialize basically everything.
       // if (this.props.revision_id !== undefined)
@@ -196,7 +196,7 @@ class RecordForm extends React.Component<
       annotation: {},
       description: null,
       ugc_comment: null,
-      realatioship: {},
+      relationship: {},
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -516,7 +516,7 @@ class RecordForm extends React.Component<
     this.setState({
       initialValues: initialValues,
       annotation: annotations,
-      realatioship: relationship,
+      relationship: relationship,
     });
     console.error('current revision id', initialValues);
   }
@@ -639,7 +639,7 @@ class RecordForm extends React.Component<
       ui_specification
     );
 
-    // let relation: Relationship = this.state.realatioship ?? {}; // this should update later TODO
+    // let relation: Relationship = this.state.relationship ?? {}; // this should update later TODO
     // relation = getParentInfo(
     //   this.props.location.state,
     //   relation,
@@ -667,7 +667,7 @@ class RecordForm extends React.Component<
               viewsetName
             ),
             ugc_comment: this.state.ugc_comment || '',
-            relationship: this.state.realatioship ?? {},
+            relationship: this.state.relationship ?? {},
           };
           if (DEBUG_APP) {
             console.log(doc);
@@ -737,7 +737,7 @@ class RecordForm extends React.Component<
         })
         .then(result => {
           if (is_close) {
-            const {state_parent, is_direct} = getparentlinkinfo(
+            const {state_parent, is_direct} = getParentlinkInfo(
               result,
               this.props.location.state,
               this.props.record_id
@@ -898,7 +898,7 @@ class RecordForm extends React.Component<
                 this.draftState.renderHook(
                   formProps.values,
                   this.state.annotation,
-                  this.state.realatioship ?? {}
+                  this.state.relationship ?? {}
                 );
                 return (
                   <Form>

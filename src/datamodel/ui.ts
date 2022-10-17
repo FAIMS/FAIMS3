@@ -220,7 +220,7 @@ export type resetprops = {
 
 export type SectionMeta = any;
 
-//inetface for field persistent state
+//interface for field persistent state
 export interface fieldpersistentdata {
   _id?: string;
   project_id?: ProjectID;

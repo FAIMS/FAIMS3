@@ -43,7 +43,7 @@ export default function SystemAlert() {
 
   if (alerts.length === 0) return <></>;
 
-  const oldest_alert = alerts[alerts.length - 1]; // adjst the sequence to display the latest alert on the top, instead of bottom
+  const oldest_alert = alerts[alerts.length - 1]; // adjust the sequence to display the latest alert on the top, instead of bottom
 
   const handleClose = (key: string) => {
     dispatch({

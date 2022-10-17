@@ -9,6 +9,7 @@ export function tokenValid(token: null | undefined | TokenContents) {
    * Check for expiry AND validity
    */
   // TODO
+  console.debug(token);
   return true;
 }
 

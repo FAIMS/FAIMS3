@@ -60,7 +60,7 @@ interface Props {
   relation_linked_vocabPair?: Array<Array<string>>;
 }
 
-function get_dafault_relation_label(
+function get_default_relation_label(
   multiple: boolean,
   value: any,
   type: string
@@ -113,7 +113,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     RecordLinkProps[]
   >([]);
   const type = props.relation_type.replace('faims-core::', '');
-  const lastvaluePair = get_dafault_relation_label(
+  const lastvaluePair = get_default_relation_label(
     multiple,
     props.form.values[field_name],
     type
@@ -126,12 +126,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [selectedRecord, SetSelectedRecord] =
     React.useState<RecordReference | null>(null);
   const url_split = search.split('&');
-  // const [columns, Setcolumns] = React.useState<GridColDef[]>(defaultColumns);
+  // const [columns, SetColumns] = React.useState<GridColDef[]>(defaultColumns);
   const [fieldValue, setFieldValue] = React.useState(
     props.form.values[field_name]
   );
   const [updated, SetUpdated] = React.useState(uuidv4());
-  const [is_enabled, setIsenabled] = React.useState(multiple ? true : false);
+  const [is_enabled, setIs_enenabled] = React.useState(multiple ? true : false);
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -160,7 +160,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           !multiple &&
           props.form.values[field_name]['record_id'] === undefined
         )
-          setIsenabled(true);
+          setIs_enenabled(true);
       })();
     } else {
       setIsactive(true);
@@ -183,7 +183,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
 
         // if (records_info.length > 0 && columns.length === 0) {
         //   const newColumns = columns;
-        //   // this is the code to dispaly the values from child, TO TO: disucssed in detail about how to display it
+        //   // this is the code to display the values from child, TO DO: in detail about how to display it
         //   // Object.keys(records_info[0]).map((key: string) =>
         //   //   key.includes('newfield')
         //   //      ?newColumns.push({
@@ -192,7 +192,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         //   //         minWidth: 100,
         //   //       }):key
         //   // );
-        //   Setcolumns(newColumns);
+        //   SetColumns(newColumns);
         // }
       }
     })();
@@ -224,7 +224,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (location_state.parent_record_id !== props.form.values._id)
       newState['parent'] = location.state;
     else if (location_state.parent !== undefined) {
-      //when the record is the parent record, the record should be the one returned from child, so should get the parent infonmation
+      //when the record is the parent record, the record should be the one returned from child, so should get the parent information
       newState['parent'] = location_state.parent;
     }
   }
@@ -262,12 +262,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       options
     );
     setOptions(records);
-    if (!multiple) setIsenabled(false);
+    if (!multiple) setIs_enenabled(false);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
     if (multiple) SetSelectedRecord(null);
     SetUpdated(uuidv4());
-    //call the function to trigger the child to be updated??To be coninued
+    //call the function to trigger the child to be updated??TBD
   };
 
   const remove_related_child = (
@@ -306,12 +306,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     //   records
     // )
     setOptions(records);
-    if (!multiple) setIsenabled(true);
+    if (!multiple) setIs_enenabled(true);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
     SetSelectedRecord(null);
     SetUpdated(uuidv4());
-    //call the function to trigger the child to be updated??To be coninued
+    //call the function to trigger the child to be updated??TBD
   };
 
   return (
@@ -443,7 +443,7 @@ const uiSetting = () => {
         label: 'Number of Line',
       },
       fullWidth: false,
-      helperText: "Add relation type Pair, use ','to seperate pair",
+      helperText: "Add relation type Pair, use ','to separate pair",
       variant: 'outlined',
       required: false,
     },

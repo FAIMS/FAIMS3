@@ -31,7 +31,7 @@ import {
 import * as ROUTES from '../../../../constants/routes';
 import {RelatedType, RecordLinkProps} from './types';
 import {get_fieldpersistentdata} from '../../../../datamodel/fieldpersistent';
-export function getparentlinkinfo(
+export function getParentlinkInfo(
   hrid: string,
   RelationState: any,
   record_id: string

@@ -20,7 +20,7 @@
 import {equals} from '../../../../utils/eqTestSupport';
 import {v4 as uuidv4} from 'uuid';
 import {
-  getparentlinkinfo,
+  getParentlinkInfo,
   getParentInfo,
   getChildInfo,
   AddParent,
@@ -81,8 +81,8 @@ const State = {
   relation_type_vocabPair: [],
 };
 
-test('testing getparentlinkinfo from dummy Field Location State', () => {
-  const {state_parent, is_direct} = getparentlinkinfo(
+test('testing getParentlinkInfo from dummy Field Location State', () => {
+  const {state_parent, is_direct} = getParentlinkInfo(
     record_id,
     RelationState,
     record_id

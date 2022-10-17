@@ -340,17 +340,17 @@ export async function getRecordsByType(
         }
 
         let is_parent = false;
-        const realtionship = metadata['relationship'];
+        const relationship = metadata['relationship'];
         if (
           relation_type === 'faims-core::Child' &&
-          realtionship !== undefined &&
-          realtionship['parent'] !== undefined &&
-          realtionship['parent'] !== null &&
-          realtionship['parent'].record_id !== undefined &&
-          realtionship['parent'].record_id !== record_id
+          relationship !== undefined &&
+          relationship['parent'] !== undefined &&
+          relationship['parent'] !== null &&
+          relationship['parent'].record_id !== undefined &&
+          relationship['parent'].record_id !== record_id
         )
           is_parent = true;
-        // console.error('record',metadata.hrid,metadata.type,realtionship?.parent?.record_id,metadata,is_parent)
+        // console.error('record',metadata.hrid,metadata.type,relationship?.parent?.record_id,metadata,is_parent)
         if (!metadata.deleted && metadata.type === type && !is_parent) {
           //
           if (relation_vocab === null)

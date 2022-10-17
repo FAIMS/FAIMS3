@@ -131,7 +131,7 @@ export type LocationState = {
   parent_link?: string; // link of parent/linked record, so when child/link record saved, this is the redirect link
   parent?: any; // parent to save upper level information for nest related, for example, grandparent
   record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
-  hrid?: string; // child/linked record HIRD, this is the value dispalyed in field, set in child/linked record, should be pass back to parent
+  hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
   relation_type_vocabPair?: string[] | null; //pass the parent information to child
 };
 export interface LinkedRelation {

@@ -55,7 +55,7 @@ const DefaultuiSetting: ProjectUIModel = {
         variant: 'outlined',
         required: false,
         fullWidth: true,
-        helperText: "Add options here, use ','to seperate option",
+        helperText: "Add options here, use ','to separate option",
         InputLabelProps: {
           label: 'Options',
         },

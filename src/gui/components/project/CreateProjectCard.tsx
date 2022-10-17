@@ -112,7 +112,7 @@ const ini_projectvalue = {
   meta: {},
   project_lead: '',
   lead_institution: '',
-  behavious: {},
+  behaviours: {},
   filenames: [],
 };
 
@@ -125,7 +125,7 @@ const PROJECT_META = [
   'access',
   'ispublic',
   'isrequest',
-  'behavious',
+  'behaviours',
   'project_lead',
   'lead_institution',
   'pre_description',
@@ -222,7 +222,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         projectvalue.pre_description !== undefined &&
         projectvalue.pre_description !== ''
       ) {
-        //this is the function to solve the issue for new record button not be dispalyed, need to update in the future---Kate
+        //this is the function to solve the issue for new record button not be displayed, need to update in the future---Kate
         handlerprojectsubmit_pounch();
       }
     }
@@ -337,7 +337,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     return {form_id: form_ids, field_id: field_ids, label: labels};
   };
 
-  const add_autoince_refereence = async (autoince: any) => {
+  const add_autoince_reference = async (autoince: any) => {
     if (project_id !== null) {
       try {
         await add_autoincrement_reference_for_project(
@@ -356,8 +356,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     try {
       await setUiSpecForProject(res ?? project_id, formuiSpec);
 
-      const autoincrecs = get_autoincrement();
-      await add_autoince_refereence(autoincrecs);
+      const autoince = get_autoincrement();
+      await add_autoince_reference(autoince);
     } catch (err) {
       console.error(
         'Failed to set UI spec and autoinc reference',
@@ -411,10 +411,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const updateproject = async (values: any, fieldlist: Array<string>) => {
     try {
-      const pvlues: any = {projectvalue: {}};
+      const prevalues: any = {projectvalue: {}};
 
       PROJECT_META.map(
-        (field: string) => (pvlues.projectvalue[field] = projectvalue[field])
+        (field: string) => (prevalues.projectvalue[field] = projectvalue[field])
       );
 
       for (const key of fieldlist) {
@@ -439,13 +439,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           await setProjectMetadata(
             project_id,
             'projectvalue',
-            pvlues.projectvalue
+            prevalues.projectvalue
           );
       } catch (err) {
         console.error(
           'Failed to set project value',
           project_id,
-          pvlues.projectvalue,
+          prevalues.projectvalue,
           err
         );
       }
