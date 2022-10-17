@@ -497,3 +497,26 @@ docid
 recs
 anno
 eqfunc
+preintegration
+postintegration
+prewebapp
+demvsystems
+qrcode
+inappbrowser
+jsonpinter
+workbox
+precaching
+selectadvanced
+Catchall
+rootcontainer
+qrscanner
+getcapacitor
+barcodescanner
+classpath
+capacitorjs
+applauncher
+posttest
+jsonpointer
+
+# TODO FIX
+Ramdom

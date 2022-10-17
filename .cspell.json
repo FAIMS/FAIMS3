@@ -8,6 +8,5 @@
     "dictionaryDefinitions": [{
         "name": "FAIMSterms", "path": "./.faimsWords.txt"
     }],
-    "ignorePaths": ["node_modules/**", "./faimsWords.txt"]
+    "ignorePaths": ["node_modules/**", "./faimsWords.txt", "*.json", "./android", "./ios"]
 }
-    
