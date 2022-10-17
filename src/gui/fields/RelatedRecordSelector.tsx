@@ -39,7 +39,7 @@ import {
 } from '../../datamodel/ui';
 import {useLocation} from 'react-router-dom';
 import {Typography} from '@mui/material';
-import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInfomation';
+import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInformation';
 import DataGridFieldLinksComponent from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
 

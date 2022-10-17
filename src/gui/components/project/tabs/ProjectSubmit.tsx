@@ -24,7 +24,7 @@ import * as ROUTES from '../../../../constants/routes';
 import CircularProgress from '@mui/material/CircularProgress';
 import {Grid, Typography, Box, Button} from '@mui/material';
 import {ProjectSubmit} from './ProjectButton';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import Alert from '@mui/material/Alert';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
@@ -32,7 +32,7 @@ import {useTheme} from '@mui/material/styles';
 
 type ProjectSubmitProps = {
   project_id: string | null;
-  projectvalue: ProjevtValueList;
+  projectvalue: ProjectValueList;
   setProjectValue: FAIMShandlerType;
   handleSubmit: FAIMShandlerType;
   handlepublish: FAIMShandlerType;

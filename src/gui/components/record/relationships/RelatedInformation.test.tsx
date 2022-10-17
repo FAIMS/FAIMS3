@@ -27,7 +27,7 @@ import {
   RemoveParent,
   AddLink,
   RemoveLink,
-} from './RelatedInfomation';
+} from './RelatedInformation';
 
 // PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 

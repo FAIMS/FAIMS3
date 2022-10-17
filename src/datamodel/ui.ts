@@ -176,7 +176,7 @@ export type FormComponentList = FormComponent[];
 
 export type FAIMShandlerType = any;
 export type FAIMSEVENTTYPE = any;
-export interface ProjevtValueList {
+export interface ProjectValueList {
   [key: string]: any;
 }
 

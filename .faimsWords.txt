@@ -517,6 +517,21 @@ capacitorjs
 applauncher
 posttest
 jsonpointer
-
+datagrid
+appbar
+Unsynced
+vocab
+Wifi
+accessgroup
+abtracting
+fmap
+Paramater
+CONSEQUTIVE
+urlenc
+toggeled
+loadedprops
+accessable
+thes
+datadbs
 # TODO FIX
 Ramdom

@@ -32,7 +32,7 @@ import {
   generatenewfield,
   regeneratesettinguiSpec,
 } from './componenentSetting';
-import {ProjevtValueList} from '../../../../datamodel/ui';
+import {ProjectValueList} from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {HRID_STRING} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -215,7 +215,7 @@ export const gettabform = (tabs: Array<string>) => {
 };
 
 export const getprojectform = (
-  projectvalue: ProjevtValueList,
+  projectvalue: ProjectValueList,
   tab: string,
   props: any = null
 ) => {
@@ -679,7 +679,7 @@ export const updateuiSpec = (type: string, props: any) => {
         props.projectvalue
       );
     case 'switch':
-      return swithField(
+      return switchField(
         props.index,
         props.type,
         props.formuiSpec,
@@ -833,7 +833,7 @@ const newfromui = (
   return {newformcom, initialfieldvalue, formdesignuiSpec};
 };
 
-const swithField = (
+const switchField = (
   index: any,
   type: boolean,
   formuiSpec: uiSpecType,

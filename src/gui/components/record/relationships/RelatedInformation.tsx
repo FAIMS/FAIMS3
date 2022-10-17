@@ -573,7 +573,7 @@ function get_field_label(ui_specification: ProjectUIModel, field: string) {
   return field;
 }
 
-export async function getDetailRelatedInfommation(
+export async function getDetailRelatedInformation(
   ui_specification: ProjectUIModel,
   form_type: string,
   values: {[field_name: string]: any},

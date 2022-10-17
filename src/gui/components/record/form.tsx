@@ -63,7 +63,7 @@ import {
   getParentInfo,
   getChildInfo,
   updateChildRecords,
-} from './relationships/RelatedInfomation';
+} from './relationships/RelatedInformation';
 
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';

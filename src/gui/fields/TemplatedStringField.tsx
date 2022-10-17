@@ -354,7 +354,7 @@ export function TemplatedStringcomponentsetting(
       console.log('set hird twice');
       //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
     } else {
-      //change all name to hird
+      //change all name to HRID
       const newfieldname = HRID_STRING + props.currentform;
       const newui = props.uiSpec;
       newui['fields'][newfieldname] = JSON.parse(

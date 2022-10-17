@@ -149,7 +149,7 @@ export default function App() {
                   token={token}
                   extraProps={{token: token}}
                 />
-                {/* Draft creation happens by redirecting to a freshy minted UUID
+                {/* Draft creation happens by redirecting to a fresh minted UUID
                 This is to keep it stable until the user navigates away. So the
                 draft_id is optional, and when RecordCreate is instantiated
                 without one, it immediately mints a UUID and redirects to it */}

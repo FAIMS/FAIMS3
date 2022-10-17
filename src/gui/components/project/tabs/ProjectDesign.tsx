@@ -17,7 +17,7 @@
  * Description:This is the file about form design, all uiSpec related sould be defined here
  *   TODO: [BUG] when form tab changes, section tab should be reset(Should use tabPanels instead??)
  *   TODO: [BUG] edit Project is not working, can't read information for project
- *   TODO: swith the form component, need to change to drag element
+ *   TODO: switch the form component, need to change to drag element
  *   TODO: [BUG] Validationschma
  *   TODO: [BUG] uiSpec ini setup issue for creating new notebook, and formcomponent issue for edit existing project
  */
@@ -35,7 +35,7 @@ import {TabEditable} from './TabTab';
 
 import TabPanel from './TabPanel';
 import {getid, updateuiSpec, uiSpecType} from '../data/ComponentSetting';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import {HRID_STRING} from '../../../../datamodel/core';
 
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
@@ -70,7 +70,7 @@ type ProjectDesignProps = {
   setFormuiSpec: FAIMShandlerType;
   handleSaveUiSpec: FAIMShandlerType;
   accessgroup: Array<string>;
-  projectvalue: ProjevtValueList;
+  projectvalue: ProjectValueList;
   setProjectValue: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
 };

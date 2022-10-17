@@ -74,7 +74,7 @@ import {ResolveButton} from '../components/record/conflict/conflictbutton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
-import {getDetailRelatedInfommation} from '../components/record/relationships/RelatedInfomation';
+import {getDetailRelatedInformation} from '../components/record/relationships/RelatedInformation';
 import {RelatedType} from '../components/record/relationships/types';
 
 import ArticleIcon from '@mui/icons-material/Article';
@@ -253,7 +253,7 @@ export default function Record() {
   useEffect(() => {
     // this is function to get child information
 
-    const getrelatedInfo = async () => {
+    const getrelated_Info = async () => {
       console.debug(relatedRecords);
       try {
         if (uiSpec !== null && type !== null) {
@@ -263,7 +263,7 @@ export default function Record() {
             updatedrevision_id
           );
           if (latest_record !== null) {
-            const newRelationship = await getDetailRelatedInfommation(
+            const newRelationship = await getDetailRelatedInformation(
               uiSpec,
               type,
               latest_record.data,
@@ -307,7 +307,7 @@ export default function Record() {
         console.error('Error to get child information', error);
       }
     };
-    getrelatedInfo();
+    getrelated_Info();
   }, [uiSpec, type]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {

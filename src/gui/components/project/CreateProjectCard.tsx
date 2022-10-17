@@ -15,11 +15,10 @@
  *
  * Filename: CreateProjectCard.tsx
  * Description: No autosync in Notebook creation/edit in this Stage
- *   TODO: seperate the tabs to different files
  *   TODO: edit Project is not working, can't read information for project
  *   TODO: setup project information
  *     TODO:  preview, User, Behaviour, submit
- *   TODO: swith the form component, need to change to drag element
+ *   TODO: switch the form component, need to change to drag element
  *   TODO: sync into and save to DB(??)
  */
 import React from 'react';
@@ -40,14 +39,14 @@ import ProjectInfoTab from './tabs/ProjectInfo';
 import ProjectSubmitTab from './tabs/ProjectSubmit';
 import ProjectPreviewTab from './tabs/ProjectPreview';
 import ProjectBehaviourTab from './tabs/ProjectBehaviour';
-import ProjectOverviewTab from './tabs/ProjctOverview';
+import ProjectOverviewTab from './tabs/ProjectOverview';
 import {ProjectSubmit} from './tabs/ProjectButton';
 import {
   setProjectInitialValues,
   uiSpecType,
   getprojectform,
 } from './data/ComponentSetting';
-import {ProjevtValueList} from '../../../datamodel/ui';
+import {ProjectValueList} from '../../../datamodel/ui';
 
 import {ProjectUIFields} from '../../../datamodel/typesystem';
 import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
@@ -140,7 +139,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const [project_id, setProjectID] = useState(props.project_id);
   const ini = {_id: props.project_id};
-  const [projectvalue, setProjectValue] = useState<ProjevtValueList>({
+  const [projectvalue, setProjectValue] = useState<ProjectValueList>({
     ...ini_projectvalue,
     project_id: props.project_id,
   });
