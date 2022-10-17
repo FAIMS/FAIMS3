@@ -91,40 +91,52 @@ export default function RecordStepper(props: RecordStepperProps) {
         </div>
       </Box>
       <Box display={{xs: 'block', sm: 'none'}}>
-        <MobileStepper
-          variant="text"
-          steps={views.length}
-          position="static"
-          activeStep={view_index}
-          nextButton={
-            <Button
-              size="small"
-              onClick={() => {
-                const stepnum = view_index + 1;
-                onChangeStepper(views[stepnum], stepnum);
-              }}
-              disabled={view_index === views.length - 1}
-            >
-              Next
-            </Button>
-          }
-          backButton={
-            <Button
-              size="small"
-              onClick={() => {
-                const stepnum = view_index - 1;
-                onChangeStepper(views[stepnum], stepnum);
-              }}
-              disabled={view_index === 0}
-            >
-              Back
-            </Button>
-          }
+        <CustomMobileStepper
+          views={views}
+          view_index={view_index}
+          onChangeStepper={onChangeStepper}
+          ui_specification={ui_specification}
         />
         <Typography variant="h5" align="center">
           {ui_specification.views[views[view_index]].label}
         </Typography>
       </Box>
     </>
+  );
+}
+
+export function CustomMobileStepper(props: RecordStepperProps) {
+  const {views, view_index, onChangeStepper} = props;
+  return (
+    <MobileStepper
+      variant="text"
+      steps={views.length}
+      position="static"
+      activeStep={view_index}
+      nextButton={
+        <Button
+          size="small"
+          onClick={() => {
+            const stepnum = view_index + 1;
+            onChangeStepper(views[stepnum], stepnum);
+          }}
+          disabled={view_index === views.length - 1}
+        >
+          Next
+        </Button>
+      }
+      backButton={
+        <Button
+          size="small"
+          onClick={() => {
+            const stepnum = view_index - 1;
+            onChangeStepper(views[stepnum], stepnum);
+          }}
+          disabled={view_index === 0}
+        >
+          Back
+        </Button>
+      }
+    />
   );
 }

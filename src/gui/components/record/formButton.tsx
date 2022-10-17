@@ -36,6 +36,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import BoxTab from '../ui/boxTab';
 
 import {grey} from '@mui/material/colors';
+import {CustomMobileStepper} from './recordStepper';
 
 function FormSubmitButton(props: any) {
   const {is_final_view, disabled, formProps, handleFormSubmit, is_close, text} =
@@ -77,9 +78,19 @@ export default function FormButtonGroup(props: any) {
     view_index,
     formProps,
     handleFormSubmit,
+    views,
+    ui_specification,
   } = props;
   return (
     <Grid item sm={12} xs={12} md={12}>
+      <Grid item>
+        <CustomMobileStepper
+          views={views}
+          view_index={view_index}
+          onChangeStepper={onChangeStepper}
+          ui_specification={ui_specification}
+        />
+      </Grid>
       <Grid container spacing={2}>
         <Grid item md={12}>
           <br />
@@ -91,7 +102,10 @@ export default function FormButtonGroup(props: any) {
               <Button
                 variant="outlined"
                 color="primary"
-                onClick={() => onChangeStepper(viewName, view_index + 1)}
+                onClick={() => {
+                  const stepnum = view_index + 1;
+                  onChangeStepper(views[stepnum], stepnum);
+                }}
               >
                 {'  '}
                 Continue{' '}
@@ -135,7 +149,7 @@ type DevToolProps = {
 };
 export function DevTool(props: DevToolProps) {
   const {formProps, state} = props;
-  return String(process.env.REACT_APP_SERVER) === 'developer' ? (
+  return String(process.env.REACT_APP_SERVER) === 'developers' ? (
     <Grid item sm={12} xs={12}>
       <BoxTab title={'Developer tool: form state'} />
       <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>

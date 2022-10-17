@@ -929,6 +929,8 @@ class RecordForm extends React.Component<
                         viewName={viewName}
                         view_index={view_index}
                         formProps={formProps}
+                        ui_specification={ui_specification}
+                        views={views}
                         handleFormSubmit={(is_close: boolean) => {
                           console.error('Save');
                           formProps.setSubmitting(true);
