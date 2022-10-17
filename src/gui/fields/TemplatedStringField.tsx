@@ -352,7 +352,7 @@ export function TemplatedStringcomponentsetting(
     });
     if (ishird) {
       console.log('set hird twice');
-      //alert('Can ONLY set one Human Readable ID, please unckeck existing firstly')
+      //alert('Can ONLY set one Human Readable ID, please Unckeck existing firstly')
     } else {
       //change all name to HRID
       const newfieldname = HRID_STRING + props.currentform;
@@ -429,7 +429,7 @@ function UISetting() {
     'component-parameters': {
       fullWidth: true,
       helperText:
-        'Select number of Component for This ID field,please enaure to add BasicAutoIncrementer Component. And then select field or meta value from following dropdown list',
+        'Select number of Component for This ID field,please ensure to add BasicAutoIncrementer Component. And then select field or meta value from following dropdown list',
       variant: 'outlined',
       required: true,
       select: true,

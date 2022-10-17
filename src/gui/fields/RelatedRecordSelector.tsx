@@ -131,7 +131,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     props.form.values[field_name]
   );
   const [updated, SetUpdated] = React.useState(uuidv4());
-  const [is_enabled, setIs_enenabled] = React.useState(multiple ? true : false);
+  const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -160,7 +160,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           !multiple &&
           props.form.values[field_name]['record_id'] === undefined
         )
-          setIs_enenabled(true);
+          setIs_enabled(true);
       })();
     } else {
       setIsactive(true);
@@ -262,7 +262,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       options
     );
     setOptions(records);
-    if (!multiple) setIs_enenabled(false);
+    if (!multiple) setIs_enabled(false);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
     if (multiple) SetSelectedRecord(null);
@@ -306,7 +306,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     //   records
     // )
     setOptions(records);
-    if (!multiple) setIs_enenabled(true);
+    if (!multiple) setIs_enabled(true);
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
     SetSelectedRecord(null);
