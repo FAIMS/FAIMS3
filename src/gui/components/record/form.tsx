@@ -23,7 +23,7 @@ import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {Grid, Box, Typography, TextField} from '@mui/material';
+import {Grid, Box, Typography} from '@mui/material';
 
 import {firstDefinedFromList} from './helpers';
 import {get_logic_fields, get_logic_views} from './branchingLogic';
@@ -82,6 +82,7 @@ type RecordFormProps = {
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
+  isDraftSaving: boolean;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -143,6 +144,12 @@ class RecordForm extends React.Component<
     prevProps: RecordFormProps,
     prevState: RecordFormState
   ) {
+    console.error(
+      'initial set up ',
+      prevProps.revision_id,
+      this.state.revision_cached,
+      this.props.revision_id
+    );
     if (
       prevProps.project_id !== this.props.project_id ||
       // prevProps.record_id !== this.props.record_id ||
@@ -168,8 +175,8 @@ class RecordForm extends React.Component<
         realatioship: {},
       });
       // Re-initialize basically everything.
-      if (this.props.revision_id !== undefined)
-        this.formChanged(true, this.props.revision_id);
+      // if (this.props.revision_id !== undefined)
+      this.formChanged(true, this.props.revision_id);
     }
     if (prevState.view_cached !== this.state.view_cached) {
       window.scrollTo(0, 0);
@@ -183,7 +190,7 @@ class RecordForm extends React.Component<
       type_cached: this.props.type ?? null,
       view_cached: null,
       activeStep: 0,
-      revision_cached: this.props.revision_id ?? null,
+      revision_cached: null,
       initialValues: null,
       draft_created: null,
       annotation: {},
@@ -204,7 +211,9 @@ class RecordForm extends React.Component<
     this._isMounted = true;
     if (this._isMounted)
       if (this.state.revision_cached !== null)
-        this.formChanged(false, this.state.revision_cached); //need to check later to see if pop correctly
+        this.formChanged(false, this.state.revision_cached);
+      //need to check later to see if pop correctly
+      else this.formChanged(false, this.props.revision_id);
   }
 
   newDraftListener(draft_id: string) {
@@ -242,18 +251,19 @@ class RecordForm extends React.Component<
 
   async formChanged(
     draft_saving_started_already: boolean,
-    revision_id: string
+    pass_revision_id: string | undefined
   ) {
-    console.error('revision id+++++', revision_id);
+    const revision_id = this.props.revision_id;
+    console.debug('revision id+++++', revision_id, pass_revision_id);
     try {
       let this_type;
       if (this.props.type === undefined) {
         const latest_record = await getFullRecordData(
           this.props.project_id,
           this.props.record_id,
-          revision_id
+          this.props.revision_id
         );
-        console.error('get latest_record', revision_id, latest_record);
+        console.debug('get latest_record', revision_id, latest_record);
         if (latest_record === null) {
           this.props.handleSetDraftError(
             `Could not find data for record ${this.props.record_id}`
@@ -337,7 +347,7 @@ class RecordForm extends React.Component<
       console.error('rare draft error', err);
     }
     try {
-      await this.setInitialValues(revision_id);
+      await this.setInitialValues();
     } catch (err: any) {
       console.error('setInitialValues error', err);
       this.context.dispatch({
@@ -367,19 +377,19 @@ class RecordForm extends React.Component<
     this.draftState.stop();
   }
 
-  async setInitialValues(revision_id: string | undefined | null) {
+  async setInitialValues() {
     /***
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
-    console.error('current revision id', revision_id);
+    console.error('current revision id', this.props.revision_id);
     const fromdb: any =
-      revision_id === undefined || revision_id === null
+      this.props.revision_id === undefined
         ? {}
         : (await getFullRecordData(
             this.props.project_id,
             this.props.record_id,
-            revision_id
+            this.props.revision_id
           )) || {};
     console.error('current revision id', fromdb);
     const database_data = fromdb.data ?? {};
@@ -408,7 +418,7 @@ class RecordForm extends React.Component<
     const initialValues: {[key: string]: any} = {
       _id: this.props.record_id!,
       _project_id: this.props.project_id,
-      _current_revision_id: revision_id,
+      _current_revision_id: this.props.revision_id,
     };
     const annotations: {[key: string]: any} = {};
 
@@ -646,7 +656,7 @@ class RecordForm extends React.Component<
           const now = new Date();
           const doc = {
             record_id: this.props.record_id,
-            revision_id: this.state.revision_cached ?? null,
+            revision_id: this.props.revision_id ?? null,
             type: this.state.type_cached!,
             data: this.filterValues(values),
             updated_by: userid,
@@ -761,6 +771,13 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
+    console.error(
+      'Initial',
+      this.state.type_cached,
+      this.state.initialValues,
+      this.props.ui_specification,
+      this.state.view_cached
+    );
     return (
       this.state.type_cached !== null &&
       this.state.initialValues !== null &&
@@ -845,7 +862,7 @@ class RecordForm extends React.Component<
       const description = this.requireDescription(viewName);
       return (
         <Box>
-          {this.state.revision_cached}
+          {/* {this.state.revision_cached} */}
           {/* remove the tab for edit ---Jira 530 */}
           {/* add padding for form only */}
           <div>

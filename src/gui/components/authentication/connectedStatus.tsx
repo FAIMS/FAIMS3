@@ -23,11 +23,11 @@ import WifiIcon from '@mui/icons-material/Wifi';
 // import WifiOffIcon from '@mui/icons-material/WifiOff';
 import {TokenContents} from '../../../datamodel/core';
 
-interface ConnectedStatusProps {
-  token?: null | undefined | TokenContents;
-}
+// interface ConnectedStatusProps {
+//   token?: null | undefined | TokenContents;
+// }
 
-export default function ConnectedStatus(props: ConnectedStatusProps) {
+export default function ConnectedStatus() {
   return (
     <React.Fragment>
       <IconButton

@@ -24,10 +24,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
 
 import CircularLoading from '../ui/circular_loading';
-interface InheritedDataComponentProps {}
-export default function InheritedDataComponent(
-  props: InheritedDataComponentProps
-) {
+
+export default function InheritedDataComponent() {
   return (
     <Accordion>
       <AccordionSummary

@@ -22,7 +22,7 @@ export const Accordion = styled((props: AccordionProps) => (
 
 export const AccordionSummary = styled((props: AccordionSummaryProps) => (
   <MuiAccordionSummary expandIcon={<ExpandMoreIcon />} {...props} />
-))(({theme}) => ({
+))(() => ({
   backgroundColor: grey[200],
 }));
 

@@ -19,46 +19,29 @@
  *   20220620 BBS Adjusted sm to 11 from 8 to get rid of the awful margin reported in FAIMS3-328
  */
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import UnpublishedWarning from './unpublished_warning';
-import {
-  related_links_from_fields,
-  field_level_links,
-} from '../../../utils/fixtures';
-import InheritedDataComponent from './inherited_data';
+import {related_links_from_fields} from '../../../utils/fixtures';
+// import InheritedDataComponent from './inherited_data';
 import DraftSyncStatus from './sync_status';
 import RelationshipsViewComponent from './relationships';
-import FieldRelationshipComponent from './relationships/field_level_links';
 import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
 import RecordForm from './form';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
-import {
-  ProjectUIModel,
-  ProjectInformation,
-  SectionMeta,
-} from '../../../datamodel/ui';
+import {ProjectUIModel} from '../../../datamodel/ui';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {
-  AppBar,
-  Alert,
-  Box,
-  Grid,
-  Typography,
-  Paper,
-  Tab,
-  CircularProgress,
-  Button,
-} from '@mui/material';
+import {Box, Grid, Typography, Paper, Tab} from '@mui/material';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {grey} from '@mui/material/colors';
 import ListAltIcon from '@mui/icons-material/ListAlt';
+import RecordReadView from './read_view';
 interface RecordDataTypes {
   project_id: ProjectID;
   record_id: RecordID;
-  hrid: string;
+  hrid?: string;
   record_type: string;
   revision_id: RevisionID;
   draft_id?: string;
@@ -93,11 +76,10 @@ export default function RecordData(props: RecordDataTypes) {
         <TabList onChange={handleDataTabChange}>
           <Tab label={'Data'} value={'1'} />
           <Tab label={'Review'} value={'2'} />
-          <Tab label={'Form-field widgets'} value={'3'} />
         </TabList>
         <TabPanel value={'1'} sx={{p: 0}}>
-           {/* Show UnpublishWarning for unsaved revision ONLY  TODO*/}
-          <UnpublishedWarning />
+          {/* Show UnpublishWarning for unsaved revision ONLY  TODO: need to update when user click publish and continue*/}
+          {props.revision_id === undefined && <UnpublishedWarning />}
           <DraftSyncStatus
             last_saved={props.draftLastSaved}
             is_saving={props.isDraftSaving}
@@ -106,11 +88,11 @@ export default function RecordData(props: RecordDataTypes) {
           <RelationshipsViewComponent
             record_to_field_links={related_links_from_fields(
               props.record_id,
-              props.hrid,
+              props.hrid ?? props.record_id,
               props.record_type
             )}
             record_id={props.record_id}
-            record_hrid={props.hrid}
+            record_hrid={props.hrid ?? props.record_id}
             record_type={props.record_type}
           />
           <Accordion defaultExpanded={true}>
@@ -149,6 +131,7 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}
+                      isDraftSaving={props.isDraftSaving}
                     />
                   </Box>
                 </Grid>
@@ -157,22 +140,18 @@ export default function RecordData(props: RecordDataTypes) {
           </Accordion>
         </TabPanel>
         <TabPanel value={'2'} sx={{p: 0}}>
-          TBD
-        </TabPanel>
-        <TabPanel value={'3'} sx={{p: 2}}>
-          <Box component={Paper} elevation={0} sx={{p: 1, mb: 3}}>
-            <InheritedDataComponent />
-          </Box>
-          <FieldRelationshipComponent
-            field_level_links={field_level_links(
-              props.record_id,
-              props.hrid,
-              props.record_type
-            )}
+          <RecordReadView
+            project_id={props.project_id}
             record_id={props.record_id}
-            record_hrid={props.hrid}
-            record_type={props.record_type}
-            field_label={'FIELD: EH'}
+            revision_id={props.revision_id}
+            ui_specification={props.ui_specification}
+            draft_id={props.draft_id}
+            metaSection={props.metaSection}
+            conflictfields={props.conflictfields}
+            handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+            handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+            handleSetDraftError={props.handleSetDraftError}
+            isDraftSaving={props.isDraftSaving}
           />
         </TabPanel>
       </TabContext>

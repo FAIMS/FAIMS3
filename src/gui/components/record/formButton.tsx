@@ -74,7 +74,6 @@ export default function FormButtonGroup(props: any) {
     is_final_view,
     disabled,
     onChangeStepper,
-    viewName,
     view_index,
     formProps,
     handleFormSubmit,
@@ -84,15 +83,16 @@ export default function FormButtonGroup(props: any) {
   return (
     <Grid item sm={12} xs={12} md={12}>
       {/* show mobile stepper for multiple section form ONLY */}
-      { views.length >1 &&
-      <Grid item>
-        <CustomMobileStepper
-          views={views}
-          view_index={view_index}
-          onChangeStepper={onChangeStepper}
-          ui_specification={ui_specification}
-        />
-      </Grid>}
+      {views.length > 1 && (
+        <Grid item>
+          <CustomMobileStepper
+            views={views}
+            view_index={view_index}
+            onChangeStepper={onChangeStepper}
+            ui_specification={ui_specification}
+          />
+        </Grid>
+      )}
       <Grid container spacing={2}>
         <Grid item md={12}>
           <br />
@@ -114,14 +114,15 @@ export default function FormButtonGroup(props: any) {
                 Continue{' '}
               </Button>
             )}
-            <FormSubmitButton
+            {/* need to fix the issue and re-enable it */}
+            {/* <FormSubmitButton
               disabled={disabled}
               formProps={formProps}
               text="Publish and continue editing"
               is_close={false}
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
-            />
+            /> */}
             <FormSubmitButton
               disabled={disabled}
               formProps={formProps}

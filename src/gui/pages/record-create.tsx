@@ -53,7 +53,7 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {getProjectMetadata} from '../../projectMetadata';
-import {TokenContents} from '../../datamodel/core';
+// import {TokenContents} from '../../datamodel/core';
 import RecordDelete from '../components/record/delete';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
@@ -155,6 +155,8 @@ function DraftEdit(props: DraftEditProps) {
       getProjectMetadata(project_id, 'sections').then(res =>
         setMetaSection(res)
       );
+      console.debug(draftLastSaved);
+      console.debug(draftError);
     }
   }, [project_id]);
 
@@ -206,11 +208,12 @@ function DraftEdit(props: DraftEditProps) {
               <Box px={not_xs ? 2 : 0}>
                 <RecordForm
                   project_id={project_id}
-                  draft_id={draft_id}
+                  record_id={record_id}
                   type={type_name}
                   ui_specification={uiSpec}
-                  record_id={record_id}
+                  draft_id={draft_id}
                   metaSection={metaSection}
+                  isDraftSaving={isDraftSaving}
                   handleSetIsDraftSaving={setIsDraftSaving}
                   handleSetDraftLastSaved={setDraftLastSaved}
                   handleSetDraftError={setDraftError}
@@ -233,11 +236,11 @@ function DraftEdit(props: DraftEditProps) {
   }
 }
 
-type RecordCreateProps = {
-  token?: null | undefined | TokenContents;
-};
+// type RecordCreateProps = {
+//   token?: null | undefined | TokenContents;
+// };
 
-export default function RecordCreate(props: RecordCreateProps) {
+export default function RecordCreate() {
   const {project_id, type_name, draft_id, record_id} = useParams<{
     project_id: ProjectID;
     type_name: string;

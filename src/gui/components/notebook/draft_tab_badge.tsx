@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {Badge, CircularProgress} from '@mui/material';
 import {listenDrafts} from '../../../drafts';
 import _ from 'lodash';

@@ -115,9 +115,7 @@ function DraftRecord(props: DraftsRecordProps) {
           headerName: '',
           type: 'string',
           width: 40,
-          renderCell: (params: GridCellParams) => (
-            <ArticleOutlinedIcon sx={{my: 2}} />
-          ),
+          renderCell: () => <ArticleOutlinedIcon sx={{my: 2}} />,
           hide: false,
           sortable: false,
           filterable: false,

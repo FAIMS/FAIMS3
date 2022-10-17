@@ -20,8 +20,6 @@
 
 import React from 'react';
 
-import {Box} from '@mui/material';
-
 import {RelationshipsComponentProps} from './types';
 
 import RecordLinkComponent from './record_links';

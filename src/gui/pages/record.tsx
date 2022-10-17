@@ -48,17 +48,7 @@ import {
 import {listFAIMSRecordRevisions} from '../../data_storage';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
-import RecordForm from '../components/record/form';
 
-// import {
-//
-//   RelationshipsViewComponent
-// } from '../components/record/relationships';
-import RelationshipsViewComponent from '../components/record/relationships';
-
-import FieldRelationshipComponent from '../components/record/relationships/field_level_links';
-import RecordReadView from '../components/record/read_view';
-import DraftSyncStatus from '../components/record/sync_status';
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
 import RecordDelete from '../components/record/delete';
@@ -85,14 +75,10 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
 import {getDetailRelatedInfommation} from '../components/record/relationships/RelatedInfomation';
-import {
-  RelationshipsComponentProps,
-  RelatedType,
-} from '../components/record/relationships/types';
+import {RelatedType} from '../components/record/relationships/types';
 
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import ListAltIcon from '@mui/icons-material/ListAlt';
 import CircularLoading from '../components/ui/circular_loading';
 import {useLocation} from 'react-router-dom';
 import RecordData from '../components/record/RecordData';
@@ -268,6 +254,7 @@ export default function Record() {
     // this is function to get child information
 
     const getrelatedInfo = async () => {
+      console.debug(relatedRecords);
       try {
         if (uiSpec !== null && type !== null) {
           const latest_record = await getFullRecordData(

@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React, {useRef} from 'react';
+import React from 'react';
 import {Field, FormikProps} from 'formik';
 
 import {getComponentByName} from '../../component_registry';

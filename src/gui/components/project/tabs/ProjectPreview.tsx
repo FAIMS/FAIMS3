@@ -34,7 +34,7 @@ import {
   Box,
 } from '@mui/material';
 import {Formik, Form} from 'formik';
-import {getComponentFromField, FormForm} from '../FormElement';
+import {FormForm} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {getprojectform, uiSpecType} from '../data/ComponentSetting';

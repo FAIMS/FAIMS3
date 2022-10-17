@@ -25,12 +25,12 @@ import {Box} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 import NoteBooks from '../components/workspace/notebooks';
-import {TokenContents} from '../../datamodel/core';
-type NoteBookListProps = {
-  token?: null | undefined | TokenContents;
-};
+// import {TokenContents} from '../../datamodel/core';
+// type NoteBookListProps = {
+//   token?: null | undefined | TokenContents;
+// };
 
-export default function NoteBookList(props: NoteBookListProps) {
+export default function NoteBookList() {
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
     {title: 'Notebooks'},

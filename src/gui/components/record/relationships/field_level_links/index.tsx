@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import CreateLinkComponent from '../create_links';
 import {Box} from '@mui/material';
 

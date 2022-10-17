@@ -24,16 +24,8 @@ import {FormikProps} from 'formik';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import RecordDraftState from '../../../sync/draft-state';
 import {getComponentFromFieldConfig} from './fields';
-import {Annotation, AnnotationField} from './Annotation';
-import {
-  Box,
-  Grid,
-  Divider,
-  Paper,
-  Alert,
-  IconButton,
-  Collapse,
-} from '@mui/material';
+import {AnnotationField} from './Annotation';
+import {Box, Grid, Paper, Alert, IconButton, Collapse} from '@mui/material';
 import {EditConflictDialog} from './conflict/conflictDialog';
 import NoteIcon from '@mui/icons-material/Note';
 import {grey} from '@mui/material/colors';

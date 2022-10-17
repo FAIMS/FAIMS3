@@ -19,7 +19,6 @@
  *   Do not use with sync code; UI code only.
  */
 
-import {string} from 'yup/lib/locale';
 import {
   ProjectID,
   RecordID,

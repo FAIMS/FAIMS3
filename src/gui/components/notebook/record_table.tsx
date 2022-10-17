@@ -122,7 +122,7 @@ function RecordsTable(props: RecordsTableProps) {
           headerName: '',
           type: 'string',
           width: 40,
-          renderCell: (params: GridCellParams) => <ArticleIcon sx={{my: 2}} />,
+          renderCell: () => <ArticleIcon sx={{my: 2}} />,
           hide: false,
           sortable: false,
           filterable: false,

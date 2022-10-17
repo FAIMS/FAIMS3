@@ -19,12 +19,8 @@
  */
 
 import React, {useEffect} from 'react';
-import Button from '@mui/material/Button';
-import AddIcon from '@mui/icons-material/Add';
-import TextField from '@mui/material/TextField';
 
-import {Field, FieldProps} from 'formik';
-import {Autocomplete} from 'formik-mui';
+import {FieldProps} from 'formik';
 
 import * as ROUTES from '../../constants/routes';
 import {FAIMSTypeName, LocationState} from '../../datamodel/core';
@@ -41,23 +37,16 @@ import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
-import {useLocation, Link} from 'react-router-dom';
+import {useLocation} from 'react-router-dom';
 import {Typography} from '@mui/material';
 import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInfomation';
-import DataGridLinksComponent from '../components/record/relationships/field_level_links/datagrid';
-import {LinkProps} from '../components/record/relationships/types';
-import {DataGrid, GridCellParams, GridColDef} from '@mui/x-data-grid';
-import {NavLink} from 'react-router-dom';
-import ArticleIcon from '@mui/icons-material/Article';
+import DataGridFieldLinksComponent from '../components/record/relationships/field_level_links/datagrid';
+import {RecordLinkProps} from '../components/record/relationships/types';
+
 import {Grid} from '@mui/material';
-import {
-  SelectChangeEvent,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material';
+import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
+import {CreateRecordLink} from '../components/record/relationships/create_links/create_record_link';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -76,7 +65,7 @@ function get_dafault_relation_label(
   value: any,
   type: string
 ) {
-  if (type === 'Child') return ['Child', 'Parent'];
+  if (type === 'Child') return ['is child of', 'is parent of'];
   if (value === null || value === undefined) return [];
   if (!multiple && value !== undefined && value['relation_type_vocabPair'])
     return value['relation_type_vocabPair'];
@@ -109,35 +98,6 @@ function excludes_related_record(
   return records;
 }
 
-const defaultColumns: GridColDef[] = [
-  {
-    field: 'recordB_type',
-    headerName: 'Kind',
-    minWidth: 100,
-  },
-  {
-    field: 'recordB_hrid',
-    headerName: 'HRID',
-    minWidth: 365,
-    renderCell: (params: GridCellParams) => (
-      <Button
-        component={NavLink}
-        to={params.row.recordB_route}
-        variant={'text'}
-      >
-        <Grid container direction="row" alignItems="center" spacing={'4px'}>
-          <ArticleIcon fontSize={'inherit'} /> {params.value}
-        </Grid>
-      </Button>
-    ),
-  },
-  {
-    field: 'recordB_lastUpdatedBy',
-    headerName: 'Last Updated',
-    minWidth: 300,
-  },
-];
-
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
@@ -150,7 +110,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     : '';
   const [isactive, setIsactive] = React.useState(false);
   const [recordsInformation, setRecordsInformation] = React.useState<
-    LinkProps[]
+    RecordLinkProps[]
   >([]);
   const type = props.relation_type.replace('faims-core::', '');
   const lastvaluePair = get_dafault_relation_label(
@@ -166,7 +126,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [selectedRecord, SetSelectedRecord] =
     React.useState<RecordReference | null>(null);
   const url_split = search.split('&');
-  const [columns, Setcolumns] = React.useState<GridColDef[]>(defaultColumns);
+  // const [columns, Setcolumns] = React.useState<GridColDef[]>(defaultColumns);
   const [fieldValue, setFieldValue] = React.useState(
     props.form.values[field_name]
   );
@@ -212,26 +172,28 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     (async () => {
       if (project_id !== undefined && mounted) {
         const records_info = await get_RelatedFields_for_field(
-          project_id,
-          props.field.name,
           props.form.values,
-          record_id
+          props.related_type,
+          relationshipPair,
+          field_name,
+          props.InputLabelProps.label,
+          multiple
         );
         setRecordsInformation(records_info);
 
-        if (records_info.length > 0 && columns.length === 0) {
-          const newColumns = columns;
-          // this is the code to dispaly the values from child, TO TO: disucssed in detail about how to display it
-          // Object.keys(records_info[0]).map((key: string) =>
-          //   key.includes('newfield')
-          //      ?newColumns.push({
-          //         field: key,
-          //         flex: 0.2,
-          //         minWidth: 100,
-          //       }):key
-          // );
-          Setcolumns(newColumns);
-        }
+        // if (records_info.length > 0 && columns.length === 0) {
+        //   const newColumns = columns;
+        //   // this is the code to dispaly the values from child, TO TO: disucssed in detail about how to display it
+        //   // Object.keys(records_info[0]).map((key: string) =>
+        //   //   key.includes('newfield')
+        //   //      ?newColumns.push({
+        //   //         field: key,
+        //   //         flex: 0.2,
+        //   //         minWidth: 100,
+        //   //       }):key
+        //   // );
+        //   Setcolumns(newColumns);
+        // }
       }
     })();
 
@@ -256,7 +218,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
-  const disbaled = props.disabled ?? false;
+  const disabled = props.disabled ?? false;
   const location_state: any = location.state;
   if (location_state !== undefined && location_state !== null) {
     if (location_state.parent_record_id !== props.form.values._id)
@@ -266,6 +228,11 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       newState['parent'] = location_state.parent;
     }
   }
+  const route = {
+    pathname:
+      ROUTES.NOTEBOOK + project_id + ROUTES.RECORD_CREATE + props.related_type,
+    state: newState,
+  };
   const handleChange = (event: SelectChangeEvent) => {
     const value: string = event.target.value;
     setRelationshipLabel(value);
@@ -328,6 +295,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       }
     } else newValue = '';
+    console.error('set new value', newValue);
     setFieldValue(newValue);
 
     const records = options;
@@ -349,143 +317,39 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   return (
     <div id={field_name}>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
-        {type === 'Linked' && props.relation_linked_vocabPair !== undefined && (
-          <Grid item xs={12} sm={12} md={3} lg={3}>
-            <FormControl fullWidth size={'small'}>
-              <InputLabel id={'demo-simple-select-label' + field_name}>
-                Relationship
-              </InputLabel>
-              <Select
-                labelId={'demo-simple-select-label' + field_name}
-                id={'create-record-relationship-type' + field_name}
-                value={relationshipLabel}
-                label="Relationship"
-                onChange={handleChange}
-                name={'create-relation-type' + field_name}
-              >
-                {props.relation_linked_vocabPair.map(
-                  (r: string[], index: number) => (
-                    <MenuItem value={r[0]} key={index}>
-                      {r[0]}
-                    </MenuItem>
-                  )
-                )}
-              </Select>
-            </FormControl>
-          </Grid>
-        )}
-        <Grid
-          item
-          xs={12}
-          sm={12}
-          md={type === 'Linked' ? 6 : 9}
-          lg={type === 'Linked' ? 6 : 9}
-        >
-          <Field
-            size={'small'}
-            // multiple={multiple}
-            id={props.id ?? 'asynchronous-demo'}
-            name={field_name + 'select'}
-            component={Autocomplete}
-            isOptionEqualToValue={(
-              option: RecordReference,
-              value: RecordReference
-            ) =>
-              value !== undefined
-                ? option.project_id === value.project_id &&
-                  option.record_id === value.record_id
-                : false
-            }
-            getOptionLabel={(option: RecordReference) =>
-              option.record_label ?? ''
-            }
+        <Grid item xs={12} sm={12} md={12} lg={12}>
+          <CreateRecordLink
+            field_name={field_name}
             options={options}
-            defaultValue={undefined}
-            disabled={disbaled}
-            onChange={(event: any, values: any) => {
-              console.error('select', values);
-              SetSelectedRecord(values);
-            }}
-            value={selectedRecord}
-            required={false}
-            renderInput={(params: any) => (
-              <TextField
-                {...params}
-                label={props.InputLabelProps.label}
-                error={props.form.errors[props.id] === undefined ? false : true}
-                variant="outlined"
-                InputProps={{
-                  ...params.InputProps,
-                }}
-              />
-            )}
+            handleChange={handleChange}
+            relationshipLabel={relationshipLabel}
+            SetSelectedRecord={SetSelectedRecord}
+            selectedRecord={selectedRecord}
+            disabled={disabled}
+            is_enabled={is_enabled}
+            project_id={project_id}
+            route={route}
+            type={type}
+            add_related_child={add_related_child}
+            {...props}
           />
         </Grid>
-        {project_id !== undefined &&
-          disbaled === false && ( //update for eid or view
-            <Grid item xs={12} sm={12} md={3} lg={3}>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<AddIcon />}
-                component={Link}
-                disabled={!is_enabled}
-                to={{
-                  pathname:
-                    ROUTES.NOTEBOOK +
-                    project_id +
-                    ROUTES.RECORD_CREATE +
-                    props.related_type,
-                  state: newState,
-                  search:
-                    '?field_id=' +
-                    props.id +
-                    '&link=' +
-                    location.pathname +
-                    search,
-                }}
-              >
-                New Record
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={() => add_related_child()}
-                disabled={!is_enabled}
-              >
-                Link
-              </Button>
-              {project_id !== undefined &&
-                disbaled === false &&
-                !is_enabled && ( //update for eid or view
-                  <Typography variant="caption">
-                    {' '}
-                    <br />
-                    To enable Add record or Link, remove the link firstly
-                  </Typography>
-                )}
-            </Grid>
-          )}
 
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          {disbaled === false && ( //update for eid or view
+          {disabled === false && ( //update for eid or view
             <Typography variant="caption">{props.helperText}</Typography>
           )}
         </Grid>
         <Grid item xs={12} sm={12} md={12} lg={12}>
           {recordsInformation.length > 0 && (
-            // <DataGridLinksComponent
-            //   links={recordsInformation}
-            //   show_title={false}
-            //   show_link_type={true}
-            //   show_section={false}
-            //   show_field={false}
-            //   field_label={'Field'}
-            //   handleUnlink={remove_related_child}
-            //   state={newState}
-            // />
-            <>Field Data</>
+            <DataGridFieldLinksComponent
+              links={recordsInformation}
+              record_id={record_id}
+              record_hrid={record_id}
+              record_type={props.form.values['type']}
+              field_label={props.InputLabelProps.label}
+              handleUnlink={remove_related_child}
+            />
           )}
         </Grid>
       </Grid>

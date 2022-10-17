@@ -33,7 +33,6 @@ import {
   Alert,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
 import * as ROUTES from '../../../../constants/routes';
 
@@ -45,11 +44,7 @@ import {
 } from '../../../pouchHook';
 import {ProjectInformation} from '../../../../datamodel/ui';
 import {dumpMetadataDBContents} from '../../../../uiSpecification';
-import {
-  ClusterProjectRoles,
-  ProjectID,
-  split_full_project_id,
-} from '../../../../datamodel/core';
+import {ProjectID, split_full_project_id} from '../../../../datamodel/core';
 import MetaDataJsonComponentProps from './metadata_json';
 import {
   isSyncingProjectAttachments,

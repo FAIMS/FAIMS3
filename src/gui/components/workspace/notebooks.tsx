@@ -109,6 +109,7 @@ export default function NoteBooks(props: NoteBookListProps) {
   // if the counter changes, add a new timeout, but only if > 0
   useEffect(() => {
     counter > 0 && setTimeout(() => setCounter(counter - 1), 1000);
+    counter === 0 && setLoading(false);
   }, [counter]);
 
   return (

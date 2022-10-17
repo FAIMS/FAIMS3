@@ -7,7 +7,6 @@ import {
   Typography,
   TextField,
   Autocomplete,
-  SelectChangeEvent,
   FormControl,
   InputLabel,
   Select,
@@ -16,31 +15,37 @@ import {
 import LoadingButton from '@mui/lab/LoadingButton';
 import {ActionType} from '../../../../../context/actions';
 import {store} from '../../../../../context/store';
-
+import {RecordReference} from '../../../../../datamodel/ui';
+import {Field} from 'formik';
 export interface RelationshipType {
   link: string;
   reciprocal: string;
 }
-interface CreateRecordLinkProps {
-  relationship_types: Array<RelationshipType>;
-  record_hrid: string;
-  record_type: string;
-  field_label: string;
-}
+// interface CreateRecordLinkProps {
+//   relationship_types: Array<RelationshipType>;
+//   record_hrid: string;
+//   record_type: string;
+//   field_label: string;
+// }
+type CreateRecordLinkProps = any;
 export function CreateRecordLink(props: CreateRecordLinkProps) {
   /**
    * Allow users to add a link to a record from the current record
    */
-  const [relationship, setRelationship] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
 
-  const options = ['Record 1', 'Record 2'];
-  const [value, setValue] = React.useState<string | null>(options[0]);
-  const [inputValue, setInputValue] = React.useState('');
   const {dispatch} = useContext(store);
-  const handleChange = (event: SelectChangeEvent) => {
-    setRelationship(event.target.value as string);
-  };
+
+  const {
+    field_name,
+    options,
+    handleChange,
+    relationshipLabel,
+    SetSelectedRecord,
+    selectedRecord,
+    disabled,
+  } = props;
+
   const handleSubmit = () => {
     /**
      * Submit relationship to couchDB
@@ -51,24 +56,22 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     const timer = setTimeout(() => {
       // reset local state of component
       setSubmitting(false);
-      setRelationship('');
-      setValue(options[0]);
-      setInputValue('');
+      props.add_related_child();
 
-      // response error
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: `Link between record ${props.record_type} ${props.record_hrid} and ${value} could not be added. Contact support.`,
-          severity: 'error',
-        },
-      });
+      // // response error
+      // dispatch({
+      //   type: ActionType.ADD_ALERT,
+      //   payload: {
+      //     message: `Link between record ${props.record_type} ${props.record_hrid} and ${selectedRecord.record_label} could not be added. Contact support.`,
+      //     severity: 'error',
+      //   },
+      // });
 
       // response success
       dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: `Link between record ${props.record_type} ${props.record_hrid} and ${value} added`,
+          message: `Link between record ${props.record_type} ${props.record_hrid} and ${selectedRecord.record_label} added`,
           severity: 'success',
         },
       });
@@ -93,39 +96,77 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
         </Typography>
       </Box>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
-        <Grid item xs={12} sm={12} md={3} lg={3}>
-          <FormControl fullWidth size={'small'}>
-            <InputLabel id="demo-simple-select-label">Relationship</InputLabel>
-            <Select
-              labelId="demo-simple-select-label"
-              id="create-record-relationship-type"
-              value={relationship}
-              label="Relationship"
-              onChange={handleChange}
-            >
-              {props.relationship_types.map(r => (
-                <MenuItem value={r.link} key={r.link}>
-                  {r.link}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={12} md={3} lg={3}>
-          <Autocomplete
-            fullWidth
+        {props.relation_type === 'Linked' &&
+          props.relation_linked_vocabPair !== undefined && (
+            <Grid item xs={12} sm={12} md={3} lg={3}>
+              <FormControl fullWidth size={'small'}>
+                <InputLabel id="demo-simple-select-label">
+                  Relationship
+                </InputLabel>
+                <Select
+                  labelId={'demo-simple-select-label' + field_name}
+                  id={'create-record-relationship-type' + field_name}
+                  value={relationshipLabel}
+                  label="Relationship"
+                  onChange={handleChange}
+                  name={'create-relation-type' + field_name}
+                >
+                  {props.relation_linked_vocabPair.map(
+                    (r: string[], index: number) => (
+                      <MenuItem value={r[0]} key={index}>
+                        {r[0]}
+                      </MenuItem>
+                    )
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
+        <Grid
+          item
+          xs={12}
+          sm={12}
+          md={props.relation_type === 'Linked' ? 3 : 6}
+          lg={props.relation_type === 'Linked' ? 3 : 6}
+        >
+          <Field
             size={'small'}
-            value={value}
-            onChange={(event: any, newValue: string | null) => {
-              setValue(newValue);
-            }}
-            inputValue={inputValue}
-            onInputChange={(event, newInputValue) => {
-              setInputValue(newInputValue);
-            }}
-            id="create-record-relationship-record"
+            // multiple={multiple}
+            id={props.id ?? 'asynchronous-demo'}
+            name={field_name + 'select'}
+            component={Autocomplete}
+            isOptionEqualToValue={(
+              option: RecordReference,
+              value: RecordReference
+            ) =>
+              value !== undefined
+                ? option.project_id === value.project_id &&
+                  option.record_id === value.record_id
+                : false
+            }
+            getOptionLabel={(option: RecordReference) =>
+              option.record_label ?? ''
+            }
             options={options}
-            renderInput={params => <TextField {...params} label="Record" />}
+            defaultValue={undefined}
+            disabled={disabled}
+            onChange={(event: any, values: any) => {
+              console.error('select', values);
+              SetSelectedRecord(values);
+            }}
+            value={selectedRecord}
+            required={false}
+            renderInput={(params: any) => (
+              <TextField
+                {...params}
+                label={props.InputLabelProps.label}
+                error={props.form.errors[props.id] === undefined ? false : true}
+                variant="outlined"
+                InputProps={{
+                  ...params.InputProps,
+                }}
+              />
+            )}
           />
         </Grid>
         <Grid

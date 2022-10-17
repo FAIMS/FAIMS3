@@ -19,13 +19,11 @@
  */
 
 import React from 'react';
-import {NavLink} from 'react-router-dom';
 import {
   Alert,
   Box,
   ButtonGroup,
   Button,
-  Grid,
   Typography,
   Modal,
   Paper,
@@ -94,12 +92,8 @@ export default function DataGridFieldLinksComponent(
   );
   function handleUnlink() {
     console.error('Unlink', modalLink);
-    props.handleUnlink(
-      modalLink.recordB_id,
-      modalLink.recordB_hrid
-      // modalLink.field,
-      // modalLink.recordA_id
-    );
+    if (props.handleUnlink !== undefined)
+      props.handleUnlink(modalLink.record_id, modalLink.hrid);
     setModalOpen(false);
   }
   function recordDisplay(

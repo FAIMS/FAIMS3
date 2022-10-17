@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, Paper, Chip, Grid, Link, Typography} from '@mui/material';
+import {Box, Paper, Chip, Link, Typography} from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
@@ -156,6 +156,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
             icon={<EditIcon color={'primary'} />}
             onClick={() => {
               alert('go to record>section>field');
+              console.debug(params);
             }}
             label="Edit link"
             showInMenu

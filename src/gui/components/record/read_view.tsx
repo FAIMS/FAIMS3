@@ -37,6 +37,7 @@ interface RecordReadViewProps {
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
+  isDraftSaving: boolean;
 }
 export default function RecordReadView(props: RecordReadViewProps) {
   /**
@@ -61,6 +62,7 @@ export default function RecordReadView(props: RecordReadViewProps) {
         handleSetIsDraftSaving={props.handleSetIsDraftSaving}
         handleSetDraftLastSaved={props.handleSetDraftLastSaved}
         handleSetDraftError={props.handleSetDraftError}
+        isDraftSaving={props.isDraftSaving}
       />
     </Box>
   );

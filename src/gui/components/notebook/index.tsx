@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import {
-  Divider,
   Tabs,
   Tab,
   Typography,
@@ -27,7 +26,6 @@ import {useTheme} from '@mui/material/styles';
 import DraftTabBadge from './draft_tab_badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
-import ProjectStatus from './settings/status';
 
 interface TabPanelProps {
   children?: React.ReactNode;
