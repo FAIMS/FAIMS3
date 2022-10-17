@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: ProjectDesign.tsx
- * Description:This is the file about form design, all uiSpec related sould be defined here
+ * Description:This is the file about form design, all uiSpec related should be defined here
  *   TODO: [BUG] when form tab changes, section tab should be reset(Should use tabPanels instead??)
  *   TODO: [BUG] edit Project is not working, can't read information for project
  *   TODO: switch the form component, need to change to drag element
@@ -93,7 +93,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
     projectvalue,
     ...others
   } = props;
-  const ini = {_id: project_id ?? 'new_notbook'};
+  const ini = {_id: project_id ?? 'new_notebook'};
 
   const [formtabs, setformTabs] = useState<Array<string>>([]);
   const [formlabel, setformlabel] = useState<string>('');

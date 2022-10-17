@@ -313,7 +313,7 @@ const uiSettingOthers: ProjectUIModel = {
       uidesign: 'form',
       label: 'other',
     },
-    // add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+    // add for branching logic setting, this is for testing/developing ONLY, not ready for production yet
     logic: {
       fields: ['logic_select'],
       uidesign: 'form',
@@ -792,7 +792,7 @@ const definelogicvalue = (
   }
   return value;
 };
-// add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+// add for branching logic setting, this is for testing/developing ONLY, not ready for production yet
 const definelogic = (
   newvalues: ProjectUIModel,
   value: any,

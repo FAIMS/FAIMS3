@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: ProjectDesign.tsx
- * Description:This is the file about form design, all uiSpec related sould be defined here
+ * Description:This is the file about form design, all uiSpec related should be defined here
  *   TODO: [BUG] when form tab changes, section tab should be reset(Should use tabPanels instead??)
  *   TODO: [BUG] edit Project is not working, can't read information for project
  *   TODO: switch the form component, need to change to drag element
@@ -52,7 +52,7 @@ const useStyles = makeStyles(theme => ({
 
 const sections_default = ['SECTION1'];
 const variant_default = ['FORM1'];
-const form_defult = {FORM1SECTION1: []};
+const form_default = {FORM1SECTION1: []};
 const VISIBLE_TYPE = 'visible_types';
 const variant_label = 'Form1';
 const DefaultAnnotation = {
@@ -89,10 +89,10 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     setProjectValue,
     ...others
   } = props;
-  const ini = {_id: project_id ?? 'new_notbook'};
+  const ini = {_id: project_id ?? 'new_notebook'};
   const [initialValues, setinitialValues] = useState(ini);
   const [formcomponents, setFormComponents] =
-    useState<formcomponents>(form_defult);
+    useState<formcomponents>(form_default);
   const [isAddField, setIsAddField] = useState(true);
   const [currentView, setCurrentView] = useState(sections_default[0]);
   const [designvalue, setDesignvalue] = useState<string>('settings');

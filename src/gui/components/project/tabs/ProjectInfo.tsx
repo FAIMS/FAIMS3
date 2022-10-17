@@ -169,7 +169,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   };
 
   const handleattachment = () => {
-    //handle to add attachemtns
+    //handle to add attachments
     if (
       props.formProps.values.attachments !== undefined &&
       props.formProps.values.attachments.length > 0

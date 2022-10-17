@@ -25,7 +25,7 @@ import {ProjectID} from './datamodel/core';
 import {UI_SPECIFICATION_NAME} from './datamodel/database';
 import {equals} from './utils/eqTestSupport';
 
-import {getProjectDB} from './sync/index';
+// import {getProjectDB} from './sync/index';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
@@ -108,7 +108,8 @@ describe('roundtrip reading and writing to db', () => {
         .then(result => {
           delete result['_rev'];
           expect(equals(result, uiInfo)).toBe(true);
-        });
+        })
+        .catch(error => console.error('error to get project', error));
     }
   );
 });

@@ -26,7 +26,7 @@ import {
   AddParent,
   RemoveParent,
   AddLink,
-  RemoveLink,
+  // RemoveLink,
 } from './RelatedInformation';
 
 // PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
@@ -154,10 +154,10 @@ test('test add link information for exist link infomation from parent', () => {
   const relation = AddLink({linked: [linked_information]}, linked_information);
   expect(equals(relation, {linked: [linked_information]})).toBe(true);
 });
-test('test remove link information from parent', () => {
-  const relation = RemoveLink(
-    {parent: linked_information, linked: [linked_information]},
-    linked_information
-  );
-  expect(equals(relation, {parent: linked_information})).toBe(true);
-});
+// test('test remove link information from parent', () => {
+//   const relation = RemoveLink(
+//     {parent: linked_information, linked: [linked_information]},
+//     linked_information
+//   );
+//   expect(equals(relation, {parent: linked_information})).toBe(true);
+// });
