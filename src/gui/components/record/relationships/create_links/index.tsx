@@ -9,11 +9,11 @@ import {
   ButtonGroup,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import AddIcon from '@mui/icons-material/Add';
 import {styled} from '@mui/material/styles';
 
-import {CreateRecordLink, RelationshipType} from './create_record_link';
+import {CreateRecordLink, AddNewRecordButton} from './create_record_link';
 import LinkIcon from '@mui/icons-material/Link';
+import {CreateRecordLinkProps} from '../types';
 interface ExpandMoreProps extends ButtonProps {
   expand: boolean;
 }
@@ -30,12 +30,15 @@ export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
     }),
   },
 }));
-export default function CreateLinkComponent(props: {
-  relationship_types: Array<RelationshipType>;
-  record_hrid: string;
-  record_type: string;
+
+interface CreateLinkComponentProps {
   field_label: string;
-}) {
+}
+
+export default function CreateLinkComponent(
+  props: CreateLinkComponentProps & CreateRecordLinkProps
+) {
+  const {field_label, ...others} = props;
   // is the new link functionality visible
   const [expanded, setExpanded] = React.useState(false);
 
@@ -56,14 +59,20 @@ export default function CreateLinkComponent(props: {
           <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
         </Grid>
         <Grid item xs={'auto'}>
-          <Typography variant={'h6'}>Links from {props.field_label}</Typography>
+          <Typography variant={'h6'}>Links from {field_label}</Typography>
         </Grid>
         <Grid item xs>
           <Divider />
         </Grid>
         <Grid item>
           <ButtonGroup variant={'outlined'} size={'medium'}>
-            <Button startIcon={<AddIcon />}>Add Child Record</Button>
+            {props.relation_type === 'Child' && (
+              <AddNewRecordButton
+                is_enabled={props.is_enabled}
+                create_route={props.create_route}
+                text={'Add Child Record'}
+              />
+            )}
             <ExpandMoreButton
               disableElevation
               expand={expanded}
@@ -71,6 +80,7 @@ export default function CreateLinkComponent(props: {
               aria-expanded={expanded}
               aria-label="show more"
               endIcon={<ExpandMoreIcon />}
+              disabled={props.disabled}
             >
               Add Link
             </ExpandMoreButton>
@@ -80,12 +90,7 @@ export default function CreateLinkComponent(props: {
       <Grid container spacing={2}>
         <Grid item xs={12}>
           <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
-            <CreateRecordLink
-              relationship_types={props.relationship_types}
-              record_hrid={props.record_hrid}
-              record_type={props.record_type}
-              field_label={props.field_label}
-            />
+            <CreateRecordLink {...others} />
           </Collapse>
         </Grid>
       </Grid>

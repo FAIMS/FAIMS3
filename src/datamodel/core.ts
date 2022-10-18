@@ -44,16 +44,16 @@ export function split_full_project_id(full_proj_id: ProjectID): {
   listing_id: ListingID;
   project_id: NonUniqueProjectID;
 } {
-  const splitid = full_proj_id.split('||');
+  const splitId = full_proj_id.split('||');
   if (
-    splitid.length !== 2 ||
-    splitid[0].trim() === '' ||
-    splitid[1].trim() === ''
+    splitId.length !== 2 ||
+    splitId[0].trim() === '' ||
+    splitId[1].trim() === ''
   ) {
     throw Error('{full_proj_id} is not a valid full project id.');
   }
-  const cleaned_listing_id = splitid[0].replace('\\|\\|', '||');
-  const cleaned_project_id = splitid[1].replace('\\|\\|', '||');
+  const cleaned_listing_id = splitId[0].replace('\\|\\|', '||');
+  const cleaned_project_id = splitId[1].replace('\\|\\|', '||');
   return {
     listing_id: cleaned_listing_id,
     project_id: cleaned_project_id,
@@ -79,18 +79,18 @@ export function resolve_record_id(
 export function split_full_record_id(
   full_record_id: FullyResolvedRecordID
 ): SplitRecordID {
-  const splitid = full_record_id.split('||');
+  const splitId = full_record_id.split('||');
   if (
-    splitid.length !== 2 ||
-    splitid[0].trim() === '' ||
-    splitid[1].trim() === ''
+    splitId.length !== 2 ||
+    splitId[0].trim() === '' ||
+    splitId[1].trim() === ''
   ) {
     throw Error('Not a valid full record id');
   }
-  const cleaned_project_id = splitid[0].replace('\\|\\|', '||');
+  const cleaned_project_id = splitId[0].replace('\\|\\|', '||');
   return {
     project_id: cleaned_project_id,
-    record_id: splitid[1],
+    record_id: splitId[1],
   };
 }
 

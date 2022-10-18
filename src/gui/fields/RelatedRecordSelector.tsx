@@ -46,7 +46,7 @@ import {RecordLinkProps} from '../components/record/relationships/types';
 import {Grid} from '@mui/material';
 import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
-import {CreateRecordLink} from '../components/record/relationships/create_links/create_record_link';
+import CreateLinkComponent from '../components/record/relationships/create_links';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -58,6 +58,9 @@ interface Props {
   helperText?: string;
   disabled?: boolean;
   relation_linked_vocabPair?: Array<Array<string>>;
+  related_type_label?: string;
+  current_form?: string;
+  current_form_label?: string;
 }
 
 function get_default_relation_label(
@@ -177,7 +180,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           relationshipPair,
           field_name,
           props.InputLabelProps.label,
-          multiple
+          multiple,
+          props.related_type_label,
+          props.current_form
         );
         setRecordsInformation(records_info);
 
@@ -318,7 +323,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     <div id={field_name}>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          <CreateRecordLink
+          <CreateLinkComponent
+            {...props}
             field_name={field_name}
             options={options}
             handleChange={handleChange}
@@ -328,10 +334,10 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             disabled={disabled}
             is_enabled={is_enabled}
             project_id={project_id}
-            route={route}
-            type={type}
+            relation_type={type}
             add_related_child={add_related_child}
-            {...props}
+            field_label={props.InputLabelProps.label}
+            create_route={route}
           />
         </Grid>
 
@@ -573,6 +579,25 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
       newvalues['fields'][props.fieldName]['component-parameters'][
         'relation_linked_vocabPair'
       ] = pair_value;
+      props.setuiSpec({...newvalues});
+    } else if (name === 'related_type') {
+      const newvalues = props.uiSpec;
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'related_type'
+      ] = event.target.value;
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'related_type_label'
+      ] =
+        props.uiSpec['viewsets'][event.target.value]['label'] ??
+        event.target.value;
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'current_form'
+      ] = props.currentform; //currentform
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'current_form_label'
+      ] =
+        props.uiSpec['viewsets'][props.currentform]['label'] ??
+        props.currentform;
       props.setuiSpec({...newvalues});
     }
   };

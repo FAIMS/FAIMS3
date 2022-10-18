@@ -107,3 +107,4 @@ export const PARENT_CHILD_VOCAB = [
   'is parent of',
   'has parent',
 ];
+export type CreateRecordLinkProps = any;

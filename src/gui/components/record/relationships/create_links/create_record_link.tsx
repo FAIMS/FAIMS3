@@ -17,17 +17,28 @@ import {ActionType} from '../../../../../context/actions';
 import {store} from '../../../../../context/store';
 import {RecordReference} from '../../../../../datamodel/ui';
 import {Field} from 'formik';
-export interface RelationshipType {
-  link: string;
-  reciprocal: string;
+import AddIcon from '@mui/icons-material/Add';
+import {Link} from 'react-router-dom';
+import {CreateRecordLinkProps} from '../types';
+
+export function AddNewRecordButton(props: {
+  is_enabled: boolean;
+  create_route: string;
+  text: string;
+}) {
+  return (
+    <Button
+      variant="outlined"
+      color="primary"
+      startIcon={<AddIcon />}
+      component={Link}
+      disabled={!props.is_enabled}
+      to={props.create_route}
+    >
+      {props.text}
+    </Button>
+  );
 }
-// interface CreateRecordLinkProps {
-//   relationship_types: Array<RelationshipType>;
-//   record_hrid: string;
-//   record_type: string;
-//   field_label: string;
-// }
-type CreateRecordLinkProps = any;
 export function CreateRecordLink(props: CreateRecordLinkProps) {
   /**
    * Allow users to add a link to a record from the current record
@@ -44,6 +55,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     SetSelectedRecord,
     selectedRecord,
     disabled,
+    project_id,
   } = props;
 
   const handleSubmit = () => {
@@ -151,7 +163,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             defaultValue={undefined}
             disabled={disabled}
             onChange={(event: any, values: any) => {
-              console.error('select', values);
               SetSelectedRecord(values);
             }}
             value={selectedRecord}
@@ -169,34 +180,64 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             )}
           />
         </Grid>
-        <Grid
-          item
-          xs={12}
-          sm={12}
-          md={1}
-          lg={1}
-          alignItems={'stretch'}
-          style={{display: 'flex'}}
-        >
-          {submitting ? (
-            <LoadingButton
-              loading
-              variant={'contained'}
-              fullWidth
-              size={'medium'}
-            />
-          ) : (
-            <Button
-              variant={'contained'}
-              disableElevation
-              fullWidth
-              size={'medium'}
-              onClick={handleSubmit}
+        {project_id !== undefined && disabled === false && (
+          <Grid
+            item
+            xs={12}
+            sm={12}
+            md={props.relation_type === 'Linked' ? 3 : 1}
+            lg={props.relation_type === 'Linked' ? 3 : 1}
+            alignItems={'stretch'}
+            style={{display: 'flex'}}
+          >
+            {submitting ? (
+              <LoadingButton
+                loading
+                variant={'contained'}
+                fullWidth
+                size={'medium'}
+              />
+            ) : (
+              <>
+                <Button
+                  variant={'contained'}
+                  disableElevation
+                  fullWidth={props.relation_type === 'Linked' ? false : true}
+                  onClick={handleSubmit}
+                  disabled={!props.is_enabled}
+                  style={{marginRight: '5px'}}
+                >
+                  Link
+                </Button>
+                {props.relation_type === 'Linked' && (
+                  <AddNewRecordButton
+                    is_enabled={props.is_enabled}
+                    create_route={props.create_route}
+                    text={'Add Record'}
+                  />
+                )}
+              </>
+            )}
+          </Grid>
+        )}
+        {project_id !== undefined &&
+          disabled === false &&
+          !props.is_enabled && ( //update for eid or view
+            <Grid
+              item
+              xs={12}
+              sm={12}
+              md={2}
+              lg={2}
+              alignItems={'stretch'}
+              style={{display: 'flex'}}
             >
-              Link
-            </Button>
+              <Typography variant="caption">
+                {' '}
+                To enable Add record or Link, remove link firstly
+              </Typography>
+            </Grid>
           )}
-        </Grid>
       </Grid>
     </Box>
   );

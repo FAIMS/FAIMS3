@@ -116,7 +116,11 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
         valueGetter: (params: GridCellParams) => params.row.link.section,
         renderCell: (params: GridCellParams) => (
           <Typography variant={'body2'} fontWeight={'bold'}>
-            <Link component={NavLink} to={params.row.route} underline={'none'}>
+            <Link
+              component={NavLink}
+              to={params.row.link.route}
+              underline={'none'}
+            >
               {params.value}
             </Link>
           </Typography>
@@ -131,7 +135,11 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
         valueGetter: (params: GridCellParams) => params.row.link.field_label,
         renderCell: (params: GridCellParams) => (
           <Typography variant={'body2'} fontWeight={'bold'}>
-            <Link component={NavLink} to={params.row.route} underline={'none'}>
+            <Link
+              component={NavLink}
+              to={params.row.link.route + '#' + params.row.link.field_id}
+              underline={'none'}
+            >
               {params.value}
             </Link>
           </Typography>

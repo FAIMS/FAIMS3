@@ -25,67 +25,12 @@ import {Formik, Form} from 'formik';
 import {ViewComponent} from '../view';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 
-import {Grid, Box, Paper} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {grey} from '@mui/material/colors';
-import {ExpandMoreButton} from './create_links';
-
-type ParentFormProps = {
+export type ParentFormProps = {
   parentRecords: Array<ParentLinkProps> | null;
   ui_specification: ProjectUIModel;
 };
 
-export default function ParentPanel(props: ParentFormProps) {
-  const [expanded, setExpanded] = React.useState(true);
-  const {ui_specification, parentRecords} = props;
-  if (
-    parentRecords === null ||
-    parentRecords.length === 0 ||
-    parentRecords[0]['persistentData'] === undefined ||
-    parentRecords[0].type === undefined
-  )
-    return <></>;
-  const handleExpandClick = () => {
-    setExpanded(!expanded);
-    console.error(expanded);
-  };
-  return (
-    <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>
-      <Grid
-        container
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={1}
-      >
-        <Grid item>
-          <ExpandMoreButton
-            disableElevation
-            expand={expanded}
-            onClick={handleExpandClick}
-            aria-expanded={expanded}
-            aria-label="show more"
-            endIcon={<ExpandMoreIcon />}
-          >
-            Inherit From Parent {parentRecords[0]['hrid']}
-          </ExpandMoreButton>
-        </Grid>
-      </Grid>
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          {expanded && (
-            <ParentForm
-              parentRecords={parentRecords}
-              ui_specification={ui_specification}
-            />
-          )}
-        </Grid>
-      </Grid>
-    </Box>
-  );
-}
-
-function ParentForm(props: ParentFormProps) {
+export default function ParentForm(props: ParentFormProps) {
   const {ui_specification, parentRecords} = props;
   if (
     parentRecords === null ||

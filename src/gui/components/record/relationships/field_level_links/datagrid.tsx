@@ -91,7 +91,6 @@ export default function DataGridFieldLinksComponent(
     []
   );
   function handleUnlink() {
-    console.error('Unlink', modalLink);
     if (props.handleUnlink !== undefined)
       props.handleUnlink(modalLink.record_id, modalLink.hrid);
     setModalOpen(false);
