@@ -1,5 +1,26 @@
-@import url('https://fonts.googleapis.com/css?family=Open+Sans');
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:300,400,500,700,800,900');
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700;900&display=swap');
+
 .recordstepper::-webkit-scrollbar {
     display: none;
-  }
+}
+.support-link{
+    color:black;
+    text-decoration:none;
+}
+.bg-primary-gradient{
+    background: linear-gradient(0deg, rgba(0,159,253,1) 0%, rgba(34,63,142,1) 58%);
+}
+/* class for conflict warnings */
+.bg-warning{
+    background-color: #FDF4E7;
+}
+
+/* MUI datagrid pagination: bold for total row count emphasis */
+.MuiTablePagination-displayedRows {font-weight: 600}
+
+/* Record links table header*/
+.faims-record-link--header{
+    background-color: #e0e0e0;
+    font-weight:700
+}

@@ -25,15 +25,14 @@ import {
   AppBar,
   Tab,
   Box,
-  Container,
   Typography,
   Paper,
   CircularProgress,
 } from '@mui/material';
 
-import {ActionType} from '../../actions';
+import {ActionType} from '../../context/actions';
 import * as ROUTES from '../../constants/routes';
-import {store} from '../../store';
+import {store} from '../../context/store';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
@@ -53,34 +52,20 @@ import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
-import {TokenContents} from '../../datamodel/core';
+// import {TokenContents} from '../../datamodel/core';
 import RecordDelete from '../components/record/delete';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
-
-const useStyles = makeStyles(theme => ({
-  NoPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 5,
-      paddingRight: 5,
-    },
-  },
-  LeftPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 5,
-      paddingRight: 5,
-    },
-  },
-}));
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
+  state?: any;
+  record_id: string;
 }
 
 function DraftCreate(props: DraftCreateProps) {
-  const {project_id, type_name} = props;
+  const {project_id, type_name, record_id} = props;
 
   const {dispatch} = useContext(store);
   const history = useHistory();
@@ -96,7 +81,7 @@ function DraftCreate(props: DraftCreateProps) {
   useEffect(() => {
     if (uiSpec !== null) {
       const field_types = getReturnedTypesForViewSet(uiSpec, type_name);
-      newStagedData(project_id, null, type_name, field_types).then(
+      newStagedData(project_id, null, type_name, field_types, record_id).then(
         setDraft_id,
         setError
       );
@@ -121,15 +106,18 @@ function DraftCreate(props: DraftCreateProps) {
   } else {
     return (
       <Redirect
-        to={
-          ROUTES.PROJECT +
-          project_id +
-          ROUTES.RECORD_CREATE +
-          type_name +
-          ROUTES.RECORD_DRAFT +
-          draft_id +
-          useLocation().search
-        }
+        to={{
+          pathname:
+            ROUTES.NOTEBOOK +
+            project_id +
+            ROUTES.RECORD_CREATE +
+            type_name +
+            ROUTES.RECORD_DRAFT +
+            draft_id +
+            ROUTES.RECORD_RECORD +
+            record_id, // update for get record_id persistence for the draft
+          state: props.state,
+        }}
       />
     );
   }
@@ -141,6 +129,7 @@ interface DraftEditProps {
   draft_id: string;
   project_info: ProjectInformation | null;
   record_id: RecordID;
+  state?: any;
 }
 
 function DraftEdit(props: DraftEditProps) {
@@ -150,7 +139,11 @@ function DraftEdit(props: DraftEditProps) {
 
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
-  const classes = useStyles();
+
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
+  const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
+  const [draftError, setDraftError] = useState(null as string | null);
+
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
@@ -162,6 +155,8 @@ function DraftEdit(props: DraftEditProps) {
       getProjectMetadata(project_id, 'sections').then(res =>
         setMetaSection(res)
       );
+      console.debug(draftLastSaved);
+      console.debug(draftError);
     }
   }, [project_id]);
 
@@ -186,7 +181,7 @@ function DraftEdit(props: DraftEditProps) {
     // Loaded, variant picked, show form:
     return (
       <React.Fragment>
-        <Box mb={2} className={classes.NoPadding}>
+        <Box mb={2}>
           <Typography variant={'h2'} component={'h1'}>
             {uiSpec['viewsets'][type_name]['label'] ?? type_name} Record
           </Typography>
@@ -213,11 +208,15 @@ function DraftEdit(props: DraftEditProps) {
               <Box px={not_xs ? 2 : 0}>
                 <RecordForm
                   project_id={project_id}
-                  draft_id={draft_id}
+                  record_id={record_id}
                   type={type_name}
                   ui_specification={uiSpec}
-                  record_id={record_id}
+                  draft_id={draft_id}
                   metaSection={metaSection}
+                  isDraftSaving={isDraftSaving}
+                  handleSetIsDraftSaving={setIsDraftSaving}
+                  handleSetDraftLastSaved={setDraftLastSaved}
+                  handleSetDraftError={setDraftError}
                 />
               </Box>
             </TabPanel>
@@ -236,18 +235,24 @@ function DraftEdit(props: DraftEditProps) {
     );
   }
 }
-type RecordCreateProps = {
-  token?: null | undefined | TokenContents;
-};
 
-export default function RecordCreate(props: RecordCreateProps) {
-  const {project_id, type_name, draft_id} = useParams<{
+// type RecordCreateProps = {
+//   token?: null | undefined | TokenContents;
+// };
+
+export default function RecordCreate() {
+  const {project_id, type_name, draft_id, record_id} = useParams<{
     project_id: ProjectID;
     type_name: string;
     draft_id?: string;
+    record_id?: string;
   }>();
+  let draft_record_id = generateFAIMSDataID();
+  if (record_id !== undefined) draft_record_id = record_id;
 
   let project_info: ProjectInformation | null;
+  const location: any = useLocation();
+
   try {
     project_info = useEventedPromise(
       getProjectInfo,
@@ -263,35 +268,62 @@ export default function RecordCreate(props: RecordCreateProps) {
       return <Redirect to="/404" />;
     }
   }
-
-  const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
-    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
+  let breadcrumbs = [
+    {link: ROUTES.INDEX, title: 'Home'},
+    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
-      link: ROUTES.PROJECT + project_id,
+      link: ROUTES.NOTEBOOK + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: 'Draft'},
   ];
 
-  const classes = useStyles();
+  // add parent link back for the parent or linked record
+  if (
+    location.state !== undefined &&
+    location.state.parent_record_id !== record_id
+  ) {
+    const type =
+      location.state.type === 'Child'
+        ? 'Parent'
+        : location.state.relation_type_vocabPair[0];
+    breadcrumbs = [
+      {link: ROUTES.INDEX, title: 'Home'},
+      {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+      {
+        link: ROUTES.NOTEBOOK + project_id,
+        title: project_info !== null ? project_info.name : project_id,
+      },
+      {
+        link: ROUTES.NOTEBOOK + location.state.parent_link,
+        title: type + ':' + location.state.parent_record_id,
+      },
+      {title: 'Draft'},
+    ];
+  }
 
   return (
     <React.Fragment>
-      <Container maxWidth="lg" className={classes.NoPadding}>
-        <Breadcrumbs data={breadcrumbs} token={props.token} />
-        {draft_id === undefined ? (
-          <DraftCreate project_id={project_id} type_name={type_name} />
+      <Box>
+        <Breadcrumbs data={breadcrumbs} />
+        {draft_id === undefined || record_id === undefined ? (
+          <DraftCreate
+            project_id={project_id}
+            type_name={type_name}
+            state={location.state}
+            record_id={draft_record_id}
+          />
         ) : (
           <DraftEdit
             project_info={project_info}
             project_id={project_id}
             type_name={type_name}
             draft_id={draft_id}
-            record_id={generateFAIMSDataID()}
+            record_id={record_id}
+            state={location.state}
           />
         )}
-      </Container>
+      </Box>
     </React.Fragment>
   );
 }

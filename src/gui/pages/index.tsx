@@ -18,77 +18,107 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {NavLink} from 'react-router-dom';
 
-import {
-  Grid,
-  Container,
-  Paper,
-  MenuList,
-  MenuItem,
-  ListItemIcon,
-} from '@mui/material';
-// import AccountTree from '@mui/icons-material/AccountTree';
-import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import WorkSharpIcon from '@mui/icons-material/WorkSharp';
+import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
-import Breadcrumbs from '../components/ui/breadcrumbs';
+import {useTheme} from '@mui/material/styles';
+import {checkToken} from '../../utils/helpers';
 import {TokenContents} from '../../datamodel/core';
-
+import DashboardIcon from '@mui/icons-material/Dashboard';
 type IndexProps = {
   token?: null | undefined | TokenContents;
 };
+export default function Index(props: IndexProps) {
+  /**
+   * Landing page
+   */
+  const theme = useTheme();
+  const isAuthenticated = checkToken(props.token);
+  useEffect(() => {
+    document.body.classList.add('bg-primary-gradient');
 
-type IndexState = {};
+    return () => {
+      document.body.classList.remove('bg-primary-gradient');
+    };
+  });
 
-export class Index extends React.Component<IndexProps, IndexState> {
-  constructor(props: IndexProps) {
-    super(props);
-
-    this.state = {};
-  }
-
-  render() {
-    const breadcrumbs = [{title: 'Home'}];
-    return (
-      <Container maxWidth="lg">
-        <Breadcrumbs data={breadcrumbs} token={this.props.token} />
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} lg={4}>
-            <Paper>
-              <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.SIGN_IN}>
-                  <ListItemIcon>
-                    <AccountBoxIcon fontSize="small" />
-                  </ListItemIcon>
-                  {this.props.token !== null && this.props.token !== undefined
-                    ? 'Account Information'
-                    : 'Sign in to notebooks'}
-                </MenuItem>
-              </MenuList>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} lg={4}>
-            <Paper>
-              <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.WORKSPACE}>
-                  <ListItemIcon>
-                    <WorkSharpIcon fontSize="small" />
-                  </ListItemIcon>
-                  Workspace
-                </MenuItem>
-                {/* <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
-                  <ListItemIcon>
-                    <AccountTree fontSize="small" />
-                  </ListItemIcon>
-                  Notebooks
-                </MenuItem>*/}
-              </MenuList>
-            </Paper>
-          </Grid>
+  return (
+    <React.Fragment>
+      <Grid
+        container
+        direction="row"
+        justifyContent="center"
+        alignItems="center"
+        spacing={3}
+        sx={{minHeight: '60vh'}}
+      >
+        <Grid item xs={12} sm={6}>
+          <Typography
+            variant={'h1'}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            FAIMS 3.0 Electronic Field{' '}
+            <Typography
+              variant={'h1'}
+              sx={{color: theme.palette.secondary.main}}
+            >
+              Notebooks
+            </Typography>
+          </Typography>
+          <Typography
+            variant={'h4'}
+            sx={{fontWeight: 'light', mb: 3}}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            The FAIMS 3.0 Project is building the next generation of Electronic
+            Field Notebooks. Join us on the journey.
+          </Typography>
+          {isAuthenticated ? (
+            <React.Fragment>
+              <Button
+                variant="contained"
+                color={'secondary'}
+                disableElevation
+                sx={{mr: 1}}
+                component={NavLink}
+                to={ROUTES.WORKSPACE}
+                startIcon={<DashboardIcon />}
+              >
+                Workspace
+              </Button>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <Button
+                variant="contained"
+                color={'primary'}
+                disableElevation
+                sx={{mr: 1}}
+                component={NavLink}
+                to={ROUTES.SIGN_IN}
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="outlined"
+                color={'secondary'}
+                disableElevation
+                href="https://faims.edu.au/contact/"
+                target={'_blank'}
+              >
+                Register your interest
+              </Button>
+            </React.Fragment>
+          )}
         </Grid>
-      </Container>
-    );
-  }
+        <Grid item xs={12} sm={6}>
+          {/*  picture could go here... */}
+        </Grid>
+      </Grid>
+    </React.Fragment>
+  );
 }

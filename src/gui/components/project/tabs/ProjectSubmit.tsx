@@ -24,14 +24,15 @@ import * as ROUTES from '../../../../constants/routes';
 import CircularProgress from '@mui/material/CircularProgress';
 import {Grid, Typography, Box, Button} from '@mui/material';
 import {ProjectSubmit} from './ProjectButton';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import Alert from '@mui/material/Alert';
 import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 type ProjectSubmitProps = {
   project_id: string | null;
-  projectvalue: ProjevtValueList;
+  projectvalue: ProjectValueList;
   setProjectValue: FAIMShandlerType;
   handleSubmit: FAIMShandlerType;
   handlepublish: FAIMShandlerType;
@@ -46,6 +47,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
   const [state, seState] = useState(false);
   const [issubmit, setissubmit] = useState(projectvalue.ispublic ?? false);
   const [ischecked, setischecked] = useState(false);
+  const theme = useTheme();
 
   useEffect(() => {
     let isactive = true;
@@ -148,7 +150,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
               color="primary"
               component={RouterLink}
               onClick={onButtonClick}
-              to={ROUTES.PROJECT + project_id}
+              to={ROUTES.NOTEBOOK + project_id}
             >
               Check Notebook
             </Button>
@@ -204,7 +206,10 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
         </Typography>
       </Grid>
       <Grid item sm={6} xs={12}>
-        <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
+        <Box
+          bgcolor={grey[200]}
+          sx={{overflowX: 'scroll', p: theme.spacing(2)}}
+        >
           <Typography variant={'h6'} component={'h6'}>
             What happens next after you click SAVE NOTEBOOK?
           </Typography>

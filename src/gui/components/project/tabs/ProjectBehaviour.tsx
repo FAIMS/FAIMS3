@@ -31,7 +31,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
     {
       label: 'Automatic Updates',
       helpText:
-        'Automatically save changes the user makes as they occur.Automatically retrive changes made by other users every 30s (if online)',
+        'Automatically save changes the user makes as they occur.Automatically retrieve changes made by other users every 30s (if online)',
     },
     {
       label: 'Offline Use',

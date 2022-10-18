@@ -29,6 +29,7 @@ import {
   ProjectID,
   FAIMSTypeName,
   Annotations,
+  Relationship,
 } from './core';
 import {
   FAIMSConstantCollection,
@@ -181,6 +182,7 @@ export interface EncodedRecord {
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
+  relationship?: Relationship;
 }
 
 export type AttributeValuePairIDMap = {
@@ -212,6 +214,7 @@ export interface Revision {
   type: FAIMSTypeName;
   deleted?: boolean;
   ugc_comment?: string;
+  relationship?: Relationship; // added for save relation to child/linked record
 }
 
 export interface AttributeValuePair {

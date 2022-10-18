@@ -43,8 +43,8 @@ import ConflictPanel from './conflictpanel';
 import ConflictToolBar from './conflicttoolbar';
 import {ConflictResolveIcon} from './conflictfield';
 import {ConflictSaveButton} from './conflictbutton';
-import {store} from '../../../../store';
-import {ActionType} from '../../../../actions';
+import {store} from '../../../../context/store';
+import {ActionType} from '../../../../context/actions';
 import {isEqualFAIMS} from '../../../../datamodel/typesystem';
 
 type ConflictFormProps = {
@@ -195,14 +195,14 @@ export default function ConflictForm(props: ConflictFormProps) {
   const [styletypeLeft, setstyletypeLeft] = useState(iscolour);
   const [styletypeRight, setstyletypeRight] = useState(iscolour);
 
-  //above are the style of 3 columns of forms , including color inditor on the top, icons
+  //above are the style of 3 columns of forms , including color indicator on the top, icons
   const [styletypeMiddle, setstyletypeMiddle] = useState(ismcolour);
 
   const [disbaledRight, setdisbaledRight] = useState(isdisbaled);
   const [disbaledLeft, setdisbaledLeft] = useState(isdisbaled);
   const [comparedrevision, setR] = useState(''); // this is just a value to trigger the revsion changed
   const [isloading, setIsloading] = useState(true); //when 2 conflict revision been load, value will be set to false
-  const [conflictfields, setconflictfields] = useState<Array<string>>([]); //get list of comnflict fields for the 2 revisions
+  const [conflictfields, setconflictfields] = useState<Array<string>>([]); //get list of conflict fields for the 2 revisions
   const [istoggleAll, setIstoggleAll] = useState(false); // toggle to show all Field of Form or just conflict fields
 
   const [saveduserMergeResult, setUserMergeResult] = useState(

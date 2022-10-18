@@ -29,7 +29,7 @@ import {
   getprojectform,
   checkvalid,
 } from '../data/ComponentSetting';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {UserRoleList, UserLists} from './PSettingCard';
@@ -37,7 +37,7 @@ import {AddUserButton, Addusersassign} from './ProjectButton';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 type ProjectUserProps = {
   project_id: string | null;
-  projectvalue: ProjevtValueList;
+  projectvalue: ProjectValueList;
   setProjectValue: FAIMShandlerType;
   setProjecttabvalue: FAIMShandlerType;
   formProps: any;

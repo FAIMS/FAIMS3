@@ -27,6 +27,7 @@ import {
   RevisionID,
   FAIMSTypeName,
   HRID_STRING,
+  Relationship,
 } from '../datamodel/core';
 import {DEBUG_APP} from '../buildconfig';
 import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
@@ -92,7 +93,8 @@ export async function newStagedData(
     revision_id: RevisionID;
   },
   type: string,
-  field_types: {[field_name: string]: FAIMSTypeName}
+  field_types: {[field_name: string]: FAIMSTypeName},
+  record_id: string
 ): Promise<PouchDB.Core.DocumentId> {
   const _id = 'drf-' + uuidv4();
   const date = new Date();
@@ -109,6 +111,7 @@ export async function newStagedData(
       existing: existing,
       type: type,
       field_types: field_types,
+      record_id: record_id,
     })
   ).id;
 }
@@ -124,14 +127,19 @@ export async function setStagedData(
   draft_id: PouchDB.Core.DocumentId,
   new_data: {[key: string]: unknown},
   new_annotations: {[key: string]: unknown},
-  field_types: {[field_name: string]: FAIMSTypeName}
+  field_types: {[field_name: string]: FAIMSTypeName},
+  relationship: Relationship
 ): Promise<PouchDB.Core.Response> {
   const existing = await draft_db.get(draft_id);
   if (DEBUG_APP) {
     console.debug('Saving draft values:', new_data, new_annotations);
   }
-
-  const encoded_info = encodeStagedData(new_data, new_annotations, field_types);
+  const encoded_info = encodeStagedData(
+    new_data,
+    new_annotations,
+    field_types,
+    relationship
+  );
 
   return await draft_db.put({
     ...existing,
@@ -143,7 +151,8 @@ export async function setStagedData(
 function encodeStagedData(
   new_data: {[key: string]: unknown},
   new_annotations: {[key: string]: unknown},
-  field_types: {[field_name: string]: FAIMSTypeName}
+  field_types: {[field_name: string]: FAIMSTypeName},
+  relationship: Relationship
 ) {
   // TODO: work out what we need to do specially for annotations, probably
   // nothing
@@ -184,6 +193,7 @@ function encodeStagedData(
     annotations: encoded_annotations,
     attachments: attachment_metadata,
     _attachments: encoded_attachments,
+    relationship: relationship,
   };
 }
 
@@ -266,6 +276,7 @@ export async function listDraftMetadata(
         updated: new Date(record.updated),
         type: record.type,
         hrid: getDraftHRID(record) ?? record._id,
+        record_id: record.record_id,
       };
     });
     return out;

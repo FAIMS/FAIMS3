@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * Filename: ProjectDesign.tsx
- * Description:This is the file about form design, all uiSpec related sould be defined here
+ * Description:This is the file about form design, all uiSpec related should be defined here
  *   TODO: [BUG] when form tab changes, section tab should be reset(Should use tabPanels instead??)
  *   TODO: [BUG] edit Project is not working, can't read information for project
- *   TODO: swith the form component, need to change to drag element
+ *   TODO: switch the form component, need to change to drag element
  *   TODO: [BUG] Validationschma
  *   TODO: [BUG] uiSpec ini setup issue for creating new notebook, and formcomponent issue for edit existing project
  */
@@ -34,17 +34,17 @@ import {
   Box,
 } from '@mui/material';
 import {Formik, Form} from 'formik';
-import {getComponentFromField, FormForm} from '../FormElement';
+import {FormForm} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {getprojectform, uiSpecType} from '../data/ComponentSetting';
-import {ProjevtValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
+import {ViewComponent} from '../../record/view';
 const useStyles = makeStyles(theme => ({
   newfield: {
     // backgroundColor:'#e1e4e8',
@@ -74,7 +74,7 @@ type ProjectPreviewProps = {
   setFormuiSpec: FAIMShandlerType;
   handleSaveUiSpec: FAIMShandlerType;
   accessgroup: Array<string>;
-  projectvalue: ProjevtValueList;
+  projectvalue: ProjectValueList;
   setProjectValue: FAIMShandlerType;
 };
 type formcomponents = any;
@@ -93,7 +93,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
     projectvalue,
     ...others
   } = props;
-  const ini = {_id: project_id ?? 'new_notbook'};
+  const ini = {_id: project_id ?? 'new_notebook'};
 
   const [formtabs, setformTabs] = useState<Array<string>>([]);
   const [formlabel, setformlabel] = useState<string>('');
@@ -175,6 +175,8 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
     setformlabel(formtabs[index]);
     console.log(fieldNames);
   };
+
+  const updateannotation = () => {};
 
   return (
     <>
@@ -306,14 +308,15 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                   {formProps => {
                     return (
                       <Form>
-                        {fieldNames.map((fieldName: string) =>
-                          getComponentFromField(
-                            formuiSpec,
-                            fieldName,
-                            formProps,
-                            handleChangeForm
-                          )
-                        )}
+                        <ViewComponent
+                          viewName={formvariants + view_name}
+                          ui_specification={formuiSpec}
+                          formProps={formProps}
+                          annotation={{}}
+                          handerannoattion={updateannotation}
+                          fieldNames={fieldNames}
+                          disabled={true}
+                        />
                       </Form>
                     );
                   }}

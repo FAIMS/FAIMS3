@@ -37,11 +37,11 @@ export default function ProjectCreate() {
   if (project_id === undefined) {
     console.log(project_id);
     const breadcrumbs = [
-      {link: ROUTES.HOME, title: 'Home'},
+      {link: ROUTES.INDEX, title: 'Home'},
       {title: 'New Notebook'},
     ];
     return (
-      <Container maxWidth="lg">
+      <React.Fragment>
         <Breadcrumbs data={breadcrumbs} />
         <Box mb={2}>
           <Typography variant={'h2'} component={'h1'}>
@@ -53,14 +53,14 @@ export default function ProjectCreate() {
             select tabs to design your notebook.
           </Typography>
         </Box>
-        <Paper square>
+        <Paper square sx={{p: 0}}>
           <CreateProjectCard
             project_id={null}
             uiSpec={null}
             project_info={null}
           />
         </Paper>
-      </Container>
+      </React.Fragment>
     );
   } else {
     const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
@@ -92,7 +92,7 @@ export default function ProjectCreate() {
     }
 
     const breadcrumbs = [
-      {link: ROUTES.HOME, title: 'Home'},
+      {link: ROUTES.INDEX, title: 'Home'},
       {title: project_info.name},
     ];
 

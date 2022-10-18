@@ -32,9 +32,9 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import {Alert} from '@mui/material';
 
-import {ActionType} from '../../../actions';
+import {ActionType} from '../../../context/actions';
 import * as ROUTES from '../../../constants/routes';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setRecordAsDeleted} from '../../../data_storage';
@@ -87,7 +87,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             severity: 'success',
           },
         });
-        history.push(ROUTES.PROJECT + project_id);
+        history.push(ROUTES.NOTEBOOK + project_id);
       })
       .catch(err => {
         console.log('Could not delete record: ' + record_id, err);
@@ -105,7 +105,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
     <div>
       <Button
         variant="outlined"
-        color="primary"
+        color="error"
         onClick={handleClickOpen}
         startIcon={<DeleteIcon />}
       >

@@ -15,11 +15,10 @@
  *
  * Filename: CreateProjectCard.tsx
  * Description: No autosync in Notebook creation/edit in this Stage
- *   TODO: seperate the tabs to different files
  *   TODO: edit Project is not working, can't read information for project
  *   TODO: setup project information
  *     TODO:  preview, User, Behaviour, submit
- *   TODO: swith the form component, need to change to drag element
+ *   TODO: switch the form component, need to change to drag element
  *   TODO: sync into and save to DB(??)
  */
 import React from 'react';
@@ -40,14 +39,14 @@ import ProjectInfoTab from './tabs/ProjectInfo';
 import ProjectSubmitTab from './tabs/ProjectSubmit';
 import ProjectPreviewTab from './tabs/ProjectPreview';
 import ProjectBehaviourTab from './tabs/ProjectBehaviour';
-import ProjectOverviewTab from './tabs/ProjctOverview';
+import ProjectOverviewTab from './tabs/ProjectOverview';
 import {ProjectSubmit} from './tabs/ProjectButton';
 import {
   setProjectInitialValues,
   uiSpecType,
   getprojectform,
 } from './data/ComponentSetting';
-import {ProjevtValueList} from '../../../datamodel/ui';
+import {ProjectValueList} from '../../../datamodel/ui';
 
 import {ProjectUIFields} from '../../../datamodel/typesystem';
 import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
@@ -113,7 +112,7 @@ const ini_projectvalue = {
   meta: {},
   project_lead: '',
   lead_institution: '',
-  behavious: {},
+  behaviours: {},
   filenames: [],
 };
 
@@ -126,7 +125,7 @@ const PROJECT_META = [
   'access',
   'ispublic',
   'isrequest',
-  'behavious',
+  'behaviours',
   'project_lead',
   'lead_institution',
   'pre_description',
@@ -140,7 +139,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const [project_id, setProjectID] = useState(props.project_id);
   const ini = {_id: props.project_id};
-  const [projectvalue, setProjectValue] = useState<ProjevtValueList>({
+  const [projectvalue, setProjectValue] = useState<ProjectValueList>({
     ...ini_projectvalue,
     project_id: props.project_id,
   });
@@ -223,7 +222,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         projectvalue.pre_description !== undefined &&
         projectvalue.pre_description !== ''
       ) {
-        //this is the function to solve the issue for new record button not be dispalyed, need to update in the future---Kate
+        //this is the function to solve the issue for new record button not be displayed, need to update in the future---Kate
         handlerprojectsubmit_pounch();
       }
     }
@@ -338,7 +337,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     return {form_id: form_ids, field_id: field_ids, label: labels};
   };
 
-  const add_autoince_refereence = async (autoince: any) => {
+  const add_autoince_reference = async (autoince: any) => {
     if (project_id !== null) {
       try {
         await add_autoincrement_reference_for_project(
@@ -357,8 +356,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     try {
       await setUiSpecForProject(res ?? project_id, formuiSpec);
 
-      const autoincrecs = get_autoincrement();
-      await add_autoince_refereence(autoincrecs);
+      const autoince = get_autoincrement();
+      await add_autoince_reference(autoince);
     } catch (err) {
       console.error(
         'Failed to set UI spec and autoinc reference',
@@ -412,10 +411,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
   const updateproject = async (values: any, fieldlist: Array<string>) => {
     try {
-      const pvlues: any = {projectvalue: {}};
+      const prevalues: any = {projectvalue: {}};
 
       PROJECT_META.map(
-        (field: string) => (pvlues.projectvalue[field] = projectvalue[field])
+        (field: string) => (prevalues.projectvalue[field] = projectvalue[field])
       );
 
       for (const key of fieldlist) {
@@ -440,13 +439,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           await setProjectMetadata(
             project_id,
             'projectvalue',
-            pvlues.projectvalue
+            prevalues.projectvalue
           );
       } catch (err) {
         console.error(
           'Failed to set project value',
           project_id,
-          pvlues.projectvalue,
+          prevalues.projectvalue,
           err
         );
       }
@@ -553,8 +552,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   };
 
   return (
-    <div className={classes.root}>
-      <AppBar position="static" color="primary">
+    <div>
+      <AppBar position="static" color="primary" sx={{boxShadow: 'none'}}>
         <TabTab
           not_xs={not_xs}
           tabs={projecttabs}

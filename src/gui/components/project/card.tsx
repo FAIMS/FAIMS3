@@ -45,7 +45,7 @@ import {Link as RouterLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import makeStyles from '@mui/styles/makeStyles';
 import {ProjectInformation} from '../../../datamodel/ui';
-import DraftsTable from '../record/draft_table';
+import DraftsTable from '../notebook/draft_table';
 import {RecordsBrowseTable, RecordsSearchTable} from '../record/table';
 import MetadataRenderer from '../metadataRenderer';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -124,7 +124,7 @@ export default function Card(props: ProjectCardProps) {
   const {project, showRecords, showDrafts, listView, dashboard} = props;
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
-  const project_url = ROUTES.PROJECT + project.project_id;
+  const project_url = ROUTES.NOTEBOOK + project.project_id;
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));

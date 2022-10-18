@@ -20,22 +20,22 @@
 
 import React, {useContext, useEffect, useState} from 'react';
 import {useHistory, useParams, Redirect} from 'react-router-dom';
-
 import {
   AppBar,
+  Alert,
   Box,
   Grid,
-  Container,
   Typography,
   Paper,
   Tab,
   CircularProgress,
   Button,
 } from '@mui/material';
+import {grey} from '@mui/material/colors';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {ActionType} from '../../actions';
+import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
@@ -46,19 +46,16 @@ import {
   SectionMeta,
 } from '../../datamodel/ui';
 import {listFAIMSRecordRevisions} from '../../data_storage';
-import {store} from '../../store';
+import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
-import RecordForm from '../components/record/form';
+
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
 import RecordDelete from '../components/record/delete';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
-import makeStyles from '@mui/styles/makeStyles';
 import {getProjectMetadata} from '../../projectMetadata';
-import {TokenContents} from '../../datamodel/core';
-import {grey} from '@mui/material/colors';
 import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
 import {
@@ -66,42 +63,35 @@ import {
   getInitialMergeDetails,
   findConflictingFields,
 } from '../../data_storage/merging';
-import Alert from '@mui/material/Alert';
+
 import {
   ConflictHelpDialog,
   BasicDialog,
 } from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
 import Badge from '@mui/material/Badge';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
-const useStyles = makeStyles(theme => ({
-  NoPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 2,
-      paddingRight: 2,
-    },
-    paddingLeft: 2,
-    paddingRight: 2,
-  },
-  LeftPadding: {
-    [theme.breakpoints.down('md')]: {
-      paddingLeft: 2,
-      paddingRight: 2,
-    },
-    paddingLeft: 2,
-    paddingRight: 2,
-  },
-}));
+import {getDetailRelatedInformation} from '../components/record/relationships/RelatedInformation';
+import {RelatedType} from '../components/record/relationships/types';
 
-type RecordProps = {
-  token?: null | undefined | TokenContents;
-};
+import ArticleIcon from '@mui/icons-material/Article';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import CircularLoading from '../components/ui/circular_loading';
+import {useLocation} from 'react-router-dom';
+import RecordData from '../components/record/RecordData';
 
-export default function Record(props: RecordProps) {
+export default function Record() {
+  /**
+   * Record Page. Comprises multiple tab components;
+   * View - displays child records and a read-only view of the record.
+   * Edit
+   * Revisions
+   * Meta
+   * Conflict
+   */
   const {project_id, record_id, revision_id, draft_id} = useParams<{
     project_id: ProjectID;
     record_id: RecordID;
@@ -134,7 +124,9 @@ export default function Record(props: RecordProps) {
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [revisions, setRevisions] = React.useState([] as string[]);
   const [error, setError] = useState(null as null | {});
-  const classes = useStyles();
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
+  const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
+  const [draftError, setDraftError] = useState(null as string | null);
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
@@ -149,27 +141,39 @@ export default function Record(props: RecordProps) {
   const [recordInfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [open, setOpen] = React.useState(false);
   const [pressedvalue, setpressedvalue] = useState(value);
+  const [relatedRecords, setRelatedRecords] = useState({
+    parentRecords: [],
+    childRecords: [],
+    linkRecords: [],
+  } as RelatedType);
+  const location: any = useLocation();
+  console.debug('Location', location.state);
 
-  const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
-    {link: ROUTES.PROJECT_LIST, title: 'Notebooks'},
+  const [breadcrumbs, setBreadcrumbs] = useState([
+    {link: ROUTES.INDEX, title: 'Home'},
+    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
-      link: ROUTES.PROJECT + project_id,
+      link: ROUTES.NOTEBOOK + project_id,
       title: project_info !== null ? project_info.name : project_id,
     },
     {title: hrid ?? record_id},
     // {title: recordInfo},
-  ];
+  ]);
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
     if (project_id !== null) {
-      getProjectMetadata(project_id, 'sections').then(res =>
-        setMetaSection(res)
-      );
-      setIsSyncing(isSyncingProjectAttachments(project_id));
+      getProjectMetadata(project_id, 'sections')
+        .then(res => setMetaSection(res))
+        .catch(console.error /*TODO*/);
+      try {
+        setIsSyncing(isSyncingProjectAttachments(project_id));
+      } catch (error) {
+        console.error('Error to set IsSyncing', error);
+      }
     }
   }, [project_id]);
 
@@ -190,14 +194,16 @@ export default function Record(props: RecordProps) {
   // below function is to get conflicts headers when loading record or after user save the conflict resolve button
   useEffect(() => {
     const getconflicts = async () => {
-      getInitialMergeDetails(project_id, record_id).then(result => {
-        setConflicts(result);
-        if (result !== null && result['available_heads'] !== undefined) {
-          setrevision_id(result['initial_head']); //reset revision id after conflict
-          if (Object.keys(result['available_heads']).length > 1)
-            setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
-        }
-      });
+      getInitialMergeDetails(project_id, record_id)
+        .then(result => {
+          setConflicts(result);
+          if (result !== null && result['available_heads'] !== undefined) {
+            setrevision_id(result['initial_head']); //reset revision id after conflict
+            if (Object.keys(result['available_heads']).length > 1)
+              setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
+          }
+        })
+        .catch(console.error /*TODO*/);
     };
 
     getconflicts();
@@ -205,35 +211,104 @@ export default function Record(props: RecordProps) {
 
   useEffect(() => {
     const getConflictList = async () => {
-      if (selectrevision !== null)
-        setConflictfields(
-          await findConflictingFields(project_id, record_id, selectrevision)
-        );
+      try {
+        if (selectrevision !== null)
+          setConflictfields(
+            await findConflictingFields(project_id, record_id, selectrevision)
+          );
+      } catch (error) {
+        console.error('Error to get Conflict List', error);
+      }
     };
     getConflictList();
   }, [selectrevision]);
 
   useEffect(() => {
     const getType = async () => {
-      const latest_record = await getFullRecordData(
-        project_id,
-        record_id,
-        updatedrevision_id
-      );
-      if (latest_record !== null) {
-        setType(latest_record.type);
-        setRecordinfo(
-          JSON.stringify(latest_record.updated)
-            .replaceAll('"', '')
-            .replaceAll('T', ' ')
-            .slice(0, 19) +
-            ' ' +
-            latest_record.updated_by
+      try {
+        const latest_record = await getFullRecordData(
+          project_id,
+          record_id,
+          updatedrevision_id
         );
+
+        if (latest_record !== null) {
+          setType(latest_record.type);
+          setRecordinfo(
+            JSON.stringify(latest_record.updated)
+              .replaceAll('"', '')
+              .replaceAll('T', ' ')
+              .slice(0, 19) +
+              ' ' +
+              latest_record.updated_by
+          );
+        }
+      } catch (error) {
+        console.error('Error to get Type', error);
       }
     };
     getType();
   }, [project_id, record_id, updatedrevision_id]);
+
+  useEffect(() => {
+    // this is function to get child information
+
+    const getrelated_Info = async () => {
+      console.debug(relatedRecords);
+      try {
+        if (uiSpec !== null && type !== null) {
+          const latest_record = await getFullRecordData(
+            project_id,
+            record_id,
+            updatedrevision_id
+          );
+          if (latest_record !== null) {
+            const newRelationship = await getDetailRelatedInformation(
+              uiSpec,
+              type,
+              latest_record.data,
+              project_id,
+              latest_record.relationship ?? null,
+              record_id
+            );
+            setRelatedRecords(newRelationship);
+            let newBreadcrumbs = [
+              {link: ROUTES.INDEX, title: 'Home'},
+              {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+              {
+                link: ROUTES.NOTEBOOK + project_id,
+                title: project_info !== null ? project_info.name : project_id,
+              },
+              {title: hrid ?? record_id},
+            ];
+            if (
+              newRelationship.parentRecords !== null &&
+              newRelationship.parentRecords.length > 0
+            ) {
+              newBreadcrumbs = [
+                {link: ROUTES.INDEX, title: 'Home'},
+                {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+                {
+                  link: ROUTES.NOTEBOOK + project_id,
+                  title: project_info !== null ? project_info.name : project_id,
+                },
+                {
+                  link: newRelationship.parentRecords[0]['route'],
+                  title: newRelationship.parentRecords[0]['hrid'],
+                },
+                {title: hrid ?? record_id},
+              ];
+            }
+            setBreadcrumbs(newBreadcrumbs);
+          }
+          setValue('1');
+        }
+      } catch (error) {
+        console.error('Error to get child information', error);
+      }
+    };
+    getrelated_Info();
+  }, [uiSpec, type]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
@@ -258,43 +333,85 @@ export default function Record(props: RecordProps) {
 
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
     return <CircularProgress size={12} thickness={4} />;
+  const record_type =
+    uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
+      ? '' + uiSpec.viewsets[type]['label']
+      : '';
   return (
-    <Container maxWidth="lg" className={classes.NoPadding}>
-      <Breadcrumbs data={breadcrumbs} token={props.token} />
-      {recordInfo !== null && (
-        <Box
-          justifyContent="flex-end"
-          alignItems="flex-end"
-          display="flex"
-          style={{paddingRight: 3}}
-        >
-          <Typography variant={'caption'} gutterBottom>
-            Last Updated {recordInfo}
+    <Box>
+      <Grid container wrap="nowrap" spacing={2}>
+        <Grid item>
+          {draft_id ? (
+            <ArticleOutlinedIcon
+              fontSize={mq_above_md ? 'large' : 'medium'}
+              style={{verticalAlign: 'top'}}
+            />
+          ) : (
+            <ArticleIcon
+              fontSize={mq_above_md ? 'large' : 'medium'}
+              style={{verticalAlign: 'top'}}
+            />
+          )}
+        </Grid>
+        <Grid item xs zeroMinWidth>
+          <Typography
+            variant={mq_above_md ? 'h3' : 'h4'}
+            style={{overflowWrap: 'break-word'}}
+          >
+            {uiSpec !== null &&
+            type !== null &&
+            uiSpec['visible_types'][0] !== ''
+              ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
+              : ''}{' '}
+            {draft_id !== undefined && (
+              <span
+                style={{
+                  textDecorationLine: 'underline',
+                  textDecorationStyle: 'double',
+                }}
+              >
+                [Draft]
+              </span>
+            )}
           </Typography>
-        </Box>
+          {recordInfo !== null && (
+            <Typography variant={'caption'} gutterBottom>
+              Last Updated by {recordInfo}
+            </Typography>
+          )}
+        </Grid>
+      </Grid>
+      <Grid item xs>
+        <Breadcrumbs data={breadcrumbs} />
+      </Grid>
+      {draft_id !== undefined && (
+        <Alert severity={'warning'}>
+          This record is currently a draft. The data is stored locally on your
+          device only.
+        </Alert>
       )}
-      <Box mb={2} className={classes.LeftPadding} pr={1}>
-        <Typography variant={'h2'} component={'h1'}>
-          {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
-            ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
-            : ''}{' '}
-          {draft_id !== undefined && ' Draft '}
-        </Typography>
-        <Typography variant={'subtitle1'} gutterBottom>
-          Edit data for this record. If you need to, you can also revisit
-          previous revisions and resolve conflicts.
-        </Typography>
+      <Typography
+        variant={'subtitle1'}
+        color={'textSecondary'}
+        gutterBottom
+        sx={{mt: 1}}
+      >
+        Edit data for this record. If you need to, you can also revisit previous
+        revisions and resolve conflicts.
+      </Typography>
+
+      <Box mb={2} pr={1}>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
           Object.keys(conflicts['available_heads']).length > 1 && (
             <Box bgcolor={'#fff3e0'}>
               <Grid container>
                 <Grid sm={6} xs={12} md={6}>
-                  <Alert severity="warning" icon={<InfoOutlinedIcon />}>
+                  <Alert severity="warning">
                     This record has{' '}
                     {Object.keys(conflicts['available_heads']).length}{' '}
                     conflicting instances. Resolve these conflicts before
-                    continuing
+                    continuing.
                   </Alert>
                 </Grid>
 
@@ -309,34 +426,21 @@ export default function Record(props: RecordProps) {
             </Box>
           )}
       </Box>
-      <Paper square className={classes.NoPadding}>
+      <Paper square elevation={0} variant={'outlined'}>
         <TabContext value={value}>
           <AppBar position="static" color="primary">
             <TabList
               onChange={handleChange}
               aria-label="Record Form Tab"
-              indicatorColor={'secondary'}
-              textColor="secondary"
+              indicatorColor="secondary"
+              textColor="inherit"
+              variant="scrollable"
+              scrollButtons="auto"
               centered={not_xs ? false : true}
             >
-              <Tab
-                label="Edit"
-                value="1"
-                style={{
-                  color: '#c2c2c2',
-                  width: '70px',
-                }}
-              />
-              <Tab
-                label="Revisions"
-                value="2"
-                style={{color: '#c2c2c2', maxWidth: '70px'}}
-              />
-              <Tab
-                label="Meta"
-                value="3"
-                style={{color: '#c2c2c2', maxWidth: '70px'}}
-              />
+              <Tab label="Edit" value="1" />
+              <Tab label="Revisions" value="2" />
+              <Tab label="Meta" value="3" />
               {conflicts !== null &&
               conflicts['available_heads'] !== undefined &&
               Object.keys(conflicts['available_heads']).length > 1 ? (
@@ -353,151 +457,147 @@ export default function Record(props: RecordProps) {
                     </Badge>
                   }
                   value="4"
-                  style={{color: '#c2c2c2'}}
                 />
               ) : (
-                <Tab
-                  label="Conflicts"
-                  value="4"
-                  style={{color: '#c2c2c2', maxWidth: '80px'}}
-                />
+                <Tab label="Conflicts" value="4" />
               )}
             </TabList>
           </AppBar>
-          <TabPanel value="1" style={{paddingLeft: 0, paddingRight: 0}}>
-            {(() => {
-              if (error !== null) {
-                dispatch({
-                  type: ActionType.ADD_ALERT,
-                  payload: {
-                    message: 'Could not load form: ' + error.toString(),
-                    severity: 'warning',
-                  },
-                });
-                history.goBack();
-                return <React.Fragment />;
-              } else if (
-                uiSpec === null ||
-                type === null ||
-                isSyncing === null
-              ) {
-                // Loading
-                return <CircularProgress size={12} thickness={4} />;
-              } else {
-                return (
-                  <Box pl={0}>
-                    {conflicts !== null &&
-                    conflicts['available_heads'] !== undefined &&
-                    Object.keys(conflicts['available_heads']).length > 1 ? (
-                      <Box pl={0}>
-                        <Box bgcolor={grey[200]} py={10} pl={0}>
-                          <Grid
-                            container
-                            justifyContent="flex-start"
-                            alignItems="center"
-                          >
-                            <Grid
-                              item
-                              md={5}
-                              xs={12}
-                              container
-                              justifyContent="center"
-                              alignItems="center"
-                            >
-                              {draft_id !== undefined ? (
-                                <Typography>
-                                  <strong>Current Edit Revision:</strong> <br />
-                                  {updatedrevision_id}
-                                </Typography>
-                              ) : (
-                                <EditDroplist
-                                  label={'edit'}
-                                  headerlist={conflicts['available_heads']}
-                                  revision={selectrevision ?? ''}
-                                  index={0}
-                                  setRevision={setRevision}
-                                  disablerevision={''}
-                                  isalerting={isalerting}
-                                />
-                              )}
-                            </Grid>
-                            <Grid
-                              item
-                              md={7}
-                              xs={12}
-                              container
-                              justifyContent="center"
-                              alignItems="center"
-                            >
-                              <Alert
-                                severity="warning"
-                                icon={<InfoOutlinedIcon />}
-                              >
-                                Edits have been made to this record by different
-                                users that cannot be automatically mergeed.
-                                Resolve the conflicting fields before editing to
-                                prevent creating further versions of this
-                                record.{' '}
-                                <Typography>
-                                  <ResolveButton handleChange={handleChange} />
+
+          {(() => {
+            if (error !== null) {
+              dispatch({
+                type: ActionType.ADD_ALERT,
+                payload: {
+                  message: 'Could not load form: ' + error.toString(),
+                  severity: 'warning',
+                },
+              });
+              history.goBack();
+              return <React.Fragment />;
+            } else if (uiSpec === null || type === null || isSyncing === null) {
+              return (
+                <Box sx={{p: 1}}>
+                  <CircularLoading label={'Loading...'} />
+                </Box>
+              );
+            } else {
+              return (
+                <React.Fragment>
+                  <TabPanel value="1" sx={{p: 0}}>
+                    <Box>
+                      {conflicts !== null &&
+                      conflicts['available_heads'] !== undefined &&
+                      Object.keys(conflicts['available_heads']).length > 1 ? (
+                        <Box>
+                          <Box bgcolor={grey[100]} p={2}>
+                            <Grid container spacing={1}>
+                              <Grid item md={5} xs={12}>
+                                {draft_id !== undefined ? (
+                                  <Typography>
+                                    <strong>Current Edit Revision:</strong>{' '}
+                                    <br />
+                                    {updatedrevision_id}
+                                  </Typography>
+                                ) : (
+                                  <EditDroplist
+                                    label={'edit'}
+                                    headerlist={conflicts['available_heads']}
+                                    revision={selectrevision ?? ''}
+                                    index={0}
+                                    setRevision={setRevision}
+                                    disablerevision={''}
+                                    isalerting={isalerting}
+                                  />
+                                )}
+                              </Grid>
+                              <Grid item md={7} xs={12}>
+                                <Alert severity="warning" variant={'filled'}>
+                                  Edits have been made to this record by
+                                  different users that cannot be automatically
+                                  merged. Resolve the conflicting fields before
+                                  editing to prevent creating further versions
+                                  of this record.
+                                  <Box sx={{my: 1}}>
+                                    <ResolveButton
+                                      handleChange={handleChange}
+                                    />
+                                  </Box>
                                   {isalerting && draft_id === undefined && (
-                                    <>
-                                      Or select version and {'  '}
+                                    <Box>
+                                      Or, select a version and {'  '}
                                       <Button
                                         variant="text"
-                                        style={{
-                                          color: '#f29c3e',
-                                          paddingLeft: 0,
-                                        }}
+                                        color={'primary'}
+                                        size={'small'}
                                         onClick={() => setIsalerting(false)}
                                       >
                                         {'  '}Edit anyway
                                       </Button>
-                                    </>
+                                    </Box>
                                   )}
-                                </Typography>
-                              </Alert>
+                                </Alert>
+                              </Grid>
                             </Grid>
-                          </Grid>
+                          </Box>
+                          <Box px={not_xs ? 30 : 0}>
+                            {/* Add the component for inherit data from parent */}
+                            {(isalerting === false ||
+                              draft_id !== undefined) && (
+                              <RecordData
+                                project_id={project_id}
+                                record_id={record_id}
+                                hrid={hrid}
+                                record_type={record_type}
+                                revision_id={
+                                  selectrevision !== null
+                                    ? selectrevision
+                                    : updatedrevision_id
+                                }
+                                ui_specification={uiSpec}
+                                draft_id={draft_id}
+                                metaSection={metaSection}
+                                conflictfields={conflictfields}
+                                handleChangeTab={handleChange}
+                                isSyncing={isSyncing.toString()}
+                                isDraftSaving={isDraftSaving}
+                                draftLastSaved={draftLastSaved}
+                                draftError={draftError}
+                                handleSetIsDraftSaving={setIsDraftSaving}
+                                handleSetDraftLastSaved={setDraftLastSaved}
+                                handleSetDraftError={setDraftError}
+                              />
+                            )}
+                          </Box>
                         </Box>
-                        <Box px={not_xs ? 30 : 0}>
-                          {(isalerting === false || draft_id !== undefined) && (
-                            <RecordForm
-                              project_id={project_id}
-                              record_id={record_id}
-                              revision_id={
-                                selectrevision !== null
-                                  ? selectrevision
-                                  : updatedrevision_id
-                              }
-                              ui_specification={uiSpec}
-                              draft_id={draft_id}
-                              metaSection={metaSection}
-                              conflictfields={conflictfields}
-                              handleChangeTab={handleChange}
-                              isSyncing={isSyncing.toString()}
-                            />
-                          )}
-                        </Box>
-                      </Box>
-                    ) : (
-                      <RecordForm
-                        project_id={project_id}
-                        record_id={record_id}
-                        revision_id={updatedrevision_id}
-                        ui_specification={uiSpec}
-                        draft_id={draft_id}
-                        metaSection={metaSection}
-                        isSyncing={isSyncing.toString()}
-                      />
-                    )}
-                  </Box>
-                );
-              }
-            })()}
-          </TabPanel>
-          <TabPanel value="2">
-            <Box p={2} />
+                      ) : (
+                        <RecordData
+                          project_id={project_id}
+                          record_id={record_id}
+                          hrid={hrid}
+                          record_type={record_type}
+                          revision_id={updatedrevision_id}
+                          ui_specification={uiSpec}
+                          draft_id={draft_id}
+                          metaSection={metaSection}
+                          isDraftSaving={isDraftSaving}
+                          isSyncing={isSyncing.toString()}
+                          handleSetIsDraftSaving={setIsDraftSaving}
+                          handleSetDraftLastSaved={setDraftLastSaved}
+                          handleSetDraftError={setDraftError}
+                          draftLastSaved={draftLastSaved}
+                          draftError={draftError}
+                        />
+                      )}
+                    </Box>
+                  </TabPanel>
+                </React.Fragment>
+              );
+            }
+          })()}
+
+          <TabPanel value="2" style={{padding: theme.spacing(2)}}>
+            <Box />
             <BoxTab title={'record revisions'} />
             <Box
               bgcolor={grey[200]}
@@ -508,7 +608,7 @@ export default function Record(props: RecordProps) {
               <pre>{JSON.stringify(revisions, null, 2)}</pre>
             </Box>
           </TabPanel>
-          <TabPanel value="3">
+          <TabPanel value="3" style={{padding: theme.spacing(2)}}>
             <RecordMeta
               project_id={project_id}
               record_id={record_id}
@@ -522,16 +622,19 @@ export default function Record(props: RecordProps) {
               />
             </Box>
           </TabPanel>
-          <TabPanel value="4" style={{overflowX: 'auto'}}>
-            <Box mt={2}>
+          <TabPanel
+            value="4"
+            style={{padding: theme.spacing(2), overflowX: 'auto'}}
+          >
+            <Box>
               <BasicDialog
                 handleClose={() => setOpen(false)}
                 handleOpen={() => setOpen(true)}
                 handleConfirm={handleConfirm}
                 content={`This record has
-                ${Object.keys(conflicts['available_heads']).length} 
+                ${Object.keys(conflicts['available_heads']).length}
                 conflicting instances. Resolve these conflicts before
-                continuing`}
+                continuing.`}
                 continue={'continue'}
                 cancel={'Resolve'}
                 open={open}
@@ -554,6 +657,6 @@ export default function Record(props: RecordProps) {
           </TabPanel>
         </TabContext>
       </Paper>
-    </Container>
+    </Box>
   );
 }

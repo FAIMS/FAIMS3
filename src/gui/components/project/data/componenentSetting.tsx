@@ -28,7 +28,10 @@ import {
 } from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
-import {HRID_STRING} from '../../../../datamodel/core';
+import {
+  HRID_STRING,
+  DEFAULT_REALTION_LINK_VOCAB,
+} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {option} from '../../../../datamodel/typesystem';
 const uiSettingOthers: ProjectUIModel = {
@@ -159,6 +162,26 @@ const uiSettingOthers: ProjectUIModel = {
       validationSchema: [['yup.bool']],
       initialValue: false,
     },
+    //to display value in parent or not
+    displayParent: {
+      'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+      'component-name': 'Checkbox',
+      'type-returned': 'faims-core::Bool', // matches a type in the Project Model
+      'component-parameters': {
+        name: 'displayParent',
+        id: 'displayParent',
+        required: false,
+        type: 'checkbox',
+        FormControlLabelProps: {
+          label: 'Select if value display in Parent Record',
+        },
+        FormHelperTextProps: {
+          children: '',
+        },
+      },
+      validationSchema: [['yup.bool']],
+      initialValue: false,
+    },
     field_type: {
       'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
       'component-name': 'Select',
@@ -281,7 +304,7 @@ const uiSettingOthers: ProjectUIModel = {
       label: 'access',
     },
     FormParamater: {
-      fields: ['required', 'persistent'],
+      fields: ['required', 'persistent', 'displayParent'],
       uidesign: 'form',
       label: 'FormParamater',
     },
@@ -290,7 +313,7 @@ const uiSettingOthers: ProjectUIModel = {
       uidesign: 'form',
       label: 'other',
     },
-    // add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+    // add for branching logic setting, this is for testing/developing ONLY, not ready for production yet
     logic: {
       fields: ['logic_select'],
       uidesign: 'form',
@@ -401,7 +424,14 @@ const getvalue = (
   const name = field.replace(fieldName, '');
   if (view === 'FormParamater') {
     //this is for persistent, it's for developing/testing only, not ready for production yet
-    if (name === 'persistent') return fieldui[name];
+    if (name === 'persistent' || name === 'displayParent') return fieldui[name];
+    if (name === 'relation_linked_vocabPair') {
+      try {
+        return fieldui['component-parameters']['relation_linked_vocabPair'][0];
+      } catch (error) {
+        return DEFAULT_REALTION_LINK_VOCAB;
+      }
+    }
     return fieldui['component-parameters'][name];
   }
   if (name === 'options' && view === 'ElementProps') {
@@ -425,6 +455,9 @@ const getvalue = (
   }
   if (view === 'meta' && fieldui['meta'] === undefined) {
     return false;
+  }
+  if (view === 'logic' && fieldui['logic_select'] === undefined) {
+    return fieldui['logic_select'];
   }
   try {
     return (
@@ -745,7 +778,7 @@ const definelogicvalue = (
   pur_fieldname: string
 ) => {
   if (value === undefined) {
-    console.error(value);
+    console.error('Error to get values for define logic');
     return value;
   }
   if (value['is_logic'] === undefined)
@@ -759,7 +792,7 @@ const definelogicvalue = (
   }
   return value;
 };
-// add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet
+// add for branching logic setting, this is for testing/developing ONLY, not ready for production yet
 const definelogic = (
   newvalues: ProjectUIModel,
   value: any,
@@ -984,9 +1017,7 @@ export function ResetComponentProperties(props: resetprops) {
       newvalues['fields'][fieldName]['component-parameters']['hrid'] === true
     ) {
       //set newvalue for hird
-
       ishird = true;
-      console.log('++++++++++++++' + newfieldname);
     }
     if (newvalues['fields'][fieldName] === undefined) {
       newvalues['fields'][fieldName] = generatenewname(fieldui, fieldName);
@@ -1003,7 +1034,9 @@ export function ResetComponentProperties(props: resetprops) {
         //not update value here
         // newvalues['fields'][fieldName]['component-parameters'][name] =
         // event.target.checked;
-      } else if (name === 'persistent') {
+      } else if (name === 'relation_linked_vocabPair') {
+        // not update value here
+      } else if (name === 'persistent' || name === 'displayParent') {
         //set persistent value
         newvalues['fields'][fieldName][name] = event.target.checked;
       } else {

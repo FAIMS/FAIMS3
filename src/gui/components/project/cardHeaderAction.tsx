@@ -12,7 +12,6 @@ import {
 
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
-import SettingsIcon from '@mui/icons-material/Settings';
 
 import * as ROUTES from '../../../constants/routes';
 import {ProjectInformation} from '../../../datamodel/ui';
@@ -197,7 +196,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
             ? {
                 component: RouterLink,
                 to:
-                  ROUTES.PROJECT +
+                  ROUTES.NOTEBOOK +
                   project_id +
                   ROUTES.RECORD_CREATE +
                   visible_types,
@@ -220,7 +219,7 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
                 <MenuItem
                   component={RouterLink}
                   to={
-                    ROUTES.PROJECT +
+                    ROUTES.NOTEBOOK +
                     project.project_id +
                     ROUTES.RECORD_CREATE +
                     viewset_name
@@ -235,17 +234,10 @@ export default function ProjectCardHeaderAction(props: ProjectCardActionProps) {
 
         <IconButton
           component={RouterLink}
-          to={ROUTES.PROJECT + project.project_id + ROUTES.PROJECT_SEARCH}
+          to={ROUTES.NOTEBOOK + project.project_id + ROUTES.PROJECT_SEARCH}
           size="large"
         >
           <SearchIcon />
-        </IconButton>
-        <IconButton
-          component={RouterLink}
-          to={ROUTES.PROJECT + project_id + ROUTES.PROJECT_SETTINGS}
-          size="large"
-        >
-          <SettingsIcon />
         </IconButton>
       </Box>
     </React.Fragment>

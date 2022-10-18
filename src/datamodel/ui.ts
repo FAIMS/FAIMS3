@@ -27,6 +27,7 @@ import {
   ListingID,
   FAIMSTypeName,
   Annotations,
+  Relationship,
 } from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
@@ -67,6 +68,7 @@ export interface RecordMetadata {
   deleted: boolean;
   hrid: string;
   type: FAIMSTypeName;
+  relationship?: Relationship;
 }
 
 export type RecordMetadataList = {
@@ -91,6 +93,8 @@ export interface Record {
   */
   created?: Date;
   created_by?: string;
+  /**add for relationship*/
+  relationship?: Relationship; // added for save relation to child/linked record
 }
 
 export interface FieldMergeInformation {
@@ -133,6 +137,8 @@ export interface RecordReference {
   record_id: RecordID;
   // This is for HRIDs or other non ID descriptions of reference
   record_label: RecordID | string;
+  //this is for Lable of linked items, default: ['is related to', 'is related to']
+  relation_type_vocabPair?: Array<string>;
 }
 
 /*
@@ -170,7 +176,7 @@ export type FormComponentList = FormComponent[];
 
 export type FAIMShandlerType = any;
 export type FAIMSEVENTTYPE = any;
-export interface ProjevtValueList {
+export interface ProjectValueList {
   [key: string]: any;
 }
 
@@ -214,7 +220,7 @@ export type resetprops = {
 
 export type SectionMeta = any;
 
-//inetface for field persistent state
+//interface for field persistent state
 export interface fieldpersistentdata {
   _id?: string;
   project_id?: ProjectID;

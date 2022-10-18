@@ -32,7 +32,7 @@ import {
   generatenewfield,
   regeneratesettinguiSpec,
 } from './componenentSetting';
-import {ProjevtValueList} from '../../../../datamodel/ui';
+import {ProjectValueList} from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {HRID_STRING} from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -50,7 +50,7 @@ export type uiSpecType = {
   visible_types: any;
 };
 
-type signlefieldType = any;
+type singleFieldType = any;
 type fieldlistType = any;
 type viewlistType = any;
 type optionType = {value: string; label: string};
@@ -65,7 +65,7 @@ export const getconnections = (
   uiSpec: uiSpecType,
   tabs: Array<string>
 ) => {
-  const connecions = CONNECTION_RELATIONS;
+  // const connections = CONNECTION_RELATIONS;
   const conectiontabs: Array<tabLinkType> = [];
   uiSpec['viewsets'][comparetab]['views'].map((view: string) =>
     uiSpec['views'][view]['fields'].map((field: string) =>
@@ -91,7 +91,7 @@ export const getconnections = (
   );
   //TODO get relation of tabs and return
   // tabs.map((tab: string) =>
-  //   conectiontabs.push({tab: tab, link: connecions[0]})
+  //   conectiontabs.push({tab: tab, link: connections[0]})
   // );
   return conectiontabs;
 };
@@ -125,7 +125,7 @@ export const getacessoption = (access: Array<string>) => {
 };
 //Add new field form or convert uiSpec to setting form convertuiSpectoSetting
 export const FieldSettings = (
-  component: signlefieldType,
+  component: singleFieldType,
   label: string,
   props: any,
   access: Array<string> = DEFAULT_accessgroup_d
@@ -215,7 +215,7 @@ export const gettabform = (tabs: Array<string>) => {
 };
 
 export const getprojectform = (
-  projectvalue: ProjevtValueList,
+  projectvalue: ProjectValueList,
   tab: string,
   props: any = null
 ) => {
@@ -252,7 +252,7 @@ export const getprojectform = (
       type: 'checkbox',
       initialValue: false,
       helperText:
-        'Check to inherit access for user roles from Form, You can change access for each form component in Commponet > Access tab',
+        'Check to inherit access for user roles from Form, You can change access for each form component in Component > Access tab',
     },
   ];
   const formaccess = [
@@ -424,7 +424,7 @@ export const getprojectform = (
     attachments: [
       {
         name: 'attachments',
-        label: 'Upload Attachements',
+        label: 'Upload Attachments',
         namespace: 'faims-custom',
         componentName: 'FileUploader',
         view: 'attachments',
@@ -462,7 +462,7 @@ export const getprojectform = (
         value: true,
         initialValue: true,
         helperText:
-          'Automatically save changes the user makes as they occur. Automatically retrive changes made by other users every 30s (if online)',
+          'Automatically save changes the user makes as they occur. Automatically retrieve changes made by other users every 30s (if online)',
       },
     ],
     preview: [],
@@ -679,7 +679,7 @@ export const updateuiSpec = (type: string, props: any) => {
         props.projectvalue
       );
     case 'switch':
-      return swithField(
+      return switchField(
         props.index,
         props.type,
         props.formuiSpec,
@@ -833,7 +833,7 @@ const newfromui = (
   return {newformcom, initialfieldvalue, formdesignuiSpec};
 };
 
-const swithField = (
+const switchField = (
   index: any,
   type: boolean,
   formuiSpec: uiSpecType,

@@ -111,7 +111,7 @@ export function SettingCard(props: SettingCard) {
       >
         <NoteIcon />
       </ListItem>
-      {/* add for branching logic setting, this is for testing/developing ONLLY, not ready for production yet */}
+      {/* add for branching logic setting, this is for testing/developing ONLY, not ready for production yet */}
       {String(process.env.REACT_APP_SERVER) === 'developers' && (
         <ListItem
           button

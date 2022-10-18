@@ -22,8 +22,8 @@ import React from 'react';
 import Input from '@mui/material/Input';
 import {FieldProps} from 'formik';
 
-import {ActionType} from '../../actions';
-import {store} from '../../store';
+import {ActionType} from '../../context/actions';
+import {store} from '../../context/store';
 import {
   get_local_autoincrement_state_for_field,
   set_local_autoincrement_state_for_field,
@@ -84,7 +84,7 @@ export class BasicAutoIncrementer extends React.Component<
         type: ActionType.ADD_ALERT,
         payload: {
           message:
-            'No ranges set up, Go to this project > Setting > EDIT AUTOINCREMENT ALLOCATIONS to set up ranges',
+            'No ranges exist for this notebook yet. Go to Notebook > Settings to add/edit ranges.',
           severity: 'error',
         },
       });
@@ -188,7 +188,7 @@ export class BasicAutoIncrementer extends React.Component<
           <Link
             component={RouterLink}
             to={
-              ROUTES.PROJECT +
+              ROUTES.NOTEBOOK +
               this.props.form.values['_project_id'] +
               ROUTES.AUTOINCREMENT +
               this.props.form_id +

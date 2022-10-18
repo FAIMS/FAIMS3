@@ -210,7 +210,6 @@ export async function listRecordMetadata(
       return out;
     }
     const revisions = await getRevisions(project_id, revision_ids);
-
     for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
@@ -243,6 +242,7 @@ export async function listRecordMetadata(
         deleted: revision.deleted ? true : false,
         hrid: hrid,
         type: record.type,
+        relationship: revision.relationship,
       };
     }
     if (DEBUG_APP) {
@@ -384,6 +384,7 @@ export async function addNewRevisionFromForm(
     created_by: record.updated_by,
     type: record.type,
     ugc_comment: record.ugc_comment,
+    relationship: record.relationship,
   };
   await datadb.put(new_revision);
 }

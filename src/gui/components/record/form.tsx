@@ -23,24 +23,14 @@ import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {
-  Button,
-  Grid,
-  Box,
-  ButtonGroup,
-  Typography,
-  TextField,
-} from '@mui/material';
+import {Grid, Box, Typography} from '@mui/material';
 
-import CircularProgress from '@mui/material/CircularProgress';
 import {firstDefinedFromList} from './helpers';
 import {get_logic_fields, get_logic_views} from './branchingLogic';
 
-import AutoSave from './autosave';
 import {ViewComponent} from './view';
-import BoxTab from '../ui/boxTab';
 
-import {ActionType} from '../../../actions';
+import {ActionType} from '../../../context/actions';
 
 import * as ROUTES from '../../../constants/routes';
 import {
@@ -48,11 +38,12 @@ import {
   RecordID,
   RevisionID,
   Annotations,
+  Relationship,
 } from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
 import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 import RecordDraftState from '../../../sync/draft-state';
 import {
   getFieldsForViewSet,
@@ -63,10 +54,20 @@ import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
-import {grey} from '@mui/material/colors';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
+
+import {
+  getParentlinkInfo,
+  getParentInfo,
+  getChildInfo,
+  updateChildRecords,
+} from './relationships/RelatedInformation';
+
+import CircularLoading from '../ui/circular_loading';
+import FormButtonGroup, {DevTool} from './formButton';
+import UGCReport from './UGCReport';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -77,6 +78,11 @@ type RecordFormProps = {
   handleChangeTab?: any;
   metaSection?: any;
   isSyncing?: string;
+  disabled?: boolean;
+  handleSetIsDraftSaving: Function;
+  handleSetDraftLastSaved: Function;
+  handleSetDraftError: Function;
+  isDraftSaving: boolean;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -106,15 +112,12 @@ type RecordFormProps = {
 );
 
 type RecordFormState = {
-  draftError: string | null;
   // This is set by formChanged() function,
   type_cached: string | null;
   view_cached: string | null;
   activeStep: number;
   revision_cached: string | null;
   initialValues: {[fieldName: string]: unknown} | null;
-  is_saving: boolean;
-  last_saved: Date;
   annotation: {[field_name: string]: Annotations};
   /**
    * Set only by newDraftListener, but this is only non-null
@@ -122,9 +125,9 @@ type RecordFormState = {
    * letting them redirect to the draft's URL
    */
   draft_created: string | null;
-  error_view: boolean;
   description: string | null;
   ugc_comment: string | null;
+  relationship: Relationship | null;
 };
 
 class RecordForm extends React.Component<
@@ -141,6 +144,12 @@ class RecordForm extends React.Component<
     prevProps: RecordFormProps,
     prevState: RecordFormState
   ) {
+    console.error(
+      'initial set up ',
+      prevProps.revision_id,
+      this.state.revision_cached,
+      this.props.revision_id
+    );
     if (
       prevProps.project_id !== this.props.project_id ||
       // prevProps.record_id !== this.props.record_id ||
@@ -148,6 +157,12 @@ class RecordForm extends React.Component<
         this.state.revision_cached !== this.props.revision_id) ||
       prevProps.draft_id !== this.props.draft_id //add this to reload the form when user jump back to previous record
     ) {
+      console.error(
+        'initial set up ',
+        prevProps.revision_id,
+        this.state.revision_cached,
+        this.props.revision_id
+      );
       // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({
         initialValues: null,
@@ -156,11 +171,12 @@ class RecordForm extends React.Component<
         activeStep: 0,
         revision_cached: null,
         annotation: {},
-        error_view: false,
         description: null,
+        relationship: {},
       });
       // Re-initialize basically everything.
-      this.formChanged(true);
+      // if (this.props.revision_id !== undefined)
+      this.formChanged(true, this.props.revision_id);
     }
     if (prevState.view_cached !== this.state.view_cached) {
       window.scrollTo(0, 0);
@@ -171,19 +187,16 @@ class RecordForm extends React.Component<
     super(props);
     this.draftState = new RecordDraftState(this.props);
     this.state = {
-      draftError: null,
       type_cached: this.props.type ?? null,
       view_cached: null,
       activeStep: 0,
       revision_cached: null,
       initialValues: null,
-      is_saving: false,
-      last_saved: new Date(),
       draft_created: null,
       annotation: {},
-      error_view: false,
       description: null,
       ugc_comment: null,
+      relationship: {},
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -194,8 +207,13 @@ class RecordForm extends React.Component<
 
   componentDidMount() {
     // On mount, draftState.start() must be called, so give this false:
+    console.error('did Mount');
     this._isMounted = true;
-    if (this._isMounted) this.formChanged(false);
+    if (this._isMounted)
+      if (this.state.revision_cached !== null)
+        this.formChanged(false, this.state.revision_cached);
+      //need to check later to see if pop correctly
+      else this.formChanged(false, this.props.revision_id);
   }
 
   newDraftListener(draft_id: string) {
@@ -205,10 +223,11 @@ class RecordForm extends React.Component<
   saveListener(val: boolean | {}) {
     if (val === true) {
       // Start saving
-      this.setState({is_saving: true});
+      this.props.handleSetIsDraftSaving(true);
     } else if (val === false) {
       // Finished saving successfully
-      this.setState({is_saving: false, last_saved: new Date()});
+      this.props.handleSetIsDraftSaving(false);
+      this.props.handleSetDraftLastSaved(new Date());
     } else {
       // Error occurred while saving
       // Heuristically determine a nice user-facing error
@@ -218,7 +237,8 @@ class RecordForm extends React.Component<
         console.log('saveListener', val);
       }
 
-      this.setState({is_saving: false, draftError: error_message});
+      this.props.handleSetIsDraftSaving(false);
+      this.props.handleSetDraftError(error_message);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -227,11 +247,14 @@ class RecordForm extends React.Component<
         },
       });
     }
-    console.log('is_saving value' + this.state.is_saving);
-    console.log('is_saving value called' + val + new Date());
   }
 
-  async formChanged(draft_saving_started_already: boolean) {
+  async formChanged(
+    draft_saving_started_already: boolean,
+    pass_revision_id: string | undefined
+  ) {
+    const revision_id = this.props.revision_id;
+    console.debug('revision id+++++', revision_id, pass_revision_id);
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -240,10 +263,11 @@ class RecordForm extends React.Component<
           this.props.record_id,
           this.props.revision_id
         );
+        console.debug('get latest_record', revision_id, latest_record);
         if (latest_record === null) {
-          this.setState({
-            draftError: `Could not find data for record ${this.props.record_id}`,
-          });
+          this.props.handleSetDraftError(
+            `Could not find data for record ${this.props.record_id}`
+          );
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -279,7 +303,7 @@ class RecordForm extends React.Component<
       await this.setState({
         type_cached: this_type,
         view_cached: this.props.ui_specification.viewsets[this_type].views[0],
-        revision_cached: this.props.revision_id || null,
+        revision_cached: revision_id || null,
       });
     } catch (err: any) {
       console.warn('setUISpec/setLastRev error', err);
@@ -345,6 +369,7 @@ class RecordForm extends React.Component<
 
   async componentWillUnmount() {
     await this.draftState.forceSave();
+    //end of update values
     this._isMounted = false;
     for (const timeout_id of this.timeouts) {
       clearTimeout(timeout_id as unknown as Parameters<typeof clearTimeout>[0]);
@@ -357,6 +382,7 @@ class RecordForm extends React.Component<
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
+    console.error('current revision id', this.props.revision_id);
     const fromdb: any =
       this.props.revision_id === undefined
         ? {}
@@ -365,9 +391,7 @@ class RecordForm extends React.Component<
             this.props.record_id,
             this.props.revision_id
           )) || {};
-    console.log('++++get initial db');
-    console.log(fromdb);
-
+    console.error('current revision id', fromdb);
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
@@ -427,18 +451,13 @@ class RecordForm extends React.Component<
       ]);
     });
 
-    const child_state: any = this.props.location.state;
-    if (child_state !== undefined && child_state.record_id !== undefined) {
-      //save the sub_record id into initial value
-      const field_id = child_state.field_id.replace('?', '');
-      const sub_record_id = child_state.record_id;
-      const hrid = child_state.hrid ?? sub_record_id;
-      const new_record = {
-        project_id: this.props.project_id,
-        record_id: sub_record_id,
-        record_label: hrid,
-      };
+    // save child/link information into the parent/linked record when back to upper level
+    const {field_id, new_record, is_related} = getChildInfo(
+      this.props.location.state,
+      this.props.project_id
+    );
 
+    if (is_related && new_record !== null) {
       if (
         this.props.ui_specification['fields'][field_id]['component-parameters'][
           'multiple'
@@ -458,8 +477,48 @@ class RecordForm extends React.Component<
         initialValues[field_id] = new_record;
       }
     }
+    const related: Relationship = {};
+    let parent = null;
+    if (
+      this.draftState.data.state !== 'uninitialized' &&
+      this.draftState.data.relationship !== undefined
+    )
+      parent = firstDefinedFromList([
+        this.draftState.data.relationship.parent,
+        fromdb.relationship?.parent,
+        null,
+      ]);
+    if (
+      parent !== null &&
+      parent !== undefined &&
+      parent.record_id !== undefined
+    )
+      related['parent'] = parent;
 
-    this.setState({initialValues: initialValues, annotation: annotations});
+    let linked = null;
+    if (
+      this.draftState.data.state !== 'uninitialized' &&
+      this.draftState.data.relationship !== undefined
+    )
+      linked = firstDefinedFromList([
+        this.draftState.data.relationship.linked,
+        fromdb.relationship?.linked,
+        null,
+      ]);
+    if (linked !== null && linked !== undefined && linked.length > 0)
+      related['linked'] = linked;
+
+    const relationship = getParentInfo(
+      this.props.location.state,
+      related,
+      this.props.record_id
+    );
+    this.setState({
+      initialValues: initialValues,
+      annotation: annotations,
+      relationship: relationship,
+    });
+    console.error('current revision id', initialValues);
   }
 
   /**
@@ -562,7 +621,12 @@ class RecordForm extends React.Component<
     }
   }
 
-  save(values: object, is_final_view: boolean) {
+  save(
+    values: object,
+    is_final_view: boolean,
+    is_close: boolean,
+    setSubmitting: any
+  ) {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
@@ -575,6 +639,17 @@ class RecordForm extends React.Component<
       ui_specification
     );
 
+    // let relation: Relationship = this.state.relationship ?? {}; // this should update later TODO
+    // relation = getParentInfo(
+    //   this.props.location.state,
+    //   relation,
+    //   this.props.record_id
+    // );
+    console.error(
+      'current revision id',
+      this.state.revision_cached,
+      this.props.revision_id
+    );
     return (
       getCurrentUserId(this.props.project_id)
         .then(userid => {
@@ -592,6 +667,7 @@ class RecordForm extends React.Component<
               viewsetName
             ),
             ugc_comment: this.state.ugc_comment || '',
+            relationship: this.state.relationship ?? {},
           };
           if (DEBUG_APP) {
             console.log(doc);
@@ -599,20 +675,39 @@ class RecordForm extends React.Component<
           return doc;
         })
         .then(doc => {
-          return upsertFAIMSData(this.props.project_id, doc).then(() => {
-            return (
-              doc.data['hrid' + this.state.type_cached] ?? this.props.record_id
-            );
-          });
+          return upsertFAIMSData(this.props.project_id, doc).then(
+            revision_id => {
+              // add to save the information for relationship when form saved,  TODO: need to be defined if it's saved when form been save
+              try {
+                const initialValues = this.requireInitialValues();
+                const type = this.requireViewsetName();
+                if (type !== undefined) {
+                  updateChildRecords(
+                    ui_specification,
+                    type,
+                    this.props.record_id,
+                    initialValues,
+                    values
+                  );
+                }
+                console.error('get new revision id++++' + revision_id);
+                this.setState({revision_cached: revision_id});
+                this.formChanged(true, revision_id);
+              } catch (error) {
+                console.error('update child Error', error);
+              }
+              return (
+                doc.data['hrid' + this.state.type_cached] ??
+                this.props.record_id
+              );
+            }
+          );
         })
         .then(result => {
           if (DEBUG_APP) {
             console.log(result);
           }
-          const message =
-            this.props.revision_id === undefined
-              ? 'Record successfully created'
-              : 'Record successfully updated';
+          const message = 'Record successfully saved';
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -624,10 +719,7 @@ class RecordForm extends React.Component<
           return result;
         })
         .catch(err => {
-          const message =
-            this.props.revision_id === undefined
-              ? 'Could not create record'
-              : 'Could not update record';
+          const message = 'Could not save record';
           this.context.dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
@@ -644,70 +736,25 @@ class RecordForm extends React.Component<
           });
         })
         .then(result => {
-          let redirecturl = this.props.project_id;
-          let search = '';
-          let state_pa = {};
-
-          if (this.props.revision_id === undefined && is_final_view) {
-            // check if last page and draft
-            const ori_search = window.location.search;
-            const url_split = ori_search.split('&');
-            const pathname = window.location.pathname;
-            redirecturl =
-              this.props.project_id +
-              ROUTES.RECORD_CREATE +
-              this.state.type_cached;
-
-            if (url_split.length > 1 && ori_search.includes('link=')) {
-              const fieldid = url_split[0];
-
-              search = ori_search.replace(
-                url_split[0] + '&' + url_split[1] + '&',
-                ''
-              );
-              if (url_split.length > 3 && url_split[0] === url_split[2])
-                search = ori_search.replace(
-                  url_split[2] + '&' + url_split[3],
-                  ''
-                );
-              const url_split_re = search.split('&');
-              if (
-                url_split_re.length > 1 &&
-                url_split_re[1].replace(
-                  'link=/projects/' + this.props.project_id,
-                  ''
-                ) ===
-                  pathname.replace(
-                    '/projects/' +
-                      pathname.replace('/projects/', '').split('/')[0],
-                    ''
-                  )
-              )
-                search = search.replace(
-                  url_split_re[0] + '&' + url_split_re[1],
-                  ''
-                );
-              state_pa = {
-                field_id: fieldid.replace('?field_id=', ''),
-                record_id: this.props.record_id,
-                hrid: result,
-                parent_link: search,
-              };
-              if (search !== '')
-                redirecturl = url_split[1].replace('link=/projects/', '');
+          if (is_close) {
+            const {state_parent, is_direct} = getParentlinkInfo(
+              result,
+              this.props.location.state,
+              this.props.record_id
+            );
+            if (is_direct === false) {
+              this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
+            } else {
+              this.props.history.push({
+                pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
+                state: state_parent,
+              });
             }
+            window.scrollTo(0, 0);
             // scroll to top of page, seems to be needed on mobile devices
-          }
-          if (search === '') {
-            this.props.history.push(ROUTES.PROJECT + this.props.project_id); //update for save and close button
           } else {
-            this.props.history.push({
-              pathname: ROUTES.PROJECT + redirecturl,
-              search: search,
-              state: state_pa,
-            });
+            setSubmitting(false);
           }
-          window.scrollTo(0, 0);
         })
     );
   }
@@ -724,6 +771,13 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
+    console.error(
+      'Initial',
+      this.state.type_cached,
+      this.state.initialValues,
+      this.props.ui_specification,
+      this.state.view_cached
+    );
     return (
       this.state.type_cached !== null &&
       this.state.initialValues !== null &&
@@ -749,11 +803,10 @@ class RecordForm extends React.Component<
   }
 
   render() {
-    console.log(this.props.conflictfields);
     if (this.state.draft_created !== null) {
       // If a draft was created, that implies this form started from
       // a non draft, so it must have been an existing record (see props
-      // as it's got a type {existing record} | {draft already created})
+      // as it's got a type {existing record} | {draft already created}
       this.context.dispatch({
         type: ActionType.ADD_CUSTOM_ALERT,
         payload: {
@@ -763,7 +816,7 @@ class RecordForm extends React.Component<
               <Link
                 component={RouterLink}
                 to={
-                  ROUTES.PROJECT +
+                  ROUTES.NOTEBOOK +
                   this.props.project_id +
                   ROUTES.RECORD_EXISTING +
                   this.props.record_id! +
@@ -808,21 +861,24 @@ class RecordForm extends React.Component<
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
       return (
-        <React.Fragment>
+        <Box>
+          {/* {this.state.revision_cached} */}
           {/* remove the tab for edit ---Jira 530 */}
           {/* add padding for form only */}
-          <div style={{paddingLeft: '3px', paddingRight: '3px'}}>
+          <div>
             <Formik
+              // enableReinitialize
               initialValues={initialValues}
               validationSchema={validationSchema}
               validateOnMount={true}
               validateOnChange={false}
               validateOnBlur={true}
-              onSubmit={values => {
+              onSubmit={(values, {setSubmitting}) => {
+                setSubmitting(true);
                 this.setTimeout(() => {
                   // console.log('is saving submitting called');
-                  // setSubmitting(false); remove setsubmiting function, after click save, user should not be able to save again
-                  this.save(values, is_final_view);
+                  //remove setsubmiting function, after click save, user should not be able to save again
+                  this.save(values, is_final_view, true, setSubmitting);
                 }, 500);
               }}
             >
@@ -841,10 +897,11 @@ class RecordForm extends React.Component<
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
                   formProps.values,
-                  this.state.annotation
+                  this.state.annotation,
+                  this.state.relationship ?? {}
                 );
                 return (
-                  <>
+                  <Form>
                     {
                       <RecordStepper
                         view_index={view_index}
@@ -864,197 +921,69 @@ class RecordForm extends React.Component<
                       </Box>
                     )}
                     <br />
-                    <Form>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <AutoSave
-                            last_saved={this.state.last_saved}
-                            is_saving={this.state.is_saving}
-                            error={this.state.draftError}
-                          />
-                        </Grid>
-                        <Grid item sm={12} xs={12}>
-                          <ViewComponent
-                            viewName={viewName}
-                            ui_specification={ui_specification}
-                            formProps={formProps}
-                            draftState={this.draftState}
-                            annotation={this.state.annotation}
-                            handerannoattion={this.updateannotation}
-                            isSyncing={this.props.isSyncing}
-                            conflictfields={this.props.conflictfields}
-                            handleChangeTab={this.props.handleChangeTab}
-                            fieldNames={fieldNames}
-                          />
-                          <br />
 
-                          <br />
-                          <ButtonGroup
-                            color="primary"
-                            aria-label="contained primary button group"
-                          >
-                            {is_final_view ? (
-                              <Button
-                                type="submit"
-                                color={
-                                  formProps.isSubmitting ? undefined : 'primary'
-                                }
-                                variant="contained"
-                                disableElevation
-                                disabled={formProps.isSubmitting}
-                              >
-                                {formProps.isSubmitting
-                                  ? !(this.props.revision_id === undefined)
-                                    ? 'Working...'
-                                    : 'Working...'
-                                  : !(this.props.revision_id === undefined)
-                                  ? 'Save and Close'
-                                  : window.location.search.includes('link=')
-                                  ? // &&
-                                    //   ui_specification.viewsets[viewsetName]
-                                    //     .submit_label !== undefined
-                                    'Save and Close'
-                                  : // ui_specification.viewsets[viewsetName]
-                                    //     .submit_label
-                                    'Save and Close'}
-                                {formProps.isSubmitting && (
-                                  <CircularProgress
-                                    size={24}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '50%',
-                                      left: '50%',
-                                      marginTop: -12,
-                                      marginLeft: -12,
-                                    }}
-                                  />
-                                )}
-                              </Button>
-                            ) : (
-                              ''
-                            )}
-                          </ButtonGroup>
-                          {!is_final_view && (
-                            <ButtonGroup
-                              color="primary"
-                              aria-label="contained primary button group"
-                            >
-                              <Button
-                                variant="outlined"
-                                color="primary"
-                                onClick={() => {
-                                  if (DEBUG_APP) {
-                                    console.log(this.state.activeStep);
-                                  }
-                                  const stepnum = view_index + 1;
-
-                                  this.setState({
-                                    activeStep: stepnum,
-                                    view_cached: views[stepnum],
-                                  });
-                                }}
-                              >
-                                {'  '}
-                                Continue{' '}
-                              </Button>
-                              <Button
-                                type="submit"
-                                color={
-                                  formProps.isSubmitting ? undefined : 'primary'
-                                }
-                                variant="outlined"
-                                disableElevation
-                                disabled={formProps.isSubmitting}
-                              >
-                                {formProps.isSubmitting
-                                  ? !(this.props.revision_id === undefined)
-                                    ? 'Working...'
-                                    : 'Working...'
-                                  : 'Save and Close'}
-                                {formProps.isSubmitting && (
-                                  <CircularProgress
-                                    size={24}
-                                    style={{
-                                      position: 'absolute',
-                                      top: '50%',
-                                      left: '50%',
-                                      marginTop: -12,
-                                      marginLeft: -12,
-                                    }}
-                                  />
-                                )}
-                              </Button>
-                            </ButtonGroup>
-                          )}
-                        </Grid>
-                        {String(process.env.REACT_APP_SERVER) ===
-                          'developers' && (
-                          <Grid item sm={6} xs={12}>
-                            <BoxTab title={'Developer tool: form state'} />
-                            <Box
-                              bgcolor={grey[200]}
-                              pl={2}
-                              pr={2}
-                              style={{overflowX: 'scroll'}}
-                            >
-                              <pre>{JSON.stringify(formProps, null, 2)}</pre>
-                              <pre>{JSON.stringify(this.state, null, 2)}</pre>
-                            </Box>
-                            <Box mt={3}>
-                              <BoxTab
-                                title={
-                                  'Alpha info: Autosave, validation and syncing'
-                                }
-                              />
-                              <Box bgcolor={grey[200]} p={2}>
-                                <p>
-                                  The data in this form are auto-saved locally
-                                  within the app every 5 seconds. The data do
-                                  not need to be valid, and you can return to
-                                  this page to complete this record on this
-                                  device at any time.
-                                </p>
-                                <p>
-                                  Once you are ready, click the{' '}
-                                  <Typography variant="button">
-                                    <b>
-                                      {this.props.revision_id === undefined
-                                        ? 'save and close'
-                                        : 'update'}
-                                    </b>
-                                  </Typography>{' '}
-                                  button. This will firstly validate the data,
-                                  and if valid, sync the record to the remote
-                                  server.
-                                </p>
-                              </Box>
-                            </Box>
-                          </Grid>
-                        )}
+                    <Grid container spacing={2}>
+                      <Grid item sm={12} xs={12}>
+                        <ViewComponent
+                          viewName={viewName}
+                          ui_specification={ui_specification}
+                          formProps={formProps}
+                          draftState={this.draftState}
+                          annotation={this.state.annotation}
+                          handerannoattion={this.updateannotation}
+                          isSyncing={this.props.isSyncing}
+                          conflictfields={this.props.conflictfields}
+                          handleChangeTab={this.props.handleChangeTab}
+                          fieldNames={fieldNames}
+                          disabled={this.props.disabled}
+                        />
                       </Grid>
-                    </Form>
-                  </>
+                      <br />
+                      <FormButtonGroup
+                        is_final_view={is_final_view}
+                        disabled={this.props.disabled}
+                        onChangeStepper={this.onChangeStepper}
+                        viewName={viewName}
+                        view_index={view_index}
+                        formProps={formProps}
+                        ui_specification={ui_specification}
+                        views={views}
+                        handleFormSubmit={(is_close: boolean) => {
+                          console.error('Save');
+                          formProps.setSubmitting(true);
+                          this.setTimeout(() => {
+                            this.save(
+                              formProps.values,
+                              is_final_view,
+                              is_close,
+                              formProps.setSubmitting
+                            );
+                          }, 500);
+                        }}
+                      />
+
+                      <DevTool formProps={formProps} state={this.state} />
+                    </Grid>
+                  </Form>
                 );
               }}
             </Formik>
           </div>
           <div>
-            <TextField
-              id="ugc-comment"
-              label="Report Content"
-              helperText="Report Content"
-              onChange={event => {
+            <UGCReport
+              handleUGCReport={(event: any) => {
+                console.error(event.target.value);
                 this.setState({ugc_comment: event.target.value});
               }}
             />
           </div>
-        </React.Fragment>
+        </Box>
       );
     } else {
       return (
-        <div>
-          <CircularProgress size={20} thickness={5} />
-        </div>
+        <Box sx={{m: 1}}>
+          <CircularLoading label={'Loading record data'} />
+        </Box>
       );
     }
   }

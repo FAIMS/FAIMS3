@@ -22,7 +22,7 @@ import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 
 import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
-import {Typography} from '@mui/material';
+import {Typography, Box, Paper} from '@mui/material';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -34,11 +34,11 @@ import {RecordMetadata} from '../../../datamodel/ui';
 import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
-} from '../../../data_storage/index';
+} from '../../../data_storage';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
-import CustomToolbar from './customtoolbar';
+import {RecordDataGridToolbar} from './datagrid_toolbar';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -242,50 +242,36 @@ function RecordsTable(props: RecordsTableProps) {
       ];
 
   return (
-    <div>
-      <Typography
-        variant="overline"
-        style={not_xs ? {paddingLeft: '10px'} : {paddingLeft: '10px'}}
-      >
-        Recent Record
-      </Typography>
-      <div
-        style={{
-          width: '100%',
-          marginBottom: not_xs ? '20px' : '40px',
+    <Box component={Paper} elevation={0}>
+      <DataGrid
+        rows={rows}
+        loading={loading}
+        getRowId={r => r.record_id}
+        columns={columns}
+        autoHeight
+        rowHeight={not_xs ? 52 : 130}
+        rowsPerPageOptions={[10, 25, 50, 100]}
+        density={not_xs ? 'standard' : 'comfortable'}
+        components={{
+          Toolbar: RecordDataGridToolbar,
         }}
-      >
-        <DataGrid
-          rows={rows}
-          loading={loading}
-          getRowId={r => r.record_id}
-          columns={columns}
-          autoHeight
-          rowHeight={not_xs ? 52 : 130}
-          rowsPerPageOptions={[10, 25, 50, 100]}
-          checkboxSelection
-          density={not_xs ? 'standard' : 'comfortable'}
-          components={{
-            Toolbar: CustomToolbar,
-          }}
-          initialState={{
-            sorting: {
-              sortModel: [{field: 'updated', sort: 'desc'}],
-            },
-            pagination: {
-              pageSize:
-                maxRows !== null
-                  ? not_xs
-                    ? maxRows
-                    : defaultMaxRowsMobile
-                  : not_xs
-                  ? 25
-                  : defaultMaxRowsMobile,
-            },
-          }}
-        />
-      </div>
-    </div>
+        initialState={{
+          sorting: {
+            sortModel: [{field: 'updated', sort: 'desc'}],
+          },
+          pagination: {
+            pageSize:
+              maxRows !== null
+                ? not_xs
+                  ? maxRows
+                  : defaultMaxRowsMobile
+                : not_xs
+                ? 25
+                : defaultMaxRowsMobile,
+          },
+        }}
+      />
+    </Box>
   );
 }
 

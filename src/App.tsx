@@ -23,27 +23,21 @@ import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
-import NavBar from './gui/components/navbar';
-import Footer from './gui/components/footer';
-import {Index} from './gui/pages';
+import Index from './gui/pages';
 import {SignIn} from './gui/pages/signin';
 import {SignInReturnLoader} from './gui/pages/signin-return';
 import AboutBuild from './gui/pages/about-build';
-import Home from './gui/pages/home';
-// import ProjectList from './gui/pages/project-list';
-import Project from './gui/pages/project';
-import ProjectSettings from './gui/pages/project-settings';
+import Workspace from './gui/pages/workspace';
+import NoteBookList from './gui/pages/notebook_list';
+import Notebook from './gui/pages/notebook';
 import ProjectSearch from './gui/pages/project-search';
 import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
-import AutoIncrementBrowse from './gui/pages/autoincrement-browse';
-import AutoIncrementEdit from './gui/pages/autoincrement-edit';
-import PROJECTATTACHMENT from './gui/pages/project-settingattch';
 import NotFound404 from './gui/pages/404';
-import {StateProvider} from './store';
-
+import {StateProvider} from './context/store';
+import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
@@ -92,185 +86,151 @@ export default function App() {
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
           <Router>
-            <NavBar token={token} />
-            <Switch>
-              <PrivateRoute
-                exact
-                path={ROUTES.SIGN_IN}
-                component={SignIn}
-                is_sign={true}
-                extraProps={{setToken: setToken}}
-              />
-              <Route
-                exact
-                path={ROUTES.SIGN_IN_RETURN}
-                component={SignInReturnLoader}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.WORKSPACE}
-                component={Home}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.RECORD_LIST}
-                component={RecordList}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.PROJECT_LIST}
-                component={Home}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.PROJECT_CREATE}
-                component={ProjectCreate}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.PROJECT_DESIGN + ':project_id'}
-                component={ProjectCreate}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.PROJECT + ':project_id'}
-                component={Project}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SEARCH}
-                component={ProjectSearch}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_SETTINGS}
-                component={ProjectSettings}
-                token={token}
-                extraProps={{token: token}}
-              />
-              /* Draft creation happens by redirecting to a freshy minted UUID
-              This is to keep it stable until the user navigates away. So the
-              draft_id is optional, and when RecordCreate is instantiated
-              without one, it immediately mints a UUID and redirects to it */
-              <PrivateRoute
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_CREATE +
-                  ':type_name' +
-                  ROUTES.RECORD_DRAFT + //
-                  ':draft_id'
-                }
-                component={RecordCreate}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_CREATE +
-                  ':type_name'
-                }
-                component={RecordCreate}
-                token={token}
-                extraProps={{token: token}}
-              />
-              /* Record editing and viewing is a seprate affair, separated by
-              the presence/absence of draft_id prop OR draft_id being in the
-              state of the Record component. So if the user clicks a draft to
-              make continued changes, the draft_id is in the URL here.
-              Otherwise, they can make changes to a record they view (Which
-              should at some point, TODO, redirect to the same Record form but
-              with the newly minted draft_id attached. BUt this TODO is in the
-              record/form.tsx */
-              <PrivateRoute
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_EXISTING +
-                  ':record_id' +
-                  ROUTES.REVISION +
-                  ':revision_id'
-                }
-                component={Record}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.RECORD_EXISTING +
-                  ':record_id' +
-                  ROUTES.REVISION +
-                  ':revision_id' +
-                  ROUTES.RECORD_DRAFT +
-                  ':draft_id'
-                }
-                component={Record}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={
-                  ROUTES.PROJECT + ':project_id' + ROUTES.AUTOINCREMENT_LIST
-                }
-                component={AutoIncrementBrowse}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={
-                  ROUTES.PROJECT + ':project_id' + ROUTES.PROJECT_ATTACHMENT
-                }
-                component={PROJECTATTACHMENT}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path={
-                  ROUTES.PROJECT +
-                  ':project_id' +
-                  ROUTES.AUTOINCREMENT +
-                  ':form_id/:field_id/:label'
-                }
-                component={AutoIncrementEdit}
-                token={token}
-                extraProps={{token: token}}
-              />
-              <PrivateRoute
-                exact
-                path="/"
-                component={Index}
-                extraProps={{token: token}}
-                is_sign={true}
-              />
-              <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
-              <Route component={NotFound404} />
-            </Switch>
-            <Footer />
+            <MainLayout token={token}>
+              <Switch>
+                <PrivateRoute
+                  exact
+                  path={ROUTES.SIGN_IN}
+                  component={SignIn}
+                  is_sign={true}
+                  extraProps={{setToken: setToken}}
+                />
+                <Route
+                  exact
+                  path={ROUTES.SIGN_IN_RETURN}
+                  component={SignInReturnLoader}
+                />
+                <PrivateRoute
+                  exact
+                  path={ROUTES.WORKSPACE}
+                  component={Workspace}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={ROUTES.RECORD_LIST}
+                  component={RecordList}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={ROUTES.NOTEBOOK_LIST}
+                  component={NoteBookList}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={ROUTES.PROJECT_CREATE}
+                  component={ProjectCreate}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={ROUTES.PROJECT_DESIGN + ':project_id'}
+                  component={ProjectCreate}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={ROUTES.NOTEBOOK + ':project_id'}
+                  component={Notebook}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={ROUTES.NOTEBOOK + ':project_id' + ROUTES.PROJECT_SEARCH}
+                  component={ProjectSearch}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                {/* Draft creation happens by redirecting to a fresh minted UUID
+                This is to keep it stable until the user navigates away. So the
+                draft_id is optional, and when RecordCreate is instantiated
+                without one, it immediately mints a UUID and redirects to it */}
+
+                <PrivateRoute
+                  exact
+                  path={
+                    ROUTES.NOTEBOOK +
+                    ':project_id' +
+                    ROUTES.RECORD_CREATE +
+                    ':type_name' +
+                    ROUTES.RECORD_DRAFT +
+                    ':draft_id' + //added for keep the record id same for draft
+                    ROUTES.RECORD_RECORD +
+                    ':record_id'
+                  }
+                  component={RecordCreate}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={
+                    ROUTES.NOTEBOOK +
+                    ':project_id' +
+                    ROUTES.RECORD_CREATE +
+                    ':type_name'
+                  }
+                  component={RecordCreate}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                {/*Record editing and viewing is a separate affair, separated by
+                the presence/absence of draft_id prop OR draft_id being in the
+                state of the Record component. So if the user clicks a draft to
+                make continued changes, the draft_id is in the URL here.
+                Otherwise, they can make changes to a record they view (Which
+                should at some point, TODO, redirect to the same Record form but
+                with the newly minted draft_id attached. BUt this TODO is in the
+                record/form.tsx*/}
+                <PrivateRoute
+                  exact
+                  path={
+                    ROUTES.NOTEBOOK +
+                    ':project_id' +
+                    ROUTES.RECORD_EXISTING +
+                    ':record_id' +
+                    ROUTES.REVISION +
+                    ':revision_id'
+                  }
+                  component={Record}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path={
+                    ROUTES.NOTEBOOK +
+                    ':project_id' +
+                    ROUTES.RECORD_EXISTING +
+                    ':record_id' +
+                    ROUTES.REVISION +
+                    ':revision_id' +
+                    ROUTES.RECORD_DRAFT +
+                    ':draft_id'
+                  }
+                  component={Record}
+                  token={token}
+                  extraProps={{token: token}}
+                />
+                <PrivateRoute
+                  exact
+                  path="/"
+                  component={Index}
+                  extraProps={{token: token}}
+                  is_sign={true}
+                />
+                <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
+                <Route component={NotFound404} />
+              </Switch>
+            </MainLayout>
           </Router>
         </ThemeProvider>
       </StyledEngineProvider>

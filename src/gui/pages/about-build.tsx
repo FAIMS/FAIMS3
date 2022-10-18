@@ -13,15 +13,13 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: home.tsx
+ * Filename: about-build.tsx
  * Description:
  *   TODO
  */
 
-import React from 'react';
-import {Box, Container} from '@mui/material';
-import Button from '@mui/material/Button';
-
+import React, {useContext} from 'react';
+import {Box, Divider, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {downloadBlob, shareStringAsFileOnApp} from '../../utils/downloadShare';
@@ -43,14 +41,29 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import {grey} from '@mui/material/colors';
-
+import {ActionType} from '../../context/actions';
+import {store} from '../../context/store';
+import {startSync, setSyncError} from '../../utils/status';
 export default function AboutBuild() {
   const breadcrumbs = [
-    {link: ROUTES.HOME, title: 'Home'},
+    {link: ROUTES.INDEX, title: 'Home'},
     {title: 'about-build'},
   ];
+
+  const {state, dispatch} = useContext(store);
+
+  const handleStartSyncUp = () => {
+    startSync(dispatch, ActionType.IS_SYNCING_UP);
+  };
+  const handleStartSyncDown = () => {
+    startSync(dispatch, ActionType.IS_SYNCING_DOWN);
+  };
+  const handleToggleSyncError = () => {
+    setSyncError(dispatch, !state.isSyncError);
+  };
+
   return (
-    <Container maxWidth="lg">
+    <Box sx={{p: 2}}>
       <Breadcrumbs data={breadcrumbs} />
       <BoxTab title={'Developer tool: About the build'} bgcolor={grey[100]} />
       <Box bgcolor={grey[100]} p={2} style={{overflowX: 'scroll'}} mb={2}>
@@ -146,6 +159,25 @@ export default function AboutBuild() {
       >
         Share local database contents (apps and some browsers)
       </Button>
-    </Container>
+      <Divider sx={{my: 3}}>Sync State Test</Divider>
+      <Button variant="contained" onClick={handleStartSyncUp} sx={{mr: 1}}>
+        Start Sync UP {JSON.stringify(state.isSyncingUp)}
+      </Button>
+      <Button variant="contained" onClick={handleStartSyncDown} sx={{mr: 1}}>
+        Start Sync DOWN {JSON.stringify(state.isSyncingDown)}
+      </Button>
+      {/*<Button*/}
+      {/*  variant="contained"*/}
+      {/*  onClick={handleToggleUnsyncedChanges}*/}
+      {/*  sx={{mr: 1}}*/}
+      {/*>*/}
+      {/*  Local changes made {JSON.stringify(state.hasUnsyncedChanges)}*/}
+      {/*</Button>*/}
+      <Button variant="contained" onClick={handleToggleSyncError} sx={{mr: 1}}>
+        Sync Error {JSON.stringify(state.isSyncError)}
+      </Button>
+
+      <Divider sx={{my: 3}} />
+    </Box>
   );
 }
