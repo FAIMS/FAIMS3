@@ -19,10 +19,12 @@
  */
 
 import React from 'react';
-import {Box, Typography} from '@mui/material';
+import {Box, Paper, Typography} from '@mui/material';
 import RecordForm from './form';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
 
 interface RecordReadViewProps {
   project_id: ProjectID;
@@ -46,10 +48,18 @@ export default function RecordReadView(props: RecordReadViewProps) {
    * RecordForm is overkill here (as we're in a read-only state and don't need all the functionality that RecordForm provides).
    * A quick read-only view of the form data is needed (no draft, state and submitting logic)
    */
+  const theme = useTheme();
+  const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
   return (
-    <Box style={{border: 'solid 1px red'}} mb={2}>
+    <Box
+      component={Paper}
+      elevation={0}
+      p={{xs: 1, sm: 1, md: 2, lg: 2}}
+      variant={is_mobile ? undefined : 'outlined'}
+      mb={2}
+    >
       <Typography variant={'overline'} component={'div'}>
-        Record data
+        Record data [component in progress]
       </Typography>
       <RecordForm
         project_id={props.project_id}
