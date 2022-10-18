@@ -194,7 +194,11 @@ async function getRecordInformation(childrecord: RecordReference) {
       revision_id
     );
   } catch (error) {
-    console.error('Error to get Full record with revision', error);
+    console.error(
+      'Error to get Full record with revision',
+      error,
+      childrecord.record_id
+    );
   }
   return {latest_record, revision_id};
 }
@@ -341,14 +345,11 @@ export async function get_RelatedFields_for_field(
   const record_id = values['_id'];
   const project_id = values['_project_id'];
   const records: RecordLinkProps[] = [];
-  console.error('Child Records', child_records);
-  console.error('Values', values, field_name);
   for (const index in child_records) {
     const child_record = child_records[index];
     const {latest_record, revision_id} = await getRecordInformation(
       child_record
     );
-    console.error('Child Record', child_record);
     if (child_record.record_id !== undefined) {
       let relationLabel = child_record.relation_type_vocabPair;
       if (

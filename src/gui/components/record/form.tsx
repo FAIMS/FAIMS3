@@ -144,12 +144,13 @@ class RecordForm extends React.Component<
     prevProps: RecordFormProps,
     prevState: RecordFormState
   ) {
-    console.error(
-      'initial set up ',
-      prevProps.revision_id,
-      this.state.revision_cached,
-      this.props.revision_id
-    );
+    if (DEBUG_APP)
+      console.debug(
+        'initial set up ',
+        prevProps.revision_id,
+        this.state.revision_cached,
+        this.props.revision_id
+      );
     if (
       prevProps.project_id !== this.props.project_id ||
       // prevProps.record_id !== this.props.record_id ||
@@ -157,12 +158,13 @@ class RecordForm extends React.Component<
         this.state.revision_cached !== this.props.revision_id) ||
       prevProps.draft_id !== this.props.draft_id //add this to reload the form when user jump back to previous record
     ) {
-      console.error(
-        'initial set up ',
-        prevProps.revision_id,
-        this.state.revision_cached,
-        this.props.revision_id
-      );
+      if (DEBUG_APP)
+        console.debug(
+          'initial set up update',
+          prevProps.revision_id,
+          this.state.revision_cached,
+          this.props.revision_id
+        );
       // Stop rendering immediately (i.e. go to loading screen immediately)
       this.setState({
         initialValues: null,
@@ -207,7 +209,6 @@ class RecordForm extends React.Component<
 
   componentDidMount() {
     // On mount, draftState.start() must be called, so give this false:
-    console.error('did Mount');
     this._isMounted = true;
     if (this._isMounted)
       if (this.state.revision_cached !== null)
@@ -254,7 +255,7 @@ class RecordForm extends React.Component<
     pass_revision_id: string | undefined
   ) {
     const revision_id = this.props.revision_id;
-    console.debug('revision id+++++', revision_id, pass_revision_id);
+    if (DEBUG_APP) console.debug('check passed revision id', pass_revision_id);
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -382,7 +383,7 @@ class RecordForm extends React.Component<
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
-    console.error('current revision id', this.props.revision_id);
+    if (DEBUG_APP) console.debug('current revision id', this.props.revision_id);
     const fromdb: any =
       this.props.revision_id === undefined
         ? {}
@@ -391,7 +392,7 @@ class RecordForm extends React.Component<
             this.props.record_id,
             this.props.revision_id
           )) || {};
-    console.error('current revision id', fromdb);
+    if (DEBUG_APP) console.debug('current revision id', fromdb);
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
@@ -518,7 +519,7 @@ class RecordForm extends React.Component<
       annotation: annotations,
       relationship: relationship,
     });
-    console.error('current revision id', initialValues);
+    if (DEBUG_APP) console.debug('current revision id', initialValues);
   }
 
   /**
@@ -645,11 +646,12 @@ class RecordForm extends React.Component<
     //   relation,
     //   this.props.record_id
     // );
-    console.error(
-      'current revision id',
-      this.state.revision_cached,
-      this.props.revision_id
-    );
+    if (DEBUG_APP)
+      console.debug(
+        'current revision id',
+        this.state.revision_cached,
+        this.props.revision_id
+      );
     return (
       getCurrentUserId(this.props.project_id)
         .then(userid => {
@@ -690,7 +692,8 @@ class RecordForm extends React.Component<
                     values
                   );
                 }
-                console.error('get new revision id++++' + revision_id);
+                if (DEBUG_APP)
+                  console.debug('get new revision id++++' + revision_id);
                 this.setState({revision_cached: revision_id});
                 this.formChanged(true, revision_id);
               } catch (error) {
@@ -771,13 +774,14 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
-    console.error(
-      'Initial',
-      this.state.type_cached,
-      this.state.initialValues,
-      this.props.ui_specification,
-      this.state.view_cached
-    );
+    if (DEBUG_APP)
+      console.debug(
+        'Initial',
+        this.state.type_cached,
+        this.state.initialValues,
+        this.props.ui_specification,
+        this.state.view_cached
+      );
     return (
       this.state.type_cached !== null &&
       this.state.initialValues !== null &&
@@ -972,7 +976,6 @@ class RecordForm extends React.Component<
           <div>
             <UGCReport
               handleUGCReport={(event: any) => {
-                console.error(event.target.value);
                 this.setState({ugc_comment: event.target.value});
               }}
             />
