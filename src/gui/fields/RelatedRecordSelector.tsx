@@ -295,7 +295,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       }
     } else newValue = '';
-    console.error('set new value', newValue);
     setFieldValue(newValue);
 
     const records = options;

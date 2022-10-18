@@ -953,7 +953,6 @@ class RecordForm extends React.Component<
                         ui_specification={ui_specification}
                         views={views}
                         handleFormSubmit={(is_close: boolean) => {
-                          console.error('Save');
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
                             this.save(
