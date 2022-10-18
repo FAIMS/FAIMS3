@@ -47,7 +47,6 @@ export default function ParentPanel(props: ParentFormProps) {
     return <></>;
   const handleExpandClick = () => {
     setExpanded(!expanded);
-    console.error(expanded);
   };
   return (
     <Box bgcolor={grey[100]} p={2} component={Paper} variant={'outlined'}>

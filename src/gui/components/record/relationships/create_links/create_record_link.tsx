@@ -151,7 +151,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             defaultValue={undefined}
             disabled={disabled}
             onChange={(event: any, values: any) => {
-              console.error('select', values);
               SetSelectedRecord(values);
             }}
             value={selectedRecord}
