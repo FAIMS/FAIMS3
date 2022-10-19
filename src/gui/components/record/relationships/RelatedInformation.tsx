@@ -105,51 +105,51 @@ export function getParentInfo(
   parent: Relationship,
   record_id: string
 ): Relationship {
-  let Relate_perant = RelationState;
-  if (Relate_perant === undefined || Relate_perant === null) return parent;
+  let Relate_parent = RelationState;
+  if (Relate_parent === undefined || Relate_parent === null) return parent;
   if (record_id === RelationState.parent_record_id)
-    Relate_perant = RelationState.parent;
-  if (Relate_perant === undefined || Relate_perant === null) return parent;
-  if (Relate_perant.type === undefined) return parent;
-  if (Relate_perant.type === 'Child')
+    Relate_parent = RelationState.parent;
+  if (Relate_parent === undefined || Relate_parent === null) return parent;
+  if (Relate_parent.type === undefined) return parent;
+  if (Relate_parent.type === 'Child')
     return {
       ...parent,
       parent: {
-        record_id: Relate_perant.parent_record_id,
-        field_id: Relate_perant.field_id,
+        record_id: Relate_parent.parent_record_id,
+        field_id: Relate_parent.field_id,
         relation_type_vocabPair: ['Child', 'Parent'],
       },
     };
-  if (Relate_perant.type === 'Linked') {
+  if (Relate_parent.type === 'Linked') {
     if (parent['linked'] === undefined)
       parent['linked'] = [
         {
-          record_id: Relate_perant.parent_record_id,
-          field_id: Relate_perant.field_id,
-          relation_type_vocabPair: Relate_perant.relation_type_vocabPair,
+          record_id: Relate_parent.parent_record_id,
+          field_id: Relate_parent.field_id,
+          relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
         },
       ];
     else if (
       !check_if_link_exist(
         parent['linked'],
-        Relate_perant.parent_record_id,
-        Relate_perant.field_id
+        Relate_parent.parent_record_id,
+        Relate_parent.field_id
       )
     )
       parent['linked'].push({
-        record_id: Relate_perant.parent_record_id,
-        field_id: Relate_perant.field_id,
-        relation_type_vocabPair: Relate_perant.relation_type_vocabPair,
+        record_id: Relate_parent.parent_record_id,
+        field_id: Relate_parent.field_id,
+        relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
       });
     //get parnet
     if (
-      Relate_perant.parent !== undefined &&
-      Relate_perant.parent.type === 'Child' &&
-      Relate_perant.parent.parent_record_id !== record_id //check to confirm
+      Relate_parent.parent !== undefined &&
+      Relate_parent.parent.type === 'Child' &&
+      Relate_parent.parent.parent_record_id !== record_id //check to confirm
     )
       parent['parent'] = {
-        record_id: Relate_perant.parent.parent_record_id,
-        field_id: Relate_perant.parent.field_id,
+        record_id: Relate_parent.parent.parent_record_id,
+        field_id: Relate_parent.parent.field_id,
         relation_type_vocabPair: [],
       };
   }
@@ -313,7 +313,7 @@ function getRelatedFields(
 //   fields = get_related_valued_field(ui_specification, field, values, fields);
 //   const type =
 //     ui_specification['fields'][field]['component-parameters']['related_type'];
-//   const dispalyFields = get_displayed_fields(ui_specification, type);
+//   const displayFields = get_displayed_fields(ui_specification, type);
 //   const form_type = 'FORM1'; // this value will not been used
 //   let hrid = values['hrid' + form_type] ?? record_id;
 //   if (hrid === ' ') hrid = record_id;
@@ -329,7 +329,7 @@ function getRelatedFields(
 //       'relation_type'
 //     ].replace('faims-core::', ''),
 //     true,
-//     dispalyFields
+//     displayFields
 //   );
 //   return records;
 // }
@@ -395,9 +395,9 @@ async function addRelatedFields(
   record_id: string,
   form_type: string,
   hrid: string,
-  reation_type: string,
-  is_dispaly = false,
-  dispalyFields: string[] = []
+  relation_type: string,
+  is_display = false,
+  displayFields: string[] = []
 ) {
   for (const index in fields) {
     const field = fields[index]['field'];
@@ -409,7 +409,7 @@ async function addRelatedFields(
 
     // let children: Array<RecordProps> = [];
     if (latest_record !== null && revision_id !== undefined) {
-      //add and defined the child/link item when the inforamtion been added correctly
+      //add and defined the child/link item when the information been added correctly
       // const {fields_child, fields_linked} = get_related_valued_fields(
       //   ui_specification,
       //   type,
@@ -427,7 +427,7 @@ async function addRelatedFields(
         childRecord['relation_type_vocabPair'] !== null &&
         childRecord['relation_type_vocabPair'] !== undefined
           ? childRecord['relation_type_vocabPair']
-          : reation_type === 'Child'
+          : relation_type === 'Child'
           ? ['Child', 'Parent']
           : ['is related to', 'is related to'];
 
@@ -451,8 +451,8 @@ async function addRelatedFields(
         relation_type_vocabPair: linked_vocab,
       };
       // get the displayed information for the child or link item, this is used by field
-      if (is_dispaly && latest_record !== null) {
-        dispalyFields.map(
+      if (is_display && latest_record !== null) {
+        displayFields.map(
           (fieldName: string) =>
             (child[fieldName] = latest_record.data[fieldName])
         );
@@ -676,7 +676,7 @@ export async function updateChildRecords(
   const fields = getRelatedFields(ui_specification, form_type);
   for (const index in fields) {
     const field = fields[index];
-    const is_mulptile =
+    const is_multiple =
       ui_specification['fields'][field]['component-parameters']['multiple'] ??
       false;
     const relation_type = ui_specification['fields'][field][
@@ -685,7 +685,7 @@ export async function updateChildRecords(
     await updateChildRecord(
       preValues[field],
       currentValues[field],
-      is_mulptile,
+      is_multiple,
       record_id,
       relation_type,
       field
