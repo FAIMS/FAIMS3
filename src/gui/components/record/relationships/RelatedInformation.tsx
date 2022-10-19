@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: RelatedInfomation.tsx
+ * Filename: RelatedInformation.tsx
  * Description:
  *   This is the file is to set the values for persistent state
  */
@@ -182,7 +182,8 @@ export function getChildInfo(child_state: any, project_id: string) {
 async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
   let revision_id;
-  if (child_record.project_id === undefined) return {latest_record, revision_id};
+  if (child_record.project_id === undefined)
+    return {latest_record, revision_id};
   try {
     revision_id = await getFirstRecordHead(
       child_record.project_id,
