@@ -148,11 +148,25 @@ function RecordsTable(props: RecordsTableProps) {
             </Link>
           ),
         },
+        //  We add in a hidden column (updated_filterable) to provide 'updated' as a date-only filterable field,
+        //  whilst rendering the datetime version and allowing custom sorting on that field.
         {
           field: 'updated',
           headerName: 'Last Updated',
           type: 'dateTime',
           width: 200,
+          filterable: false,
+        },
+        {
+          field: 'updated_filterable',
+          headerName: 'Last Updated',
+          type: 'date',
+          width: 200,
+          filterable: true,
+          valueGetter: (params: GridCellParams) => {
+            return params.row.updated;
+          },
+          hide: true,
         },
         {
           field: 'updated_by',
