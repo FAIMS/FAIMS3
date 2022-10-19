@@ -183,6 +183,7 @@ export function getChildInfo(child_state: any, project_id: string) {
 async function getRecordInformation(childrecord: RecordReference) {
   let latest_record = null;
   let revision_id;
+  if (childrecord === null) return {latest_record, revision_id};
   if (childrecord.project_id === undefined) return {latest_record, revision_id};
   try {
     revision_id = await getFirstRecordHead(
@@ -278,6 +279,7 @@ function getRelatedFields(
   );
   return fields;
 }
+
 export async function get_RelatedFields_for_field(
   values: {[field_name: string]: any},
   related_type: string,
@@ -293,10 +295,11 @@ export async function get_RelatedFields_for_field(
   const records: RecordLinkProps[] = [];
   for (const index in child_records) {
     const child_record = child_records[index];
-    const {latest_record, revision_id} = await getRecordInformation(
-      child_record
-    );
-    if (child_record.record_id !== undefined) {
+
+    if (child_record !== null && child_record.record_id !== undefined) {
+      const {latest_record, revision_id} = await getRecordInformation(
+        child_record
+      );
       let relationLabel = child_record.relation_type_vocabPair;
       if (
         relationLabel === undefined ||
@@ -308,17 +311,24 @@ export async function get_RelatedFields_for_field(
       if (revision_id !== undefined) {
         const child = generate_RecordLink(
           child_record,
-          latest_record?.updated_by ?? '',
+          get_last_updated(
+            latest_record?.updated_by ?? '',
+            latest_record?.updated
+          ),
           revision_id,
           relationLabel,
           record_id,
           hrid,
           form_type ?? '',
           related_type_label ?? related_type,
-          field_name,
           '',
+          field_name,
           field_label,
-          values['_current_revision_id']
+          get_route_for_field(
+            child_record.project_id,
+            record_id,
+            values['_current_revision_id']
+          )
         );
 
         records.push(child);
@@ -326,6 +336,23 @@ export async function get_RelatedFields_for_field(
     }
   }
   return records;
+}
+
+function get_route_for_field(
+  project_id: string,
+  record_id: string,
+  current_revision_id: string
+) {
+  try {
+    return ROUTES.getRecordRoute(
+      project_id ?? '',
+      (record_id || '').toString(),
+      (current_revision_id || '').toString()
+    );
+  } catch (error) {
+    console.log('Parent Route not passed correctly', current_revision_id);
+    return project_id + record_id + current_revision_id;
+  }
 }
 
 function generate_RecordLink(
@@ -340,7 +367,7 @@ function generate_RecordLink(
   section: string,
   field: string,
   field_label: string,
-  current_revision_id: string
+  link_route: string
 ): RecordLinkProps {
   const child: RecordLinkProps = {
     record_id: chid_record.record_id,
@@ -356,11 +383,7 @@ function generate_RecordLink(
       record_id: record_id,
       hrid: hrid,
       type: form_type,
-      route: ROUTES.getRecordRoute(
-        chid_record.project_id ?? '',
-        (record_id || '').toString(),
-        (current_revision_id || '').toString()
-      ), //chid_record.project_id+ current_revision_id,
+      route: link_route,
       section: section,
       field_id: field,
       field_label: field_label,
@@ -405,7 +428,10 @@ async function get_field_RelatedFields(
 
       const child = generate_RecordLink(
         fields[index]['value'],
-        latest_record?.updated_by ?? '',
+        get_last_updated(
+          latest_record?.updated_by ?? '',
+          latest_record?.updated
+        ),
         revision_id,
         linked_vocab,
         record_id,
@@ -415,7 +441,11 @@ async function get_field_RelatedFields(
         get_section(ui_specification, form_type, field),
         field,
         get_field_label(ui_specification, field),
-        current_revision_id
+        get_route_for_field(
+          fields[index]['value']?.project_id ?? '',
+          record_id,
+          current_revision_id
+        )
       );
       // get the displayed information for the child or link item, this is used by field
       if (is_dispaly && latest_record !== null) {
@@ -482,7 +512,10 @@ export async function addLinkedRecord(
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
       const child = generate_RecordLink(
         child_record,
-        latest_record?.updated_by ?? '',
+        get_last_updated(
+          latest_record?.updated_by ?? '',
+          latest_record?.updated
+        ),
         current_revision_id,
         linked_vocab,
         parent_link.record_id,
@@ -496,7 +529,11 @@ export async function addLinkedRecord(
         ),
         parent_link.field_id,
         get_field_label(ui_specification, parent_link.field_id),
-        revision_id
+        get_route_for_field(
+          child_record.project_id,
+          parent_link.record_id,
+          revision_id ?? ''
+        )
       );
       newfields.push(child);
     }
@@ -646,204 +683,111 @@ export async function getDetailRelatedInformation(
   //get information for parent
   return record_to_field_links;
 }
-export async function updateChildRecords(
-  ui_specification: ProjectUIModel,
-  form_type: string,
-  record_id: string, // this is the current parent/link record ID
-  preValues: {[field_name: string]: any},
-  currentValues: {[field_name: string]: any}
-) {
-  const fields = getRelatedFields(ui_specification, form_type);
-  for (const index in fields) {
-    const field = fields[index];
-    const is_mulptile =
-      ui_specification['fields'][field]['component-parameters']['multiple'] ??
-      false;
-    const relation_type = ui_specification['fields'][field][
-      'component-parameters'
-    ]['relation_type'].replace('faims-core::', '');
-    await updateChildRecord(
-      preValues[field],
-      currentValues[field],
-      is_mulptile,
-      record_id,
-      relation_type,
-      field
-    );
-  }
-}
-
-async function updateChildRecord(
-  preValue: any,
-  currentValue: any,
-  is_multiple: boolean,
-  record_id: string,
-  relation_type: string,
-  field_id: string
-) {
-  if (!is_multiple && preValue !== currentValue)
-    return await updateRecords(
-      currentValue,
-      record_id,
-      relation_type,
-      true,
-      field_id
-    );
-  if (!is_multiple && preValue === currentValue) return record_id;
-  if (is_multiple && JSON.stringify(preValue) === JSON.stringify(currentValue))
-    return record_id;
-  const preArray: string[] = [];
-  preValue.map((preSubrecord: RecordReference) =>
-    preArray.push(preSubrecord.record_id)
+function get_last_updated(updated_by: string, updated: Date | undefined) {
+  if (updated === undefined) return updated_by;
+  return (
+    updated_by +
+    ' at ' +
+    JSON.stringify(updated)
+      .replaceAll('"', '')
+      .replaceAll('T', ' ')
+      .slice(0, 19)
   );
-  const currentArray: string[] = [];
-  currentValue.map((currentrecord: RecordReference) =>
-    currentArray.push(currentrecord.record_id)
-  );
-  let is_added = true;
-  let updated_value: RecordReference | null = null;
-  if (preValue.length > currentValue.length) {
-    //remove items in array
-    for (const index in preArray) {
-      if (!currentArray.includes(preArray[index])) {
-        updated_value = preValue[index];
-        is_added = false;
-        if (updated_value !== null)
-          await updateRecords(
-            updated_value,
-            record_id,
-            relation_type,
-            is_added,
-            field_id
-          );
-      }
-    }
-  } else {
-    for (const index in currentArray) {
-      if (!preArray.includes(currentArray[index])) {
-        updated_value = currentValue[index];
-        if (updated_value !== null)
-          await updateRecords(
-            updated_value,
-            record_id,
-            relation_type,
-            is_added,
-            field_id
-          );
-      }
-    }
-  }
-  return record_id;
 }
-
-async function updateRecords(
+export async function Update_New_Link(
   child_record: RecordReference,
-  record_id: string,
+  parent: LinkedRelation,
+  field_label: string,
+  related_type_label: string,
+  form_type: string | undefined,
+  hrid: string,
+  form_revision_id: string | undefined,
   relation_type: string,
-  is_added: boolean,
-  field_id: string
-) {
+  relation_type_vocabPair: string[],
+  is_add: boolean
+): Promise<RecordLinkProps | null> {
   const {latest_record, revision_id} = await getRecordInformation(child_record);
-  console.debug('Get current revision id', revision_id);
-  let parent = latest_record?.relationship;
-  if (parent === undefined) parent = {};
-  if (relation_type === 'Child')
-    if (is_added)
-      //add parent from child
-      parent['parent'] = {
-        record_id: record_id,
-        field_id: field_id,
-        relation_type_vocabPair: [],
-      };
-    //remove parent from child
-    else delete parent['parent'];
-  else if (relation_type === 'Linked') {
-    if (parent['linked'] === undefined) {
-      if (is_added)
-        parent['linked'] = [
-          {
-            record_id: record_id,
-            field_id: field_id,
-            relation_type_vocabPair: child_record.relation_type_vocabPair ?? [
-              DEFAULT_REALTION_LINK_VOCAB,
-              DEFAULT_REALTION_LINK_VOCAB,
-            ],
-          },
-        ];
-    } else if (
-      !check_if_link_exist(parent['linked'], record_id, field_id) &&
-      is_added
-    ) {
-      //add the link item if not in record
-      parent['linked'].push({
-        record_id: record_id,
-        field_id: field_id,
-        relation_type_vocabPair: child_record.relation_type_vocabPair ?? [
-          DEFAULT_REALTION_LINK_VOCAB,
-          DEFAULT_REALTION_LINK_VOCAB,
-        ],
-      });
-    } else if (
-      check_if_link_exist(parent['linked'], record_id, field_id) &&
-      !is_added
-    ) {
-      // remove the link item if it's in record
-      parent['linked'].map((linkRecord: LinkedRelation, index: number) => {
-        if (
-          linkRecord.record_id === record_id &&
-          linkRecord.field_id === field_id &&
-          parent !== undefined &&
-          parent['linked'] !== undefined
-        )
-          parent['linked'].splice(index, 1);
-      });
-    }
+  let current_revision_id = revision_id;
+  const relation = latest_record?.relationship ?? {};
+  if (relation_type === 'Child' && is_add) relation['parent'] = parent;
+  else if (relation_type === 'Linked' && is_add)
+    relation['linked'] = AddLink(relation, parent);
+  else if (relation_type === 'Child' && !is_add) delete relation.parent;
+  else if (relation_type === 'Linked' && !is_add)
+    relation['linked'] = RemoveLink(relation, parent);
+  else {
+    console.error('Error: not correct Type', relation_type);
+    return null;
   }
-
+  const now = new Date();
   if (latest_record !== null && child_record.project_id !== undefined) {
     const new_doc = latest_record;
-    new_doc['relationship'] = parent;
-    await upsertFAIMSData(child_record.project_id, new_doc);
+    new_doc['relationship'] = relation;
+    new_doc['updated'] = now;
+    current_revision_id = await upsertFAIMSData(
+      child_record.project_id,
+      new_doc
+    );
   }
-  return record_id;
+  if (current_revision_id === undefined) return null;
+  const new_child_record = generate_RecordLink(
+    child_record,
+    get_last_updated(latest_record?.updated_by ?? '', now),
+    current_revision_id,
+    relation_type_vocabPair,
+    parent.record_id,
+    hrid,
+    form_type ?? '',
+    related_type_label,
+    '',
+    parent.field_id,
+    field_label,
+    get_route_for_field(
+      child_record.project_id ?? '',
+      parent.record_id,
+      form_revision_id ?? ''
+    )
+  );
+  return new_child_record;
 }
 
-// const {
-//   record_id: record_id,
-//   field_id: field_id,
-//   relation_type_vocabPair: [],
-// }
-export function AddParent(relation: Relationship, parent: LinkedRelation) {
-  return {...relation, parent: parent};
+export function remove_link_from_list(
+  link_records: RecordLinkProps[],
+  child_record: RecordLinkProps
+) {
+  if (link_records.length === 0) return link_records;
+  const new_link_records: RecordLinkProps[] = [];
+  link_records.map((linkRecord: RecordLinkProps, index: number) =>
+    linkRecord.record_id !== child_record.record_id
+      ? new_link_records.push(linkRecord)
+      : linkRecord
+  );
+  return new_link_records;
 }
 
-export function RemoveParent(relation: Relationship) {
-  const newparent = relation;
-  if (newparent.parent !== undefined) delete newparent.parent;
-  return newparent;
-}
-
-export function AddLink(relation: Relationship, linked: LinkedRelation) {
-  if (relation === undefined) return {linked: [linked]};
-  if (relation.linked === undefined) return {...relation, linked: [linked]};
+export function AddLink(
+  relation: Relationship,
+  linked: LinkedRelation
+): LinkedRelation[] {
+  if (relation === undefined || relation.linked === undefined) return [linked];
   if (check_if_link_exist(relation.linked, linked.record_id, linked.field_id))
-    return relation;
-  return {...relation, linked: relation.linked.push(linked)};
+    return relation.linked;
+  const new_linked = relation.linked;
+  new_linked.push(linked);
+  return new_linked;
 }
 
 export function RemoveLink(relation: Relationship, linked: LinkedRelation) {
-  if (relation === undefined) return relation;
-  if (relation.linked === undefined) return relation;
-  if (!check_if_link_exist(relation.linked, linked.record_id, linked.field_id))
-    return relation;
-  const newlinked = relation['linked'];
-  newlinked.map((linkRecord: LinkedRelation, index: number) => {
-    if (
+  if (relation === undefined || relation.linked === undefined) return [];
+
+  const newlinked: LinkedRelation[] = [];
+  relation['linked'].map((linkRecord: LinkedRelation) => {
+    !(
       linkRecord.record_id === linked.record_id &&
-      linkRecord.field_id === linked.field_id &&
-      newlinked !== undefined
+      linkRecord.field_id === linked.field_id
     )
-      newlinked.splice(index, 1);
+      ? newlinked.push(linkRecord)
+      : linkRecord;
   });
-  return {...relation, linked: newlinked};
+  return newlinked;
 }

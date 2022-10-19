@@ -1,4 +1,4 @@
-import React, {useContext} from 'react';
+import React, {useContext, useEffect, useRef} from 'react';
 import {
   Button,
   Grid,
@@ -18,22 +18,60 @@ import {store} from '../../../../../context/store';
 import {RecordReference} from '../../../../../datamodel/ui';
 import {Field} from 'formik';
 import AddIcon from '@mui/icons-material/Add';
-import {Link} from 'react-router-dom';
 import {CreateRecordLinkProps} from '../types';
+import {useHistory} from 'react-router-dom';
+import {LocationState} from '../../../../../datamodel/core';
+import * as ROUTES from '../../../../../constants/routes';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
-  create_route: string;
+  pathname: string;
+  state: LocationState;
   text: string;
+  handleSubmit: Function;
+  project_id: string;
 }) {
-  return (
+  const [submitting, setSubmitting] = React.useState(false);
+  const history = useHistory();
+  const handleSubmit = () => {
+    setSubmitting(true);
+    if (props.handleSubmit !== undefined) {
+      props.handleSubmit().then((result: string) => {
+        const newState = props.state;
+        newState['parent_link'] = ROUTES.getRecordRoute(
+          props.project_id,
+          (props.state.parent_record_id || '').toString(),
+          (result || '').toString()
+        ).replace('/notebooks/', '');
+        setTimeout(() => {
+          // reset local state of component
+          setSubmitting(false);
+          history.push({
+            pathname: props.pathname,
+            state: newState,
+          });
+        }, 1000);
+      });
+    }
+    const timer = setTimeout(() => {
+      // reset local state of component
+      setSubmitting(false);
+    }, 3000);
+    return () => {
+      clearTimeout(timer);
+    };
+  };
+  return submitting ? (
+    <LoadingButton loading variant={'contained'} size={'medium'}>
+      Working...
+    </LoadingButton>
+  ) : (
     <Button
       variant="outlined"
       color="primary"
       startIcon={<AddIcon />}
-      component={Link}
       disabled={!props.is_enabled}
-      to={props.create_route}
+      onClick={() => handleSubmit()}
     >
       {props.text}
     </Button>
@@ -64,11 +102,16 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
      * TODO replace setTimeout with actual request to couchDB
      */
     setSubmitting(true);
+    if (props.add_related_child !== undefined) {
+      props.add_related_child();
+    }
+
     // mimic sending request to couch
     const timer = setTimeout(() => {
       // reset local state of component
       setSubmitting(false);
-      props.add_related_child();
+      // setSubmitting(false);
+      // if (props.handleReset !== undefined) props.handleReset();
 
       // // response error
       // dispatch({
@@ -212,8 +255,11 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                 {props.relation_type === 'Linked' && (
                   <AddNewRecordButton
                     is_enabled={props.is_enabled}
-                    create_route={props.create_route}
+                    pathname={props.pathname}
+                    state={props.state}
                     text={'Add Record'}
+                    handleSubmit={props.handleSubmit}
+                    project_id={props.project_id}
                   />
                 )}
               </>

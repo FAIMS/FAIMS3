@@ -69,8 +69,11 @@ export default function CreateLinkComponent(
             {props.relation_type === 'Child' && (
               <AddNewRecordButton
                 is_enabled={props.is_enabled}
-                create_route={props.create_route}
+                pathname={props.pathname}
+                state={props.state}
                 text={'Add Child Record'}
+                handleSubmit={props.handleSubmit}
+                project_id={props.project_id}
               />
             )}
             <ExpandMoreButton

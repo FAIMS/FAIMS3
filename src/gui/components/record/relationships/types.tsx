@@ -99,7 +99,8 @@ export interface DataGridLinksComponentProps {
   record_hrid: string;
   record_type: string;
   field_label: string;
-  handleUnlink?: any;
+  handleUnlink?: Function;
+  handleReset?: Function;
 }
 export const PARENT_CHILD_VOCAB = [
   'is child of',

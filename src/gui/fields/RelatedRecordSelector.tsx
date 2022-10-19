@@ -39,7 +39,11 @@ import {
 } from '../../datamodel/ui';
 import {useLocation} from 'react-router-dom';
 import {Typography} from '@mui/material';
-import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInformation';
+import {
+  get_RelatedFields_for_field,
+  Update_New_Link,
+  remove_link_from_list,
+} from '../components/record/relationships/RelatedInformation';
 import DataGridFieldLinksComponent from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
 
@@ -78,6 +82,7 @@ function get_default_relation_label(
     multiple &&
     length > 0 &&
     value[length - 1] !== undefined &&
+    value[length - 1] !== null &&
     value[length - 1]['relation_type_vocabPair'] !== undefined
   )
     return value[length - 1]['relation_type_vocabPair'];
@@ -92,8 +97,10 @@ function excludes_related_record(
 ) {
   const relations: string[] = multiple ? [] : [value.record_id];
   const records: RecordReference[] = [];
-  if (multiple)
-    value.map((record: RecordReference) => relations.push(record.record_id));
+  if (multiple && value !== null)
+    value.map((record: RecordReference) =>
+      record !== null ? relations.push(record.record_id) : record
+    );
 
   all_records.map((record: RecordReference) =>
     relations.includes(record.record_id) ? record : records.push(record)
@@ -206,7 +213,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       // executed when unmount
       mounted = false;
     };
-  }, [updated]);
+  }, []);
 
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
@@ -233,11 +240,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       newState['parent'] = location_state.parent;
     }
   }
-  const route = {
-    pathname:
-      ROUTES.NOTEBOOK + project_id + ROUTES.RECORD_CREATE + props.related_type,
-    state: newState,
-  };
+
   const handleChange = (event: SelectChangeEvent) => {
     const value: string = event.target.value;
     setRelationshipLabel(value);
@@ -256,11 +259,41 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   };
 
   const add_related_child = () => {
+    // skip the null value
+    if (selectedRecord === null) return false;
     let newValue = props.form.values[field_name];
+
     if (multiple) newValue.push(selectedRecord);
     else newValue = selectedRecord;
     setFieldValue(newValue);
-
+    props.form.setFieldValue(props.field.name, newValue);
+    props.form.submitForm();
+    const current_record = {
+      record_id: record_id,
+      field_id: field_name,
+      relation_type_vocabPair: relationshipPair,
+    };
+    Update_New_Link(
+      selectedRecord,
+      current_record,
+      props.InputLabelProps.label,
+      props.related_type_label ?? props.related_type,
+      props.current_form,
+      props.form.values['hrid' + props.current_form] ?? record_id,
+      props.form.values['_current_revision_id'],
+      type,
+      relationshipPair,
+      true
+    ).then(child_record => {
+      if (child_record !== null) {
+        if (type === 'Child') setRecordsInformation([child_record]);
+        else {
+          const new_records = [...recordsInformation, child_record];
+          // new_records.push(child_record)
+          setRecordsInformation(new_records);
+        }
+      } else console.error('Error to Add Link');
+    });
     const records = excludes_related_record(
       multiple,
       props.form.values[field_name],
@@ -269,22 +302,22 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     setOptions(records);
     if (!multiple) setIs_enabled(false);
     //set the form value
-    props.form.setFieldValue(props.field.name, newValue);
     if (multiple) SetSelectedRecord(null);
-    SetUpdated(uuidv4());
     //call the function to trigger the child to be updated??TBD
+    return true;
   };
 
   const remove_related_child = (
-    record_id: string | null | undefined,
-    hrid: string | null | undefined
+    child_record_id: string | null | undefined,
+    child_hrid: string | null | undefined
   ) => {
-    if (record_id === null || record_id === undefined) return;
-    if (hrid === null || hrid === undefined) hrid = record_id;
+    if (child_record_id === null || child_record_id === undefined) return;
+    if (child_hrid === null || child_hrid === undefined)
+      child_hrid = child_record_id;
     const child_record = {
       project_id: project_id,
-      record_id: record_id,
-      record_label: hrid,
+      record_id: child_record_id,
+      record_label: child_hrid,
       relation_type_vocabPair: relationshipPair,
     };
     let newValue = props.form.values[field_name];
@@ -300,22 +333,58 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       }
     } else newValue = '';
-    console.error('set new value', newValue);
+
     setFieldValue(newValue);
 
     const records = options;
     records.push(child_record);
-    // records=excludes_related_record(
-    //   multiple,
-    //   props.form.values[field_name],
-    //   records
-    // )
     setOptions(records);
+
     if (!multiple) setIs_enabled(true);
+    const current_record = {
+      record_id: record_id,
+      field_id: field_name,
+      relation_type_vocabPair: relationshipPair,
+    };
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
+    props.form
+      .submitForm()
+      .then(result => {
+        console.log('Record saved revision', result);
+      })
+      .catch(err => {
+        console.error('Failed to save record', err);
+      });
+
+    Update_New_Link(
+      child_record,
+      current_record,
+      props.InputLabelProps.label,
+      props.related_type_label ?? props.related_type,
+      props.current_form,
+      props.form.values['hrid' + props.current_form] ?? record_id,
+      props.form.values['_current_revision_id'],
+      type,
+      relationshipPair,
+      false
+    )
+      .then(child_record => {
+        if (child_record !== null) {
+          if (type === 'Child') setRecordsInformation([]);
+          else {
+            const new_records = remove_link_from_list(
+              recordsInformation,
+              child_record
+            );
+            setRecordsInformation(new_records);
+          }
+        } else throw Error('Failed to get child_record');
+      })
+      .catch(err => {
+        console.error('Failed to save Child record ', err);
+      });
     SetSelectedRecord(null);
-    SetUpdated(uuidv4());
     //call the function to trigger the child to be updated??TBD
   };
 
@@ -337,7 +406,14 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             relation_type={type}
             add_related_child={add_related_child}
             field_label={props.InputLabelProps.label}
-            create_route={route}
+            pathname={
+              ROUTES.NOTEBOOK +
+              project_id +
+              ROUTES.RECORD_CREATE +
+              props.related_type
+            }
+            state={newState}
+            handleSubmit={() => props.form.submitForm()}
           />
         </Grid>
 
@@ -355,6 +431,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               record_type={props.form.values['type']}
               field_label={props.InputLabelProps.label}
               handleUnlink={remove_related_child}
+              handleReset={() => SetUpdated(uuidv4())}
             />
           )}
         </Grid>
