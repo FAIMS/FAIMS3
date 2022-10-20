@@ -55,14 +55,6 @@ type RecordsBrowseTableProps = {
   viewsets?: ProjectUIViewsets | null;
 };
 
-type RecordsSearchTableProps = {
-  project_id: ProjectID;
-  maxRows: number | null;
-  query: string;
-  filter_deleted: boolean;
-  viewsets?: ProjectUIViewsets | null;
-};
-
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
   const theme = useTheme();
@@ -320,46 +312,3 @@ RecordsBrowseTable.defaultProps = {
   filter_deleted: true,
 };
 
-export function RecordsSearchTable(props: RecordsSearchTableProps) {
-  const {project_id, maxRows, query, filter_deleted} = props;
-
-  const rows = useEventedPromise(
-    async (project_id: ProjectID, query: string) => {
-      if (DEBUG_APP) {
-        console.log('RecordsSearchTable updating', project_id);
-      }
-      const metadata = await getRecordsWithRegex(
-        project_id,
-        query,
-        filter_deleted
-      );
-      return metadata;
-    },
-    constantArgsSplit(
-      listenDataDB,
-      [project_id, {since: 'now', live: true}],
-      [project_id, query]
-    ),
-    false,
-    [project_id, query],
-    project_id,
-    query
-  );
-
-  if (DEBUG_APP) {
-    console.debug('New records:', rows);
-  }
-  return (
-    <RecordsTable
-      project_id={project_id}
-      maxRows={maxRows}
-      rows={rows.value ?? []}
-      loading={rows.loading !== undefined}
-      viewsets={props.viewsets}
-    />
-  );
-}
-RecordsSearchTable.defaultProps = {
-  maxRows: null,
-  filter_deleted: true,
-};

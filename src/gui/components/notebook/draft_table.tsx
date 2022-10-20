@@ -219,6 +219,9 @@ function DraftRecord(props: DraftsRecordProps) {
           components={{
             Toolbar: NotebookDraftDataGridToolbar,
           }}
+          componentsProps={{
+            filterPanel: {sx: {maxWidth: '96vw'}},
+          }}
           initialState={{
             sorting: {
               sortModel: [{field: 'updated', sort: 'desc'}],

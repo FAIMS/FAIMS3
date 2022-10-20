@@ -243,6 +243,9 @@ export default function DataGridFieldLinksComponent(
             components={{
               Footer: RecordLinksToolbar,
             }}
+            componentsProps={{
+              filterPanel: {sx: {maxWidth: '96vw'}},
+            }}
             columns={columns}
             initialState={{
               sorting: {
