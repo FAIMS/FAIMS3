@@ -136,7 +136,9 @@ export default function AboutBuild() {
         variant="outlined"
         color={'primary'}
         onClick={async () => {
+          console.error('Starting browser system dump');
           const b = await getFullDBSystemDumpAsBlob();
+          console.error('Finished browser system dump, starting download');
           downloadBlob(b, 'faims3-dump.json');
         }}
         style={{marginRight: '10px'}}
@@ -147,7 +149,9 @@ export default function AboutBuild() {
         variant="outlined"
         color={'primary'}
         onClick={async () => {
+          console.error('Starting app system dump');
           const s = await getFullDBSystemDump();
+          console.error('Finished app system dump, starting app sharing');
           await shareStringAsFileOnApp(
             s,
             'FAIMS Database Dump',

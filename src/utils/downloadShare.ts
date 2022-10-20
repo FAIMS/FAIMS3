@@ -38,6 +38,7 @@ export async function shareStringAsFileOnApp(
   dialogTitle: string,
   filename: string
 ) {
+  console.error('Starting writing of file');
   const url = (
     await Filesystem.writeFile({
       path: filename,
@@ -46,10 +47,12 @@ export async function shareStringAsFileOnApp(
       encoding: Encoding.UTF8,
     })
   ).uri;
+  console.error('Writing of file complete, sharing file');
   await Share.share({
     title: title,
     text: dialogTitle,
     url: url,
     dialogTitle: dialogTitle,
   });
+  console.error('Shared file');
 }
