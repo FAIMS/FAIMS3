@@ -32,7 +32,7 @@ interface MainCardProps {
   secondary?: React.ReactNode;
   shadow?: string;
   sx?: object;
-  title?: string;
+  title?: string | React.ReactNode;
   content?: boolean;
   children: React.ReactNode;
 }
@@ -76,6 +76,7 @@ export default function MainCard(props: MainCardProps) {
           fontFamily: theme.typography.fontFamily,
           fontSize: '0.75rem',
         },
+        borderTop: 'solid 3px ' + theme.palette.secondary.main,
       }}
     >
       {/* card header and action */}
@@ -84,6 +85,7 @@ export default function MainCard(props: MainCardProps) {
           sx={{
             p: 2.5,
             '& .MuiCardHeader-action': {m: '0px auto', alignSelf: 'center'},
+            // backgroundColor: theme.palette.grey[200]
           }}
           titleTypographyProps={{variant: 'subtitle1'}}
           title={title}
