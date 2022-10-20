@@ -22,6 +22,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const project_id = project.project_id;
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
+  const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
 
   const ui_spec = useEventedPromise(
     getUiSpecForProject,
@@ -64,7 +65,11 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
           New Record
         </Button>
       ) : (
-        <ButtonGroup fullWidth={mq_above_md ? false : true}>
+        <ButtonGroup
+          fullWidth={mq_above_md ? false : true}
+          orientation={mq_above_sm ? 'horizontal' : 'vertical'}
+          sx={{maxHeight: '400px', overflowY: 'scroll'}}
+        >
           {visible_types.map(
             viewset_name =>
               viewsets[viewset_name].is_visible !== false && (
