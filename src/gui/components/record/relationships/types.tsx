@@ -1,6 +1,5 @@
 import React from 'react';
 
-import {ProjectUIModel} from '../../../../datamodel/ui';
 import {RecordID} from '../../../../datamodel/core';
 export interface TabPanelProps {
   children?: React.ReactNode;
@@ -18,7 +17,7 @@ export interface FieldLinkProps {
   type: string;
   route: string;
   section: string;
-  section_label:string;
+  section_label: string;
   field_id: string;
   field_label: string;
 }
@@ -49,8 +48,6 @@ export interface ParentLinkProps {
   link_id?: string;
 }
 
-
-
 /**************need to be updated later */
 export interface RelationshipsComponentProps {
   record_to_field_links: Array<RecordLinkProps> | null;
@@ -70,7 +67,7 @@ export interface FieldRelationshipComponentProps {
 export interface RecordLinksComponentProps {
   record_links: Array<RecordLinkProps> | null;
   record_id: RecordID;
-  handleSetSection:Function
+  handleSetSection: Function;
 }
 
 export interface DataGridLinksComponentProps {

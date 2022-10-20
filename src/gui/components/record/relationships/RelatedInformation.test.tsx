@@ -127,9 +127,3 @@ test('test get child information to save in parent', () => {
   ).toBe(true);
   expect(equals(is_related, true)).toBe(true);
 });
-
-const linked_information = {
-  record_id: record_id,
-  field_id: 'field',
-  relation_type_vocabPair: [],
-};

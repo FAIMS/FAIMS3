@@ -98,6 +98,7 @@ export default function DataGridFieldLinksComponent(
       props
         .handleUnlink(modalLink.record_id, modalLink.hrid)
         .then((result: string) => {
+          console.debug('UnClick result', result);
           const timer = setTimeout(() => {
             // reset local state of component
             setIsSubmitting(false);

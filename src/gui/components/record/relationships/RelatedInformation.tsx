@@ -25,7 +25,6 @@ import {
 import {ProjectUIModel, RecordReference} from '../../../../datamodel/ui';
 import {
   LinkedRelation,
-  DEFAULT_REALTION_LINK_VOCAB,
   LocationState,
   Relationship,
 } from '../../../../datamodel/core';
@@ -395,7 +394,7 @@ function generate_RecordLink(
   form_type: string,
   type: string,
   section: string,
-  section_label:string,
+  section_label: string,
   field: string,
   field_label: string,
   link_route: string
@@ -454,7 +453,11 @@ async function get_field_RelatedFields(
             : reation_type === 'Child'
             ? ['is child of', 'is parent of']
             : ['is related to', 'is related to'];
-        const {section,section_label} = get_section(ui_specification, form_type, field)
+        const {section, section_label} = get_section(
+          ui_specification,
+          form_type,
+          field
+        );
         const child = generate_RecordLink(
           child_record,
           get_last_updated(
@@ -547,11 +550,11 @@ export async function addLinkedRecord(
       )
         hrid = latest_record?.data['hrid' + type] ?? record_id;
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
-      const {section,section_label} = get_section(
+      const {section, section_label} = get_section(
         ui_specification,
         latest_record?.type ?? 'FORM1',
         parent_link.field_id
-      )
+      );
       const child = generate_RecordLink(
         child_record,
         get_last_updated(
@@ -568,7 +571,8 @@ export async function addLinkedRecord(
         hrid,
         type ?? '',
         form_type,
-        section,section_label,
+        section,
+        section_label,
         parent_link.field_id,
         get_field_label(ui_specification, parent_link.field_id),
         get_route_for_field(
@@ -590,15 +594,15 @@ function get_section(
   field_id: string
 ) {
   let section = '';
-  let section_label = ''
+  let section_label = '';
   ui_specification['viewsets'][form_type]['views'].map((view: string) =>
     ui_specification['views'][view]['fields'].map((field: string) =>
       field === field_id ? (section = view) : field
     )
   );
-  if (section === '') return {section,section_label};
+  if (section === '') return {section, section_label};
   section_label = ui_specification['views'][section]['label'] ?? section;
-  return {section,section_label};
+  return {section, section_label};
 }
 
 function get_field_label(ui_specification: ProjectUIModel, field: string) {
@@ -830,7 +834,7 @@ export function remove_link_from_list(
 ) {
   if (link_records.length === 0) return link_records;
   const new_link_records: RecordLinkProps[] = [];
-  link_records.map((linkRecord: RecordLinkProps, index: number) =>
+  link_records.map((linkRecord: RecordLinkProps) =>
     linkRecord.record_id !== child_record.record_id
       ? new_link_records.push(linkRecord)
       : linkRecord

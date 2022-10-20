@@ -82,8 +82,8 @@ type RecordFormProps = {
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
   isDraftSaving: boolean;
-  setRevision_id?:Function;
-  ViewName?:string | null;
+  setRevision_id?: Function;
+  ViewName?: string | null;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -175,9 +175,16 @@ class RecordForm extends React.Component<
       this.formChanged(true, this.props.revision_id); // need to check if revision id been passed corrected: after conflict resoved, user save form and user open another form
     }
     // update the viewName if user click link
-    if(this.props.ViewName!==this.state.view_cached){
-      if(this.props.ViewName!==null&&this.props.ViewName!==undefined&&this.state.type_cached!==null&&this.props.ui_specification.viewsets[this.state.type_cached].views.includes(this.props.ViewName))
-        this.updateView(this.props.ViewName)
+    if (this.props.ViewName !== this.state.view_cached) {
+      if (
+        this.props.ViewName !== null &&
+        this.props.ViewName !== undefined &&
+        this.state.type_cached !== null &&
+        this.props.ui_specification.viewsets[
+          this.state.type_cached
+        ].views.includes(this.props.ViewName)
+      )
+        this.updateView(this.props.ViewName);
     }
     if (prevState.view_cached !== this.state.view_cached) {
       window.scrollTo(0, 200);
@@ -303,11 +310,23 @@ class RecordForm extends React.Component<
       }
 
       // this.get_view_description(this.props.ui_specification.viewsets[this_type].views[0])
-      let viewName = this.props.ui_specification.viewsets[this_type].views[0]
-      if(this.props.ViewName!==null&&this.props.ViewName!==undefined&&this.props.ui_specification.viewsets[this_type].views.includes(this.props.ViewName)){
-        viewName = this.props.ViewName
-      }else if(this.state.view_cached!==null&&this.state.view_cached!==undefined&&this.props.ui_specification.viewsets[this_type].views.includes(this.state.view_cached)){
-        viewName = this.state.view_cached
+      let viewName = this.props.ui_specification.viewsets[this_type].views[0];
+      if (
+        this.props.ViewName !== null &&
+        this.props.ViewName !== undefined &&
+        this.props.ui_specification.viewsets[this_type].views.includes(
+          this.props.ViewName
+        )
+      ) {
+        viewName = this.props.ViewName;
+      } else if (
+        this.state.view_cached !== null &&
+        this.state.view_cached !== undefined &&
+        this.props.ui_specification.viewsets[this_type].views.includes(
+          this.state.view_cached
+        )
+      ) {
+        viewName = this.state.view_cached;
       }
       await this.setState({
         type_cached: this_type,
@@ -375,33 +394,33 @@ class RecordForm extends React.Component<
       });
     }
 
-    // try {
-    //   //save the child record when child record been pop
-    //   if (DEBUG_APP)
-    //     console.debug(
-    //       'current revision ID after in formChanged intital',
-    //       this.props.revision_id,
-    //       this.state.revision_cached
-    //     );
-    //   if (
-    //     this.props.revision_id === undefined &&
-    //     this.state.revision_cached === undefined
-    //   ) {
-    //     const location: any = this.props.location;
-    //     if (
-    //       location !== undefined &&
-    //       location.state.parent_record_id !== undefined &&
-    //       location.state.parent_record_id !== this.props.record_id &&
-    //       this.state.initialValues !== null
-    //     ) {
-    //       this.save(this.state.initialValues, false, false, () =>
-    //         console.log('saved')
-    //       );
-    //     }
-    //   }
-    // } catch (err: any) {
-    //   console.error('Error save Record ', err);
-    // }
+    try {
+      //save the child record when child record been pop
+      if (DEBUG_APP)
+        console.debug(
+          'current revision ID after in formChanged intital',
+          this.props.revision_id,
+          this.state.revision_cached
+        );
+      if (
+        this.props.revision_id === undefined &&
+        this.state.revision_cached === undefined
+      ) {
+        const location: any = this.props.location;
+        if (
+          location !== undefined &&
+          location.state.parent_record_id !== undefined &&
+          location.state.parent_record_id !== this.props.record_id &&
+          this.state.initialValues !== null
+        ) {
+          this.save(this.state.initialValues, false, false, () =>
+            console.log('saved')
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error('Error save Record ', err);
+    }
   }
 
   async componentWillUnmount() {
@@ -431,7 +450,7 @@ class RecordForm extends React.Component<
           )) || {};
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
-    
+
     const [staged_data, staged_annotations] =
       await this.draftState.getInitialValues();
     if (DEBUG_APP) {
@@ -712,7 +731,8 @@ class RecordForm extends React.Component<
                   console.debug('get new revision id++++' + revision_id);
                 this.setState({revision_cached: revision_id});
                 this.formChanged(true, revision_id);
-                if(this.props.setRevision_id!==undefined) this.props.setRevision_id(revision_id) //pass the revision id back
+                if (this.props.setRevision_id !== undefined)
+                  this.props.setRevision_id(revision_id); //pass the revision id back
               } catch (error) {
                 console.error('update child Error', error);
               }

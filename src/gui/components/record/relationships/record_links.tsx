@@ -138,8 +138,10 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           <Typography variant={'body2'} fontWeight={'bold'}>
             <Link
               component={NavLink}
-              to={{pathname:params.row.link.route,
-                hash: '#' + params.row.link.field_id}}
+              to={{
+                pathname: params.row.link.route,
+                hash: '#' + params.row.link.field_id,
+              }}
               underline={'none'}
             >
               {params.value}
