@@ -175,10 +175,10 @@ class RecordForm extends React.Component<
       this.formChanged(true, this.props.revision_id); // need to check if revision id been passed corrected: after conflict resoved, user save form and user open another form
     }
     // update the viewName if user click link
-    // if(this.props.ViewName!==this.state.view_cached){
-    //   if(this.props.ViewName!==null&&this.props.ViewName!==undefined&&this.state.type_cached!==null&&this.props.ui_specification.viewsets[this.state.type_cached].views.includes(this.props.ViewName))
-    //     this.updateView(this.props.ViewName)
-    // }
+    if(this.props.ViewName!==this.state.view_cached){
+      if(this.props.ViewName!==null&&this.props.ViewName!==undefined&&this.state.type_cached!==null&&this.props.ui_specification.viewsets[this.state.type_cached].views.includes(this.props.ViewName))
+        this.updateView(this.props.ViewName)
+    }
     if (prevState.view_cached !== this.state.view_cached) {
       window.scrollTo(0, 200);
     }
@@ -303,12 +303,12 @@ class RecordForm extends React.Component<
       }
 
       // this.get_view_description(this.props.ui_specification.viewsets[this_type].views[0])
-      const viewName = this.props.ui_specification.viewsets[this_type].views[0]
-      // if(this.props.ViewName!==null&&this.props.ViewName!==undefined&&this.props.ui_specification.viewsets[this_type].views.includes(this.props.ViewName)){
-      //   viewName = this.props.ViewName
-      // }else if(this.state.view_cached!==null&&this.state.view_cached!==undefined&&this.props.ui_specification.viewsets[this_type].views.includes(this.state.view_cached)){
-      //   viewName = this.state.view_cached
-      // }
+      let viewName = this.props.ui_specification.viewsets[this_type].views[0]
+      if(this.props.ViewName!==null&&this.props.ViewName!==undefined&&this.props.ui_specification.viewsets[this_type].views.includes(this.props.ViewName)){
+        viewName = this.props.ViewName
+      }else if(this.state.view_cached!==null&&this.state.view_cached!==undefined&&this.props.ui_specification.viewsets[this_type].views.includes(this.state.view_cached)){
+        viewName = this.state.view_cached
+      }
       await this.setState({
         type_cached: this_type,
         view_cached: viewName,

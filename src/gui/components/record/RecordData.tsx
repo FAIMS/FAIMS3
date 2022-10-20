@@ -124,7 +124,7 @@ export default function RecordData(props: RecordDataTypes) {
                     <RecordForm
                       project_id={props.project_id}
                       record_id={props.record_id}
-                      revision_id={revision_id}
+                      revision_id={props.revision_id}
                       ui_specification={props.ui_specification}
                       draft_id={props.draft_id}
                       metaSection={props.metaSection}
