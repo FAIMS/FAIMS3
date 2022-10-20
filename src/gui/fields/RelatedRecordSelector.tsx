@@ -51,6 +51,7 @@ import {Grid} from '@mui/material';
 import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
+import {generateFAIMSDataID} from '../../data_storage';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -150,8 +151,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   if (search !== '') search = '&' + search;
 
   useEffect(() => {
-    if (project_id !== undefined) {
-      (async () => {
+    let mounted = true;
+    (async () => {
+      if (project_id !== undefined && mounted) {
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
@@ -171,16 +173,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.form.values[field_name]['record_id'] === undefined
         )
           setIs_enabled(true);
-      })();
-    } else {
-      setIsactive(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (project_id !== undefined && mounted) {
         const records_info = await get_RelatedFields_for_field(
           props.form.values,
           props.related_type,
@@ -206,6 +198,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         //   // );
         //   SetColumns(newColumns);
         // }
+      } else {
+        setIsactive(true);
       }
     })();
 
@@ -258,6 +252,21 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     }
   };
 
+  const save_new_record = () => {
+    const new_record_id = generateFAIMSDataID();
+    const new_child_record = {
+      record_id: new_record_id,
+      project_id: project_id,
+      // record_label:new_record_id
+      relation_type_vocabPair: relationshipPair,
+    };
+    let newValue = props.form.values[field_name];
+    if (multiple) newValue.push(new_child_record);
+    else newValue = new_child_record;
+    props.form.setFieldValue(props.field.name, newValue);
+    return new_record_id;
+  };
+
   const add_related_child = () => {
     // skip the null value
     if (selectedRecord === null) return false;
@@ -284,16 +293,18 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       type,
       relationshipPair,
       true
-    ).then(child_record => {
-      if (child_record !== null) {
-        if (type === 'Child') setRecordsInformation([child_record]);
-        else {
-          const new_records = [...recordsInformation, child_record];
-          // new_records.push(child_record)
-          setRecordsInformation(new_records);
-        }
-      } else console.error('Error to Add Link');
-    });
+    )
+      .then(child_record => {
+        if (child_record !== null) {
+          if (type === 'Child') setRecordsInformation([child_record]);
+          else {
+            const new_records = [...recordsInformation, child_record];
+            // new_records.push(child_record)
+            setRecordsInformation(new_records);
+          }
+        } else console.error('Error to Add Link');
+      })
+      .catch(error => console.error('Fail to update child'));
     const records = excludes_related_record(
       multiple,
       props.form.values[field_name],
@@ -307,11 +318,11 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     return true;
   };
 
-  const remove_related_child = (
+  const remove_related_child = async (
     child_record_id: string | null | undefined,
     child_hrid: string | null | undefined
   ) => {
-    if (child_record_id === null || child_record_id === undefined) return;
+    if (child_record_id === null || child_record_id === undefined) return '';
     if (child_hrid === null || child_hrid === undefined)
       child_hrid = child_record_id;
     const child_record = {
@@ -348,43 +359,45 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     };
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
-    props.form
-      .submitForm()
-      .then(result => {
-        console.log('Record saved revision', result);
-      })
-      .catch(err => {
-        console.error('Failed to save record', err);
-      });
+    let revision_id = props.form.values['_current_revision_id'];
+    try {
+      revision_id = await props.form.submitForm();
+    } catch (error) {
+      console.error('Error to save current record', error);
+    }
 
-    Update_New_Link(
-      child_record,
-      current_record,
-      props.InputLabelProps.label,
-      props.related_type_label ?? props.related_type,
-      props.current_form,
-      props.form.values['hrid' + props.current_form] ?? record_id,
-      props.form.values['_current_revision_id'],
-      type,
-      relationshipPair,
-      false
-    )
-      .then(child_record => {
-        if (child_record !== null) {
-          if (type === 'Child') setRecordsInformation([]);
-          else {
-            const new_records = remove_link_from_list(
-              recordsInformation,
-              child_record
-            );
-            setRecordsInformation(new_records);
-          }
-        } else throw Error('Failed to get child_record');
-      })
-      .catch(err => {
-        console.error('Failed to save Child record ', err);
-      });
+    try {
+      const new_child_record = await Update_New_Link(
+        child_record,
+        current_record,
+        props.InputLabelProps.label,
+        props.related_type_label ?? props.related_type,
+        props.current_form,
+        props.form.values['hrid' + props.current_form] ?? record_id,
+        revision_id,
+        type,
+        relationshipPair,
+        false
+      );
+      if (new_child_record !== null) {
+        if (type === 'Child') setRecordsInformation([]);
+        else {
+          const new_records = remove_link_from_list(
+            recordsInformation,
+            new_child_record
+          );
+          setRecordsInformation(new_records);
+        }
+      } else {
+        console.error('Failed to save Child record');
+        return '';
+      }
+    } catch (error) {
+      console.error('Failed to save Child record', error);
+      return '';
+    }
     SetSelectedRecord(null);
+    return props.form.values['_current_revision_id'];
     //call the function to trigger the child to be updated??TBD
   };
 
@@ -414,6 +427,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             }
             state={newState}
             handleSubmit={() => props.form.submitForm()}
+            save_new_record={save_new_record}
           />
         </Grid>
 

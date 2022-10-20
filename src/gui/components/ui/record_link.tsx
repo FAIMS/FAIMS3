@@ -21,10 +21,28 @@ export default function RecordRouteDisplay(props: RecordLinkProps) {
       </Typography>
     </span>
   );
+  const broken = (
+    <span
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        flexWrap: 'nowrap',
+      }}
+    >
+      <ArticleIcon fontSize={'inherit'} sx={{mt: '3px', mr: '3px'}} />
+      <Typography variant={'body2'} fontWeight={'bold'} color="red">
+        {props.children} 
+      </Typography>
+    </span>
+  );
   return props.link ? (
-    <Link component={NavLink} to={props.link} underline={'none'}>
-      {inner}
-    </Link>
+    props.link !== '' ? (
+      <Link component={NavLink} to={props.link} underline={'none'}>
+        {inner}
+      </Link>
+    ) : (
+      broken
+    )
   ) : (
     inner
   );

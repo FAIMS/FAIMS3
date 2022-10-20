@@ -95,18 +95,18 @@ export default function DataGridFieldLinksComponent(
     setIsSubmitting(true);
 
     if (props.handleUnlink !== undefined)
-      props.handleUnlink(modalLink.record_id, modalLink.hrid);
-
-    const timer = setTimeout(() => {
-      // reset local state of component
-      if (props.handleReset !== undefined) props.handleReset();
-      if (props.handleReset !== undefined) props.handleReset();
-      setIsSubmitting(false);
-      setModalOpen(false);
-    }, 3000);
-    return () => {
-      clearTimeout(timer);
-    };
+      props
+        .handleUnlink(modalLink.record_id, modalLink.hrid)
+        .then((result: string) => {
+          const timer = setTimeout(() => {
+            // reset local state of component
+            setIsSubmitting(false);
+            setModalOpen(false);
+          }, 500);
+          return () => {
+            clearTimeout(timer);
+          };
+        });
   }
   function recordDisplay(
     current_record_id: RecordID,
@@ -169,7 +169,6 @@ export default function DataGridFieldLinksComponent(
       valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
       flex: 0.4,
     },
-
     {
       field: 'actions',
       type: 'actions',

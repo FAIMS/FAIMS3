@@ -30,12 +30,14 @@ export function AddNewRecordButton(props: {
   text: string;
   handleSubmit: Function;
   project_id: string;
+  save_new_record: Function;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
   const history = useHistory();
   const handleSubmit = () => {
     setSubmitting(true);
     if (props.handleSubmit !== undefined) {
+      const new_child_id = props.save_new_record();
       props.handleSubmit().then((result: string) => {
         const newState = props.state;
         newState['parent_link'] = ROUTES.getRecordRoute(
@@ -43,6 +45,7 @@ export function AddNewRecordButton(props: {
           (props.state.parent_record_id || '').toString(),
           (result || '').toString()
         ).replace('/notebooks/', '');
+        newState['child_record_id'] = new_child_id;
         setTimeout(() => {
           // reset local state of component
           setSubmitting(false);
@@ -53,13 +56,6 @@ export function AddNewRecordButton(props: {
         }, 1000);
       });
     }
-    const timer = setTimeout(() => {
-      // reset local state of component
-      setSubmitting(false);
-    }, 3000);
-    return () => {
-      clearTimeout(timer);
-    };
   };
   return submitting ? (
     <LoadingButton loading variant={'contained'} size={'medium'}>
@@ -260,6 +256,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                     text={'Add Record'}
                     handleSubmit={props.handleSubmit}
                     project_id={props.project_id}
+                    save_new_record={props.save_new_record}
                   />
                 )}
               </>

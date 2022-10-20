@@ -62,6 +62,8 @@ interface RecordDataTypes {
 
 export default function RecordData(props: RecordDataTypes) {
   const [dataTab, setDataTab] = React.useState('1');
+  const [revision_id,setRevision_id] = React.useState(props.revision_id)
+  const [ViewName, setViewName] = React.useState(null)
   const handleDataTabChange = (
     event: React.SyntheticEvent,
     newValue: string
@@ -80,7 +82,8 @@ export default function RecordData(props: RecordDataTypes) {
         </TabList>
         <TabPanel value={'1'} sx={{p: 0}}>
           {/* Show UnpublishWarning for unsaved revision ONLY  TODO: need to update when user click publish and continue*/}
-          {props.revision_id === undefined && <UnpublishedWarning />}
+          {ViewName} {revision_id} {props.record_id}this is new bar
+          {revision_id === undefined && <UnpublishedWarning />}
           <DraftSyncStatus
             last_saved={props.draftLastSaved}
             is_saving={props.isDraftSaving}
@@ -91,6 +94,7 @@ export default function RecordData(props: RecordDataTypes) {
             record_id={props.record_id}
             record_hrid={props.hrid ?? props.record_id}
             record_type={props.record_type}
+            handleSetSection={setViewName}
           />
           <Accordion defaultExpanded={true}>
             <AccordionSummary
@@ -110,6 +114,7 @@ export default function RecordData(props: RecordDataTypes) {
                 alignItems="stretch"
               >
                 <Grid item lg={12}>
+                
                   <Box
                     component={Paper}
                     elevation={0}
@@ -119,7 +124,7 @@ export default function RecordData(props: RecordDataTypes) {
                     <RecordForm
                       project_id={props.project_id}
                       record_id={props.record_id}
-                      revision_id={props.revision_id}
+                      revision_id={revision_id}
                       ui_specification={props.ui_specification}
                       draft_id={props.draft_id}
                       metaSection={props.metaSection}
@@ -129,6 +134,8 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}
                       isDraftSaving={props.isDraftSaving}
+                      setRevision_id = {setRevision_id}
+                      ViewName = {ViewName}
                     />
                   </Box>
                 </Grid>

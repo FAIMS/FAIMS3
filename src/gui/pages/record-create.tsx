@@ -247,12 +247,12 @@ export default function RecordCreate() {
     draft_id?: string;
     record_id?: string;
   }>();
+  const location: any = useLocation();
   let draft_record_id = generateFAIMSDataID();
   if (record_id !== undefined) draft_record_id = record_id;
-
+  if (location.state!==undefined&&location.state.child_record_id !== undefined)
+    draft_record_id = location.state.child_record_id; //pass record_id from parent
   let project_info: ProjectInformation | null;
-  const location: any = useLocation();
-
   try {
     project_info = useEventedPromise(
       getProjectInfo,

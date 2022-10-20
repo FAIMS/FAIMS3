@@ -74,6 +74,7 @@ export default function CreateLinkComponent(
                 text={'Add Child Record'}
                 handleSubmit={props.handleSubmit}
                 project_id={props.project_id}
+                save_new_record={props.save_new_record}
               />
             )}
             <ExpandMoreButton
