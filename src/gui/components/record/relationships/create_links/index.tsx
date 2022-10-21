@@ -20,6 +20,7 @@ interface ExpandMoreProps extends ButtonProps {
 
 export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
   const {expand, ...other} = props;
+  console.log(expand);
   return <Button {...other} />;
 })(({theme, expand}) => ({
   '	.MuiButton-endIcon': {
