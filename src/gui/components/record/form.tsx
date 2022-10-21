@@ -179,7 +179,7 @@ class RecordForm extends React.Component<
       });
       // Re-initialize basically everything.
       // if (this.props.revision_id !== undefined)
-      this.formChanged(true, this.props.revision_id); // need to check if revision id been passed corrected: after conflict resoved, user save form and user open another form
+      this.formChanged(true, this.props.revision_id); // need to check if revision id been passed corrected: after conflict resolved, user save form and user open another form
     }
     // update the viewName if user click link
     if (this.props.ViewName !== this.state.view_cached) {
@@ -405,7 +405,7 @@ class RecordForm extends React.Component<
       //save the child record when child record been pop
       if (DEBUG_APP)
         console.debug(
-          'current revision ID after in formChanged intital',
+          'current revision ID after in formChanged initial',
           this.props.revision_id,
           this.state.revision_cached
         );
