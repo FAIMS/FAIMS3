@@ -38,15 +38,19 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {useLocation} from 'react-router-dom';
-import {Typography} from '@mui/material';
-import {get_RelatedFields_for_field} from '../components/record/relationships/RelatedInformation';
+import {CircularProgress, Grid, Typography} from '@mui/material';
+import {
+  get_RelatedFields_for_field,
+  Update_New_Link,
+  remove_link_from_list,
+} from '../components/record/relationships/RelatedInformation';
 import DataGridFieldLinksComponent from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
 
-import {Grid, Box} from '@mui/material';
 import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
-import {CreateRecordLink} from '../components/record/relationships/create_links/create_record_link';
+import CreateLinkComponent from '../components/record/relationships/create_links';
+import {generateFAIMSDataID} from '../../data_storage';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -58,6 +62,9 @@ interface Props {
   helperText?: string;
   disabled?: boolean;
   relation_linked_vocabPair?: Array<Array<string>>;
+  related_type_label?: string;
+  current_form?: string;
+  current_form_label?: string;
 }
 
 function get_default_relation_label(
@@ -75,6 +82,7 @@ function get_default_relation_label(
     multiple &&
     length > 0 &&
     value[length - 1] !== undefined &&
+    value[length - 1] !== null &&
     value[length - 1]['relation_type_vocabPair'] !== undefined
   )
     return value[length - 1]['relation_type_vocabPair'];
@@ -89,8 +97,10 @@ function excludes_related_record(
 ) {
   const relations: string[] = multiple ? [] : [value.record_id];
   const records: RecordReference[] = [];
-  if (multiple)
-    value.map((record: RecordReference) => relations.push(record.record_id));
+  if (multiple && value !== null)
+    value.map((record: RecordReference) =>
+      record !== null ? relations.push(record.record_id) : record
+    );
 
   all_records.map((record: RecordReference) =>
     relations.includes(record.record_id) ? record : records.push(record)
@@ -110,8 +120,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     : '';
   const [isactive, setIsactive] = React.useState(false);
   const [recordsInformation, setRecordsInformation] = React.useState<
-    RecordLinkProps[]
-  >([]);
+    RecordLinkProps[] | null
+  >(null);
   const type = props.relation_type.replace('faims-core::', '');
   const lastvaluePair = get_default_relation_label(
     multiple,
@@ -140,8 +150,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   if (search !== '') search = '&' + search;
 
   useEffect(() => {
-    if (project_id !== undefined) {
-      (async () => {
+    let mounted = true;
+    (async () => {
+      if (project_id !== undefined && mounted) {
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
@@ -161,23 +172,15 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.form.values[field_name]['record_id'] === undefined
         )
           setIs_enabled(true);
-      })();
-    } else {
-      setIsactive(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (project_id !== undefined && mounted) {
         const records_info = await get_RelatedFields_for_field(
           props.form.values,
           props.related_type,
           relationshipPair,
           field_name,
           props.InputLabelProps.label,
-          multiple
+          multiple,
+          props.related_type_label,
+          props.current_form
         );
         setRecordsInformation(records_info);
 
@@ -194,6 +197,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         //   // );
         //   SetColumns(newColumns);
         // }
+      } else {
+        setIsactive(true);
       }
     })();
 
@@ -201,12 +206,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       // executed when unmount
       mounted = false;
     };
-  }, [updated]);
+  }, []);
 
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
-  if (!isactive) return <></>;
+  // if (!isactive) return <></>;
   //to reset the method to pass state value between the link and record
   //to pass information in state to child/link record
 
@@ -228,11 +233,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       newState['parent'] = location_state.parent;
     }
   }
-  const route = {
-    pathname:
-      ROUTES.NOTEBOOK + project_id + ROUTES.RECORD_CREATE + props.related_type,
-    state: newState,
-  };
   const handleChange = (event: SelectChangeEvent) => {
     const value: string = event.target.value;
     setRelationshipLabel(value);
@@ -250,12 +250,59 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     }
   };
 
-  const add_related_child = () => {
+  const save_new_record = () => {
+    const new_record_id = generateFAIMSDataID();
+    const new_child_record = {
+      record_id: new_record_id,
+      project_id: project_id,
+      // record_label:new_record_id
+      relation_type_vocabPair: relationshipPair,
+    };
     let newValue = props.form.values[field_name];
+    if (multiple) newValue.push(new_child_record);
+    else newValue = new_child_record;
+    props.form.setFieldValue(props.field.name, newValue);
+    return new_record_id;
+  };
+
+  const add_related_child = () => {
+    // skip the null value
+    if (selectedRecord === null) return false;
+    let newValue = props.form.values[field_name];
+
     if (multiple) newValue.push(selectedRecord);
     else newValue = selectedRecord;
     setFieldValue(newValue);
-
+    props.form.setFieldValue(props.field.name, newValue);
+    props.form.submitForm();
+    const current_record = {
+      record_id: record_id,
+      field_id: field_name,
+      relation_type_vocabPair: relationshipPair,
+    };
+    Update_New_Link(
+      selectedRecord,
+      current_record,
+      props.InputLabelProps.label,
+      props.related_type_label ?? props.related_type,
+      props.current_form,
+      props.form.values['hrid' + props.current_form] ?? record_id,
+      props.form.values['_current_revision_id'],
+      type,
+      relationshipPair,
+      true
+    )
+      .then(child_record => {
+        if (child_record !== null) {
+          if (type === 'Child') setRecordsInformation([child_record]);
+          else {
+            const new_records = [...(recordsInformation ?? []), child_record];
+            // new_records.push(child_record)
+            setRecordsInformation(new_records);
+          }
+        } else console.error('Error to Add Link');
+      })
+      .catch(error => console.error('Fail to update child'));
     const records = excludes_related_record(
       multiple,
       props.form.values[field_name],
@@ -264,22 +311,22 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     setOptions(records);
     if (!multiple) setIs_enabled(false);
     //set the form value
-    props.form.setFieldValue(props.field.name, newValue);
     if (multiple) SetSelectedRecord(null);
-    SetUpdated(uuidv4());
     //call the function to trigger the child to be updated??TBD
+    return true;
   };
 
-  const remove_related_child = (
-    record_id: string | null | undefined,
-    hrid: string | null | undefined
+  const remove_related_child = async (
+    child_record_id: string | null | undefined,
+    child_hrid: string | null | undefined
   ) => {
-    if (record_id === null || record_id === undefined) return;
-    if (hrid === null || hrid === undefined) hrid = record_id;
+    if (child_record_id === null || child_record_id === undefined) return '';
+    if (child_hrid === null || child_hrid === undefined)
+      child_hrid = child_record_id;
     const child_record = {
       project_id: project_id,
-      record_id: record_id,
-      record_label: hrid,
+      record_id: child_record_id,
+      record_label: child_hrid,
       relation_type_vocabPair: relationshipPair,
     };
     let newValue = props.form.values[field_name];
@@ -299,17 +346,55 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
 
     const records = options;
     records.push(child_record);
-    // records=excludes_related_record(
-    //   multiple,
-    //   props.form.values[field_name],
-    //   records
-    // )
     setOptions(records);
+
     if (!multiple) setIs_enabled(true);
+    const current_record = {
+      record_id: record_id,
+      field_id: field_name,
+      relation_type_vocabPair: relationshipPair,
+    };
     //set the form value
     props.form.setFieldValue(props.field.name, newValue);
+    let revision_id = props.form.values['_current_revision_id'];
+    try {
+      revision_id = await props.form.submitForm();
+    } catch (error) {
+      console.error('Error to save current record', error);
+    }
+
+    try {
+      const new_child_record = await Update_New_Link(
+        child_record,
+        current_record,
+        props.InputLabelProps.label,
+        props.related_type_label ?? props.related_type,
+        props.current_form,
+        props.form.values['hrid' + props.current_form] ?? record_id,
+        revision_id,
+        type,
+        relationshipPair,
+        false
+      );
+      if (new_child_record !== null) {
+        if (type === 'Child') setRecordsInformation([]);
+        else {
+          const new_records = remove_link_from_list(
+            recordsInformation ?? [],
+            new_child_record
+          );
+          setRecordsInformation(new_records);
+        }
+      } else {
+        console.error('Failed to save Child record');
+        return '';
+      }
+    } catch (error) {
+      console.error('Failed to save Child record', error);
+      return '';
+    }
     SetSelectedRecord(null);
-    SetUpdated(uuidv4());
+    return props.form.values['_current_revision_id'];
     //call the function to trigger the child to be updated??TBD
   };
 
@@ -317,40 +402,61 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     <div id={field_name}>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          <CreateRecordLink
-            field_name={field_name}
-            options={options}
-            handleChange={handleChange}
-            relationshipLabel={relationshipLabel}
-            SetSelectedRecord={SetSelectedRecord}
-            selectedRecord={selectedRecord}
-            disabled={disabled}
-            is_enabled={is_enabled}
-            project_id={project_id}
-            route={route}
-            type={type}
-            add_related_child={add_related_child}
-            {...props}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={12} md={12} lg={12}>
-          {disabled === false && ( //update for eid or view
-            <Typography variant="caption">{props.helperText}</Typography>
+          {isactive && (
+            <CreateLinkComponent
+              {...props}
+              field_name={field_name}
+              options={options}
+              handleChange={handleChange}
+              relationshipLabel={relationshipLabel}
+              SetSelectedRecord={SetSelectedRecord}
+              selectedRecord={selectedRecord}
+              disabled={disabled}
+              is_enabled={is_enabled}
+              project_id={project_id}
+              relation_type={type}
+              add_related_child={add_related_child}
+              field_label={props.InputLabelProps.label}
+              pathname={
+                ROUTES.NOTEBOOK +
+                project_id +
+                ROUTES.RECORD_CREATE +
+                props.related_type
+              }
+              state={newState}
+              handleSubmit={() => props.form.submitForm()}
+              save_new_record={save_new_record}
+            />
           )}
         </Grid>
+        {disabled === false ||
+          (props.helperText === '' && !is_enabled && (
+            <Grid item xs={12} sm={12} md={12} lg={12}>
+              <Typography variant="caption">
+                {props.helperText}
+                {'   '}
+              </Typography>
+              {is_enabled && (
+                <Typography variant="caption">
+                  To enable Add record or Link, remove link firstly
+                </Typography>
+              )}
+            </Grid>
+          ))}
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          {recordsInformation.length > 0 && (
-            <Box sx={{mb: 1}}>
-              <DataGridFieldLinksComponent
-                links={recordsInformation}
-                record_id={record_id}
-                record_hrid={record_id}
-                record_type={props.form.values['type']}
-                field_label={props.InputLabelProps.label}
-                handleUnlink={remove_related_child}
-              />
-            </Box>
+          {recordsInformation === null && (
+            <CircularProgress size={14} thickness={5} />
+          )}
+          {recordsInformation !== null && recordsInformation.length > 0 && (
+            <DataGridFieldLinksComponent
+              links={recordsInformation}
+              record_id={record_id}
+              record_hrid={record_id}
+              record_type={props.form.values['type']}
+              field_label={props.InputLabelProps.label}
+              handleUnlink={remove_related_child}
+              handleReset={() => SetUpdated(uuidv4())}
+            />
           )}
         </Grid>
       </Grid>
@@ -574,6 +680,25 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
       newvalues['fields'][props.fieldName]['component-parameters'][
         'relation_linked_vocabPair'
       ] = pair_value;
+      props.setuiSpec({...newvalues});
+    } else if (name === 'related_type') {
+      const newvalues = props.uiSpec;
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'related_type'
+      ] = event.target.value;
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'related_type_label'
+      ] =
+        props.uiSpec['viewsets'][event.target.value]['label'] ??
+        event.target.value;
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'current_form'
+      ] = props.currentform; //currentform
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'current_form_label'
+      ] =
+        props.uiSpec['viewsets'][props.currentform]['label'] ??
+        props.currentform;
       props.setuiSpec({...newvalues});
     }
   };

@@ -17,17 +17,62 @@ import {ActionType} from '../../../../../context/actions';
 import {store} from '../../../../../context/store';
 import {RecordReference} from '../../../../../datamodel/ui';
 import {Field} from 'formik';
-export interface RelationshipType {
-  link: string;
-  reciprocal: string;
+import AddIcon from '@mui/icons-material/Add';
+import {CreateRecordLinkProps} from '../types';
+import {useHistory} from 'react-router-dom';
+import {LocationState} from '../../../../../datamodel/core';
+import * as ROUTES from '../../../../../constants/routes';
+
+export function AddNewRecordButton(props: {
+  is_enabled: boolean;
+  pathname: string;
+  state: LocationState;
+  text: string;
+  handleSubmit: Function;
+  project_id: string;
+  save_new_record: Function;
+}) {
+  const [submitting, setSubmitting] = React.useState(false);
+  const history = useHistory();
+  const handleSubmit = () => {
+    setSubmitting(true);
+    if (props.handleSubmit !== undefined) {
+      const new_child_id = props.save_new_record();
+      props.handleSubmit().then((result: string) => {
+        const newState = props.state;
+        newState['parent_link'] = ROUTES.getRecordRoute(
+          props.project_id,
+          (props.state.parent_record_id || '').toString(),
+          (result || '').toString()
+        ).replace('/notebooks/', '');
+        newState['child_record_id'] = new_child_id;
+        setTimeout(() => {
+          // reset local state of component
+          setSubmitting(false);
+          history.push({
+            pathname: props.pathname,
+            state: newState,
+          });
+        }, 1000);
+      });
+    }
+  };
+  return submitting ? (
+    <LoadingButton loading variant={'contained'} size={'medium'}>
+      Working...
+    </LoadingButton>
+  ) : (
+    <Button
+      variant="outlined"
+      color="primary"
+      startIcon={<AddIcon />}
+      disabled={!props.is_enabled}
+      onClick={() => handleSubmit()}
+    >
+      {props.text}
+    </Button>
+  );
 }
-// interface CreateRecordLinkProps {
-//   relationship_types: Array<RelationshipType>;
-//   record_hrid: string;
-//   record_type: string;
-//   field_label: string;
-// }
-type CreateRecordLinkProps = any;
 export function CreateRecordLink(props: CreateRecordLinkProps) {
   /**
    * Allow users to add a link to a record from the current record
@@ -44,6 +89,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     SetSelectedRecord,
     selectedRecord,
     disabled,
+    project_id,
   } = props;
 
   const handleSubmit = () => {
@@ -52,11 +98,16 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
      * TODO replace setTimeout with actual request to couchDB
      */
     setSubmitting(true);
+    if (props.add_related_child !== undefined) {
+      props.add_related_child();
+    }
+
     // mimic sending request to couch
     const timer = setTimeout(() => {
       // reset local state of component
       setSubmitting(false);
-      props.add_related_child();
+      // setSubmitting(false);
+      // if (props.handleReset !== undefined) props.handleReset();
 
       // // response error
       // dispatch({
@@ -168,34 +219,68 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             )}
           />
         </Grid>
-        <Grid
-          item
-          xs={12}
-          sm={12}
-          md={1}
-          lg={1}
-          alignItems={'stretch'}
-          style={{display: 'flex'}}
-        >
-          {submitting ? (
-            <LoadingButton
-              loading
-              variant={'contained'}
-              fullWidth
-              size={'medium'}
-            />
-          ) : (
-            <Button
-              variant={'contained'}
-              disableElevation
-              fullWidth
-              size={'medium'}
-              onClick={handleSubmit}
+        {project_id !== undefined && disabled === false && (
+          <Grid
+            item
+            xs={12}
+            sm={12}
+            md={props.relation_type === 'Linked' ? 3 : 1}
+            lg={props.relation_type === 'Linked' ? 3 : 1}
+            alignItems={'stretch'}
+            style={{display: 'flex'}}
+          >
+            {submitting ? (
+              <LoadingButton
+                loading
+                variant={'contained'}
+                fullWidth
+                size={'medium'}
+              />
+            ) : (
+              <>
+                <Button
+                  variant={'contained'}
+                  disableElevation
+                  fullWidth={props.relation_type === 'Linked' ? false : true}
+                  onClick={handleSubmit}
+                  disabled={!props.is_enabled}
+                  style={{marginRight: '5px'}}
+                >
+                  Link
+                </Button>
+                {props.relation_type === 'Linked' && (
+                  <AddNewRecordButton
+                    is_enabled={props.is_enabled}
+                    pathname={props.pathname}
+                    state={props.state}
+                    text={'Add Record'}
+                    handleSubmit={props.handleSubmit}
+                    project_id={props.project_id}
+                    save_new_record={props.save_new_record}
+                  />
+                )}
+              </>
+            )}
+          </Grid>
+        )}
+        {project_id !== undefined &&
+          disabled === false &&
+          !props.is_enabled && ( //update for eid or view
+            <Grid
+              item
+              xs={12}
+              sm={12}
+              md={2}
+              lg={2}
+              alignItems={'stretch'}
+              style={{display: 'flex'}}
             >
-              Link
-            </Button>
+              <Typography variant="caption">
+                {' '}
+                To enable Add record or Link, remove link firstly
+              </Typography>
+            </Grid>
           )}
-        </Grid>
       </Grid>
     </Box>
   );

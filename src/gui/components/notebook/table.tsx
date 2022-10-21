@@ -261,7 +261,7 @@ function RecordsTable(props: RecordsTableProps) {
           Toolbar: NotebookDataGridToolbar,
         }}
         componentsProps={{
-            filterPanel: {sx: {maxWidth: '96vw'}},
+          filterPanel: {sx: {maxWidth: '96vw'}},
         }}
         initialState={{
           sorting: {

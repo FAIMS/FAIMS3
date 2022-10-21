@@ -24,8 +24,17 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
 
 import CircularLoading from '../ui/circular_loading';
+import ParentForm, {ParentFormProps} from './relationships/parent_form';
 
-export default function InheritedDataComponent() {
+export default function InheritedDataComponent(props: ParentFormProps) {
+  const {parentRecords, ui_specification} = props;
+  if (
+    parentRecords === null ||
+    parentRecords.length === 0 ||
+    parentRecords[0]['persistentData'] === undefined ||
+    parentRecords[0].type === undefined
+  )
+    return <></>;
   return (
     <Accordion>
       <AccordionSummary
@@ -37,7 +46,13 @@ export default function InheritedDataComponent() {
       </AccordionSummary>
       <AccordionDetails>
         <Box sx={{p: 2}}>
-          <CircularLoading label={'Loading data inherited from parent'} />
+          {parentRecords === null && (
+            <CircularLoading label={'Loading data inherited from parent'} />
+          )}
+          <ParentForm
+            parentRecords={parentRecords}
+            ui_specification={ui_specification}
+          />
         </Box>
       </AccordionDetails>
     </Accordion>

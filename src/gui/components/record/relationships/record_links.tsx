@@ -113,10 +113,15 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
         headerClassName: 'faims-record-link--header',
         minWidth: 150,
         flex: 0.15,
-        valueGetter: (params: GridCellParams) => params.row.link.section,
+        valueGetter: (params: GridCellParams) => params.row.link.section_label,
         renderCell: (params: GridCellParams) => (
           <Typography variant={'body2'} fontWeight={'bold'}>
-            <Link component={NavLink} to={params.row.route} underline={'none'}>
+            <Link
+              component={NavLink}
+              to={params.row.link.route}
+              underline={'none'}
+              onClick={() => props.handleSetSection(params.row.link.section)}
+            >
               {params.value}
             </Link>
           </Typography>
@@ -131,7 +136,14 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
         valueGetter: (params: GridCellParams) => params.row.link.field_label,
         renderCell: (params: GridCellParams) => (
           <Typography variant={'body2'} fontWeight={'bold'}>
-            <Link component={NavLink} to={params.row.route} underline={'none'}>
+            <Link
+              component={NavLink}
+              to={{
+                pathname: params.row.link.route,
+                hash: '#' + params.row.link.field_id,
+              }}
+              underline={'none'}
+            >
               {params.value}
             </Link>
           </Typography>

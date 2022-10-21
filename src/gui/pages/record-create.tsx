@@ -57,6 +57,7 @@ import {getProjectMetadata} from '../../projectMetadata';
 import RecordDelete from '../components/record/delete';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
+import UnpublishedWarning from '../components/record/unpublished_warning';
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -206,6 +207,7 @@ function DraftEdit(props: DraftEditProps) {
             </AppBar>
             <TabPanel value="1">
               <Box px={not_xs ? 2 : 0}>
+                <UnpublishedWarning />
                 <RecordForm
                   project_id={project_id}
                   record_id={record_id}
@@ -247,11 +249,15 @@ export default function RecordCreate() {
     draft_id?: string;
     record_id?: string;
   }>();
+  const location: any = useLocation();
   let draft_record_id = generateFAIMSDataID();
   if (record_id !== undefined) draft_record_id = record_id;
-
+  if (
+    location.state !== undefined &&
+    location.state.child_record_id !== undefined
+  )
+    draft_record_id = location.state.child_record_id; //pass record_id from parent
   let project_info: ProjectInformation | null;
-  const location: any = useLocation();
 
   try {
     project_info = useEventedPromise(

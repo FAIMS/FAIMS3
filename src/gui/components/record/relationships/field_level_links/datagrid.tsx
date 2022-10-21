@@ -66,6 +66,7 @@ export default function DataGridFieldLinksComponent(
   const [modalLink, setModalLink] = React.useState(
     null as null | GridRowParams['row']
   );
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   function getRowId(row: any) {
     /***
      * Provide a unique row id for each row
@@ -91,10 +92,22 @@ export default function DataGridFieldLinksComponent(
     []
   );
   function handleUnlink() {
-    console.error('Unlink', modalLink);
+    setIsSubmitting(true);
+
     if (props.handleUnlink !== undefined)
-      props.handleUnlink(modalLink.record_id, modalLink.hrid);
-    setModalOpen(false);
+      props
+        .handleUnlink(modalLink.record_id, modalLink.hrid)
+        .then((result: string) => {
+          console.debug('UnClick result', result);
+          const timer = setTimeout(() => {
+            // reset local state of component
+            setIsSubmitting(false);
+            setModalOpen(false);
+          }, 500);
+          return () => {
+            clearTimeout(timer);
+          };
+        });
   }
   function recordDisplay(
     current_record_id: RecordID,
@@ -154,7 +167,6 @@ export default function DataGridFieldLinksComponent(
       valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
       flex: 0.4,
     },
-
     {
       field: 'actions',
       type: 'actions',
@@ -224,7 +236,7 @@ export default function DataGridFieldLinksComponent(
                   </Alert>
                   <ButtonGroup fullWidth disableElevation>
                     <Button onClick={handleUnlink} variant={'contained'}>
-                      Unlink
+                      {isSubmitting ? 'Working...' : 'Unlick'}
                     </Button>
                     <Button onClick={handleModalClose} variant={'outlined'}>
                       cancel

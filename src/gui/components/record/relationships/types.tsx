@@ -1,6 +1,5 @@
 import React from 'react';
 
-import {ProjectUIModel} from '../../../../datamodel/ui';
 import {RecordID} from '../../../../datamodel/core';
 export interface TabPanelProps {
   children?: React.ReactNode;
@@ -18,6 +17,7 @@ export interface FieldLinkProps {
   type: string;
   route: string;
   section: string;
+  section_label: string;
   field_id: string;
   field_label: string;
 }
@@ -47,38 +47,13 @@ export interface ParentLinkProps {
   link_type?: string;
   link_id?: string;
 }
-export interface LinkProps {
-  relation_type_vocabPair?: string[] | null; // [field, record] e.g., ['has child', 'is child of']
-
-  // record A
-  recordA_id: string | number;
-  recordA_hrid: string;
-  recordA_type: string;
-
-  recordA_section?: string;
-  recordA_field_id: string;
-  recordA_field_label: string;
-
-  // record B
-  recordB_id: string | number;
-  recordB_hrid: string; // hrid?
-  recordB_type: string;
-  recordB_route: string;
-  recordB_lastUpdatedBy?: string;
-}
-
-export interface RelatedType {
-  parentRecords: Array<ParentLinkProps> | null;
-  childRecords: Array<LinkProps> | null;
-  linkRecords: Array<LinkProps> | null;
-  ui_specification?: ProjectUIModel;
-}
 /**************need to be updated later */
 export interface RelationshipsComponentProps {
   record_to_field_links: Array<RecordLinkProps> | null;
   record_id: RecordID;
   record_hrid: string;
   record_type: string;
+  handleSetSection: Function;
 }
 
 export interface FieldRelationshipComponentProps {
@@ -91,6 +66,7 @@ export interface FieldRelationshipComponentProps {
 export interface RecordLinksComponentProps {
   record_links: Array<RecordLinkProps> | null;
   record_id: RecordID;
+  handleSetSection: Function;
 }
 
 export interface DataGridLinksComponentProps {
@@ -99,7 +75,8 @@ export interface DataGridLinksComponentProps {
   record_hrid: string;
   record_type: string;
   field_label: string;
-  handleUnlink?: any;
+  handleUnlink?: Function;
+  handleReset?: Function;
 }
 export const PARENT_CHILD_VOCAB = [
   'is child of',
@@ -107,3 +84,4 @@ export const PARENT_CHILD_VOCAB = [
   'is parent of',
   'has parent',
 ];
+export type CreateRecordLinkProps = any;

@@ -20,9 +20,6 @@
  */
 
 import React from 'react';
-import UnpublishedWarning from './unpublished_warning';
-import {related_links_from_fields} from '../../../utils/fixtures';
-// import InheritedDataComponent from './inherited_data';
 import DraftSyncStatus from './sync_status';
 import RelationshipsViewComponent from './relationships';
 import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
@@ -37,7 +34,8 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {grey} from '@mui/material/colors';
 import ListAltIcon from '@mui/icons-material/ListAlt';
-import RecordReadView from './read_view';
+import InheritedDataComponent from './inherited_data';
+import {ParentLinkProps, RecordLinkProps} from './relationships/types';
 interface RecordDataTypes {
   project_id: ProjectID;
   record_id: RecordID;
@@ -57,10 +55,14 @@ interface RecordDataTypes {
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
+  parentRecords: Array<ParentLinkProps> | null;
+  record_to_field_links: RecordLinkProps[];
 }
 
 export default function RecordData(props: RecordDataTypes) {
   const [dataTab, setDataTab] = React.useState('1');
+  // const [revision_id, setRevision_id] = React.useState(props.revision_id);
+  const [ViewName, setViewName] = React.useState(null);
   const handleDataTabChange = (
     event: React.SyntheticEvent,
     newValue: string
@@ -79,21 +81,19 @@ export default function RecordData(props: RecordDataTypes) {
         </TabList>
         <TabPanel value={'1'} sx={{p: 0}}>
           {/* Show UnpublishWarning for unsaved revision ONLY  TODO: need to update when user click publish and continue*/}
-          {props.revision_id === undefined && <UnpublishedWarning />}
+          {props.revision_id}
+
           <DraftSyncStatus
             last_saved={props.draftLastSaved}
             is_saving={props.isDraftSaving}
             error={props.draftError}
           />
           <RelationshipsViewComponent
-            record_to_field_links={related_links_from_fields(
-              props.record_id,
-              props.hrid ?? props.record_id,
-              props.record_type
-            )}
+            record_to_field_links={props.record_to_field_links}
             record_id={props.record_id}
             record_hrid={props.hrid ?? props.record_id}
             record_type={props.record_type}
+            handleSetSection={setViewName}
           />
           <Accordion defaultExpanded={true}>
             <AccordionSummary
@@ -132,6 +132,8 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}
                       isDraftSaving={props.isDraftSaving}
+                      // setRevision_id={setRevision_id}
+                      ViewName={ViewName}
                     />
                   </Box>
                 </Grid>
@@ -140,20 +142,19 @@ export default function RecordData(props: RecordDataTypes) {
           </Accordion>
         </TabPanel>
         <TabPanel value={'2'} sx={{p: 0}}>
-          <Box
-            component={Paper}
-            elevation={0}
-            p={{xs: 1, sm: 1, md: 2, lg: 2}}
-            sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
-          >
-            <RecordReadView
+          <Box component={Paper} elevation={0} sx={{p: 1, mb: 3}}>
+            <InheritedDataComponent
+              parentRecords={props.parentRecords}
+              ui_specification={props.ui_specification}
+            />
+            <RecordForm
               project_id={props.project_id}
               record_id={props.record_id}
               revision_id={props.revision_id}
               ui_specification={props.ui_specification}
               draft_id={props.draft_id}
               metaSection={props.metaSection}
-              conflictfields={props.conflictfields}
+              disabled={true}
               handleSetIsDraftSaving={props.handleSetIsDraftSaving}
               handleSetDraftLastSaved={props.handleSetDraftLastSaved}
               handleSetDraftError={props.handleSetDraftError}

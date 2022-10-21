@@ -31,10 +31,7 @@ import * as ROUTES from '../../../constants/routes';
 import {ProjectID} from '../../../datamodel/core';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {RecordMetadata} from '../../../datamodel/ui';
-import {
-  getMetadataForAllRecords,
-  getRecordsWithRegex,
-} from '../../../data_storage';
+import {getMetadataForAllRecords} from '../../../data_storage';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
@@ -311,4 +308,3 @@ RecordsBrowseTable.defaultProps = {
   maxRows: null,
   filter_deleted: true,
 };
-

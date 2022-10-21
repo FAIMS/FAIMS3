@@ -74,8 +74,14 @@ import {ResolveButton} from '../components/record/conflict/conflictbutton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 
-import {getDetailRelatedInformation} from '../components/record/relationships/RelatedInformation';
-import {RelatedType} from '../components/record/relationships/types';
+import {
+  getDetailRelatedInformation,
+  getParentPersistenceData,
+} from '../components/record/relationships/RelatedInformation';
+import {
+  RecordLinkProps,
+  ParentLinkProps,
+} from '../components/record/relationships/types';
 
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
@@ -144,11 +150,8 @@ export default function Record() {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [open, setOpen] = React.useState(false);
   const [pressedvalue, setpressedvalue] = useState(value);
-  const [relatedRecords, setRelatedRecords] = useState({
-    parentRecords: [],
-    childRecords: [],
-    linkRecords: [],
-  } as RelatedType);
+  const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
+  const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const location: any = useLocation();
   console.debug('Location', location.state);
 
@@ -269,9 +272,17 @@ export default function Record() {
               latest_record.data,
               project_id,
               latest_record.relationship ?? null,
-              record_id
+              record_id,
+              updatedrevision_id
             );
             setRelatedRecords(newRelationship);
+            const newParent = await getParentPersistenceData(
+              uiSpec,
+              project_id,
+              latest_record.relationship ?? null,
+              record_id
+            );
+            setParentLinks(newParent);
             let newBreadcrumbs = [
               {link: ROUTES.INDEX, title: 'Home'},
               {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
@@ -281,10 +292,7 @@ export default function Record() {
               },
               {title: hrid ?? record_id},
             ];
-            if (
-              newRelationship.parentRecords !== null &&
-              newRelationship.parentRecords.length > 0
-            ) {
+            if (newParent !== null && newParent.length > 0) {
               newBreadcrumbs = [
                 {link: ROUTES.INDEX, title: 'Home'},
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
@@ -293,8 +301,8 @@ export default function Record() {
                   title: project_info !== null ? project_info.name : project_id,
                 },
                 {
-                  link: newRelationship.parentRecords[0]['route'],
-                  title: newRelationship.parentRecords[0]['hrid'],
+                  link: newParent[0]['route'],
+                  title: newParent[0]['hrid'],
                 },
                 {title: hrid ?? record_id},
               ];
@@ -566,6 +574,8 @@ export default function Record() {
                                 handleSetIsDraftSaving={setIsDraftSaving}
                                 handleSetDraftLastSaved={setDraftLastSaved}
                                 handleSetDraftError={setDraftError}
+                                parentRecords={parentLinks}
+                                record_to_field_links={relatedRecords}
                               />
                             )}
                           </Box>
@@ -587,6 +597,8 @@ export default function Record() {
                           handleSetDraftError={setDraftError}
                           draftLastSaved={draftLastSaved}
                           draftError={draftError}
+                          parentRecords={parentLinks}
+                          record_to_field_links={relatedRecords}
                         />
                       )}
                     </Box>
