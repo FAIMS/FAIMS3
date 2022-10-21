@@ -115,14 +115,14 @@ export default function FormButtonGroup(props: any) {
               </Button>
             )}
             {/* need to fix the issue and re-enable it */}
-            {/* <FormSubmitButton
+            <FormSubmitButton
               disabled={disabled}
               formProps={formProps}
               text="Publish and continue editing"
               is_close={false}
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
-            /> */}
+            />
             <FormSubmitButton
               disabled={disabled}
               formProps={formProps}
