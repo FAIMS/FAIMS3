@@ -81,7 +81,6 @@ export default function RecordData(props: RecordDataTypes) {
         </TabList>
         <TabPanel value={'1'} sx={{p: 0}}>
           {/* Show UnpublishWarning for unsaved revision ONLY  TODO: need to update when user click publish and continue*/}
-          {props.revision_id}
 
           <DraftSyncStatus
             last_saved={props.draftLastSaved}
