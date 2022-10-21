@@ -16,6 +16,7 @@ export type LoginButtonProps = {
   is_refresh: boolean;
   label?: string;
   size?: ButtonProps['size'];
+  sx?: object;
 };
 
 /**
@@ -28,6 +29,9 @@ export function LoginButton(props: LoginButtonProps) {
       variant="outlined"
       color="primary"
       size={props.size}
+      sx={{
+        ...props.sx,
+      }}
       onClick={() => {
         window.addEventListener(
           'message',

@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: RelatedInfomation.tsx
+ * Filename: RelatedInformation.tsx
  * Description:
  *   This is the file is to set the values for persistent state
  */
@@ -105,51 +105,51 @@ export function getParentInfo(
   parent: Relationship,
   record_id: string
 ): Relationship {
-  let Relate_perant = RelationState;
-  if (Relate_perant === undefined || Relate_perant === null) return parent;
+  let Relate_parent = RelationState;
+  if (Relate_parent === undefined || Relate_parent === null) return parent;
   if (record_id === RelationState.parent_record_id)
-    Relate_perant = RelationState.parent;
-  if (Relate_perant === undefined || Relate_perant === null) return parent;
-  if (Relate_perant.type === undefined) return parent;
-  if (Relate_perant.type === 'Child')
+    Relate_parent = RelationState.parent;
+  if (Relate_parent === undefined || Relate_parent === null) return parent;
+  if (Relate_parent.type === undefined) return parent;
+  if (Relate_parent.type === 'Child')
     return {
       ...parent,
       parent: {
-        record_id: Relate_perant.parent_record_id,
-        field_id: Relate_perant.field_id,
+        record_id: Relate_parent.parent_record_id,
+        field_id: Relate_parent.field_id,
         relation_type_vocabPair: ['Child', 'Parent'],
       },
     };
-  if (Relate_perant.type === 'Linked') {
+  if (Relate_parent.type === 'Linked') {
     if (parent['linked'] === undefined)
       parent['linked'] = [
         {
-          record_id: Relate_perant.parent_record_id,
-          field_id: Relate_perant.field_id,
-          relation_type_vocabPair: Relate_perant.relation_type_vocabPair,
+          record_id: Relate_parent.parent_record_id,
+          field_id: Relate_parent.field_id,
+          relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
         },
       ];
     else if (
       !check_if_link_exist(
         parent['linked'],
-        Relate_perant.parent_record_id,
-        Relate_perant.field_id
+        Relate_parent.parent_record_id,
+        Relate_parent.field_id
       )
     )
       parent['linked'].push({
-        record_id: Relate_perant.parent_record_id,
-        field_id: Relate_perant.field_id,
-        relation_type_vocabPair: Relate_perant.relation_type_vocabPair,
+        record_id: Relate_parent.parent_record_id,
+        field_id: Relate_parent.field_id,
+        relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
       });
     //get parnet
     if (
-      Relate_perant.parent !== undefined &&
-      Relate_perant.parent.type === 'Child' &&
-      Relate_perant.parent.parent_record_id !== record_id //check to confirm
+      Relate_parent.parent !== undefined &&
+      Relate_parent.parent.type === 'Child' &&
+      Relate_parent.parent.parent_record_id !== record_id //check to confirm
     )
       parent['parent'] = {
-        record_id: Relate_perant.parent.parent_record_id,
-        field_id: Relate_perant.parent.field_id,
+        record_id: Relate_parent.parent.parent_record_id,
+        field_id: Relate_parent.parent.field_id,
         relation_type_vocabPair: [],
       };
   }
@@ -179,19 +179,19 @@ export function getChildInfo(child_state: any, project_id: string) {
   return {field_id, new_record, is_related};
 }
 
-async function getRecordInformation(childrecord: RecordReference) {
+async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
   let revision_id;
-  if (childrecord === null) return {latest_record, revision_id};
-  if (childrecord.project_id === undefined) return {latest_record, revision_id};
+  if (child_record.project_id === undefined)
+    return {latest_record, revision_id};
   try {
     revision_id = await getFirstRecordHead(
-      childrecord.project_id,
-      childrecord.record_id
+      child_record.project_id,
+      child_record.record_id
     );
     latest_record = await getFullRecordData(
-      childrecord.project_id,
-      childrecord.record_id,
+      child_record.project_id,
+      child_record.record_id,
       revision_id
     );
   } catch (error) {

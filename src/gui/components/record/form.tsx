@@ -23,7 +23,7 @@ import {withRouter} from 'react-router-dom';
 import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
-import {Grid, Box, Typography} from '@mui/material';
+import {Grid, Box, Typography, Divider} from '@mui/material';
 
 import {firstDefinedFromList} from './helpers';
 import {get_logic_fields, get_logic_views} from './branchingLogic';
@@ -145,6 +145,13 @@ class RecordForm extends React.Component<
     prevProps: RecordFormProps,
     prevState: RecordFormState
   ) {
+    if (DEBUG_APP)
+      console.debug(
+        'initial set up ',
+        prevProps.revision_id,
+        this.state.revision_cached,
+        this.props.revision_id
+      );
     if (
       prevProps.project_id !== this.props.project_id ||
       // prevProps.record_id !== this.props.record_id ||
@@ -1013,13 +1020,14 @@ class RecordForm extends React.Component<
               }}
             </Formik>
           </div>
-          <div>
+          <Box mt={3}>
+            <Divider />
             <UGCReport
-              handleUGCReport={(event: any) => {
-                this.setState({ugc_comment: event.target.value});
+              handleUGCReport={(value: string) => {
+                this.setState({ugc_comment: value});
               }}
             />
-          </div>
+          </Box>
         </Box>
       );
     } else {

@@ -24,14 +24,11 @@ import {useHistory} from 'react-router-dom';
 import {
   Autocomplete,
   Button,
+  Divider,
   Grid,
   Box,
   Typography,
   Chip,
-  Table,
-  TableCell,
-  TableRow,
-  TableBody,
   TextField,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -110,7 +107,20 @@ export default function ClusterCard(props: ClusterCardProps) {
 
   return (
     <MainCard
-      title={props.listing_name}
+      title={
+        <Grid container>
+          <Grid item xs>
+            <Typography variant={'overline'}>Provider</Typography>
+            <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
+              {props.listing_name}
+            </Typography>
+            <Typography variant={'caption'}>
+              {props.listing_description}
+            </Typography>
+          </Grid>
+          <Divider orientation="vertical" flexItem />
+        </Grid>
+      }
       content={true}
       secondary={
         <Button
@@ -118,13 +128,12 @@ export default function ClusterCard(props: ClusterCardProps) {
           variant="text"
           onClick={() => history.push(ROUTES.WORKSPACE)}
           startIcon={<DashboardIcon />}
+          sx={{ml: 2}}
         >
           Workspace
         </Button>
       }
     >
-      <Typography variant={'body2'}>{props.listing_description}</Typography>
-
       {token === undefined ? (
         <LoginButton
           key={props.listing_id}
@@ -136,47 +145,64 @@ export default function ClusterCard(props: ClusterCardProps) {
         />
       ) : (
         <React.Fragment>
-          <Table size={'small'} sx={{mb: 2}}>
-            <colgroup>
-              <col style={{width: '20%'}} />
-              <col style={{width: '60%'}} />
-              <col style={{width: '20%'}} />
-            </colgroup>
-            <TableBody>
-              <TableRow>
-                <TableCell align="left" sx={{pl: 0}}>
-                  Current User{' '}
-                </TableCell>
-                <TableCell align="left">
-                  <code style={{fontWeight: 'bold'}}>{token.username}</code>
-                </TableCell>
-                <TableCell sx={{pr: 0}} align="right">
-                  <Button
-                    size={'small'}
-                    variant={'outlined'}
-                    onClick={() =>
-                      forgetCurrentToken(props.listing_id).then(() => {
-                        setToken(undefined);
-                        reprocess_listing(props.listing_id);
-                      })
-                    }
-                  >
-                    Logout
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell align="left" sx={{pl: 0}}>
-                  Roles
-                </TableCell>
-                <TableCell align="left">
-                  <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
-                    {token.roles.map((group, index) => {
-                      return <Chip key={index} label={group} />;
-                    })}
-                  </Box>
-                </TableCell>
-                <TableCell sx={{pr: 0}} align="right">
+          <Grid
+            container
+            direction="row"
+            justifyContent="flex-start"
+            alignItems="center"
+            spacing={1}
+          >
+            <Grid item sm={3} xs={12}>
+              <Typography variant={'overline'}>Current User</Typography>
+            </Grid>
+            <Grid item sm={6} xs={12}>
+              <Typography variant={'body2'} fontWeight={700}>
+                {token.username}
+              </Typography>
+            </Grid>
+            <Grid item sm={3} xs={12}>
+              <Button
+                size={'small'}
+                sx={{float: 'right'}}
+                variant={'outlined'}
+                onClick={() =>
+                  forgetCurrentToken(props.listing_id).then(() => {
+                    setToken(undefined);
+                    reprocess_listing(props.listing_id);
+                  })
+                }
+              >
+                Sign Out
+              </Button>
+            </Grid>
+          </Grid>
+          <Divider sx={{my: 2}} />
+          <Grid
+            container
+            direction="row"
+            justifyContent="flex-start"
+            alignItems="flex-start"
+            spacing={1}
+          >
+            <Grid item sm={3} xs={12}>
+              <Typography variant={'overline'}>Roles</Typography>
+            </Grid>
+            <Grid item sm={6} xs={12}>
+              <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
+                {token.roles.map((group, index) => {
+                  return <Chip key={index} label={group} sx={{mb: 1}} />;
+                })}
+              </Box>
+            </Grid>
+            <Grid item sm={3} xs={12}>
+              <Grid
+                container
+                direction="row"
+                justifyContent="flex-end"
+                alignItems="flex-start"
+                spacing={1}
+              >
+                <Grid item xs={12}>
                   <LoginButton
                     key={props.listing_id}
                     listing_id={props.listing_id}
@@ -186,15 +212,19 @@ export default function ClusterCard(props: ClusterCardProps) {
                     is_refresh={true}
                     label={'refresh'}
                     size={'small'}
+                    sx={{float: 'right'}}
                   />
+                </Grid>
+                <Grid item xs={12} sx={{textAlign: 'right'}}>
                   <Typography variant={'caption'}>
                     Sign in again to refresh roles
                   </Typography>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                </Grid>
+              </Grid>
+            </Grid>
+          </Grid>
 
+          <Divider sx={{my: 2}} />
           {token.username ? (
             <React.Fragment>
               <Grid
@@ -218,6 +248,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                     is_refresh={true}
                     label={'add user'}
                     size={'small'}
+                    sx={{my: 1}}
                   />
                 </Grid>
               </Grid>

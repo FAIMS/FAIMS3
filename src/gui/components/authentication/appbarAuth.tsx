@@ -100,7 +100,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
         color={'primary'}
         disableElevation
       >
-        Login
+        Sign In
       </Button>
     );
   }

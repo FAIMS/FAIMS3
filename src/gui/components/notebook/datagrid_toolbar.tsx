@@ -59,8 +59,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
           <Button variant="text" size={'small'} onClick={handleClear}>
             reset
           </Button>
-        </Grid>
-        <Grid item>
           <TextField
             label="Search record data (case sensitive)"
             value={value}
@@ -69,9 +67,12 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             variant="outlined"
             size={'small'}
           />
-        </Grid>
-        <Grid item alignItems="stretch" style={{display: 'flex'}}>
-          <Button variant="outlined" size={'small'} onClick={handleSubmit}>
+          <Button
+            variant="outlined"
+            size={'small'}
+            onClick={handleSubmit}
+            sx={{ml: 1}}
+          >
             <SearchIcon />
           </Button>
         </Grid>

@@ -258,6 +258,7 @@ export default function RecordCreate() {
   )
     draft_record_id = location.state.child_record_id; //pass record_id from parent
   let project_info: ProjectInformation | null;
+
   try {
     project_info = useEventedPromise(
       getProjectInfo,

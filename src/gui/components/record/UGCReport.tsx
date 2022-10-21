@@ -19,20 +19,81 @@
  */
 import React from 'react';
 
-import {Grid, TextField} from '@mui/material';
+import {
+  Grid,
+  TextField,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from '@mui/material';
+import OutlinedFlagIcon from '@mui/icons-material/OutlinedFlag';
+interface UGCReportProps {
+  handleUGCReport: Function;
+}
 
-export default function UGCReport(props: {handleUGCReport: any}) {
+export default function UGCReport(props: UGCReportProps) {
+  /**
+   * Provide a mechanism for the user to report objectionable content.
+   */
+  const [open, setOpen] = React.useState(false);
+  const [value, setValue] = React.useState(null as string | null);
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(event.target.value);
+  };
+  const handleSubmit = () => {
+    props.handleUGCReport(value);
+    setValue(null);
+    setOpen(false);
+  };
   return (
-    <Grid item sm={12} xs={12} md={12}>
+    <Grid item sm={12} xs={12} md={12} sx={{mt: 1}}>
       <Grid container spacing={2}>
         <Grid item md={12}>
-          <br />
-          <TextField
-            id="ugc-comment"
-            label="Report"
-            helperText="Report Content"
-            onChange={props.handleUGCReport}
-          />
+          <Button
+            variant="text"
+            onClick={handleClickOpen}
+            startIcon={<OutlinedFlagIcon color={'secondary'} />}
+            size={'small'}
+          >
+            Report
+          </Button>
+          <Dialog open={open} onClose={handleClose}>
+            <DialogTitle>Need to report inappropriate content?</DialogTitle>
+            <DialogContent>
+              <TextField
+                autoFocus
+                id="ugc-comment"
+                label="Tell us about the issue"
+                margin="dense"
+                multiline={true}
+                rows={3}
+                fullWidth
+                variant="standard"
+                helperText="If you are concerned about the content of this record, let us know why. Reporting content is anonymous, so other users can't tell who made the report."
+                onChange={handleChange}
+                value={value}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleClose}>Cancel</Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={value === null}
+                variant={'contained'}
+                disableElevation={true}
+              >
+                Send
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Grid>
       </Grid>
     </Grid>

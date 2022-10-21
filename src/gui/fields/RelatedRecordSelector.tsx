@@ -38,7 +38,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {useLocation} from 'react-router-dom';
-import {Typography} from '@mui/material';
+import {CircularProgress, Grid, Typography} from '@mui/material';
 import {
   get_RelatedFields_for_field,
   Update_New_Link,
@@ -47,7 +47,6 @@ import {
 import DataGridFieldLinksComponent from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
 
-import {Grid} from '@mui/material';
 import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
@@ -121,8 +120,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     : '';
   const [isactive, setIsactive] = React.useState(false);
   const [recordsInformation, setRecordsInformation] = React.useState<
-    RecordLinkProps[]
-  >([]);
+    RecordLinkProps[] | null
+  >(null);
   const type = props.relation_type.replace('faims-core::', '');
   const lastvaluePair = get_default_relation_label(
     multiple,
@@ -212,7 +211,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
   // TODO: Have the relation_type set the multiplicity of the system
-  if (!isactive) return <></>;
+  // if (!isactive) return <></>;
   //to reset the method to pass state value between the link and record
   //to pass information in state to child/link record
 
@@ -234,7 +233,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       newState['parent'] = location_state.parent;
     }
   }
-
   const handleChange = (event: SelectChangeEvent) => {
     const value: string = event.target.value;
     setRelationshipLabel(value);
@@ -298,7 +296,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         if (child_record !== null) {
           if (type === 'Child') setRecordsInformation([child_record]);
           else {
-            const new_records = [...recordsInformation, child_record];
+            const new_records = [...(recordsInformation ?? []), child_record];
             // new_records.push(child_record)
             setRecordsInformation(new_records);
           }
@@ -344,7 +342,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       }
     } else newValue = '';
-
     setFieldValue(newValue);
 
     const records = options;
@@ -383,7 +380,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         if (type === 'Child') setRecordsInformation([]);
         else {
           const new_records = remove_link_from_list(
-            recordsInformation,
+            recordsInformation ?? [],
             new_child_record
           );
           setRecordsInformation(new_records);
@@ -405,39 +402,52 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     <div id={field_name}>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          <CreateLinkComponent
-            {...props}
-            field_name={field_name}
-            options={options}
-            handleChange={handleChange}
-            relationshipLabel={relationshipLabel}
-            SetSelectedRecord={SetSelectedRecord}
-            selectedRecord={selectedRecord}
-            disabled={disabled}
-            is_enabled={is_enabled}
-            project_id={project_id}
-            relation_type={type}
-            add_related_child={add_related_child}
-            field_label={props.InputLabelProps.label}
-            pathname={
-              ROUTES.NOTEBOOK +
-              project_id +
-              ROUTES.RECORD_CREATE +
-              props.related_type
-            }
-            state={newState}
-            handleSubmit={() => props.form.submitForm()}
-            save_new_record={save_new_record}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={12} md={12} lg={12}>
-          {disabled === false && ( //update for eid or view
-            <Typography variant="caption">{props.helperText}</Typography>
+          {isactive && (
+            <CreateLinkComponent
+              {...props}
+              field_name={field_name}
+              options={options}
+              handleChange={handleChange}
+              relationshipLabel={relationshipLabel}
+              SetSelectedRecord={SetSelectedRecord}
+              selectedRecord={selectedRecord}
+              disabled={disabled}
+              is_enabled={is_enabled}
+              project_id={project_id}
+              relation_type={type}
+              add_related_child={add_related_child}
+              field_label={props.InputLabelProps.label}
+              pathname={
+                ROUTES.NOTEBOOK +
+                project_id +
+                ROUTES.RECORD_CREATE +
+                props.related_type
+              }
+              state={newState}
+              handleSubmit={() => props.form.submitForm()}
+              save_new_record={save_new_record}
+            />
           )}
         </Grid>
+        {disabled === false ||
+          (props.helperText === '' && !is_enabled && (
+            <Grid item xs={12} sm={12} md={12} lg={12}>
+              <Typography variant="caption">
+                {props.helperText}
+                {'   '}
+              </Typography>
+              {is_enabled && (
+                <Typography variant="caption">
+                  To enable Add record or Link, remove link firstly
+                </Typography>
+              )}
+            </Grid>
+          ))}
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          {recordsInformation.length > 0 && (
+          {recordsInformation === null && (
+            <CircularProgress size={14} thickness={5} />
+          )}
+          {recordsInformation !== null && recordsInformation.length > 0 && (
             <DataGridFieldLinksComponent
               links={recordsInformation}
               record_id={record_id}
@@ -460,7 +470,7 @@ const uiSpec = {
   'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
   'component-parameters': {
     fullWidth: true,
-    helperText: 'Select or Add new related record',
+    helperText: 'Select or add new related record',
     variant: 'outlined',
     required: true,
     related_type: '',

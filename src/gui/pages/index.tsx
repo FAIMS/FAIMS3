@@ -61,12 +61,7 @@ export default function Index(props: IndexProps) {
             gutterBottom
           >
             FAIMS 3.0 Electronic Field{' '}
-            <Typography
-              variant={'h1'}
-              sx={{color: theme.palette.secondary.main}}
-            >
-              Notebooks
-            </Typography>
+            <span style={{color: theme.palette.secondary.main}}>Notebooks</span>
           </Typography>
           <Typography
             variant={'h4'}

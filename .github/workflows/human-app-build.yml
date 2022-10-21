@@ -59,16 +59,22 @@ jobs:
           cache: 'npm'
       - name: Building webapp
         run: |
-          export REACT_APP_PRODUCTION_BUILD=true
-          export REACT_APP_DIRECTORY_HOST=selenium.db.faims.edu.au
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh selenium-ios)
-          export REACT_APP_SERVER=production
+          export platform="github-actions-play"
+          export serverprefix="testing"
+          export REACT_APP_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh gh-play)
+          export REACT_APP_DEBUG_APP=true
+          export REACT_APP_DEBUG_POUCHDB=false
+          export REACT_APP_USE_HTTPS=true
+          export REACT_APP_SHOW_WIPE=true
+          export REACT_APP_SHOW_NEW_NOTEBOOK=true
+          export REACT_APP_SHOW_MINIFAUXTON=true
+          export REACT_APP_DIRECTORY_HOST=testing.db.faims.edu.au
+          export REACT_APP_DIRECTORY_PORT=443
+          export REACT_APP_PRODUCTION_BUILD=true          
           export REACT_APP_SERVICES=FAIMSTEXT
-          export REACT_APP_TAG=testingAndroid
-          export REACT_APP_USE_REAL_DATA=true
+          export REACT_APP_TAG=testingAndroid          
           export REACT_APP_PROD_BUILD=true
-          export platform="selenium-gh-ios"
-          export serverprefix="selenium"
           git clean -xfd
           npm ci
           npm run build

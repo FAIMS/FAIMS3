@@ -47,7 +47,6 @@ export interface ParentLinkProps {
   link_type?: string;
   link_id?: string;
 }
-
 /**************need to be updated later */
 export interface RelationshipsComponentProps {
   record_to_field_links: Array<RecordLinkProps> | null;

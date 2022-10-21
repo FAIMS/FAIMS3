@@ -130,7 +130,6 @@ export default function DataGridFieldLinksComponent(
     {
       field: 'record',
       headerName: 'Record',
-      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) =>
@@ -147,7 +146,6 @@ export default function DataGridFieldLinksComponent(
     {
       field: 'relation_type_vocabPair',
       headerName: 'Relationship to ' + props.field_label,
-      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) => params.value[0],
@@ -165,7 +163,6 @@ export default function DataGridFieldLinksComponent(
     {
       field: 'lastUpdatedBy',
       headerName: 'Last Updated By',
-      headerClassName: 'faims-record-link--header',
       minWidth: 100,
       valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
       flex: 0.4,
@@ -174,7 +171,6 @@ export default function DataGridFieldLinksComponent(
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
-      headerClassName: 'faims-record-link--header',
       flex: 0.2,
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
@@ -258,6 +254,9 @@ export default function DataGridFieldLinksComponent(
             disableSelectionOnClick
             components={{
               Footer: RecordLinksToolbar,
+            }}
+            componentsProps={{
+              filterPanel: {sx: {maxWidth: '96vw'}},
             }}
             columns={columns}
             initialState={{
