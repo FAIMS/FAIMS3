@@ -140,19 +140,26 @@ export default function RecordData(props: RecordDataTypes) {
           </Accordion>
         </TabPanel>
         <TabPanel value={'2'} sx={{p: 0}}>
-          <RecordReadView
-            project_id={props.project_id}
-            record_id={props.record_id}
-            revision_id={props.revision_id}
-            ui_specification={props.ui_specification}
-            draft_id={props.draft_id}
-            metaSection={props.metaSection}
-            conflictfields={props.conflictfields}
-            handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-            handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-            handleSetDraftError={props.handleSetDraftError}
-            isDraftSaving={props.isDraftSaving}
-          />
+          <Box
+            component={Paper}
+            elevation={0}
+            p={{xs: 1, sm: 1, md: 2, lg: 2}}
+            sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
+          >
+            <RecordReadView
+              project_id={props.project_id}
+              record_id={props.record_id}
+              revision_id={props.revision_id}
+              ui_specification={props.ui_specification}
+              draft_id={props.draft_id}
+              metaSection={props.metaSection}
+              conflictfields={props.conflictfields}
+              handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+              handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+              handleSetDraftError={props.handleSetDraftError}
+              isDraftSaving={props.isDraftSaving}
+            />
+          </Box>
         </TabPanel>
       </TabContext>
     </Box>

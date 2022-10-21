@@ -13,7 +13,7 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: RelatedInfomation.tsx
+ * Filename: RelatedInformation.tsx
  * Description:
  *   This is the file is to set the values for persistent state
  */
@@ -105,51 +105,51 @@ export function getParentInfo(
   parent: Relationship,
   record_id: string
 ): Relationship {
-  let Relate_perant = RelationState;
-  if (Relate_perant === undefined || Relate_perant === null) return parent;
+  let Relate_parent = RelationState;
+  if (Relate_parent === undefined || Relate_parent === null) return parent;
   if (record_id === RelationState.parent_record_id)
-    Relate_perant = RelationState.parent;
-  if (Relate_perant === undefined || Relate_perant === null) return parent;
-  if (Relate_perant.type === undefined) return parent;
-  if (Relate_perant.type === 'Child')
+    Relate_parent = RelationState.parent;
+  if (Relate_parent === undefined || Relate_parent === null) return parent;
+  if (Relate_parent.type === undefined) return parent;
+  if (Relate_parent.type === 'Child')
     return {
       ...parent,
       parent: {
-        record_id: Relate_perant.parent_record_id,
-        field_id: Relate_perant.field_id,
+        record_id: Relate_parent.parent_record_id,
+        field_id: Relate_parent.field_id,
         relation_type_vocabPair: ['Child', 'Parent'],
       },
     };
-  if (Relate_perant.type === 'Linked') {
+  if (Relate_parent.type === 'Linked') {
     if (parent['linked'] === undefined)
       parent['linked'] = [
         {
-          record_id: Relate_perant.parent_record_id,
-          field_id: Relate_perant.field_id,
-          relation_type_vocabPair: Relate_perant.relation_type_vocabPair,
+          record_id: Relate_parent.parent_record_id,
+          field_id: Relate_parent.field_id,
+          relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
         },
       ];
     else if (
       !check_if_link_exist(
         parent['linked'],
-        Relate_perant.parent_record_id,
-        Relate_perant.field_id
+        Relate_parent.parent_record_id,
+        Relate_parent.field_id
       )
     )
       parent['linked'].push({
-        record_id: Relate_perant.parent_record_id,
-        field_id: Relate_perant.field_id,
-        relation_type_vocabPair: Relate_perant.relation_type_vocabPair,
+        record_id: Relate_parent.parent_record_id,
+        field_id: Relate_parent.field_id,
+        relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
       });
-    //get parnet
+    //get parent
     if (
-      Relate_perant.parent !== undefined &&
-      Relate_perant.parent.type === 'Child' &&
-      Relate_perant.parent.parent_record_id !== record_id //check to confirm
+      Relate_parent.parent !== undefined &&
+      Relate_parent.parent.type === 'Child' &&
+      Relate_parent.parent.parent_record_id !== record_id //check to confirm
     )
       parent['parent'] = {
-        record_id: Relate_perant.parent.parent_record_id,
-        field_id: Relate_perant.parent.field_id,
+        record_id: Relate_parent.parent.parent_record_id,
+        field_id: Relate_parent.parent.field_id,
         relation_type_vocabPair: [],
       };
   }
@@ -179,22 +179,27 @@ export function getChildInfo(child_state: any, project_id: string) {
   return {field_id, new_record, is_related};
 }
 
-async function getRecordInformation(childrecord: RecordReference) {
+async function getRecordInformation(child_record: RecordReference) {
   let latest_record = null;
   let revision_id;
-  if (childrecord.project_id === undefined) return {latest_record, revision_id};
+  if (child_record.project_id === undefined)
+    return {latest_record, revision_id};
   try {
     revision_id = await getFirstRecordHead(
-      childrecord.project_id,
-      childrecord.record_id
+      child_record.project_id,
+      child_record.record_id
     );
     latest_record = await getFullRecordData(
-      childrecord.project_id,
-      childrecord.record_id,
+      child_record.project_id,
+      child_record.record_id,
       revision_id
     );
   } catch (error) {
-    console.error('Error to get Full record with revision', error);
+    console.error(
+      'Error to get Full record with revision',
+      error,
+      child_record.record_id
+    );
   }
   return {latest_record, revision_id};
 }
@@ -297,7 +302,7 @@ function getRelatedFields(
 //   }
 //   return fields;
 // }
-// get defailed information for child/linked
+// get information for child/linked
 // export async function get_RelatedFields_for_field(
 //   project_id: string,
 //   field: string,
@@ -309,7 +314,7 @@ function getRelatedFields(
 //   fields = get_related_valued_field(ui_specification, field, values, fields);
 //   const type =
 //     ui_specification['fields'][field]['component-parameters']['related_type'];
-//   const dispalyFields = get_displayed_fields(ui_specification, type);
+//   const displayFields = get_displayed_fields(ui_specification, type);
 //   const form_type = 'FORM1'; // this value will not been used
 //   let hrid = values['hrid' + form_type] ?? record_id;
 //   if (hrid === ' ') hrid = record_id;
@@ -325,7 +330,7 @@ function getRelatedFields(
 //       'relation_type'
 //     ].replace('faims-core::', ''),
 //     true,
-//     dispalyFields
+//     displayFields
 //   );
 //   return records;
 // }
@@ -341,14 +346,11 @@ export async function get_RelatedFields_for_field(
   const record_id = values['_id'];
   const project_id = values['_project_id'];
   const records: RecordLinkProps[] = [];
-  console.error('Child Records', child_records);
-  console.error('Values', values, field_name);
   for (const index in child_records) {
     const child_record = child_records[index];
     const {latest_record, revision_id} = await getRecordInformation(
       child_record
     );
-    console.error('Child Record', child_record);
     if (child_record.record_id !== undefined) {
       let relationLabel = child_record.relation_type_vocabPair;
       if (
@@ -394,9 +396,9 @@ async function addRelatedFields(
   record_id: string,
   form_type: string,
   hrid: string,
-  reation_type: string,
-  is_dispaly = false,
-  dispalyFields: string[] = []
+  relation_type: string,
+  is_display = false,
+  displayFields: string[] = []
 ) {
   for (const index in fields) {
     const field = fields[index]['field'];
@@ -408,7 +410,7 @@ async function addRelatedFields(
 
     // let children: Array<RecordProps> = [];
     if (latest_record !== null && revision_id !== undefined) {
-      //add and defined the child/link item when the inforamtion been added correctly
+      //add and defined the child/link item when the information been added correctly
       // const {fields_child, fields_linked} = get_related_valued_fields(
       //   ui_specification,
       //   type,
@@ -426,7 +428,7 @@ async function addRelatedFields(
         childRecord['relation_type_vocabPair'] !== null &&
         childRecord['relation_type_vocabPair'] !== undefined
           ? childRecord['relation_type_vocabPair']
-          : reation_type === 'Child'
+          : relation_type === 'Child'
           ? ['Child', 'Parent']
           : ['is related to', 'is related to'];
 
@@ -450,8 +452,8 @@ async function addRelatedFields(
         relation_type_vocabPair: linked_vocab,
       };
       // get the displayed information for the child or link item, this is used by field
-      if (is_dispaly && latest_record !== null) {
-        dispalyFields.map(
+      if (is_display && latest_record !== null) {
+        displayFields.map(
           (fieldName: string) =>
             (child[fieldName] = latest_record.data[fieldName])
         );
@@ -581,7 +583,7 @@ export async function getDetailRelatedInformation(
   parent: Relationship | null,
   record_id: string
 ): Promise<RelatedType> {
-  const childrecords: RelatedType = {
+  const child_records: RelatedType = {
     parentRecords: [],
     childRecords: [],
     linkRecords: null,
@@ -597,17 +599,17 @@ export async function getDetailRelatedInformation(
   let hrid = values['hrid' + form_type] ?? record_id;
   if (hrid === ' ') hrid = record_id;
 
-  if (childrecords['childRecords'] !== null && fields_child.length > 0)
-    childrecords['childRecords'] = await addRelatedFields(
+  if (child_records['childRecords'] !== null && fields_child.length > 0)
+    child_records['childRecords'] = await addRelatedFields(
       ui_specification,
       fields_child,
-      childrecords['childRecords'],
+      child_records['childRecords'],
       record_id,
       form_type,
       hrid,
       'Child'
     );
-  childrecords['linkRecords'] = await addLinkedRecord(
+  child_records['linkRecords'] = await addLinkedRecord(
     ui_specification,
     fields_linked,
     [],
@@ -643,7 +645,7 @@ export async function getDetailRelatedInformation(
       )
         type = ui_specification.viewsets[type]['label'] ?? '';
 
-      childrecords['parentRecords'] = [
+      child_records['parentRecords'] = [
         {
           record_id: parent.parent.record_id,
           hrid: parent_hrid,
@@ -663,7 +665,7 @@ export async function getDetailRelatedInformation(
       ];
     }
   }
-  return childrecords;
+  return child_records;
 }
 export async function updateChildRecords(
   ui_specification: ProjectUIModel,
@@ -675,7 +677,7 @@ export async function updateChildRecords(
   const fields = getRelatedFields(ui_specification, form_type);
   for (const index in fields) {
     const field = fields[index];
-    const is_mulptile =
+    const is_multiple =
       ui_specification['fields'][field]['component-parameters']['multiple'] ??
       false;
     const relation_type = ui_specification['fields'][field][
@@ -684,7 +686,7 @@ export async function updateChildRecords(
     await updateChildRecord(
       preValues[field],
       currentValues[field],
-      is_mulptile,
+      is_multiple,
       record_id,
       relation_type,
       field
@@ -712,12 +714,12 @@ async function updateChildRecord(
   if (is_multiple && JSON.stringify(preValue) === JSON.stringify(currentValue))
     return record_id;
   const preArray: string[] = [];
-  preValue.map((preSubrecord: RecordReference) =>
-    preArray.push(preSubrecord.record_id)
+  preValue.map((preSubRecord: RecordReference) =>
+    preArray.push(preSubRecord.record_id)
   );
   const currentArray: string[] = [];
-  currentValue.map((currentrecord: RecordReference) =>
-    currentArray.push(currentrecord.record_id)
+  currentValue.map((current_record: RecordReference) =>
+    currentArray.push(current_record.record_id)
   );
   let is_added = true;
   let updated_value: RecordReference | null = null;
@@ -837,9 +839,9 @@ export function AddParent(relation: Relationship, parent: LinkedRelation) {
 }
 
 export function RemoveParent(relation: Relationship) {
-  const newparent = relation;
-  if (newparent.parent !== undefined) delete newparent.parent;
-  return newparent;
+  const new_parent = relation;
+  if (new_parent.parent !== undefined) delete new_parent.parent;
+  return new_parent;
 }
 
 export function AddLink(relation: Relationship, linked: LinkedRelation) {
@@ -855,14 +857,14 @@ export function RemoveLink(relation: Relationship, linked: LinkedRelation) {
   if (relation.linked === undefined) return relation;
   if (!check_if_link_exist(relation.linked, linked.record_id, linked.field_id))
     return relation;
-  const newlinked = relation['linked'];
-  newlinked.map((linkRecord: LinkedRelation, index: number) => {
+  const new_linked = relation['linked'];
+  new_linked.map((linkRecord: LinkedRelation, index: number) => {
     if (
       linkRecord.record_id === linked.record_id &&
       linkRecord.field_id === linked.field_id &&
-      newlinked !== undefined
+      new_linked !== undefined
     )
-      newlinked.splice(index, 1);
+      new_linked.splice(index, 1);
   });
-  return {...relation, linked: newlinked};
+  return {...relation, linked: new_linked};
 }

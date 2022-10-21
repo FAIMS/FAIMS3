@@ -35,6 +35,7 @@ import {getProjectList, listenProjectList} from '../../../databaseAccess';
 import {useEventedPromise} from '../../pouchHook';
 import {TokenContents} from '../../../datamodel/core';
 import CircularLoading from '../../components/ui/circular_loading';
+import ProjectStatus from '../notebook/settings/status';
 interface sortModel {
   field: string;
   sort: 'asc' | 'desc';
@@ -64,6 +65,7 @@ export default function NoteBooks(props: NoteBookListProps) {
       headerName: 'Name',
       type: 'string',
       flex: 0.5,
+      minWidth: 200,
       renderCell: (params: GridCellParams) => (
         <Box my={1}>
           <Typography variant={'h5'} sx={{m: 0}} component={'div'}>
@@ -90,19 +92,20 @@ export default function NoteBooks(props: NoteBookListProps) {
       field: 'last_updated',
       headerName: 'Last Updated',
       type: 'string',
-      flex: 0.2,
-    },
-    {
-      field: 'created',
-      headerName: 'Created',
-      type: 'string',
+      minWidth: 200,
       flex: 0.2,
     },
     {
       field: 'status',
       headerName: 'Status',
       type: 'string',
-      flex: 0.1,
+      flex: 0.3,
+      minWidth: 200,
+      renderCell: (params: GridCellParams) => (
+        <Box sx={{mt: 1}}>
+          <ProjectStatus status={params.value} />
+        </Box>
+      ),
     },
   ];
 

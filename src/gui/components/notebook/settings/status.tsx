@@ -1,11 +1,11 @@
 import React from 'react';
 import {Box, Chip, ChipProps} from '@mui/material';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
 import HourglassTopOutlinedIcon from '@mui/icons-material/HourglassTopOutlined';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 // import {ProjectInformation} from '../../../../datamodel/ui';
 interface ProjectStatusProps {
@@ -54,7 +54,7 @@ export default function ProjectStatus(props: ProjectStatusProps) {
           props.status !== undefined && statusTypes.includes(props.status) ? (
             iconMapping[props.status]
           ) : (
-            <QuestionMarkIcon />
+            <HelpOutlineIcon />
           )
         }
         label={
@@ -63,6 +63,7 @@ export default function ProjectStatus(props: ProjectStatusProps) {
             : 'undefined'
         }
         sx={{textTransform: 'capitalize'}}
+        size={'small'}
       />
     </Box>
   );

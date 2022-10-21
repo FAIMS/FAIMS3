@@ -43,7 +43,7 @@ import {get_RelatedFields_for_field} from '../components/record/relationships/Re
 import DataGridFieldLinksComponent from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
 
-import {Grid} from '@mui/material';
+import {Grid, Box} from '@mui/material';
 import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import {CreateRecordLink} from '../components/record/relationships/create_links/create_record_link';
@@ -295,7 +295,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       }
     } else newValue = '';
-    console.error('set new value', newValue);
     setFieldValue(newValue);
 
     const records = options;
@@ -342,14 +341,16 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         </Grid>
         <Grid item xs={12} sm={12} md={12} lg={12}>
           {recordsInformation.length > 0 && (
-            <DataGridFieldLinksComponent
-              links={recordsInformation}
-              record_id={record_id}
-              record_hrid={record_id}
-              record_type={props.form.values['type']}
-              field_label={props.InputLabelProps.label}
-              handleUnlink={remove_related_child}
-            />
+            <Box sx={{mb: 1}}>
+              <DataGridFieldLinksComponent
+                links={recordsInformation}
+                record_id={record_id}
+                record_hrid={record_id}
+                record_type={props.form.values['type']}
+                field_label={props.InputLabelProps.label}
+                handleUnlink={remove_related_child}
+              />
+            </Box>
           )}
         </Grid>
       </Grid>
@@ -363,7 +364,7 @@ const uiSpec = {
   'type-returned': 'faims-core::Relationship', // matches a type in the Project Model
   'component-parameters': {
     fullWidth: true,
-    helperText: 'Select or Add new related record',
+    helperText: 'Select or add new related record',
     variant: 'outlined',
     required: true,
     related_type: '',
