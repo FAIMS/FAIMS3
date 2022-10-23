@@ -39,7 +39,7 @@ export function getParentlinkInfo(
   let is_direct = false;
   let state_parent: LocationState = {};
 
-  if (RelationState === undefined) return {state_parent, is_direct};
+  if (RelationState === undefined||RelationState ===null) return {state_parent, is_direct};
   if (RelationState.field_id !== undefined) is_direct = true;
 
   state_parent = {
