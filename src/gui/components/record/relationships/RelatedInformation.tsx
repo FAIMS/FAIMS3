@@ -427,10 +427,10 @@ async function get_field_RelatedFields(
   record_id: string,
   form_type: string,
   hrid: string,
-  reation_type: string,
+  relation_type: string,
   current_revision_id: string,
-  is_dispaly = false,
-  dispalyFields: string[] = []
+  is_display = false,
+  displayFields: string[] = []
 ): Promise<Array<RecordLinkProps>> {
   for (const index in fields) {
     const field = fields[index]['field'];
@@ -450,7 +450,7 @@ async function get_field_RelatedFields(
           child_record['relation_type_vocabPair'] !== undefined &&
           child_record['relation_type_vocabPair'].length > 0
             ? child_record['relation_type_vocabPair']
-            : reation_type === 'Child'
+            : relation_type === 'Child'
             ? ['is child of', 'is parent of']
             : ['is related to', 'is related to'];
         const {section, section_label} = get_section(
@@ -485,13 +485,13 @@ async function get_field_RelatedFields(
           )
         );
         // get the displayed information for the child or link item, this is used by field
-        if (is_dispaly && latest_record !== null) {
-          console.debug('display values', dispalyFields);
+        if (is_display && latest_record !== null) {
+          console.debug('display values', displayFields);
         }
         newfields.push(child);
       }
     } catch (error) {
-      console.error('Error to get record infoamtion for field', field, error);
+      console.error('Error to get record information for field', field, error);
     }
   }
   return newfields;
@@ -857,14 +857,14 @@ export function AddLink(
 export function RemoveLink(relation: Relationship, linked: LinkedRelation) {
   if (relation === undefined || relation.linked === undefined) return [];
 
-  const newlinked: LinkedRelation[] = [];
+  const new_linked: LinkedRelation[] = [];
   relation['linked'].map((linkRecord: LinkedRelation) => {
     !(
       linkRecord.record_id === linked.record_id &&
       linkRecord.field_id === linked.field_id
     )
-      ? newlinked.push(linkRecord)
+      ? new_linked.push(linkRecord)
       : linkRecord;
   });
-  return newlinked;
+  return new_linked;
 }
