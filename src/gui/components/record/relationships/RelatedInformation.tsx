@@ -39,7 +39,8 @@ export function getParentlinkInfo(
   let is_direct = false;
   let state_parent: LocationState = {};
 
-  if (RelationState === undefined||RelationState ===null) return {state_parent, is_direct};
+  if (RelationState === undefined || RelationState === null)
+    return {state_parent, is_direct};
   if (RelationState.field_id !== undefined) is_direct = true;
 
   state_parent = {
@@ -141,7 +142,7 @@ export function getParentInfo(
         field_id: Relate_parent.field_id,
         relation_type_vocabPair: Relate_parent.relation_type_vocabPair,
       });
-    //get parnet
+    //get parent
     if (
       Relate_parent.parent !== undefined &&
       Relate_parent.parent.type === 'Child' &&
