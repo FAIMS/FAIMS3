@@ -215,7 +215,6 @@ function DraftEdit(props: DraftEditProps) {
                   ui_specification={uiSpec}
                   draft_id={draft_id}
                   metaSection={metaSection}
-                  isDraftSaving={isDraftSaving}
                   handleSetIsDraftSaving={setIsDraftSaving}
                   handleSetDraftLastSaved={setDraftLastSaved}
                   handleSetDraftError={setDraftError}
