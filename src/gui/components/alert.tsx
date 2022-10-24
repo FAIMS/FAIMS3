@@ -55,7 +55,10 @@ export default function SystemAlert() {
   };
   // this code is to move the successful message after 2 second, need to be updated in the next stage
   setTimeout(() => {
-    if (oldest_alert !== undefined && oldest_alert.severity === 'success')
+    if (
+      oldest_alert !== undefined &&
+      ['success', 'info'].includes(oldest_alert.severity)
+    )
       handleClose(oldest_alert.key);
   }, 2000);
 
@@ -66,17 +69,12 @@ export default function SystemAlert() {
         <Snackbar
           open={true}
           autoHideDuration={6000}
-          anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+          anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
         >
           <Alert
             onClose={() => handleClose(oldest_alert.key)}
-            severity={
-              oldest_alert.severity === 'error'
-                ? 'error'
-                : oldest_alert.severity === 'warnings'
-                ? 'warning'
-                : 'success'
-            }
+            severity={oldest_alert.severity}
+            variant={'filled'}
           >
             {'message' in oldest_alert
               ? oldest_alert.message

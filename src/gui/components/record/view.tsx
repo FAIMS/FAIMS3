@@ -100,7 +100,7 @@ function SingleComponent(props: SingleComponentProps) {
       mb={isHiddenField ? 0 : 2}
     >
       <Grid container spacing={isHiddenField ? 0 : 1}>
-        <Grid item xs>
+        <Grid item xs={12} sm>
           {getComponentFromFieldConfig(
             fields[fieldName],
             fieldName,
@@ -114,7 +114,7 @@ function SingleComponent(props: SingleComponentProps) {
                 variant={'outlined'}
                 component={Paper}
                 elevation={0}
-                sx={{p: 2, ml: 2, my: 1}}
+                sx={{ml: {xs: 0, sm: 2}, p: 2, my: 1}}
                 bgcolor={grey[100]}
               >
                 <AnnotationField
@@ -134,7 +134,7 @@ function SingleComponent(props: SingleComponentProps) {
         {conflictfields !== null &&
           conflictfields !== undefined &&
           conflictfields.includes(fieldName) && (
-            <Grid item xs={'auto'}>
+            <Grid item xs={6} sm={'auto'}>
               <EditConflictDialog
                 label={label}
                 handleChangeTab={props.handleChangeTab}
@@ -144,7 +144,7 @@ function SingleComponent(props: SingleComponentProps) {
 
         {show_annotation && (
           <React.Fragment>
-            <Grid item xs={'auto'}>
+            <Grid item xs={6} sm={'auto'}>
               <IconButton
                 color={'info'}
                 size={'large'}

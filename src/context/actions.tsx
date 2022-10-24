@@ -20,6 +20,7 @@
 
 import {ProjectObject} from '../datamodel/database';
 import {Record} from '../datamodel/ui';
+import {AlertColor} from '@mui/material/Alert/Alert';
 
 export enum ActionType {
   IS_SYNCING_UP,
@@ -105,7 +106,7 @@ export interface ADD_ALERT {
   type: ActionType.ADD_ALERT;
   payload: {
     message: string;
-    severity: string;
+    severity: AlertColor;
   };
 }
 
@@ -118,7 +119,7 @@ export interface ADD_CUSTOM_ALERT {
   type: ActionType.ADD_CUSTOM_ALERT;
   payload: {
     element: JSX.Element[];
-    severity: string;
+    severity: AlertColor;
   };
 }
 
