@@ -56,10 +56,13 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
 
   // create the new project
   const new_project_id = generate_non_unique_project_id();
+  const creation_time = new Date();
   const project_object = {
     _id: new_project_id,
     name: name,
-    status: 'new', // TODO: work out proper status
+    status: 'local_draft',
+    created: creation_time.toISOString(),
+    last_updated: creation_time.toISOString(),
   };
   await projects_db.local.put(project_object);
   console.debug('Created new project', new_project_id);
