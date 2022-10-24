@@ -547,7 +547,7 @@ export default function Record() {
                               </Grid>
                             </Grid>
                           </Box>
-                          <Box px={not_xs ? 30 : 0}>
+                          <Box>
                             {/* Add the component for inherit data from parent */}
                             {(isalerting === false ||
                               draft_id !== undefined) && (
@@ -589,6 +589,8 @@ export default function Record() {
                           ui_specification={uiSpec}
                           draft_id={draft_id}
                           metaSection={metaSection}
+                          conflictfields={conflictfields}
+                          handleChangeTab={handleChange}
                           isDraftSaving={isDraftSaving}
                           isSyncing={isSyncing.toString()}
                           handleSetIsDraftSaving={setIsDraftSaving}

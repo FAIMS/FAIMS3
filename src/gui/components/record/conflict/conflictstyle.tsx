@@ -29,8 +29,8 @@ export type cardstyletype = {
   icon?: any;
   iconstyle?: {[key: string]: string};
   text?: string;
-  textstyle?: {[key: string]: string};
-  cardcotent?: {[key: string]: string};
+  text_style?: {[key: string]: string};
+  card_content?: {[key: string]: string};
 };
 
 export const conflicticonstyle = {
@@ -40,7 +40,7 @@ export const conflicticonstyle = {
   color: '#f29c3e',
 };
 
-export const cardsstyles: {[key: string]: cardstyletype} = {
+export const card_styles: {[key: string]: cardstyletype} = {
   warning: {
     card: {
       borderColor: '#f9dbaf',
@@ -82,7 +82,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       backgroundColor: '#f6f6f6',
       // height:'35px',
     },
-    cardcotent: {
+    card_content: {
       paddingLeft: '0px',
       paddingRight: '0px',
       overflow: 'visible',
@@ -98,7 +98,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardheader: {
       backgroundColor: '#449852',
     },
-    cardcotent: {
+    card_content: {
       overflowY: 'auto',
       paddingLeft: '0px',
       paddingRight: '0px',
@@ -111,7 +111,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       borderRadius: '3px 0px 0px 3px',
       border: '1px solid #b5b5b5',
     },
-    textstyle: {
+    text_style: {
       padding: '1px 10px',
       border: '1px solid #b5b5b5',
       borderRadius: '0px 3px 3px 0px',
@@ -128,7 +128,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardheader: {
       backgroundColor: '#ee565a',
     },
-    cardcotent: {
+    card_content: {
       overflowY: 'auto',
       paddingLeft: '0px',
       paddingRight: '0px',

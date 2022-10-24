@@ -62,6 +62,7 @@ import {
 import {listenDataDB} from '../../../../sync';
 import CircularLoading from '../../ui/circular_loading';
 import ProjectStatus from './status';
+import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
@@ -204,6 +205,18 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             </Grid>
           </Box>
 
+          <Box
+            component={Paper}
+            variant={'outlined'}
+            elevation={0}
+            p={2}
+            mb={2}
+          >
+            <Typography variant={'h6'} sx={{mb: 2}}>
+              Sync Notebook
+            </Typography>
+            <NotebookSyncSwitch project={project_info} />
+          </Box>
           <Box
             component={Paper}
             variant={'outlined'}

@@ -215,7 +215,6 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                 </Box>
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <Typography variant={'overline'}>About</Typography>
                 <TableContainer
                   component={Paper}
                   elevation={0}
