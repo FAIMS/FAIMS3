@@ -1012,22 +1012,30 @@ class RecordForm extends React.Component<
                           }, 500);
                         }}
                       />
-
-                      <DevTool formProps={formProps} state={this.state} />
                     </Grid>
+                    {/* {UGCReport ONLY for the saved record} */}
+                    {this.state.revision_cached !== undefined && (
+                      <Box mt={3}>
+                        <Divider />
+                        <UGCReport
+                          handleUGCReport={(value: string) => {
+                            this.setState({ugc_comment: value});
+                            this.save(
+                              formProps.values,
+                              is_final_view,
+                              false,
+                              formProps.setSubmitting
+                            );
+                          }}
+                        />
+                      </Box>
+                    )}
+                    <DevTool formProps={formProps} state={this.state} />
                   </Form>
                 );
               }}
             </Formik>
           </div>
-          <Box mt={3}>
-            <Divider />
-            <UGCReport
-              handleUGCReport={(value: string) => {
-                this.setState({ugc_comment: value});
-              }}
-            />
-          </Box>
         </Box>
       );
     } else {
