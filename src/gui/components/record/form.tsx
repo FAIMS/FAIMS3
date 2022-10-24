@@ -949,6 +949,7 @@ class RecordForm extends React.Component<
                 );
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
+                //@James, please check below this code, I'll move above code 
                 this.draftState.renderHook(
                   formProps.values,
                   this.state.annotation,
