@@ -1,5 +1,6 @@
 import {ActionType} from '../context/actions';
 import {ContextType} from '../context/store';
+import {SyncStatusCallbacks} from '../datamodel/core';
 
 export type SyncActionTypes =
   | ActionType.IS_SYNCING_DOWN
@@ -33,4 +34,19 @@ export function setSyncError(
    * Toggle the sync error state
    */
   dispatch({type: ActionType.IS_SYNC_ERROR, payload: has_error});
+}
+
+export function getSyncStatusCallbacks(
+  dispatch: ContextType['dispatch']
+): SyncStatusCallbacks {
+  const handleStartSyncUp = () => {
+    startSync(dispatch, ActionType.IS_SYNCING_UP);
+  };
+  const handleStartSyncDown = () => {
+    startSync(dispatch, ActionType.IS_SYNCING_DOWN);
+  };
+  return {
+    sync_up: handleStartSyncUp,
+    sync_down: handleStartSyncDown,
+  };
 }

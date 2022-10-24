@@ -124,6 +124,11 @@ export interface ClusterProjectRoles {
   [key: string]: Array<ProjectRole>;
 }
 
+export interface SyncStatusCallbacks {
+  sync_up: () => void;
+  sync_down: () => void;
+}
+
 export type LocationState = {
   parent_record_id?: string; // parent or linked record id, set from parent or linked record
   field_id?: string; // parent or linked field id, set from parent or linked record

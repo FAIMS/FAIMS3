@@ -20,6 +20,7 @@
 
 import PouchDB from 'pouchdb';
 import {RUNNING_UNDER_TEST, DEBUG_APP} from '../buildconfig';
+import {SyncStatusCallbacks} from '../datamodel/core';
 import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel/database';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 
@@ -46,6 +47,28 @@ export function materializeConnectionInfo(
     ret = {...ret, ...overlay};
   }
   return ret;
+}
+
+/*
+ * The following provide the infrastructure connect up the UI sync notifications
+ * with pouchdb's callbacks.
+ */
+export let sync_status_callbacks: SyncStatusCallbacks | null = null;
+
+export function set_sync_status_callbacks(callbacks: SyncStatusCallbacks) {
+  sync_status_callbacks = callbacks;
+}
+
+export function ping_sync_up() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_up();
+  }
+}
+
+export function ping_sync_down() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_down();
+  }
 }
 
 /**
@@ -79,6 +102,8 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
       }
       opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
     }
+    ping_sync_up();
+    ping_sync_down();
     // Commented out as it seems this may break sending attachments on
     // chrome/safari
     //opts.keepalive = true;

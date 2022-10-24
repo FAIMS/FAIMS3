@@ -24,6 +24,7 @@ import {v4 as uuidv4} from 'uuid';
 
 import {ProjectObject} from '../datamodel/database';
 import {Record} from '../datamodel/ui';
+import {getSyncStatusCallbacks} from '../utils/status';
 import {
   ProjectActions,
   RecordActions,
@@ -33,6 +34,8 @@ import {
 } from './actions';
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
+import {set_sync_status_callbacks} from '../sync/connection';
+import {AlertColor} from '@mui/material/Alert/Alert';
 
 interface InitialStateProps {
   initialized: boolean;
@@ -45,7 +48,7 @@ interface InitialStateProps {
   active_record: Record | null;
   alerts: Array<
     {
-      severity: string;
+      severity: AlertColor;
       key: string;
     } & ({message: string} | {element: JSX.Element[]})
   >;
@@ -187,6 +190,8 @@ const StateProvider = (props: any) => {
     },
     InitialState
   );
+
+  set_sync_status_callbacks(getSyncStatusCallbacks(dispatch));
 
   useEffect(() => {
     initialize()
