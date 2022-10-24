@@ -416,6 +416,8 @@ class RecordForm extends React.Component<
         const location: any = this.props.location;
         if (
           location !== undefined &&
+          location.state !== undefined &&
+          location.state !== null &&
           location.state.parent_record_id !== undefined &&
           location.state.parent_record_id !== this.props.record_id &&
           this.state.initialValues !== null

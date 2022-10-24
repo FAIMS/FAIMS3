@@ -31,9 +31,16 @@ import {
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {ProjectUIModel} from '../../datamodel/ui';
-import {Link as RouterLink} from 'react-router-dom';
-import Link from '@mui/material/Link';
-import * as ROUTES from '../../constants/routes';
+
+import {
+  Grid,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material';
 interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
@@ -45,6 +52,43 @@ interface State {
   has_run: boolean;
   is_ranger: boolean;
   label: string;
+}
+
+function AddRangDialog() {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <Grid container>
+      <Button
+        onClick={() => setOpen(true)}
+        color={'error'}
+        variant={'text'}
+        disableElevation={true}
+      >
+        Add Range
+      </Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Information</DialogTitle>
+        <DialogContent style={{width: '600px', height: '100px'}}>
+          <DialogContentText id="alert-dialog-description">
+            {
+              'Go to Notebook > Settings Tab > Edit Allocations to Add New Range'
+            }{' '}
+            <br />
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)} autoFocus>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Grid>
+  );
 }
 
 export class BasicAutoIncrementer extends React.Component<
@@ -184,23 +228,7 @@ export class BasicAutoIncrementer extends React.Component<
           readOnly={true}
           type={'hidden'}
         />
-        {this.state.is_ranger === false && (
-          <Link
-            component={RouterLink}
-            to={
-              ROUTES.NOTEBOOK +
-              this.props.form.values['_project_id'] +
-              ROUTES.AUTOINCREMENT +
-              this.props.form_id +
-              '/' +
-              this.props.field.name +
-              '/' +
-              this.state.label
-            }
-          >
-            Add Range
-          </Link>
-        )}
+        {this.state.is_ranger === false && <AddRangDialog />}
       </>
     );
   }

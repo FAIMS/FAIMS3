@@ -62,8 +62,9 @@ import {
 import {listenDataDB} from '../../../../sync';
 import CircularLoading from '../../ui/circular_loading';
 import ProjectStatus from './status';
+import {ProjectUIModel} from '../../../../datamodel/ui';
 
-export default function NotebookSettings() {
+export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
 
   const [isSyncing, setIsSyncing] = useState<null | boolean>(null);
@@ -256,7 +257,10 @@ export default function NotebookSettings() {
           </Grid>
         ) : (
           <Grid item xs={12} sm={12} md={6} lg={8}>
-            <AutoIncrementerSettingsList project_info={project_info} />
+            <AutoIncrementerSettingsList
+              project_info={project_info}
+              uiSpec={props.uiSpec}
+            />
           </Grid>
         )}
       </Grid>

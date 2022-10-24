@@ -1,12 +1,22 @@
 import React, {useEffect} from 'react';
 import {Box, Grid, Typography, Paper, Alert} from '@mui/material';
-import {ProjectInformation} from '../../../../datamodel/ui';
+import {ProjectInformation, ProjectUIModel} from '../../../../datamodel/ui';
 import {get_autoincrement_references_for_project} from '../../../../datamodel/autoincrement';
 import {AutoIncrementReference} from '../../../../datamodel/database';
 import AutoIncrementEditForm from '../../autoincrement/edit-form';
-
 interface AutoIncrementerSettingsListProps {
   project_info: ProjectInformation;
+  uiSpec: ProjectUIModel;
+}
+
+function get_form(section_id: string, uiSpec: ProjectUIModel) {
+  let form = '';
+  uiSpec.visible_types.map(viewset =>
+    uiSpec.viewsets[viewset].views.includes(section_id)
+      ? (form = uiSpec.viewsets[viewset].label ?? viewset)
+      : viewset
+  );
+  return form;
 }
 export default function AutoIncrementerSettingsList(
   props: AutoIncrementerSettingsListProps
@@ -39,7 +49,15 @@ export default function AutoIncrementerSettingsList(
         ''
       )}
       {references.map(ai => {
-        const label = ai.label ?? ai.form_id;
+        // display form section label for user to fill Auto correctly
+        const section =
+          props.uiSpec['views'][ai.form_id]['label'] ?? ai.form_id;
+        const label =
+          get_form(ai.form_id, props.uiSpec) +
+            ' <' +
+            section +
+            '> ' +
+            ai.label ?? '';
         return (
           <Grid
             item

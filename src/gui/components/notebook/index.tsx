@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
-import {ProjectInformation} from '../../../datamodel/ui';
+import {ProjectInformation, ProjectUIModel} from '../../../datamodel/ui';
 import DraftsTable from './draft_table';
 import {RecordsBrowseTable} from './record_table';
 import RangeHeader from './range_header';
@@ -90,6 +90,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
+  const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
 
   useEffect(() => {
     let isactive = true;
@@ -107,6 +108,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
       getUiSpecForProject(project.project_id).then(
         uiSpec => {
           setViewsets(uiSpec.viewsets);
+          setUiSpec(uiSpec);
         },
         () => {}
       );
@@ -291,7 +293,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
             </Grid>
           </TabPanel>
           <TabPanel value={notebookTabValue} index={2} id={'notebook'}>
-            <NotebookSettings />
+            {uiSpec !== null && <NotebookSettings uiSpec={uiSpec} />}
           </TabPanel>
         </Box>
       )}
