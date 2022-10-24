@@ -46,7 +46,7 @@ import {
   Typography,
   AlertTitle,
 } from '@mui/material';
-import {cardstyles} from './conflictstyle';
+import {card_styles} from './conflictstyle';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -260,7 +260,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <InfoIcon style={cardstyles.conflict.iconstyle} />
+            <InfoIcon style={card_styles.conflict.iconstyle} />
           </Grid>
           <Grid
             item
@@ -291,7 +291,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <InfoIcon style={cardstyles.warning.iconstyle} />
+            <InfoIcon style={card_styles.warning.iconstyle} />
           </Grid>
           <Grid
             item
@@ -322,7 +322,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <CheckBoxIcon style={cardstyles.success.iconstyle} />
+            <CheckBoxIcon style={card_styles.success.iconstyle} />
           </Grid>
           <Grid
             item
@@ -353,7 +353,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <ErrorOutlineOutlinedIcon style={cardstyles.delete.iconstyle} />
+            <ErrorOutlineOutlinedIcon style={card_styles.delete.iconstyle} />
           </Grid>
           <Grid
             item

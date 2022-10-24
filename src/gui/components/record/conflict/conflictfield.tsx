@@ -37,7 +37,7 @@ import {AnnotationField} from '../Annotation';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import {cardstyles, cardstyletype} from './conflictstyle';
+import {card_styles, cardstyletype} from './conflictstyle';
 import {CircularProgress} from '@mui/material';
 import {getComponentFromFieldConfig} from '../fields';
 
@@ -48,13 +48,13 @@ type EmptyProps = {
 };
 export function EmptyField(props: EmptyProps) {
   return (
-    <Box pt={10} px={3} style={cardstyles.empty.card}>
+    <Box pt={10} px={3} style={card_styles.empty.card}>
       {props.isspin && (
         <Grid
           container
           justifyContent="center"
           alignItems="center"
-          style={cardstyles.empty.cardheader}
+          style={card_styles.empty.cardheader}
         >
           <Grid
             item
@@ -66,7 +66,7 @@ export function EmptyField(props: EmptyProps) {
             {props.isloading === false ? (
               <CircularProgress size={12} thickness={4} />
             ) : (
-              <InfoOutlinedIcon style={cardstyles.empty.iconstyle} />
+              <InfoOutlinedIcon style={card_styles.empty.iconstyle} />
             )}
           </Grid>
 
@@ -100,35 +100,35 @@ export function ConflictResolveIcon(props: ConflictResolveIconProps) {
       alignItems="center"
       style={{paddingBottom: 10, paddingLeft: 10}}
     >
-      <InfoIcon style={cardstyles.conflict.iconstyle} />
+      <InfoIcon style={card_styles.conflict.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardstyles.success.textstyle}
+        style={card_styles.success.text_style}
       >
         <strong>{num} Conflicting </strong>
       </Typography>
-      <InfoIcon style={cardstyles.warning.iconstyle} />
+      <InfoIcon style={card_styles.warning.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardstyles.success.textstyle}
+        style={card_styles.success.text_style}
       >
         {numUnResolved} Unresolved
       </Typography>
-      <CheckBoxIcon style={cardstyles.success.iconstyle} />
+      <CheckBoxIcon style={card_styles.success.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardstyles.success.textstyle}
+        style={card_styles.success.text_style}
       >
         {numResolved} Resolved
       </Typography>
-      <ErrorOutlineOutlinedIcon style={cardstyles.delete.iconstyle} />
+      <ErrorOutlineOutlinedIcon style={card_styles.delete.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardstyles.success.textstyle}
+        style={card_styles.success.text_style}
       >
         {numRejected} Rejected
       </Typography>
@@ -158,8 +158,8 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
       ? fieldConfig['component-parameters']['FormControlLabelProps']['children']
       : fieldName;
 
-  const cardstyle: cardstyletype = cardstyles[styletype];
-  const annoataion =
+  const cardstyle: cardstyletype = card_styles[styletype];
+  const annotation =
     data['fields'][fieldName] !== undefined
       ? data['fields'][fieldName]['annotations']
       : null;
@@ -196,7 +196,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             {cardstyle.icon}
             <Typography variant="caption" display="block">
               {' '}
-              This field is requierd
+              This field is required
             </Typography>
           </Grid>
         )}
@@ -218,7 +218,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             style={cardstyle['cardheader']}
           />
         )}
-        <CardContent style={cardstyle.cardcontent}>
+        <CardContent style={cardstyle.card_content}>
           <Grid
             style={{
               height: '320px',
@@ -242,13 +242,13 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
               fieldConfig['component-name'] !== 'BasicAutoIncrementer' &&
               fieldConfig['component-name'] !== 'TemplatedStringField' &&
               fieldConfig['component-name'] !== 'RandomStyle' &&
-              annoataion !== null && (
+              annotation !== null && (
                 <AnnotationField
                   key={'annotation' + fieldName + 'box'}
                   fieldName={fieldName}
                   field={fieldConfig}
                   annotation={{
-                    [fieldName]: {...annoataion},
+                    [fieldName]: {...annotation},
                   }}
                   handerannoattion={() => {
                     console.log('annotation');
