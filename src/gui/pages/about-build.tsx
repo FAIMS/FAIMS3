@@ -18,8 +18,20 @@
  *   TODO
  */
 
-import React, {useContext} from 'react';
-import {Box, Divider, Button} from '@mui/material';
+import React from 'react';
+import {
+  Box,
+  Divider,
+  Button,
+  Typography,
+  ButtonGroup,
+  Grid,
+} from '@mui/material';
+import {grey} from '@mui/material/colors';
+import DownloadIcon from '@mui/icons-material/Download';
+import ErrorIcon from '@mui/icons-material/Error';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ShareIcon from '@mui/icons-material/Share';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {downloadBlob, shareStringAsFileOnApp} from '../../utils/downloadShare';
@@ -40,27 +52,40 @@ import {
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
-import {grey} from '@mui/material/colors';
-import {ActionType} from '../../context/actions';
-import {store} from '../../context/store';
-import {startSync, setSyncError} from '../../utils/status';
+// import {ActionType} from '../../context/actions';
+// import {store} from '../../context/store';
+// import {startSync, setSyncError} from '../../utils/status';
+import {styled} from '@mui/material/styles';
+import Tooltip, {TooltipProps, tooltipClasses} from '@mui/material/Tooltip';
+const BootstrapTooltip = styled(({className, ...props}: TooltipProps) => (
+  <Tooltip {...props} arrow classes={{popper: className}} />
+))(() => ({
+  [`& .${tooltipClasses.arrow}`]: {
+    color: 'transparent',
+  },
+  [`& .${tooltipClasses.tooltip}`]: {
+    // color: theme.palette.primary.main,
+    backgroundColor: grey[300],
+    color: 'black',
+  },
+}));
 export default function AboutBuild() {
   const breadcrumbs = [
     {link: ROUTES.INDEX, title: 'Home'},
     {title: 'about-build'},
   ];
 
-  const {state, dispatch} = useContext(store);
+  // const {state, dispatch} = useContext(store);
 
-  const handleStartSyncUp = () => {
-    startSync(dispatch, ActionType.IS_SYNCING_UP);
-  };
-  const handleStartSyncDown = () => {
-    startSync(dispatch, ActionType.IS_SYNCING_DOWN);
-  };
-  const handleToggleSyncError = () => {
-    setSyncError(dispatch, !state.isSyncError);
-  };
+  // const handleStartSyncUp = () => {
+  //   startSync(dispatch, ActionType.IS_SYNCING_UP);
+  // };
+  // const handleStartSyncDown = () => {
+  //   startSync(dispatch, ActionType.IS_SYNCING_DOWN);
+  // };
+  // const handleToggleSyncError = () => {
+  //   setSyncError(dispatch, !state.isSyncError);
+  // };
 
   return (
     <Box sx={{p: 2}}>
@@ -92,10 +117,85 @@ export default function AboutBuild() {
           </table>
         </pre>
       </Box>
+      <Typography variant={'h5'} gutterBottom>
+        Having issues?
+      </Typography>
+      <Button
+        variant="contained"
+        color={'primary'}
+        disableElevation
+        onClick={() => {
+          console.log('User refreshed page');
+          unregisterServiceWorker();
+          window.location.reload();
+        }}
+        startIcon={<RefreshIcon />}
+      >
+        Refresh the app
+      </Button>
+      <Typography variant={'body2'} sx={{mt: 1, mb: 4}}>
+        This is similar to a browser refresh
+      </Typography>
+      <Typography variant={'h5'} gutterBottom>
+        Downloading data from this device
+      </Typography>
+
+      <Grid container spacing={2} sx={{pb: 6}}>
+        <Grid item xs={12} md={6}>
+          <Typography variant={'body2'} sx={{mt: 1, mb: 1}}>
+            Data download functionality is not well-supported by all
+            device+browser combinations. Try the following buttons to access
+            data from this device.
+          </Typography>
+          <ButtonGroup color={'primary'} variant={'contained'} disableElevation>
+            <BootstrapTooltip title="Browsers only" open={true}>
+              <Button
+                disableElevation
+                onClick={async () => {
+                  console.error('Starting browser system dump');
+                  const b = await getFullDBSystemDumpAsBlob();
+                  console.error(
+                    'Finished browser system dump, starting download'
+                  );
+                  downloadBlob(b, 'faims3-dump.json');
+                }}
+                startIcon={<DownloadIcon />}
+              >
+                Download local database contents
+              </Button>
+            </BootstrapTooltip>
+            <BootstrapTooltip title="Apps and some browsers" open={true}>
+              <Button
+                disableElevation
+                onClick={async () => {
+                  console.error('Starting app system dump');
+                  const s = await getFullDBSystemDump();
+                  console.error(
+                    'Finished app system dump, starting app sharing'
+                  );
+                  await shareStringAsFileOnApp(
+                    s,
+                    'FAIMS Database Dump',
+                    'Share all the FAIMS data on your device',
+                    'faims3-dump.json'
+                  );
+                }}
+                startIcon={<ShareIcon />}
+              >
+                Share local database contents
+              </Button>
+            </BootstrapTooltip>
+          </ButtonGroup>
+        </Grid>
+        <Grid item xs={12} md={6}></Grid>
+      </Grid>
+
+      <Divider sx={{my: 3}} />
       {SHOW_WIPE && (
         <Button
-          variant="outlined"
-          color={'primary'}
+          variant="contained"
+          disableElevation
+          color={'error'}
           onClick={() => {
             unregisterServiceWorker();
             wipe_all_pouch_databases().then(() => {
@@ -103,84 +203,43 @@ export default function AboutBuild() {
               window.location.reload();
             });
           }}
-          style={{marginRight: '10px'}}
+          startIcon={<ErrorIcon />}
+          sx={{mr: 1}}
         >
-          Wipe and reset everything!
+          Wipe and reset everything
         </Button>
       )}
-      <Button
-        variant="outlined"
-        color={'primary'}
-        onClick={() => {
-          console.log('User refreshed page');
-          unregisterServiceWorker();
-          window.location.reload();
-        }}
-        style={{marginRight: '10px'}}
-      >
-        Refresh the app (like in a browser)!
-      </Button>
+
       {SHOW_MINIFAUXTON && (
         <Button
           variant="outlined"
+          disableElevation
           color={'primary'}
           onClick={() => {
             window.location.pathname = '/minifauxton.html';
           }}
-          style={{marginRight: '10px'}}
         >
           Open MiniFauxton
         </Button>
       )}
-      <Button
-        variant="outlined"
-        color={'primary'}
-        onClick={async () => {
-          console.error('Starting browser system dump');
-          const b = await getFullDBSystemDumpAsBlob();
-          console.error('Finished browser system dump, starting download');
-          downloadBlob(b, 'faims3-dump.json');
-        }}
-        style={{marginRight: '10px'}}
-      >
-        Download local database contents (browsers only)
-      </Button>
-      <Button
-        variant="outlined"
-        color={'primary'}
-        onClick={async () => {
-          console.error('Starting app system dump');
-          const s = await getFullDBSystemDump();
-          console.error('Finished app system dump, starting app sharing');
-          await shareStringAsFileOnApp(
-            s,
-            'FAIMS Database Dump',
-            'Share all the FAIMS data on your device',
-            'faims3-dump.json'
-          );
-        }}
-        style={{marginRight: '10px'}}
-      >
-        Share local database contents (apps and some browsers)
-      </Button>
-      <Divider sx={{my: 3}}>Sync State Test</Divider>
-      <Button variant="contained" onClick={handleStartSyncUp} sx={{mr: 1}}>
-        Start Sync UP {JSON.stringify(state.isSyncingUp)}
-      </Button>
-      <Button variant="contained" onClick={handleStartSyncDown} sx={{mr: 1}}>
-        Start Sync DOWN {JSON.stringify(state.isSyncingDown)}
-      </Button>
-      {/*<Button*/}
-      {/*  variant="contained"*/}
-      {/*  onClick={handleToggleUnsyncedChanges}*/}
-      {/*  sx={{mr: 1}}*/}
-      {/*>*/}
-      {/*  Local changes made {JSON.stringify(state.hasUnsyncedChanges)}*/}
-      {/*</Button>*/}
-      <Button variant="contained" onClick={handleToggleSyncError} sx={{mr: 1}}>
-        Sync Error {JSON.stringify(state.isSyncError)}
-      </Button>
 
+      {/*<Divider sx={{my: 3}}>Sync State Test</Divider>*/}
+      {/*<Button variant="contained" onClick={handleStartSyncUp} sx={{mr: 1}}>*/}
+      {/*  Start Sync UP {JSON.stringify(state.isSyncingUp)}*/}
+      {/*</Button>*/}
+      {/*<Button variant="contained" onClick={handleStartSyncDown} sx={{mr: 1}}>*/}
+      {/*  Start Sync DOWN {JSON.stringify(state.isSyncingDown)}*/}
+      {/*</Button>*/}
+      {/*/!*<Button*!/*/}
+      {/*/!*  variant="contained"*!/*/}
+      {/*/!*  onClick={handleToggleUnsyncedChanges}*!/*/}
+      {/*/!*  sx={{mr: 1}}*!/*/}
+      {/*/!*>*!/*/}
+      {/*/!*  Local changes made {JSON.stringify(state.hasUnsyncedChanges)}*!/*/}
+      {/*/!*</Button>*!/*/}
+      {/*<Button variant="contained" onClick={handleToggleSyncError} sx={{mr: 1}}>*/}
+      {/*  Sync Error {JSON.stringify(state.isSyncError)}*/}
+      {/*</Button>*/}
       <Divider sx={{my: 3}} />
     </Box>
   );

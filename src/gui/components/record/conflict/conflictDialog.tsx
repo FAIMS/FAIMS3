@@ -30,7 +30,6 @@ import {styled} from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
 import CloseIcon from '@mui/icons-material/Close';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -525,7 +524,10 @@ export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
   );
 }
 
-function ConflictChildDialog(props: any) {
+function ConflictChildDialog(props: {
+  handleChangeTab: Function;
+  handleparentClose: Function;
+}) {
   const [open, setOpen] = React.useState(false);
 
   const handleOpen = () => {
@@ -621,24 +623,26 @@ export function BasicDialog(props: BasicDialogProps) {
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
-      <DialogTitle id="alert-dialog-title">{' Alert '}</DialogTitle>
-      <DialogContent style={{width: '600px', height: '100px'}}>
-        <DialogContentText id="alert-dialog-description">
-          {props.content}
-          <br />
-        </DialogContentText>
-      </DialogContent>
+      <Alert severity={'warning'}>
+        <AlertTitle>Are you sure?</AlertTitle>
+        {props.content}
+      </Alert>
       <DialogActions>
-        <Button onClick={props.handleClose} autoFocus>
+        <Button onClick={props.handleClose} autoFocus color={'warning'}>
           {props.cancel}
         </Button>
-        <Button onClick={props.handleConfirm}>{props.continue}</Button>
+        <Button onClick={props.handleConfirm} color={'success'}>
+          {props.continue}
+        </Button>
       </DialogActions>
     </Dialog>
   );
 }
 
-export function EditConflictDialog(props: any) {
+export function EditConflictDialog(props: {
+  handleChangeTab: Function;
+  label: string;
+}) {
   const {label} = props;
   const [open, setOpen] = React.useState(false);
 

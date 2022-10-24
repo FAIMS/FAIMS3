@@ -74,7 +74,7 @@ type RecordFormProps = {
   view_default?: string;
   ui_specification: ProjectUIModel;
   conflictfields?: string[] | null;
-  handleChangeTab?: any;
+  handleChangeTab?: Function;
   metaSection?: any;
   isSyncing?: string;
   disabled?: boolean;
