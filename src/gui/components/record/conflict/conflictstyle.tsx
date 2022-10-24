@@ -30,7 +30,7 @@ export type cardstyletype = {
   iconstyle?: {[key: string]: string};
   text?: string;
   textstyle?: {[key: string]: string};
-  cardcotent?: {[key: string]: string};
+  cardcontent?: {[key: string]: string};
 };
 
 export const conflicticonstyle = {
@@ -40,7 +40,7 @@ export const conflicticonstyle = {
   color: '#f29c3e',
 };
 
-export const cardsstyles: {[key: string]: cardstyletype} = {
+export const cardstyles: {[key: string]: cardstyletype} = {
   warning: {
     card: {
       borderColor: '#f9dbaf',
@@ -82,7 +82,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
       backgroundColor: '#f6f6f6',
       // height:'35px',
     },
-    cardcotent: {
+    cardcontent: {
       paddingLeft: '0px',
       paddingRight: '0px',
       overflow: 'visible',
@@ -98,7 +98,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardheader: {
       backgroundColor: '#449852',
     },
-    cardcotent: {
+    cardcontent: {
       overflowY: 'auto',
       paddingLeft: '0px',
       paddingRight: '0px',
@@ -128,7 +128,7 @@ export const cardsstyles: {[key: string]: cardstyletype} = {
     cardheader: {
       backgroundColor: '#ee565a',
     },
-    cardcotent: {
+    cardcontent: {
       overflowY: 'auto',
       paddingLeft: '0px',
       paddingRight: '0px',

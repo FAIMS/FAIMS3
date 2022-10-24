@@ -37,7 +37,7 @@ import {AnnotationField} from '../Annotation';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import {cardsstyles, cardstyletype} from './conflictstyle';
+import {cardstyles, cardstyletype} from './conflictstyle';
 import {CircularProgress} from '@mui/material';
 import {getComponentFromFieldConfig} from '../fields';
 
@@ -48,13 +48,13 @@ type EmptyProps = {
 };
 export function EmptyField(props: EmptyProps) {
   return (
-    <Box pt={10} px={3} style={cardsstyles.empty.card}>
+    <Box pt={10} px={3} style={cardstyles.empty.card}>
       {props.isspin && (
         <Grid
           container
           justifyContent="center"
           alignItems="center"
-          style={cardsstyles.empty.cardheader}
+          style={cardstyles.empty.cardheader}
         >
           <Grid
             item
@@ -66,7 +66,7 @@ export function EmptyField(props: EmptyProps) {
             {props.isloading === false ? (
               <CircularProgress size={12} thickness={4} />
             ) : (
-              <InfoOutlinedIcon style={cardsstyles.empty.iconstyle} />
+              <InfoOutlinedIcon style={cardstyles.empty.iconstyle} />
             )}
           </Grid>
 
@@ -100,35 +100,35 @@ export function ConflictResolveIcon(props: ConflictResolveIconProps) {
       alignItems="center"
       style={{paddingBottom: 10, paddingLeft: 10}}
     >
-      <InfoIcon style={cardsstyles.conflict.iconstyle} />
+      <InfoIcon style={cardstyles.conflict.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardsstyles.success.textstyle}
+        style={cardstyles.success.textstyle}
       >
         <strong>{num} Conflicting </strong>
       </Typography>
-      <InfoIcon style={cardsstyles.warning.iconstyle} />
+      <InfoIcon style={cardstyles.warning.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardsstyles.success.textstyle}
+        style={cardstyles.success.textstyle}
       >
         {numUnResolved} Unresolved
       </Typography>
-      <CheckBoxIcon style={cardsstyles.success.iconstyle} />
+      <CheckBoxIcon style={cardstyles.success.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardsstyles.success.textstyle}
+        style={cardstyles.success.textstyle}
       >
         {numResolved} Resolved
       </Typography>
-      <ErrorOutlineOutlinedIcon style={cardsstyles.delete.iconstyle} />
+      <ErrorOutlineOutlinedIcon style={cardstyles.delete.iconstyle} />
       <Typography
         variant="caption"
         display="block"
-        style={cardsstyles.success.textstyle}
+        style={cardstyles.success.textstyle}
       >
         {numRejected} Rejected
       </Typography>
@@ -158,7 +158,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
       ? fieldConfig['component-parameters']['FormControlLabelProps']['children']
       : fieldName;
 
-  const cardstyle: cardstyletype = cardsstyles[styletype];
+  const cardstyle: cardstyletype = cardstyles[styletype];
   const annoataion =
     data['fields'][fieldName] !== undefined
       ? data['fields'][fieldName]['annotations']
@@ -218,7 +218,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             style={cardstyle['cardheader']}
           />
         )}
-        <CardContent style={cardstyle.cardcotent}>
+        <CardContent style={cardstyle.cardcontent}>
           <Grid
             style={{
               height: '320px',

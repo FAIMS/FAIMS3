@@ -21,7 +21,7 @@
  *  ConflictInfoDialog
  *   - Shows User what is Conflict
  *  EditConflictDialogue
- *   - In Record Edit Tab shows user the information for Conflict Icon and help user choose resove conflict
+ *   - In Record Edit Tab shows user the information for Conflict Icon and help user choose resolve conflict
  *
  */
 
@@ -46,7 +46,7 @@ import {
   Typography,
   AlertTitle,
 } from '@mui/material';
-import {cardsstyles} from './conflictstyle';
+import {cardstyles} from './conflictstyle';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
@@ -260,7 +260,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <InfoIcon style={cardsstyles.conflict.iconstyle} />
+            <InfoIcon style={cardstyles.conflict.iconstyle} />
           </Grid>
           <Grid
             item
@@ -291,7 +291,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <InfoIcon style={cardsstyles.warning.iconstyle} />
+            <InfoIcon style={cardstyles.warning.iconstyle} />
           </Grid>
           <Grid
             item
@@ -322,7 +322,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <CheckBoxIcon style={cardsstyles.success.iconstyle} />
+            <CheckBoxIcon style={cardstyles.success.iconstyle} />
           </Grid>
           <Grid
             item
@@ -353,7 +353,7 @@ function ConflictDialogContent() {
             alignItems="center"
             style={{paddingRight: 5}}
           >
-            <ErrorOutlineOutlinedIcon style={cardsstyles.delete.iconstyle} />
+            <ErrorOutlineOutlinedIcon style={cardstyles.delete.iconstyle} />
           </Grid>
           <Grid
             item
