@@ -59,14 +59,7 @@ import AppBarAuth from '../components/authentication/appbarAuth';
 import {TokenContents} from '../../datamodel/core';
 import {checkToken} from '../../utils/helpers';
 // import ConnectedStatus from '../components/authentication/connectedStatus';
-import SyncStatus from '../components/authentication/syncStatus';
-
-// type NavBarState = {
-//   topMenuItems: any;
-//   bottomMenuItems: any;
-//   open: boolean;
-//   nestedMenuOpen: any;
-// };
+import SyncStatus from '../components/sync';
 
 type ProjectListItemProps = {
   title: string;

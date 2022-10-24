@@ -444,7 +444,6 @@ export default function Record() {
               textColor="inherit"
               variant="scrollable"
               scrollButtons="auto"
-              centered={not_xs ? false : true}
             >
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />

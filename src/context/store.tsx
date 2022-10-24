@@ -35,6 +35,7 @@ import {
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
 import {set_sync_status_callbacks} from '../sync/connection';
+import {AlertColor} from '@mui/material/Alert/Alert';
 
 interface InitialStateProps {
   initialized: boolean;
@@ -47,7 +48,7 @@ interface InitialStateProps {
   active_record: Record | null;
   alerts: Array<
     {
-      severity: string;
+      severity: AlertColor;
       key: string;
     } & ({message: string} | {element: JSX.Element[]})
   >;
