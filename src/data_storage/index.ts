@@ -407,13 +407,29 @@ async function filterRecordMetadata(
   return new_record_list;
 }
 
+function sortByLastUpdated(record_list: RecordMetadata[]): RecordMetadata[] {
+  return record_list.sort((a: RecordMetadata, b: RecordMetadata) => {
+    if (a < b) {
+      return 1;
+    }
+    if (a > b) {
+      return -1;
+    }
+    return 0;
+  });
+}
+
 export async function getMetadataForAllRecords(
   project_id: ProjectID,
   filter_deleted: boolean
 ): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(await listRecordMetadata(project_id));
-    return await filterRecordMetadata(project_id, record_list, filter_deleted);
+    return await filterRecordMetadata(
+      project_id,
+      sortByLastUpdated(record_list),
+      filter_deleted
+    );
   } catch (error) {
     console.error('Failed to get record metadata for', project_id, error);
     return [];
