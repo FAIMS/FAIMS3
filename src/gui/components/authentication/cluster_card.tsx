@@ -51,12 +51,13 @@ type ClusterCardProps = {
   listing_name: string;
   listing_description: string;
   conductor_url: string;
-  setToken?: any;
+  setToken: Function;
 };
 
 type UserSwitcherProps = {
   listing_id: string;
   current_username: string;
+  setToken: Function;
 };
 
 function UserSwitcher(props: UserSwitcherProps) {
@@ -69,6 +70,7 @@ function UserSwitcher(props: UserSwitcherProps) {
   const [value, setValue] = React.useState<TokenContents | null | undefined>(
     null
   );
+
   const {dispatch} = useContext(store);
   useEffect(() => {
     const getUserList = async () => {
@@ -81,15 +83,24 @@ function UserSwitcher(props: UserSwitcherProps) {
   }
 
   const handleClick = () => {
-    switchUsername(props.listing_id, value?.username as string);
-    dispatch({
-      type: ActionType.ADD_ALERT,
-      payload: {
-        message: 'Switching user ' + value?.name,
-        severity: 'success',
-      },
+    switchUsername(props.listing_id, value?.username as string).then(() => {
+      const getToken = async () => {
+        console.log('awaiting getTokenInfoForCluster()');
+        // props.setToken(await getTokenContentsForRouting());
+        props.setToken(await getTokenContentsForCluster(props.listing_id));
+      };
+      getToken().then(() =>
+        dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Switching user ' + value?.name,
+            severity: 'success',
+          },
+        })
+      );
+
+      return;
     });
-    console.log();
   };
 
   return (
@@ -115,6 +126,9 @@ function UserSwitcher(props: UserSwitcherProps) {
             ) => {
               setValue(newValue);
             }}
+            isOptionEqualToValue={(option, value) =>
+              option.username === value.username
+            }
             fullWidth
             renderInput={params => (
               <TextField {...params} label="Choose User" />
@@ -133,6 +147,7 @@ function UserSwitcher(props: UserSwitcherProps) {
           </Button>
         </Grid>
       </Grid>
+      {JSON.stringify(value)}
     </React.Fragment>
   );
 }
@@ -283,6 +298,7 @@ export default function ClusterCard(props: ClusterCardProps) {
               <UserSwitcher
                 listing_id={props.listing_id}
                 current_username={token.username}
+                setToken={props.setToken}
               />
 
               <Divider sx={{my: 3}} />

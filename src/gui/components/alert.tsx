@@ -60,9 +60,9 @@ export default function SystemAlert() {
       ['success', 'info'].includes(oldest_alert.severity)
     )
       handleClose(oldest_alert.key);
-  }, 2000);
+  }, 3000);
 
-  if (alerts.length > 0) console.log(oldest_alert.severity);
+  // if (alerts.length > 0) console.log(oldest_alert.severity);
   return (
     <div className={classes.root}>
       {alerts.length > 0 ? (
