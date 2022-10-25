@@ -45,7 +45,7 @@ export default function ProjectStatus(props: ProjectStatusProps) {
     deleted: <DeleteForeverIcon />,
   };
   return (
-    <Box mb={1}>
+    <Box>
       <Chip
         color={
           props.status !== undefined ? colorMapping[props.status] : 'error'
