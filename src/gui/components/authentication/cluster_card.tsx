@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import React from 'react';
+import React, {useContext} from 'react';
 import {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 
@@ -43,6 +43,9 @@ import {reprocess_listing} from '../../../sync/process-initialization';
 import {TokenContents} from '../../../datamodel/core';
 import * as ROUTES from '../../../constants/routes';
 import MainCard from '../ui/main-card';
+import {store} from '../../../context/store';
+import {ActionType} from '../../../context/actions';
+
 type ClusterCardProps = {
   listing_id: string;
   listing_name: string;
@@ -57,7 +60,16 @@ type UserSwitcherProps = {
 };
 
 function UserSwitcher(props: UserSwitcherProps) {
+  /**
+   * Allow the user to switch to another locally-logged-in user
+   * Autocomplete is controlled, switchUsername is called on button click
+   */
   const [userList, setUserList] = useState([] as TokenContents[]);
+
+  const [value, setValue] = React.useState<TokenContents | null | undefined>(
+    null
+  );
+  const {dispatch} = useContext(store);
   useEffect(() => {
     const getUserList = async () => {
       setUserList(await getAllUsersForCluster(props.listing_id));
@@ -67,19 +79,60 @@ function UserSwitcher(props: UserSwitcherProps) {
   if (userList.length === 0) {
     return <p>No logged in users</p>;
   }
+
+  const handleClick = () => {
+    switchUsername(props.listing_id, value?.username as string);
+    dispatch({
+      type: ActionType.ADD_ALERT,
+      payload: {
+        message: 'Switching user ' + value?.name,
+        severity: 'success',
+      },
+    });
+    console.log();
+  };
+
   return (
     <React.Fragment>
-      <Autocomplete
-        disablePortal
-        id={`user-switcher-${props.listing_id}`}
-        getOptionLabel={option => (option.name ? option.name : option.username)}
-        options={userList}
-        sx={{width: 300}}
-        onChange={(e, value) =>
-          switchUsername(props.listing_id, value?.username as string)
-        }
-        renderInput={params => <TextField {...params} label="Switch User" />}
-      />
+      <Grid
+        container
+        direction="row"
+        justifyContent="flex-start"
+        alignItems="stretch"
+      >
+        <Grid item xs alignItems="stretch" style={{display: 'flex'}}>
+          <Autocomplete
+            disablePortal
+            id={`user-switcher-${props.listing_id}`}
+            options={userList}
+            getOptionLabel={option =>
+              option.name ? option.name : option.username
+            }
+            value={value}
+            onChange={(
+              event: any,
+              newValue: TokenContents | null | undefined
+            ) => {
+              setValue(newValue);
+            }}
+            fullWidth
+            renderInput={params => (
+              <TextField {...params} label="Choose User" />
+            )}
+          />
+        </Grid>
+        <Grid item xs={'auto'} alignItems="stretch" style={{display: 'flex'}}>
+          <Button
+            variant={'contained'}
+            color={'primary'}
+            disableElevation
+            sx={{ml: 1}}
+            onClick={handleClick}
+          >
+            Switch
+          </Button>
+        </Grid>
+      </Grid>
     </React.Fragment>
   );
 }
@@ -227,31 +280,23 @@ export default function ClusterCard(props: ClusterCardProps) {
           <Divider sx={{my: 2}} />
           {token.username ? (
             <React.Fragment>
-              <Grid
-                container
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Grid item>
-                  <UserSwitcher
-                    listing_id={props.listing_id}
-                    current_username={token.username}
-                  />
-                </Grid>
-                <Grid item>
-                  <LoginButton
-                    key={props.listing_id}
-                    listing_id={props.listing_id}
-                    listing_name={props.listing_name}
-                    conductor_url={props.conductor_url}
-                    setToken={setToken}
-                    is_refresh={true}
-                    label={'add user'}
-                    size={'small'}
-                    sx={{my: 1}}
-                  />
-                </Grid>
-              </Grid>
+              <UserSwitcher
+                listing_id={props.listing_id}
+                current_username={token.username}
+              />
+
+              <Divider sx={{my: 3}} />
+              <LoginButton
+                key={props.listing_id}
+                listing_id={props.listing_id}
+                listing_name={props.listing_name}
+                conductor_url={props.conductor_url}
+                setToken={setToken}
+                is_refresh={true}
+                label={'add another user'}
+                size={'small'}
+                sx={{my: 1}}
+              />
             </React.Fragment>
           ) : (
             ''
