@@ -53,11 +53,12 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {getProjectMetadata} from '../../projectMetadata';
-// import {TokenContents} from '../../datamodel/core';
 import RecordDelete from '../components/record/delete';
+import UnpublishedWarning from '../components/record/unpublished_warning';
+import DraftSyncStatus from '../components/record/sync_status';
+import {grey} from '@mui/material/colors';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
-import UnpublishedWarning from '../components/record/unpublished_warning';
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -148,8 +149,7 @@ function DraftEdit(props: DraftEditProps) {
   const [metaSection, setMetaSection] = useState(null as null | SectionMeta);
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
-  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
-
+  const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
     if (project_id !== null) {
@@ -192,7 +192,6 @@ function DraftEdit(props: DraftEditProps) {
           </Typography>
         </Box>
         <Paper square>
-          <Box p={3}></Box>
           <TabContext value={value}>
             <AppBar position="static" color="primary">
               <TabList
@@ -205,21 +204,36 @@ function DraftEdit(props: DraftEditProps) {
                 <Tab label="Meta" value="2" sx={{color: '#c2c2c2'}} />
               </TabList>
             </AppBar>
-            <TabPanel value="1">
-              <Box px={not_xs ? 2 : 0}>
+            <TabPanel value="1" sx={{p: 0}}>
+              <Box>
                 <UnpublishedWarning />
-                <RecordForm
-                  project_id={project_id}
-                  record_id={record_id}
-                  type={type_name}
-                  ui_specification={uiSpec}
-                  draft_id={draft_id}
-                  metaSection={metaSection}
-                  isDraftSaving={isDraftSaving}
-                  handleSetIsDraftSaving={setIsDraftSaving}
-                  handleSetDraftLastSaved={setDraftLastSaved}
-                  handleSetDraftError={setDraftError}
+                <DraftSyncStatus
+                  last_saved={draftLastSaved}
+                  is_saving={isDraftSaving}
+                  error={draftError}
                 />
+                <Box
+                  sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
+                >
+                  <Box
+                    component={Paper}
+                    elevation={0}
+                    p={{xs: 1, sm: 1, md: 2, lg: 2}}
+                    variant={is_mobile ? undefined : 'outlined'}
+                  >
+                    <RecordForm
+                      project_id={project_id}
+                      record_id={record_id}
+                      type={type_name}
+                      ui_specification={uiSpec}
+                      draft_id={draft_id}
+                      metaSection={metaSection}
+                      handleSetIsDraftSaving={setIsDraftSaving}
+                      handleSetDraftLastSaved={setDraftLastSaved}
+                      handleSetDraftError={setDraftError}
+                    />
+                  </Box>
+                </Box>
               </Box>
             </TabPanel>
             <TabPanel value="2">

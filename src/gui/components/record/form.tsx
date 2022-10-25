@@ -71,7 +71,6 @@ type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
   // Might be given in the URL:
-  view_default?: string;
   ui_specification: ProjectUIModel;
   conflictfields?: string[] | null;
   handleChangeTab?: Function;
@@ -81,7 +80,6 @@ type RecordFormProps = {
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
-  isDraftSaving: boolean;
   setRevision_id?: Function;
   ViewName?: string | null;
 } & (
