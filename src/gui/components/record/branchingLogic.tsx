@@ -25,15 +25,27 @@ import {ProjectUIModel} from '../../../datamodel/ui';
 export function get_logic_fields(
   ui_specification: ProjectUIModel,
   values: any,
-  viewName: string
+  viewName: string,
+  fields: string[],
+  field: string
 ) {
-  const fields: string[] = [];
+  
+  // when initial or field is controller field('logic_select' is defined)
+  if (
+    field !== '' &&
+    ui_specification['fields'][field]['logic_select'] === undefined &&
+    fields.length > 0
+  )
+    return fields;
+
+  const new_fields: string[] = [];
   ui_specification['views'][viewName]['fields'].map((field: string) =>
     get_field(ui_specification['fields'][field], values, ui_specification)
-      ? fields.push(field)
+      ? new_fields.push(field)
       : field
   );
-  return fields;
+  console.error('Run logic',fields)
+  return new_fields;
 }
 
 const get_field = (
@@ -59,14 +71,23 @@ const get_field = (
 export function get_logic_views(
   ui_specification: ProjectUIModel,
   form_type: string,
-  values: any
+  values: any,
+  views: string[],
+  field: string
 ) {
-  const views: string[] = [];
+  // when initial or field is controller field('logic_select' is defined)
+  if (
+    field !== '' &&
+    ui_specification['fields'][field]['logic_select'] === undefined &&
+    views.length > 0
+  )
+    return views;
+  views = [];
   ui_specification['viewsets'][form_type]['views'].map((view: string) =>
     get_field(ui_specification['views'][view], values, ui_specification)
       ? views.push(view)
       : view
   );
-
+  console.error('sections',views)
   return views;
 }
