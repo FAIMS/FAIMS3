@@ -45,6 +45,7 @@ export async function shareStringAsFileOnApp(
       data: s,
       directory: Directory.Cache,
       encoding: Encoding.UTF8,
+      recursive: true,
     })
   ).uri;
   console.error('Writing of file complete, sharing file');
