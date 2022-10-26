@@ -43,7 +43,7 @@ export async function shareStringAsFileOnApp(
     await Filesystem.writeFile({
       path: filename,
       data: s,
-      directory: Directory.Cache,
+      directory: Directory.External,
       encoding: Encoding.UTF8,
       recursive: true,
     })
