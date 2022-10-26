@@ -634,6 +634,8 @@ export async function getParentPersistenceData(
     if (latest_record !== null) {
       const persistentvalue: {[field_name: string]: any} = {};
       let type = latest_record?.type;
+
+      //get persistent data from parent record not from local DB
       ui_specification.viewsets[type]['views'].map((view: string) =>
         ui_specification.views[view]['fields'].map((field: string) =>
           ui_specification.fields[field]['displayParent'] ||
@@ -642,8 +644,6 @@ export async function getParentPersistenceData(
             : field
         )
       );
-
-      console.error('Persisitence', persistentvalue);
 
       // const data: Array<{[field_name: string]: any}> = [];
 
