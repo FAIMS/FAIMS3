@@ -22,7 +22,7 @@ import React, {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 import {Box, Paper, Typography, Alert} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
-
+import {grey} from '@mui/material/colors';
 import {
   DataGrid,
   GridColDef,
@@ -66,8 +66,8 @@ export default function NoteBooks(props: NoteBookListProps) {
       field: 'name',
       headerName: 'Name',
       type: 'string',
-      flex: 0.5,
-      minWidth: 200,
+      flex: 0.3,
+      minWidth: 300,
       renderCell: (params: GridCellParams) => (
         <Box my={1}>
           <span
@@ -101,8 +101,8 @@ export default function NoteBooks(props: NoteBookListProps) {
       field: 'status',
       headerName: 'Status',
       type: 'string',
-      flex: 0.3,
-      minWidth: 200,
+      flex: 0.2,
+      minWidth: 160,
       renderCell: (params: GridCellParams) => (
         <ProjectStatus status={params.value} />
       ),
@@ -114,9 +114,21 @@ export default function NoteBooks(props: NoteBookListProps) {
       minWidth: 200,
       headerName: 'Sync',
       description: 'Toggle syncing this notebook to the server',
-      renderCell: (params: GridCellParams) => (
-        <NotebookSyncSwitch project={params.row} showHelperText={false} />
-      ),
+      renderCell: (params: GridCellParams) =>
+        ['published', 'archived'].includes(params.row.status) ? (
+          <NotebookSyncSwitch project={params.row} showHelperText={false} />
+        ) : (
+          <Box
+            sx={{backgroundColor: grey[200], borderRadius: '4px', px: 1}}
+            component={Paper}
+            variant={'outlined'}
+            elevation={0}
+          >
+            <Typography variant={'caption'}>
+              Published or archived notebooks can be synced.
+            </Typography>
+          </Box>
+        ),
     },
   ];
 
