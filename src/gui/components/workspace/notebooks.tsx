@@ -20,7 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
-import {Box, Paper, Typography, Grid, Alert} from '@mui/material';
+import {Box, Paper, Typography, Alert} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
 import {
@@ -36,6 +36,8 @@ import {useEventedPromise} from '../../pouchHook';
 import {TokenContents} from '../../../datamodel/core';
 import CircularLoading from '../../components/ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+
 interface sortModel {
   field: string;
   sort: 'asc' | 'desc';
@@ -68,22 +70,22 @@ export default function NoteBooks(props: NoteBookListProps) {
       minWidth: 200,
       renderCell: (params: GridCellParams) => (
         <Box my={1}>
-          <Typography variant={'h5'} sx={{m: 0}} component={'div'}>
-            <Grid
-              container
-              justifyContent="flex-start"
-              alignItems="center"
-              spacing={1}
-            >
-              <Grid item>
-                <FolderIcon
-                  color={'secondary'}
-                  style={{verticalAlign: 'middle'}}
-                />
-              </Grid>
-              <Grid item>{params.row.name}</Grid>
-            </Grid>
-          </Typography>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              flexWrap: 'nowrap',
+            }}
+          >
+            <FolderIcon
+              fontSize={'small'}
+              color={'secondary'}
+              sx={{mr: '3px'}}
+            />
+            <Typography variant={'body2'} fontWeight={'bold'}>
+              {params.row.name}
+            </Typography>
+          </span>
           <Typography variant={'caption'}>{params.row.description}</Typography>
         </Box>
       ),
@@ -102,9 +104,18 @@ export default function NoteBooks(props: NoteBookListProps) {
       flex: 0.3,
       minWidth: 200,
       renderCell: (params: GridCellParams) => (
-        <Box sx={{mt: 1}}>
-          <ProjectStatus status={params.value} />
-        </Box>
+        <ProjectStatus status={params.value} />
+      ),
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      flex: 0.3,
+      minWidth: 200,
+      headerName: 'Sync',
+      description: 'Toggle syncing this notebook to the server',
+      renderCell: (params: GridCellParams) => (
+        <NotebookSyncSwitch project={params.row} showHelperText={false} />
       ),
     },
   ];

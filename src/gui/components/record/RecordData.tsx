@@ -131,7 +131,6 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}
-                      isDraftSaving={props.isDraftSaving}
                       // setRevision_id={setRevision_id}
                       ViewName={ViewName}
                     />
@@ -158,7 +157,6 @@ export default function RecordData(props: RecordDataTypes) {
               handleSetIsDraftSaving={props.handleSetIsDraftSaving}
               handleSetDraftLastSaved={props.handleSetDraftLastSaved}
               handleSetDraftError={props.handleSetDraftError}
-              isDraftSaving={props.isDraftSaving}
             />
           </Box>
         </TabPanel>

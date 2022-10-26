@@ -257,6 +257,38 @@ export async function do3WayMerge(
     merge_result.set_no_merge();
   }
 
+  let parent = undefined;
+  const them_parent = them.relationship?.parent ?? undefined;
+  const us_parent = us.relationship?.parent ?? undefined;
+  const base_parent = base.relationship?.parent ?? undefined;
+  if (them_parent !== us_parent) {
+    if (them_parent === base_parent) {
+      parent = us_parent;
+    } else if (us_parent === base_parent) {
+      parent = them_parent;
+    } else {
+      merge_result.set_no_merge();
+    }
+  } else {
+    parent = us_parent;
+  }
+
+  let linked = undefined;
+  const them_linked = them.relationship?.linked ?? undefined;
+  const us_linked = us.relationship?.linked ?? undefined;
+  const base_linked = base.relationship?.linked ?? undefined;
+  if (them_linked !== us_linked) {
+    if (them_linked === base_linked) {
+      linked = us_linked;
+    } else if (us_linked === base_linked) {
+      linked = them_linked;
+    } else {
+      merge_result.set_no_merge();
+    }
+  } else {
+    linked = us_linked;
+  }
+
   const attrs = getAttributes(base, them, us);
   for (const attr of attrs) {
     const base_avp_id = base.avps[attr];
@@ -320,6 +352,10 @@ export async function do3WayMerge(
       // TODO: Work out how to handle changing types if that's going to be a
       // thing
       type: us.type,
+      relationship: {
+        parent: parent,
+        linked: linked,
+      },
     };
     await datadb.put(new_revision);
     await updateHeads(project_id, us.record_id, parents, new_revision_id);

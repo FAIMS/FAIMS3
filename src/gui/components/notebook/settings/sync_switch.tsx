@@ -38,6 +38,7 @@ import {ActionType} from '../../../../context/actions';
 
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;
+  showHelperText: boolean;
 };
 
 export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
@@ -72,7 +73,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
                   type: ActionType.ADD_ALERT,
                   payload: {
                     message: `Disabling data sync for notebook ${project.name}`,
-                    severity: 'warning',
+                    severity: 'success',
                   },
                 });
               }
@@ -83,9 +84,13 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
           <Typography variant={'button'}>{isSyncing ? 'On' : 'Off'}</Typography>
         }
       />
-      <FormHelperText>
-        Toggle syncing this notebook to the server.
-      </FormHelperText>
+      {props.showHelperText ? (
+        <FormHelperText>
+          Toggle syncing this notebook to the server.
+        </FormHelperText>
+      ) : (
+        ''
+      )}
     </Box>
   );
 }
