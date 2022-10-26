@@ -218,7 +218,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             <NotebookSyncSwitch
               project={project_info}
               showHelperText={true}
-              project_status={String(project_info?.status)}
+              project_status={project_info?.status}
             />
           </Box>
 

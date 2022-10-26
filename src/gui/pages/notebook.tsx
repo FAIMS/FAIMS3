@@ -58,7 +58,7 @@ export default function Notebook() {
   }
 
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Home'},
+    // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {title: project_info !== null ? project_info.name : ''},
   ];

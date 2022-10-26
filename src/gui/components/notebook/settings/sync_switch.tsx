@@ -41,7 +41,7 @@ import {grey} from '@mui/material/colors';
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;
   showHelperText: boolean;
-  project_status: string;
+  project_status: string | undefined;
 };
 
 export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
@@ -56,7 +56,9 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
     return listenSyncingProject(project.project_id, setIsSyncing);
   }, [project.project_id]);
 
-  return ['published', 'archived'].includes(props.project_status) ? (
+  return ['published', 'archived', undefined, 'Unknown'].includes(
+    props.project_status
+  ) ? (
     <Box p={1}>
       <FormControlLabel
         control={

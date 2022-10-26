@@ -21,7 +21,6 @@
 import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
 
 export const INDEX = '/';
-export const SIGN_UP = '/signup';
 export const SIGN_IN = '/signin/';
 export const SIGN_IN_RETURN = '/signin-return';
 
@@ -30,8 +29,6 @@ export const WORKSPACE = '/workspace';
 
 export const NOTEBOOK = '/notebooks/';
 export const NOTEBOOK_LIST = '/notebooks';
-
-export const PROJECT_SEARCH = '/search'; // TODO remove in favour of notebook settings
 
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';
