@@ -156,7 +156,7 @@ export default function Record() {
   console.debug('Location', location.state);
 
   const [breadcrumbs, setBreadcrumbs] = useState([
-    {link: ROUTES.INDEX, title: 'Home'},
+    // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
       link: ROUTES.NOTEBOOK + project_id,
@@ -284,7 +284,7 @@ export default function Record() {
             );
             setParentLinks(newParent);
             let newBreadcrumbs = [
-              {link: ROUTES.INDEX, title: 'Home'},
+              // {link: ROUTES.INDEX, title: 'Home'},
               {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
               {
                 link: ROUTES.NOTEBOOK + project_id,
@@ -294,7 +294,7 @@ export default function Record() {
             ];
             if (newParent !== null && newParent.length > 0) {
               newBreadcrumbs = [
-                {link: ROUTES.INDEX, title: 'Home'},
+                // {link: ROUTES.INDEX, title: 'Home'},
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
                 {
                   link: ROUTES.NOTEBOOK + project_id,

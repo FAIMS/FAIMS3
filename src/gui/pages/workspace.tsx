@@ -21,12 +21,11 @@
 import React from 'react';
 import {Typography, Grid} from '@mui/material';
 import Notebooks from '../components/workspace/notebooks';
-import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 
 export default function Workspace() {
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Home'},
+    // {link: ROUTES.INDEX, title: 'Home'},
     {title: 'Workspace'},
   ];
 
