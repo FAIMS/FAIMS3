@@ -30,7 +30,6 @@ import {
 } from '../../../../datamodel/core';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
-import {get_fieldpersistentdata} from '../../../../datamodel/fieldpersistent';
 export function getParentlinkInfo(
   hrid: string,
   RelationState: any,
@@ -633,13 +632,21 @@ export async function getParentPersistenceData(
     });
 
     if (latest_record !== null) {
-      const persistentvalue = await get_fieldpersistentdata(
-        project_id,
-        latest_record?.type
+      const persistentvalue: {[field_name: string]: any} = {};
+      let type = latest_record?.type;
+
+      //get persistent data from parent record not from local DB
+      ui_specification.viewsets[type]['views'].map((view: string) =>
+        ui_specification.views[view]['fields'].map((field: string) =>
+          ui_specification.fields[field]['displayParent'] ||
+          ui_specification.fields[field]['persistent']
+            ? (persistentvalue[field] = latest_record?.data[field])
+            : field
+        )
       );
 
       // const data: Array<{[field_name: string]: any}> = [];
-      let type = latest_record?.type;
+
       let parent_hrid = latest_record?.data['hrid' + type] ?? record_id;
       if (parent_hrid === ' ') parent_hrid = record_id;
       if (
@@ -665,7 +672,7 @@ export async function getParentPersistenceData(
           ),
           type: type,
           children: [],
-          persistentData: persistentvalue,
+          persistentData: {data: persistentvalue},
         },
       ];
     }

@@ -26,7 +26,11 @@ import {Formik, Form} from 'formik';
 import {Grid, Box, Typography, Divider} from '@mui/material';
 
 import {firstDefinedFromList} from './helpers';
-import {get_logic_fields, get_logic_views} from './branchingLogic';
+import {
+  get_logic_fields,
+  get_logic_views,
+  update_by_branching_logic,
+} from './branchingLogic';
 
 import {ViewComponent} from './view';
 
@@ -935,16 +939,32 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                fieldNames = get_logic_fields(
-                  this.props.ui_specification,
-                  formProps.values,
-                  viewName
-                );
-                views = get_logic_views(
-                  this.props.ui_specification,
-                  viewsetName,
-                  formProps.values
-                );
+                //ONLY update if the updated field is the controller field
+                if (
+                  update_by_branching_logic(
+                    this.props.ui_specification,
+                    formProps.values,
+                    true
+                  )
+                )
+                  fieldNames = get_logic_fields(
+                    this.props.ui_specification,
+                    formProps.values,
+                    viewName
+                  );
+                //ONLY update if the updated field is the controller field
+                if (
+                  update_by_branching_logic(
+                    this.props.ui_specification,
+                    formProps.values,
+                    false
+                  )
+                )
+                  views = get_logic_views(
+                    this.props.ui_specification,
+                    viewsetName,
+                    formProps.values
+                  );
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
