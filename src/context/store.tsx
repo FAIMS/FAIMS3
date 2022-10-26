@@ -125,7 +125,6 @@ const StateProvider = (props: any) => {
         }
 
         case ActionType.ADD_ALERT: {
-          console.log('ADD ALERT', action.payload);
           const alert = {
             ...action.payload,
             key: uuidv4(),
@@ -146,7 +145,6 @@ const StateProvider = (props: any) => {
           };
         }
         case ActionType.ADD_CUSTOM_ALERT: {
-          console.log('ADD CUSTOM ALERT', action.payload);
           const alert = {
             ...action.payload,
             key: uuidv4(),
