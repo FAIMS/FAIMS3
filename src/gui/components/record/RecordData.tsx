@@ -146,6 +146,13 @@ export default function RecordData(props: RecordDataTypes) {
               parentRecords={props.parentRecords}
               ui_specification={props.ui_specification}
             />
+            <RelationshipsViewComponent
+              record_to_field_links={props.record_to_field_links}
+              record_id={props.record_id}
+              record_hrid={props.hrid ?? props.record_id}
+              record_type={props.record_type}
+              handleSetSection={setViewName}
+            />
             <RecordForm
               project_id={props.project_id}
               record_id={props.record_id}
