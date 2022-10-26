@@ -215,8 +215,13 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             <Typography variant={'h6'} sx={{mb: 2}}>
               Sync Notebook
             </Typography>
-            <NotebookSyncSwitch project={project_info} showHelperText={true} />
+            <NotebookSyncSwitch
+              project={project_info}
+              showHelperText={true}
+              project_status={String(project_info?.status)}
+            />
           </Box>
+
           <Box
             component={Paper}
             variant={'outlined'}

@@ -25,6 +25,7 @@ import {
   FormControlLabel,
   FormHelperText,
   Typography,
+  Paper,
 } from '@mui/material';
 
 import {ProjectInformation} from '../../../../datamodel/ui';
@@ -35,10 +36,12 @@ import {
 } from '../../../../sync/sync-toggle';
 import {store} from '../../../../context/store';
 import {ActionType} from '../../../../context/actions';
+import {grey} from '@mui/material/colors';
 
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;
   showHelperText: boolean;
+  project_status: string;
 };
 
 export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
@@ -47,36 +50,34 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
   const [isSyncing, setIsSyncing] = useState(
     isSyncingProject(project.project_id)
   );
+  const [isWorking, setIsWorking] = useState(false);
 
   useEffect(() => {
     return listenSyncingProject(project.project_id, setIsSyncing);
   }, [project.project_id]);
 
-  return (
+  return ['published', 'archived'].includes(props.project_status) ? (
     <Box p={1}>
       <FormControlLabel
         control={
           <Switch
             checked={isSyncing}
+            disabled={isWorking}
             onChange={async (event, checked) => {
-              await setSyncingProject(project.project_id, checked);
-              if (checked) {
+              setIsWorking(true);
+              await setSyncingProject(project.project_id, checked).then(() => {
                 dispatch({
                   type: ActionType.ADD_ALERT,
                   payload: {
-                    message: `Enabling data sync for notebook  ${project.name}`,
+                    message: `${
+                      checked ? 'Enabling ' : 'Disabling '
+                    } data sync for notebook  ${project.name}`,
                     severity: 'success',
                   },
                 });
-              } else {
-                dispatch({
-                  type: ActionType.ADD_ALERT,
-                  payload: {
-                    message: `Disabling data sync for notebook ${project.name}`,
-                    severity: 'success',
-                  },
-                });
-              }
+
+                setIsWorking(false);
+              });
             }}
           />
         }
@@ -84,6 +85,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
           <Typography variant={'button'}>{isSyncing ? 'On' : 'Off'}</Typography>
         }
       />
+      {isWorking ? <FormHelperText>Working...</FormHelperText> : ''}
       {props.showHelperText ? (
         <FormHelperText>
           Toggle syncing this notebook to the server.
@@ -91,6 +93,32 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
       ) : (
         ''
       )}
+    </Box>
+  ) : (
+    <Box
+      sx={{
+        backgroundColor: grey[200],
+        borderRadius: '4px',
+        px: '4px',
+        py: '2px',
+      }}
+      component={Paper}
+      variant={'outlined'}
+      elevation={0}
+    >
+      <Typography
+        sx={{
+          backgroundColor: grey[200],
+          borderRadius: '4px',
+          px: '4px',
+          py: '2px',
+        }}
+        component={Paper}
+        variant={'caption'}
+        elevation={0}
+      >
+        Published or archived notebooks can be synced.
+      </Typography>
     </Box>
   );
 }
