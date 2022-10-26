@@ -25,7 +25,7 @@ import {ProjectUIModel} from '../../../datamodel/ui';
 export function update_by_branching_logic(
   ui_specification: ProjectUIModel,
   values: {[field_name: string]: any},
-  is_feild: boolean
+  is_field: boolean
 ) {
   const field = values.updateField;
   if (field === undefined || field === '') return true;
@@ -34,13 +34,13 @@ export function update_by_branching_logic(
     return false;
 
   if (
-    is_feild &&
+    is_field &&
     ui_specification['fields'][field]['logic_select']['type'] === 'field'
   )
     return true;
 
   if (
-    !is_feild &&
+    !is_field &&
     ui_specification['fields'][field]['logic_select']['type'] === 'section'
   )
     return true;
