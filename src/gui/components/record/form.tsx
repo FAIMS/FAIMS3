@@ -26,7 +26,11 @@ import {Formik, Form} from 'formik';
 import {Grid, Box, Typography, Divider} from '@mui/material';
 
 import {firstDefinedFromList} from './helpers';
-import {get_logic_fields, get_logic_views} from './branchingLogic';
+import {
+  get_logic_fields,
+  get_logic_views,
+  update_by_branching_logic,
+} from './branchingLogic';
 
 import {ViewComponent} from './view';
 
@@ -67,7 +71,6 @@ import {
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
-import {bind} from 'lodash';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -130,8 +133,6 @@ type RecordFormState = {
   description: string | null;
   ugc_comment: string | null;
   relationship: Relationship | null;
-  fieldNames: string[];
-  views: string[];
 };
 
 class RecordForm extends React.Component<
@@ -179,8 +180,6 @@ class RecordForm extends React.Component<
         annotation: {},
         description: null,
         relationship: {},
-        fieldNames: [],
-        views: [],
       });
       // Re-initialize basically everything.
       // if (this.props.revision_id !== undefined)
@@ -217,15 +216,12 @@ class RecordForm extends React.Component<
       description: null,
       ugc_comment: null,
       relationship: {},
-      fieldNames: [],
-      views: [],
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
     this.updateannotation = this.updateannotation.bind(this);
     this.onChangeStepper = this.onChangeStepper.bind(this);
     this.onChangeTab = this.onChangeTab.bind(this);
-    this.handleBranchingLogic = this.handleBranchingLogic.bind(this);
   }
 
   componentDidMount() {
@@ -578,25 +574,10 @@ class RecordForm extends React.Component<
       related,
       this.props.record_id
     );
-
     this.setState({
       initialValues: initialValues,
       annotation: annotations,
       relationship: fromdb.relationship ?? relationship,
-      fieldNames: get_logic_fields(
-        this.props.ui_specification,
-        initialValues,
-        this.requireView(),
-        [],
-        ''
-      ),
-      views: get_logic_views(
-        this.props.ui_specification,
-        this.requireViewsetName(),
-        initialValues,
-        [],
-        ''
-      ),
     });
     if (DEBUG_APP) console.debug('current revision id', initialValues);
   }
@@ -876,27 +857,6 @@ class RecordForm extends React.Component<
     this.setState({...this.state, annotation: annotation});
   }
 
-  handleBranchingLogic(values: {[field_name: string]: any}, field: string) {
-    const fields = get_logic_fields(
-      this.props.ui_specification,
-      values,
-      this.requireView(),
-      this.state.fieldNames,
-      field
-    );
-    const views = get_logic_views(
-      this.props.ui_specification,
-      this.requireViewsetName(),
-      values,
-      this.state.views,
-      field
-    );
-    this.setState({
-      fieldNames: fields,
-      views: views,
-    });
-  }
-
   render() {
     if (this.state.draft_created !== null) {
       // If a draft was created, that implies this form started from
@@ -936,14 +896,23 @@ class RecordForm extends React.Component<
       const initialValues = this.requireInitialValues();
       const ui_specification = this.props.ui_specification;
       //fields list and views list could be updated depends on values user choose
-
+      let fieldNames = get_logic_fields(
+        this.props.ui_specification,
+        initialValues,
+        viewName
+      );
+      let views = get_logic_views(
+        this.props.ui_specification,
+        viewsetName,
+        initialValues
+      );
       const validationSchema = getValidationSchemaForViewset(
         ui_specification,
         viewsetName
       );
       //value could be update for branching logic, change to let
-      let view_index = this.state.views.indexOf(viewName);
-      let is_final_view = view_index + 1 === this.state.views.length;
+      let view_index = views.indexOf(viewName);
+      let is_final_view = view_index + 1 === views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
       return (
@@ -972,8 +941,34 @@ class RecordForm extends React.Component<
               }}
             >
               {formProps => {
-                view_index = this.state.views.indexOf(viewName);
-                is_final_view = view_index + 1 === this.state.views.length;
+                //ONLY update if the updated field is the controller field
+                if (
+                  update_by_branching_logic(
+                    this.props.ui_specification,
+                    formProps.values,
+                    true
+                  )
+                )
+                  fieldNames = get_logic_fields(
+                    this.props.ui_specification,
+                    formProps.values,
+                    viewName
+                  );
+                //ONLY update if the updated field is the controller field
+                if (
+                  update_by_branching_logic(
+                    this.props.ui_specification,
+                    formProps.values,
+                    false
+                  )
+                )
+                  views = get_logic_views(
+                    this.props.ui_specification,
+                    viewsetName,
+                    formProps.values
+                  );
+                view_index = views.indexOf(viewName);
+                is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
                   formProps.values,
                   this.state.annotation,
@@ -983,10 +978,10 @@ class RecordForm extends React.Component<
                   <Form>
                     {
                       <RecordStepper
-                        view_index={this.state.views.indexOf(viewName)}
+                        view_index={view_index}
                         ui_specification={ui_specification}
                         onChangeStepper={this.onChangeStepper}
-                        views={this.state.views}
+                        views={views}
                       />
                     }
 
@@ -1013,9 +1008,8 @@ class RecordForm extends React.Component<
                           isSyncing={this.props.isSyncing}
                           conflictfields={this.props.conflictfields}
                           handleChangeTab={this.props.handleChangeTab}
-                          fieldNames={this.state.fieldNames}
+                          fieldNames={fieldNames}
                           disabled={this.props.disabled}
-                          handleBranchingLogic={this.handleBranchingLogic}
                         />
                       </Grid>
                       <br />
@@ -1027,7 +1021,7 @@ class RecordForm extends React.Component<
                         view_index={view_index}
                         formProps={formProps}
                         ui_specification={ui_specification}
-                        views={this.state.views}
+                        views={views}
                         handleFormSubmit={(is_close: boolean) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {

@@ -22,35 +22,49 @@
  */
 import {ProjectUIModel} from '../../../datamodel/ui';
 //function is to get all relevant fields
+export function update_by_branching_logic(
+  ui_specification: ProjectUIModel,
+  values: {[field_name: string]: any},
+  is_feild: boolean
+) {
+  const field = values.updateField;
+  if (field === undefined || field === '') return true;
+
+  if (ui_specification['fields'][field]['logic_select'] === undefined)
+    return false;
+
+  if (
+    is_feild &&
+    ui_specification['fields'][field]['logic_select']['type'] === 'field'
+  )
+    return true;
+
+  if (
+    !is_feild &&
+    ui_specification['fields'][field]['logic_select']['type'] === 'section'
+  )
+    return true;
+
+  return false;
+}
+
 export function get_logic_fields(
   ui_specification: ProjectUIModel,
-  values: any,
-  viewName: string,
-  fields: string[],
-  field: string
+  values: {[field_name: string]: any},
+  viewName: string
 ) {
-  
-  // when initial or field is controller field('logic_select' is defined)
-  if (
-    field !== '' &&
-    ui_specification['fields'][field]['logic_select'] === undefined &&
-    fields.length > 0
-  )
-    return fields;
-
-  const new_fields: string[] = [];
+  const fields: string[] = [];
   ui_specification['views'][viewName]['fields'].map((field: string) =>
     get_field(ui_specification['fields'][field], values, ui_specification)
-      ? new_fields.push(field)
+      ? fields.push(field)
       : field
   );
-  console.error('Run logic',fields)
-  return new_fields;
+  return fields;
 }
 
 const get_field = (
   value: any,
-  values: any,
+  values: {[field_name: string]: any},
   ui_specification: ProjectUIModel
 ) => {
   if (value['is_logic'] === undefined) return true;
@@ -71,23 +85,14 @@ const get_field = (
 export function get_logic_views(
   ui_specification: ProjectUIModel,
   form_type: string,
-  values: any,
-  views: string[],
-  field: string
+  values: {[field_name: string]: any}
 ) {
-  // when initial or field is controller field('logic_select' is defined)
-  if (
-    field !== '' &&
-    ui_specification['fields'][field]['logic_select'] === undefined &&
-    views.length > 0
-  )
-    return views;
-  views = [];
+  const views: string[] = [];
   ui_specification['viewsets'][form_type]['views'].map((view: string) =>
     get_field(ui_specification['views'][view], values, ui_specification)
       ? views.push(view)
       : view
   );
-  console.error('sections',views)
+
   return views;
 }

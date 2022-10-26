@@ -43,7 +43,6 @@ type ViewProps = {
   handleChangeTab?: any;
   fieldNames: string[]; //add for branching logic
   disabled?: boolean; // add for view tab or edit tab
-  handleBranchingLogic?: Function;
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -57,7 +56,6 @@ type SingleComponentProps = {
   handleChangeTab?: any;
   isSyncing?: string;
   disabled?: boolean; // add for view tab or edit tab
-  handleBranchingLogic?: Function;
 };
 
 function SingleComponent(props: SingleComponentProps) {
@@ -108,8 +106,7 @@ function SingleComponent(props: SingleComponentProps) {
             fieldName,
             props.formProps,
             props.isSyncing,
-            props.disabled,
-            props.handleBranchingLogic
+            props.disabled
           )}
           {show_annotation && (
             <Collapse in={expanded} timeout="auto" unmountOnExit>
@@ -200,7 +197,6 @@ export function ViewComponent(props: ViewProps) {
           conflictfields={props.conflictfields}
           handleChangeTab={props.handleChangeTab}
           disabled={props.disabled}
-          handleBranchingLogic={props.handleBranchingLogic}
         />
       ))}
       {!props.formProps.isValid && error !== false && (

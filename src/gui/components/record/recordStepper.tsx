@@ -98,7 +98,7 @@ export default function RecordStepper(props: RecordStepperProps) {
           ui_specification={ui_specification}
         />
         <Typography variant="h5" align="center">
-          {ui_specification.views[views[view_index]].label}
+          {ui_specification.views[views[view_index]]?.label}
         </Typography>
       </Box>
     </>

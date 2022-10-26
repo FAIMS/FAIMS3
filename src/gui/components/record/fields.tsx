@@ -28,8 +28,7 @@ export function getComponentFromFieldConfig(
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>,
   isSyncing = 'false',
-  disabled = false,
-  handleBranchingLogic: Function | undefined = undefined
+  disabled = false
 ) {
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
@@ -61,9 +60,7 @@ export function getComponentFromFieldConfig(
       onWheel={(event: any) => event.target.blur()}
       onChange={(event: any) => {
         formProps.handleChange(event);
-        console.error('form changed', fieldName);
-        if (handleBranchingLogic !== undefined)
-          handleBranchingLogic(formProps.values, fieldName);
+        formProps.setFieldValue('updateField', fieldName);
       }}
       disabled={disabled}
     />
@@ -80,9 +77,7 @@ export function getComponentFromFieldConfig(
       onWheel={(event: any) => event.target.blur()}
       onChange={(event: any) => {
         formProps.handleChange(event);
-        if (handleBranchingLogic !== undefined)
-          handleBranchingLogic(formProps.values, fieldName);
-        console.error('form changed', fieldName);
+        formProps.setFieldValue('updateField', fieldName);
       }}
       issyncing={isSyncing}
       disabled={disabled}
