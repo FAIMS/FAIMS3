@@ -141,24 +141,58 @@ export default function RecordData(props: RecordDataTypes) {
           </Accordion>
         </TabPanel>
         <TabPanel value={'2'} sx={{p: 0}}>
-          <Box component={Paper} elevation={0} sx={{p: 1, mb: 3}}>
-            <InheritedDataComponent
-              parentRecords={props.parentRecords}
-              ui_specification={props.ui_specification}
-            />
-            <RecordForm
-              project_id={props.project_id}
-              record_id={props.record_id}
-              revision_id={props.revision_id}
-              ui_specification={props.ui_specification}
-              draft_id={props.draft_id}
-              metaSection={props.metaSection}
-              disabled={true}
-              handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-              handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-              handleSetDraftError={props.handleSetDraftError}
-            />
-          </Box>
+          <InheritedDataComponent
+            parentRecords={props.parentRecords}
+            ui_specification={props.ui_specification}
+          />
+          <RelationshipsViewComponent
+            record_to_field_links={props.record_to_field_links}
+            record_id={props.record_id}
+            record_hrid={props.hrid ?? props.record_id}
+            record_type={props.record_type}
+            handleSetSection={setViewName}
+          />
+          <Accordion defaultExpanded={true}>
+            <AccordionSummary
+              aria-controls="form-accordion-content"
+              id="form-accordion"
+            >
+              <ListAltIcon sx={{mr: 1}} />
+              <Typography>Form</Typography>
+            </AccordionSummary>
+            <AccordionDetails
+              sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
+            >
+              <Grid
+                container
+                direction="row"
+                justifyContent="flex-start"
+                alignItems="stretch"
+              >
+                <Grid item lg={12}>
+                  <Box
+                    component={Paper}
+                    elevation={0}
+                    p={{xs: 1, sm: 1, md: 2, lg: 2}}
+                    variant={is_mobile ? undefined : 'outlined'}
+                  >
+                    <RecordForm
+                      project_id={props.project_id}
+                      record_id={props.record_id}
+                      revision_id={props.revision_id}
+                      ui_specification={props.ui_specification}
+                      draft_id={props.draft_id}
+                      metaSection={props.metaSection}
+                      disabled={true}
+                      handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+                      handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+                      handleSetDraftError={props.handleSetDraftError}
+                    />
+                  </Box>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
         </TabPanel>
       </TabContext>
     </Box>
