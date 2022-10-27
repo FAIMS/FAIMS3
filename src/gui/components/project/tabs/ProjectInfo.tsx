@@ -21,7 +21,7 @@ import React from 'react';
 import {useState, useEffect} from 'react';
 import makeStyles from '@mui/styles/makeStyles';
 
-import {Grid, Box, Paper} from '@mui/material';
+import {Grid, Box, Paper, Button} from '@mui/material';
 import {getComponentFromField} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
@@ -31,6 +31,7 @@ import {AddUserButton, ProjectSubmit} from './ProjectButton';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@mui/material/Alert';
+import {List, ListItem, Divider} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({}));
 
@@ -42,6 +43,7 @@ type ProjectInfoProps = {
   setProjecttabvalue: FAIMShandlerType;
   formProps: any;
   handleChangeFormProjectAttachment: FAIMShandlerType;
+  handleattachment: FAIMShandlerType;
 };
 
 export default function ProjectInfoTab(props: ProjectInfoProps) {
@@ -166,23 +168,6 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   const isready = (uiSp: any) => {
     if (uiSp['views']['start-view'] !== undefined) return true;
     return false;
-  };
-
-  const handleattachment = () => {
-    //handle to add attachments
-    if (
-      props.formProps.values.attachments !== undefined &&
-      props.formProps.values.attachments.length > 0
-    ) {
-      const newproject = projectvalue;
-      const filename = props.formProps.values.attachments[0].name;
-      if (newproject['attachments'] === undefined)
-        newproject['attachments'] = {};
-      if (newproject['filenames'] === undefined) newproject['filenames'] = [];
-      newproject['attachments'][filename] = props.formProps.values.attachments;
-      newproject['filenames'].push(filename);
-      setProjectValue({...newproject});
-    }
   };
 
   const metaTab = () => {
@@ -341,6 +326,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
   };
 
   const AttachmentTab = () => {
+    console.log(projectvalue);
     return (
       <Grid>
         {getfields(getprojectform(projectvalue, 'attachments')).map(
@@ -385,11 +371,52 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             value={metaAdded}
           /> */}
           <br />
+          <Button
+            type="button"
+            color="primary"
+            variant="contained"
+            disableElevation
+            onClick={() =>
+              props.handleattachment(props.formProps.values.attachments)
+            }
+          >
+            Get Attachment Files ID
+          </Button>
+          <Paper>
+            File will be Uploaded:
+            <br />
+            {projectvalue.newfiles !== undefined &&
+              Object.keys(projectvalue.newfiles).map((fileName: string) => (
+                <ListItem key={fileName} id={fileName + 'file'}>
+                  {fileName}
+                  <img
+                    style={{maxHeight: 300, maxWidth: 200}}
+                    src={URL.createObjectURL(projectvalue.newfiles[fileName])}
+                  />
+                </ListItem>
+              ))}
+            <br />
+            <br />
+          </Paper>
           <Paper>
             Files Attached:
             <br />
             <br />
-            {projectvalue.filenames}
+            <List>
+              {projectvalue.files !== undefined &&
+                Object.keys(projectvalue.files).map((key: string) => (
+                  <ListItem key={key} id={key + 'file'}>
+                    <Divider />
+                    {key}
+                    {projectvalue.files[key][0] !== undefined && (
+                      <img
+                        style={{maxHeight: 300, maxWidth: 200}}
+                        src={URL.createObjectURL(projectvalue.files[key][0])}
+                      />
+                    )}
+                  </ListItem>
+                ))}
+            </List>
           </Paper>
           <br />
           <ProjectSubmit

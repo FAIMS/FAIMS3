@@ -17,7 +17,7 @@
  * Description:
  *   File is the field about Tree view for prototype for hierarchical-vocabularies, not finalized yet
  */
-
+import React, {useEffect} from 'react';
 import {TextFieldProps} from 'formik-mui';
 
 import {
@@ -31,7 +31,6 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import Box from '@mui/material/Box';
-import * as React from 'react';
 import TreeView from '@mui/lab/TreeView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -41,10 +40,12 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import {styled} from '@mui/material/styles';
+import {getProjectMetadata} from '../../projectMetadata';
 interface RenderTree {
   // id: string;
   name: string;
   children?: Array<RenderTree>;
+  type?: string;
 }
 
 interface ElementProps {
@@ -74,6 +75,8 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
     expansionIcon,
     displayIcon,
     onselectvalue,
+    type,
+    attachements,
   } = props;
 
   const {
@@ -115,20 +118,38 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
       <div className="MuiTreeItem-contentBar" />
       <div className={classes.iconContainer}>{icon}</div>
       <Typography component="div" className={classes.label}>
-        {label}
+        {type === 'image' &&
+        attachements !== undefined &&
+        attachements[label] !== undefined &&
+        attachements[label].type.includes('image') ? (
+          <img
+            style={{maxHeight: 500, maxWidth: 200}}
+            src={URL.createObjectURL(attachements[label])}
+          />
+        ) : (
+          label
+        )}
       </Typography>
     </div>
   );
 });
 
-const CustomTreeItem = (props: TreeItemProps & SelectProps) => (
+type CustomerProps = {
+  type: string | undefined;
+  attachements: {[key: string]: File} | null;
+};
+
+const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
   <TreeItem
     key={props.nodeId}
     {...props}
     ContentComponent={CustomContent}
     ContentProps={
       {
-        onselectvalue: (nodeId: string) => props.onselectvalue(nodeId),
+        onselectvalue: (nodeId: string) =>
+          props.onselectvalue(nodeId, props.type),
+        type: props.type,
+        attachements: props.attachements,
       } as any
     }
   />
@@ -141,11 +162,45 @@ const data: RenderTree = {
 
 interface ValueChipsArrayProps {
   data: any;
+  attachements: {[key: string]: File} | null;
+  isactive: boolean;
 }
 
 const ListItem = styled('li')(({theme}) => ({
   margin: theme.spacing(0.5),
 }));
+
+interface ChildChipProps {
+  value: any;
+  attachements: {[key: string]: File} | null;
+  isactive: boolean;
+}
+
+function ChildChip(props: ChildChipProps) {
+  let leaf_child = props.value !== undefined ? props.value.split('>') : '';
+  if (leaf_child.length > 1)
+    leaf_child = leaf_child[leaf_child.length - 1].replace(' ', '');
+  return (
+    <ListItem key={props.value}>
+      <Chip label={props.value} />
+      <br />
+      <br />
+      {props.isactive &&
+        props.attachements !== undefined &&
+        props.attachements !== null &&
+        props.attachements[leaf_child] !== undefined &&
+        props.attachements[leaf_child].type.includes('image') && (
+          <img
+            style={{maxHeight: 500, maxWidth: 200}}
+            src={URL.createObjectURL(props.attachements[leaf_child])}
+            onClick={() => {
+              console.log('on click');
+            }}
+          />
+        )}
+    </ListItem>
+  );
+}
 
 function ValueChipsArray(props: ValueChipsArrayProps) {
   return (
@@ -162,13 +217,11 @@ function ValueChipsArray(props: ValueChipsArrayProps) {
     >
       {props.data.map((value: string) =>
         value !== '' ? (
-          <ListItem key={value}>
-            <Chip
-              // icon={icon}
-              label={value}
-              // onDelete={data.name === 'React' ? undefined : handleDelete(data)}
-            />
-          </ListItem>
+          <ChildChip
+            attachements={props.attachements}
+            value={value}
+            isactive={props.isactive}
+          />
         ) : (
           value
         )
@@ -182,6 +235,37 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   const [value, setValue] = React.useState([
     props.form.values[props.field.name],
   ]);
+  const [isactive, setIsactive] = React.useState(false);
+  const project_id = props.form.values['_project_id'];
+  const [attachements, SetAttachements] = React.useState<{
+    [key: string]: File;
+  } | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (project_id !== undefined && mounted) {
+        const attachfilenames = await getProjectMetadata(
+          project_id,
+          'attachfilenames'
+        );
+        const attachments: {[key: string]: File} = {};
+        for (const index in attachfilenames) {
+          const key = attachfilenames[index];
+          const file = await getProjectMetadata(project_id, key);
+          attachments[key] = file[0];
+        }
+        setIsactive(true);
+        SetAttachements(attachments);
+      } else {
+        setIsactive(true);
+      }
+    })();
+
+    return () => {
+      // executed when unmount
+      mounted = false;
+    };
+  }, []);
   /***make select not multiple to avoid error */
   const onselectvalue = (newvalue: string) => {
     let returnvalue = newvalue;
@@ -209,7 +293,9 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         key={singlekey}
         nodeId={name}
         label={nodes.name}
+        type={nodes.type}
         onselectvalue={onselectvalue}
+        attachements={attachements}
       >
         {Array.isArray(nodes.children)
           ? nodes.children.map((node, childkey) =>
@@ -222,23 +308,18 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   return (
     <Box>
       <Typography>{props.label}</Typography>
-      <ValueChipsArray data={value} />
-      {/* <TextField
-        label={props.label}
-        id={props.label + 'value'}
-        variant="outlined"
-        disabled={true}
-        value={value}
-        fullWidth
-        helperText={props.helperText}
-      /> */}
+      <ValueChipsArray
+        data={value}
+        attachements={attachements}
+        isactive={isactive}
+      />
       <Typography variant="caption">{props.helperText}</Typography>
       <Box sx={{overflowY: 'auto'}}>
         <TreeView
           aria-label="file system navigator"
           defaultCollapseIcon={<ExpandMoreIcon />}
           defaultExpandIcon={<ChevronRightIcon />}
-          sx={{flexGrow: 1, minWidth: 300, maxHeight: 150, overflowY: 'auto'}}
+          sx={{flexGrow: 1, minWidth: 500, maxHeight: 300, overflowY: 'auto'}}
           // multiSelect
         >
           {Array.isArray(ElementProps.optiontree) &&

@@ -61,6 +61,7 @@ import {
 import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {HRID_STRING} from '../../../datamodel/core';
 import {grey} from '@mui/material/colors';
+import {getid} from './data/ComponentSetting';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -291,6 +292,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     if (props.project_id !== null && projectvalue.name !== '') {
       //for edit project
       const projectui = getprojectform(projectvalue, 'project');
+
       setinitialValues(
         setProjectInitialValues(projectui, 'start-view', {_id: project_id})
       );
@@ -373,17 +375,28 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       try {
         if (project_id !== null) {
           const res = await getProjectMetadata(project_id, 'projectvalue');
+          const filenames = await getProjectMetadata(
+            project_id,
+            'attachfilenames'
+          );
           const newvalue = {...projectvalue, ...res};
-          setProjectValue({...projectvalue, ...res});
-          console.log('++++project value');
-          console.log(projectvalue);
+          newvalue['attachfilenames'] = filenames;
+          const files: any = {};
+          for (const index in newvalue['attachfilenames']) {
+            const file = await getProjectMetadata(
+              project_id,
+              newvalue['attachfilenames'][index]
+            );
+            files[newvalue['attachfilenames'][index]] = file;
+          }
+          newvalue['files'] = files;
+          setProjectValue(newvalue);
           const projectui = getprojectform(newvalue, 'project');
           setinitialValues(
             setProjectInitialValues(projectui, 'start-view', {
               _id: project_id,
             })
           );
-          console.log('initialValues', initialValues);
         }
       } catch (error) {
         console.error('DO not get the meta data...', error);
@@ -393,14 +406,58 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   };
 
+  const handleattachment = (attachments: File[]) => {
+    const filenames: {[key: string]: File} = {};
+    if (attachments === undefined || attachments.length === 0) {
+      setProjectValue({...projectvalue, newfiles: filenames});
+      return filenames;
+    }
+    for (const index in attachments) {
+      const file_id = 'Attachment-' + getid();
+      filenames[file_id] = attachments[index];
+    }
+    setProjectValue({...projectvalue, newfiles: filenames});
+    return filenames;
+  };
+
   const saveattachement = async (projectvalue: any) => {
     try {
-      if (project_id !== null && projectvalue.attachments !== undefined)
+      if (project_id !== null && projectvalue.attachments !== undefined) {
         await setProjectMetadataFiles(
           project_id,
           'attachments',
           projectvalue.attachments
         );
+        const filenames: string[] = projectvalue.attachfilenames ?? [];
+
+        let new_filenames = projectvalue.newfiles;
+        //reset the newfiles list if the attahments are not been processed
+        if (
+          projectvalue.newfiles === undefined ||
+          Object.keys(projectvalue.newfiles).length <
+            projectvalue.attachments.length
+        )
+          new_filenames = handleattachment(projectvalue.attachments);
+
+        for (const [key, value] of Object.entries(new_filenames)) {
+          const file_id = key;
+          try {
+            await setProjectMetadataFiles(project_id, file_id, [
+              new_filenames[key],
+            ]);
+            filenames.push(file_id);
+          } catch (error) {
+            console.error(
+              'error save attchment',
+              error,
+              new_filenames,
+              key,
+              new_filenames[key]
+            );
+          }
+        }
+        await setProjectMetadata(project_id, 'attachfilenames', filenames);
+      }
     } catch (err) {
       console.error(
         'databases needs cleaning for save attachment error...',
@@ -595,6 +652,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                           handleChangeFormProjectAttachment={
                             handleChangeFormProjectAttachment
                           }
+                          handleattachment={handleattachment}
                         />
                       ) : (
                         ''
