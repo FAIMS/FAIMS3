@@ -192,7 +192,7 @@ export default function AppBar(props: NavbarProps) {
     },
     pouchProjectList === null
       ? {
-          title: '[loading]',
+          title: 'Loading notebooks...',
           icon: <AccountTree />,
           to: '/',
           disabled: true,
@@ -211,40 +211,27 @@ export default function AppBar(props: NavbarProps) {
       to: ROUTES.PROJECT_CREATE,
       disabled: !SHOW_NEW_NOTEBOOK,
     },
+  ];
+  const bottomMenuItems: Array<MenuItemProps> = [
+    isAuthenticated
+      ? {
+          title: 'User',
+          icon: <AccountCircleIcon />,
+          to: ROUTES.SIGN_IN,
+          disabled: false,
+        }
+      : {
+          title: 'User',
+          icon: <AccountCircleIcon />,
+          to: '/',
+          disabled: true,
+        },
     {
       title: 'About Build',
       icon: <SettingsIcon />,
       to: ROUTES.ABOUT_BUILD,
       disabled: false,
     },
-  ];
-  const bottomMenuItems: Array<MenuItemProps> = [
-    isAuthenticated
-      ? {
-          title: 'Profile',
-          icon: <AccountCircleIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: false,
-        }
-      : {
-          title: 'Profile',
-          icon: <AccountCircleIcon />,
-          to: '/',
-          disabled: true,
-        },
-    isAuthenticated
-      ? {
-          title: 'Settings',
-          icon: <SettingsIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: false,
-        }
-      : {
-          title: 'Settings',
-          icon: <SettingsIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: true,
-        },
   ];
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{

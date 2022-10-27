@@ -20,7 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
-import {Box, Paper, Typography, Grid, Alert} from '@mui/material';
+import {Box, Paper, Typography, Alert} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
 import {
@@ -36,6 +36,10 @@ import {useEventedPromise} from '../../pouchHook';
 import {TokenContents} from '../../../datamodel/core';
 import CircularLoading from '../../components/ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
+
 interface sortModel {
   field: string;
   sort: 'asc' | 'desc';
@@ -49,6 +53,8 @@ export default function NoteBooks(props: NoteBookListProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [counter, setCounter] = React.useState(5);
   const history = useHistory();
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
@@ -59,55 +65,127 @@ export default function NoteBooks(props: NoteBookListProps) {
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     history.push(ROUTES.NOTEBOOK + params.row.project_id);
   };
-  const columns: GridColDef[] = [
-    {
-      field: 'name',
-      headerName: 'Name',
-      type: 'string',
-      flex: 0.5,
-      minWidth: 200,
-      renderCell: (params: GridCellParams) => (
-        <Box my={1}>
-          <Typography variant={'h5'} sx={{m: 0}} component={'div'}>
-            <Grid
-              container
-              justifyContent="flex-start"
-              alignItems="center"
-              spacing={1}
-            >
-              <Grid item>
+  const columns: GridColDef[] = not_xs
+    ? [
+        {
+          field: 'name',
+          headerName: 'Name',
+          type: 'string',
+          flex: 0.3,
+          minWidth: 200,
+          renderCell: (params: GridCellParams) => (
+            <Box my={1}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  flexWrap: 'nowrap',
+                }}
+              >
                 <FolderIcon
+                  fontSize={'small'}
                   color={'secondary'}
-                  style={{verticalAlign: 'middle'}}
+                  sx={{mr: '3px'}}
                 />
-              </Grid>
-              <Grid item>{params.row.name}</Grid>
-            </Grid>
-          </Typography>
-          <Typography variant={'caption'}>{params.row.description}</Typography>
-        </Box>
-      ),
-    },
-    {
-      field: 'last_updated',
-      headerName: 'Last Updated',
-      type: 'string',
-      minWidth: 200,
-      flex: 0.2,
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      type: 'string',
-      flex: 0.3,
-      minWidth: 200,
-      renderCell: (params: GridCellParams) => (
-        <Box sx={{mt: 1}}>
-          <ProjectStatus status={params.value} />
-        </Box>
-      ),
-    },
-  ];
+                <Typography variant={'body2'} fontWeight={'bold'}>
+                  {params.row.name}
+                </Typography>
+              </span>
+              <Typography variant={'caption'}>
+                {params.row.description}
+              </Typography>
+            </Box>
+          ),
+        },
+        {
+          field: 'last_updated',
+          headerName: 'Last Updated',
+          type: 'string',
+          minWidth: 200,
+          flex: 0.3,
+        },
+        {
+          field: 'status',
+          headerName: 'Status',
+          type: 'string',
+          flex: 0.2,
+          minWidth: 160,
+          renderCell: (params: GridCellParams) => (
+            <ProjectStatus status={params.value} />
+          ),
+        },
+        {
+          field: 'actions',
+          type: 'actions',
+          flex: 0.2,
+          minWidth: 160,
+          headerName: 'Sync',
+          description: 'Toggle syncing this notebook to the server',
+          renderCell: (params: GridCellParams) => (
+            <NotebookSyncSwitch
+              project={params.row}
+              showHelperText={false}
+              project_status={params.row.status}
+            />
+          ),
+        },
+      ]
+    : [
+        {
+          field: 'name',
+          headerName: 'Name',
+          type: 'string',
+          flex: 0.7,
+          minWidth: 240,
+          renderCell: (params: GridCellParams) => (
+            <Box my={1}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  flexWrap: 'nowrap',
+                }}
+              >
+                <FolderIcon
+                  fontSize={'small'}
+                  color={'secondary'}
+                  sx={{mr: '3px'}}
+                />
+                <Typography variant={'body2'} fontWeight={'bold'}>
+                  {params.row.name}
+                </Typography>
+              </span>
+              <Typography variant={'caption'}>
+                {params.row.description}
+              </Typography>
+              <Typography variant={'body2'}>
+                {params.row.last_updated}
+              </Typography>
+              <Typography variant={'body2'}>
+                12th November 2022: 11am
+              </Typography>
+              <Box my={1}>
+                <ProjectStatus status={params.row.status} />
+              </Box>
+            </Box>
+          ),
+        },
+        {
+          field: 'actions',
+          type: 'actions',
+          flex: 0.3,
+          minWidth: 100,
+          headerName: 'Sync',
+          description: 'Toggle syncing this notebook to the server',
+          renderCell: (params: GridCellParams) => (
+            <NotebookSyncSwitch
+              project={params.row}
+              showHelperText={false}
+              project_status={params.row.status}
+            />
+          ),
+        },
+      ];
 
   // if the counter changes, add a new timeout, but only if > 0
   useEffect(() => {

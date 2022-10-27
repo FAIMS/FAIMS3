@@ -22,9 +22,35 @@
  */
 import {ProjectUIModel} from '../../../datamodel/ui';
 //function is to get all relevant fields
+export function update_by_branching_logic(
+  ui_specification: ProjectUIModel,
+  values: {[field_name: string]: any},
+  is_field: boolean
+) {
+  const field = values.updateField;
+  if (field === undefined || field === '') return true;
+
+  if (ui_specification['fields'][field]['logic_select'] === undefined)
+    return false;
+
+  if (
+    is_field &&
+    ui_specification['fields'][field]['logic_select']['type'] === 'field'
+  )
+    return true;
+
+  if (
+    !is_field &&
+    ui_specification['fields'][field]['logic_select']['type'] === 'section'
+  )
+    return true;
+
+  return false;
+}
+
 export function get_logic_fields(
   ui_specification: ProjectUIModel,
-  values: any,
+  values: {[field_name: string]: any},
   viewName: string
 ) {
   const fields: string[] = [];
@@ -38,7 +64,7 @@ export function get_logic_fields(
 
 const get_field = (
   value: any,
-  values: any,
+  values: {[field_name: string]: any},
   ui_specification: ProjectUIModel
 ) => {
   if (value['is_logic'] === undefined) return true;
@@ -59,7 +85,7 @@ const get_field = (
 export function get_logic_views(
   ui_specification: ProjectUIModel,
   form_type: string,
-  values: any
+  values: {[field_name: string]: any}
 ) {
   const views: string[] = [];
   ui_specification['viewsets'][form_type]['views'].map((view: string) =>

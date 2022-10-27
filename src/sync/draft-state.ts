@@ -572,6 +572,7 @@ class RecordDraftState {
       }
     }
     this.is_saving = false;
+    this.saveListener(false);
   }
 
   /**

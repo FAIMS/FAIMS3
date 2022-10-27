@@ -227,6 +227,7 @@ export async function setRecordAsDeleted(
     created: date.toISOString(),
     created_by: user,
     deleted: true,
+    relationship: base_revision.relationship,
   };
   await datadb.put(new_revision);
   await updateHeads(project_id, obsid, [base_revision._id], new_rev_id);
@@ -253,6 +254,7 @@ export async function setRecordAsUndeleted(
     created: date.toISOString(),
     created_by: user,
     deleted: false,
+    relationship: base_revision.relationship,
   };
   await datadb.put(new_revision);
   await updateHeads(project_id, obsid, [base_revision._id], new_rev_id);
@@ -280,6 +282,7 @@ export async function getRecordMetadata(
       deleted: revision.deleted ? true : false,
       hrid: hrid,
       type: record.type,
+      relationship: revision.relationship,
     };
   } catch (err) {
     console.error(

@@ -182,7 +182,6 @@ export interface EncodedRecord {
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
-  relationship?: Relationship;
 }
 
 export type AttributeValuePairIDMap = {

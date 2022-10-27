@@ -58,6 +58,10 @@ export function getComponentFromFieldConfig(
       {...fieldConfig['component-parameters']['FormHelperTextProps']}
       InputLabelProps={{shrink: true}} //e.g, TextField label for Date and email and number
       onWheel={(event: any) => event.target.blur()}
+      onChange={(event: any) => {
+        formProps.handleChange(event);
+        formProps.setFieldValue('updateField', fieldName);
+      }}
       disabled={disabled}
     />
   ) : (
@@ -71,6 +75,10 @@ export function getComponentFromFieldConfig(
       {...fieldConfig['component-parameters']['InputLabelProps']}
       {...fieldConfig['component-parameters']['FormHelperTextProps']}
       onWheel={(event: any) => event.target.blur()}
+      onChange={(event: any) => {
+        formProps.handleChange(event);
+        formProps.setFieldValue('updateField', fieldName);
+      }}
       issyncing={isSyncing}
       disabled={disabled}
     />

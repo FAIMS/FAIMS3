@@ -45,13 +45,13 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        node-version: ['lts/*']
+        node-version: ['16']
         experimental: [false]
-        include:
-          - node-version: 'current' #, 16 ok, it looks like v2 doesn't support /nv even though the docs say it does. Hardcoding version for now.
-            experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
-          - node-version: 'latest'
-            experimental: true
+        # include:
+        #   - node-version: 'current' #, 16 ok, it looks like v2 doesn't support /nv even though the docs say it does. Hardcoding version for now.
+        #     experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
+        #   - node-version: 'latest'
+        #     experimental: true
 
     steps:
     - uses: actions/checkout@v2

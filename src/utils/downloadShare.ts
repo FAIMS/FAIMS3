@@ -39,20 +39,34 @@ export async function shareStringAsFileOnApp(
   filename: string
 ) {
   console.error('Starting writing of file');
-  const url = (
-    await Filesystem.writeFile({
-      path: filename,
-      data: s,
-      directory: Directory.Cache,
-      encoding: Encoding.UTF8,
-    })
-  ).uri;
-  console.error('Writing of file complete, sharing file');
-  await Share.share({
-    title: title,
-    text: dialogTitle,
-    url: url,
-    dialogTitle: dialogTitle,
-  });
+  for (const dir of [
+    Directory.Cache,
+    Directory.External,
+    Directory.Data,
+    Directory.Library,
+    Directory.Documents,
+    Directory.ExternalStorage,
+  ]) {
+    try {
+      const url = (
+        await Filesystem.writeFile({
+          path: filename,
+          data: s,
+          directory: Directory.External,
+          encoding: Encoding.UTF8,
+          recursive: true,
+        })
+      ).uri;
+      console.error('Writing of file complete, sharing file with', dir);
+      await Share.share({
+        title: title,
+        text: dialogTitle,
+        url: url,
+        dialogTitle: dialogTitle,
+      });
+    } catch (err) {
+      console.error('Sharing failed with', dir, err);
+    }
+  }
   console.error('Shared file');
 }
