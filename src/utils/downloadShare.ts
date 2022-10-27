@@ -52,7 +52,7 @@ export async function shareStringAsFileOnApp(
         await Filesystem.writeFile({
           path: filename,
           data: s,
-          directory: Directory.External,
+          directory: dir,
           encoding: Encoding.UTF8,
           recursive: true,
         })
