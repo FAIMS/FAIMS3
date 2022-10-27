@@ -448,7 +448,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             filenames.push(file_id);
           } catch (error) {
             console.error(
-              'error save attchment',
+              'error save attachment',
               error,
               new_filenames,
               key,

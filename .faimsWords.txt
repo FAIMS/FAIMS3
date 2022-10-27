@@ -614,5 +614,19 @@ roundtrip
 timheuer
 GPLAY
 attachfilenames
+apks
+rini's
+coturiv
+satak
+webrequest
+endgroup
+accesskey
+ACCESSKEY
+indiesdev
+appium
+DBNAME
+usees
+conn
+availabe
 # TODO FIX
 Ramdom

@@ -382,7 +382,7 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             <Paper>
               <Typography variant="caption">
                 Tips: This block is only used for debug only, if get the
-                attachmnet ID, please make sure all photo been attached. <br />
+                attachment ID, please make sure all photo been attached. <br />
               </Typography>
               <Button
                 type="button"
