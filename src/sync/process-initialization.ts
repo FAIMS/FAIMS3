@@ -38,6 +38,8 @@ import {
   materializeConnectionInfo,
   ping_sync_up,
   ping_sync_down,
+  ping_sync_error,
+  ping_sync_denied,
 } from './connection';
 import {
   active_db,
@@ -171,6 +173,7 @@ export async function update_directory(
     if (DEBUG_APP) {
       console.debug('Directory sync denied', err);
     }
+    ping_sync_denied();
   };
   const directory_error = (err: any) => {
     if (DEBUG_APP) {
@@ -180,6 +183,7 @@ export async function update_directory(
         console.debug('Directory sync error', err);
       }
     }
+    ping_sync_error();
   };
   //const directory_complete = (info: any) => {
   //  console.debug('Directory sync complete', info);
@@ -439,6 +443,7 @@ export async function update_listing(
       })
       .on('error', err => {
         events.emit('listing_error', listing_id, err);
+        ping_sync_error();
       });
   }
 
@@ -484,6 +489,7 @@ export async function update_listing(
       })
       .on('denied', err => {
         console.debug('Projects sync denied', listing_id, err);
+        ping_sync_denied();
       })
       //.on('complete', info => {
       //  console.debug('Projects sync complete', listing_id, info);
@@ -497,6 +503,7 @@ export async function update_listing(
           console.debug('Projects sync waiting on auth', listing_id);
         } else {
           console.debug('Projects sync error', listing_id, err);
+          ping_sync_error();
         }
       });
   } else {
@@ -748,6 +755,7 @@ export async function update_project(
         })
         .on('denied', err => {
           console.debug('Meta sync denied', active_id, err);
+          ping_sync_denied();
         })
         //.on('change', info => {
         //  console.debug('Meta sync change', active_id, info);
@@ -761,6 +769,7 @@ export async function update_project(
             console.debug('Meta sync waiting on auth', active_id);
           } else {
             console.debug('Meta sync error', active_id, err);
+            ping_sync_error();
           }
         });
     } else {
@@ -787,6 +796,7 @@ export async function update_project(
         })
         .on('denied', err => {
           console.debug('Data sync denied', active_id, err);
+          ping_sync_denied();
         })
         //.on('change', info => {
         //  console.debug('Data sync change', active_id, info);
@@ -799,6 +809,7 @@ export async function update_project(
             console.debug('Data sync waiting on auth', active_id);
           } else {
             console.debug('Data sync error', active_id, err);
+            ping_sync_error();
           }
         });
     } else {

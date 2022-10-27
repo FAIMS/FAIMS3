@@ -26,6 +26,16 @@ export function startSync(
   return;
 }
 
+function sendErrorNotification(
+  dispatch: ContextType['dispatch'],
+  message: string
+) {
+  dispatch({
+    type: ActionType.ADD_ALERT,
+    payload: {message: message, severity: 'error'},
+  });
+}
+
 export function setSyncError(
   dispatch: ContextType['dispatch'],
   has_error: boolean
@@ -45,8 +55,21 @@ export function getSyncStatusCallbacks(
   const handleStartSyncDown = () => {
     startSync(dispatch, ActionType.IS_SYNCING_DOWN);
   };
+  const handleStartSyncError = () => {
+    setSyncError(dispatch, true);
+  };
+  const handleStartSyncDenied = () => {
+    // TODO: Add denied status
+    sendErrorNotification(
+      dispatch,
+      'Sync Authentication Error: try refreshing your roles'
+    );
+    setSyncError(dispatch, true);
+  };
   return {
     sync_up: handleStartSyncUp,
     sync_down: handleStartSyncDown,
+    sync_error: handleStartSyncError,
+    sync_denied: handleStartSyncDenied,
   };
 }
