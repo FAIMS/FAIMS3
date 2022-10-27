@@ -21,7 +21,15 @@ import React from 'react';
 import {useState, useEffect} from 'react';
 import makeStyles from '@mui/styles/makeStyles';
 
-import {Grid, Box, Paper, Button} from '@mui/material';
+import {
+  Grid,
+  Box,
+  Paper,
+  Button,
+  List,
+  ListItem,
+  Typography,
+} from '@mui/material';
 import {getComponentFromField} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
@@ -31,7 +39,6 @@ import {AddUserButton, ProjectSubmit} from './ProjectButton';
 import {ProjectUIModel} from '../../../../datamodel/ui';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@mui/material/Alert';
-import {List, ListItem, Divider} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({}));
 
@@ -371,51 +378,71 @@ export default function ProjectInfoTab(props: ProjectInfoProps) {
             value={metaAdded}
           /> */}
           <br />
-          <Button
-            type="button"
-            color="primary"
-            variant="contained"
-            disableElevation
-            onClick={() =>
-              props.handleattachment(props.formProps.values.attachments)
-            }
-          >
-            Get Attachment Files ID
-          </Button>
+          {String(process.env.REACT_APP_SERVER) === 'developers' && (
+            <Paper>
+              <Typography variant="caption">
+                Tips: This block is only used for debug only, if get the
+                attachmnet ID, please make sure all photo been attached. <br />
+              </Typography>
+              <Button
+                type="button"
+                color="primary"
+                variant="contained"
+                disableElevation
+                onClick={() =>
+                  props.handleattachment(props.formProps.values.attachments)
+                }
+              >
+                Get New Files ID
+              </Button>
+              <br />
+              File will be Uploaded:
+              <br />
+              {projectvalue.newfiles !== undefined &&
+                Object.keys(projectvalue.newfiles).map((fileName: string) => (
+                  <ListItem key={fileName} id={fileName + 'file'}>
+                    {fileName}
+                    <img
+                      style={{maxHeight: 300, maxWidth: 200}}
+                      src={URL.createObjectURL(projectvalue.newfiles[fileName])}
+                    />
+                  </ListItem>
+                ))}
+              <br />
+              <br />
+            </Paper>
+          )}
           <Paper>
-            File will be Uploaded:
-            <br />
-            {projectvalue.newfiles !== undefined &&
-              Object.keys(projectvalue.newfiles).map((fileName: string) => (
-                <ListItem key={fileName} id={fileName + 'file'}>
-                  {fileName}
-                  <img
-                    style={{maxHeight: 300, maxWidth: 200}}
-                    src={URL.createObjectURL(projectvalue.newfiles[fileName])}
-                  />
-                </ListItem>
-              ))}
-            <br />
-            <br />
-          </Paper>
-          <Paper>
-            Files Attached:
+            <Typography variant="h2">Files Attached:</Typography>
+
             <br />
             <br />
             <List>
               {projectvalue.files !== undefined &&
-                Object.keys(projectvalue.files).map((key: string) => (
-                  <ListItem key={key} id={key + 'file'}>
-                    <Divider />
-                    {key}
-                    {projectvalue.files[key][0] !== undefined && (
-                      <img
-                        style={{maxHeight: 300, maxWidth: 200}}
-                        src={URL.createObjectURL(projectvalue.files[key][0])}
-                      />
-                    )}
-                  </ListItem>
-                ))}
+                Object.keys(projectvalue.files).map(
+                  (key: string, index: number) => (
+                    <ListItem
+                      key={key}
+                      id={key + 'file'}
+                      style={
+                        index % 2 === 0
+                          ? {backgroundColor: '#ededeb', height: '200px'}
+                          : {height: '200px'}
+                      }
+                    >
+                      <Typography style={{width: '200px'}}>
+                        {key}
+                        {'    '}
+                      </Typography>
+                      {projectvalue.files[key][0] !== undefined && (
+                        <img
+                          style={{maxHeight: 300, maxWidth: 200}}
+                          src={URL.createObjectURL(projectvalue.files[key][0])}
+                        />
+                      )}
+                    </ListItem>
+                  )
+                )}
             </List>
           </Paper>
           <br />
