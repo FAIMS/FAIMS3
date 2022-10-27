@@ -71,6 +71,18 @@ export function ping_sync_down() {
   }
 }
 
+export function ping_sync_error() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_error();
+  }
+}
+
+export function ping_sync_denied() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_denied();
+  }
+}
+
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
  * @param connection_info Network address/database info to use to initialize the connection
