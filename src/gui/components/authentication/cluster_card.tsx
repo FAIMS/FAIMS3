@@ -32,6 +32,10 @@ import {
   TextField,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
 import {LoginButton} from './login_form';
 import {
   getTokenContentsForCluster,
@@ -83,12 +87,15 @@ function UserSwitcher(props: UserSwitcherProps) {
   }
 
   const handleClick = () => {
-    switchUsername(props.listing_id, value?.username as string).then(() => {
+    switchUsername(props.listing_id, value?.username as string).then(r => {
+      console.log('switchUsername returned', r);
       const getToken = async () => {
-        console.log('awaiting getTokenInfoForCluster()');
-        // props.setToken(await getTokenContentsForRouting());
-        props.setToken(await getTokenContentsForCluster(props.listing_id));
+        await getTokenContentsForCluster(props.listing_id).then(r => {
+          console.log('awaiting getTokenInfoForCluster() returned', r);
+          props.setToken(r);
+        });
       };
+
       getToken().then(() =>
         dispatch({
           type: ActionType.ADD_ALERT,
@@ -119,6 +126,18 @@ function UserSwitcher(props: UserSwitcherProps) {
             getOptionLabel={option =>
               option.name ? option.name : option.username
             }
+            renderOption={(props, option) => (
+              <Box component="li" {...props}>
+                {option.name ? (
+                  <span>
+                    {option.name}{' '}
+                    <Chip size={'small'} label={option.username} />
+                  </span>
+                ) : (
+                  option.username
+                )}
+              </Box>
+            )}
             value={value}
             onChange={(
               event: any,
@@ -131,7 +150,7 @@ function UserSwitcher(props: UserSwitcherProps) {
             }
             fullWidth
             renderInput={params => (
-              <TextField {...params} label="Choose User" />
+              <TextField {...params} label="Choose Active User" />
             )}
           />
         </Grid>
@@ -147,7 +166,6 @@ function UserSwitcher(props: UserSwitcherProps) {
           </Button>
         </Grid>
       </Grid>
-      {JSON.stringify(value)}
     </React.Fragment>
   );
 }
@@ -210,6 +228,7 @@ export default function ClusterCard(props: ClusterCardProps) {
           conductor_url={props.conductor_url}
           setToken={setToken}
           is_refresh={false}
+          startIcon={<LoginIcon />}
         />
       ) : (
         <React.Fragment>
@@ -232,15 +251,17 @@ export default function ClusterCard(props: ClusterCardProps) {
               <Button
                 size={'small'}
                 sx={{float: 'right'}}
-                variant={'outlined'}
+                variant={'contained'}
+                disableElevation
                 onClick={() =>
                   forgetCurrentToken(props.listing_id).then(() => {
                     setToken(undefined);
                     reprocess_listing(props.listing_id);
                   })
                 }
+                startIcon={<LogoutIcon />}
               >
-                Sign Out
+                Log&nbsp;Out
               </Button>
             </Grid>
           </Grid>
@@ -281,6 +302,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                     label={'refresh'}
                     size={'small'}
                     sx={{float: 'right'}}
+                    startIcon={<RefreshIcon />}
                   />
                 </Grid>
                 <Grid item xs={12} sx={{textAlign: 'right'}}>
@@ -301,7 +323,6 @@ export default function ClusterCard(props: ClusterCardProps) {
                 setToken={props.setToken}
               />
 
-              <Divider sx={{my: 3}} />
               <LoginButton
                 key={props.listing_id}
                 listing_id={props.listing_id}
@@ -312,6 +333,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                 label={'add another user'}
                 size={'small'}
                 sx={{my: 1}}
+                startIcon={<PersonAddIcon />}
               />
             </React.Fragment>
           ) : (
