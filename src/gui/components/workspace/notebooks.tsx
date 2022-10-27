@@ -71,7 +71,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           field: 'name',
           headerName: 'Name',
           type: 'string',
-          flex: 0.3,
+          flex: 0.4,
           minWidth: 200,
           renderCell: (params: GridCellParams) => (
             <Box my={1}>
@@ -100,9 +100,10 @@ export default function NoteBooks(props: NoteBookListProps) {
         {
           field: 'last_updated',
           headerName: 'Last Updated',
-          type: 'string',
-          minWidth: 200,
-          flex: 0.3,
+          type: 'dateTime',
+          minWidth: 160,
+          flex: 0.2,
+          valueGetter: ({value}) => value && new Date(value),
         },
         {
           field: 'status',
@@ -135,8 +136,8 @@ export default function NoteBooks(props: NoteBookListProps) {
           field: 'name',
           headerName: 'Name',
           type: 'string',
-          flex: 0.7,
-          minWidth: 240,
+          flex: 0.4,
+          minWidth: 160,
           renderCell: (params: GridCellParams) => (
             <Box my={1}>
               <span
@@ -158,12 +159,6 @@ export default function NoteBooks(props: NoteBookListProps) {
               <Typography variant={'caption'}>
                 {params.row.description}
               </Typography>
-              <Typography variant={'body2'}>
-                {params.row.last_updated}
-              </Typography>
-              <Typography variant={'body2'}>
-                12th November 2022: 11am
-              </Typography>
               <Box my={1}>
                 <ProjectStatus status={params.row.status} />
               </Box>
@@ -171,10 +166,18 @@ export default function NoteBooks(props: NoteBookListProps) {
           ),
         },
         {
+          field: 'last_updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          minWidth: 80,
+          flex: 0.3,
+          valueGetter: ({value}) => value && new Date(value),
+        },
+        {
           field: 'actions',
           type: 'actions',
           flex: 0.3,
-          minWidth: 100,
+          minWidth: 60,
           headerName: 'Sync',
           description: 'Toggle syncing this notebook to the server',
           renderCell: (params: GridCellParams) => (

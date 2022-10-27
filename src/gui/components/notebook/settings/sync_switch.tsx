@@ -56,11 +56,10 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
     return listenSyncingProject(project.project_id, setIsSyncing);
   }, [project.project_id]);
 
-  return ['published', 'archived', undefined, 'Unknown'].includes(
-    props.project_status
-  ) ? (
-    <Box p={1}>
+  return ['published', 'archived'].includes(String(props.project_status)) ? (
+    <Box>
       <FormControlLabel
+        sx={{mr: 0}}
         control={
           <Switch
             checked={isSyncing}
