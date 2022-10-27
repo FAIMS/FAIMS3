@@ -22,14 +22,13 @@ import React from 'react';
 import {
   Box,
   Paper,
-  Divider,
+  ButtonGroup,
   Button,
   Typography,
   Grid,
   TableContainer,
   TableRow,
   TableCell,
-  TableHead,
   TableBody,
   Table,
 } from '@mui/material';
@@ -107,17 +106,25 @@ export default function AboutBuild() {
           </table>
         </pre>
       </Box>
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} elevation={0} variant={'outlined'}>
         <Table sx={{minWidth: 650}} aria-label="simple table">
-          <TableHead>
+          <TableBody>
             <TableRow>
               <TableCell>
-                <Typography variant={'h5'}>Having issues?</Typography>
+                <Typography variant={'overline'}>Having issues?</Typography>
+              </TableCell>
+
+              <TableCell>
+                {' '}
+                <Typography variant={'body2'}>
+                  Refresh the app (this is similar to a browser refresh)
+                </Typography>
               </TableCell>
               <TableCell>
                 <Button
                   variant="contained"
                   color={'primary'}
+                  size={'small'}
                   disableElevation
                   onClick={() => {
                     console.log('User refreshed page');
@@ -129,28 +136,29 @@ export default function AboutBuild() {
                   Refresh the app
                 </Button>
               </TableCell>
-              <TableCell>
-                {' '}
-                <Typography variant={'body2'}>
-                  This is similar to a browser refresh
-                </Typography>
-              </TableCell>
             </TableRow>
-          </TableHead>
-          <TableBody>
             <TableRow>
               <TableCell>
                 {' '}
-                <Typography variant={'h5'}>
+                <Typography variant={'overline'}>
                   Downloading data from this device
                 </Typography>
               </TableCell>
+
               <TableCell>
-                <Grid container spacing={2}>
+                <Typography variant={'body2'}>
+                  Data download functionality is not well-supported by all
+                  device+browser combinations. Try the following buttons to
+                  access data from this device.
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Grid container spacing={2} alignItems={'center'}>
                   <Grid item>
                     <Button
                       disableElevation
                       variant={'outlined'}
+                      size={'small'}
                       onClick={async () => {
                         console.error('Starting browser system dump');
                         const b = await getFullDBSystemDumpAsBlob();
@@ -165,11 +173,12 @@ export default function AboutBuild() {
                     </Button>
                   </Grid>
                   <Grid item sm={'auto'}>
-                    <Box mt={1}>Browsers only</Box>
+                    <Box>Browsers only</Box>
                   </Grid>
                   <Grid item>
                     <Button
                       disableElevation
+                      size={'small'}
                       variant={'outlined'}
                       onClick={async () => {
                         console.error('Starting app system dump');
@@ -190,73 +199,57 @@ export default function AboutBuild() {
                     </Button>
                   </Grid>
                   <Grid item sm={'auto'}>
-                    <Box mt={1}>Apps and some browsers</Box>
+                    <Box>Apps and some browsers</Box>
                   </Grid>
                 </Grid>
               </TableCell>
-              <TableCell>
-                <Typography variant={'body2'}>
-                  Data download functionality is not well-supported by all
-                  device+browser combinations. Try the following buttons to
-                  access data from this device.
-                </Typography>
-              </TableCell>
             </TableRow>
+            {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
+              <TableRow>
+                <TableCell>
+                  <Typography variant={'overline'}>Devtools</Typography>
+                </TableCell>
+                <TableCell>Use the following with care!</TableCell>
+                <TableCell>
+                  <ButtonGroup>
+                    {SHOW_WIPE && (
+                      <Button
+                        size={'small'}
+                        variant="contained"
+                        disableElevation
+                        color={'error'}
+                        onClick={() => {
+                          unregisterServiceWorker();
+                          wipe_all_pouch_databases().then(() => {
+                            console.log('User cleaned database');
+                            window.location.reload();
+                          });
+                        }}
+                        startIcon={<ErrorIcon />}
+                      >
+                        Wipe and reset everything
+                      </Button>
+                    )}
+                    {SHOW_MINIFAUXTON && (
+                      <Button
+                        size={'small'}
+                        variant="contained"
+                        disableElevation
+                        color={'warning'}
+                        onClick={() => {
+                          window.location.pathname = '/minifauxton.html';
+                        }}
+                      >
+                        Open Mini-Fauxton
+                      </Button>
+                    )}
+                  </ButtonGroup>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
-
-      <Divider sx={{my: 3}} />
-      {SHOW_WIPE && (
-        <Button
-          variant="contained"
-          disableElevation
-          color={'error'}
-          onClick={() => {
-            unregisterServiceWorker();
-            wipe_all_pouch_databases().then(() => {
-              console.log('User cleaned database');
-              window.location.reload();
-            });
-          }}
-          startIcon={<ErrorIcon />}
-          sx={{mr: 1}}
-        >
-          Wipe and reset everything
-        </Button>
-      )}
-
-      {SHOW_MINIFAUXTON && (
-        <Button
-          variant="outlined"
-          disableElevation
-          color={'primary'}
-          onClick={() => {
-            window.location.pathname = '/minifauxton.html';
-          }}
-        >
-          Open MiniFauxton
-        </Button>
-      )}
-
-      {/*<Divider sx={{my: 3}}>Sync State Test</Divider>*/}
-      {/*<Button variant="contained" onClick={handleStartSyncUp} sx={{mr: 1}}>*/}
-      {/*  Start Sync UP {JSON.stringify(state.isSyncingUp)}*/}
-      {/*</Button>*/}
-      {/*<Button variant="contained" onClick={handleStartSyncDown} sx={{mr: 1}}>*/}
-      {/*  Start Sync DOWN {JSON.stringify(state.isSyncingDown)}*/}
-      {/*</Button>*/}
-      {/*/!*<Button*!/*/}
-      {/*/!*  variant="contained"*!/*/}
-      {/*/!*  onClick={handleToggleUnsyncedChanges}*!/*/}
-      {/*/!*  sx={{mr: 1}}*!/*/}
-      {/*/!*>*!/*/}
-      {/*/!*  Local changes made {JSON.stringify(state.hasUnsyncedChanges)}*!/*/}
-      {/*/!*</Button>*!/*/}
-      {/*<Button variant="contained" onClick={handleToggleSyncError} sx={{mr: 1}}>*/}
-      {/*  Sync Error {JSON.stringify(state.isSyncError)}*/}
-      {/*</Button>*/}
-      <Divider sx={{my: 3}} />
     </Box>
   );
 }
