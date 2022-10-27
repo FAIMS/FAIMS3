@@ -431,7 +431,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         const filenames: string[] = projectvalue.attachfilenames ?? [];
 
         let new_filenames = projectvalue.newfiles;
-        //reset the newfiles list if the attahments are not been processed
+        //reset the newfiles list if the attachments are not been processed
         if (
           projectvalue.newfiles === undefined ||
           Object.keys(projectvalue.newfiles).length <

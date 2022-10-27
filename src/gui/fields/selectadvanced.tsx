@@ -76,7 +76,7 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
     displayIcon,
     onselectvalue,
     type,
-    attachements,
+    attachments,
   } = props;
 
   const {
@@ -119,12 +119,12 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
       <div className={classes.iconContainer}>{icon}</div>
       <Typography component="div" className={classes.label}>
         {type === 'image' &&
-        attachements !== undefined &&
-        attachements[label] !== undefined &&
-        attachements[label].type.includes('image') ? (
+        attachments !== undefined &&
+        attachments[label] !== undefined &&
+        attachments[label].type.includes('image') ? (
           <img
             style={{maxHeight: 500, maxWidth: 200}}
-            src={URL.createObjectURL(attachements[label])}
+            src={URL.createObjectURL(attachments[label])}
           />
         ) : (
           label
@@ -136,7 +136,7 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
 
 type CustomerProps = {
   type: string | undefined;
-  attachements: {[key: string]: File} | null;
+  attachments: {[key: string]: File} | null;
 };
 
 const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
@@ -149,7 +149,7 @@ const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
         onselectvalue: (nodeId: string) =>
           props.onselectvalue(nodeId, props.type),
         type: props.type,
-        attachements: props.attachements,
+        attachments: props.attachments,
       } as any
     }
   />
@@ -162,7 +162,7 @@ const data: RenderTree = {
 
 interface ValueChipsArrayProps {
   data: any;
-  attachements: {[key: string]: File} | null;
+  attachments: {[key: string]: File} | null;
   isactive: boolean;
 }
 
@@ -172,7 +172,7 @@ const ListItem = styled('li')(({theme}) => ({
 
 interface ChildChipProps {
   value: any;
-  attachements: {[key: string]: File} | null;
+  attachments: {[key: string]: File} | null;
   isactive: boolean;
 }
 
@@ -186,13 +186,13 @@ function ChildChip(props: ChildChipProps) {
       <br />
       <br />
       {props.isactive &&
-        props.attachements !== undefined &&
-        props.attachements !== null &&
-        props.attachements[leaf_child] !== undefined &&
-        props.attachements[leaf_child].type.includes('image') && (
+        props.attachments !== undefined &&
+        props.attachments !== null &&
+        props.attachments[leaf_child] !== undefined &&
+        props.attachments[leaf_child].type.includes('image') && (
           <img
             style={{maxHeight: 500, maxWidth: 200}}
-            src={URL.createObjectURL(props.attachements[leaf_child])}
+            src={URL.createObjectURL(props.attachments[leaf_child])}
             onClick={() => {
               console.log('on click');
             }}
@@ -218,7 +218,7 @@ function ValueChipsArray(props: ValueChipsArrayProps) {
       {props.data.map((value: string) =>
         value !== '' ? (
           <ChildChip
-            attachements={props.attachements}
+            attachments={props.attachments}
             value={value}
             isactive={props.isactive}
           />
@@ -237,7 +237,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   ]);
   const [isactive, setIsactive] = React.useState(false);
   const project_id = props.form.values['_project_id'];
-  const [attachements, SetAttachements] = React.useState<{
+  const [attachments, SetAttachments] = React.useState<{
     [key: string]: File;
   } | null>(null);
   useEffect(() => {
@@ -255,7 +255,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
           attachments[key] = file[0];
         }
         setIsactive(true);
-        SetAttachements(attachments);
+        SetAttachments(attachments);
       } else {
         setIsactive(true);
       }
@@ -295,7 +295,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         label={nodes.name}
         type={nodes.type}
         onselectvalue={onselectvalue}
-        attachements={attachements}
+        attachments={attachments}
       >
         {Array.isArray(nodes.children)
           ? nodes.children.map((node, childkey) =>
@@ -310,7 +310,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
       <Typography>{props.label}</Typography>
       <ValueChipsArray
         data={value}
-        attachements={attachements}
+        attachments={attachments}
         isactive={isactive}
       />
       <Typography variant="caption">{props.helperText}</Typography>
