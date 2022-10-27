@@ -21,12 +21,11 @@
 import React from 'react';
 import {Typography, Grid} from '@mui/material';
 import Notebooks from '../components/workspace/notebooks';
-import * as ROUTES from '../../constants/routes';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 
 export default function Workspace() {
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Home'},
+    // {link: ROUTES.INDEX, title: 'Home'},
     {title: 'Workspace'},
   ];
 
@@ -34,11 +33,11 @@ export default function Workspace() {
     <React.Fragment>
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="h5" gutterBottom>
-            Workspace
-          </Typography>
-        </Grid>
+        {/*<Grid item xs={12}>*/}
+        {/*  <Typography variant="h5" gutterBottom>*/}
+        {/*    Workspace*/}
+        {/*  </Typography>*/}
+        {/*</Grid>*/}
 
         <Grid item xs={12} md={12} lg={8}>
           <Typography variant="h6" color="textSecondary">

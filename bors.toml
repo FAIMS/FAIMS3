@@ -1,6 +1,6 @@
 status = [
-  "build (lts/*, false)",
-  "test (lts/*, false)",
+  "build (16, false)",
+  "test (16, false)",
   "license",
 #  "DCO",
 ]

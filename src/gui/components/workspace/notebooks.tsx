@@ -37,6 +37,8 @@ import {TokenContents} from '../../../datamodel/core';
 import CircularLoading from '../../components/ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
 
 interface sortModel {
   field: string;
@@ -51,6 +53,8 @@ export default function NoteBooks(props: NoteBookListProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [counter, setCounter] = React.useState(5);
   const history = useHistory();
+  const theme = useTheme();
+  const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const pouchProjectList = useEventedPromise(
     getProjectList,
     listenProjectList,
@@ -61,64 +65,130 @@ export default function NoteBooks(props: NoteBookListProps) {
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     history.push(ROUTES.NOTEBOOK + params.row.project_id);
   };
-  const columns: GridColDef[] = [
-    {
-      field: 'name',
-      headerName: 'Name',
-      type: 'string',
-      flex: 0.5,
-      minWidth: 200,
-      renderCell: (params: GridCellParams) => (
-        <Box my={1}>
-          <span
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              flexWrap: 'nowrap',
-            }}
-          >
-            <FolderIcon
-              fontSize={'small'}
-              color={'secondary'}
-              sx={{mr: '3px'}}
+  const columns: GridColDef[] = not_xs
+    ? [
+        {
+          field: 'name',
+          headerName: 'Name',
+          type: 'string',
+          flex: 0.4,
+          minWidth: 200,
+          renderCell: (params: GridCellParams) => (
+            <Box my={1}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  flexWrap: 'nowrap',
+                }}
+              >
+                <FolderIcon
+                  fontSize={'small'}
+                  color={'secondary'}
+                  sx={{mr: '3px'}}
+                />
+                <Typography variant={'body2'} fontWeight={'bold'}>
+                  {params.row.name}
+                </Typography>
+              </span>
+              <Typography variant={'caption'}>
+                {params.row.description}
+              </Typography>
+            </Box>
+          ),
+        },
+        {
+          field: 'last_updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          minWidth: 160,
+          flex: 0.2,
+          valueGetter: ({value}) => value && new Date(value),
+        },
+        {
+          field: 'status',
+          headerName: 'Status',
+          type: 'string',
+          flex: 0.2,
+          minWidth: 160,
+          renderCell: (params: GridCellParams) => (
+            <ProjectStatus status={params.value} />
+          ),
+        },
+        {
+          field: 'actions',
+          type: 'actions',
+          flex: 0.2,
+          minWidth: 160,
+          headerName: 'Sync',
+          description: 'Toggle syncing this notebook to the server',
+          renderCell: (params: GridCellParams) => (
+            <NotebookSyncSwitch
+              project={params.row}
+              showHelperText={false}
+              project_status={params.row.status}
             />
-            <Typography variant={'body2'} fontWeight={'bold'}>
-              {params.row.name}
-            </Typography>
-          </span>
-          <Typography variant={'caption'}>{params.row.description}</Typography>
-        </Box>
-      ),
-    },
-    {
-      field: 'last_updated',
-      headerName: 'Last Updated',
-      type: 'string',
-      minWidth: 200,
-      flex: 0.2,
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      type: 'string',
-      flex: 0.3,
-      minWidth: 200,
-      renderCell: (params: GridCellParams) => (
-        <ProjectStatus status={params.value} />
-      ),
-    },
-    {
-      field: 'actions',
-      type: 'actions',
-      flex: 0.3,
-      minWidth: 200,
-      headerName: 'Sync',
-      description: 'Toggle syncing this notebook to the server',
-      renderCell: (params: GridCellParams) => (
-        <NotebookSyncSwitch project={params.row} showHelperText={false} />
-      ),
-    },
-  ];
+          ),
+        },
+      ]
+    : [
+        {
+          field: 'name',
+          headerName: 'Name',
+          type: 'string',
+          flex: 0.4,
+          minWidth: 160,
+          renderCell: (params: GridCellParams) => (
+            <Box my={1}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  flexWrap: 'nowrap',
+                }}
+              >
+                <FolderIcon
+                  fontSize={'small'}
+                  color={'secondary'}
+                  sx={{mr: '3px'}}
+                />
+                <Typography variant={'body2'} fontWeight={'bold'}>
+                  {params.row.name}
+                </Typography>
+              </span>
+              <Typography variant={'caption'}>
+                {params.row.description}
+              </Typography>
+              <Box my={1}>
+                <ProjectStatus status={params.row.status} />
+              </Box>
+            </Box>
+          ),
+        },
+        {
+          field: 'last_updated',
+          headerName: 'Last Updated',
+          type: 'dateTime',
+          minWidth: 80,
+          flex: 0.3,
+          valueGetter: ({value}) => value && new Date(value),
+        },
+        {
+          field: 'actions',
+          type: 'actions',
+          flex: 0.3,
+          minWidth: 60,
+          headerName: 'Sync',
+          description: 'Toggle syncing this notebook to the server',
+          renderCell: (params: GridCellParams) => (
+            <NotebookSyncSwitch
+              project={params.row}
+              showHelperText={false}
+              project_status={params.row.status}
+            />
+          ),
+        },
+      ];
 
   // if the counter changes, add a new timeout, but only if > 0
   useEffect(() => {

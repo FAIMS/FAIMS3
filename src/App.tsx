@@ -30,7 +30,6 @@ import AboutBuild from './gui/pages/about-build';
 import Workspace from './gui/pages/workspace';
 import NoteBookList from './gui/pages/notebook_list';
 import Notebook from './gui/pages/notebook';
-import RecordList from './gui/pages/record-list';
 import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
@@ -103,13 +102,6 @@ export default function App() {
                   exact
                   path={ROUTES.WORKSPACE}
                   component={Workspace}
-                  token={token}
-                  extraProps={{token: token}}
-                />
-                <PrivateRoute
-                  exact
-                  path={ROUTES.RECORD_LIST}
-                  component={RecordList}
                   token={token}
                   extraProps={{token: token}}
                 />

@@ -49,7 +49,9 @@ export default function RelationshipsViewComponent(
         <LinkIcon sx={{mr: 1}} />
         <Typography>Links</Typography>
       </AccordionSummary>
-      <AccordionDetails sx={{backgroundColor: grey[100], p: {xs: 1, sm: 2}}}>
+      <AccordionDetails
+        sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
+      >
         <RecordLinkComponent
           record_links={props.record_to_field_links}
           record_id={props.record_id}

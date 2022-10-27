@@ -45,7 +45,7 @@ function FormSubmitButton(props: any) {
     <Button
       type="button"
       color={formProps.isSubmitting ? undefined : 'primary'}
-      variant={is_final_view && !is_close ? 'contained' : 'outlined'}
+      variant={is_final_view && is_close ? 'contained' : 'outlined'}
       disableElevation
       disabled={formProps.isSubmitting}
       onClick={() => handleFormSubmit(is_close)}
@@ -100,20 +100,6 @@ export default function FormButtonGroup(props: any) {
             color="primary"
             aria-label="contained primary button group"
           >
-            {/* show mobile stepper for multiple section and not last page ONLY  */}
-            {!is_final_view && disabled !== true && (
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => {
-                  const stepnum = view_index + 1;
-                  onChangeStepper(views[stepnum], stepnum);
-                }}
-              >
-                {'  '}
-                Continue{' '}
-              </Button>
-            )}
             {/* need to fix the issue and re-enable it */}
             <FormSubmitButton
               disabled={disabled}

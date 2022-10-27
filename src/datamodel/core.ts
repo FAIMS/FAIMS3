@@ -127,6 +127,8 @@ export interface ClusterProjectRoles {
 export interface SyncStatusCallbacks {
   sync_up: () => void;
   sync_down: () => void;
+  sync_error: () => void;
+  sync_denied: () => void;
 }
 
 export type LocationState = {
@@ -148,8 +150,4 @@ export interface LinkedRelation {
 export interface Relationship {
   parent?: LinkedRelation; // has single parent
   linked?: Array<LinkedRelation>; // has multiple link
-}
-export interface SyncStatusCallbacks {
-  sync_up: () => void;
-  sync_down: () => void;
 }

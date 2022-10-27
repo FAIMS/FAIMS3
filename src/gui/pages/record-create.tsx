@@ -289,7 +289,7 @@ export default function RecordCreate() {
     }
   }
   let breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Home'},
+    // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
       link: ROUTES.NOTEBOOK + project_id,
@@ -308,7 +308,7 @@ export default function RecordCreate() {
         ? 'Parent'
         : location.state.relation_type_vocabPair[0];
     breadcrumbs = [
-      {link: ROUTES.INDEX, title: 'Home'},
+      // {link: ROUTES.INDEX, title: 'Home'},
       {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
       {
         link: ROUTES.NOTEBOOK + project_id,

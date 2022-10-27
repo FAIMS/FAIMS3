@@ -23,7 +23,6 @@ import React from 'react';
 import {Box} from '@mui/material';
 
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import * as ROUTES from '../../constants/routes';
 import NoteBooks from '../components/workspace/notebooks';
 // import {TokenContents} from '../../datamodel/core';
 // type NoteBookListProps = {
@@ -32,7 +31,7 @@ import NoteBooks from '../components/workspace/notebooks';
 
 export default function NoteBookList() {
   const breadcrumbs = [
-    {link: ROUTES.INDEX, title: 'Home'},
+    // {link: ROUTES.INDEX, title: 'Home'},
     {title: 'Notebooks'},
   ];
 
