@@ -33,11 +33,11 @@ export default function Workspace() {
     <React.Fragment>
       <Breadcrumbs data={breadcrumbs} />
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="h5" gutterBottom>
-            Workspace
-          </Typography>
-        </Grid>
+        {/*<Grid item xs={12}>*/}
+        {/*  <Typography variant="h5" gutterBottom>*/}
+        {/*    Workspace*/}
+        {/*  </Typography>*/}
+        {/*</Grid>*/}
 
         <Grid item xs={12} md={12} lg={8}>
           <Typography variant="h6" color="textSecondary">
