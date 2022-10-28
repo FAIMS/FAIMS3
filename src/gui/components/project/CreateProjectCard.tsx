@@ -375,21 +375,27 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       try {
         if (project_id !== null) {
           const res = await getProjectMetadata(project_id, 'projectvalue');
-          const filenames = await getProjectMetadata(
-            project_id,
-            'attachfilenames'
-          );
           const newvalue = {...projectvalue, ...res};
-          newvalue['attachfilenames'] = filenames;
-          const files: any = {};
-          for (const index in newvalue['attachfilenames']) {
-            const file = await getProjectMetadata(
+          try {
+            const filenames = await getProjectMetadata(
               project_id,
-              newvalue['attachfilenames'][index]
+              'attachfilenames'
             );
-            files[newvalue['attachfilenames'][index]] = file;
+
+            newvalue['attachfilenames'] = filenames;
+            const files: any = {};
+            for (const index in newvalue['attachfilenames']) {
+              const file = await getProjectMetadata(
+                project_id,
+                newvalue['attachfilenames'][index]
+              );
+              files[newvalue['attachfilenames'][index]] = file;
+            }
+            newvalue['files'] = files;
+          } catch (error) {
+            console.error('Error to get attachment', error);
           }
-          newvalue['files'] = files;
+
           setProjectValue(newvalue);
           const projectui = getprojectform(newvalue, 'project');
           setinitialValues(
