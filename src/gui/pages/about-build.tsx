@@ -22,21 +22,19 @@ import React from 'react';
 import {
   Box,
   Paper,
-  ButtonGroup,
+  Divider,
   Button,
   Typography,
   Grid,
-  TableContainer,
-  TableRow,
-  TableCell,
-  TableBody,
-  Table,
+  Alert,
+  AlertTitle,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import DownloadIcon from '@mui/icons-material/Download';
 import ErrorIcon from '@mui/icons-material/Error';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ShareIcon from '@mui/icons-material/Share';
+import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
 import {downloadBlob, shareStringAsFileOnApp} from '../../utils/downloadShare';
@@ -57,6 +55,8 @@ import {
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
+import DialogActions from '@mui/material/DialogActions';
+import Dialog from '@mui/material/Dialog';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -75,7 +75,15 @@ export default function AboutBuild() {
   // const handleToggleSyncError = () => {
   //   setSyncError(dispatch, !state.isSyncError);
   // };
+  const [open, setOpen] = React.useState(false);
 
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
   return (
     <Box sx={{p: 2}}>
       <Breadcrumbs data={breadcrumbs} />
@@ -106,150 +114,203 @@ export default function AboutBuild() {
           </table>
         </pre>
       </Box>
-      <TableContainer component={Paper} elevation={0} variant={'outlined'}>
-        <Table sx={{minWidth: 650}} aria-label="simple table">
-          <TableBody>
-            <TableRow>
-              <TableCell>
-                <Typography variant={'overline'}>Having issues?</Typography>
-              </TableCell>
+      <Box
+        component={Paper}
+        sx={{p: 2, my: {xs: 1, sm: 2}}}
+        elevation={0}
+        variant={'outlined'}
+      >
+        <Grid
+          container
+          direction="row"
+          justifyContent="flex-start"
+          alignItems="left"
+          spacing={2}
+        >
+          <Grid item md={4} sm={6} xs={12}>
+            <Typography variant={'h5'} gutterBottom>
+              Having issues?
+            </Typography>
 
-              <TableCell>
-                {' '}
-                <Typography variant={'body2'}>
-                  Refresh the app (this is similar to a browser refresh)
-                </Typography>
-              </TableCell>
-              <TableCell>
+            <Typography variant={'body2'}>
+              Refresh the app (this is similar to a browser refresh)
+            </Typography>
+          </Grid>
+          <Grid item md={8} sm={6} xs={12}>
+            <Button
+              variant="contained"
+              color={'primary'}
+              size={'small'}
+              disableElevation
+              onClick={() => {
+                console.log('User refreshed page');
+                unregisterServiceWorker();
+                window.location.reload();
+              }}
+              startIcon={<RefreshIcon />}
+            >
+              Refresh the app
+            </Button>
+          </Grid>
+          <Grid item xs={12}>
+            <Divider />
+          </Grid>
+          <Grid item md={4} sm={6} xs={12}>
+            <Typography variant={'h5'} gutterBottom>
+              Downloading data from this device
+            </Typography>
+
+            <Typography variant={'body2'}>
+              Data download functionality is not well-supported by all
+              device+browser combinations. Try the following buttons to access
+              data from this device.
+            </Typography>
+          </Grid>
+          <Grid item md={8} sm={6} xs={12}>
+            <Grid container spacing={2} alignItems={'center'}>
+              <Grid item>
                 <Button
-                  variant="contained"
-                  color={'primary'}
-                  size={'small'}
                   disableElevation
-                  onClick={() => {
-                    console.log('User refreshed page');
-                    unregisterServiceWorker();
-                    window.location.reload();
+                  variant={'contained'}
+                  size={'small'}
+                  color={'info'}
+                  onClick={async () => {
+                    console.error('Starting browser system dump');
+                    const b = await getFullDBSystemDumpAsBlob();
+                    console.error(
+                      'Finished browser system dump, starting download'
+                    );
+                    downloadBlob(b, 'faims3-dump.json');
                   }}
-                  startIcon={<RefreshIcon />}
+                  startIcon={<DownloadIcon />}
                 >
-                  Refresh the app
+                  Download local database contents
                 </Button>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                {' '}
-                <Typography variant={'overline'}>
-                  Downloading data from this device
-                </Typography>
-              </TableCell>
-
-              <TableCell>
+              </Grid>
+              <Grid item sm={'auto'}>
+                <Typography variant={'body2'}>Browsers only</Typography>
+              </Grid>
+              <Grid item>
+                <Button
+                  disableElevation
+                  size={'small'}
+                  color={'info'}
+                  variant={'contained'}
+                  onClick={async () => {
+                    console.error('Starting app system dump');
+                    const s = await getFullDBSystemDump();
+                    console.error(
+                      'Finished app system dump, starting app sharing'
+                    );
+                    await shareStringAsFileOnApp(
+                      s,
+                      'FAIMS Database Dump',
+                      'Share all the FAIMS data on your device',
+                      'faims3-dump.json'
+                    );
+                  }}
+                  startIcon={<ShareIcon />}
+                >
+                  Share local database contents
+                </Button>
+              </Grid>
+              <Grid item sm={'auto'}>
                 <Typography variant={'body2'}>
-                  Data download functionality is not well-supported by all
-                  device+browser combinations. Try the following buttons to
-                  access data from this device.
+                  Apps and some browsers
                 </Typography>
-              </TableCell>
-              <TableCell>
+              </Grid>
+            </Grid>
+          </Grid>
+
+          {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
+            <React.Fragment>
+              <Grid item xs={12}>
+                <Divider />
+              </Grid>
+              <Divider flexItem orientation={'horizontal'} />
+              <Grid item md={4} sm={6} xs={12}>
+                <Typography variant={'h5'} gutterBottom>
+                  Devtools
+                </Typography>
+
+                <Typography variant={'body2'}>
+                  Use the following with care!
+                </Typography>
+              </Grid>
+              <Grid item md={8} sm={6} xs={12}>
                 <Grid container spacing={2} alignItems={'center'}>
-                  <Grid item>
-                    <Button
-                      disableElevation
-                      variant={'outlined'}
-                      size={'small'}
-                      onClick={async () => {
-                        console.error('Starting browser system dump');
-                        const b = await getFullDBSystemDumpAsBlob();
-                        console.error(
-                          'Finished browser system dump, starting download'
-                        );
-                        downloadBlob(b, 'faims3-dump.json');
-                      }}
-                      startIcon={<DownloadIcon />}
-                    >
-                      Download local database contents
-                    </Button>
-                  </Grid>
-                  <Grid item sm={'auto'}>
-                    <Box>Browsers only</Box>
-                  </Grid>
-                  <Grid item>
-                    <Button
-                      disableElevation
-                      size={'small'}
-                      variant={'outlined'}
-                      onClick={async () => {
-                        console.error('Starting app system dump');
-                        const s = await getFullDBSystemDump();
-                        console.error(
-                          'Finished app system dump, starting app sharing'
-                        );
-                        await shareStringAsFileOnApp(
-                          s,
-                          'FAIMS Database Dump',
-                          'Share all the FAIMS data on your device',
-                          'faims3-dump.json'
-                        );
-                      }}
-                      startIcon={<ShareIcon />}
-                    >
-                      Share local database contents
-                    </Button>
-                  </Grid>
-                  <Grid item sm={'auto'}>
-                    <Box>Apps and some browsers</Box>
-                  </Grid>
-                </Grid>
-              </TableCell>
-            </TableRow>
-            {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
-              <TableRow>
-                <TableCell>
-                  <Typography variant={'overline'}>Devtools</Typography>
-                </TableCell>
-                <TableCell>Use the following with care!</TableCell>
-                <TableCell>
-                  <ButtonGroup>
-                    {SHOW_WIPE && (
+                  {SHOW_WIPE && (
+                    <Grid item>
                       <Button
-                        size={'small'}
-                        variant="contained"
-                        disableElevation
+                        onClick={handleOpen}
                         color={'error'}
-                        onClick={() => {
-                          unregisterServiceWorker();
-                          wipe_all_pouch_databases().then(() => {
-                            console.log('User cleaned database');
-                            window.location.reload();
-                          });
-                        }}
+                        variant={'contained'}
+                        disableElevation={true}
                         startIcon={<ErrorIcon />}
                       >
                         Wipe and reset everything
                       </Button>
-                    )}
-                    {SHOW_MINIFAUXTON && (
+                      <Dialog
+                        open={open}
+                        onClose={handleClose}
+                        aria-labelledby="alert-dialog-title"
+                        aria-describedby="alert-dialog-description"
+                      >
+                        <Alert severity={'warning'}>
+                          <AlertTitle>Are you sure?</AlertTitle>
+                          Go ahead and wipe all local databases?
+                        </Alert>
+                        <DialogActions
+                          style={{justifyContent: 'space-between'}}
+                        >
+                          <Button
+                            onClick={handleClose}
+                            autoFocus
+                            color={'warning'}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size={'small'}
+                            variant="contained"
+                            disableElevation
+                            color={'error'}
+                            onClick={() => {
+                              unregisterServiceWorker();
+                              wipe_all_pouch_databases().then(() => {
+                                console.log('User cleaned database');
+                                window.location.reload();
+                              });
+                            }}
+                            startIcon={<StorageIcon />}
+                          >
+                            Reset local DB
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
+                    </Grid>
+                  )}
+                  {SHOW_MINIFAUXTON && (
+                    <Grid item>
                       <Button
-                        size={'small'}
                         variant="contained"
                         disableElevation
                         color={'warning'}
                         onClick={() => {
                           window.location.pathname = '/minifauxton.html';
                         }}
+                        startIcon={<StorageIcon />}
                       >
                         Open Mini-Fauxton
                       </Button>
-                    )}
-                  </ButtonGroup>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                    </Grid>
+                  )}
+                </Grid>
+              </Grid>
+            </React.Fragment>
+          )}
+        </Grid>
+      </Box>
     </Box>
   );
 }
