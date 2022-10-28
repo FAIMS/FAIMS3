@@ -20,6 +20,7 @@
 
 import {MapFormField} from '@faims-project/faims3-map-input';
 import {Typography} from '@mui/material';
+import React from 'react';
 import {ProjectUIFields} from '../../datamodel/typesystem';
 import {
   componenentSettingprops,
@@ -42,6 +43,7 @@ const MapFieldUISpec = {
     featureType: 'Point',
     zoom: 12,
     label: '',
+    geoTiff: 'default',
     FormLabelProps: {
       children: '',
     },
@@ -51,8 +53,6 @@ const MapFieldUISpec = {
 };
 
 const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
-  console.log('In MapField Settings');
-
   const newuiSetting = Object.assign({}, defaultSetting);
 
   newuiSetting['fields']['featureType'] = {
@@ -65,6 +65,7 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
       variant: 'outlined',
       required: true,
       select: true,
+      defaultValue: 'Point',
       InputProps: {},
       SelectProps: {},
       ElementProps: {
@@ -109,10 +110,40 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
     initialValue: 12,
   };
 
+  newuiSetting['fields']['basemap'] = {
+    'component-namespace': 'faims-custom',
+    'component-name': 'Select',
+    'type-returned': 'faims-core::String', // should this be File???
+    'component-parameters': {
+      fullWidth: true,
+      helperText: '',
+      variant: 'outlined',
+      defaultValue: 'default',
+      required: true,
+      select: true,
+      InputProps: {},
+      SelectProps: {},
+      ElementProps: {
+        options: [
+          {
+            value: 'default',
+            label: 'Use Default Basemap',
+          },
+        ],
+      },
+      InputLabelProps: {
+        label: 'Select Basemap File',
+      },
+    },
+    validationSchema: [['yup.string']],
+    initialValue: 'default',
+  };
+
   newuiSetting['views']['FormParamater']['fields'] = [
     'label',
     'featureType',
     'zoom',
+    'basemap',
   ];
 
   newuiSetting['viewsets'] = {
@@ -121,8 +152,64 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
       label: 'settings',
     },
   };
-  console.log('NEW SETTINGS', newuiSetting);
+
+  console.log('MapFieldUISetting:', newuiSetting);
   return newuiSetting;
+};
+
+const basemapCache: {[key: string]: string} = {};
+
+const addFileAttachmentSelect = (
+  project_id: string,
+  newuiSetting: ProjectUIModel
+) => {
+  // add any attached files to the select list for basemap
+  // first need to work out the fieldname which is 'basenamXYZZY'
+  const fields = Object.keys(newuiSetting.fields);
+  let fieldname = '';
+  fields.forEach(f => {
+    if (f.startsWith('basemap')) {
+      fieldname = f;
+    }
+  });
+  console.log('basemap field is', fieldname);
+  return getProjectMetadata(project_id, 'attachments')
+    .then(attachments => {
+      console.log('Attachments:', attachments);
+      console.log('newuiSetting:', newuiSetting);
+      const options = [
+        {
+          value: 'default',
+          label: 'Use Default Basemap',
+        },
+      ];
+
+      attachments.map((file: File) => {
+        let url;
+        if (file.name in basemapCache) {
+          url = basemapCache[file.name];
+        } else {
+          url = URL.createObjectURL(file);
+          basemapCache[file.name] = url;
+        }
+        console.log(file.name, url);
+
+        const option = {
+          value: url,
+          label: file.name,
+        };
+        options.push(option);
+      });
+      newuiSetting['fields'][fieldname][
+        'component-parameters'
+      ].ElementProps.options = options;
+      return newuiSetting;
+    })
+    .catch(() => {
+      // most likely there is no project metadata and so we just
+      // return the unmodified settings
+      return newuiSetting;
+    });
 };
 
 const MapFieldBuilderSettings = [
@@ -158,7 +245,10 @@ const getfieldNamesbyView = (
 // settings for the MapField
 //
 const MapComponentSetting = (props: componenentSettingprops) => {
-  const uiSetting = props.uiSetting;
+  const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
+
+  console.log('State uiSetting:', uiSetting);
+
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     if (props.handlerchanges !== undefined) {
       props.handlerchanges(event);
@@ -177,8 +267,9 @@ const MapComponentSetting = (props: componenentSettingprops) => {
     handlerchangewithview: any,
     view: string
   ) => {
+    console.log('GETFIELD', fieldName, uiSetting, formProps);
     return (
-      <>
+      <div key={'key' + fieldName}>
         {getComponentFromField(
           uiSetting,
           fieldName,
@@ -192,19 +283,21 @@ const MapComponentSetting = (props: componenentSettingprops) => {
           {formProps.errors[fieldName] !== undefined &&
             formProps.errors[fieldName].replace(fieldName, '  It ')}
         </Typography>
-      </>
+      </div>
     );
   };
 
   console.log('Here we are in MapComponentSetting', props);
 
-  const project_id = props.initialValues._id;
-  getProjectMetadata(project_id, 'attachments').then(data =>
-    console.log('metadata', data)
+  addFileAttachmentSelect(props.projectvalue.project_id, props.uiSetting).then(
+    settings => {
+      console.log('Updating uiSetting:', settings);
+      setuiSetting(settings);
+    }
   );
 
   return (
-    <>
+    <div>
       {uiSetting['viewsets'][props.designvalue]['views'] !== undefined &&
       uiSetting['viewsets'][props.designvalue]['views'].length === 0
         ? ''
@@ -220,7 +313,7 @@ const MapComponentSetting = (props: componenentSettingprops) => {
                 )
             )
           )}
-    </>
+    </div>
   );
 };
 
