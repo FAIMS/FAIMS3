@@ -38,6 +38,7 @@ export async function shareStringAsFileOnApp(
   dialogTitle: string,
   filename: string
 ) {
+  const isodate = new Date().toISOString();
   console.error('Starting writing of file');
   for (const dir of [
     Directory.Cache,
@@ -58,8 +59,9 @@ export async function shareStringAsFileOnApp(
         })
       ).uri;
       console.error('Writing of file complete, sharing file with', dir);
+      // TODO Remove dir when we figure out which one works. Arguably, we should just "continue" out of this loop if one works.
       await Share.share({
-        title: title,
+        title: `${title} ${dir} ${isodate}.json`,
         text: dialogTitle,
         url: url,
         dialogTitle: dialogTitle,
