@@ -253,22 +253,20 @@ const uiSettingOthers: ProjectUIModel = {
     // add for branching logic setting, this is for testing/developing ONLY, not ready for production yet
     logic_select: {
       'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-      'component-name': 'Select',
-      'type-returned': 'faims-core::String', // matches a type in the Project Model
+      'component-name': 'MultiSelect',
+      'type-returned': 'faims-core::Array', // matches a type in the Project Model
       'component-parameters': {
         fullWidth: true,
-        helperText: 'Select logic ',
+        helperText: 'Choose items from the dropdown',
         variant: 'outlined',
         required: false,
         select: true,
         InputProps: {},
-        SelectProps: {},
+        SelectProps: {
+          multiple: true,
+        },
         ElementProps: {
           options: [
-            {
-              value: 'none',
-              label: 'none',
-            },
             {
               value: 'field',
               label: 'field',
@@ -280,11 +278,11 @@ const uiSettingOthers: ProjectUIModel = {
           ],
         },
         InputLabelProps: {
-          label: 'Select ',
+          label: 'Select Multiple',
         },
       },
-      validationSchema: [['yup.string']],
-      initialValue: '1',
+      validationSchema: [['yup.array']],
+      initialValue: [],
     },
   },
   views: {
@@ -804,10 +802,12 @@ const definelogic = (
     newvalues['fields'][fieldname][name] = {type: value};
     return newvalues;
   }
-  if (newvalues['fields'][fieldname]['logic_select']['type'] === 'field') {
-    newvalues['fields'][fieldname]['logic_select'][
-      name.replace('select', '').replace(fieldname, '')
-    ] = value;
+  if (
+    newvalues['fields'][fieldname]['logic_select']['type'].includes('field')
+  ) {
+    // newvalues['fields'][fieldname]['logic_select'][
+    //   name.replace('select', '').replace(fieldname, '')
+    // ] = value;
     const pur_fieldname = name.replace('select', '').replace(fieldname, '');
     if (value.length > 0) {
       value.map((v: string) =>
@@ -826,10 +826,12 @@ const definelogic = (
 
     return newvalues;
   }
-  if (newvalues['fields'][fieldname]['logic_select']['type'] === 'section') {
-    newvalues['fields'][fieldname]['logic_select'][
-      name.replace('select', '').replace(fieldname, '')
-    ] = value;
+  if (
+    newvalues['fields'][fieldname]['logic_select']['type'].includes('section')
+  ) {
+    // newvalues['fields'][fieldname]['logic_select'][
+    //   name.replace('select', '').replace(fieldname, '')
+    // ] = value;
     const pur_fieldname = name.replace('select', '').replace(fieldname, '');
     if (value.length > 0) {
       value.map(
@@ -852,7 +854,7 @@ const getlogicoption = (
   type: string
 ) => {
   const options: Array<option> = [];
-  if (type === 'field') {
+  if (type.includes('field')) {
     uiSpec['viewsets'][currentform]['views'].map((view: string) => {
       uiSpec['views'][view]['fields'].map((field: string) =>
         uiSpec['fields'][field]['component-name'] !== 'TemplatedStringField'
@@ -866,7 +868,7 @@ const getlogicoption = (
     return options;
   }
 
-  if (type === 'section') {
+  if (type.includes('section')) {
     uiSpec['viewsets'][currentform]['views'].map((view: string) => {
       options.push({
         value: view,

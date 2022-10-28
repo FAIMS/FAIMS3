@@ -35,13 +35,15 @@ export function update_by_branching_logic(
 
   if (
     is_field &&
-    ui_specification['fields'][field]['logic_select']['type'] === 'field'
+    ui_specification['fields'][field]['logic_select']['type'].includes('field')
   )
     return true;
 
   if (
     !is_field &&
-    ui_specification['fields'][field]['logic_select']['type'] === 'section'
+    ui_specification['fields'][field]['logic_select']['type'].includes(
+      'section'
+    )
   )
     return true;
 
