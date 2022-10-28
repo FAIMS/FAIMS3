@@ -69,7 +69,6 @@ export default function Sandbox() {
           id="datetime-local"
           label="datetime-stamp with now button"
           type="datetime-local"
-          defaultValue="2017-05-24T10:30"
           sx={{minWidth: 300}}
           value={value}
           onChange={handleChange}
