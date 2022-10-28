@@ -34,6 +34,7 @@ import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
 import NotFound404 from './gui/pages/404';
+import Sandbox from './gui/pages/sandbox';
 import {StateProvider} from './context/store';
 import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
@@ -212,6 +213,7 @@ export default function App() {
                   is_sign={true}
                 />
                 <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
+                <Route exact path={ROUTES.SANDBOX} component={Sandbox} />
                 <Route component={NotFound404} />
               </Switch>
             </MainLayout>
