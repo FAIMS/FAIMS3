@@ -51,7 +51,7 @@ export async function shareStringAsFileOnApp(
     try {
       const url = (
         await Filesystem.writeFile({
-          path: filename,
+          path: `${isodate}-${dir}-${filename}`,
           data: s,
           directory: dir,
           encoding: Encoding.UTF8,
