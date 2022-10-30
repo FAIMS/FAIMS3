@@ -41,11 +41,11 @@ export async function shareStringAsFileOnApp(
   const isodate = new Date().toISOString();
   console.error('Starting writing of file');
   for (const dir of [
+    Directory.Documents,
     Directory.Cache,
-    Directory.External,
     Directory.Data,
     Directory.Library,
-    Directory.Documents,
+    Directory.External,
     Directory.ExternalStorage,
   ]) {
     try {
