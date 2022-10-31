@@ -57,6 +57,7 @@ function RecordsTable(props: RecordsTableProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const defaultMaxRowsMobile = 10;
+  console.error('RecordsTable props', rows, loading);
   // const newrows:any=[];
   // rows.map((r:any,index:number)=>
   //   props.viewsets !== null &&
