@@ -38,7 +38,7 @@ export async function shareStringAsFileOnApp(
   dialogTitle: string,
   filename: string
 ) {
-  const isodate = new Date().toJSON().slice(0,10);
+  const isodate = new Date().toJSON().slice(0, 10);
   console.error('Starting writing of file');
   for (const dir of [
     Directory.Library,
