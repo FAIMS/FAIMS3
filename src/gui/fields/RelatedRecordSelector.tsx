@@ -51,6 +51,7 @@ import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {generateFAIMSDataID} from '../../data_storage';
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -182,23 +183,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type_label,
           props.current_form
         );
+        console.log(records_info);
         setRecordsInformation(records_info);
-
-        // if (records_info.length > 0 && columns.length === 0) {
-        //   const newColumns = columns;
-        //   // this is the code to display the values from child, TO DO: in detail about how to display it
-        //   // Object.keys(records_info[0]).map((key: string) =>
-        //   //   key.includes('newfield')
-        //   //      ?newColumns.push({
-        //   //         field: key,
-        //   //         flex: 0.2,
-        //   //         minWidth: 100,
-        //   //       }):key
-        //   // );
-        //   SetColumns(newColumns);
-        // }
       } else {
-        setIsactive(true);
+        console.log('not get id');
+        console.log(project_id);
+        console.log(mounted);
+        // setIsactive(true);
       }
     })();
 
@@ -456,6 +447,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               field_label={props.InputLabelProps.label}
               handleUnlink={remove_related_child}
               handleReset={() => SetUpdated(uuidv4())}
+              disabled={disabled}
             />
           )}
         </Grid>

@@ -34,7 +34,7 @@ import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {styled} from '@mui/material/styles';
-
+import {List, ListItem} from '@mui/material';
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
     throw Error('No photo data found');
@@ -60,6 +60,8 @@ type ImgeListProps = {
   images: Array<any>;
   setopen: any;
   setimage: any;
+  disabled: boolean;
+  fieldName: string;
 };
 
 /******** create own Image List for dynamic loading images TODO: need to test if it's working on browsers and phone *** Kate */
@@ -79,18 +81,56 @@ const ImageGalleryList = styled('ul')(({theme}) => ({
   },
 }));
 
+// function srcset(image: string, size: number, rows = 1, cols = 1) {
+//   return {
+//     src: `${image}?w=${size * cols}&h=${size * rows}&fit=crop&auto=format`,
+//     srcSet: `${image}?w=${size * cols}&h=${
+//       size * rows
+//     }&fit=crop&auto=format&dpr=2 2x`,
+//   };
+// }
+
+const FAIMSViewImageList = (props: {images: Array<any>; fieldName: string}) => {
+  console.log(props.images);
+  return (
+    <List>
+      {props.images.map((image, index) => (
+        <ListItem
+          key={props.fieldName + index}
+          id={props.fieldName + index + 'image'}
+        >
+          <img
+            // {...srcset(item.img, 121, item.rows, item.cols)}
+            style={{maxHeight: 300, maxWidth: 200}}
+            src={URL.createObjectURL(image)}
+            loading="lazy"
+          />
+        </ListItem>
+      ))}
+    </List>
+  );
+};
+
 const FAIMESImageList = (props: ImgeListProps) => {
   const {images, setopen, setimage} = props;
+  const disabled = props.disabled ?? false;
+  console.log(disabled);
   const handelonClick = (index: number) => {
     if (images.length > index) {
       const newimages = images.filter((image: any, i: number) => i !== index);
       setimage(newimages);
     }
   };
-  console.log(images);
-  return images !== null && images !== undefined ? (
+
+  if (images === null && images === undefined)
+    return <span>No photo taken.</span>;
+  if (disabled === true)
+    return (
+      <FAIMSViewImageList images={props.images} fieldName={props.fieldName} />
+    );
+  return (
     <ImageGalleryList>
-      {images.map((image, index) =>
+      {props.images.map((image: any, index: number) =>
         image['attachment_id'] === undefined ? (
           <ImageListItem key={index}>
             <img
@@ -101,6 +141,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
               src={URL.createObjectURL(image)}
               onClick={() => setopen(URL.createObjectURL(image))}
             />
+
             <ImageListItemBar
               sx={{
                 background:
@@ -131,8 +172,6 @@ const FAIMESImageList = (props: ImgeListProps) => {
         )
       )}{' '}
     </ImageGalleryList>
-  ) : (
-    <span>No photo taken.</span>
   );
 };
 interface State {
@@ -229,6 +268,8 @@ export class TakePhoto extends React.Component<
           setimage={(newfiles: Array<any>) =>
             this.props.form.setFieldValue(this.props.field.name, newfiles)
           }
+          disabled={this.props.disabled ?? false}
+          fieldName={this.props.field.name}
         />
         <Typography variant="caption" color="textSecondary">
           {error_text}{' '}

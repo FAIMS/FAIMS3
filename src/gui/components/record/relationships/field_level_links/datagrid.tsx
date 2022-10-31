@@ -167,7 +167,10 @@ export default function DataGridFieldLinksComponent(
       valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
       flex: 0.4,
     },
-    {
+  ];
+  // for read ONLY
+  if (props.disabled !== true)
+    columns.push({
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
@@ -180,8 +183,7 @@ export default function DataGridFieldLinksComponent(
           showInMenu
         />,
       ],
-    },
-  ];
+    });
   return (
     <Box component={Paper} elevation={0}>
       {props.links !== null && (
