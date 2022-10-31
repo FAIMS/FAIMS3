@@ -22,15 +22,14 @@ import React from 'react';
 // import {makeStyles} from '@mui/material/styles';
 import {
   Box,
+  Stack,
   Breadcrumbs,
   Typography,
-  IconButton,
   Paper,
+  Button,
   Container,
-  InputAdornment,
 } from '@mui/material';
 import TextField from '@mui/material/TextField';
-import MoreTimeIcon from '@mui/icons-material/MoreTime';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 
@@ -64,31 +63,41 @@ export default function Sandbox() {
         </Breadcrumbs>
       </Box>
 
-      <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
-        <TextField
-          id="datetime-local"
-          label="datetime-stamp with now button"
-          type="datetime-local"
-          sx={{minWidth: 300}}
-          value={value}
-          onChange={handleChange}
-          InputLabelProps={{
-            shrink: true,
-          }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="capture time now"
-                  onClick={handleClick}
-                  edge="end"
-                >
-                  <MoreTimeIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+      <Box
+        component={Paper}
+        variant={'outlined'}
+        elevation={0}
+        px={1}
+        py={2}
+        my={2}
+      >
+        <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
+          <TextField
+            id="datetime-stamp"
+            label="datetime-stamp with now button"
+            type="datetime-local"
+            sx={{
+              minWidth: 250,
+              '& .MuiOutlinedInput-root': {borderRadius: '4px 0px 0px 4px'},
+            }}
+            value={value}
+            onChange={handleChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <Button
+            variant="contained"
+            disableElevation
+            aria-label="capture time now"
+            onClick={handleClick}
+            sx={{
+              borderRadius: {xs: '4px', sm: '0px 4px 4px 0px'},
+            }}
+          >
+            Now
+          </Button>
+        </Stack>
       </Box>
     </Container>
   );
