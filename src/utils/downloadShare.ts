@@ -38,7 +38,7 @@ export async function shareStringAsFileOnApp(
   dialogTitle: string,
   filename: string
 ) {
-  const isodate = new Date().toJSON().slice(0, 10);
+  const localDate = new Date().toJSON().slice(0, 10);
   console.error('Starting writing of file');
   for (const dir of [
     Directory.Library,
@@ -52,7 +52,7 @@ export async function shareStringAsFileOnApp(
       console.error('Trying ', dir);
       const url = (
         await Filesystem.writeFile({
-          path: `${isodate}-${dir}-${filename}`,
+          path: `${localDate}-${dir}-${filename}`,
           data: s,
           directory: dir,
           encoding: Encoding.UTF8,
@@ -62,7 +62,7 @@ export async function shareStringAsFileOnApp(
       console.error('Writing of file complete, sharing file', url);
       // TODO Remove dir when we figure out which one works. Arguably, we should just "continue" out of this loop if one works.
       await Share.share({
-        title: `${title} ${dir} ${isodate}.json`,
+        title: `${title} ${dir} ${localDate}.json`,
         text: dialogTitle,
         url: url,
         dialogTitle: dialogTitle,
