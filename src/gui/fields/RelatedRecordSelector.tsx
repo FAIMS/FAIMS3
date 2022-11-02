@@ -71,10 +71,27 @@ interface Props {
 function get_default_relation_label(
   multiple: boolean,
   value: any,
-  type: string
+  type: string,
+  relation_linked_vocabPair: string[][] | undefined
 ) {
-  if (type === 'Child') return ['is child of', 'is parent of'];
-  if (value === null || value === undefined) return [];
+  if (type === 'Child') {
+    if (
+      relation_linked_vocabPair === undefined ||
+      relation_linked_vocabPair.length === 0
+    )
+      //get default value for relation_linked_vocabPair
+      return ['is child of', 'is parent of'];
+    else return relation_linked_vocabPair;
+  }
+  if (value === null || value === undefined) {
+    if (
+      relation_linked_vocabPair === undefined ||
+      relation_linked_vocabPair.length === 0
+    )
+      //get default value for relation_linked_vocabPair
+      return [];
+    else return relation_linked_vocabPair[0];
+  }
   if (!multiple && value !== undefined && value['relation_type_vocabPair'])
     return value['relation_type_vocabPair'];
 
@@ -127,7 +144,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const lastvaluePair = get_default_relation_label(
     multiple,
     props.form.values[field_name],
-    type
+    type,
+    props.relation_linked_vocabPair
   );
   const [relationshipLabel, setRelationshipLabel] = React.useState<string>(
     lastvaluePair[0]
@@ -159,6 +177,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type,
           props.relation_type,
           record_id,
+          field_name,
           relationshipPair
         );
         const records = excludes_related_record(

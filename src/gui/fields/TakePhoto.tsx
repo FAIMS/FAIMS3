@@ -122,7 +122,7 @@ const FAIMESImageList = (props: ImgeListProps) => {
     }
   };
 
-  if (images === null && images === undefined)
+  if (images === null || images === undefined)
     return <span>No photo taken.</span>;
   if (disabled === true)
     return (
