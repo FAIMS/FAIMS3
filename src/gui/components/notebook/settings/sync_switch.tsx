@@ -37,6 +37,7 @@ import {
 import {store} from '../../../../context/store';
 import {ActionType} from '../../../../context/actions';
 import {grey} from '@mui/material/colors';
+import NotebookActivationSwitch from './activation-switch';
 
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;
@@ -51,48 +52,69 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
     isSyncingProject(project.project_id)
   );
   const [isWorking, setIsWorking] = useState(false);
-
+  const [isActivated, setIsActivated] = useState(false);
   useEffect(() => {
     return listenSyncingProject(project.project_id, setIsSyncing);
   }, [project.project_id]);
 
+  const handleActivation = () => {
+    setIsWorking(true);
+    setTimeout(() => {
+      setIsWorking(false), setIsActivated(true);
+    }, 2000);
+  };
   return ['published', 'archived'].includes(String(props.project_status)) ? (
     <Box>
-      <FormControlLabel
-        sx={{mr: 0}}
-        control={
-          <Switch
-            checked={isSyncing}
-            disabled={isWorking}
-            onChange={async (event, checked) => {
-              setIsWorking(true);
-              await setSyncingProject(project.project_id, checked).then(() => {
-                dispatch({
-                  type: ActionType.ADD_ALERT,
-                  payload: {
-                    message: `${
-                      checked ? 'Enabling ' : 'Disabling '
-                    } data sync for notebook  ${project.name}`,
-                    severity: 'success',
-                  },
-                });
-
-                setIsWorking(false);
-              });
-            }}
-          />
-        }
-        label={
-          <Typography variant={'button'}>{isSyncing ? 'On' : 'Off'}</Typography>
-        }
-      />
-      {isWorking ? <FormHelperText>Working...</FormHelperText> : ''}
-      {props.showHelperText ? (
-        <FormHelperText>
-          Toggle syncing this notebook to the server.
-        </FormHelperText>
+      {!isActivated ? (
+        <NotebookActivationSwitch
+          project={props.project}
+          project_status={props.project_status}
+          handleActivation={handleActivation}
+          isWorking={isWorking}
+        />
       ) : (
-        ''
+        <Box>
+          <FormControlLabel
+            sx={{mr: 0}}
+            control={
+              <Switch
+                checked={isSyncing}
+                disabled={isWorking}
+                onChange={async (event, checked) => {
+                  setIsWorking(true);
+                  await setSyncingProject(project.project_id, checked).then(
+                    () => {
+                      dispatch({
+                        type: ActionType.ADD_ALERT,
+                        payload: {
+                          message: `${
+                            checked ? 'Enabling ' : 'Disabling '
+                          } data sync for notebook  ${project.name}`,
+                          severity: 'success',
+                        },
+                      });
+
+                      setIsWorking(false);
+                    }
+                  );
+                }}
+              />
+            }
+            label={
+              <Typography variant={'button'}>
+                {isSyncing ? 'On' : 'Off'}
+              </Typography>
+            }
+          />
+          {isWorking ? <FormHelperText>Working...</FormHelperText> : ''}
+          {props.showHelperText ? (
+            <FormHelperText>
+              Toggle syncing this notebook to the server.
+            </FormHelperText>
+          ) : (
+            ''
+          )}
+        </Box>
       )}
     </Box>
   ) : (
@@ -104,7 +126,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
         py: '2px',
       }}
       component={Paper}
-      variant={'outlined'}
+      // variant={'outlined'}
       elevation={0}
     >
       <Typography
@@ -118,7 +140,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
         variant={'caption'}
         elevation={0}
       >
-        Published or archived notebooks can be synced.
+        Only published or archived notebooks can be synced.
       </Typography>
     </Box>
   );
