@@ -15,7 +15,7 @@
  *
  * Filename: RecordTabBar.tsx
  * Description:
- *   Conflict Resolve Working Panel include ConflictA Pannel, Resolved Panel and ConflictB Pannel
+ *   Conflict Resolve Working Panel include ConflictA Panel, Resolved Panel and ConflictB Panel
  */
 
 import React from 'react';

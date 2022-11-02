@@ -238,7 +238,7 @@ export default function DataGridFieldLinksComponent(
                   </Alert>
                   <ButtonGroup fullWidth disableElevation>
                     <Button onClick={handleUnlink} variant={'contained'}>
-                      {isSubmitting ? 'Working...' : 'Unlick'}
+                      {isSubmitting ? 'Working...' : 'Unlink'}
                     </Button>
                     <Button onClick={handleModalClose} variant={'outlined'}>
                       cancel

@@ -15,7 +15,7 @@
  *
  * Filename: TakePhoto.tsx
  * Description:
- *   TODO : to add function check if photoes be downloaded
+ *   TODO : to add function check if photo be downloaded
  */
 
 import React from 'react';
@@ -56,7 +56,7 @@ interface Props {
   issyncing?: string;
 }
 
-type ImgeListProps = {
+type ImageListProps = {
   images: Array<any>;
   setopen: any;
   setimage: any;
@@ -111,7 +111,7 @@ const FAIMSViewImageList = (props: {images: Array<any>; fieldName: string}) => {
   );
 };
 
-const FAIMESImageList = (props: ImgeListProps) => {
+const FAIMSImageList = (props: ImageListProps) => {
   const {images, setopen, setimage} = props;
   const disabled = props.disabled ?? false;
   console.log(disabled);
@@ -260,7 +260,7 @@ export class TakePhoto extends React.Component<
             ? this.props.label
             : 'Take Photo'}
         </Button>
-        <FAIMESImageList
+        <FAIMSImageList
           images={images}
           setopen={(path: string) =>
             this.setState({open: true, photopath: path})
