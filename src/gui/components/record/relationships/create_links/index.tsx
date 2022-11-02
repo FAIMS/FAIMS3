@@ -67,7 +67,7 @@ export default function CreateLinkComponent(
         </Grid>
         <Grid item>
           <ButtonGroup variant={'outlined'} size={'medium'}>
-            {props.relation_type === 'Child' && (
+            {props.relation_type === 'Child' && props.disabled !== true && (
               <AddNewRecordButton
                 is_enabled={props.is_enabled}
                 pathname={props.pathname}

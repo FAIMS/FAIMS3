@@ -125,6 +125,7 @@ function SingleComponent(props: SingleComponentProps) {
                   handerannoattion={props.handerannoattion}
                   isannotationshow={isannotationshow}
                   isuncertityshow={isuncertityshow}
+                  disabled={props.disabled}
                 />
               </Box>
             </Collapse>
