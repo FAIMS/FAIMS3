@@ -157,6 +157,7 @@ function DisplayChild(props: DisplayChildProps) {
         />
       );
   }
+  console.debug('values', props.value);
   return (
     <DataGridFieldLinksComponent
       links={props.recordsInformation}
@@ -511,6 +512,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             </Grid>
           ))}
         <Grid item xs={12} sm={12} md={12} lg={12}>
+          {/* {multiple?props.form.values[field_name][0]['record_id']:props.form.values[field_name]['record_id']} */}
           <DisplayChild
             recordsInformation={recordsInformation}
             record_id={record_id}
