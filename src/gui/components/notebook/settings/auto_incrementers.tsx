@@ -33,7 +33,7 @@ export default function AutoIncrementerSettingsList(
   }, [props.project_info.project_id]);
 
   return (
-    <Grid container spacing={2}>
+    <Grid container spacing={{xs:1, sm:2, md:3}}>
       {references.length === 0 ? (
         <Grid item xs={12} sm={6} md={6}>
           <Box component={Paper} variant={'outlined'} elevation={0}>
@@ -70,8 +70,13 @@ export default function AutoIncrementerSettingsList(
             key={'autoincrementer_range_' + ai.form_id + ai.field_id + ai.label}
           >
             <Box component={Paper} variant={'outlined'} p={2} elevation={0}>
-              <Typography variant={'h6'} sx={{mb: 2}}>
+              <Typography variant={'h6'} gutterBottom>
                 Edit Allocations for {label}
+              </Typography>
+              <Typography variant={'caption'} sx={{mb: 2}} gutterBottom>
+                The allocated range will be &ge; the start value and &lt; the
+                stop value. e.g., a range allocation of start:1, stop:5 will
+                generate hrids in the range (1,2,3,4).
               </Typography>
               <AutoIncrementEditForm
                 project_id={props.project_info.project_id}

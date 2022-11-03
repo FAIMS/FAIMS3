@@ -120,18 +120,20 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
   ) : (
     <Box
       sx={{
-        backgroundColor: grey[200],
+        backgroundColor: grey[100],
         borderRadius: '4px',
         px: '4px',
         py: '2px',
+        borderLeft: 'solid 3px ' + grey[300],
       }}
       component={Paper}
       // variant={'outlined'}
+      my={1}
       elevation={0}
     >
       <Typography
         sx={{
-          backgroundColor: grey[200],
+          backgroundColor: grey[100],
           borderRadius: '4px',
           px: '4px',
           py: '2px',

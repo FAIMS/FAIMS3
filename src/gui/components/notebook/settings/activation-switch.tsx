@@ -1,10 +1,9 @@
 import React from 'react';
-import {Alert, AlertTitle, Button} from '@mui/material';
+import {Alert, Box, AlertTitle, Button, FormHelperText} from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {ProjectInformation} from '../../../../datamodel/ui';
 import DialogActions from '@mui/material/DialogActions';
-
-import ToggleOffIcon from '@mui/icons-material/ToggleOn';
+import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 
 import Dialog from '@mui/material/Dialog';
 
@@ -27,12 +26,12 @@ export default function NotebookActivationSwitch(
     setOpen(false);
   };
   return (
-    <React.Fragment>
+    <Box my={1}>
       <Button
         onClick={handleOpen}
         color={'info'}
         size={'small'}
-        variant={'contained'}
+        variant={'outlined'}
         disableElevation={true}
         startIcon={<ToggleOffIcon />}
       >
@@ -46,7 +45,7 @@ export default function NotebookActivationSwitch(
       >
         <Alert severity={'info'}>
           <AlertTitle>Are you sure?</AlertTitle>
-          Do you want to start syncing notebook {props.project.name} to your
+          Do you want to start syncing the {props.project.name} notebook to your
           device?
         </Alert>
         <DialogActions style={{justifyContent: 'space-between'}}>
@@ -55,30 +54,25 @@ export default function NotebookActivationSwitch(
           </Button>
 
           {props.isWorking ? (
-            <LoadingButton
-              loading
-              variant="outlined"
-              size={'small'}
-              color={'info'}
-            >
+            <LoadingButton loading variant="outlined" size={'small'}>
               Activating...
             </LoadingButton>
           ) : (
             <Button
               size={'small'}
-              variant="outlined"
+              variant="contained"
               disableElevation
-              color={'info'}
+              color={'primary'}
               onClick={() => {
                 props.handleActivation();
               }}
-              startIcon={<ToggleOffIcon />}
             >
               Activate
             </Button>
           )}
         </DialogActions>
       </Dialog>
-    </React.Fragment>
+      <FormHelperText>Begin syncing notebook to this device.</FormHelperText>
+    </Box>
   );
 }
