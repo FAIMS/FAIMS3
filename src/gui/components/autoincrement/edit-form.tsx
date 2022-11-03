@@ -179,13 +179,9 @@ export default class BasicAutoIncrementer extends React.Component<
         }}
       >
         {({submitForm, isSubmitting}) => (
-          <Box sx={{my:1}}>
+          <Box sx={{my: 1}}>
             <Form>
-              <Grid
-                container
-                direction="row"
-                spacing={2}
-              >
+              <Grid container direction="row" spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Field
                     size={'small'}
@@ -227,7 +223,7 @@ export default class BasicAutoIncrementer extends React.Component<
               </Grid>
             </Form>
             {isSubmitting && <LinearProgress />}
-            <Divider sx={{mt: 1, mb:2}} />
+            <Divider sx={{mt: 1, mb: 2}} />
           </Box>
         )}
       </Formik>

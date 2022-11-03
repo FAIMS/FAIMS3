@@ -33,7 +33,7 @@ export default function AutoIncrementerSettingsList(
   }, [props.project_info.project_id]);
 
   return (
-    <Grid container spacing={{xs:1, sm:2, md:3}}>
+    <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
       {references.length === 0 ? (
         <Grid item xs={12} sm={6} md={6}>
           <Box component={Paper} variant={'outlined'} elevation={0}>
