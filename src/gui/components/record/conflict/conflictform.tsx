@@ -676,6 +676,7 @@ export default function ConflictForm(props: ConflictFormProps) {
                   isSyncing={isSyncing}
                   disbaledRight={disbaledRight}
                   disbaledLeft={disbaledLeft}
+                  project_id={props.project_id}
                 />
               </div>
             </TabPanel>

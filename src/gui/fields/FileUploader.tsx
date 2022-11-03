@@ -88,32 +88,37 @@ export function FileUploader(props: FieldProps & Props) {
   };
   return (
     <div>
-      <Dropzone
-        // accept={accepted_filetypes}
-        disabled={disabled}
-        multiple={multiple}
-        maxFiles={maximum_number_of_files}
-        maxSize={maximum_file_size}
-        minSize={minimum_file_size}
-        onDrop={files => {
-          const newfiles = current_files.concat(files);
-          setfiles(newfiles);
-          props.form.setFieldValue(props.field.name, newfiles);
-        }}
-      >
-        {({getRootProps, getInputProps}) => (
-          <div {...getRootProps()}>
-            <div style={baseStyle}>
-              <input {...getInputProps()} />
-              <p>Drag 'n' drop some files here, or click to select files</p>
+      {props.disabled !== true && (
+        <Dropzone
+          // accept={accepted_filetypes}
+          disabled={disabled}
+          multiple={multiple}
+          maxFiles={maximum_number_of_files}
+          maxSize={maximum_file_size}
+          minSize={minimum_file_size}
+          onDrop={files => {
+            const newfiles = current_files.concat(files);
+            setfiles(newfiles);
+            props.form.setFieldValue(props.field.name, newfiles);
+          }}
+        >
+          {({getRootProps, getInputProps}) => (
+            <div {...getRootProps()}>
+              <div style={baseStyle}>
+                <input {...getInputProps()} />
+                <p>Drag 'n' drop some files here, or click to select files</p>
+              </div>
             </div>
-          </div>
-        )}
-      </Dropzone>
+          )}
+        </Dropzone>
+      )}
       <p>File uploaded:</p>
       <List>
         {current_files.map((file: any, index: number) => (
-          <ListItem key={index} id={index + 'file'}>
+          <ListItem
+            key={props.field.name + index}
+            id={props.field.name + index + 'file'}
+          >
             {file.file_type !== undefined && file.file_type !== 'image' ? (
               <ListItemButton onClick={() => setopen(true)}>
                 <ListItemIcon>
@@ -129,14 +134,21 @@ export function FileUploader(props: FieldProps & Props) {
                 <ListItemText primary={file.name} secondary={file.type} />
               </ListItemButton>
             ) : file.type !== undefined && file.type.includes('image') ? (
-              <img
-                style={{maxHeight: 300, maxWidth: 200}}
-                src={URL.createObjectURL(file)}
-                onClick={() => {
-                  setopen(true);
-                  setpath(URL.createObjectURL(file));
-                }}
-              />
+              props.disabled !== true ? (
+                <img
+                  style={{maxHeight: 300, maxWidth: 200}}
+                  src={URL.createObjectURL(file)}
+                  onClick={() => {
+                    setopen(true);
+                    setpath(URL.createObjectURL(file));
+                  }}
+                />
+              ) : (
+                <img
+                  style={{maxHeight: 300, maxWidth: 200}}
+                  src={URL.createObjectURL(file)}
+                />
+              )
             ) : (
               <ListItemText primary={file.name} secondary={file.type} />
             )}
@@ -149,16 +161,18 @@ export function FileUploader(props: FieldProps & Props) {
             ) : (
               ''
             )} */}
-            <ListItemSecondaryAction>
-              <IconButton
-                style={{color: '#000'}}
-                aria-label="Delete this Attachment"
-                onClick={() => handelonClick(index)}
-                size="large"
-              >
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
+            {props.disabled !== true && (
+              <ListItemSecondaryAction>
+                <IconButton
+                  style={{color: '#000'}}
+                  aria-label="Delete this Attachment"
+                  onClick={() => handelonClick(index)}
+                  size="large"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </ListItemSecondaryAction>
+            )}
           </ListItem>
         ))}
       </List>

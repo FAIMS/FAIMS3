@@ -17,6 +17,7 @@ export type LoginButtonProps = {
   label?: string;
   size?: ButtonProps['size'];
   sx?: object;
+  startIcon: React.ReactNode;
 };
 
 /**
@@ -32,6 +33,7 @@ export function LoginButton(props: LoginButtonProps) {
       sx={{
         ...props.sx,
       }}
+      startIcon={props.startIcon}
       onClick={() => {
         window.addEventListener(
           'message',

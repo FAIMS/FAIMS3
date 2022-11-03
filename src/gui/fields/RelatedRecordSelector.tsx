@@ -51,6 +51,7 @@ import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {generateFAIMSDataID} from '../../data_storage';
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
   related_type: FAIMSTypeName;
@@ -70,10 +71,27 @@ interface Props {
 function get_default_relation_label(
   multiple: boolean,
   value: any,
-  type: string
+  type: string,
+  relation_linked_vocabPair: string[][] | undefined
 ) {
-  if (type === 'Child') return ['is child of', 'is parent of'];
-  if (value === null || value === undefined) return [];
+  if (type === 'Child') {
+    if (
+      relation_linked_vocabPair === undefined ||
+      relation_linked_vocabPair.length === 0
+    )
+      //get default value for relation_linked_vocabPair
+      return ['is child of', 'is parent of'];
+    else return relation_linked_vocabPair;
+  }
+  if (value === null || value === undefined) {
+    if (
+      relation_linked_vocabPair === undefined ||
+      relation_linked_vocabPair.length === 0
+    )
+      //get default value for relation_linked_vocabPair
+      return [];
+    else return relation_linked_vocabPair[0];
+  }
   if (!multiple && value !== undefined && value['relation_type_vocabPair'])
     return value['relation_type_vocabPair'];
 
@@ -126,7 +144,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const lastvaluePair = get_default_relation_label(
     multiple,
     props.form.values[field_name],
-    type
+    type,
+    props.relation_linked_vocabPair
   );
   const [relationshipLabel, setRelationshipLabel] = React.useState<string>(
     lastvaluePair[0]
@@ -158,6 +177,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type,
           props.relation_type,
           record_id,
+          field_name,
           relationshipPair
         );
         const records = excludes_related_record(
@@ -182,23 +202,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type_label,
           props.current_form
         );
+        console.log(records_info);
         setRecordsInformation(records_info);
-
-        // if (records_info.length > 0 && columns.length === 0) {
-        //   const newColumns = columns;
-        //   // this is the code to display the values from child, TO DO: in detail about how to display it
-        //   // Object.keys(records_info[0]).map((key: string) =>
-        //   //   key.includes('newfield')
-        //   //      ?newColumns.push({
-        //   //         field: key,
-        //   //         flex: 0.2,
-        //   //         minWidth: 100,
-        //   //       }):key
-        //   // );
-        //   SetColumns(newColumns);
-        // }
       } else {
-        setIsactive(true);
+        console.log('not get id');
+        console.log(project_id);
+        console.log(mounted);
+        // setIsactive(true);
       }
     })();
 
@@ -456,6 +466,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               field_label={props.InputLabelProps.label}
               handleUnlink={remove_related_child}
               handleReset={() => SetUpdated(uuidv4())}
+              disabled={disabled}
             />
           )}
         </Grid>

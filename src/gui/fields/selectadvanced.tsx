@@ -120,6 +120,7 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
       <Typography component="div" className={classes.label}>
         {type === 'image' &&
         attachments !== undefined &&
+        attachments !== null &&
         attachments[label] !== undefined &&
         attachments[label].type.includes('image') ? (
           <img
@@ -244,18 +245,23 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
     let mounted = true;
     (async () => {
       if (project_id !== undefined && mounted) {
-        const attachfilenames = await getProjectMetadata(
-          project_id,
-          'attachfilenames'
-        );
-        const attachments: {[key: string]: File} = {};
-        for (const index in attachfilenames) {
-          const key = attachfilenames[index];
-          const file = await getProjectMetadata(project_id, key);
-          attachments[key] = file[0];
+        try {
+          const attachfilenames = await getProjectMetadata(
+            project_id,
+            'attachfilenames'
+          );
+          const attachments: {[key: string]: File} = {};
+          for (const index in attachfilenames) {
+            const key = attachfilenames[index];
+            const file = await getProjectMetadata(project_id, key);
+            attachments[key] = file[0];
+          }
+          setIsactive(true);
+          SetAttachments(attachments);
+        } catch (error) {
+          console.error('error to get Meta data', error);
+          setIsactive(true);
         }
-        setIsactive(true);
-        SetAttachments(attachments);
       } else {
         setIsactive(true);
       }
@@ -313,21 +319,24 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
         attachments={attachments}
         isactive={isactive}
       />
+
       <Typography variant="caption">{props.helperText}</Typography>
-      <Box sx={{overflowY: 'auto'}}>
-        <TreeView
-          aria-label="file system navigator"
-          defaultCollapseIcon={<ExpandMoreIcon />}
-          defaultExpandIcon={<ChevronRightIcon />}
-          sx={{flexGrow: 1, minWidth: 500, maxHeight: 300, overflowY: 'auto'}}
-          // multiSelect
-        >
-          {Array.isArray(ElementProps.optiontree) &&
-            ElementProps.optiontree.map((node, key) =>
-              renderTree(node, key, '', '')
-            )}
-        </TreeView>
-      </Box>
+      {props.disabled !== true && (
+        <Box sx={{overflowY: 'auto'}}>
+          <TreeView
+            aria-label="file system navigator"
+            defaultCollapseIcon={<ExpandMoreIcon />}
+            defaultExpandIcon={<ChevronRightIcon />}
+            sx={{flexGrow: 1, minWidth: 500, maxHeight: 300, overflowY: 'auto'}}
+            // multiSelect
+          >
+            {Array.isArray(ElementProps.optiontree) &&
+              ElementProps.optiontree.map((node, key) =>
+                renderTree(node, key, '', '')
+              )}
+          </TreeView>
+        </Box>
+      )}
     </Box>
   );
 }

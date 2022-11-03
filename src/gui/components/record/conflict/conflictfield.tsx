@@ -40,7 +40,6 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import {card_styles, cardstyletype} from './conflictstyle';
 import {CircularProgress} from '@mui/material';
 import {getComponentFromFieldConfig} from '../fields';
-
 type EmptyProps = {
   isspin: boolean;
   text?: string;

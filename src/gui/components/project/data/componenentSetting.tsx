@@ -454,8 +454,13 @@ const getvalue = (
   if (view === 'meta' && fieldui['meta'] === undefined) {
     return false;
   }
-  if (view === 'logic' && fieldui['logic_select'] === undefined) {
-    return fieldui['logic_select'];
+  if (view === 'logic') {
+    if (
+      fieldui['logic_select'] !== undefined &&
+      fieldui['logic_select']['type'] !== undefined
+    )
+      return fieldui['logic_select']['type'];
+    else return [];
   }
   try {
     return (
@@ -845,6 +850,7 @@ const definelogic = (
     }
     return newvalues;
   }
+  console.error(newvalues);
   return newvalues;
 };
 

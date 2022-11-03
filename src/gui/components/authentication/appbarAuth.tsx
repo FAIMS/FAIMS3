@@ -19,9 +19,17 @@
  *   throughout the app.
  */
 import React from 'react';
-import {Button, Menu, MenuItem} from '@mui/material';
+import {
+  Button,
+  Menu,
+  MenuItem,
+  ListItemText,
+  ListItemIcon,
+} from '@mui/material';
 import {useHistory} from 'react-router-dom';
-
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import LogoutIcon from '@mui/icons-material/Logout';
+import GroupIcon from '@mui/icons-material/Group';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {TokenContents} from '../../../datamodel/core';
@@ -80,13 +88,22 @@ export default function AppBarAuth(props: AppBarAuthProps) {
           onClose={handleClose}
         >
           <MenuItem onClick={() => handleRoutingAndClose(ROUTES.WORKSPACE)}>
-            Workspace
+            <ListItemIcon>
+              <DashboardIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Workspace</ListItemText>
           </MenuItem>
           <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
-            Switch User
+            <ListItemIcon>
+              <GroupIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Switch User</ListItemText>
           </MenuItem>
           <MenuItem onClick={() => handleRoutingAndClose(ROUTES.SIGN_IN)}>
-            Logout {props.token!.username}
+            <ListItemIcon>
+              <LogoutIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Log out {props.token!.username}</ListItemText>
           </MenuItem>
         </Menu>
       </React.Fragment>
