@@ -38,13 +38,15 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {useLocation} from 'react-router-dom';
-import {CircularProgress, Grid, Typography} from '@mui/material';
+import {Grid, Typography} from '@mui/material';
 import {
   get_RelatedFields_for_field,
   Update_New_Link,
   remove_link_from_list,
 } from '../components/record/relationships/RelatedInformation';
-import DataGridFieldLinksComponent from '../components/record/relationships/field_level_links/datagrid';
+import DataGridFieldLinksComponent, {
+  DataGridNoLink,
+} from '../components/record/relationships/field_level_links/datagrid';
 import {RecordLinkProps} from '../components/record/relationships/types';
 
 import {SelectChangeEvent} from '@mui/material';
@@ -125,7 +127,49 @@ function excludes_related_record(
   );
   return records;
 }
+type DisplayChildProps = {
+  handleUnlink: Function;
+  handleReset: Function;
+  recordsInformation: RecordLinkProps[] | null;
+  disabled: boolean;
+  record_id: string;
+  record_hrid: string;
+  record_type: string;
+  field_label: string;
+  value: any;
+  multiple: boolean;
+  relationshipLabel: string;
+};
 
+function DisplayChild(props: DisplayChildProps) {
+  let is_values = true;
+  if (props.multiple && props.value.length === 0) is_values = false;
+  if (!props.multiple && props.value.record_id === undefined) is_values = false;
+
+  if (!is_values) return <></>;
+
+  if (props.recordsInformation === null) {
+    if (is_values)
+      return (
+        <DataGridNoLink
+          links={props.multiple ? props.value : [props.value]}
+          relation_linked_vocab={props.relationshipLabel}
+        />
+      );
+  }
+  return (
+    <DataGridFieldLinksComponent
+      links={props.recordsInformation}
+      record_id={props.record_id}
+      record_hrid={props.record_hrid}
+      record_type={props.record_type}
+      field_label={props.field_label}
+      handleUnlink={props.handleUnlink}
+      handleReset={props.handleReset}
+      disabled={props.disabled}
+    />
+  );
+}
 export function RelatedRecordSelector(props: FieldProps & Props) {
   const project_id = props.form.values['_project_id'];
   const record_id = props.form.values['_id'];
@@ -167,11 +211,21 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   )
     search = search.replace(url_split[0] + '&' + url_split[1], '');
   if (search !== '') search = '&' + search;
+  const hrid =
+    props.form.values['type'] !== undefined
+      ? props.form.values['hrid' + props.form.values['type']] ??
+        props.form.values['_id']
+      : props.form.values['_id'];
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (project_id !== undefined && mounted) {
+        if (
+          !multiple &&
+          props.form.values[field_name]['record_id'] === undefined
+        )
+          setIs_enabled(true);
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
@@ -187,11 +241,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         );
         setOptions(records);
         setIsactive(true);
-        if (
-          !multiple &&
-          props.form.values[field_name]['record_id'] === undefined
-        )
-          setIs_enabled(true);
+
         const records_info = await get_RelatedFields_for_field(
           props.form.values,
           props.related_type,
@@ -202,12 +252,10 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.related_type_label,
           props.current_form
         );
-        console.log(records_info);
+        console.debug('record information', records_info);
         setRecordsInformation(records_info);
       } else {
-        console.log('not get id');
-        console.log(project_id);
-        console.log(mounted);
+        console.error('Project ID is not avaliable');
         // setIsactive(true);
       }
     })();
@@ -282,6 +330,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
 
     if (multiple) newValue.push(selectedRecord);
     else newValue = selectedRecord;
+
     setFieldValue(newValue);
     props.form.setFieldValue(props.field.name, newValue);
     props.form.submitForm();
@@ -304,7 +353,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     )
       .then(child_record => {
         if (child_record !== null) {
-          if (type === 'Child') setRecordsInformation([child_record]);
+          if (!multiple) setRecordsInformation([child_record]);
           else {
             const new_records = [...(recordsInformation ?? []), child_record];
             // new_records.push(child_record)
@@ -387,7 +436,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         false
       );
       if (new_child_record !== null) {
-        if (type === 'Child') setRecordsInformation([]);
+        if (!multiple)
+          setRecordsInformation([]); // fix multiple child parent issue
         else {
           const new_records = remove_link_from_list(
             recordsInformation ?? [],
@@ -412,33 +462,39 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     <div id={field_name}>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          {isactive && (
-            <CreateLinkComponent
-              {...props}
-              field_name={field_name}
-              options={options}
-              handleChange={handleChange}
-              relationshipLabel={relationshipLabel}
-              SetSelectedRecord={SetSelectedRecord}
-              selectedRecord={selectedRecord}
-              disabled={disabled}
-              is_enabled={is_enabled}
-              project_id={project_id}
-              relation_type={type}
-              add_related_child={add_related_child}
-              field_label={props.InputLabelProps.label}
-              pathname={
-                ROUTES.NOTEBOOK +
-                project_id +
-                ROUTES.RECORD_CREATE +
-                props.related_type
-              }
-              state={newState}
-              handleSubmit={() => props.form.submitForm()}
-              save_new_record={save_new_record}
-            />
-          )}
+          <CreateLinkComponent
+            {...props}
+            field_name={field_name}
+            options={options}
+            handleChange={handleChange}
+            relationshipLabel={relationshipLabel}
+            SetSelectedRecord={SetSelectedRecord}
+            selectedRecord={selectedRecord}
+            disabled={disabled}
+            is_enabled={is_enabled}
+            project_id={project_id}
+            relation_type={type}
+            add_related_child={add_related_child}
+            field_label={props.InputLabelProps.label}
+            pathname={
+              ROUTES.NOTEBOOK +
+              project_id +
+              ROUTES.RECORD_CREATE +
+              props.related_type
+            }
+            state={newState}
+            handleSubmit={() => props.form.submitForm()}
+            save_new_record={save_new_record}
+            is_active={isactive}
+          />
         </Grid>
+        {props.form.isValid === false && (
+          <Grid item xs={12} sm={12} md={12} lg={12}>
+            <Typography variant="caption" color="error">
+              To enable Add record or Link, please make sure form has no error
+            </Typography>
+          </Grid>
+        )}
         {disabled === false ||
           (props.helperText === '' && !is_enabled && (
             <Grid item xs={12} sm={12} md={12} lg={12}>
@@ -448,27 +504,26 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               </Typography>
               {is_enabled && (
                 <Typography variant="caption">
-                  To enable Add record or Link, remove link firstly
+                  It's a signle related, to enable Add record or Link, remove
+                  link firstly
                 </Typography>
               )}
             </Grid>
           ))}
         <Grid item xs={12} sm={12} md={12} lg={12}>
-          {recordsInformation === null && (
-            <CircularProgress size={14} thickness={5} />
-          )}
-          {recordsInformation !== null && recordsInformation.length > 0 && (
-            <DataGridFieldLinksComponent
-              links={recordsInformation}
-              record_id={record_id}
-              record_hrid={record_id}
-              record_type={props.form.values['type']}
-              field_label={props.InputLabelProps.label}
-              handleUnlink={remove_related_child}
-              handleReset={() => SetUpdated(uuidv4())}
-              disabled={disabled}
-            />
-          )}
+          <DisplayChild
+            recordsInformation={recordsInformation}
+            record_id={record_id}
+            record_hrid={props.form.values['_id']}
+            record_type={props.form.values['type']}
+            field_label={props.InputLabelProps.label}
+            handleUnlink={remove_related_child}
+            handleReset={() => SetUpdated(uuidv4())}
+            disabled={disabled}
+            value={props.form.values[field_name]}
+            multiple={multiple}
+            relationshipLabel={relationshipLabel}
+          />
         </Grid>
       </Grid>
     </div>
