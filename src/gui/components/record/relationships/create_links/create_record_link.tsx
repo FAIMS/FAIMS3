@@ -251,7 +251,9 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                 {props.relation_type === 'Linked' && (
                   <AddNewRecordButton
                     is_enabled={
-                      props.form.isValid === false ? false : props.is_enabled
+                      props.form.isValid === false || props.form.isSubmitting
+                        ? false
+                        : props.is_enabled
                     }
                     pathname={props.pathname}
                     state={props.state}
