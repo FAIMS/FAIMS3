@@ -256,7 +256,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         console.debug('record information', records_info);
         setRecordsInformation(records_info);
       } else {
-        console.debug('Project ID is not avaliable');
+        console.debug('Project ID is not available');
         // setIsactive(true);
       }
     })();
@@ -286,7 +286,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         setRecordsInformation(records_info);
         SetUpdated(uuidv4());
       } else {
-        console.debug('Project ID is not avaliable');
+        console.debug('Project ID is not available');
         // setIsactive(true);
       }
     })();
@@ -535,7 +535,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
               </Typography>
               {is_enabled && (
                 <Typography variant="caption">
-                  It's a signle related, to enable Add record or Link, remove
+                  It's a single related, to enable Add record or Link, remove
                   link firstly
                 </Typography>
               )}

@@ -40,7 +40,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
     },
     {
       label: 'Store Contenet Offline',
-      helpText: 'Make all images and fiels avaliable offline',
+      helpText: 'Make all images and fiels available offline',
     },
   ];
 
