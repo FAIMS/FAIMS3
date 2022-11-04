@@ -83,8 +83,8 @@ export default function FaimsDialog(props: DiagProps) {
           </DialogContentText>
         ) : (
           <DialogContentText id="alert-dialog-description">
-            To download attachments and photos, please go to Settings and enable
-            it.
+            To download attachments and photos, please go to Notebook / Settings
+            Tab and enable it.
           </DialogContentText>
         )}
       </DialogContent>
@@ -95,15 +95,11 @@ export default function FaimsDialog(props: DiagProps) {
           <Button color="primary" size="large" onClick={setopen}>
             Close
           </Button>
-          {/* <Button color="primary" size="large" onClick={()=>console.log('function to download'+ props.filedId)}>
-          Download
-        </Button> */}
-
           <Button
             color="primary"
             size="large"
             component={RouterLink}
-            to={ROUTES.NOTEBOOK + project_id + ROUTES.PROJECT_ATTACHMENT}
+            to={ROUTES.NOTEBOOK + project_id}
           >
             CHANGE SETTINGS
           </Button>

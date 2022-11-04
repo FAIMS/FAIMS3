@@ -69,7 +69,11 @@ export default function CreateLinkComponent(
           <ButtonGroup variant={'outlined'} size={'medium'}>
             {props.relation_type === 'Child' && props.disabled !== true && (
               <AddNewRecordButton
-                is_enabled={props.is_enabled}
+                is_enabled={
+                  props.form.isValid === false || props.form.isSubmitting
+                    ? false
+                    : props.is_enabled
+                }
                 pathname={props.pathname}
                 state={props.state}
                 text={'Add Child Record'}
@@ -78,6 +82,7 @@ export default function CreateLinkComponent(
                 save_new_record={props.save_new_record}
               />
             )}
+
             <ExpandMoreButton
               disableElevation
               expand={expanded}
@@ -85,7 +90,11 @@ export default function CreateLinkComponent(
               aria-expanded={expanded}
               aria-label="show more"
               endIcon={<ExpandMoreIcon />}
-              disabled={props.disabled}
+              disabled={
+                props.form.isValid === false || props.form.isSubmitting
+                  ? true
+                  : props.disabled
+              } // add to disable add/link record feature
             >
               Add Link
             </ExpandMoreButton>

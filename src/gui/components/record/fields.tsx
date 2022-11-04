@@ -28,7 +28,8 @@ export function getComponentFromFieldConfig(
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>,
   isSyncing = 'false',
-  disabled = false
+  disabled = false,
+  isconflict = false
 ) {
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
@@ -63,6 +64,7 @@ export function getComponentFromFieldConfig(
         formProps.setFieldValue('updateField', fieldName);
       }}
       disabled={disabled}
+      isconflict={isconflict}
     />
   ) : (
     <Field
@@ -81,6 +83,7 @@ export function getComponentFromFieldConfig(
       }}
       issyncing={isSyncing}
       disabled={disabled}
+      isconflict={isconflict}
     />
   );
 }
