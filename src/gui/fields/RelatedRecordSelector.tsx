@@ -256,7 +256,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         console.debug('record information', records_info);
         setRecordsInformation(records_info);
       } else {
-        console.error('Project ID is not avaliable');
+        console.debug('Project ID is not avaliable');
         // setIsactive(true);
       }
     })();
@@ -270,11 +270,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      console.error(
-        'isconflict value',
-        props.isconflict,
-        props.form.values[field_name]
-      );
       // this is for conflict only
       if (project_id !== undefined && mounted && props.isconflict === true) {
         const records_info = await get_RelatedFields_for_field(
@@ -291,7 +286,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
         setRecordsInformation(records_info);
         SetUpdated(uuidv4());
       } else {
-        console.error('Project ID is not avaliable');
+        console.debug('Project ID is not avaliable');
         // setIsactive(true);
       }
     })();
@@ -353,7 +348,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       relation_type_vocabPair: relationshipPair,
     };
     let newValue = props.form.values[field_name];
-    if (multiple) newValue.push(new_child_record);
+    if (multiple) newValue = [...(newValue ?? []), new_child_record];
     else newValue = new_child_record;
     props.form.setFieldValue(props.field.name, newValue);
     return new_record_id;
@@ -397,7 +392,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           }
         } else console.error('Error to Add Link');
       })
-      .catch(error => console.error('Fail to update child'));
+      .catch(error => console.error('Fail to update child', error));
     const records = excludes_related_record(
       multiple,
       props.form.values[field_name],
