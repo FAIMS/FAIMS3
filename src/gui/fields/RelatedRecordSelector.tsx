@@ -68,6 +68,7 @@ interface Props {
   related_type_label?: string;
   current_form?: string;
   current_form_label?: string;
+  isconflict?: boolean;
 }
 
 function get_default_relation_label(
@@ -157,7 +158,6 @@ function DisplayChild(props: DisplayChildProps) {
         />
       );
   }
-  console.debug('values', props.value);
   return (
     <DataGridFieldLinksComponent
       links={props.recordsInformation}
@@ -221,7 +221,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (project_id !== undefined && mounted) {
+      if (project_id !== undefined && mounted && props.isconflict !== true) {
         if (
           !multiple &&
           props.form.values[field_name]['record_id'] === undefined
@@ -266,6 +266,41 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      console.error(
+        'isconflict value',
+        props.isconflict,
+        props.form.values[field_name]
+      );
+      // this is for conflict only
+      if (project_id !== undefined && mounted && props.isconflict === true) {
+        const records_info = await get_RelatedFields_for_field(
+          props.form.values,
+          props.related_type,
+          relationshipPair,
+          field_name,
+          props.InputLabelProps.label,
+          multiple,
+          props.related_type_label,
+          props.current_form
+        );
+        console.debug('record information', records_info);
+        setRecordsInformation(records_info);
+        SetUpdated(uuidv4());
+      } else {
+        console.error('Project ID is not avaliable');
+        // setIsactive(true);
+      }
+    })();
+
+    return () => {
+      // executed when unmount
+      mounted = false;
+    };
+  }, [props.form.values[field_name]]);
 
   // Note the "multiple" option below, that seems to control whether multiple
   // entries can in entered.
