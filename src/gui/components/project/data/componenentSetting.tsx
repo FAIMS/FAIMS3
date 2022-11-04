@@ -27,7 +27,7 @@ import {
   componenentSettingprops,
 } from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
-import {Defaultcomponentsetting} from '../../../fields/BasicFieldSettings';
+import {DefaultComponentSetting} from '../../../fields/BasicFieldSettings';
 import {
   HRID_STRING,
   DEFAULT_REALTION_LINK_VOCAB,
@@ -764,7 +764,7 @@ const Componentsetting = (props: componenentSettingprops) => {
   };
   return (
     <>
-      <Defaultcomponentsetting
+      <DefaultComponentSetting
         handlerchangewithview={handlerchangewithviewSpec}
         handlerchanges={handlerchanges}
         {...others}

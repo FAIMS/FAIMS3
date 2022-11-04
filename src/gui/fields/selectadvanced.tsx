@@ -21,7 +21,7 @@ import React, {useEffect} from 'react';
 import {TextFieldProps} from 'formik-mui';
 
 import {
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 
@@ -370,7 +370,7 @@ export function AdvancedSelectcomponentsetting(props: componenentSettingprops) {
   };
 
   return (
-    <Defaultcomponentsetting
+    <DefaultComponentSetting
       handlerchangewithview={handlerchangewithviewSpec}
       handlerchanges={handlerchanges}
       {...others}

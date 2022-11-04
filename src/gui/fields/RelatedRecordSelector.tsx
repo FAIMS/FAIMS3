@@ -28,7 +28,7 @@ import {RecordReference} from '../../datamodel/ui';
 import {getRecordsByType} from '../../data_storage';
 import {
   getDefaultuiSetting,
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
 } from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {option} from '../../datamodel/typesystem';
@@ -715,7 +715,7 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
   };
 
   return (
-    <Defaultcomponentsetting
+    <DefaultComponentSetting
       handlerchanges={handlerchanges}
       {...props}
       fieldui={props.fieldui}

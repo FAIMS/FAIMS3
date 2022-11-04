@@ -24,7 +24,7 @@ import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {MenuItem} from '@mui/material';
 import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 import {option} from '../../datamodel/typesystem';
@@ -153,7 +153,7 @@ export function Selectcomponentsetting(props: componenentSettingprops) {
   };
 
   return (
-    <Defaultcomponentsetting
+    <DefaultComponentSetting
       handlerchangewithview={handlerchangewithviewSpec}
       handlerchanges={handlerchanges}
       {...others}
