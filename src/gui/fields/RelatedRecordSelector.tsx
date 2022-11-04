@@ -427,7 +427,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           ? (child_record_index = index)
           : record
       );
-      if (child_record_index > -1) {
+      if (child_record_index === 0 && newValue.length === 1) {
+        newValue = [];
+      } else if (child_record_index > -1) {
         // only splice array when item is found
         newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
       }

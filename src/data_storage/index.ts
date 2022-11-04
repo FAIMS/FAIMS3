@@ -372,18 +372,21 @@ export async function getRecordsByType(
           is_parent
         );
         if (!metadata.deleted && metadata.type === type && !is_parent) {
-          //
+          const hrid =
+            metadata.hrid !== '' && metadata.hrid !== undefined
+              ? metadata.hrid
+              : metadata.record_id;
           if (relation_vocab === null)
             records.push({
               project_id: project_id,
               record_id: metadata.record_id,
-              record_label: metadata.hrid,
+              record_label: hrid,
             });
           else
             records.push({
               project_id: project_id,
               record_id: metadata.record_id,
-              record_label: metadata.hrid,
+              record_label: hrid,
               relation_type_vocabPair: relation_vocab, // pass the value of the vocab
             });
           if (DEBUG_APP) {

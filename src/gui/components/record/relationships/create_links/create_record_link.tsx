@@ -91,7 +91,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     disabled,
     project_id,
   } = props;
-
   const handleSubmit = () => {
     /**
      * Submit relationship to couchDB
@@ -122,7 +121,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: `Link between record ${props.record_type} ${props.record_hrid} and ${selectedRecord.record_label} added`,
+          message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
           severity: 'success',
         },
       });
