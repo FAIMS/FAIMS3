@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: ProjectBehaviour.tsx
- * Description:This is the file about Notebook Behavoiur, there is nothing in beta yet
+ * Description:This is the file about Notebook behaviour, there is nothing in beta yet
  *   TODO:
  */
 
@@ -39,12 +39,12 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
         'Allow users to add observations even when there is no internet connection. Changes will not be synced until the user is online again)',
     },
     {
-      label: 'Store Contenet Offline',
-      helpText: 'Make all images and fiels available offline',
+      label: 'Store Content Offline',
+      helpText: 'Make all images and files available offline',
     },
   ];
 
-  const belement = (
+  const element = (
     behaviour: BehaviourProperties,
     handleChange: FAIMShandlerType
   ) => {
@@ -83,7 +83,7 @@ export default function ProjectBehaviourTab(props: ProjectBehaviourProps) {
   return (
     <>
       {behaviours.map((behaviour: BehaviourProperties) =>
-        belement(behaviour, handleChange)
+        element(behaviour, handleChange)
       )}
     </>
   );
