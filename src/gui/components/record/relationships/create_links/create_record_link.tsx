@@ -163,8 +163,8 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                 >
                   {props.relation_linked_vocabPair.map(
                     (r: string[], index: number) => (
-                      <MenuItem value={r[0]} key={index}>
-                        {r[0]}
+                      <MenuItem value={r[1]} key={index}>
+                        {r[1]}
                       </MenuItem>
                     )
                   )}
