@@ -329,13 +329,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (props.relation_linked_vocabPair !== undefined) {
       let valuePair: string[] = [];
       props.relation_linked_vocabPair.map((r: string[]) =>
-        r[0] === value ? (valuePair = r) : r
+        r[1] === value ? (valuePair = r) : r
       );
       setRelationshipPair(valuePair);
       //reset the value of the record list
       const records = options;
       records.map(record => (record['relation_type_vocabPair'] = valuePair));
-      setOptions(records);
+      setOptions(records); 
     }
   };
 
