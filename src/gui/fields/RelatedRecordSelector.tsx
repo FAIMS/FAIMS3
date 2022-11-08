@@ -335,7 +335,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       //reset the value of the record list
       const records = options;
       records.map(record => (record['relation_type_vocabPair'] = valuePair));
-      setOptions(records); 
+      setOptions(records);
     }
   };
 
