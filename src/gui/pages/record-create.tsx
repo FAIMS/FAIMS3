@@ -319,6 +319,7 @@ export default function RecordCreate() {
 
   try {
     project_info = useEventedPromise(
+      'RecordCreate page',
       getProjectInfo,
       constantArgsShared(listenProjectInfo, project_id),
       false,

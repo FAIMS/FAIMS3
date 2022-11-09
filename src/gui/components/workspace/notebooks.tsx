@@ -56,6 +56,7 @@ export default function NoteBooks(props: NoteBookListProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const pouchProjectList = useEventedPromise(
+    'NoteBooks component',
     getProjectList,
     listenProjectList,
     true,

@@ -171,6 +171,7 @@ export default function AppBar(props: NavbarProps) {
   const toggle = () => setIsOpen(!isOpen);
 
   const pouchProjectList = useEventedPromise(
+    'AppBar component',
     getProjectList,
     listenProjectList,
     true,

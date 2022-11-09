@@ -28,7 +28,6 @@ import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@mui/material';
-import {ProjectInformation} from '../../datamodel/ui';
 
 import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
@@ -39,32 +38,38 @@ export default function Notebook() {
    *
    */
   const {project_id} = useParams<{project_id: ProjectID}>();
-  let project_info: ProjectInformation | null;
 
-  try {
-    project_info = useEventedPromise(
-      getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id),
-      false,
-      [project_id],
-      project_id
-    ).expect();
-  } catch (err: any) {
-    if (err.message !== 'missing') {
-      throw err;
-    } else {
-      return <Redirect to="/404" />;
-    }
+  const project_info_promise = useEventedPromise(
+    'notebook page',
+    getProjectInfo,
+    constantArgsShared(listenProjectInfo, project_id),
+    false,
+    [project_id],
+    project_id
+  );
+  console.log('Notebook page', project_id, project_info_promise);
+
+  if (project_info_promise.error !== undefined) {
+    console.error(
+      'Failed to load notebook',
+      project_id,
+      project_info_promise.error
+    );
+    return <Redirect to="/404" />;
   }
+  const project_info = project_info_promise.value;
+  const loading = project_info_promise.loading || project_info === undefined;
 
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
-    {title: project_info !== null ? project_info.name : ''},
+    {
+      title: !loading ? project_info.name : '',
+    },
   ];
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-  return project_info ? (
+  return !loading ? (
     <Box>
       <Grid
         container
