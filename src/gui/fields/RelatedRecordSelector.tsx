@@ -144,8 +144,10 @@ type DisplayChildProps = {
 
 function DisplayChild(props: DisplayChildProps) {
   let is_values = true;
-  if (props.multiple && props.value.length === 0) is_values = false;
-  if (!props.multiple && props.value.record_id === undefined) is_values = false;
+  if (props.value === undefined || props.value === null) is_values = false;
+  else if (props.multiple && props.value.length === 0) is_values = false;
+  else if (!props.multiple && props.value.record_id === undefined)
+    is_values = false;
 
   if (!is_values) return <></>;
 

@@ -41,9 +41,7 @@ export function update_by_branching_logic(
 
   if (
     !is_field &&
-    ui_specification['fields'][field]['logic_select']['type'].includes(
-      'section'
-    )
+    ui_specification['fields'][field]['logic_select']['type'].includes('view')
   )
     return true;
 

@@ -272,8 +272,8 @@ const uiSettingOthers: ProjectUIModel = {
               label: 'field',
             },
             {
-              value: 'section',
-              label: 'section',
+              value: 'view',
+              label: 'view',
             },
           ],
         },
@@ -831,9 +831,7 @@ const definelogic = (
 
     return newvalues;
   }
-  if (
-    newvalues['fields'][fieldname]['logic_select']['type'].includes('section')
-  ) {
+  if (newvalues['fields'][fieldname]['logic_select']['type'].includes('view')) {
     // newvalues['fields'][fieldname]['logic_select'][
     //   name.replace('select', '').replace(fieldname, '')
     // ] = value;
@@ -874,7 +872,7 @@ const getlogicoption = (
     return options;
   }
 
-  if (type.includes('section')) {
+  if (type.includes('view')) {
     uiSpec['viewsets'][currentform]['views'].map((view: string) => {
       options.push({
         value: view,
