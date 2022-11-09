@@ -46,6 +46,7 @@ interface RenderTree {
   name: string;
   children?: Array<RenderTree>;
   type?: string;
+  label?: string;
 }
 
 interface ElementProps {
@@ -77,6 +78,7 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
     onselectvalue,
     type,
     attachments,
+    name,
   } = props;
 
   const {
@@ -100,7 +102,7 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
   const handleClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     handleExpansion(event);
     handleSelection(event);
-    onselectvalue(nodeId);
+    onselectvalue(nodeId, type, name, label);
   };
 
   return (
@@ -117,20 +119,23 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
     >
       <div className="MuiTreeItem-contentBar" />
       <div className={classes.iconContainer}>{icon}</div>
-      <Typography component="div" className={classes.label}>
+      <div className={classes.name}>
         {type === 'image' &&
         attachments !== undefined &&
         attachments !== null &&
-        attachments[label] !== undefined &&
-        attachments[label].type.includes('image') ? (
-          <img
-            style={{maxHeight: 500, maxWidth: 200}}
-            src={URL.createObjectURL(attachments[label])}
-          />
+        attachments[name] !== undefined &&
+        attachments[name].type.includes('image') ? (
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <Typography style={{minWidth: 100}}>{label}</Typography>
+            <img
+              style={{maxHeight: 500, maxWidth: 200}}
+              src={URL.createObjectURL(attachments[name])}
+            />
+          </div>
         ) : (
-          label
+          <Typography>{label ?? name}</Typography>
         )}
-      </Typography>
+      </div>
     </div>
   );
 });
@@ -138,6 +143,7 @@ const CustomContent = React.forwardRef((props: CustomContent, ref) => {
 type CustomerProps = {
   type: string | undefined;
   attachments: {[key: string]: File} | null;
+  name: string;
 };
 
 const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
@@ -148,9 +154,10 @@ const CustomTreeItem = (props: TreeItemProps & SelectProps & CustomerProps) => (
     ContentProps={
       {
         onselectvalue: (nodeId: string) =>
-          props.onselectvalue(nodeId, props.type),
+          props.onselectvalue(nodeId, props.type, props.name, props.label),
         type: props.type,
         attachments: props.attachments,
+        name: props.name,
       } as any
     }
   />
@@ -181,6 +188,10 @@ function ChildChip(props: ChildChipProps) {
   let leaf_child = props.value !== undefined ? props.value.split('>') : '';
   if (leaf_child.length > 1)
     leaf_child = leaf_child[leaf_child.length - 1].replace(' ', '');
+  const leaf_child_image = (leaf_child =
+    props.value !== undefined ? props.value.split('(') : ''); // to get the attachment image name if there is label for the image
+  if (leaf_child_image.length > 1)
+    leaf_child = leaf_child_image[1].replace(')', ''); // to get the attachment image name if there is label for the image
   return (
     <ListItem key={props.value}>
       <Chip label={props.value} />
@@ -273,16 +284,23 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
     };
   }, []);
   /***make select not multiple to avoid error */
-  const onselectvalue = (newvalue: string) => {
-    let returnvalue = newvalue;
+  const onselectvalue = (
+    newvalue: string,
+    type: string,
+    name: string,
+    label: string
+  ) => {
     //get value for only child selection
     if (props.valuetype === 'child') {
-      const valuearray = newvalue.split('>');
-      returnvalue =
-        valuearray.length > 0 ? valuearray[valuearray.length - 1] : returnvalue;
+      let newvalue = label;
+      if (type === 'image') newvalue = label + '(' + name + ')';
+      props.form.setFieldValue(props.field.name, newvalue);
+      setValue([name]);
+      return;
     }
-    props.form.setFieldValue(props.field.name, returnvalue);
-    setValue([returnvalue]);
+    props.form.setFieldValue(props.field.name, newvalue);
+    setValue([newvalue]);
+    return;
   };
 
   const renderTree = (
@@ -292,16 +310,23 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
     parentnode: string
   ) => {
     const singlekey = parentkey !== '' ? parentkey + '.' + key : key + '';
-    const name =
-      parentnode !== '' ? parentnode + ' > ' + nodes.name : nodes.name;
+    let name = '';
+    if (nodes.type === 'image' && nodes.label !== undefined)
+      name =
+        parentnode !== ''
+          ? parentnode + ' > ' + nodes.label + '(' + nodes.name + ')'
+          : nodes.label + '(' + nodes.name + ')';
+    else
+      name = parentnode !== '' ? parentnode + ' > ' + nodes.name : nodes.name;
     return (
       <CustomTreeItem
         key={singlekey}
         nodeId={name}
-        label={nodes.name}
+        name={nodes.name}
         type={nodes.type}
         onselectvalue={onselectvalue}
         attachments={attachments}
+        label={nodes.label} //add label for image
       >
         {Array.isArray(nodes.children)
           ? nodes.children.map((node, childkey) =>

@@ -463,12 +463,12 @@ const getvalue = (
     else return [];
   }
   try {
-    return (
-      fieldui['component-parameters'][view][name] ??
-      fieldui['component-parameters'][view]['children']
-    );
+    return fieldui['component-parameters'][view] !== undefined
+      ? fieldui['component-parameters'][view][name] ??
+          fieldui['component-parameters'][view]['children']
+      : fieldui['component-parameters'][name];
   } catch (err) {
-    console.error('error to get value:', view, name, err);
+    console.error('error to get value:', view, name, err, fieldui);
     return 'not get value' + view + name;
   }
 };
