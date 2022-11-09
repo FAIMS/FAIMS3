@@ -113,6 +113,7 @@ export default function Record() {
   let project_info: ProjectInformation | null;
   try {
     project_info = useEventedPromise(
+      'Record page',
       getProjectInfo,
       constantArgsShared(listenProjectInfo, project_id),
       false,

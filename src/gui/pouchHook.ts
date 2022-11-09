@@ -21,6 +21,13 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {DEBUG_APP} from '../buildconfig';
 
+// This specifies how long to hold the refresh locks to prevent a stream of
+// events from continuously causing refreshes.
+const LOCK_HOLD_TIMEOUT = 5000;
+// This specifies at least how long before a new refresh caught by the refresh
+// lock should happen after it triggered.
+const LOCK_WAIT_TIMEOUT = 1000 * 60 * 2;
+
 export class PromiseState<S, L extends null | {}> {
   // Only one of these 3 is defined at a time
   // If all 3 are undefined, then it's loading (but with no initial load params)
@@ -216,6 +223,7 @@ export function constantArgsSplit<
  *          error occurred
  */
 export function useEventedPromise<A extends Array<unknown>, V>(
+  label: string,
   startGetting: (...args: A) => Promise<V>,
   startListening: (
     trigger_callback: (...args: any) => void,
@@ -225,6 +233,7 @@ export function useEventedPromise<A extends Array<unknown>, V>(
   dependencies: React.DependencyList,
   ...args: A
 ): PromiseState<V, A> {
+  console.log('useEventedPromise', label, dependencies);
   const [state, setState] = useState(
     new PromiseState<V, A>({loading: undefined})
   );
@@ -244,10 +253,16 @@ export function useEventedPromise<A extends Array<unknown>, V>(
 
   const promise_value_callback =
     (thisValuesTriggerCount: number) => (new_value: V) => {
+      if (DEBUG_APP) {
+        console.debug('current triggerCount', label, triggerCount.current);
+        console.debug('thisValuesTriggerCount', label, thisValuesTriggerCount);
+      }
+
       // Don't do anything if we stopped for an error
       if (state.error !== undefined && stopAtError) {
         return;
       }
+
       // Discard the result if another promise has started later
       // than the current receiving one did start
       if (triggerCount.current === thisValuesTriggerCount) {
@@ -265,6 +280,11 @@ export function useEventedPromise<A extends Array<unknown>, V>(
 
   const promise_error_callback =
     (thisValuesTriggerCount: number) => (new_error: {}) => {
+      if (DEBUG_APP) {
+        console.debug('current triggerCount', label, triggerCount.current);
+        console.debug('thisValuesTriggerCount', label, thisValuesTriggerCount);
+      }
+
       // Discard the result if another promise has started later
       // than the current receiving one did start
       // UNLESS we stopAtError, which is the first error only.
@@ -278,13 +298,16 @@ export function useEventedPromise<A extends Array<unknown>, V>(
 
   const start_waiting_safe = (...waiter_args: any[]) => {
     if (DEBUG_APP) {
-      console.debug('start_waiting_safe args', waiter_args);
+      console.debug('start_waiting_safe args', label, waiter_args);
     }
     // Don't do anything if we stopped for an error
     if (state.error !== undefined && stopAtError) {
       return;
     }
     setState(new PromiseState<V, A>({loading: args}));
+    if (DEBUG_APP) {
+      console.debug('current triggerCount', label, triggerCount.current);
+    }
     triggerCount.current += 1;
     try {
       startGetting(...args).then(
@@ -292,7 +315,7 @@ export function useEventedPromise<A extends Array<unknown>, V>(
         promise_error_callback(triggerCount.current)
       );
     } catch (err: any) {
-      console.debug('useEventedPromise start_waiting_safe error', err);
+      console.debug('useEventedPromise start_waiting_safe error', label, err);
       promise_value_callback(triggerCount.current)(err);
     }
   };
@@ -301,34 +324,38 @@ export function useEventedPromise<A extends Array<unknown>, V>(
     // Don't try to do anything if we're locked
     if (refreshLock.current) {
       if (DEBUG_APP) {
-        console.debug('Still locked!');
+        console.debug('Still locked!', label);
       }
       if (!refreshLockHit.current) {
         refreshLockHit.current = true;
         if (DEBUG_APP) {
-          console.debug('Starting lock wait!');
+          console.debug('Starting lock wait!', label);
         }
         setTimeout(() => {
           if (DEBUG_APP) {
-            console.debug('Running lock wait!');
+            console.debug('Running lock wait!', label);
           }
           start_waiting_safe(...waiter_args);
-        }, 5000);
+        }, LOCK_WAIT_TIMEOUT + Math.random() * LOCK_WAIT_TIMEOUT);
+      } else {
+        if (DEBUG_APP) {
+          console.debug('Refresh lock still locked!', label);
+        }
       }
       return;
     }
     // Activate lock and set timeout to release
     refreshLock.current = true;
     if (DEBUG_APP) {
-      console.debug('Locked now!');
+      console.debug('Locked now!', label);
     }
     setTimeout(() => {
       refreshLock.current = false;
       refreshLockHit.current = false;
       if (DEBUG_APP) {
-        console.debug('Unlocked now!');
+        console.debug('Unlocked now!', label);
       }
-    }, 5000);
+    }, LOCK_HOLD_TIMEOUT);
     start_waiting_safe(...waiter_args);
   };
 

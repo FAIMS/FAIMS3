@@ -64,6 +64,7 @@ type NotebookComponentProps = {
   project: ProjectInformation;
 };
 export default function NotebookComponent(props: NotebookComponentProps) {
+  console.log('NotebookComponent props', props);
   /**
    * Notebook component. Consolidating into three tabs; records, info (meta) and settings.
    * Display customized for smaller screens
@@ -88,34 +89,26 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const {project} = props;
   const [loading, setLoading] = useState(true);
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
+  const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-  const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
 
   useEffect(() => {
-    let isactive = true;
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
-      if (isactive) setLoading(false);
+      getUiSpecForProject(project.project_id)
+        .then(spec => {
+          setUiSpec(spec);
+          setViewsets(spec.viewsets);
+          setLoading(false);
+        })
+        .catch(console.error);
     }
     return () => {
-      isactive = false;
-    }; // cleanup toggles value,
+      setViewsets(null);
+      setUiSpec(null);
+      setLoading(true);
+    };
   }, [project]);
-
-  useEffect(() => {
-    let isactive = true;
-    if (isactive)
-      getUiSpecForProject(project.project_id).then(
-        uiSpec => {
-          setViewsets(uiSpec.viewsets);
-          setUiSpec(uiSpec);
-        },
-        () => {}
-      );
-    return () => {
-      isactive = false;
-    }; // cleanup toggles value,
-  }, [project.project_id]);
 
   return (
     <Box>

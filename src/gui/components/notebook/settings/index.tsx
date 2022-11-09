@@ -77,6 +77,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
   // What rights does the user have on this notebook?
   const role_info = useEventedPromise(
+    'NotebookSettings component',
     async (project_id: ProjectID) => {
       const split_id = await split_full_project_id(project_id);
       const roles = await getUserProjectRolesForCluster(split_id.listing_id);
@@ -120,6 +121,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   let project_info: ProjectInformation | null;
   try {
     project_info = useEventedPromise(
+      'NotebookSettings component project info',
       getProjectInfo,
       constantArgsShared(listenProjectInfo, project_id),
       false,

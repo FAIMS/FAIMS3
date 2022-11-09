@@ -25,6 +25,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
 
   const ui_spec = useEventedPromise(
+    'AddRecordButtons component',
     getUiSpecForProject,
     constantArgsSplit(
       listenProjectDB,
