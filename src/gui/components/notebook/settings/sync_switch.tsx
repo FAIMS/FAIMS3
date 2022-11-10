@@ -34,6 +34,7 @@ import {
   setSyncingProject,
   listenSyncingProject,
 } from '../../../../sync/sync-toggle';
+import {activate_project} from '../../../../sync/process-initialization';
 import {store} from '../../../../context/store';
 import {ActionType} from '../../../../context/actions';
 import {grey} from '@mui/material/colors';
@@ -48,17 +49,22 @@ type NotebookSyncSwitchProps = {
 export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
   const {project} = props;
   const {dispatch} = useContext(store);
+  const [isActivated, setIsActivated] = useState(project.is_activated);
   const [isSyncing, setIsSyncing] = useState(
-    isSyncingProject(project.project_id)
+    isActivated ? isSyncingProject(project.project_id) : false
   );
   const [isWorking, setIsWorking] = useState(false);
-  const [isActivated, setIsActivated] = useState(false);
   useEffect(() => {
-    return listenSyncingProject(project.project_id, setIsSyncing);
-  }, [project.project_id]);
+    if (isActivated) {
+      return listenSyncingProject(project.project_id, setIsSyncing);
+    }
+    return () => {};
+  }, [project.project_id, isActivated]);
 
-  const handleActivation = () => {
+  const handleActivation = async () => {
     setIsWorking(true);
+    await activate_project(project.listing_id, project.non_unique_project_id);
+    setIsSyncing(true);
     setTimeout(() => {
       setIsWorking(false), setIsActivated(true);
     }, 2000);
