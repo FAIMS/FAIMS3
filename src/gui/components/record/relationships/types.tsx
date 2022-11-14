@@ -79,7 +79,7 @@ export interface DataGridLinksComponentProps {
   handleUnlink?: Function;
   handleReset?: Function;
   disabled?: boolean;
-  handleMakePrefered?: Function;
+  handleMakePreferred?: Function;
   preferred?: string | null;
   relation_type?: string;
   relation_preferred_label?: string;

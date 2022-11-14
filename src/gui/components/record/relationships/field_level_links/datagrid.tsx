@@ -278,8 +278,8 @@ export default function DataGridFieldLinksComponent(
               }
               onChange={(event: any) => {
                 console.log(event.target.checked);
-                if (props.handleMakePrefered !== undefined)
-                  props.handleMakePrefered(
+                if (props.handleMakePreferred !== undefined)
+                  props.handleMakePreferred(
                     params.row.record_id,
                     event.target.checked
                   );

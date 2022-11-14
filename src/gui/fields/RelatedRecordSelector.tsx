@@ -141,7 +141,7 @@ type DisplayChildProps = {
   value: any;
   multiple: boolean;
   relationshipLabel: string;
-  handleMakePrefered: Function;
+  handleMakePreferred: Function;
   preferred: null | string;
   relation_type: string;
   relation_preferred_label: string;
@@ -177,7 +177,7 @@ function DisplayChild(props: DisplayChildProps) {
       handleUnlink={props.handleUnlink}
       handleReset={props.handleReset}
       disabled={props.disabled}
-      handleMakePrefered={props.handleMakePrefered}
+      handleMakePreferred={props.handleMakePreferred}
       preferred={props.preferred}
       relation_type={props.relation_type}
       relation_preferred_label={props.relation_preferred_label}
@@ -219,8 +219,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   );
   const [updated, SetUpdated] = React.useState(uuidv4());
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
-  const [preferred, setPrefered] = React.useState(null as string | null);
-  const relation_preferred_label = props.relation_preferred_label ?? 'Prefered';
+  const [preferred, setPreferred] = React.useState(null as string | null);
+  const relation_preferred_label = props.relation_preferred_label ?? 'Preferred';
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -247,16 +247,16 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             props.form.values[field_name]['record_id'] !== undefined &&
             props.form.values[field_name]['is_preferred'] === true
           )
-            setPrefered(props.form.values[field_name]['record_id']);
+            setPreferred(props.form.values[field_name]['record_id']);
         } else {
           props.form.values[field_name].map((child_record: RecordReference) => {
             if (child_record.is_preferred === true) {
-              setPrefered(child_record['record_id']);
+              setPreferred(child_record['record_id']);
               console.error('child record preferred', preferred);
             }
           });
         }
-        console.error('Prefered child record record id', preferred);
+        console.error('Preferred child record record id', preferred);
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
@@ -521,7 +521,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     //call the function to trigger the child to be updated??TBD
   };
 
-  const handleMakePrefered = (
+  const handleMakePreferred = (
     child_record_id: string,
     is_preferred: boolean
   ) => {
@@ -546,8 +546,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       setRecordsInformation(newRecords);
     }
     props.form.setFieldValue(props.field.name, newValue);
-    if (is_preferred === true) setPrefered(child_record_id);
-    else setPrefered(null);
+    if (is_preferred === true) setPreferred(child_record_id);
+    else setPreferred(null);
   };
 
   return (
@@ -617,7 +617,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             value={props.form.values[field_name]}
             multiple={multiple}
             relationshipLabel={relationshipLabel}
-            handleMakePrefered={handleMakePrefered}
+            handleMakePreferred={handleMakePreferred}
             preferred={preferred}
             relation_preferred_label={relation_preferred_label}
           />
@@ -726,15 +726,15 @@ const uiSetting = () => {
     'type-returned': 'faims-core::String',
     'component-parameters': {
       InputLabelProps: {
-        label: 'Make Prefered Label',
+        label: 'Make Preferred Label',
       },
       fullWidth: false,
-      helperText: 'Make Prefered Label',
+      helperText: 'Make Preferred Label',
       variant: 'outlined',
       required: false,
     },
     validationSchema: [['yup.string']],
-    initialValue: 'Prefered',
+    initialValue: 'Preferred',
   };
   newuiSetting['fields']['related_type'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
