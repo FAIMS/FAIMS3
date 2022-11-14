@@ -88,7 +88,7 @@ jobs:
       - run: cd ios/App; pod install
       - run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
       - name: Deploy iOS Beta to TestFlight via Fastlane
-        uses: maierj/fastlane-action@v2.2.1
+        uses: maierj/fastlane-action@v2.3.0
         with:
           lane: closed_beta_testflight
           subdirectory: 'ios/App'

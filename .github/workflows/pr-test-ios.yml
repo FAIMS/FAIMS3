@@ -46,7 +46,7 @@ jobs:
       - run: cd ios/App; pod install
       - run: chmod -R 777 /Users/runner/hostedtoolcache/Ruby/3.0.2/x64/lib/ruby/gems/
       - name: Build iOS fastlane IPA
-        uses: maierj/fastlane-action@v2.1.0
+        uses: maierj/fastlane-action@v2.3.0
         with:
           lane: test_ipa
           subdirectory: 'ios/App'
