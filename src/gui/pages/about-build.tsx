@@ -48,6 +48,7 @@ import {
   DIRECTORY_PORT,
   RUNNING_UNDER_TEST,
   COMMIT_VERSION,
+  AUTOACTIVATE_PROJECTS,
   SHOW_MINIFAUXTON,
   SHOW_WIPE,
 } from '../../buildconfig';
@@ -104,6 +105,10 @@ export default function AboutBuild() {
               <tr>
                 <td>Running under test</td>
                 <td>{RUNNING_UNDER_TEST ? 'True' : 'False'}</td>
+              </tr>
+              <tr>
+                <td>Autoactivating projects</td>
+                <td>{AUTOACTIVATE_PROJECTS ? 'True' : 'False'}</td>
               </tr>
             </tbody>
           </table>

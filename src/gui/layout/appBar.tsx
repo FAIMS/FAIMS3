@@ -51,7 +51,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import * as ROUTES from '../../constants/routes';
 import {SHOW_NEW_NOTEBOOK} from '../../buildconfig';
-import {getActiveProjectList, listenProjectList} from '../../databaseAccess';
+import {getProjectList, listenProjectList} from '../../databaseAccess';
 import SystemAlert from '../components/alert';
 import {ProjectInformation} from '../../datamodel/ui';
 import {useEventedPromise} from '../pouchHook';
@@ -172,7 +172,7 @@ export default function AppBar(props: NavbarProps) {
 
   const pouchProjectList = useEventedPromise(
     'AppBar component',
-    getActiveProjectList,
+    getProjectList,
     listenProjectList,
     true,
     []
