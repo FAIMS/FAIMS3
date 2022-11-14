@@ -44,7 +44,6 @@ import {RecordLinksToolbar} from '../toolbars';
 import {RecordID} from '../../../../../datamodel/core';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '../../../../../datamodel/ui';
-import { GRID_CHECKBOX_SELECTION_COL_DEF } from '@mui/x-data-grid';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -61,7 +60,8 @@ const style = {
 export function DataGridNoLink(props: {
   links: RecordReference[];
   relation_linked_vocab: string;
-  relation_type:string;
+  relation_type: string;
+  relation_prefered_label: string;
 }) {
   const columns: GridColumns = [
     {
@@ -106,18 +106,16 @@ export function DataGridNoLink(props: {
       flex: 0.4,
     },
   ];
-  if(props.relation_type ==='Child')
-  columns.push({
-    field: 'prefered',
-    headerName: 'Prefered',
-    minWidth: 200,
-    flex: 0.2,
-    valueGetter: (params: GridCellParams) =>
-      params.row.is_prefered??false,
-    renderCell: (params: GridCellParams) => params.value?(
-      <>Prefered</>
-    ):(<></>),
-  })
+  if (props.relation_type === 'Child')
+    columns.push({
+      field: 'prefered',
+      headerName: props.relation_prefered_label,
+      minWidth: 200,
+      flex: 0.2,
+      valueGetter: (params: GridCellParams) => params.row.is_prefered ?? false,
+      renderCell: (params: GridCellParams) =>
+        params.value ? <>{props.relation_prefered_label}</> : <></>,
+    });
   return props.links !== null && props.links.length > 0 ? (
     <DataGrid
       autoHeight
@@ -255,38 +253,60 @@ export default function DataGridFieldLinksComponent(
       minWidth: 100,
       valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
       flex: 0.4,
-    }
+    },
   ];
   // for read ONLY
-  if(props.relation_type ==='Child'&&props.disabled !== true)
+  if (props.relation_type === 'Child' && props.disabled !== true)
     columns.push({
       field: 'prefered',
-      headerName: 'Make Prefered',
+      headerName: 'Make ' + props.relation_prefered_label,
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) =>
-        params.row.relation_prefered??false,
+        params.row.relation_prefered ?? false,
       renderCell: (params: GridCellParams) => (
-        <FormControlLabel control={<Checkbox checked={params.value} disabled={props.prefered!==undefined&&props.prefered!==null&&props.prefered!==params.row.record_id?true:false} onChange={(event: any) => {
-          console.log(event.target.checked);
-          if(props.handleMakePrefered!==undefined)
-            props.handleMakePrefered(params.row.record_id,event.target.checked)
-        }}
-        />} label="Make Prefered" />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={params.value}
+              disabled={
+                props.prefered !== undefined &&
+                props.prefered !== null &&
+                props.prefered !== params.row.record_id
+                  ? true
+                  : false
+              }
+              onChange={(event: any) => {
+                console.log(event.target.checked);
+                if (props.handleMakePrefered !== undefined)
+                  props.handleMakePrefered(
+                    params.row.record_id,
+                    event.target.checked
+                  );
+              }}
+            />
+          }
+          label={'Make ' + props.relation_prefered_label}
+        />
       ),
-    })
-  else if(props.relation_type ==='Child'&&props.disabled === true)
-  columns.push({
-    field: 'prefered',
-    headerName: 'Make Prefered',
-    minWidth: 200,
-    flex: 0.2,
-    valueGetter: (params: GridCellParams) =>
-      params.row.relation_prefered??false,
-    renderCell: (params: GridCellParams) => params.value?(
-      <><CheckCircleIcon color="success" /> Prefered</>
-    ):(<></>),
-  })
+    });
+  else if (props.relation_type === 'Child' && props.disabled === true)
+    columns.push({
+      field: 'prefered',
+      headerName: 'Make ' + props.relation_prefered_label,
+      minWidth: 200,
+      flex: 0.2,
+      valueGetter: (params: GridCellParams) =>
+        params.row.relation_prefered ?? false,
+      renderCell: (params: GridCellParams) =>
+        params.value ? (
+          <>
+            <CheckCircleIcon color="success" /> {props.relation_prefered_label}
+          </>
+        ) : (
+          <></>
+        ),
+    });
   if (props.disabled !== true)
     columns.push({
       field: 'actions',

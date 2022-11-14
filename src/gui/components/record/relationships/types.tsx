@@ -30,7 +30,7 @@ export interface RecordLinkProps {
   relation_type_vocabPair?: string[];
   link: FieldLinkProps;
   lastUpdatedBy?: string;
-  relation_prefered?:boolean
+  relation_prefered?: boolean;
 }
 /**************need to be updated later */
 export interface ParentLinkProps {
@@ -79,9 +79,10 @@ export interface DataGridLinksComponentProps {
   handleUnlink?: Function;
   handleReset?: Function;
   disabled?: boolean;
-  handleMakePrefered?:Function;
-  prefered?:string|null;
-  relation_type?:string
+  handleMakePrefered?: Function;
+  prefered?: string | null;
+  relation_type?: string;
+  relation_prefered_label?: string;
 }
 export const PARENT_CHILD_VOCAB = [
   'is child of',
