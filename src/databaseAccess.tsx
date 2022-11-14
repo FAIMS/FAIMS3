@@ -30,19 +30,9 @@
  */
 
 import {DEBUG_APP} from './buildconfig';
-import {
-  ProjectID,
-  ListingID,
-  split_full_project_id,
-  resolve_project_id,
-} from './datamodel/core';
-import {ProjectObject} from './datamodel/database';
+import {ProjectID} from './datamodel/core';
 import {ProjectInformation, ListingInformation} from './datamodel/ui';
-import {
-  all_projects_updated,
-  createdProjects,
-  createdListings,
-} from './sync/state';
+import {all_projects_updated, createdProjects} from './sync/state';
 import {events} from './sync/events';
 import {
   getProject,
@@ -52,7 +42,7 @@ import {
 } from './sync';
 import {shouldDisplayProject} from './users';
 
-export async function getActiveProjectList(): Promise<ProjectInformation[]> {
+export async function getProjectList(): Promise<ProjectInformation[]> {
   /**
    * Return all active projects the user has access to, including the
    * top 30 most recently updated records.
@@ -66,7 +56,6 @@ export async function getActiveProjectList(): Promise<ProjectInformation[]> {
   const output: ProjectInformation[] = [];
   for (const listing_id_project_id in createdProjects) {
     if (await shouldDisplayProject(listing_id_project_id)) {
-      const split_id = split_full_project_id(listing_id_project_id);
       output.push({
         name: createdProjects[listing_id_project_id].project.name,
         description: createdProjects[listing_id_project_id].project.description,
@@ -75,64 +64,9 @@ export async function getActiveProjectList(): Promise<ProjectInformation[]> {
         created: createdProjects[listing_id_project_id].project.created,
         status: createdProjects[listing_id_project_id].project.status,
         project_id: listing_id_project_id,
-        is_activated: true,
-        listing_id: split_id.listing_id,
-        non_unique_project_id: split_id.project_id,
       });
     }
   }
-  return output;
-}
-
-async function getAvailableProjectsFromListing(
-  listing_id: ListingID
-): Promise<ProjectInformation[]> {
-  const output: ProjectInformation[] = [];
-  const projects: ProjectObject[] = [];
-  const projects_db = createdListings[listing_id].projects.local;
-  const res = await projects_db.allDocs({
-    include_docs: true,
-  });
-  res.rows.forEach(e => {
-    if (e.doc !== undefined && !e.id.startsWith('_')) {
-      projects.push(e.doc as ProjectObject);
-    }
-  });
-  console.debug('All projects in listing', listing_id, projects);
-  for (const project of projects) {
-    const project_id = project._id;
-    const full_project_id = resolve_project_id(listing_id, project_id);
-    if (await shouldDisplayProject(full_project_id)) {
-      output.push({
-        name: project.name,
-        description: project.description,
-        last_updated: project.last_updated,
-        created: project.created,
-        status: project.status,
-        project_id: full_project_id,
-        is_activated: createdProjects[full_project_id] !== undefined,
-        listing_id: listing_id,
-        non_unique_project_id: project_id,
-      });
-    }
-  }
-  return output;
-}
-
-export async function getAllProjectList(): Promise<ProjectInformation[]> {
-  /**
-   * Return all projects the user has access to.
-   */
-  await waitForStateOnce(() => all_projects_updated);
-
-  const output: ProjectInformation[] = [];
-  for (const listing_id in createdListings) {
-    const projects = await getAvailableProjectsFromListing(listing_id);
-    for (const proj of projects) {
-      output.push(proj);
-    }
-  }
-  console.debug('All project list output', output);
   return output;
 }
 
@@ -153,7 +87,6 @@ export async function getProjectInfo(
 ): Promise<ProjectInformation> {
   const proj = await getProject(project_id);
 
-  const split_id = split_full_project_id(project_id);
   return {
     project_id: project_id,
     name: proj.project.name,
@@ -161,9 +94,6 @@ export async function getProjectInfo(
     last_updated: proj.project.last_updated || 'Unknown',
     created: proj.project.created || 'Unknown',
     status: proj.project.status || 'Unknown',
-    is_activated: true,
-    listing_id: split_id.listing_id,
-    non_unique_project_id: split_id.project_id,
   };
 }
 

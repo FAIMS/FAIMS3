@@ -191,9 +191,15 @@ export default class BasicAutoIncrementer extends React.Component<
         }}
       >
         {({submitForm, isSubmitting}) => (
-          <Box sx={{my: 1}}>
+          <Box>
             <Form>
-              <Grid container direction="row" spacing={2}>
+              <Grid
+                container
+                direction="row"
+                //justifyContent="center"
+                //alignItems="center"
+                spacing={2}
+              >
                 <Grid item xs={12} sm={6}>
                   <Field
                     size={'small'}
@@ -235,7 +241,7 @@ export default class BasicAutoIncrementer extends React.Component<
               </Grid>
             </Form>
             {isSubmitting && <LinearProgress />}
-            <Divider sx={{mt: 1, mb: 2}} />
+            <Divider sx={{m: 1}} />
           </Box>
         )}
       </Formik>
@@ -252,7 +258,7 @@ export default class BasicAutoIncrementer extends React.Component<
 
   render() {
     return (
-      <Box mt={1}>
+      <div>
         {this.render_ranges()}
         <Button
           variant="outlined"
@@ -264,7 +270,7 @@ export default class BasicAutoIncrementer extends React.Component<
         >
           Add new range
         </Button>
-      </Box>
+      </div>
     );
   }
 }

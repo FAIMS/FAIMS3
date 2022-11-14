@@ -28,7 +28,6 @@ import {
   FAIMSTypeName,
   Annotations,
   Relationship,
-  NonUniqueProjectID,
 } from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
@@ -46,9 +45,6 @@ export interface ProjectInformation {
   last_updated?: string;
   created?: string;
   status?: string;
-  is_activated: boolean;
-  listing_id: ListingID;
-  non_unique_project_id: NonUniqueProjectID;
 }
 
 export interface ProjectUIModel {

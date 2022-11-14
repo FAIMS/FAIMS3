@@ -2,6 +2,7 @@ import {Typography} from '@mui/material';
 import Obfuscate from 'react-obfuscate';
 import React from 'react';
 import {
+  AUTOACTIVATE_PROJECTS,
   COMMIT_VERSION,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
@@ -26,6 +27,7 @@ export default function SupportEmail(props: SupportEmailProps) {
   const bodyContent =
     `Directory Server: ${DIRECTORY_PROTOCOL}://${DIRECTORY_HOST}:${DIRECTORY_PORT}/ \r` +
     `Commit Version: ${COMMIT_VERSION} \r` +
+    `Autoactivating projects: ${AUTOACTIVATE_PROJECTS ? 'True' : 'False'} \r` +
     `Username: ${
       props.token?.username ? props.token.username : 'Unauthenticated'
     } \r` +

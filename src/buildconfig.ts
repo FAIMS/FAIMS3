@@ -276,9 +276,6 @@ function get_login_token(): string | undefined {
   return login_token;
 }
 
-// this should disappear once we have listing activation set up
-export const AUTOACTIVATE_LISTINGS = true;
-
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_PROTOCOL = directory_protocol();
@@ -290,6 +287,7 @@ export const COMMIT_VERSION = commit_version();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
+export const AUTOACTIVATE_PROJECTS = true; // for alpha, beta will change this
 export const SHOW_MINIFAUXTON = show_minifauxton();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
