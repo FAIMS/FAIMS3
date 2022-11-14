@@ -33,6 +33,8 @@ import AddIcon from '@mui/icons-material/Add';
 import {TextField} from 'formik-mui';
 import * as yup from 'yup';
 
+import {ActionType} from '../../../context/actions';
+import {store} from '../../../context/store';
 import {ProjectID} from '../../../datamodel/core';
 import {LocalAutoIncrementRange} from '../../../datamodel/database';
 import {
@@ -120,13 +122,23 @@ export default class BasicAutoIncrementer extends React.Component<
 
   async update_ranges(ranges: LocalAutoIncrementRange[]) {
     const {project_id, form_id, field_id} = this.props;
-    await set_local_autoincrement_ranges_for_field(
-      project_id,
-      form_id,
-      field_id,
-      ranges
-    );
-    this.setState({ranges: ranges});
+    try {
+      await set_local_autoincrement_ranges_for_field(
+        project_id,
+        form_id,
+        field_id,
+        ranges
+      );
+      this.setState({ranges: ranges});
+    } catch (err: any) {
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: err.toString(),
+          severity: 'error',
+        },
+      });
+    }
   }
 
   render_range(
@@ -256,3 +268,4 @@ export default class BasicAutoIncrementer extends React.Component<
     );
   }
 }
+BasicAutoIncrementer.contextType = store;
