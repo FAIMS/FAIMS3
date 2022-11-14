@@ -150,8 +150,11 @@ export async function set_local_autoincrement_ranges_for_field(
           throw Error('Currently used range removed');
         } else if (new_using_range.start !== range.start) {
           throw Error('Currently used range start changed');
-        } else if (new_using_range.stop < range.stop) {
-          throw Error('Currently used range stop reduced');
+        } else if (
+          state.last_used_id !== null &&
+          new_using_range.stop <= state.last_used_id
+        ) {
+          throw Error('Currently used range stop less than last used ID.');
         }
       }
     }
