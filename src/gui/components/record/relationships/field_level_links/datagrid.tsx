@@ -61,7 +61,7 @@ export function DataGridNoLink(props: {
   links: RecordReference[];
   relation_linked_vocab: string;
   relation_type: string;
-  relation_prefered_label: string;
+  relation_preferred_label: string;
 }) {
   const columns: GridColumns = [
     {
@@ -108,13 +108,13 @@ export function DataGridNoLink(props: {
   ];
   if (props.relation_type === 'Child')
     columns.push({
-      field: 'prefered',
-      headerName: props.relation_prefered_label,
+      field: 'preferred',
+      headerName: props.relation_preferred_label,
       minWidth: 200,
       flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.row.is_prefered ?? false,
+      valueGetter: (params: GridCellParams) => params.row.is_preferred ?? false,
       renderCell: (params: GridCellParams) =>
-        params.value ? <>{props.relation_prefered_label}</> : <></>,
+        params.value ? <>{props.relation_preferred_label}</> : <></>,
     });
   return props.links !== null && props.links.length > 0 ? (
     <DataGrid
@@ -258,21 +258,21 @@ export default function DataGridFieldLinksComponent(
   // for read ONLY
   if (props.relation_type === 'Child' && props.disabled !== true)
     columns.push({
-      field: 'prefered',
-      headerName: 'Make ' + props.relation_prefered_label,
+      field: 'preferred',
+      headerName: 'Make ' + props.relation_preferred_label,
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) =>
-        params.row.relation_prefered ?? false,
+        params.row.relation_preferred ?? false,
       renderCell: (params: GridCellParams) => (
         <FormControlLabel
           control={
             <Checkbox
               checked={params.value}
               disabled={
-                props.prefered !== undefined &&
-                props.prefered !== null &&
-                props.prefered !== params.row.record_id
+                props.preferred !== undefined &&
+                props.preferred !== null &&
+                props.preferred !== params.row.record_id
                   ? true
                   : false
               }
@@ -286,22 +286,22 @@ export default function DataGridFieldLinksComponent(
               }}
             />
           }
-          label={'Make ' + props.relation_prefered_label}
+          label={'Make ' + props.relation_preferred_label}
         />
       ),
     });
   else if (props.relation_type === 'Child' && props.disabled === true)
     columns.push({
-      field: 'prefered',
-      headerName: 'Make ' + props.relation_prefered_label,
+      field: 'preferred',
+      headerName: 'Make ' + props.relation_preferred_label,
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) =>
-        params.row.relation_prefered ?? false,
+        params.row.relation_preferred ?? false,
       renderCell: (params: GridCellParams) =>
         params.value ? (
           <>
-            <CheckCircleIcon color="success" /> {props.relation_prefered_label}
+            <CheckCircleIcon color="success" /> {props.relation_preferred_label}
           </>
         ) : (
           <></>
