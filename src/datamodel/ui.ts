@@ -139,6 +139,7 @@ export interface RecordReference {
   record_label: RecordID | string;
   //this is for Lable of linked items, default: ['is related to', 'is related to']
   relation_type_vocabPair?: Array<string>;
+  is_preferred?: boolean;
 }
 
 /*
