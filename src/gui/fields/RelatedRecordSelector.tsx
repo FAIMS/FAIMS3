@@ -526,7 +526,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     child_record_id: string,
     is_preferred: boolean
   ) => {
-    //function to set perfered field
+    //function to set preferred field
     const newValue = props.form.values[field_name];
     if (multiple) {
       newValue.map((child_record: RecordReference) =>
