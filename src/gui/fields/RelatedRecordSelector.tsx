@@ -220,7 +220,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [updated, SetUpdated] = React.useState(uuidv4());
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
   const [preferred, setPreferred] = React.useState(null as string | null);
-  const relation_preferred_label = props.relation_preferred_label ?? 'Preferred';
+  const relation_preferred_label =
+    props.relation_preferred_label ?? 'Preferred';
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
