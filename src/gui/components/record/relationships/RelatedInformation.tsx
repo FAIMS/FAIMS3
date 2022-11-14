@@ -418,6 +418,7 @@ function generate_RecordLink(
     },
     lastUpdatedBy: lastUpdatedBy,
   };
+  if (child_record.is_preferred === true) child['relation_preferred'] = true;
   return child;
 }
 

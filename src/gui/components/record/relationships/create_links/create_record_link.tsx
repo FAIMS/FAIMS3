@@ -141,8 +141,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     >
       <Box>
         <Typography variant={'subtitle2'} sx={{mb: 1}}>
-          Add a link from {props.record_type} {props.record_hrid}{' '}
-          <strong>{props.field_label}</strong> to an existing record.
+          Add a link to an existing record.
         </Typography>
       </Box>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
