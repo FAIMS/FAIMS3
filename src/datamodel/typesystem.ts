@@ -173,7 +173,7 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
         });
       })
       .catch(err => {
-        console.error(err);
+        console.error('Blob checking failed', err);
         return false;
       });
   } else {
