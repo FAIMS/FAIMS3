@@ -89,6 +89,12 @@ function parseAndHandleAppUrl(url_s: string) {
     const token = JSON.parse(decodeURIComponent(urlenc_token));
     console.debug('Parsed url token', token);
     processUrlPassedToken(token as TokenURLObject);
+  } else if (url.pathname.startsWith('//auth/')) {
+    // Drop //auth/ from pathname
+    const urlenc_token = url.pathname.substring(7);
+    const token = JSON.parse(decodeURIComponent(urlenc_token));
+    console.debug('Parsed url token', token);
+    processUrlPassedToken(token as TokenURLObject);
   } else {
     console.warn('App url not handled', url_s, url);
   }
