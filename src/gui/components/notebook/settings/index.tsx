@@ -147,14 +147,19 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
   return project_info ? (
     <Box>
-      <Grid container spacing={{xs: 1, sm: 2, md: 3}}>
+      <Grid
+        container
+        rowSpacing={{xs: 1, sm: 2, md: 3}}
+        columnSpacing={{xs: 1, sm: 2, md: 3}}
+        sx={{mb: {xs: 1, sm: 2, md: 3}}}
+      >
         <Grid item xs={12} sm={12} md={6} lg={4}>
           <Box
             component={Paper}
             variant={'outlined'}
             elevation={0}
             p={2}
-            mb={2}
+            mb={{xs: 1, sm: 2, md: 3}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
               Notebook Status
@@ -212,7 +217,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             variant={'outlined'}
             elevation={0}
             p={2}
-            mb={2}
+            mb={{xs: 1, sm: 2, md: 3}}
           >
             <Typography variant={'h6'} sx={{mb: 2}}>
               Sync Notebook
@@ -224,13 +229,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             />
           </Box>
 
-          <Box
-            component={Paper}
-            variant={'outlined'}
-            elevation={0}
-            p={2}
-            mb={2}
-          >
+          <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
             <Typography variant={'h6'} sx={{mb: 2}}>
               Get attachments from other devices
             </Typography>
@@ -273,7 +272,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
         </Grid>
         {loading ? (
           <Grid item>
-            <CircularProgress size={'small'} /> Loading AutoIncrementer info
+            <CircularLoading label={'Loading autoincrementer information...'} />
           </Grid>
         ) : (
           <Grid item xs={12} sm={12} md={6} lg={8}>
@@ -284,15 +283,13 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
           </Grid>
         )}
       </Grid>
-      <Grid container>
+      <Grid
+        container
+        rowSpacing={{xs: 1, sm: 2, md: 3}}
+        columnSpacing={{xs: 1, sm: 2, md: 3}}
+      >
         <Grid item xs={12} sm={12} md={8}>
-          <Box
-            component={Paper}
-            variant={'outlined'}
-            elevation={0}
-            p={2}
-            mb={2}
-          >
+          <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
             <Typography variant={'h6'} sx={{mb: 2}}>
               Metadata DB contents
             </Typography>
