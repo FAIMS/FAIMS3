@@ -66,6 +66,7 @@ import {
   getParentlinkInfo,
   getParentInfo,
   getChildInfo,
+  getParentLink_from_relationship,
 } from './relationships/RelatedInformation';
 
 import CircularLoading from '../ui/circular_loading';
@@ -424,7 +425,7 @@ class RecordForm extends React.Component<
           location.state.parent_record_id !== this.props.record_id &&
           this.state.initialValues !== null
         ) {
-          this.save(this.state.initialValues, false, false, () =>
+          this.save(this.state.initialValues, false, 'continue', () =>
             console.log('saved')
           );
         }
@@ -690,7 +691,7 @@ class RecordForm extends React.Component<
   save(
     values: object,
     is_final_view: boolean,
-    is_close: boolean,
+    is_close: string,
     setSubmitting: any
   ) {
     const ui_specification = this.props.ui_specification;
@@ -747,7 +748,7 @@ class RecordForm extends React.Component<
               } catch (error) {
                 console.error('update child Error', error);
               }
-              return is_close
+              return is_close === 'close'
                 ? doc.data['hrid' + this.state.type_cached] ??
                     this.props.record_id
                 : revision_id; // return revision id for save and continue function
@@ -787,24 +788,71 @@ class RecordForm extends React.Component<
           });
         })
         .then(result => {
-          if (is_close) {
-            const {state_parent, is_direct} = getParentlinkInfo(
-              result,
-              this.props.location.state,
-              this.props.record_id
-            );
-            if (is_direct === false) {
-              this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
-            } else {
-              this.props.history.push({
-                pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
-                state: state_parent,
-              });
-            }
-            window.scrollTo(0, 0);
-            // scroll to top of page, seems to be needed on mobile devices
-          } else {
+          //when user try to close the page
+          if (is_close === 'continue') {
             setSubmitting(false);
+            return result;
+          }
+          if (is_close === 'new') {
+            setSubmitting(false);
+            this.props.history.push(
+              ROUTES.NOTEBOOK +
+                this.props.project_id +
+                ROUTES.RECORD_CREATE +
+                this.state.type_cached
+            );
+            console.debug('current state', this.state);
+            //if save and new for child record, should the child has the same parent or not?
+            return result;
+          }
+          if (is_close === 'close') {
+            const RelationState = this.props.location.state;
+            console.debug('location', RelationState);
+            if (RelationState !== undefined && RelationState !== null) {
+              const {state_parent, is_direct} = getParentlinkInfo(
+                result,
+                this.props.location.state,
+                this.props.record_id
+              );
+              if (is_direct === false) {
+                this.props.history.push(
+                  ROUTES.NOTEBOOK + this.props.project_id
+                ); //update for save and close button
+              } else {
+                this.props.history.push({
+                  pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
+                  state: state_parent,
+                });
+              }
+              window.scrollTo(0, 0);
+              // scroll to top of page, seems to be needed on mobile devices
+            } else {
+              const relationship = this.state.relationship;
+              console.error('location state', relationship);
+              if (
+                relationship === undefined ||
+                relationship === null ||
+                relationship.parent === undefined ||
+                relationship.parent === null
+              ) {
+                this.props.history.push(
+                  ROUTES.NOTEBOOK + this.props.project_id
+                );
+                window.scrollTo(0, 0);
+              } else {
+                getParentLink_from_relationship(
+                  result,
+                  relationship,
+                  this.props.record_id,
+                  this.props.project_id
+                ).then(LocationState => {
+                  this.props.history.push({
+                    pathname: LocationState.parent_link,
+                  });
+                  window.scrollTo(0, 0);
+                });
+              }
+            }
           }
           return result;
         })
@@ -931,7 +979,7 @@ class RecordForm extends React.Component<
                 return this.save(
                   values,
                   is_final_view,
-                  false,
+                  'continue',
                   setSubmitting
                 ).then(result => {
                   return result;
@@ -1020,7 +1068,7 @@ class RecordForm extends React.Component<
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
-                        handleFormSubmit={(is_close: boolean) => {
+                        handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
                             this.save(
@@ -1043,7 +1091,7 @@ class RecordForm extends React.Component<
                             this.save(
                               formProps.values,
                               is_final_view,
-                              false,
+                              'continue',
                               formProps.setSubmitting
                             );
                           }}

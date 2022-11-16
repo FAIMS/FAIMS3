@@ -30,6 +30,37 @@ import {
 } from '../../../../datamodel/core';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
+//get parent link when child record been open
+export async function getParentLink_from_relationship(
+  hrid: string,
+  relatioship: any,
+  record_id: string,
+  project_id: string
+) {
+  const parent_record = {
+    project_id: project_id,
+    record_id: relatioship.parent.record_id,
+    record_label: relatioship.parent.record_id,
+  };
+  const {latest_record, revision_id} = await getRecordInformation(
+    parent_record
+  );
+
+  return {
+    field_id: relatioship.parent.field_id,
+    record_id: record_id,
+    hrid: hrid,
+    parent: latest_record?.relationship?.parent,
+    parent_link: ROUTES.getRecordRoute(
+      project_id ?? '',
+      (relatioship.parent.record_id || '').toString(),
+      (revision_id || '').toString()
+    ),
+    parent_record_id: relatioship.parent.record_id,
+    type: 'Child',
+    relation_type_vocabPair: relatioship.parent.relation_type_vocabPair,
+  };
+}
 export function getParentlinkInfo(
   hrid: string,
   RelationState: any,

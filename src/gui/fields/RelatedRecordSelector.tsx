@@ -253,11 +253,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.form.values[field_name].map((child_record: RecordReference) => {
             if (child_record.is_preferred === true) {
               setPreferred(child_record['record_id']);
-              console.error('child record preferred', preferred);
             }
           });
         }
-        console.error('Preferred child record record id', preferred);
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
