@@ -26,6 +26,11 @@ import {
   FormHelperText,
   Typography,
   Paper,
+  DialogActions,
+  Dialog,
+  Alert,
+  AlertTitle,
+  Button,
 } from '@mui/material';
 
 import {ProjectInformation} from '../../../../datamodel/ui';
@@ -39,6 +44,7 @@ import {store} from '../../../../context/store';
 import {ActionType} from '../../../../context/actions';
 import {grey} from '@mui/material/colors';
 import NotebookActivationSwitch from './activation-switch';
+import LoadingButton from '@mui/lab/LoadingButton';
 
 type NotebookSyncSwitchProps = {
   project: ProjectInformation;
@@ -49,11 +55,19 @@ type NotebookSyncSwitchProps = {
 export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
   const {project} = props;
   const {dispatch} = useContext(store);
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => {
+    setOpen(true);
+  };
+  const handleClose = () => {
+    setOpen(false);
+  };
   const [isActivated, setIsActivated] = useState(project.is_activated);
   const [isSyncing, setIsSyncing] = useState(
     isActivated ? isSyncingProject(project.project_id) : false
   );
   const [isWorking, setIsWorking] = useState(false);
+
   useEffect(() => {
     if (isActivated) {
       return listenSyncingProject(project.project_id, setIsSyncing);
@@ -69,6 +83,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
       setIsWorking(false), setIsActivated(true);
     }, 2000);
   };
+
   return ['published', 'archived'].includes(String(props.project_status)) ? (
     <Box>
       {!isActivated ? (
@@ -86,24 +101,25 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
               <Switch
                 checked={isSyncing}
                 disabled={isWorking}
-                onChange={async (event, checked) => {
-                  setIsWorking(true);
-                  await setSyncingProject(project.project_id, checked).then(
-                    () => {
-                      dispatch({
-                        type: ActionType.ADD_ALERT,
-                        payload: {
-                          message: `${
-                            checked ? 'Enabling ' : 'Disabling '
-                          } data sync for notebook  ${project.name}`,
-                          severity: 'success',
-                        },
-                      });
-
-                      setIsWorking(false);
-                    }
-                  );
-                }}
+                // onChange={async (event, checked) => {
+                //   setIsWorking(true);
+                //   await setSyncingProject(project.project_id, checked).then(
+                //     () => {
+                //       dispatch({
+                //         type: ActionType.ADD_ALERT,
+                //         payload: {
+                //           message: `${
+                //             checked ? 'Enabling ' : 'Disabling '
+                //           } data sync for notebook  ${project.name}`,
+                //           severity: 'success',
+                //         },
+                //       });
+                //
+                //       setIsWorking(false);
+                //     }
+                //   );
+                // }}
+                onClick={handleOpen}
               />
             }
             label={
@@ -120,6 +136,56 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
           ) : (
             ''
           )}
+          <Dialog
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <Alert severity={isSyncing ? 'warning' : 'info'}>
+              <AlertTitle>Are you sure?</AlertTitle>
+              Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
+              {props.project.name} notebook to your device?
+            </Alert>
+            <DialogActions style={{justifyContent: 'space-between'}}>
+              <Button onClick={handleClose} autoFocus>
+                Cancel
+              </Button>
+
+              {isWorking ? (
+                <LoadingButton loading variant="outlined" size={'small'}>
+                  {isSyncing ? 'Stoping' : 'Starting'} sync
+                </LoadingButton>
+              ) : (
+                <Button
+                  size={'small'}
+                  variant="contained"
+                  disableElevation
+                  onClick={async () => {
+                    setIsWorking(true);
+                    await setSyncingProject(
+                      project.project_id,
+                      !isSyncing
+                    ).then(() => {
+                      dispatch({
+                        type: ActionType.ADD_ALERT,
+                        payload: {
+                          message: `${
+                            !isSyncing ? 'Enabling ' : 'Disabling '
+                          } data sync for notebook  ${project.name}`,
+                          severity: 'success',
+                        },
+                      });
+                      setIsWorking(false);
+                      handleClose();
+                    });
+                  }}
+                >
+                  {isSyncing ? 'Stop ' : 'Start'} sync
+                </Button>
+              )}
+            </DialogActions>
+          </Dialog>
         </Box>
       )}
     </Box>

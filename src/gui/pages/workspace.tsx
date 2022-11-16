@@ -43,7 +43,7 @@ export default function Workspace() {
           <Typography variant="h6" color="textSecondary">
             My Notebooks
           </Typography>
-          <Notebooks sortModel={{field: 'updated', sort: 'desc'}} />
+          <Notebooks sortModel={{field: 'last_updated', sort: 'desc'}} />
         </Grid>
       </Grid>
     </React.Fragment>

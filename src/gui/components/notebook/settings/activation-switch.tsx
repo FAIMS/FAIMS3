@@ -1,9 +1,8 @@
 import React from 'react';
-import {Alert, Box, AlertTitle, Button, FormHelperText} from '@mui/material';
+import {Alert, Box, AlertTitle, Button} from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import {ProjectInformation} from '../../../../datamodel/ui';
 import DialogActions from '@mui/material/DialogActions';
-import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 
 import Dialog from '@mui/material/Dialog';
 
@@ -29,11 +28,10 @@ export default function NotebookActivationSwitch(
     <Box my={1}>
       <Button
         onClick={handleOpen}
-        color={'info'}
+        color={'primary'}
         size={'small'}
         variant={'outlined'}
         disableElevation={true}
-        startIcon={<ToggleOffIcon />}
       >
         Activate
       </Button>
@@ -72,7 +70,6 @@ export default function NotebookActivationSwitch(
           )}
         </DialogActions>
       </Dialog>
-      <FormHelperText>Begin syncing notebook to this device.</FormHelperText>
     </Box>
   );
 }
