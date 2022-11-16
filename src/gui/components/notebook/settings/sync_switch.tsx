@@ -154,7 +154,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
 
               {isWorking ? (
                 <LoadingButton loading variant="outlined" size={'small'}>
-                  {isSyncing ? 'Stoping' : 'Starting'} sync
+                  {isSyncing ? 'Stopping' : 'Starting'} sync
                 </LoadingButton>
               ) : (
                 <Button
