@@ -233,7 +233,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           <Typography variant={'body1'} gutterBottom>
             You have {pouchProjectList.filter(r => r.is_activated).length}{' '}
             notebook
-            {pouchProjectList.filter(r => r.is_activated).length > 1
+            {pouchProjectList.filter(r => r.is_activated).length !== 1
               ? 's'
               : ''}{' '}
             activated on this device. To start syncing a notebook, visit the{' '}
@@ -248,12 +248,15 @@ export default function NoteBooks(props: NoteBookListProps) {
             </Button>{' '}
             tab and click the activate button.
           </Typography>
-          <TabContext value={value}>
+          <TabContext
+            value={
+              pouchProjectList.filter(r => r.is_activated).length === 0
+                ? '2'
+                : value
+            }
+          >
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-              <TabList
-                onChange={handleChange}
-                aria-label="lab API tabs example"
-              >
+              <TabList onChange={handleChange} aria-label="tablist">
                 <Tab
                   label={
                     'Activated (' +
@@ -261,6 +264,11 @@ export default function NoteBooks(props: NoteBookListProps) {
                     ')'
                   }
                   value="1"
+                  disabled={
+                    pouchProjectList.filter(r => r.is_activated).length === 0
+                      ? true
+                      : false
+                  }
                 />
                 <Tab
                   label={
