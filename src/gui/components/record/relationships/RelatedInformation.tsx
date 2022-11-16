@@ -45,20 +45,21 @@ export async function getParentLink_from_relationship(
   const {latest_record, revision_id} = await getRecordInformation(
     parent_record
   );
-
   return {
-    field_id: relatioship.parent.field_id,
-    record_id: record_id,
-    hrid: hrid,
-    parent: latest_record?.relationship?.parent,
-    parent_link: ROUTES.getRecordRoute(
-      project_id ?? '',
-      (relatioship.parent.record_id || '').toString(),
-      (revision_id || '').toString()
-    ),
-    parent_record_id: relatioship.parent.record_id,
-    type: 'Child',
-    relation_type_vocabPair: relatioship.parent.relation_type_vocabPair,
+    location_state: {
+      field_id: relatioship.parent.field_id,
+      parent: latest_record?.relationship?.parent,
+      parent_link: ROUTES.getRecordRoute(
+        project_id ?? '',
+        (relatioship.parent.record_id || '').toString(),
+        (revision_id || '').toString()
+      ),
+      parent_record_id: relatioship.parent.record_id,
+      type: 'Child',
+      // relation_type_vocabPair: relatioship.parent.relation_type_vocabPair,
+    },
+    latest_record: latest_record,
+    revision_id: revision_id,
   };
 }
 export function getParentlinkInfo(

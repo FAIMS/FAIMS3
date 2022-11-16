@@ -72,6 +72,7 @@ import {
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
+import {generateFAIMSDataID} from '../../../data_storage';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -793,19 +794,7 @@ class RecordForm extends React.Component<
             setSubmitting(false);
             return result;
           }
-          if (is_close === 'new') {
-            setSubmitting(false);
-            this.props.history.push(
-              ROUTES.NOTEBOOK +
-                this.props.project_id +
-                ROUTES.RECORD_CREATE +
-                this.state.type_cached
-            );
-            console.debug('current state', this.state);
-            //if save and new for child record, should the child has the same parent or not?
-            return result;
-          }
-          if (is_close === 'close') {
+          
             const RelationState = this.props.location.state;
             console.debug('location', RelationState);
             if (RelationState !== undefined && RelationState !== null) {
@@ -815,30 +804,70 @@ class RecordForm extends React.Component<
                 this.props.record_id
               );
               if (is_direct === false) {
-                this.props.history.push(
-                  ROUTES.NOTEBOOK + this.props.project_id
-                ); //update for save and close button
+                if (is_close === 'close') {
+                  this.props.history.push(
+                    ROUTES.NOTEBOOK + this.props.project_id
+                  ); //update for save and close button
+                  window.scrollTo(0, 0);
+                  return result;}
+                if (is_close === 'new') {
+                  //not child record
+                  setSubmitting(false);
+                  this.props.history.push(
+                    ROUTES.NOTEBOOK +
+                      this.props.project_id +
+                      ROUTES.RECORD_CREATE +
+                      this.state.type_cached
+                  );
+                  window.scrollTo(0, 0);
+                  return result;}
               } else {
+                if (is_close === 'close') {
                 this.props.history.push({
                   pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
                   state: state_parent,
                 });
+                window.scrollTo(0, 0);
+                return result; }
+                if (is_close === 'new') {
+                  // for new child record, should save the parent record and pass the location state --TODO
+                  setSubmitting(false);
+                  this.props.history.push({
+                    pathname:
+                      ROUTES.NOTEBOOK +
+                        this.props.project_id +
+                        ROUTES.RECORD_CREATE +
+                        this.state.type_cached,
+                    state: this.props.location.state});
+                  console.debug('current state', this.state);
+                  return result;}
               }
-              window.scrollTo(0, 0);
-              // scroll to top of page, seems to be needed on mobile devices
+              
             } else {
               const relationship = this.state.relationship;
-              console.error('location state', relationship);
+              console.debug('location state', relationship);
               if (
                 relationship === undefined ||
                 relationship === null ||
                 relationship.parent === undefined ||
                 relationship.parent === null
               ) {
+                if (is_close === 'close') {
                 this.props.history.push(
                   ROUTES.NOTEBOOK + this.props.project_id
                 );
                 window.scrollTo(0, 0);
+                return result;}
+                if (is_close === 'new') {
+                  //not child record
+                  setSubmitting(false);
+                  this.props.history.push(
+                    ROUTES.NOTEBOOK +
+                      this.props.project_id +
+                      ROUTES.RECORD_CREATE +
+                      this.state.type_cached
+                  );
+                  return result;}
               } else {
                 getParentLink_from_relationship(
                   result,
@@ -846,16 +875,59 @@ class RecordForm extends React.Component<
                   this.props.record_id,
                   this.props.project_id
                 ).then(LocationState => {
+                  if (is_close === 'close') {
                   this.props.history.push({
-                    pathname: LocationState.parent_link,
+                    pathname: LocationState.location_state.parent_link,
                   });
                   window.scrollTo(0, 0);
-                });
+                  return result;}
+                  if (is_close === 'new') {
+                    // for new child record, should save the parent record and pass the location state --TODO
+                    // update parent information
+                    const new_doc= LocationState.latest_record
+                    const field_id = LocationState.location_state.field_id
+                    const new_record_id = generateFAIMSDataID();
+                    const new_child_record = {
+                      record_id: new_record_id,
+                      project_id: this.props.project_id,
+                      // record_label:new_record_id
+                      // relation_type_vocabPair: [],
+                    }
+                    if(new_doc!==null){
+                      if(this.props.ui_specification['fields'][field_id]['component-parameters']['multiple']===true)
+                        new_doc['data'][field_id] = [...new_doc['data'][field_id] ,new_child_record]
+                      else new_doc['data'][field_id] = [...new_doc['data'][field_id] ,new_child_record]
+                      upsertFAIMSData(
+                        this.props.project_id,
+                        new_doc
+                      ).then(new_revision_id=>{
+                        const location_state:any=LocationState.location_state
+                        location_state['parent_link'] = ROUTES.getRecordRoute(
+                          this.props.project_id,
+                          (location_state.parent_record_id || '').toString(),
+                          (new_revision_id || '').toString()
+                        ).replace('/notebooks/', '')
+                        location_state['child_record_id'] = new_record_id;
+                        console.debug('new child state',location_state)
+                        this.props.history.push({
+                          pathname:
+                            ROUTES.NOTEBOOK +
+                              this.props.project_id +
+                              ROUTES.RECORD_CREATE +
+                              this.state.type_cached,
+                          state: location_state});
+                          setSubmitting(false);
+                          window.scrollTo(0, 0);
+                          return result;}).catch(error=>console.error('Error to save the parent record',error))
+                    }
+                    
+                  }
+                    
+
+                }).catch(error=>console.error('Error to get parent record',error));
               }
             }
-          }
-          return result;
-        })
+          })
     );
   }
 
