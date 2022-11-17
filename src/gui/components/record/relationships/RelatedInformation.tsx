@@ -33,30 +33,30 @@ import {RecordLinkProps, ParentLinkProps} from './types';
 //get parent link when child record been open
 export async function getParentLink_from_relationship(
   hrid: string,
-  relatioship: any,
+  relationship: any,
   record_id: string,
   project_id: string
 ) {
   const parent_record = {
     project_id: project_id,
-    record_id: relatioship.parent.record_id,
-    record_label: relatioship.parent.record_id,
+    record_id: relationship.parent.record_id,
+    record_label: relationship.parent.record_id,
   };
   const {latest_record, revision_id} = await getRecordInformation(
     parent_record
   );
   return {
     location_state: {
-      field_id: relatioship.parent.field_id,
+      field_id: relationship.parent.field_id,
       parent: latest_record?.relationship?.parent,
       parent_link: ROUTES.getRecordRoute(
         project_id ?? '',
-        (relatioship.parent.record_id || '').toString(),
+        (relationship.parent.record_id || '').toString(),
         (revision_id || '').toString()
       ),
-      parent_record_id: relatioship.parent.record_id,
+      parent_record_id: relationship.parent.record_id,
       type: 'Child',
-      // relation_type_vocabPair: relatioship.parent.relation_type_vocabPair,
+      // relation_type_vocabPair: relationship.parent.relation_type_vocabPair,
     },
     latest_record: latest_record,
     revision_id: revision_id,
