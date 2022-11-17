@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -20,10 +20,11 @@
 
 import {getProjectDB} from './sync/index';
 import PouchDB from 'pouchdb';
-import {ProjectID} from './datamodel/core';
+import {ProjectID, FAIMSTypeName} from './datamodel/core';
 import {
   PROJECT_SPECIFICATION_PREFIX,
   ProjectSchema,
+  AttributeValuePair,
 } from './datamodel/database';
 import {FAIMSType, FAIMSConstant} from './datamodel/typesystem';
 
@@ -63,7 +64,7 @@ export function createTypeContext(
   };
 }
 
-export function parseTypeName(typename: string): TypeReference {
+export function parseTypeName(typename: FAIMSTypeName): TypeReference {
   const splitname = typename.split('::');
   if (
     splitname.length !== 2 ||
@@ -77,7 +78,10 @@ export function parseTypeName(typename: string): TypeReference {
   return {namespace: splitname[0], name: splitname[1]};
 }
 
-export async function lookupFAIMSType(faimsType: string, context: TypeContext) {
+export async function lookupFAIMSType(
+  faimsType: FAIMSTypeName,
+  context: TypeContext
+) {
   if (context.use_cache && typeCache.has(faimsType)) {
     return typeCache.get(faimsType);
   }
@@ -100,7 +104,7 @@ export async function lookupFAIMSType(faimsType: string, context: TypeContext) {
     typeCache.set(faimsType, refVal);
     return refVal;
   } catch (err) {
-    console.warn(err);
+    console.warn('Failed to look up type', err);
     throw Error('failed to look up type');
   }
 }
@@ -148,7 +152,7 @@ async function getOrCreateSpecDoc(
   project_id: ProjectID,
   namespace: string
 ): Promise<ProjectSchema & PouchDB.Core.IdMeta> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const specdoc = (await projdb.get(
       PROJECT_SPECIFICATION_PREFIX + '-' + namespace
@@ -268,7 +272,7 @@ export async function upsertFAIMSType(
     throw Error('failed to get document');
   }
 
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     return projdb.put(specdoc);
   } catch (err) {
@@ -300,7 +304,7 @@ export async function upsertFAIMSConstant(
   const specdoc = await getOrCreateSpecDoc(project_id, parsedName['namespace']);
   specdoc.constants[parsedName['name']] = validatedInfo;
 
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     return projdb.put(specdoc);
   } catch (err) {

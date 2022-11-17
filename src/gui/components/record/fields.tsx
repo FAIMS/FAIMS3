@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -21,52 +21,69 @@
 import React from 'react';
 import {Field, FormikProps} from 'formik';
 
-import {Box} from '@material-ui/core';
-
 import {getComponentByName} from '../../component_registry';
-import RecordStagingState from '../../../sync/staging-observation';
 
 export function getComponentFromFieldConfig(
   fieldConfig: any,
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>,
-  staging: RecordStagingState
+  isSyncing = 'false',
+  disabled = false,
+  isconflict = false
 ) {
-  // console.log('getComponentFromFieldConfig');
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
   let Component: React.Component;
   try {
     Component = getComponentByName(namespace, name);
   } catch (err) {
-    // console.debug(err);
-    // console.warn(`Failed to load component ${namespace}::${name}`);
+    console.warn(`Failed to load component ${namespace}::${name}`, err);
     return undefined;
   }
-  return (
-    <Box mb={3} key={fieldName}>
-      <Field
-        component={Component} //e.g, TextField (default <input>)
-        name={fieldName}
-        onChange={staging.createNativeFieldHook<
-          React.ChangeEvent<{name: string}>,
-          ReturnType<typeof formProps.handleChange>
-        >(formProps.handleChange, fieldName)}
-        onBlur={staging.createNativeFieldHook<
-          React.FocusEvent<{name: string}>,
-          ReturnType<typeof formProps.handleBlur>
-        >(formProps.handleBlur, fieldName)}
-        stageValue={staging.createCustomFieldHook(
-          formProps.setFieldValue,
-          fieldName
-        )}
-        value={formProps.values[fieldName]}
-        {...fieldConfig['component-parameters']}
-        {...fieldConfig['component-parameters']['InputProps']}
-        {...fieldConfig['component-parameters']['SelectProps']}
-        {...fieldConfig['component-parameters']['InputLabelProps']}
-        {...fieldConfig['component-parameters']['FormHelperTextProps']}
-      />
-    </Box>
+  let inputlabel = false;
+  if (
+    name === 'TextField' &&
+    fieldConfig['component-parameters']['InputProps'] !== undefined &&
+    fieldConfig['component-parameters']['InputProps']['type'] !== 'text'
+  )
+    inputlabel = true;
+  return inputlabel ? (
+    <Field
+      component={Component}
+      name={fieldName}
+      value={formProps.values[fieldName]}
+      {...fieldConfig['component-parameters']}
+      {...fieldConfig['component-parameters']['InputProps']}
+      {...fieldConfig['component-parameters']['SelectProps']}
+      {...fieldConfig['component-parameters']['InputLabelProps']}
+      {...fieldConfig['component-parameters']['FormHelperTextProps']}
+      InputLabelProps={{shrink: true}} //e.g, TextField label for Date and email and number
+      onWheel={(event: any) => event.target.blur()}
+      onChange={(event: any) => {
+        formProps.handleChange(event);
+        formProps.setFieldValue('updateField', fieldName);
+      }}
+      disabled={disabled}
+      isconflict={isconflict}
+    />
+  ) : (
+    <Field
+      component={Component} //e.g, TextField (default <input>)
+      name={fieldName}
+      value={formProps.values[fieldName]}
+      {...fieldConfig['component-parameters']}
+      {...fieldConfig['component-parameters']['InputProps']}
+      {...fieldConfig['component-parameters']['SelectProps']}
+      {...fieldConfig['component-parameters']['InputLabelProps']}
+      {...fieldConfig['component-parameters']['FormHelperTextProps']}
+      onWheel={(event: any) => event.target.blur()}
+      onChange={(event: any) => {
+        formProps.handleChange(event);
+        formProps.setFieldValue('updateField', fieldName);
+      }}
+      issyncing={isSyncing}
+      disabled={disabled}
+      isconflict={isconflict}
+    />
   );
 }

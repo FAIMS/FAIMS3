@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -17,9 +17,14 @@
  * Description:
  *   TODO
  */
-import {getComponentByName, getComponentPropertiesByName} from './internals';
+import {
+  getComponentByName,
+  getComponentPropertiesByName,
+  getAvailableComponents,
+} from './internals';
 import BundledComponents from './bundle_components';
 
 export {getComponentByName};
 export {getComponentPropertiesByName};
 export {BundledComponents};
+export {getAvailableComponents};

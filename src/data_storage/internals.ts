@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -15,37 +15,53 @@
  *
  * Filename: internals.ts
  * Description:
- *   TODO
+ *   Helper functions to handle converting data between the GUI and pouchdb.
  */
 
 import {v4 as uuidv4} from 'uuid';
 
+import {DEBUG_APP} from '../buildconfig';
 import {getDataDB} from '../sync';
 import {
   AttributeValuePairID,
   RecordID,
   ProjectID,
   RevisionID,
+  FAIMSTypeName,
+  Annotations,
+  HRID_STRING,
 } from '../datamodel/core';
 import {
   AttributeValuePair,
   AttributeValuePairMap,
   AttributeValuePairIDMap,
   EncodedRecord,
+  FAIMSAttachment,
   RecordMap,
   Revision,
   RevisionMap,
 } from '../datamodel/database';
 import {Record, RecordMetadataList} from '../datamodel/ui';
+import {
+  getAttachmentLoaderForType,
+  getAttachmentDumperForType,
+  getEqualityFunctionForType,
+} from '../datamodel/typesystem';
 
 type EncodedRecordMap = Map<RecordID, EncodedRecord>;
 
-export function generateFAIMSRevisionID(): RevisionID {
-  return uuidv4();
+interface FormData {
+  data: {[field_name: string]: any};
+  annotations: {[field_name: string]: Annotations};
+  types: {[field_name: string]: FAIMSTypeName};
 }
 
-function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
-  return uuidv4();
+export function generateFAIMSRevisionID(): RevisionID {
+  return 'frev-' + uuidv4();
+}
+
+export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
+  return 'avp-' + uuidv4();
 }
 
 export async function updateHeads(
@@ -54,7 +70,7 @@ export async function updateHeads(
   base_revids: RevisionID[],
   new_revid: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const record = await getRecord(project_id, obsid);
 
   // Add new revision to heads, removing obsolete heads
@@ -76,7 +92,7 @@ export async function updateHeads(
   record.revisions = Array.from(revisions);
   record.revisions.sort();
 
-  datadb.put(record);
+  await datadb.put(record);
 }
 
 export async function getRecord(
@@ -119,13 +135,54 @@ export async function getLatestRevision(
   project_id: ProjectID,
   docid: string
 ): Promise<string | undefined> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   try {
     const doc = await datadb.get(docid);
     return doc._rev;
   } catch (err) {
-    console.debug(err);
+    if (DEBUG_APP) {
+      console.debug(err);
+    }
     return undefined;
+  }
+}
+
+export async function getHRID(
+  project_id: ProjectID,
+  revision: Revision
+): Promise<string | null> {
+  let hrid_name: string | null = null;
+  for (const possible_name of Object.keys(revision.avps)) {
+    if (possible_name.startsWith(HRID_STRING)) {
+      hrid_name = possible_name;
+      break;
+    }
+  }
+
+  if (DEBUG_APP) {
+    console.debug('hrid_name:', hrid_name);
+  }
+  if (hrid_name === null) {
+    console.warn('No HRID field found');
+    return null;
+  }
+  const hrid_avp_id = revision.avps[hrid_name];
+  if (hrid_avp_id === undefined) {
+    console.warn('No HRID field set for revision');
+    return null;
+  }
+  if (DEBUG_APP) {
+    console.debug('hrid_avp_id:', hrid_avp_id);
+  }
+  try {
+    const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
+    if (DEBUG_APP) {
+      console.debug('hrid_avp:', hrid_avp);
+    }
+    return hrid_avp.data as string;
+  } catch (err) {
+    console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
+    return null;
   }
 }
 
@@ -135,20 +192,44 @@ export async function getLatestRevision(
  * @returns key: record id, value: record (NOT NULL)
  */
 export async function listRecordMetadata(
-  project_id: ProjectID
+  project_id: ProjectID,
+  record_ids: RecordID[] | null = null
 ): Promise<RecordMetadataList> {
   try {
-    const records = await getAllRecords(project_id);
+    const out: RecordMetadataList = {};
+    const records =
+      record_ids === null
+        ? await getAllRecords(project_id)
+        : recordToRecordMap(await getRecords(project_id, record_ids));
     const revision_ids: RevisionID[] = [];
     records.forEach(o => {
       revision_ids.push(o.heads[0]);
     });
+    if (revision_ids.length === 0) {
+      // No records, so return early
+      return out;
+    }
     const revisions = await getRevisions(project_id, revision_ids);
-
-    const out: RecordMetadataList = {};
-    records.forEach((record, record_id) => {
+    for (const [record_id, record] of records) {
       const revision_id = record.heads[0];
       const revision = revisions[revision_id];
+      if (revision === undefined) {
+        // We don't have that revision, so skip
+        console.warn(
+          'Unable to find revision',
+          project_id,
+          record_id,
+          revision_id
+        );
+        continue;
+      }
+      const hrid =
+        revision === undefined
+          ? record_id
+          : (await getHRID(project_id, revision)) ?? record_id;
+      if (DEBUG_APP) {
+        console.debug('hrid:', hrid);
+      }
       out[record_id] = {
         project_id: project_id,
         record_id: record_id,
@@ -158,11 +239,18 @@ export async function listRecordMetadata(
         updated: new Date(revision.created),
         updated_by: revision.created_by,
         conflicts: record.heads.length > 1,
+        deleted: revision.deleted ? true : false,
+        hrid: hrid,
+        type: record.type,
+        relationship: revision.relationship,
       };
-    });
+    }
+    if (DEBUG_APP) {
+      console.debug('Record metadata list', out);
+    }
     return out;
   } catch (err) {
-    console.warn(err);
+    console.warn('Failed to get metadata', err);
     throw Error('failed to get metadata');
   }
 }
@@ -171,20 +259,21 @@ export async function getAttributeValuePairs(
   project_id: ProjectID,
   avp_ids: AttributeValuePairID[]
 ): Promise<AttributeValuePairMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
-    binary: true, // TODO: work out which format is best for attachments
+    attachments: true,
+    binary: true,
     keys: avp_ids,
   });
   const rows = res.rows;
   const mapping: AttributeValuePairMap = {};
-  rows.forEach(e => {
+  for (const e of rows) {
     if (e.doc !== undefined) {
       const doc = e.doc as AttributeValuePair;
-      mapping[doc._id] = doc;
+      mapping[doc._id] = await loadAttributeValuePair(project_id, doc);
     }
-  });
+  }
   return mapping;
 }
 
@@ -192,7 +281,7 @@ export async function getRevisions(
   project_id: ProjectID,
   revision_ids: RevisionID[]
 ): Promise<RevisionMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     keys: revision_ids,
@@ -212,7 +301,7 @@ export async function getRecords(
   project_id: ProjectID,
   record_ids: RecordID[]
 ): Promise<RecordMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.allDocs({
     include_docs: true,
     keys: record_ids,
@@ -229,10 +318,18 @@ export async function getRecords(
   return mapping;
 }
 
+function recordToRecordMap(old_recs: RecordMap): EncodedRecordMap {
+  const records: EncodedRecordMap = new Map();
+  for (const r in old_recs) {
+    records.set(r, old_recs[r]);
+  }
+  return records;
+}
+
 export async function getAllRecords(
   project_id: ProjectID
 ): Promise<EncodedRecordMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.find({
     selector: {
       record_format_version: 1,
@@ -248,14 +345,21 @@ export async function getAllRecords(
 export async function getFormDataFromRevision(
   project_id: ProjectID,
   revision: Revision
-): Promise<{[field_name: string]: any}> {
-  const data: {[field_name: string]: any} = {};
+): Promise<FormData> {
+  const form_data: FormData = {
+    data: {},
+    annotations: {},
+    types: {},
+  };
   const avp_ids = Object.values(revision.avps);
   const avps = await getAttributeValuePairs(project_id, avp_ids);
+
   for (const [name, avp_id] of Object.entries(revision.avps)) {
-    data[name] = avps[avp_id].data;
+    form_data.data[name] = avps[avp_id].data;
+    form_data.annotations[name] = avps[avp_id].annotations;
+    form_data.types[name] = avps[avp_id].type;
   }
-  return data;
+  return form_data;
 }
 
 export async function addNewRevisionFromForm(
@@ -263,7 +367,7 @@ export async function addNewRevisionFromForm(
   record: Record,
   new_revision_id: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map = await addNewAttributeValuePairs(
     project_id,
     record,
@@ -279,6 +383,8 @@ export async function addNewRevisionFromForm(
     created: record.updated.toISOString(),
     created_by: record.updated_by,
     type: record.type,
+    ugc_comment: record.ugc_comment,
+    relationship: record.relationship,
   };
   await datadb.put(new_revision);
 }
@@ -288,7 +394,7 @@ async function addNewAttributeValuePairs(
   record: Record,
   new_revision_id: RevisionID
 ): Promise<AttributeValuePairIDMap> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const avp_map: AttributeValuePairIDMap = {};
   let revision;
   let data;
@@ -297,24 +403,45 @@ async function addNewAttributeValuePairs(
     data = await getFormDataFromRevision(project_id, revision);
   } else {
     revision = {};
-    data = {};
+    data = {
+      data: {},
+      annotations: {},
+      types: {},
+    };
   }
+  const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
   for (const [field_name, field_value] of Object.entries(record.data)) {
-    const stored_data = data[field_name];
-    if (stored_data === undefined || stored_data !== field_value) {
+    const stored_data = data.data[field_name];
+    const stored_anno = data.annotations[field_name];
+    const eqfunc = getEqualityFunctionForType(record.field_types[field_name]);
+    const has_data_changed =
+      stored_data === undefined || !(await eqfunc(stored_data, field_value));
+    const has_anno_changed =
+      stored_anno === undefined ||
+      !(await eqfunc(stored_anno, record.annotations[field_name]));
+    if (has_data_changed || has_anno_changed) {
       const new_avp_id = generateFAIMSAttributeValuePairID();
       const new_avp = {
         _id: new_avp_id,
         avp_format_version: 1,
-        type: '??:??', // TODO: Add type handling
+        type: record.field_types[field_name] ?? '??:??',
         data: field_value,
         revision_id: new_revision_id,
         record_id: record.record_id,
-        annotations: [], // TODO: Add annotation handling
+        annotations: record.annotations[field_name],
+        created: record.updated.toISOString(),
+        created_by: record.updated_by,
       };
-      await datadb.put(new_avp);
+      docs_to_dump.push(...dumpAttributeValuePair(new_avp));
       avp_map[field_name] = new_avp_id;
     } else {
+      if (DEBUG_APP) {
+        console.info(
+          'Using existing AVP, the following are equal',
+          stored_data,
+          field_value
+        );
+      }
       if (revision.avps !== undefined) {
         avp_map[field_name] = revision.avps[field_name];
       } else {
@@ -325,6 +452,7 @@ async function addNewAttributeValuePairs(
       }
     }
   }
+  await datadb.bulkDocs(docs_to_dump);
   return avp_map;
 }
 
@@ -333,7 +461,7 @@ export async function createNewRecord(
   record: Record,
   revision_id: RevisionID
 ) {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const new_encoded_record = {
     _id: record.record_id,
     record_format_version: 1,
@@ -352,11 +480,50 @@ export async function createNewRecord(
   }
 }
 
-//function pouchAllDocsToMap(pouch_res: PouchDBAllDocsResult): FAIMSPouchDBMap {
-//    const rows = pouch_res.rows;
-//    let mapping: FAIMSPouchDBMap = {};
-//    rows.forEach(e => {
-//        mapping[e.doc._id] = e.doc;
-//    });
-//    return mapping;
-//}
+/*
+ * This handles converting attachments to data
+ */
+async function loadAttributeValuePair(
+  project_id: ProjectID,
+  avp: AttributeValuePair
+): Promise<AttributeValuePair> {
+  const attach_refs = avp.faims_attachments;
+  if (attach_refs === null || attach_refs === undefined) {
+    // No attachments
+    return avp;
+  }
+  const loader = getAttachmentLoaderForType(avp.type);
+  if (loader === null) {
+    return avp;
+  }
+  const ids_to_get = attach_refs.map(ref => ref.attachment_id);
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.allDocs({
+    include_docs: true,
+    attachments: true,
+    binary: true,
+    keys: ids_to_get,
+  });
+  const rows = res.rows;
+  const attach_docs: FAIMSAttachment[] = [];
+  rows.forEach(e => {
+    if (e.doc !== undefined) {
+      const doc = e.doc as FAIMSAttachment;
+      attach_docs.push(doc);
+    }
+  });
+  return loader(avp, attach_docs);
+}
+
+/*
+ * This handles converting data to attachments
+ */
+function dumpAttributeValuePair(
+  avp: AttributeValuePair
+): Array<AttributeValuePair | FAIMSAttachment> {
+  const dumper = getAttachmentDumperForType(avp.type);
+  if (dumper === null) {
+    return [avp];
+  }
+  return dumper(avp);
+}

@@ -8,4 +8,6 @@ else
 	platform="$1";
 fi
 
-git describe --long 2>/dev/null || git describe --all --long --always | sed "s#heads/#${platform}.#"
+descstring=$(echo 0.5.$(git log --perl-regexp --pretty='%s' | grep 'Merge #' | head -n1 | cut -d'#' -f2)-$(git describe --long 2>/dev/null || git describe --all --long --always)| tr -d "\n")
+#echo "$descstring"
+echo "$descstring" | sed -E "s#heads/[A-Za-z0-9-]+-0-g#${platform}.#"

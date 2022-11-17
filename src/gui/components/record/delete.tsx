@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -28,21 +28,22 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-} from '@material-ui/core';
-import DeleteIcon from '@material-ui/icons/Delete';
-import {Alert} from '@material-ui/lab';
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import {Alert} from '@mui/material';
 
-import {ActionType} from '../../../actions';
+import {ActionType} from '../../../context/actions';
 import * as ROUTES from '../../../constants/routes';
-import {store} from '../../../store';
+import {store} from '../../../context/store';
 import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setRecordAsDeleted} from '../../../data_storage';
+import {deleteStagedData} from '../../../sync/draft-storage';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
   record_id: RecordID;
-  revision_id: RevisionID;
+  revision_id: RevisionID | null;
 };
 
 export default function RecordDelete(props: RecordDeleteProps) {
@@ -59,11 +60,25 @@ export default function RecordDelete(props: RecordDeleteProps) {
     setOpen(false);
   };
 
+  const handleDeletefunction = (userid: string) => {
+    if (revision_id !== null)
+      return setRecordAsDeleted(
+        project_id,
+        record_id,
+        revision_id,
+        userid
+      ).then(() => {
+        return record_id;
+      });
+    else
+      return deleteStagedData(record_id, revision_id).then(() => {
+        return record_id;
+      });
+  };
+
   const handleDelete = () => {
     getCurrentUserId(project_id)
-      .then(userid =>
-        setRecordAsDeleted(project_id, record_id, revision_id, userid)
-      )
+      .then(userid => handleDeletefunction(userid))
       .then(() => {
         dispatch({
           type: ActionType.ADD_ALERT,
@@ -72,7 +87,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             severity: 'success',
           },
         });
-        history.push(ROUTES.PROJECT + project_id);
+        history.push(ROUTES.NOTEBOOK + project_id);
       })
       .catch(err => {
         console.log('Could not delete record: ' + record_id, err);
@@ -90,7 +105,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
     <div>
       <Button
         variant="outlined"
-        color="secondary"
+        color="error"
         onClick={handleClickOpen}
         startIcon={<DeleteIcon />}
       >

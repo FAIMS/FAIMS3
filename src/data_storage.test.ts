@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -39,7 +39,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockDataDB(project_id: ProjectID) {
+async function mockDataDB(project_id: ProjectID) {
   if (projdbs[project_id] === undefined) {
     const db = new PouchDB(project_id, {adapter: 'memory'});
     projdbs[project_id] = db;
@@ -115,7 +115,11 @@ describe('roundtrip reading and writing to db', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanDataDBS();
+      try {
+        await cleanDataDBS();
+      } catch (err) {
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
@@ -132,6 +136,8 @@ describe('roundtrip reading and writing to db', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -172,7 +178,11 @@ describe('CRUD for data', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanDataDBS();
+      try {
+        await cleanDataDBS();
+      } catch (err) {
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
@@ -189,6 +199,8 @@ describe('CRUD for data', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       const new_doc: Record = {
@@ -201,6 +213,8 @@ describe('CRUD for data', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -229,7 +243,7 @@ describe('CRUD for data', () => {
         .then(result => {
           expect(recordsEqual(result, new_doc)).toBe(true);
         })
-        .then(result => {
+        .then(_result => {
           return deleteFAIMSDataForID(project_id, record_id, userid);
         })
         .then(revision_id => {
@@ -238,7 +252,7 @@ describe('CRUD for data', () => {
         .then(result => {
           expect(result).toBe(null);
         })
-        .then(result => {
+        .then(_result => {
           return undeleteFAIMSDataForID(project_id, record_id, userid);
         })
         .then(revision_id => {
@@ -268,7 +282,11 @@ describe('listing revisions', () => {
       fc.pre(!name.includes(':'));
       fc.pre(namespace.trim() !== '');
       fc.pre(name.trim() !== '');
-      await cleanDataDBS();
+      try {
+        await cleanDataDBS();
+      } catch (err) {
+        fail('Failed to clean dbs');
+      }
       fc.pre(projdbs !== {});
 
       const fulltype = namespace + '::' + name;
@@ -285,10 +303,12 @@ describe('listing revisions', () => {
         updated_by: userid,
         created: time,
         updated: time,
+        annotations: {},
+        field_types: {field_name: fulltype},
       };
 
       return upsertFAIMSData(project_id, doc)
-        .then(result => {
+        .then(_result => {
           return listFAIMSProjectRevisions(project_id);
         })
         .then(result => {

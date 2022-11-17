@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,22 +18,98 @@
  *   TODO
  */
 
-import Input from '@material-ui/core/Input';
-import Checkbox from '@material-ui/core/Checkbox';
-import TextField from '@material-ui/core/TextField';
-import {TextField as FormikTextField} from 'formik-material-ui';
-import {Select as FormikSelect} from 'formik-material-ui';
-import {RadioGroup as FormikRadioGroup} from 'formik-material-ui';
-// import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-material-ui';
-import {Select as FAIMSSelect} from '../fields/select';
-import {ActionButton} from '../fields/ActionButton';
-import {TakePoint} from '../fields/TakePoint';
-import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
-import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
-import {TemplatedStringField} from '../fields/TemplatedStringField';
-import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
-import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
+import Input from '@mui/material/Input';
+import Checkbox from '@mui/material/Checkbox';
+import TextField from '@mui/material/TextField';
+import {TextField as FormikTextField} from 'formik-mui';
+import {Select as FormikSelect} from 'formik-mui';
+import {RadioGroup as FormikRadioGroup} from 'formik-mui';
+// import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-mui';
+
+import {
+  Select as FAIMSSelect,
+  SelectSetting,
+  Selectcomponentsetting,
+  getSelectBuilderIcon,
+} from '../fields/select';
+import {
+  AdvancedSelect,
+  AdvancedSelectSetting,
+  AdvancedSelectcomponentsetting,
+} from '../fields/selectadvanced';
+import {
+  MultiSelect,
+  MultiSelectSetting,
+  MultiSelectcomponentsetting,
+} from '../fields/multiselect';
+import {ActionButton, ActionSetting} from '../fields/ActionButton';
+import {TakePoint, TakePointSetting} from '../fields/TakePoint';
+import {
+  Checkbox as FAIMSCheckbox,
+  CheckboxSetting,
+  getCheckBoxBuilderIcon,
+} from '../fields/checkbox';
+import {
+  RadioGroup as FAIMSRadioGroup,
+  RadioSetting,
+  Radiocomponentsetting,
+  getRadioBuilderIcon,
+} from '../fields/radio';
+import {
+  TemplatedStringField,
+  TemplatedStringSetting,
+  TemplatedStringcomponentsetting,
+  getTemplatedStringBuilderIcon,
+} from '../fields/TemplatedStringField';
+import {
+  BasicAutoIncrementer,
+  AutoSetting,
+  getAutoBuilderIcon,
+} from '../fields/BasicAutoIncrementer';
+import {
+  RelatedRecordSelector,
+  LinkedSetting,
+  getLinkedBuilderIcon,
+  Linkedcomponentsetting,
+} from '../fields/RelatedRecordSelector';
+import {
+  FileUploader,
+  FileuploadSetting,
+  getFileuploadBuilderIcon,
+} from '../fields/FileUploader';
+import {TakePhoto, TakePhotoSetting} from '../fields/TakePhoto';
+
 import {registerComponent, setupComponentProperties} from './internals';
+import {
+  TextuiSpec,
+  TextuiSetting,
+  Defaultcomponentsetting,
+  MultiTextuiSetting,
+  MultiTextuiSpec,
+} from '../fields/BasicFieldSettings';
+// Mapping plugin imports
+import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
+import {
+  MapFormField,
+  MapFieldUISetting,
+  MapFieldUISpec,
+} from '@faims-project/faims3-map-input';
+import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
+
+const MapFieldBuilderSettings = [
+  MapFieldUISetting(getDefaultuiSetting()),
+  MapFieldUISpec,
+];
+
+import {
+  setAttachmentLoaderForType,
+  setAttachmentDumperForType,
+} from '../../datamodel/typesystem';
+import {
+  file_data_to_attachments,
+  file_attachments_to_data,
+} from '../../data_storage/attachments';
+import {QRCodeFormField, QRCodeFieldBuilderSettings} from '../fields/qrcode';
 
 /*
  * This should be enough to make typescript/the build system happy
@@ -47,70 +123,369 @@ export default bundle;
 registerComponent(
   'core-material-ui',
   'Input',
-  setupComponentProperties('HTML input field', 'Catchall field', Input)
+  setupComponentProperties(
+    'HTML input field',
+    'Catchall field',
+    'Advanced',
+    Input
+  )
 );
 registerComponent(
   'core-material-ui',
   'Checkbox',
-  setupComponentProperties('', '', Checkbox)
+  setupComponentProperties(
+    'HTML checkbox field',
+    'A simple checkbox',
+    'Simple',
+    Checkbox
+  )
 );
 registerComponent(
   'core-material-ui',
   'TextField',
-  setupComponentProperties('', '', TextField)
+  setupComponentProperties(
+    'HTML text field',
+    'A simple text field',
+    'Simple',
+    TextField
+  )
 );
+//this is for testing
+
 registerComponent(
   'formik-material-ui',
   'TextField',
-  setupComponentProperties('', '', FormikTextField)
+  setupComponentProperties(
+    'Input field',
+    'text plus special characters',
+    'Text',
+    FormikTextField,
+    {
+      namespace: 'formik-material-ui',
+      componentName: 'TextField',
+      type_return: 'faims-core::String',
+      validationSchema: [['yup.string']],
+      type: 'text',
+    },
+    [TextuiSetting, TextuiSpec],
+    Defaultcomponentsetting
+  )
 );
+
 registerComponent(
   'formik-material-ui',
   'Select',
-  setupComponentProperties('', '', FormikSelect)
+  setupComponentProperties('', '', 'Simple', FormikSelect)
 );
 registerComponent(
   'formik-material-ui',
   'RadioGroup',
-  setupComponentProperties('', '', FormikRadioGroup)
+  setupComponentProperties('Radio', 'Radio', 'Simple', FormikRadioGroup)
 );
 registerComponent(
   'faims-custom',
   'Select',
-  setupComponentProperties('', '', FAIMSSelect)
+  setupComponentProperties(
+    'Select',
+    'Select one item',
+    'Select',
+    FAIMSSelect,
+    {
+      namespace: 'faims-custom',
+      componentName: 'Select',
+      select: true,
+      type_return: 'faims-core::String',
+      validationSchema: [['yup.string']],
+      type: 'select',
+    },
+    SelectSetting,
+    Selectcomponentsetting,
+    getSelectBuilderIcon()
+  )
+);
+registerComponent(
+  'faims-custom',
+  'MultiSelect',
+  setupComponentProperties(
+    'MultiSelect',
+    'Select multiple items',
+    'Select',
+    MultiSelect,
+    {
+      namespace: 'faims-custom',
+      componentName: 'MultiSelect',
+      select: true,
+      type_return: 'faims-core::Array',
+      validationSchema: [['yup.Array']],
+      type: 'select',
+    },
+    MultiSelectSetting,
+    MultiSelectcomponentsetting,
+    getSelectBuilderIcon()
+  )
+);
+registerComponent(
+  'faims-custom',
+  'AdvancedSelect',
+  setupComponentProperties(
+    'Hierarchical Select',
+    'Hierarchical vocabularies pick',
+    'Select',
+    AdvancedSelect,
+    {
+      namespace: 'faims-custom',
+      componentName: 'AdvancedSelect',
+      select: true,
+      type_return: 'faims-core::string',
+      validationSchema: [['yup.string']],
+      type: 'select',
+    },
+    AdvancedSelectSetting,
+    AdvancedSelectcomponentsetting,
+    getSelectBuilderIcon()
+  )
 );
 registerComponent(
   'faims-custom',
   'Checkbox',
-  setupComponentProperties('', '', FAIMSCheckbox)
+  setupComponentProperties(
+    'Checkbox',
+    'Checkbox',
+    'Select',
+    FAIMSCheckbox,
+    {
+      namespace: 'faims-custom',
+      componentName: 'Checkbox',
+      type_return: 'faims-core::Bool',
+      validationSchema: [['yup.bool']],
+      type: 'checkbox',
+    },
+    CheckboxSetting,
+    Defaultcomponentsetting,
+    getCheckBoxBuilderIcon()
+  )
 );
 registerComponent(
   'faims-custom',
   'RadioGroup',
-  setupComponentProperties('', '', FAIMSRadioGroup)
+  setupComponentProperties(
+    'Radio',
+    'Radio',
+    'Select',
+    FAIMSRadioGroup,
+    {
+      ...RadioSetting[1],
+      namespace: 'faims-custom',
+      componentName: 'RadioGroup',
+    },
+    RadioSetting,
+    Radiocomponentsetting,
+    getRadioBuilderIcon()
+  )
 );
 registerComponent(
   'faims-custom',
   'ActionButton',
-  setupComponentProperties('', '', ActionButton)
+  setupComponentProperties(
+    'Action Button',
+    'Do an action',
+    'Special',
+    ActionButton,
+    {
+      namespace: 'faims-custom',
+      componentName: 'ActionButton',
+      type_return: 'faims-core::String',
+      validationSchema: [['yup.string']],
+      type: 'string',
+    },
+    ActionSetting,
+    Defaultcomponentsetting
+  )
 );
 registerComponent(
   'faims-custom',
   'TakePoint',
-  setupComponentProperties('', '', TakePoint)
+  setupComponentProperties(
+    'Take Point',
+    '',
+    'Special',
+    TakePoint,
+    {
+      namespace: 'faims-custom',
+      componentName: 'TakePoint',
+      type_return: 'faims-pos::Location',
+      initialValue: null,
+      validationSchema: [
+        ['yup.object'],
+        ['yup.nullable'],
+        [
+          'yup.shape',
+          {
+            latitude: [['yup.number'], ['yup.required']],
+            longitude: [['yup.number'], ['yup.required']],
+          },
+        ],
+      ],
+    },
+    TakePointSetting,
+    Defaultcomponentsetting
+  )
+);
+registerComponent(
+  'faims-custom',
+  'TakePhoto',
+  setupComponentProperties(
+    'Take Photo',
+    'Take photo',
+    'Images',
+    TakePhoto,
+    {
+      namespace: 'faims-custom',
+      componentName: 'TakePhoto',
+      type_return: 'faims-attachment::Files',
+      initialValue: null,
+      validationSchema: [['yup.object'], ['yup.nullable']],
+    },
+    TakePhotoSetting,
+    Defaultcomponentsetting
+  )
 );
 registerComponent(
   'faims-custom',
   'TemplatedStringField',
-  setupComponentProperties('', '', TemplatedStringField)
+  setupComponentProperties(
+    'Unique ID',
+    'Build a value up from other fields',
+    'Special',
+    TemplatedStringField,
+    {
+      namespace: 'faims-custom',
+      componentName: 'TemplatedStringField',
+      type_return: 'faims-core::String',
+      required: true,
+      validationSchema: [['yup.string'], ['yup.required']],
+      type: 'text',
+      template: 'αβγ {{str-field}}-{{basic-autoincrementer-field}}',
+    },
+    TemplatedStringSetting,
+    TemplatedStringcomponentsetting,
+    getTemplatedStringBuilderIcon()
+  )
 );
 registerComponent(
   'faims-custom',
   'BasicAutoIncrementer',
-  setupComponentProperties('', '', BasicAutoIncrementer)
+  setupComponentProperties(
+    'Basic AutoIncrementer',
+    'A basic autoincrementer to help create identifiers',
+    'Special',
+    BasicAutoIncrementer,
+    AutoSetting[1],
+    AutoSetting,
+    Defaultcomponentsetting,
+    getAutoBuilderIcon()
+  )
 );
 registerComponent(
   'faims-custom',
   'RelatedRecordSelector',
-  setupComponentProperties('', '', RelatedRecordSelector)
+  setupComponentProperties(
+    'Related field',
+    'Add relations between records',
+    'Special',
+    RelatedRecordSelector,
+    LinkedSetting[1],
+    LinkedSetting,
+    Linkedcomponentsetting,
+    getLinkedBuilderIcon()
+  )
 );
+
+registerComponent(
+  'qrcode',
+  'QRCodeFormField',
+  setupComponentProperties(
+    'QR Code Scanning',
+    'Scan a QR/Bar code',
+    'QRCode',
+    QRCodeFormField,
+    QRCodeFieldBuilderSettings[1],
+    QRCodeFieldBuilderSettings,
+    Defaultcomponentsetting
+  )
+);
+
+// Mapping Plugin registration
+
+registerComponent(
+  'mapping-plugin',
+  'MapFormField',
+  setupComponentProperties(
+    'Map Input Field',
+    'Input Geo Data via a map',
+    'Maps',
+    MapFormField,
+    MapFieldBuilderSettings[1],
+    MapFieldBuilderSettings,
+    Defaultcomponentsetting
+  )
+);
+
+registerComponent(
+  'formik-material-ui',
+  'MultipleTextField',
+  setupComponentProperties(
+    'Input Box',
+    'Multiple line Input Box',
+    'Text',
+    FormikTextField,
+    {
+      namespace: 'formik-material-ui',
+      componentName: 'MultipleTextField',
+      type_return: 'faims-core::String',
+      validationSchema: [['yup.string']],
+      type: 'text',
+      multiline: true,
+      multirows: 4,
+    },
+    [MultiTextuiSetting, MultiTextuiSpec],
+    Defaultcomponentsetting
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'FileUploader',
+  setupComponentProperties(
+    'File Upload',
+    'Upload File',
+    'Special',
+    FileUploader,
+    FileuploadSetting[1],
+    FileuploadSetting,
+    Defaultcomponentsetting,
+    getFileuploadBuilderIcon()
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'RandomStyle',
+  setupComponentProperties(
+    'Title',
+    'A sub Title for part',
+    'Special',
+    RandomStyle,
+    RandomStyleSetting[1],
+    RandomStyleSetting,
+    Defaultcomponentsetting,
+    getAutoBuilderIcon()
+  )
+);
+
+/*
+ * For saving and loading attachment with type faims-attachment::Files
+ */
+
+setAttachmentLoaderForType('faims-attachment::Files', file_attachments_to_data);
+setAttachmentDumperForType('faims-attachment::Files', file_data_to_attachments);

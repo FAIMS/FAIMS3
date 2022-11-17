@@ -1,3 +1,5 @@
+android/fastlane/metadata/android/en-GB/changelogs/
+
 # Logs
 logs
 *.log
@@ -110,5 +112,12 @@ build
 active
 directory
 .DS_Store
+__pycache__
+*.swp
+*.pyc
+*.pyo
+*~
 staging
 local_state
+draft-storage
+local_auth

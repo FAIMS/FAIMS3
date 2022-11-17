@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -17,7 +17,8 @@
  * Description:
  *   TODO
  */
-import BrokenImageIcon from '@material-ui/icons/BrokenImage';
+import BrokenImageIcon from '@mui/icons-material/BrokenImage';
+import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
 
 export function getDefaultBuilderComponent() {
   return <p>This field has no configuration options.</p>;
@@ -25,4 +26,18 @@ export function getDefaultBuilderComponent() {
 
 export function getDefaultBuilderIcon() {
   return <BrokenImageIcon />;
+}
+
+export function getDefaultuiSpecProps() {
+  return {
+    namespace: 'formik-material-ui',
+    componentName: 'TextField',
+    type_return: 'faims-core::String',
+    validationSchema: [['yup.string']],
+    type: 'text',
+  };
+}
+
+export function getDefaultuisettings() {
+  return [getDefaultuiSetting()];
 }

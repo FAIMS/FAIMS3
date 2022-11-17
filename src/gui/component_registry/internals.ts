@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -24,8 +24,16 @@ import {
   FAIMSFormField,
   FAIMSBuilderFormField,
   FAIMSBuilderIcon,
+  FAIMSUiSpec,
+  FormComponentList,
 } from '../../datamodel/ui';
-import {getDefaultBuilderComponent, getDefaultBuilderIcon} from './defaults';
+
+import {
+  getDefaultBuilderComponent,
+  getDefaultBuilderIcon,
+  getDefaultuiSpecProps,
+  getDefaultuisettings,
+} from './defaults';
 
 const componentRegistry: ComponentRegistry = {};
 
@@ -74,14 +82,21 @@ export function registerComponent(
 export function setupComponentProperties(
   human_readable_name: string,
   description: string,
+  category: string,
   component: FAIMSFormField,
+  uiSpecProps: FAIMSUiSpec | null = null,
+  settingsProps: Array<FAIMSUiSpec> | null = null,
   builder_component: FAIMSBuilderFormField | null = null,
   icon: FAIMSBuilderIcon | null = null
 ): ComponentRegistryProperties {
   const props: ComponentRegistryProperties = {
     human_readable_name: human_readable_name,
     description: description,
+    category: category,
     component: component,
+    settingsProps:
+      settingsProps !== null ? settingsProps : getDefaultuisettings(),
+    uiSpecProps: uiSpecProps !== null ? uiSpecProps : getDefaultuiSpecProps(),
     builder_component:
       builder_component !== null
         ? builder_component
@@ -96,4 +111,18 @@ function getNameSpace(namespace: string) {
     componentRegistry[namespace] = {};
   }
   return componentRegistry[namespace];
+}
+
+export function getAvailableComponents(): FormComponentList {
+  const components: FormComponentList = [];
+  for (const namespace in componentRegistry) {
+    for (const component_name in componentRegistry[namespace]) {
+      components.push({
+        namespace: namespace,
+        component_name: component_name,
+        component_properties: componentRegistry[namespace][component_name],
+      });
+    }
+  }
+  return components;
 }

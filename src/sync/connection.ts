@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -19,7 +19,8 @@
  */
 
 import PouchDB from 'pouchdb';
-import {RUNNING_UNDER_TEST} from '../buildconfig';
+import {RUNNING_UNDER_TEST, DEBUG_APP} from '../buildconfig';
+import {SyncStatusCallbacks} from '../datamodel/core';
 import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel/database';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 
@@ -32,7 +33,7 @@ import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 export const local_pouch_options: any = {};
 if (RUNNING_UNDER_TEST) {
   // enable memory adapter for testing
-  console.error('Using memory store');
+  // console.log('Using memory store');
   PouchDB.plugin(PouchDBAdaptorMemory);
   local_pouch_options['adapter'] = 'memory';
 }
@@ -48,24 +49,78 @@ export function materializeConnectionInfo(
   return ret;
 }
 
+/*
+ * The following provide the infrastructure connect up the UI sync notifications
+ * with pouchdb's callbacks.
+ */
+export let sync_status_callbacks: SyncStatusCallbacks | null = null;
+
+export function set_sync_status_callbacks(callbacks: SyncStatusCallbacks) {
+  sync_status_callbacks = callbacks;
+}
+
+export function ping_sync_up() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_up();
+  }
+}
+
+export function ping_sync_down() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_down();
+  }
+}
+
+export function ping_sync_error() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_error();
+  }
+}
+
+export function ping_sync_denied() {
+  if (sync_status_callbacks !== null) {
+    sync_status_callbacks.sync_denied();
+  }
+}
+
 /**
  * Creates a local PouchDB.Database used to access a remote Couch/Pouch instance
  * @param connection_info Network address/database info to use to initialize the connection
  * @returns A new PouchDB.Database, interfacing to the remote Couch/Pouch instance
  */
 export function ConnectionInfo_create_pouch<Content extends {}>(
-  connection_info: ConnectionInfo,
-  username: string | null = null,
-  password: string | null = null,
-  skip_setup = false
+  connection_info: ConnectionInfo
 ): PouchDB.Database<Content> {
-  const pouch_options: any = {skip_setup: skip_setup};
-  if (username !== null && password !== null) {
+  const pouch_options: PouchDB.Configuration.RemoteDatabaseConfiguration = {
+    skip_setup: true,
+  };
+
+  // Username & password auth is optional
+  if ('auth' in connection_info && connection_info.auth !== undefined) {
     pouch_options.auth = {
-      username: username,
-      password: password,
+      username: connection_info.auth.username,
+      password: connection_info.auth.password,
     };
   }
+  // TODO: Use a new enough pouchdb such that we don't need the fetch hook, see
+  // https://github.com/pouchdb/pouchdb/issues/8387
+  pouch_options.fetch = function (url: any, opts: any) {
+    if (
+      'jwt_token' in connection_info &&
+      connection_info.jwt_token !== undefined
+    ) {
+      if (DEBUG_APP) {
+        console.debug('Using JWT for connection', connection_info);
+      }
+      opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
+    }
+    ping_sync_up();
+    ping_sync_down();
+    // Commented out as it seems this may break sending attachments on
+    // chrome/safari
+    //opts.keepalive = true;
+    return PouchDB.fetch(url, opts);
+  };
   return new PouchDB(
     encodeURIComponent(connection_info.proto) +
       '://' +

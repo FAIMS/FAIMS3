@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -19,10 +19,8 @@
  */
 
 import {getProjectDB} from './sync';
-import PouchDB from 'pouchdb';
-import {ProjectID} from './datamodel/core';
+import {ProjectID, FAIMSTypeName} from './datamodel/core';
 import {
-  ProjectMetaObject,
   UI_SPECIFICATION_NAME,
   EncodedProjectUIModel,
 } from './datamodel/database';
@@ -31,8 +29,8 @@ import {ProjectUIModel} from './datamodel/ui';
 export async function getUiSpecForProject(
   project_id: ProjectID
 ): Promise<ProjectUIModel> {
-  const projdb = getProjectDB(project_id);
   try {
+    const projdb = await getProjectDB(project_id);
     const encUIInfo: EncodedProjectUIModel = await projdb.get(
       UI_SPECIFICATION_NAME
     );
@@ -45,15 +43,16 @@ export async function getUiSpecForProject(
       visible_types: encUIInfo.visible_types,
     };
   } catch (err) {
-    console.warn(err);
-    throw Error('failed to find ui specification');
+    console.warn('failed to find ui specification for', project_id, err);
+    throw Error(`failed to find ui specification for ${project_id}`);
   }
 }
 
 export async function setUiSpecForProject(
-  projdb: PouchDB.Database<ProjectMetaObject>,
+  project_id: ProjectID,
   uiInfo: ProjectUIModel
 ) {
+  const projdb = await getProjectDB(project_id);
   const encUIInfo: EncodedProjectUIModel = {
     _id: UI_SPECIFICATION_NAME,
     fields: uiInfo.fields,
@@ -64,15 +63,17 @@ export async function setUiSpecForProject(
   try {
     const existing_encUIInfo = await projdb.get(encUIInfo._id);
     encUIInfo._rev = existing_encUIInfo._rev;
-  } catch (err) {
+  } catch (err: any) {
     // Probably no existing UI info
-    console.debug(err);
+    if (err?.status !== 404) {
+      console.debug('Failed to set UI specification for', project_id, err);
+    }
   }
 
   try {
     return await projdb.put(encUIInfo);
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to set ui specification', err);
     throw Error('failed to set ui specification');
   }
 }
@@ -96,4 +97,36 @@ export function getFieldNamesFromFields(fields: {
   [key: string]: {[key: string]: any};
 }): string[] {
   return Object.keys(fields);
+}
+
+export function getReturnedTypesForViewSet(
+  ui_specification: ProjectUIModel,
+  viewset_name: string
+): {[field_name: string]: FAIMSTypeName} {
+  const fields = getFieldsForViewSet(ui_specification, viewset_name);
+  const types: {[field_name: string]: FAIMSTypeName} = {};
+  for (const field_name in fields) {
+    types[field_name] = fields[field_name]['type-returned'];
+  }
+  return types;
+}
+
+export async function dumpMetadataDBContents(
+  project_id: ProjectID
+): Promise<object[]> {
+  const projdb = await getProjectDB(project_id);
+  try {
+    const db_contents = await projdb.allDocs({
+      include_docs: true,
+      attachments: true,
+    });
+    const docs = [];
+    for (const o of db_contents.rows) {
+      docs.push(o.doc as object);
+    }
+    return docs;
+  } catch (err) {
+    console.warn('failed to dump meta db for', project_id, err);
+    throw Error(`failed to dump meta db for ${project_id}`);
+  }
 }

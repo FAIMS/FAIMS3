@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -20,10 +20,21 @@
 
 import React from 'react';
 import {Formik, Form, Field, yupToFormErrors} from 'formik';
-import {Button, LinearProgress, Grid} from '@material-ui/core';
-import {TextField} from 'formik-material-ui';
+import {
+  ButtonGroup,
+  Box,
+  Alert,
+  Button,
+  LinearProgress,
+  Grid,
+  Divider,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import {TextField} from 'formik-mui';
 import * as yup from 'yup';
 
+import {ActionType} from '../../../context/actions';
+import {store} from '../../../context/store';
 import {ProjectID} from '../../../datamodel/core';
 import {LocalAutoIncrementRange} from '../../../datamodel/database';
 import {
@@ -36,6 +47,7 @@ interface Props {
   project_id: ProjectID;
   form_id: string;
   field_id: string;
+  label: string;
 }
 
 interface State {
@@ -93,7 +105,11 @@ export default class BasicAutoIncrementer extends React.Component<
   render_ranges() {
     const ranges = this.cloned_ranges();
     if (ranges === null || ranges.length === 0) {
-      return <p>No ranges allocated yet.</p>;
+      return (
+        <Alert severity={'info'} sx={{mb: 1}}>
+          No ranges allocated yet.
+        </Alert>
+      );
     }
     return (
       <div>
@@ -106,13 +122,23 @@ export default class BasicAutoIncrementer extends React.Component<
 
   async update_ranges(ranges: LocalAutoIncrementRange[]) {
     const {project_id, form_id, field_id} = this.props;
-    await set_local_autoincrement_ranges_for_field(
-      project_id,
-      form_id,
-      field_id,
-      ranges
-    );
-    this.setState({ranges: ranges});
+    try {
+      await set_local_autoincrement_ranges_for_field(
+        project_id,
+        form_id,
+        field_id,
+        ranges
+      );
+      this.setState({ranges: ranges});
+    } catch (err: any) {
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: err.toString(),
+          severity: 'error',
+        },
+      });
+    }
   }
 
   render_range(
@@ -165,46 +191,52 @@ export default class BasicAutoIncrementer extends React.Component<
         }}
       >
         {({submitForm, isSubmitting}) => (
-          <Grid
-            container
-            direction="row"
-            //justifyContent="center"
-            //alignItems="center"
-            //spacing={2}
-          >
+          <Box sx={{my: 1}}>
             <Form>
-              <Grid item xs>
-                <Field component={TextField} {...start_props} />
+              <Grid container direction="row" spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Field
+                    size={'small'}
+                    component={TextField}
+                    {...start_props}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Field size={'small'} component={TextField} {...stop_props} />
+                </Grid>
               </Grid>
-              <Grid item xs>
-                <Field component={TextField} {...stop_props} />
-              </Grid>
-              <Grid item xs>
-                <Button
-                  variant="contained"
-                  disabled={range.using || range.fully_used}
-                  onClick={async () => {
-                    ranges.splice(range_index, 1);
 
-                    await this.update_ranges(ranges);
-                  }}
-                >
-                  Remove range
-                </Button>
-              </Grid>
               <Grid item xs>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  disabled={isSubmitting || range.fully_used}
-                  onClick={submitForm}
+                <ButtonGroup
+                  fullWidth={true}
+                  sx={{mt: 1}}
+                  variant={'outlined'}
+                  size={'small'}
                 >
-                  Update range
-                </Button>
+                  <Button
+                    color="error"
+                    disabled={range.using || range.fully_used}
+                    onClick={async () => {
+                      ranges.splice(range_index, 1);
+
+                      await this.update_ranges(ranges);
+                    }}
+                  >
+                    Remove range
+                  </Button>
+                  <Button
+                    color="primary"
+                    disabled={isSubmitting || range.fully_used}
+                    onClick={submitForm}
+                  >
+                    Update range
+                  </Button>
+                </ButtonGroup>
               </Grid>
             </Form>
             {isSubmitting && <LinearProgress />}
-          </Grid>
+            <Divider sx={{mt: 1, mb: 2}} />
+          </Box>
         )}
       </Formik>
     );
@@ -220,7 +252,7 @@ export default class BasicAutoIncrementer extends React.Component<
 
   render() {
     return (
-      <div>
+      <Box mt={1}>
         {this.render_ranges()}
         <Button
           variant="outlined"
@@ -228,10 +260,12 @@ export default class BasicAutoIncrementer extends React.Component<
           onClick={async () => {
             this.add_new_range();
           }}
+          startIcon={<AddIcon />}
         >
-          Add new range!
+          Add new range
         </Button>
-      </div>
+      </Box>
     );
   }
 }
+BasicAutoIncrementer.contextType = store;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,28 +18,98 @@
  *   TODO
  */
 
-import {createMuiTheme, colors} from '@material-ui/core';
-import {Shadows} from '@material-ui/core/styles/shadows';
+import {createTheme, colors} from '@mui/material';
 import typography from './typography';
-import shadows from './shadows';
+import {Theme} from '@mui/material/styles';
 
-const theme = createMuiTheme({
+declare module '@mui/styles/defaultTheme' {
+  interface DefaultTheme extends Theme {}
+}
+
+const theme = createTheme({
+  // spacing: 2,
   palette: {
+    background: {
+      default: '#FAFAFB',
+    },
     primary: {
       main: '#1B3E93',
+      light: '#5768c4',
+      dark: '#001964',
     },
+    // secondary: {
+    //   100: colors.grey[100],
+    //   200: colors.grey[200],
+    //   light: colors.grey[300],
+    //   400: colors.grey[400],
+    //   main: colors.grey[500],
+    //   600: colors.grey[600],
+    //   dark: colors.grey[700],
+    //   800: colors.grey[800],
+    // },
     secondary: {
-      // main: '#F68E1E',
-      main: colors.indigo[500],
+      main: '#E59136',
+      contrastText: '#fff',
     },
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
     },
+    // error: {
+    //   main: colors.red[500],
+    // },
   },
-  shadows: shadows as Shadows,
+  // shadows: Shadows,
   typography,
   // shadows: Array(25).fill('none') as Shadows,
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          '&.MuiAppBar-root': {
+            boxShadow: 'none',
+          },
+        },
+        colorPrimary: {
+          backgroundColor: '#1B3E93',
+          color: '#fff',
+          contrastText: '#fff',
+          textColor: '#fff',
+          indicatorColor: '#fff',
+          text: {
+            primary: '#fff',
+          },
+        },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          '&.MuiTabs-root': {
+            boxShadow: 'none',
+            fontWeight: 'bold',
+          },
+          '&.MuiTab-root': {
+            fontWeight: '700 !important',
+          },
+          '&.Mui-selected': {
+            fontWeight: '700 !important',
+            color: 'white',
+            backgroundColor: '#DA9449',
+          },
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          '&.MuiTab-root': {
+            fontWeight: 'bold',
+          },
+        },
+      },
+    },
+  },
 });
 
 export default theme;

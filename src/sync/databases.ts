@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -23,25 +23,27 @@ import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
+  POUCH_BATCH_SIZE,
+  POUCH_BATCHES_LIMIT,
 } from '../buildconfig';
 import {
   ActiveDoc,
   ConnectionInfo,
   ListingsObject,
-  NonNullListingsObject,
-  PeopleDoc,
   ProjectMetaObject,
   ProjectDataObject,
   ProjectObject,
+  LocalAuthDoc,
+  NonNullListingsObject,
 } from '../datamodel/database';
 import {
   ConnectionInfo_create_pouch,
   local_pouch_options,
   materializeConnectionInfo,
 } from './connection';
-import {staging_db} from './staging';
-import {SyncHandler} from './sync-handler';
+import {draft_db} from './draft-storage';
 
+export const DB_TIMEOUT = 2000;
 export const DEFAULT_LISTING_ID = 'default';
 export const POUCH_SEPARATOR = '_';
 export const directory_connection_info: ConnectionInfo = {
@@ -56,7 +58,9 @@ export type ExistingListings = PouchDB.Core.ExistingDocument<ListingsObject>;
 
 export interface LocalDB<Content extends {}> {
   local: PouchDB.Database<Content>;
+  changes: PouchDB.Core.Changes<Content>;
   is_sync: boolean;
+  is_sync_attachments: boolean;
   remote: null | LocalDBRemote<Content>;
 }
 
@@ -68,10 +72,6 @@ export interface LocalDBRemote<Content extends {}> {
     | null;
   info: ConnectionInfo;
   options: DBReplicateOptions;
-  create_handler: (
-    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler<Content>;
-  handler: null | SyncHandler<Content>;
 }
 
 export interface LocalDBList<Content extends {}> {
@@ -81,17 +81,40 @@ export interface LocalDBList<Content extends {}> {
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions
   | {
-      pull?: PouchDB.Replication.ReplicateOptions;
+      pull: PouchDB.Replication.ReplicateOptions;
       push: PouchDB.Replication.ReplicateOptions;
     };
 
 /**
+ * Each database has a changes stream.
+ * This is the template for which the changes stream is listened to
+ * Some databases might use options added to this like:
+ *  {...default_changes_opts, filter:'abc'}
+ * If they want to, for example, restrict to only listings in the active DB.
+ */
+export const default_changes_opts: PouchDB.Core.ChangesOptions &
+  PouchDB.Core.AllDocsOptions = {
+  live: true,
+  since: 'now',
+  timeout: DB_TIMEOUT,
+  include_docs: true,
+  conflicts: true,
+  attachments: true,
+};
+
+const directory_db_pouch = new PouchDB<ListingsObject>(
+  'directory',
+  local_pouch_options
+);
+/**
  * Directory: All (public, anyways) Faims instances
  */
 export const directory_db: LocalDB<ListingsObject> = {
-  local: new PouchDB('directory', local_pouch_options),
+  local: directory_db_pouch,
+  changes: directory_db_pouch.changes({...default_changes_opts, since: 'now'}),
   remote: null,
   is_sync: true,
+  is_sync_attachments: false,
 };
 
 /**
@@ -100,7 +123,7 @@ export const directory_db: LocalDB<ListingsObject> = {
  *   For each project the current device is part of (so this is keyed by listing id + project id),
  *   * listing_id: A couchdb instance object's id (from "directory" db)
  *   * project_id: A project id (from the project_db in the couchdb instance object.)
- *   * username, password: A device login (mostly the same across all docs in this db, except for differences in people_db of the instance),
+ *   * authentication mechanism used (id of a doc in the auth_db)
  */
 export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 
@@ -110,14 +133,17 @@ export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 export const local_state_db = new PouchDB('local_state', local_pouch_options);
 
 /**
- * Each listing has a Projects database and Users/People DBs
+ * Login tokens for each FAIMS Cluster that needs it
  */
-export const projects_dbs: LocalDBList<ProjectObject> = {};
+export const local_auth_db = new PouchDB<LocalAuthDoc>(
+  'local_auth',
+  local_pouch_options
+);
 
 /**
- * mapping from listing id to a PouchDB CLIENTSIDE DB
+ * Each listing has a Projects database and Users DBs
  */
-export const people_dbs: LocalDBList<PeopleDoc> = {};
+export const projects_dbs: LocalDBList<ProjectObject> = {};
 
 /**
  * Per-[active]-project project data:
@@ -148,38 +174,97 @@ export async function get_default_instance(): Promise<NonNullListingsObject> {
         directory_connection_info,
         possibly_corrupted_instance.projects_db
       ),
-      people_db: materializeConnectionInfo(
-        directory_connection_info,
-        possibly_corrupted_instance.people_db
-      ),
     };
   }
   return default_instance;
 }
 
+let default_projects_db: null | ConnectionInfo = null;
+
+export async function get_base_connection_info(
+  listing_object: ListingsObject
+): Promise<ConnectionInfo> {
+  if (default_projects_db === null) {
+    try {
+      // Normal case of a single DEFAULT listing in the directory
+      const possibly_corrupted_instance = await directory_db.local.get(
+        DEFAULT_LISTING_ID
+      );
+      return (default_projects_db = materializeConnectionInfo(
+        directory_connection_info,
+        possibly_corrupted_instance.projects_db
+      ));
+    } catch (err: any) {
+      // Missing when directory_db has NOTHING in it
+      // i.e. current FAIMS app doesn't have a directory
+      // this is usually because it's the server, not the app.
+      if (err.message !== 'missing') {
+        // Other DB error
+        throw err;
+      }
+
+      const nullexcept = <T>(val: T | undefined | null, err: any): T => {
+        if (val === null || val === undefined) {
+          throw err;
+        }
+        return val;
+      };
+
+      // If running in server mode
+      // the listings object MUST have all the connection properties
+      return {
+        proto: nullexcept(
+          listing_object.projects_db?.proto,
+          'Server misconfigured: Missing proto'
+        ),
+        host: nullexcept(
+          listing_object.projects_db?.host,
+          'Server misconfigured: Missing host'
+        ),
+        port: nullexcept(
+          listing_object.projects_db?.port,
+          'Server misconfigured: Missing port'
+        ),
+        lan: listing_object.projects_db?.lan,
+        db_name: nullexcept(
+          listing_object.projects_db?.db_name,
+          'Server misconfigured: Missing db_name'
+        ),
+        auth: listing_object.projects_db?.auth,
+      };
+    }
+  }
+  return default_projects_db;
+}
+
 /**
  * @param prefix Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db or people_db
+ * @param global_dbs projects_db
  * @returns Flag if newly created =true, already existing=false & The local DB
  */
 export function ensure_local_db<Content extends {}>(
   prefix: string,
   local_db_id: string,
   start_sync: boolean,
-  global_dbs: LocalDBList<Content>
+  global_dbs: LocalDBList<Content>,
+  start_sync_attachments: boolean
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id]) {
+    global_dbs[local_db_id].is_sync = start_sync;
     return [false, global_dbs[local_db_id]];
   } else {
+    const db = new PouchDB<Content>(
+      prefix + POUCH_SEPARATOR + local_db_id,
+      local_pouch_options
+    );
     return [
       true,
       (global_dbs[local_db_id] = {
-        local: new PouchDB(
-          prefix + POUCH_SEPARATOR + local_db_id,
-          local_pouch_options
-        ),
+        local: db,
+        changes: db.changes(default_changes_opts),
         is_sync: start_sync,
+        is_sync_attachments: start_sync_attachments,
         remote: null,
       }),
     ];
@@ -188,7 +273,7 @@ export function ensure_local_db<Content extends {}>(
 
 /**
  * @param local_db_id id is per-object of type, to discriminate between them. i.e. a project ID
- * @param global_dbs projects_db or people_db
+ * @param global_dbs projects_db
  * @param connection_info Info to use to connect to remote
  * @param options PouchDB options. Defaults to live: true, retry: true.
  *                if options.sync is defined, then this turns into ensuring the DB
@@ -197,18 +282,15 @@ export function ensure_local_db<Content extends {}>(
  */
 export function ensure_synced_db<Content extends {}>(
   local_db_id: string,
-  connection_info: ConnectionInfo,
+  connection_info: ConnectionInfo | null,
   global_dbs: LocalDBList<Content>,
-  handler: (
-    remote: LocalDB<Content> & {remote: LocalDBRemote<Content>}
-  ) => SyncHandler<Content>,
   options: DBReplicateOptions = {}
-): [boolean, LocalDB<Content> & {remote: LocalDBRemote<Content>}] {
+): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id] === undefined) {
     throw 'Logic eror: ensure_local_db must be called before this code';
   }
 
-  // Already connected/connecting
+  // Already connected/connecting, or local-only database
   if (
     global_dbs[local_db_id].remote !== null &&
     JSON.stringify(global_dbs[local_db_id].remote!.info) ===
@@ -224,14 +306,18 @@ export function ensure_synced_db<Content extends {}>(
       },
     ];
   }
+
+  // Special case for local-only projects
+  if (connection_info === null) {
+    return [false, global_dbs[local_db_id]];
+  }
+
   const db_info = (global_dbs[local_db_id] = {
     ...global_dbs[local_db_id],
     remote: {
       db: ConnectionInfo_create_pouch(connection_info),
       connection: null, //Connection initialized in setLocalConnection
       info: connection_info,
-      create_handler: handler,
-      handler: null,
       options: options,
     },
   });
@@ -255,39 +341,72 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
+  console.debug('Setting local connection:', db_info);
 
-  if (db_info.is_sync && db_info.remote.connection === null) {
+  if (db_info.is_sync) {
+    if (db_info.remote.connection !== null) {
+      // Stop an existing connection
+      db_info.remote.connection.cancel();
+      db_info.remote.connection = null;
+      console.debug('Removed sync for', db_info);
+    }
     // Start a new connection
     const push_too = (options as {push?: unknown}).push !== undefined;
     let connection:
       | PouchDB.Replication.Replication<Content>
       | PouchDB.Replication.Sync<Content>;
 
+    const pull_filter = db_info.is_sync_attachments
+      ? {}
+      : {filter: '_view', view: 'attachment_filter/attachment_filter'};
+
     if (push_too) {
       const options_sync = options as PouchDB.Replication.SyncOptions;
-      connection = PouchDB.sync(db_info.remote.db, db_info.local, {
-        push: {live: true, retry: true, ...options_sync.push},
-        pull: {live: true, retry: true, ...(options_sync.pull || {})},
+      console.debug(
+        'Pushing and pulling from',
+        db_info,
+        options_sync.push,
+        options_sync.pull,
+        pull_filter
+      );
+      connection = PouchDB.sync(db_info.local, db_info.remote.db, {
+        push: {
+          live: true,
+          retry: true,
+          checkpoint: 'source',
+          batch_size: POUCH_BATCH_SIZE,
+          batches_limit: POUCH_BATCHES_LIMIT,
+          ...options_sync.push,
+        },
+        pull: {
+          live: true,
+          retry: true,
+          checkpoint: 'target',
+          batch_size: POUCH_BATCH_SIZE,
+          batches_limit: POUCH_BATCHES_LIMIT,
+          ...pull_filter,
+          ...(options_sync.pull || {}),
+        },
       });
     } else {
+      console.debug('Pulling only from', db_info, options);
       connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
         live: true,
         retry: true,
+        checkpoint: 'target',
         ...options,
       });
     }
 
     db_info.remote.connection = connection;
-    db_info.remote.handler = db_info.remote.create_handler(db_info);
-    db_info.remote.handler.listen(
-      connection,
-      db_info.local.changes({since: 'now', include_docs: true})
-    );
+    console.debug('Added sync for', db_info);
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
-    db_info.remote.handler!.detach(db_info.remote.connection);
     db_info.remote.connection.cancel();
     db_info.remote.connection = null;
+    console.debug('Removed sync for', db_info);
+  } else {
+    console.error('Sync is still off', db_info);
   }
 }
 
@@ -295,15 +414,13 @@ async function delete_synced_db(name: string, db: LocalDB<any>) {
   try {
     console.debug(await db.remote?.db.close());
   } catch (err) {
-    console.error('Failed to remove remote db', name);
-    console.error(err);
+    console.error('Failed to remove remote db', name, err);
   }
   try {
     console.debug(await db.local.destroy());
     console.debug('Removed local db', name);
   } catch (err) {
-    console.error('Failed to remove local db', name);
-    console.error(err);
+    console.error('Failed to remove local db', name, err);
   }
 }
 
@@ -316,17 +433,21 @@ async function delete_synced_dbs(db_list: LocalDBList<any>) {
 }
 
 export async function wipe_all_pouch_databases() {
-  const local_only_dbs_to_wipe = [active_db, local_state_db, staging_db];
+  const local_only_dbs_to_wipe = [
+    active_db,
+    local_state_db,
+    draft_db,
+    local_auth_db,
+  ];
   await delete_synced_dbs(data_dbs);
   await delete_synced_dbs(metadata_dbs);
-  await delete_synced_dbs(people_dbs);
   await delete_synced_dbs(projects_dbs);
   await delete_synced_db('directory', directory_db);
   for (const db of local_only_dbs_to_wipe) {
     try {
       console.debug(await db.destroy());
     } catch (err) {
-      console.error(err);
+      console.error('Error wiping all pouch databases', err);
     }
   }
   // TODO: work out how best to recreate the databases, currently using a

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,13 +18,18 @@
  *   TODO
  */
 
+import PouchDB from 'pouchdb';
 import {
   NonUniqueProjectID,
+  ListingID,
   RecordID,
   RevisionID,
   AttributeValuePairID,
+  FAIMSAttachmentID,
   ProjectID,
   FAIMSTypeName,
+  Annotations,
+  Relationship,
 } from './core';
 import {
   FAIMSConstantCollection,
@@ -41,14 +46,7 @@ export const RECORD_INDEX_NAME = 'record-version-index';
 export const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 export const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 export const LOCALLY_CREATED_PROJECT_PREFIX = 'locallycreatedproject';
-
-/*
- * This may already exist in pouchdb's typing, but lets make a temporary one for
- * our needs
- */
-export interface PouchAttachments {
-  [key: string]: any; // any for now until we work out what we need
-}
+export const LOCAL_FIELDpersistent_PREFIX = 'local-fieldpersistent-state';
 
 export interface ConnectionInfo {
   proto: string;
@@ -56,7 +54,14 @@ export interface ConnectionInfo {
   port: number;
   lan?: boolean;
   db_name: string;
+  auth?: {
+    username: string;
+    password: string;
+  };
+  jwt_token?: string;
 }
+
+export type ConductorURL = string;
 
 export type PossibleConnectionInfo =
   | undefined
@@ -66,39 +71,55 @@ export type PossibleConnectionInfo =
       port?: number | undefined;
       lan?: boolean | undefined;
       db_name?: string | undefined;
+      auth?: {
+        username: string;
+        password: string;
+      };
+      jwt_token?: string;
     };
 
 export interface ListingsObject {
-  _id: string;
+  _id: ListingID;
   name: string;
   description: string;
   projects_db?: PossibleConnectionInfo;
-  people_db?: PossibleConnectionInfo;
+  conductor_url?: ConductorURL;
+  local_only?: boolean;
 }
 
 export interface NonNullListingsObject extends ListingsObject {
   projects_db: ConnectionInfo;
-  people_db: ConnectionInfo;
 }
 
 export interface ActiveDoc {
   _id: ProjectID;
-  listing_id: string;
+  listing_id: ListingID;
   project_id: NonUniqueProjectID;
   username: string | null;
   password: string | null;
   friendly_name?: string;
   is_sync: boolean;
+  is_sync_attachments: boolean;
 }
 
-/*
- * Objects that may be contained in a Project's metadata DB
- */
+export type JWTToken = string;
 
-export interface ProjectPeople {
-  _id: string;
+export interface JWTTokenInfo {
+  pubkey: string;
+  pubalg: string;
+  token: JWTToken;
+}
+
+export type JWTTokenMap = {
+  [username: string]: JWTTokenInfo;
+};
+
+export interface LocalAuthDoc {
+  _id: string; //Corresponds to a listings ID
   _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
+  current_token: JWTToken;
+  current_username: string;
+  available_tokens: JWTTokenMap;
 }
 
 /**
@@ -107,7 +128,7 @@ export interface ProjectPeople {
  * Do not use with UI code; sync code only
  */
 export interface ProjectObject {
-  _id: string;
+  _id: NonUniqueProjectID;
   name: string;
   description?: string;
   data_db?: PossibleConnectionInfo;
@@ -144,9 +165,10 @@ export interface EncodedProjectMetadata {
   _id: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean;
-  _attachments?: PouchAttachments;
+  _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
+  single_attachment?: boolean;
 }
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
@@ -171,11 +193,11 @@ export type AttributeValuePairMap = {
 };
 
 export type RevisionMap = {
-  [field_name: string]: Revision;
+  [revision_id: string]: Revision;
 };
 
 export type RecordMap = {
-  [field_name: string]: EncodedRecord;
+  [record_id: string]: EncodedRecord;
 };
 
 export interface Revision {
@@ -190,19 +212,44 @@ export interface Revision {
   created_by: string;
   type: FAIMSTypeName;
   deleted?: boolean;
+  ugc_comment?: string;
+  relationship?: Relationship; // added for save relation to child/linked record
 }
 
 export interface AttributeValuePair {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
-  _attachments?: PouchAttachments;
+  _attachments?: PouchDB.Core.Attachments;
   avp_format_version: number;
   type: FAIMSTypeName;
   data: any;
   revision_id: RevisionID;
   record_id: RecordID;
-  annotations: any;
+  annotations: Annotations;
+  created: string;
+  created_by: string;
+  faims_attachments?: FAIMSAttachmentReference[];
+}
+
+export interface FAIMSAttachmentReference {
+  attachment_id: FAIMSAttachmentID;
+  filename: string;
+  file_type: string;
+}
+
+export interface FAIMSAttachment {
+  _id: string;
+  _rev?: string; // optional as we may want to include the raw json in places
+  _deleted?: boolean; // This is for couchdb deletion
+  _attachments?: PouchDB.Core.Attachments;
+  filename: string;
+  attach_format_version: number;
+  avp_id: AttributeValuePairID;
+  revision_id: RevisionID;
+  record_id: RecordID;
+  created: string;
+  created_by: string;
 }
 
 /*
@@ -223,9 +270,9 @@ export interface LocalAutoIncrementState {
 }
 
 export interface AutoIncrementReference {
-  project_id: ProjectID;
   form_id: string;
   field_id: string;
+  label?: string;
 }
 
 export interface AutoIncrementReferenceDoc {
@@ -241,27 +288,19 @@ export interface AutoIncrementReferenceDoc {
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | AutoIncrementReferenceDoc
-  | ProjectPeople;
+  | EncodedProjectMetadata
+  | AutoIncrementReferenceDoc;
 
 /*
  * Elements of a Project's dataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
-export type ProjectDataObject = AttributeValuePair | Revision | EncodedRecord;
+export type ProjectDataObject =
+  | AttributeValuePair
+  | Revision
+  | EncodedRecord
+  | FAIMSAttachment;
 
 export function isRecord(doc: ProjectDataObject): doc is EncodedRecord {
   return (<EncodedRecord>doc).record_format_version !== undefined;
-}
-
-/**
- * Document from a people DB
- */
-export interface PeopleDoc {
-  roles: Array<string>;
-  devices: Array<string>;
-  salt: string;
-  ierations: 10;
-  derived_key: string;
-  passsword_scheme: string;
 }

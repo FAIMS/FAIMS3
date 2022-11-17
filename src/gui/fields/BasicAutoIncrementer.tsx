@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -19,24 +19,76 @@
  */
 
 import React from 'react';
-import Input from '@material-ui/core/Input';
+import Input from '@mui/material/Input';
 import {FieldProps} from 'formik';
 
-import {ActionType} from '../../actions';
-import {store} from '../../store';
+import {ActionType} from '../../context/actions';
+import {store} from '../../context/store';
 import {
   get_local_autoincrement_state_for_field,
   set_local_autoincrement_state_for_field,
 } from '../../datamodel/autoincrement';
+import {getDefaultuiSetting} from './BasicFieldSettings';
+import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
+import {ProjectUIModel} from '../../datamodel/ui';
 
+import {
+  Grid,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material';
 interface Props {
   num_digits: number;
   // This could be dropped depending on how multi-stage forms are configured
   form_id: string;
+  label?: string;
 }
 
 interface State {
   has_run: boolean;
+  is_ranger: boolean;
+  label: string;
+}
+
+function AddRangeDialog() {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <Grid container>
+      <Button
+        onClick={() => setOpen(true)}
+        color={'error'}
+        variant={'text'}
+        disableElevation={true}
+      >
+        Add Range
+      </Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Information</DialogTitle>
+        <DialogContent style={{width: '600px', height: '100px'}}>
+          <DialogContentText id="alert-dialog-description">
+            {
+              'Go to Notebook > Settings Tab > Edit Allocations to Add New Range'
+            }{' '}
+            <br />
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)} autoFocus>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Grid>
+  );
 }
 
 export class BasicAutoIncrementer extends React.Component<
@@ -45,8 +97,14 @@ export class BasicAutoIncrementer extends React.Component<
 > {
   constructor(props: FieldProps & Props) {
     super(props);
+    const label =
+      this.props.label !== '' && this.props.label !== undefined
+        ? this.props.label
+        : this.props.form_id;
     this.state = {
       has_run: false,
+      is_ranger: true,
+      label: label ?? this.props.form_id,
     };
   }
 
@@ -69,10 +127,12 @@ export class BasicAutoIncrementer extends React.Component<
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: 'No ranges allocated for autoincrement ID, add ranges',
+          message:
+            'No ranges exist for this notebook yet. Go to the notebook Settings tab to add/edit ranges.',
           severity: 'error',
         },
       });
+      this.setState({...this.state, is_ranger: false});
       return null;
     }
     if (local_state.last_used_id === null) {
@@ -161,13 +221,52 @@ export class BasicAutoIncrementer extends React.Component<
 
   render() {
     return (
-      <Input
-        name={this.props.field.name}
-        id={this.props.field.name}
-        readOnly={true}
-        type={'hidden'}
-      />
+      <>
+        <Input
+          name={this.props.field.name}
+          id={this.props.field.name}
+          readOnly={true}
+          type={'hidden'}
+        />
+        {this.state.is_ranger === false && <AddRangeDialog />}
+      </>
     );
   }
 }
 BasicAutoIncrementer.contextType = store;
+
+const uiSpec = {
+  'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+  'component-name': 'BasicAutoIncrementer',
+  'type-returned': 'faims-core::String', // matches a type in the Project Model
+  'component-parameters': {
+    name: 'basic-autoincrementer-field',
+    id: 'basic-autoincrementer-field',
+    variant: 'outlined',
+    required: true,
+    num_digits: 5,
+    form_id: 'default', // TODO: sort out this
+    label: 'Auto Increase Range',
+  },
+  validationSchema: [['yup.string'], ['yup.required']],
+  initialValue: null,
+};
+
+const uiSetting = () => {
+  const newuiSetting: ProjectUIModel = getDefaultuiSetting();
+  newuiSetting['views']['FormParamater']['fields'] = ['label'];
+  newuiSetting['viewsets'] = {
+    settings: {
+      views: ['FormParamater'],
+      label: 'settings',
+    },
+  };
+
+  return newuiSetting;
+};
+
+export function getAutoBuilderIcon() {
+  return <LibraryBooksIcon />;
+}
+
+export const AutoSetting = [uiSetting(), uiSpec];

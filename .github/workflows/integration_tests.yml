@@ -41,20 +41,23 @@ jobs:
       COUCHDB_PASSWORD: password
       REACT_APP_DIRECTORY_HOST: localhost
       REACT_APP_USE_REAL_DATA: true
+      REACT_APP_PRODUCTION_BUILD: false
       COUCHDB_CURL_HOST: http://admin:password@localhost:5984
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        node-version: ['lts/*'] # '14'
-        experimental: [false]
-        include:
-          - node-version: '16' #, 16 ok, it looks like v2 doesn't support /nv even though the docs say it does. Hardcoding version for now.
-            experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
+        node-version: ['16'] # '14'
+        experimental: [false] # We know everything after 16 is broken because React.
+        # include:
+        #   - node-version: 'current'
+        #     experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
+        #   - node-version: 'latest'
+        #     experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'

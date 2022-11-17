@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -25,19 +25,11 @@ import {
 } from '../datamodel/database';
 import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
 
-import {
-  active_db,
-  data_dbs,
-  directory_db,
-  ensure_local_db,
-  metadata_dbs,
-  projects_dbs,
-} from './databases';
-import {events} from './events';
+import {directory_db, ensure_local_db, projects_dbs} from './databases';
 import {activate_project} from './process-initialization';
-import {createdProjects} from './state';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
+  console.debug(`Requesting allocation for ${project_id}`);
   throw Error('not implemented yet');
 }
 
@@ -55,9 +47,26 @@ export async function request_allocation_for_project(project_id: ProjectID) {
  * 6. Return new project id (for further usage)
  */
 export async function create_new_project_dbs(name: string): Promise<ProjectID> {
+  // Get the local-only listing
+  console.debug('Creating new project', name);
   const listing = await ensure_locally_created_project_listing();
+  console.debug('Checked locally created listing');
   const projects_db = ensure_locally_created_projects_db(listing._id);
+  console.debug('Got locally created projects_db');
+
+  // create the new project
   const new_project_id = generate_non_unique_project_id();
+  const creation_time = new Date();
+  const project_object = {
+    _id: new_project_id,
+    name: name,
+    status: 'local_draft',
+    created: creation_time.toISOString(),
+    last_updated: creation_time.toISOString(),
+  };
+  await projects_db.local.put(project_object);
+  console.debug('Created new project', new_project_id);
+
   const active_id = await activate_project(
     listing._id,
     new_project_id,
@@ -65,64 +74,33 @@ export async function create_new_project_dbs(name: string): Promise<ProjectID> {
     null,
     false
   );
-  const active_project = await active_db.get(active_id);
+  console.debug('Activated new project', new_project_id);
 
-  const project_object = {
-    _id: active_id,
-    name: name,
-    status: 'new', // TODO: work out proper status
-  };
-  await projects_db.local.put(project_object);
-
-  const [, meta_db_local] = ensure_local_db(
-    'metadata',
-    active_id,
-    active_project.is_sync,
-    metadata_dbs
-  );
-  const [, data_db_local] = ensure_local_db(
-    'data',
-    active_id,
-    active_project.is_sync,
-    data_dbs
-  );
-
-  createdProjects[active_id] = {
-    project: project_object,
-    active: active_project,
-    meta: meta_db_local,
-    data: data_db_local,
-  };
-
-  events.emit(
-    'project_local',
-    listing,
-    active_project,
-    project_object,
-    meta_db_local,
-    data_db_local
-  );
   return active_id;
 }
 
 function generate_non_unique_project_id(): NonUniqueProjectID {
-  return uuidv4();
+  return 'proj-' + uuidv4();
 }
 
-async function ensure_locally_created_project_listing(): Promise<ListingsObject> {
+export async function ensure_locally_created_project_listing(): Promise<ListingsObject> {
   try {
     return await directory_db.local.get(LOCALLY_CREATED_PROJECT_PREFIX);
   } catch (err: any) {
     if (err.status === 404) {
+      console.debug('Creating local-only listing');
       const listing_object = {
         _id: LOCALLY_CREATED_PROJECT_PREFIX,
         name: 'Locally Created Projects',
         description:
           'Projects created on this device (have not been submitted).',
+        local_only: true,
+        auth_mechanisms: {}, // No auth needed, nor allowed
       };
       await directory_db.local.put(listing_object);
       return listing_object;
     } else {
+      console.error('Failed to create locally created projects listing');
       throw err;
     }
   }
@@ -133,7 +111,8 @@ function ensure_locally_created_projects_db(projects_db_id: string) {
     'projects',
     projects_db_id,
     true,
-    projects_dbs
+    projects_dbs,
+    true
   );
   return local_projects_db;
 }

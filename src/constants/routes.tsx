@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -21,22 +21,26 @@
 import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
 
 export const INDEX = '/';
-export const SIGN_UP = '/signup';
-export const SIGN_IN = '/signin';
-export const FORGOT_PASSWORD = '/forgot-password';
+export const SIGN_IN = '/signin/';
+export const SIGN_IN_RETURN = '/signin-return';
+
 export const NOT_FOUND = '/not-found';
-export const HOME = '/home';
-export const PROJECT_LIST = '/projects';
-export const PROJECT = '/projects/';
-export const PROJECT_SETTINGS = '/settings';
+export const WORKSPACE = '/workspace';
+
+export const NOTEBOOK = '/notebooks/';
+export const NOTEBOOK_LIST = '/notebooks';
+
 export const RECORD_LIST = '/records';
-export const RECORD = '/records/';
-export const RECORD_CREATE = '/new-record';
-export const RECORD_TYPE = '/type/';
+export const RECORD_EXISTING = '/records/';
+export const RECORD_CREATE = '/new/';
+export const RECORD_DRAFT = '/draft/';
+export const RECORD_RECORD = '/record/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
-export const AUTOINCREMENT_LIST = '/autoincrements';
 export const AUTOINCREMENT = '/autoincrements/';
+export const PROJECT_CREATE = '/new-notebook';
+export const PROJECT_DESIGN = '/notebook/';
+export const PROJECT_ATTACHMENT = '/attachment/';
 
 export function getRecordRoute(
   project_id: ProjectID,
@@ -44,9 +48,50 @@ export function getRecordRoute(
   revision_id: RevisionID
 ) {
   if (!!project_id && !!record_id && !!revision_id) {
-    return PROJECT + project_id + RECORD + record_id + REVISION + revision_id;
+    return (
+      NOTEBOOK +
+      project_id +
+      RECORD_EXISTING +
+      record_id +
+      REVISION +
+      revision_id
+    );
   }
   throw Error(
     'project_id, record_id and revision_id are required for this route'
   );
+}
+
+// this function is to get route for draft-- depend on edit draft or created draft??? TODO need to check created draft route
+export function getDraftRoute(
+  project_id: ProjectID,
+  draft_id: string,
+  existing: null | {record_id: RecordID; revision_id: RevisionID},
+  type_name: string,
+  record_id: string
+) {
+  if (existing !== null)
+    return (
+      NOTEBOOK +
+      project_id +
+      RECORD_EXISTING +
+      // existing+
+      existing.record_id +
+      REVISION +
+      existing.revision_id +
+      RECORD_DRAFT +
+      draft_id
+    );
+  else {
+    return (
+      NOTEBOOK +
+      project_id +
+      RECORD_CREATE +
+      type_name +
+      RECORD_DRAFT +
+      draft_id +
+      RECORD_RECORD +
+      record_id
+    );
+  }
 }

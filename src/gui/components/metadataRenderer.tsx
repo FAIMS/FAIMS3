@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,36 +18,58 @@
  *   TODO
  */
 
-import React, {useEffect, useState} from 'react';
-import {CircularProgress, Chip} from '@material-ui/core';
+import React from 'react';
+import {CircularProgress, Chip} from '@mui/material';
+
 import {getProjectMetadata} from '../../projectMetadata';
 import {ProjectID} from '../../datamodel/core';
+import {listenProjectDB} from '../../sync';
+import {useEventedPromise, constantArgsSplit} from '../pouchHook';
+import {DEBUG_APP} from '../../buildconfig';
 
 type MetadataProps = {
   project_id: ProjectID;
   metadata_key: string;
   metadata_label?: string;
+  chips?: boolean;
 };
 
 export default function MetadataRenderer(props: MetadataProps) {
   const project_id = props.project_id;
+  const chips = props.chips ?? true;
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
-  const [metadata_value, setMetadata] = useState(null as string | null);
-
-  useEffect(() => {
-    const getMeta = async () => {
+  const metadata_value = useEventedPromise(
+    'MetadataRenderer component',
+    async (project_id: ProjectID, metadata_key: string) => {
       try {
-        const meta = await getProjectMetadata(project_id, metadata_key);
-        setMetadata(meta);
+        return await getProjectMetadata(project_id, metadata_key);
       } catch (err) {
-        setMetadata('Unknown');
+        console.warn(
+          'Failed to get project metadata with key',
+          project_id,
+          metadata_key,
+          err
+        );
+        return '';
       }
-    };
-    getMeta();
-  }, []);
+    },
+    constantArgsSplit(
+      listenProjectDB,
+      [project_id, {since: 'now', live: true}],
+      [project_id, metadata_key]
+    ),
+    true,
+    [project_id, metadata_key],
+    project_id,
+    metadata_key
+  );
+  if (DEBUG_APP) {
+    console.debug('metadata_label', metadata_label);
+    console.debug('metadata_value', metadata_value);
+  }
 
-  return (
+  return chips && metadata_value.value !== '' ? (
     <Chip
       size={'small'}
       style={{marginRight: '5px', marginBottom: '5px'}}
@@ -58,13 +80,17 @@ export default function MetadataRenderer(props: MetadataProps) {
           ) : (
             <React.Fragment />
           )}
-          {metadata_value ? (
-            <span>{metadata_value}</span>
-          ) : (
+          {metadata_value.value && <span>{metadata_value.value}</span>}
+          {metadata_value.loading && (
             <CircularProgress size={12} thickness={4} />
           )}
         </React.Fragment>
       }
     />
+  ) : (
+    <>
+      {metadata_value.value && <span>{metadata_value.value}</span>}
+      {metadata_value.loading && <CircularProgress size={12} thickness={4} />}
+    </>
   );
 }

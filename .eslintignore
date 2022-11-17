@@ -1,3 +1,5 @@
 build/
 ios/
 android/
+test/
+public/pouchdb-*.min.js

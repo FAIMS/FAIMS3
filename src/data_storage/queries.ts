@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -15,23 +15,27 @@
  *
  * Filename: queries.ts
  * Description:
- *   TODO
+ *   Functions to query specific information from pouchdb
  */
 import {getDataDB} from '../sync';
-import {ProjectID, FAIMSTypeName} from '../datamodel/core';
-import {RecordReference} from '../datamodel/ui';
+import {ProjectID, FAIMSTypeName, RecordID} from '../datamodel/core';
+import {AttributeValuePair} from '../datamodel/database';
+import {RecordReference, RecordMetadataList} from '../datamodel/ui';
+import {listRecordMetadata} from './internals';
 
 export async function getAllRecordsOfType(
   project_id: ProjectID,
   type: FAIMSTypeName
 ): Promise<RecordReference[]> {
-  const datadb = getDataDB(project_id);
+  const datadb = await getDataDB(project_id);
   const res = await datadb.find({
     selector: {
       record_format_version: 1,
       type: type,
     },
   });
+  console.log(res);
+  // const hrid = (await getHRID(project_id, o.revision)) ;
   return res.docs.map(o => {
     return {
       project_id: project_id,
@@ -39,4 +43,24 @@ export async function getAllRecordsOfType(
       record_label: o._id, // TODO: decide how we're getting HRIDs from db
     };
   });
+}
+
+export async function getAllRecordsWithRegex(
+  project_id: ProjectID,
+  regex: string
+): Promise<RecordMetadataList> {
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.find({
+    selector: {
+      avp_format_version: 1,
+      data: {$regex: regex},
+    },
+  });
+  const record_ids = res.docs.map(o => {
+    const avp = o as AttributeValuePair;
+    return avp.record_id;
+  });
+  // Remove duplicates, no order is implied
+  const deduped_record_ids = Array.from(new Set<RecordID>(record_ids));
+  return await listRecordMetadata(project_id, deduped_record_ids);
 }

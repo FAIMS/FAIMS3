@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -19,17 +19,18 @@
  */
 
 import React, {useContext} from 'react';
-import Snackbar from '@material-ui/core/Snackbar';
-import MuiAlert from '@material-ui/lab/Alert';
-import {makeStyles, Theme} from '@material-ui/core/styles';
-import {store} from '../../store';
-import {ActionType} from '../../actions';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import makeStyles from '@mui/styles/makeStyles';
+import {store} from '../../context/store';
+import {ActionType} from '../../context/actions';
 
-const useStyles = makeStyles((theme: Theme) => ({
+/* eslint-disable @typescript-eslint/no-unused-vars */
+const useStyles = makeStyles(theme => ({
   root: {
     width: '100%',
     '& > * + *': {
-      marginTop: theme.spacing(2),
+      marginTop: '16px',
     },
   },
 }));
@@ -38,6 +39,12 @@ export default function SystemAlert() {
   const classes = useStyles();
   const globalState = useContext(store);
   const {dispatch} = globalState;
+  const alerts = globalState.state.alerts;
+
+  if (alerts.length === 0) return <></>;
+
+  const oldest_alert = alerts[alerts.length - 1]; // adjust the sequence to display the latest alert on the top, instead of bottom
+
   const handleClose = (key: string) => {
     dispatch({
       type: ActionType.DELETE_ALERT,
@@ -46,23 +53,33 @@ export default function SystemAlert() {
       },
     });
   };
+  // this code is to move the successful message after 2 second, need to be updated in the next stage
+  setTimeout(() => {
+    if (
+      oldest_alert !== undefined &&
+      ['success', 'info'].includes(oldest_alert.severity)
+    )
+      handleClose(oldest_alert.key);
+  }, 3000);
 
-  const alerts = globalState.state.alerts;
-  const oldest_alert = alerts[0];
+  // if (alerts.length > 0) console.log(oldest_alert.severity);
   return (
     <div className={classes.root}>
       {alerts.length > 0 ? (
         <Snackbar
           open={true}
           autoHideDuration={6000}
-          anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+          anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
         >
-          <MuiAlert
+          <Alert
             onClose={() => handleClose(oldest_alert.key)}
             severity={oldest_alert.severity}
+            variant={'filled'}
           >
-            {oldest_alert.message}
-          </MuiAlert>
+            {'message' in oldest_alert
+              ? oldest_alert.message
+              : oldest_alert.element}
+          </Alert>
         </Snackbar>
       ) : (
         ''

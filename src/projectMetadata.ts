@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -23,19 +23,40 @@ import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
 } from './datamodel/database';
+import {
+  attachments_to_files,
+  files_to_attachments,
+} from './data_storage/attachments';
 
 export async function getProjectMetadata(
   project_id: ProjectID,
   metadata_key: string
 ): Promise<any> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = await projdb.get(
-      PROJECT_METADATA_PREFIX + '-' + metadata_key
+      PROJECT_METADATA_PREFIX + '-' + metadata_key,
+      {
+        attachments: true,
+        binary: true,
+      }
     );
+    if (doc.is_attachment && doc._attachments !== undefined) {
+      const file_list = attachments_to_files(doc._attachments);
+      if (doc.single_attachment) {
+        return file_list[0];
+      }
+      return file_list;
+    } else if (doc.is_attachment && doc._attachments === undefined) {
+      console.error(
+        'Unable to load metadata attachments',
+        project_id,
+        metadata_key
+      );
+    }
     return doc.metadata;
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to find metadata', err);
     throw Error('failed to find metadata');
   }
 }
@@ -45,7 +66,7 @@ export async function setProjectMetadata(
   metadata_key: string,
   metadata: any
 ) {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: EncodedProjectMetadata = {
       _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,
@@ -64,7 +85,37 @@ export async function setProjectMetadata(
 
     await projdb.put(doc);
   } catch (err) {
-    console.warn(err);
+    console.warn('failed to set metadata', err);
+    throw Error('failed to set metadata');
+  }
+}
+
+export async function setProjectMetadataFiles(
+  project_id: ProjectID,
+  metadata_key: string,
+  files: File[]
+) {
+  const projdb = await getProjectDB(project_id);
+  try {
+    const doc: EncodedProjectMetadata = {
+      _id: PROJECT_METADATA_PREFIX + '-' + metadata_key,
+      is_attachment: true,
+      metadata: null,
+      _attachments: files_to_attachments(files),
+    };
+
+    try {
+      const existing_metaDoc = await projdb.get(
+        PROJECT_METADATA_PREFIX + '-' + metadata_key
+      );
+      doc._rev = existing_metaDoc._rev;
+    } catch (err) {
+      // Probably no existing UI info
+    }
+
+    await projdb.put(doc);
+  } catch (err) {
+    console.warn('failed to set metadata', err);
     throw Error('failed to set metadata');
   }
 }

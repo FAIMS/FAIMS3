@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -35,6 +35,12 @@ import {
   AutoIncrementReferenceDoc,
 } from './database';
 
+export interface UserFriendlyAutoincrementStatus {
+  label: string;
+  last_used: number | null;
+  end: number | null;
+}
+
 function get_pouch_id(
   project_id: ProjectID,
   form_id: string,
@@ -69,8 +75,16 @@ export async function get_local_autoincrement_state_for_field(
       };
       return doc;
     }
-    console.error(err);
-    throw Error('Unable to get local increment state');
+    console.error(
+      'Unable to get local increment state:',
+      project_id,
+      form_id,
+      field_id,
+      err
+    );
+    throw Error(
+      `Unable to get local increment state: ${project_id} ${form_id} ${field_id}`
+    );
   }
 }
 
@@ -80,7 +94,7 @@ export async function set_local_autoincrement_state_for_field(
   try {
     return await local_state_db.put(new_state);
   } catch (err) {
-    console.error(err);
+    console.error(err, new_state);
     throw Error('Unable to set local increment state');
   }
 }
@@ -128,16 +142,17 @@ export async function set_local_autoincrement_ranges_for_field(
   } else {
     // We should check that we're not causing problems for existing ranges
     for (const range of state.ranges) {
-      if (range.fully_used && !new_ranges.includes(range)) {
-        throw Error('Fully used range removed');
-      } else if (range.using) {
+      if (range.using) {
         const new_using_range = new_ranges.find(r => r.using);
         if (new_using_range === undefined) {
           throw Error('Currently used range removed');
         } else if (new_using_range.start !== range.start) {
           throw Error('Currently used range start changed');
-        } else if (new_using_range.stop < range.stop) {
-          throw Error('Currently used range stop reduced');
+        } else if (
+          state.last_used_id !== null &&
+          new_using_range.stop <= state.last_used_id
+        ) {
+          throw Error('Currently used range stop less than last used ID.');
         }
       }
     }
@@ -150,7 +165,7 @@ export async function set_local_autoincrement_ranges_for_field(
 export async function get_autoincrement_references_for_project(
   project_id: ProjectID
 ): Promise<AutoIncrementReference[]> {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   try {
     const doc: AutoIncrementReferenceDoc = await projdb.get(
       LOCAL_AUTOINCREMENT_NAME
@@ -161,39 +176,60 @@ export async function get_autoincrement_references_for_project(
       // No autoincrementers
       return [];
     }
-    console.error(err);
-    throw Error('Unable to get local autoincrement references');
+    console.error(
+      'Unable to get local autoincrement references for',
+      project_id,
+      err
+    );
+    throw Error(
+      `Unable to get local autoincrement references for ${project_id}`
+    );
   }
 }
 
 export async function add_autoincrement_reference_for_project(
   project_id: ProjectID,
-  form_id: string,
-  field_id: string
+  form_id: string[],
+  field_id: string[],
+  label: string[]
 ) {
-  const projdb = getProjectDB(project_id);
-  const ref: AutoIncrementReference = {
-    project_id: project_id,
-    form_id: form_id,
-    field_id: field_id,
-  };
+  const projdb = await getProjectDB(project_id);
+  const refs: Array<AutoIncrementReference> = [];
+  form_id.map((id: string, index: number) =>
+    refs.push({
+      form_id: id,
+      field_id: field_id[index],
+      label: label[index],
+    })
+  );
+  const refs_add: Array<AutoIncrementReference> = [];
   try {
     const doc: AutoIncrementReferenceDoc = await projdb.get(
       LOCAL_AUTOINCREMENT_NAME
     );
-    const ref_set = new Set(doc.references);
-    ref_set.add(ref);
-    doc.references = Array.from(ref_set.values());
+    refs.map((ref: AutoIncrementReference) => {
+      let found = false;
+      for (const existing_ref of doc.references) {
+        if (ref.toString() === existing_ref.toString()) {
+          found = true;
+        }
+      }
+      if (!found) {
+        refs_add.push(ref);
+      }
+    });
+    doc.references = refs;
+
     await projdb.put(doc);
   } catch (err: any) {
     if (err.status === 404) {
       // No autoincrementers currently
       await projdb.put({
         _id: LOCAL_AUTOINCREMENT_NAME,
-        references: [ref],
+        references: refs,
       });
     } else {
-      console.error(err);
+      console.error('Unable to add local autoincrement reference', err);
       throw Error('Unable to add local autoincrement reference');
     }
   }
@@ -202,13 +238,14 @@ export async function add_autoincrement_reference_for_project(
 export async function remove_autoincrement_reference_for_project(
   project_id: ProjectID,
   form_id: string,
-  field_id: string
+  field_id: string,
+  label: string
 ) {
-  const projdb = getProjectDB(project_id);
+  const projdb = await getProjectDB(project_id);
   const ref: AutoIncrementReference = {
-    project_id: project_id,
     form_id: form_id,
     field_id: field_id,
+    label: label,
   };
   try {
     const doc: AutoIncrementReferenceDoc = await projdb.get(
@@ -219,7 +256,56 @@ export async function remove_autoincrement_reference_for_project(
     doc.references = Array.from(ref_set.values());
     await projdb.put(doc);
   } catch (err) {
-    console.error(err);
+    console.error('Unable to remove local autoincrement reference', err);
     throw Error('Unable to remove local autoincrement reference');
   }
+}
+
+async function get_user_friendly_status_for_field(
+  project_id: ProjectID,
+  form_id: string,
+  field_id: string,
+  label: string
+): Promise<UserFriendlyAutoincrementStatus> {
+  const ref_state = await get_local_autoincrement_state_for_field(
+    project_id,
+    form_id,
+    field_id
+  );
+  const last_used = ref_state.last_used_id;
+  for (const range of ref_state.ranges) {
+    if (range.using) {
+      return {
+        label: label,
+        last_used: last_used,
+        end: range.stop,
+      };
+    }
+  }
+  return {
+    label: label,
+    last_used: last_used,
+    end: null,
+  };
+}
+
+export async function get_user_friendly_status_for_project(
+  project_id: ProjectID
+): Promise<UserFriendlyAutoincrementStatus[]> {
+  const statuses: UserFriendlyAutoincrementStatus[] = [];
+  try {
+    const refs = await get_autoincrement_references_for_project(project_id);
+    for (const ref of refs) {
+      const status = await get_user_friendly_status_for_field(
+        project_id,
+        ref.form_id,
+        ref.field_id,
+        ref.label ?? ref.form_id
+      );
+      statuses.push(status);
+    }
+  } catch (err) {
+    console.error('Error getting user friendly status', err);
+  }
+  return statuses;
 }

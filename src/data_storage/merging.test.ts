@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -36,7 +36,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 
 const projdbs: any = {};
 
-function mockDataDB(project_id: ProjectID) {
+async function mockDataDB(project_id: ProjectID) {
   if (projdbs[project_id] === undefined) {
     const db = new PouchDB(project_id, {adapter: 'memory'});
     projdbs[project_id] = db;
@@ -68,7 +68,12 @@ jest.mock('../sync/index', () => ({
 describe('test basic automerge', () => {
   test('single revision', async () => {
     // This tests the case where there is a single revision (i.e. new record)
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -88,10 +93,16 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
-    await upsertFAIMSData(project_id, doc);
-    return mergeHeads(project_id, record_id)
+    return upsertFAIMSData(project_id, doc)
+      .then(_result => {
+        return mergeHeads(project_id, record_id);
+      })
       .then(status => {
         expect(status).toBe(true);
       })
@@ -107,7 +118,12 @@ describe('test basic automerge', () => {
   test('no merged needed', async () => {
     // This tests the case where there is a linear history, so there's no need
     // for merging
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -127,6 +143,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -141,6 +161,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id2 = await upsertFAIMSData(project_id, doc2);
@@ -155,6 +179,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -169,6 +197,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -190,7 +222,12 @@ describe('test basic automerge', () => {
     // This tests the case where there is a linear history, but where an old
     // head was not removed (this shouldn't happen, but maybe there's some bad
     // integration code that wrote to couchdb
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -210,6 +247,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -224,6 +265,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id2 = await upsertFAIMSData(project_id, doc2);
@@ -238,6 +283,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -252,18 +301,18 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
 
     const record = await getRecord(project_id, record_id);
     // add all revisions to heads
-    console.error(record.revisions);
-    console.error(record.heads);
     record.heads = record.revisions.concat();
-    console.error(record.revisions);
-    console.error(record.heads);
-    const datadb = getDataDB(project_id);
+    const datadb = await getDataDB(project_id);
     await datadb.put(record);
 
     return mergeHeads(project_id, record_id)
@@ -282,7 +331,12 @@ describe('test basic automerge', () => {
   test('same change', async () => {
     // This tests the case where there has been a split, but the same change has
     // been made. This should cause the basic automerge to fail.
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -302,6 +356,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -316,6 +374,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -330,6 +392,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -344,6 +410,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -364,7 +434,12 @@ describe('test basic automerge', () => {
   test('different change', async () => {
     // This tests the case where there has been a split, and different changes
     // have been made. This should cause the basic automerge to fail.
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -384,6 +459,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -398,6 +477,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -412,6 +495,10 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -426,6 +513,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -446,7 +538,12 @@ describe('test basic automerge', () => {
   test('changes to different avps', async () => {
     // This tests the case where there has been a split, but the changes have
     // been to different avps
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -469,6 +566,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -486,6 +588,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -503,6 +610,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc3);
@@ -523,7 +635,12 @@ describe('test basic automerge', () => {
   test('changes to different avps AND different change', async () => {
     // This tests the case where there are three heads, of which two can be
     // merged
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -546,6 +663,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -563,6 +685,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -580,6 +707,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc3);
@@ -597,6 +729,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -617,7 +754,12 @@ describe('test basic automerge', () => {
   test('changes to different avps AND different change 4 HEADS', async () => {
     // This tests the case where there are 4 heads, of which three can be merged
     // together
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -641,6 +783,12 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -659,6 +807,12 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -677,6 +831,12 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc3);
@@ -695,6 +855,12 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc4);
@@ -713,6 +879,12 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+        avp3: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc5);
@@ -855,7 +1027,12 @@ describe('test basic automerge', () => {
   test('merge deleted and non-deleted', async () => {
     // This tests the case where there are 2 heads, and one revision is marked
     // deleted
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -878,6 +1055,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -895,6 +1077,8 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {},
+      field_types: {field_name: fulltype},
     };
 
     await upsertFAIMSData(project_id, doc2);
@@ -912,6 +1096,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);
@@ -920,30 +1109,26 @@ describe('test basic automerge', () => {
 
     return mergeHeads(project_id, record_id)
       .then(status => {
-        expect(status).toBe(true);
+        expect(status).toBe(false);
       })
       .then(() => {
         return getRecord(project_id, record_id);
       })
       .then(record => {
-        return getRevision(project_id, record.heads[0]);
-      })
-      .then(revision => {
-        expect(revision.deleted).toBe(false); // Should not be deleted
-      })
-      .then(() => {
-        return getRecord(project_id, record_id);
-      })
-      .then(record => {
-        expect(record.heads).toHaveLength(1); // Should be 1 head
-        expect(record.revisions).toHaveLength(5); // 1 merge should happen
+        expect(record.heads).toHaveLength(2); // Should be 1 head
+        expect(record.revisions).toHaveLength(4); // 1 merge should happen
       });
   });
 
   test('merge deleted and deleted', async () => {
     // This tests the case where there are 2 heads, and both revisions are
     // marked deleted
-    await cleanDataDBS();
+    try {
+      await cleanDataDBS();
+    } catch (err) {
+      console.error(err);
+      fail('Failed to clean dbs');
+    }
     expect(projdbs === {});
 
     const project_id = 'test';
@@ -966,6 +1151,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id1 = await upsertFAIMSData(project_id, doc1);
@@ -983,6 +1173,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id2 = await upsertFAIMSData(project_id, doc2);
@@ -1000,6 +1195,11 @@ describe('test basic automerge', () => {
       updated_by: userid,
       created: time,
       updated: time,
+      annotations: {
+        avp1: 1,
+        avp2: 1,
+      },
+      field_types: {field_name: fulltype},
     };
 
     const revision_id3 = await upsertFAIMSData(project_id, doc3);

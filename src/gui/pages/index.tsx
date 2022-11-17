@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -18,112 +18,102 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {NavLink} from 'react-router-dom';
+
+import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
-import {
-  Grid,
-  Container,
-  Paper,
-  MenuList,
-  MenuItem,
-  ListItemIcon,
-} from '@material-ui/core';
-import AccountTree from '@material-ui/icons/AccountTree';
-import HomeIcon from '@material-ui/icons/Home';
-import DescriptionIcon from '@material-ui/icons/Description';
-import LockOpenIcon from '@material-ui/icons/LockOpen';
-import PersonAddIcon from '@material-ui/icons/PersonAdd';
-import AccountBoxIcon from '@material-ui/icons/AccountBox';
-import TimelapseIcon from '@material-ui/icons/Timelapse';
-import Breadcrumbs from '../components/ui/breadcrumbs';
+import {useTheme} from '@mui/material/styles';
+import {checkToken} from '../../utils/helpers';
+import {TokenContents} from '../../datamodel/core';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 type IndexProps = {
-  // project: string;
+  token?: null | undefined | TokenContents;
 };
+export default function Index(props: IndexProps) {
+  /**
+   * Landing page
+   */
+  const theme = useTheme();
+  const isAuthenticated = checkToken(props.token);
+  useEffect(() => {
+    document.body.classList.add('bg-primary-gradient');
 
-type IndexState = {};
+    return () => {
+      document.body.classList.remove('bg-primary-gradient');
+    };
+  });
 
-export class Index extends React.Component<IndexProps, IndexState> {
-  constructor(props: IndexProps) {
-    super(props);
-
-    this.state = {};
-  }
-
-  render() {
-    const breadcrumbs = [{title: 'Index'}];
-    return (
-      <Container maxWidth="lg">
-        <Breadcrumbs data={breadcrumbs} />
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
-            <Paper>
-              <MenuList>
-                <MenuItem
-                  component={NavLink}
-                  to={ROUTES.SIGN_IN}
-                  disabled={true}
-                >
-                  <ListItemIcon>
-                    <AccountBoxIcon fontSize="small" />
-                  </ListItemIcon>
-                  Sign In <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-                <MenuItem
-                  component={NavLink}
-                  to={ROUTES.SIGN_UP}
-                  disabled={true}
-                >
-                  <ListItemIcon>
-                    <PersonAddIcon fontSize="small" />
-                  </ListItemIcon>
-                  Sign Up <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-                <MenuItem
-                  component={NavLink}
-                  to={ROUTES.FORGOT_PASSWORD}
-                  disabled={true}
-                >
-                  <ListItemIcon>
-                    <LockOpenIcon fontSize="small" />
-                  </ListItemIcon>
-                  Forgot Password <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-              </MenuList>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Paper>
-              <MenuList>
-                <MenuItem component={NavLink} to={ROUTES.HOME}>
-                  <ListItemIcon>
-                    <HomeIcon fontSize="small" />
-                  </ListItemIcon>
-                  Home
-                </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.PROJECT_LIST}>
-                  <ListItemIcon>
-                    <AccountTree fontSize="small" />
-                  </ListItemIcon>
-                  Projects
-                </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.RECORD_LIST}>
-                  <ListItemIcon>
-                    <DescriptionIcon fontSize="small" />
-                  </ListItemIcon>
-                  Records <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-                <MenuItem component={NavLink} to={ROUTES.ABOUT_BUILD}>
-                  <ListItemIcon>
-                    <DescriptionIcon fontSize="small" />
-                  </ListItemIcon>
-                  About Build <TimelapseIcon color={'secondary'} />
-                </MenuItem>
-              </MenuList>
-            </Paper>
-          </Grid>
+  return (
+    <React.Fragment>
+      <Grid
+        container
+        direction="row"
+        justifyContent="center"
+        alignItems="center"
+        spacing={3}
+        sx={{minHeight: '60vh'}}
+      >
+        <Grid item xs={12} sm={6}>
+          <Typography
+            variant={'h1'}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            FAIMS 3.0 Electronic Field{' '}
+            <span style={{color: theme.palette.secondary.main}}>Notebooks</span>
+          </Typography>
+          <Typography
+            variant={'h4'}
+            sx={{fontWeight: 'light', mb: 3}}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            The FAIMS 3.0 Project is building the next generation of Electronic
+            Field Notebooks. Join us on the journey.
+          </Typography>
+          {isAuthenticated ? (
+            <React.Fragment>
+              <Button
+                variant="contained"
+                color={'secondary'}
+                disableElevation
+                sx={{mr: 1}}
+                component={NavLink}
+                to={ROUTES.WORKSPACE}
+                startIcon={<DashboardIcon />}
+              >
+                Workspace
+              </Button>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <Button
+                variant="contained"
+                color={'primary'}
+                disableElevation
+                sx={{mr: 1}}
+                component={NavLink}
+                to={ROUTES.SIGN_IN}
+              >
+                Sign In
+              </Button>
+              <Button
+                variant="outlined"
+                color={'secondary'}
+                disableElevation
+                href="https://faims.edu.au/contact/"
+                target={'_blank'}
+              >
+                Register your interest
+              </Button>
+            </React.Fragment>
+          )}
         </Grid>
-      </Container>
-    );
-  }
+        <Grid item xs={12} sm={6}>
+          {/*  picture could go here... */}
+        </Grid>
+      </Grid>
+    </React.Fragment>
+  );
 }

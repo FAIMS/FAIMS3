@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -25,7 +25,7 @@ import {
   Typography,
   Grid,
   Container,
-} from '@material-ui/core';
+} from '@mui/material';
 import SystemAlert from './alert';
 
 export default function LoadingApp() {
@@ -34,9 +34,8 @@ export default function LoadingApp() {
       <Grid
         container
         spacing={0}
-        direction="column"
         alignItems="center"
-        justify="center"
+        justifyContent="center"
         style={{minHeight: '100vh'}}
       >
         <Grid item xs={3} sm={2} md={1}>

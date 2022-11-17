@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Macquarie University
+ * Copyright 2021, 2022 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-// import {makeStyles} from '@material-ui/core/styles';
+// import {makeStyles} from '@mui/material/styles';
 import {
   Box,
   Breadcrumbs,
@@ -27,10 +27,12 @@ import {
   Typography,
   Grid,
   Container,
-} from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+  Divider,
+} from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import {Link as RouterLink, NavLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import NotListedLocationIcon from '@mui/icons-material/NotListedLocation';
 
 // const useStyles = makeStyles(theme => ({
 //   root: {
@@ -44,7 +46,7 @@ export default function NotFound404() {
     <Container maxWidth={false}>
       <Box display="flex" flexDirection="row-reverse" p={1} m={1}>
         <Breadcrumbs aria-label="breadcrumb">
-          <NavLink to={ROUTES.INDEX}>Index</NavLink>
+          <NavLink to={ROUTES.INDEX}>Home</NavLink>
           <Typography color="textPrimary">Not Found</Typography>
         </Breadcrumbs>
       </Box>
@@ -54,54 +56,43 @@ export default function NotFound404() {
         spacing={0}
         direction="column"
         alignItems="center"
-        justify="center"
-        style={{minHeight: '80vh'}}
+        justifyContent="center"
+        style={{minHeight: '70vh'}}
       >
         <Grid item xs={12}>
-          <Grid container>
-            <Grid item xs={6}>
-              <Box mt={1}>
-                <Typography
-                  variant={'overline'}
-                  color={'textSecondary'}
-                  align={'center'}
-                >
-                  Image TBD
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6}>
-              <Box mb={1}>
-                <Typography variant="h1">
-                  <b>404</b>
-                </Typography>
-              </Box>
-              <Box mb={1}>
-                <Typography variant="subtitle2">
-                  <b>Something's missing.</b>
-                </Typography>
-              </Box>
-              <Box mb={2}>
-                <Typography variant={'body1'}>
-                  The page you are looking for does not exist.
-                </Typography>
-              </Box>
-              <Box>
-                <Link
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                  }}
-                  component={RouterLink}
-                  to={ROUTES.HOME}
-                >
-                  <b>Go home</b>
-                  <ChevronRightIcon />
-                </Link>
-              </Box>
-            </Grid>
-          </Grid>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              flexWrap: 'nowrap',
+            }}
+          >
+            <NotListedLocationIcon sx={{fontSize: '64px', mt: 1}} />
+            <Typography variant="h1" fontSize={'64px'} fontWeight={700}>
+              404
+            </Typography>
+          </span>
+          <Divider sx={{m: 2}} />
+          <Box m={2}>
+            <Typography variant="h3" gutterBottom>
+              Something's missing
+            </Typography>
+            <Typography variant={'body1'} sx={{mb: 1}}>
+              The page you are looking for does not exist.
+            </Typography>
+            <Link
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+              }}
+              component={RouterLink}
+              to={ROUTES.INDEX}
+            >
+              <b>Go home</b>
+              <ChevronRightIcon />
+            </Link>
+          </Box>
         </Grid>
       </Grid>
     </Container>
