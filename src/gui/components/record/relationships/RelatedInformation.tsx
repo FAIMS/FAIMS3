@@ -30,6 +30,38 @@ import {
 } from '../../../../datamodel/core';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
+//get parent link when child record been open
+export async function getParentLink_from_relationship(
+  hrid: string,
+  relationship: any,
+  record_id: string,
+  project_id: string
+) {
+  const parent_record = {
+    project_id: project_id,
+    record_id: relationship.parent.record_id,
+    record_label: relationship.parent.record_id,
+  };
+  const {latest_record, revision_id} = await getRecordInformation(
+    parent_record
+  );
+  return {
+    location_state: {
+      field_id: relationship.parent.field_id,
+      parent: latest_record?.relationship?.parent,
+      parent_link: ROUTES.getRecordRoute(
+        project_id ?? '',
+        (relationship.parent.record_id || '').toString(),
+        (revision_id || '').toString()
+      ),
+      parent_record_id: relationship.parent.record_id,
+      type: 'Child',
+      // relation_type_vocabPair: relationship.parent.relation_type_vocabPair,
+    },
+    latest_record: latest_record,
+    revision_id: revision_id,
+  };
+}
 export function getParentlinkInfo(
   hrid: string,
   RelationState: any,
@@ -74,11 +106,12 @@ export function getParentlinkInfo(
     }
   }
   //id the record has same ID as parent and has no parent, then the record is the parent record
-  if (
-    state_parent.parent_record_id === state_parent.record_id &&
-    state_parent.parent.parent_record_id === undefined
-  )
-    is_direct = false;
+  if (state_parent.parent_record_id === state_parent.record_id)
+    if (
+      state_parent.parent === undefined ||
+      state_parent.parent.parent_record_id === undefined
+    )
+      is_direct = false;
   return {state_parent, is_direct};
 }
 

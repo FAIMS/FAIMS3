@@ -407,7 +407,6 @@ export default function DataGridFieldLinksComponent(
             }}
             rows={props.links}
             getRowId={getRowId}
-            checkboxSelection
           />
         </Box>
       )}

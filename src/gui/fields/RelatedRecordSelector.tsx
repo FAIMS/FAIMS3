@@ -253,11 +253,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.form.values[field_name].map((child_record: RecordReference) => {
             if (child_record.is_preferred === true) {
               setPreferred(child_record['record_id']);
-              console.error('child record preferred', preferred);
             }
           });
         }
-        console.error('Preferred child record record id', preferred);
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
@@ -450,22 +448,22 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       record_label: child_hrid,
       relation_type_vocabPair: relationshipPair,
     };
-    let newValue = props.form.values[field_name];
+    const newValue: RecordReference[] = [];
     if (multiple) {
-      let child_record_index = -1;
-      newValue.map((record: RecordReference, index: number) =>
+      // let child_record_index = -1;
+      props.form.values[field_name].map((record: RecordReference) =>
         record.record_id === child_record.record_id
-          ? (child_record_index = index)
-          : record
+          ? record
+          : newValue.push(record)
       );
-      if (child_record_index === 0 && newValue.length === 1) {
-        newValue = [];
-      } else if (child_record_index > -1) {
-        // only splice array when item is found
-        newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
-      }
-    } else newValue = '';
-    setFieldValue(newValue);
+      // if (child_record_index === 0 && newValue.length === 1) {
+      //   newValue = [];
+      // } else if (child_record_index > -1) {
+      //   // only splice array when item is found
+      //   newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
+      // }
+      setFieldValue(newValue);
+    } else setFieldValue('');
 
     const records = options;
     records.push(child_record);

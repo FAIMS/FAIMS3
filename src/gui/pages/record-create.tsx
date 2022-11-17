@@ -154,6 +154,7 @@ function DraftEdit(props: DraftEditProps) {
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
+  const [is_link_ready, setIs_link_ready] = useState(false);
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -168,6 +169,7 @@ function DraftEdit(props: DraftEditProps) {
 
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       if (
         uiSpec !== null &&
@@ -177,6 +179,7 @@ function DraftEdit(props: DraftEditProps) {
         props.state.type !== undefined &&
         props.state.type === 'Child'
       ) {
+        setIs_link_ready(false);
         const parent = {
           parent: {
             record_id: props.state.parent_record_id,
@@ -191,6 +194,9 @@ function DraftEdit(props: DraftEditProps) {
           record_id
         );
         setParentLinks(newParent);
+        setIs_link_ready(true);
+      } else {
+        setIs_link_ready(true);
       }
     })();
 
@@ -261,10 +267,14 @@ function DraftEdit(props: DraftEditProps) {
                     p={{xs: 1, sm: 1, md: 2, lg: 2}}
                     variant={is_mobile ? undefined : 'outlined'}
                   >
-                    <InheritedDataComponent
-                      parentRecords={parentLinks}
-                      ui_specification={uiSpec}
-                    />
+                    {is_link_ready ? (
+                      <InheritedDataComponent
+                        parentRecords={parentLinks}
+                        ui_specification={uiSpec}
+                      />
+                    ) : (
+                      <CircularProgress size={24} />
+                    )}
                     <RecordForm
                       project_id={project_id}
                       record_id={record_id}
