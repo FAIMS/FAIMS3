@@ -106,11 +106,12 @@ export function getParentlinkInfo(
     }
   }
   //id the record has same ID as parent and has no parent, then the record is the parent record
-  if (
-    state_parent.parent_record_id === state_parent.record_id &&
-    state_parent.parent.parent_record_id === undefined
-  )
-    is_direct = false;
+  if (state_parent.parent_record_id === state_parent.record_id)
+    if (
+      state_parent.parent === undefined ||
+      state_parent.parent.parent_record_id === undefined
+    )
+      is_direct = false;
   return {state_parent, is_direct};
 }
 

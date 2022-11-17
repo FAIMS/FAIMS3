@@ -448,7 +448,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       record_label: child_hrid,
       relation_type_vocabPair: relationshipPair,
     };
-    const newValue:RecordReference[] = [];
+    const newValue: RecordReference[] = [];
     if (multiple) {
       // let child_record_index = -1;
       props.form.values[field_name].map((record: RecordReference) =>
@@ -464,7 +464,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       // }
       setFieldValue(newValue);
     } else setFieldValue('');
-    
 
     const records = options;
     records.push(child_record);
