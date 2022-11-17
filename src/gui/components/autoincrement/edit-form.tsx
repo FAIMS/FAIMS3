@@ -128,7 +128,15 @@ export default class BasicAutoIncrementer extends React.Component<
         form_id,
         field_id,
         ranges
-      );
+      ).then(() => {
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Range successfully updated',
+            severity: 'success',
+          },
+        });
+      });
       this.setState({ranges: ranges});
     } catch (err: any) {
       this.context.dispatch({
@@ -152,8 +160,8 @@ export default class BasicAutoIncrementer extends React.Component<
       name: 'start',
       required: true,
       type: 'number',
-      readOnly: range.using || range.fully_used ? true : false,
-      disabled: range.using || range.fully_used ? true : false,
+      readOnly: range.using || range.fully_used,
+      disabled: range.using || range.fully_used,
     };
     const stop_props = {
       id: 'stop',
@@ -161,8 +169,8 @@ export default class BasicAutoIncrementer extends React.Component<
       name: 'stop',
       required: true,
       type: 'number',
-      readOnly: range.fully_used ? true : false,
-      disabled: range.fully_used ? true : false,
+      readOnly: range.fully_used,
+      disabled: range.fully_used,
     };
 
     return (
@@ -186,8 +194,9 @@ export default class BasicAutoIncrementer extends React.Component<
         onSubmit={async (values, {setSubmitting}) => {
           range.start = values.start;
           range.stop = values.stop;
-          await this.update_ranges(ranges);
-          setSubmitting(false);
+          await this.update_ranges(ranges).then(() => {
+            setSubmitting(false);
+          });
         }}
       >
         {({submitForm, isSubmitting}) => (
@@ -218,7 +227,6 @@ export default class BasicAutoIncrementer extends React.Component<
                     disabled={range.using || range.fully_used}
                     onClick={async () => {
                       ranges.splice(range_index, 1);
-
                       await this.update_ranges(ranges);
                     }}
                   >
