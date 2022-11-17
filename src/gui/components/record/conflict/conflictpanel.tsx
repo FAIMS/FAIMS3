@@ -63,12 +63,13 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
   if (data === null) return <CircularProgress size={12} thickness={4} />;
   const initialvalues = getinitial(data, fieldslist);
   initialvalues['_project_id'] = props.project_id;
+  if (type === 'middle') console.debug('initial values', initialvalues);
   return (
     <>
       <Formik
         enableReinitialize={type === 'middle' ? true : false}
         initialValues={initialvalues}
-        validateOnMount={true}
+        validateOnMount={false}
         onSubmit={(values, {setSubmitting}) => {
           setSubmitting(false);
         }}

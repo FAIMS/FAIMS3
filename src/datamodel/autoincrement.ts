@@ -142,16 +142,17 @@ export async function set_local_autoincrement_ranges_for_field(
   } else {
     // We should check that we're not causing problems for existing ranges
     for (const range of state.ranges) {
-      if (range.fully_used && !new_ranges.includes(range)) {
-        throw Error('Fully used range removed');
-      } else if (range.using) {
+      if (range.using) {
         const new_using_range = new_ranges.find(r => r.using);
         if (new_using_range === undefined) {
           throw Error('Currently used range removed');
         } else if (new_using_range.start !== range.start) {
           throw Error('Currently used range start changed');
-        } else if (new_using_range.stop < range.stop) {
-          throw Error('Currently used range stop reduced');
+        } else if (
+          state.last_used_id !== null &&
+          new_using_range.stop <= state.last_used_id
+        ) {
+          throw Error('Currently used range stop less than last used ID.');
         }
       }
     }

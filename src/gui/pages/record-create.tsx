@@ -59,6 +59,9 @@ import DraftSyncStatus from '../components/record/sync_status';
 import {grey} from '@mui/material/colors';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
+import {ParentLinkProps} from '../components/record/relationships/types';
+import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
+import InheritedDataComponent from '../components/record/inherited_data';
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -150,16 +153,59 @@ function DraftEdit(props: DraftEditProps) {
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
+  const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
+  const [is_link_ready, setIs_link_ready] = useState(false);
+
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
     if (project_id !== null) {
       getProjectMetadata(project_id, 'sections').then(res =>
         setMetaSection(res)
       );
-      console.debug(draftLastSaved);
-      console.debug(draftError);
     }
   }, [project_id]);
+
+  console.debug('state', props.state);
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      if (
+        uiSpec !== null &&
+        props.state !== undefined &&
+        props.state.parent_record_id !== undefined &&
+        props.state.parent_record_id !== record_id &&
+        props.state.type !== undefined &&
+        props.state.type === 'Child'
+      ) {
+        setIs_link_ready(false);
+        const parent = {
+          parent: {
+            record_id: props.state.parent_record_id,
+            field_id: props.state.field_id,
+            relation_type_vocabPair: props.state.relation_type_vocabPair,
+          },
+        };
+        const newParent = await getParentPersistenceData(
+          uiSpec,
+          project_id,
+          parent,
+          record_id
+        );
+        setParentLinks(newParent);
+        setIs_link_ready(true);
+      } else {
+        setIs_link_ready(true);
+      }
+    })();
+
+    return () => {
+      // executed when unmount
+      mounted = false;
+      console.log(mounted);
+    };
+  }, [project_id, record_id, uiSpec]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
@@ -221,6 +267,14 @@ function DraftEdit(props: DraftEditProps) {
                     p={{xs: 1, sm: 1, md: 2, lg: 2}}
                     variant={is_mobile ? undefined : 'outlined'}
                   >
+                    {is_link_ready ? (
+                      <InheritedDataComponent
+                        parentRecords={parentLinks}
+                        ui_specification={uiSpec}
+                      />
+                    ) : (
+                      <CircularProgress size={24} />
+                    )}
                     <RecordForm
                       project_id={project_id}
                       record_id={record_id}
@@ -275,6 +329,7 @@ export default function RecordCreate() {
 
   try {
     project_info = useEventedPromise(
+      'RecordCreate page',
       getProjectInfo,
       constantArgsShared(listenProjectInfo, project_id),
       false,

@@ -74,6 +74,7 @@ type RecordsBrowseTableProps = {
 
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
+  console.log('RecordsTable props', props);
 
   // default for mobileView is on (collapsed table)
   const [mobileViewSwitchValue, setMobileViewSwitchValue] =
@@ -398,6 +399,7 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
+  console.error('RecordsBrowseTable props', props);
   const [query, setQuery] = React.useState('');
 
   if (DEBUG_APP) {
@@ -405,9 +407,10 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
   }
 
   const pouchData = useEventedPromise(
+    'RecordsBrowseTable component',
     async (project_id: ProjectID, query: string) => {
       if (DEBUG_APP) {
-        console.log('RecordsTable updating', project_id);
+        console.log('RecordsTable updating', project_id, query);
       }
       if (query.length === 0) {
         return await getMetadataForAllRecords(
@@ -435,7 +438,11 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
 
   useEffect(() => {
     if (pouchData !== undefined) {
-      console.log('pouchData.value changed', pouchData.value?.length);
+      console.log(
+        'pouchData.value changed',
+        pouchData.value?.length,
+        pouchData.value
+      );
     }
   }, [pouchData.value]);
 
@@ -443,12 +450,18 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
     console.debug('New records:', pouchData);
   }
 
+  const rows = pouchData.value ?? [];
+  const loading =
+    pouchData.loading !== undefined ||
+    pouchData.value === undefined ||
+    pouchData.value?.length === undefined;
+
   return (
     <RecordsTable
       project_id={props.project_id}
       maxRows={props.maxRows}
-      rows={pouchData.value ?? []}
-      loading={pouchData.loading !== undefined}
+      rows={rows}
+      loading={loading}
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
     />

@@ -92,6 +92,9 @@ export async function setSyncingProject(
     await active_db.put(active_doc);
   } catch (err) {
     console.error('Failed to update active_db with sync state', err);
+    throw Error(
+      `Could not change sync for this notebook (${active_id}). Contact Support.`
+    );
   }
 
   const created = createdProjects[active_id];

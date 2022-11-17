@@ -113,6 +113,7 @@ export default function Record() {
   let project_info: ProjectInformation | null;
   try {
     project_info = useEventedPromise(
+      'Record page',
       getProjectInfo,
       constantArgsShared(listenProjectInfo, project_id),
       false,
@@ -152,19 +153,13 @@ export default function Record() {
   const [pressedvalue, setpressedvalue] = useState(value);
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
+  const [is_link_ready, setIs_link_ready] = useState(false);
   const location: any = useLocation();
   console.debug('Location', location.state);
 
-  const [breadcrumbs, setBreadcrumbs] = useState([
-    // {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
-    {
-      link: ROUTES.NOTEBOOK + project_id,
-      title: project_info !== null ? project_info.name : project_id,
-    },
-    {title: hrid ?? record_id},
-    // {title: recordInfo},
-  ]);
+  const [breadcrumbs, setBreadcrumbs] = useState<
+    {link?: string; title: string}[]
+  >([]);
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -182,13 +177,25 @@ export default function Record() {
 
   useEffect(() => {
     const getIni = async () => {
+      setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
       listFAIMSRecordRevisions(project_id, record_id)
         .then(all_revisions => {
           setRevisions(all_revisions);
         })
         .catch(console.error /*TODO*/);
-      getHRIDforRecordID(project_id, record_id).then(hrid => setHrid(hrid));
+      getHRIDforRecordID(project_id, record_id).then(hrid => {
+        setHrid(hrid);
+        setBreadcrumbs([
+          // {link: ROUTES.INDEX, title: 'Home'},
+          {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+          {
+            link: ROUTES.NOTEBOOK + project_id,
+            title: project_info !== null ? project_info.name : project_id,
+          },
+          {title: hrid ?? record_id},
+        ]);
+      });
     };
 
     getIni();
@@ -309,7 +316,8 @@ export default function Record() {
             }
             setBreadcrumbs(newBreadcrumbs);
           }
-          setValue('1');
+          // setValue('1');
+          setIs_link_ready(true);
         }
       } catch (error) {
         console.error('Error to get child information', error);
@@ -390,7 +398,7 @@ export default function Record() {
         </Grid>
       </Grid>
       <Grid item xs>
-        <Breadcrumbs data={breadcrumbs} />
+        {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
       </Grid>
       {draft_id !== undefined && (
         <Alert severity={'warning'}>
@@ -575,6 +583,7 @@ export default function Record() {
                                 handleSetDraftError={setDraftError}
                                 parentRecords={parentLinks}
                                 record_to_field_links={relatedRecords}
+                                is_link_ready={is_link_ready}
                               />
                             )}
                           </Box>
@@ -600,6 +609,7 @@ export default function Record() {
                           draftError={draftError}
                           parentRecords={parentLinks}
                           record_to_field_links={relatedRecords}
+                          is_link_ready={is_link_ready}
                         />
                       )}
                     </Box>

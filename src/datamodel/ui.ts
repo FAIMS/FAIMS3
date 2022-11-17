@@ -28,6 +28,7 @@ import {
   FAIMSTypeName,
   Annotations,
   Relationship,
+  NonUniqueProjectID,
 } from './core';
 import {ProjectUIFields, ProjectUIViewsets, ProjectUIViews} from './typesystem';
 
@@ -45,6 +46,9 @@ export interface ProjectInformation {
   last_updated?: string;
   created?: string;
   status?: string;
+  is_activated: boolean;
+  listing_id: ListingID;
+  non_unique_project_id: NonUniqueProjectID;
 }
 
 export interface ProjectUIModel {
@@ -139,6 +143,7 @@ export interface RecordReference {
   record_label: RecordID | string;
   //this is for Lable of linked items, default: ['is related to', 'is related to']
   relation_type_vocabPair?: Array<string>;
+  is_preferred?: boolean;
 }
 
 /*

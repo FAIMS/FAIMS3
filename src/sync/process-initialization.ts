@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import {AUTOACTIVATE_PROJECTS, DEBUG_APP} from '../buildconfig';
+import {AUTOACTIVATE_LISTINGS, DEBUG_APP} from '../buildconfig';
 import {
   ProjectID,
   ListingID,
@@ -133,7 +133,7 @@ export async function update_directory(
       if (DEBUG_APP) {
         console.debug('DirectoryDB Info', info);
       }
-      if (info.id in to_sync || AUTOACTIVATE_PROJECTS) {
+      if (info.id in to_sync || AUTOACTIVATE_LISTINGS) {
         // Only active listings
         // This can delete for deletion changes
         process_listing(info.deleted || false, info.doc!);
@@ -435,10 +435,6 @@ export async function update_listing(
             info.doc!
           );
         }
-
-        if (AUTOACTIVATE_PROJECTS) {
-          await autoactivate_projects(listing_id, [info.id]);
-        }
         return undefined;
       })
       .on('error', err => {
@@ -511,25 +507,11 @@ export async function update_listing(
   }
 }
 
-async function autoactivate_projects(
-  listing_id: string,
-  project_ids: NonUniqueProjectID[]
-) {
-  for (const project_id of project_ids) {
-    try {
-      await activate_project(listing_id, project_id, null, null);
-    } catch (err) {
-      const active_id = resolve_project_id(listing_id, project_id);
-      console.debug('Unable to autoactivate', active_id);
-    }
-  }
-}
-
 export async function activate_project(
   listing_id: string,
   project_id: NonUniqueProjectID,
-  username: string | null,
-  password: string | null,
+  username: string | null = null,
+  password: string | null = null,
   is_sync = true
 ): Promise<ProjectID> {
   if (project_id.startsWith('_design/')) {
@@ -544,6 +526,7 @@ export async function activate_project(
     console.debug('Have already activated', active_id);
     return active_id;
   } catch (err: any) {
+    console.debug('Activating', active_id);
     if (err.status === 404) {
       // TODO: work out a better way to do this
       await active_db.put({
@@ -578,6 +561,14 @@ function process_project(
   projects_db_connection: ConnectionInfo | null,
   project_object: ProjectObject
 ) {
+  console.log(
+    'Processing project',
+    delete_proj,
+    listing,
+    active_project,
+    projects_db_connection,
+    project_object
+  );
   if (delete_proj) {
     // Delete project from memory
     const project_id = active_project.project_id;

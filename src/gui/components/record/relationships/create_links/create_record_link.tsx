@@ -91,7 +91,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     disabled,
     project_id,
   } = props;
-
   const handleSubmit = () => {
     /**
      * Submit relationship to couchDB
@@ -122,7 +121,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
-          message: `Link between record ${props.record_type} ${props.record_hrid} and ${selectedRecord.record_label} added`,
+          message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
           severity: 'success',
         },
       });
@@ -142,8 +141,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     >
       <Box>
         <Typography variant={'subtitle2'} sx={{mb: 1}}>
-          Add a link from {props.record_type} {props.record_hrid}{' '}
-          <strong>{props.field_label}</strong> to an existing record.
+          Add a link to an existing record.
         </Typography>
       </Box>
       <Grid container spacing={1} direction="row" justifyContent="flex-start">
@@ -164,8 +162,8 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                 >
                   {props.relation_linked_vocabPair.map(
                     (r: string[], index: number) => (
-                      <MenuItem value={r[0]} key={index}>
-                        {r[0]}
+                      <MenuItem value={r[1]} key={index}>
+                        {r[1]}
                       </MenuItem>
                     )
                   )}
@@ -250,7 +248,11 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                 </Button>
                 {props.relation_type === 'Linked' && (
                   <AddNewRecordButton
-                    is_enabled={props.is_enabled}
+                    is_enabled={
+                      props.form.isValid === false || props.form.isSubmitting
+                        ? false
+                        : props.is_enabled
+                    }
                     pathname={props.pathname}
                     state={props.state}
                     text={'Add Record'}

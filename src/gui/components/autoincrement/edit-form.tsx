@@ -33,6 +33,8 @@ import AddIcon from '@mui/icons-material/Add';
 import {TextField} from 'formik-mui';
 import * as yup from 'yup';
 
+import {ActionType} from '../../../context/actions';
+import {store} from '../../../context/store';
 import {ProjectID} from '../../../datamodel/core';
 import {LocalAutoIncrementRange} from '../../../datamodel/database';
 import {
@@ -120,13 +122,23 @@ export default class BasicAutoIncrementer extends React.Component<
 
   async update_ranges(ranges: LocalAutoIncrementRange[]) {
     const {project_id, form_id, field_id} = this.props;
-    await set_local_autoincrement_ranges_for_field(
-      project_id,
-      form_id,
-      field_id,
-      ranges
-    );
-    this.setState({ranges: ranges});
+    try {
+      await set_local_autoincrement_ranges_for_field(
+        project_id,
+        form_id,
+        field_id,
+        ranges
+      );
+      this.setState({ranges: ranges});
+    } catch (err: any) {
+      this.context.dispatch({
+        type: ActionType.ADD_ALERT,
+        payload: {
+          message: err.toString(),
+          severity: 'error',
+        },
+      });
+    }
   }
 
   render_range(
@@ -179,15 +191,9 @@ export default class BasicAutoIncrementer extends React.Component<
         }}
       >
         {({submitForm, isSubmitting}) => (
-          <Box>
+          <Box sx={{my: 1}}>
             <Form>
-              <Grid
-                container
-                direction="row"
-                //justifyContent="center"
-                //alignItems="center"
-                spacing={2}
-              >
+              <Grid container direction="row" spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Field
                     size={'small'}
@@ -229,7 +235,7 @@ export default class BasicAutoIncrementer extends React.Component<
               </Grid>
             </Form>
             {isSubmitting && <LinearProgress />}
-            <Divider sx={{m: 1}} />
+            <Divider sx={{mt: 1, mb: 2}} />
           </Box>
         )}
       </Formik>
@@ -246,7 +252,7 @@ export default class BasicAutoIncrementer extends React.Component<
 
   render() {
     return (
-      <div>
+      <Box mt={1}>
         {this.render_ranges()}
         <Button
           variant="outlined"
@@ -258,7 +264,8 @@ export default class BasicAutoIncrementer extends React.Component<
         >
           Add new range
         </Button>
-      </div>
+      </Box>
     );
   }
 }
+BasicAutoIncrementer.contextType = store;

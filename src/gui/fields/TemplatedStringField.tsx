@@ -47,6 +47,7 @@ function render_template(template: string, values: FieldValues): string {
 
 interface Props {
   template: string;
+  disabled?: boolean;
 }
 
 interface State {
@@ -65,6 +66,7 @@ export class TemplatedStringField extends React.Component<
   }
 
   componentDidUpdate() {
+    if (this.props.disabled === true) return;
     const {template, ...textFieldProps} = this.props;
 
     const field_values: FieldValues = {};

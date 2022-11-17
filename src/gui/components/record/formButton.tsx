@@ -45,7 +45,7 @@ function FormSubmitButton(props: any) {
     <Button
       type="button"
       color={formProps.isSubmitting ? undefined : 'primary'}
-      variant={is_final_view && is_close ? 'contained' : 'outlined'}
+      variant={is_final_view && is_close === 'close' ? 'contained' : 'outlined'}
       disableElevation
       disabled={formProps.isSubmitting}
       onClick={() => handleFormSubmit(is_close)}
@@ -105,7 +105,7 @@ export default function FormButtonGroup(props: any) {
               disabled={disabled}
               formProps={formProps}
               text="Publish and continue editing"
-              is_close={false}
+              is_close={'continue'}
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
             />
@@ -113,7 +113,15 @@ export default function FormButtonGroup(props: any) {
               disabled={disabled}
               formProps={formProps}
               text="Publish and Close Record"
-              is_close={true}
+              is_close={'close'}
+              handleFormSubmit={handleFormSubmit}
+              is_final_view={is_final_view}
+            />
+            <FormSubmitButton
+              disabled={disabled}
+              formProps={formProps}
+              text="Publish and New Record"
+              is_close={'new'}
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
             />
