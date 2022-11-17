@@ -147,6 +147,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               project={params.row}
               showHelperText={false}
               project_status={params.row.status}
+              handleTabChange={setValue}
             />
           ),
         },
@@ -209,6 +210,7 @@ export default function NoteBooks(props: NoteBookListProps) {
               project={params.row}
               showHelperText={false}
               project_status={params.row.status}
+              handleTabChange={setValue}
             />
           ),
         },
