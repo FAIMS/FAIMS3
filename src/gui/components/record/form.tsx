@@ -72,7 +72,7 @@ import {
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
-import {generateFAIMSDataID} from '../../../data_storage';
+import {generateFAIMSDataID,getFirstRecordHead} from '../../../data_storage';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -270,9 +270,22 @@ class RecordForm extends React.Component<
 
   async formChanged(
     draft_saving_started_already: boolean,
-    revision_id: string | undefined
+    passed_revision_id: string | undefined
   ) {
+    let revision_id = passed_revision_id
     if (DEBUG_APP) console.debug('check passed revision id', revision_id);
+    if(revision_id===undefined){
+      try{
+        // for new draft but saved record, get the revision instead of using the null
+        const first_revision_id = await getFirstRecordHead(this.props.project_id,
+          this.props.record_id)
+        revision_id = first_revision_id
+        if (DEBUG_APP) console.debug('get record revision', this.props.record_id);
+      }catch(error){
+        if (DEBUG_APP) console.debug('new record', this.props.record_id);
+      }
+      
+    }
     // const revision_id = this.props.revision_id;
     try {
       let this_type;
@@ -283,6 +296,7 @@ class RecordForm extends React.Component<
             this.props.record_id,
             revision_id
           );
+          if (DEBUG_APP) console.debug('get record revision', this.props.record_id);
           if (latest_record === null) {
             this.props.handleSetDraftError(
               `Could not find data for record ${this.props.record_id}`
@@ -426,9 +440,16 @@ class RecordForm extends React.Component<
           location.state.parent_record_id !== this.props.record_id &&
           this.state.initialValues !== null
         ) {
-          this.save(this.state.initialValues, false, 'continue', () =>
-            console.log('saved')
-          );
+          
+          if(location.state.child_record_id!==undefined&&location.state.child_record_id!==this.props.record_id){
+            //child_record_id should always be current record_id, otherwise there would be an issue
+            if(DEBUG_APP){
+              console.debug('child_record_id is not record_id  ',this.props.record_id,location.state.child_record_id);
+            }
+          }else
+            this.save(this.state.initialValues, false, 'continue', () =>
+              console.log('saved')
+            );
         }
       }
     } catch (err: any) {
@@ -731,7 +752,7 @@ class RecordForm extends React.Component<
             relationship: this.state.relationship ?? {},
           };
           if (DEBUG_APP) {
-            console.log(doc);
+            console.debug('doc',this.props.record_id,this.state.revision_cached,this.props.location.state,this.state,doc);
           }
           return doc;
         })
@@ -780,7 +801,7 @@ class RecordForm extends React.Component<
               severity: 'error',
             },
           });
-          console.error('Failed to save data', err);
+          console.error('Failed to save data', err,this.props.record_id);
         })
         //Clear the current draft area (Possibly after redirecting back to project page)
         .then(result => {
@@ -793,10 +814,11 @@ class RecordForm extends React.Component<
           if (is_close === 'continue') {
             setSubmitting(false);
             return result;
-          }
+          }else{
           
             const RelationState = this.props.location.state;
-            console.debug('location', RelationState);
+            if(DEBUG_APP)
+              console.debug('Location ', RelationState);
             if (RelationState !== undefined && RelationState !== null) {
               const {state_parent, is_direct} = getParentlinkInfo(
                 result,
@@ -810,7 +832,7 @@ class RecordForm extends React.Component<
                   ); //update for save and close button
                   window.scrollTo(0, 0);
                   return result;}
-                if (is_close === 'new') {
+                else if (is_close === 'new') {
                   //not child record
                   setSubmitting(false);
                   this.props.history.push(
@@ -829,8 +851,9 @@ class RecordForm extends React.Component<
                 });
                 window.scrollTo(0, 0);
                 return result; }
-                if (is_close === 'new') {
+                else if (is_close === 'new') {
                   // for new child record, should save the parent record and pass the location state --TODO
+                  const LocationState:any=this.props.location.state
                   setSubmitting(false);
                   this.props.history.push({
                     pathname:
@@ -840,12 +863,73 @@ class RecordForm extends React.Component<
                         this.state.type_cached,
                     state: this.props.location.state});
                   console.debug('current state', this.state);
+                    const field_id = LocationState.field_id
+                    const new_record_id = generateFAIMSDataID();
+                    const new_child_record = {
+                      record_id: new_record_id,
+                      project_id: this.props.project_id,
+                    }
+                    getFirstRecordHead(
+                      this.props.project_id,
+                      LocationState.parent_record_id
+                    ).then(revision_id=>
+                      getFullRecordData(
+                        this.props.project_id,
+                        LocationState.parent_record_id,
+                        revision_id
+                      ).then(
+                        latest_record=>{
+                          const new_doc = latest_record
+                          if(new_doc!==null){
+                            if(this.props.ui_specification['fields'][field_id]['component-parameters']['multiple']===true)
+                              new_doc['data'][field_id] = [...new_doc['data'][field_id] ,new_child_record]
+                            else new_doc['data'][field_id] = [...new_doc['data'][field_id] ,new_child_record]
+                            upsertFAIMSData(
+                              this.props.project_id,
+                              new_doc
+                            ).then(new_revision_id=>{
+                              const location_state:any=LocationState
+                              location_state['parent_link'] = ROUTES.getRecordRoute(
+                                this.props.project_id,
+                                (location_state.parent_record_id || '').toString(),
+                                (new_revision_id || '').toString()
+                              ).replace('/notebooks/', '')
+                              location_state['child_record_id'] = new_record_id;
+                              if(DEBUG_APP)
+                                console.debug('new child state',location_state)
+                              this.props.history.push({
+                                pathname:
+                                  ROUTES.NOTEBOOK +
+                                    this.props.project_id +
+                                    ROUTES.RECORD_CREATE +
+                                    this.state.type_cached,
+                                state: location_state});
+                                setSubmitting(false);
+                                window.scrollTo(0, 0);
+                                return result;}).catch(error=>console.error('Error to save the parent record',error))
+                          }else{
+                            console.error('Error to save the parent record, latest record is null')
+                            this.props.history.push({
+                              pathname:
+                                ROUTES.NOTEBOOK +
+                                  this.props.project_id +
+                                  ROUTES.RECORD_CREATE +
+                                  this.state.type_cached,
+                              state: LocationState.location_state});
+                              setSubmitting(false);
+                              window.scrollTo(0, 0);
+                              return result;
+                          }
+                        }
+                      )
+                    )
                   return result;}
               }
               
             } else {
               const relationship = this.state.relationship;
-              console.debug('location state', relationship);
+              if(DEBUG_APP)
+                console.debug('location state', relationship);
               if (
                 relationship === undefined ||
                 relationship === null ||
@@ -858,7 +942,7 @@ class RecordForm extends React.Component<
                 );
                 window.scrollTo(0, 0);
                 return result;}
-                if (is_close === 'new') {
+                else if (is_close === 'new') {
                   //not child record
                   setSubmitting(false);
                   this.props.history.push(
@@ -881,7 +965,7 @@ class RecordForm extends React.Component<
                   });
                   window.scrollTo(0, 0);
                   return result;}
-                  if (is_close === 'new') {
+                  else if (is_close === 'new') {
                     // for new child record, should save the parent record and pass the location state --TODO
                     // update parent information
                     const new_doc= LocationState.latest_record
@@ -918,16 +1002,22 @@ class RecordForm extends React.Component<
                           state: location_state});
                           setSubmitting(false);
                           window.scrollTo(0, 0);
-                          return result;}).catch(error=>console.error('Error to save the parent record',error))
-                    }
-                    
-                  }
-                    
-
-                }).catch(error=>console.error('Error to get parent record',error));
+                          return result;}).catch(error=>console.error('Error to save the parent record from child relationship',error))
+                    }else{
+                      console.error('Error to save the parent record from child relationship, latest record is null')
+                      this.props.history.push({
+                        pathname:
+                          ROUTES.NOTEBOOK +
+                            this.props.project_id +
+                            ROUTES.RECORD_CREATE +
+                            this.state.type_cached,
+                        state: LocationState.location_state});
+                        setSubmitting(false);
+                        window.scrollTo(0, 0);
+                    }}}).catch(error=>console.error('Error to get parent record',error));
               }
             }
-          })
+          }})
     );
   }
 
