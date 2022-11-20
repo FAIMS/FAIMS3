@@ -455,7 +455,7 @@ export default function Record() {
             >
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
-              <Tab label="Meta" value="3" />
+              <Tab label="Settings" value="3" />
               {conflicts !== null &&
               conflicts['available_heads'] !== undefined &&
               Object.keys(conflicts['available_heads']).length > 1 ? (
@@ -642,6 +642,7 @@ export default function Record() {
                 project_id={project_id}
                 record_id={record_id}
                 revision_id={updatedrevision_id}
+                is_draft={draft_id !== undefined}
               />
             </Box>
           </TabPanel>

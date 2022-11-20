@@ -21,14 +21,7 @@
 import React, {useContext} from 'react';
 import {useHistory} from 'react-router-dom';
 
-import {
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-} from '@mui/material';
+import {Button, Dialog, DialogActions, AlertTitle} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {Alert} from '@mui/material';
 
@@ -44,6 +37,7 @@ type RecordDeleteProps = {
   project_id: ProjectID;
   record_id: RecordID;
   revision_id: RevisionID | null;
+  is_draft: boolean;
 };
 
 export default function RecordDelete(props: RecordDeleteProps) {
@@ -109,7 +103,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
         onClick={handleClickOpen}
         startIcon={<DeleteIcon />}
       >
-        Delete record
+        Delete {!props.is_draft ? 'Record' : 'Draft'}
       </Button>
       <Dialog
         open={open}
@@ -117,22 +111,24 @@ export default function RecordDelete(props: RecordDeleteProps) {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          {'Delete record ' + record_id}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description" component={'div'}>
-            <Alert severity="warning">
-              You cannot reverse this action! Be sure you wish to delete this
-              record.
-            </Alert>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
+        <Alert severity="error">
+          <AlertTitle>
+            Are you sure you want to delete{' '}
+            {!props.is_draft ? 'record' : 'draft'} {record_id}?
+          </AlertTitle>
+          You cannot reverse this action! Be sure you wish to delete this{' '}
+          {!props.is_draft ? 'record' : 'draft'}.
+        </Alert>
+        <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} color="primary">
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="primary" variant={'contained'}>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            disableElevation
+            variant={'contained'}
+          >
             Delete
           </Button>
         </DialogActions>

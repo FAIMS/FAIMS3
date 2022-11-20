@@ -247,7 +247,7 @@ function DraftEdit(props: DraftEditProps) {
                 textColor="secondary"
               >
                 <Tab label="Create" value="1" sx={{color: '#c2c2c2'}} />
-                <Tab label="Meta" value="2" sx={{color: '#c2c2c2'}} />
+                <Tab label="Settings" value="2" sx={{color: '#c2c2c2'}} />
               </TabList>
             </AppBar>
             <TabPanel value="1" sx={{p: 0}}>
@@ -296,6 +296,7 @@ function DraftEdit(props: DraftEditProps) {
                   project_id={project_id}
                   record_id={draft_id}
                   revision_id={null}
+                  is_draft={draft_id !== undefined}
                 />
               </Box>
             </TabPanel>
