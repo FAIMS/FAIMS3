@@ -110,7 +110,7 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
     initialValue: 12,
   };
 
-  newuiSetting['fields']['basemap'] = {
+  newuiSetting['fields']['geoTiff'] = {
     'component-namespace': 'faims-custom',
     'component-name': 'Select',
     'type-returned': 'faims-core::String', // should this be File???
@@ -143,7 +143,7 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
     'label',
     'featureType',
     'zoom',
-    'basemap',
+    'geoTiff',
   ];
 
   newuiSetting['viewsets'] = {
@@ -168,11 +168,11 @@ const addFileAttachmentSelect = (
   const fields = Object.keys(newuiSetting.fields);
   let fieldname = '';
   fields.forEach(f => {
-    if (f.startsWith('basemap')) {
+    if (f.startsWith('geoTiff')) {
       fieldname = f;
     }
   });
-  console.log('basemap field is', fieldname);
+  console.log('geoTiff field is', fieldname);
   return getProjectMetadata(project_id, 'attachments')
     .then(attachments => {
       console.log('Attachments:', attachments);
