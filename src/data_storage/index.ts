@@ -319,6 +319,7 @@ export async function getRecordsByType(
   type: FAIMSTypeName,
   relation_type: string,
   record_id: string,
+  field_id: string,
   relation_linked_vocabPair: string[] | null = null
 ): Promise<RecordReference[]> {
   try {
@@ -344,29 +345,48 @@ export async function getRecordsByType(
 
         let is_parent = false;
         const relationship = metadata['relationship'];
-        if (
-          relation_type === 'faims-core::Child' &&
-          relationship !== undefined &&
-          relationship['parent'] !== undefined &&
-          relationship['parent'] !== null &&
-          relationship['parent'].record_id !== undefined &&
-          relationship['parent'].record_id !== record_id
-        )
-          is_parent = true;
-        // console.error('record',metadata.hrid,metadata.type,relationship?.parent?.record_id,metadata,is_parent)
+
+        if (relation_type === 'faims-core::Child') {
+          //check if record has the parent, record should only have one parent
+          if (
+            relationship === undefined ||
+            relationship['parent'] === undefined ||
+            relationship['parent'] === null ||
+            relationship['parent'].record_id === undefined
+          )
+            is_parent = false;
+          else if (relationship['parent'].record_id !== record_id)
+            is_parent = true;
+          else if (
+            relationship['parent'].record_id === record_id &&
+            relationship['parent'].field_id !== field_id
+          )
+            is_parent = true;
+        }
+        console.debug(
+          'relationship',
+          metadata,
+          relationship,
+          record_id,
+          field_id,
+          is_parent
+        );
         if (!metadata.deleted && metadata.type === type && !is_parent) {
-          //
+          const hrid =
+            metadata.hrid !== '' && metadata.hrid !== undefined
+              ? metadata.hrid
+              : metadata.record_id;
           if (relation_vocab === null)
             records.push({
               project_id: project_id,
               record_id: metadata.record_id,
-              record_label: metadata.hrid,
+              record_label: hrid,
             });
           else
             records.push({
               project_id: project_id,
               record_id: metadata.record_id,
-              record_label: metadata.hrid,
+              record_label: hrid,
               relation_type_vocabPair: relation_vocab, // pass the value of the vocab
             });
           if (DEBUG_APP) {

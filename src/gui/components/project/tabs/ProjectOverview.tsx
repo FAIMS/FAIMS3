@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Filename: ProjectBehaviour.tsx
- * Description:This is the file about Notebook Behavoiur
+ * Description:This is the file about Notebook behaviour
  *   TODO:
  */
 import React from 'react';

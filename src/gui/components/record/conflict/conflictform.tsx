@@ -344,11 +344,10 @@ export default function ConflictForm(props: ConflictFormProps) {
         setIsClickLeft({...isclickLeft, [fieldName]: true});
     }
     if (chosenvalues !== null && saveduserMergeResult !== null) {
-      const newvalues = chosenvalues['fields'][fieldName];
+      let newvalues = chosenvalues['fields'][fieldName];
       const newmerged = saveduserMergeResult['field_choices'];
       if (choosevalueA === true && conflicts !== null && newvalues !== null) {
-        newvalues['data'] = conflictA['fields'][fieldName]['data'];
-        newvalues['avp_id'] = conflictA['fields'][fieldName]['avp_id'];
+        newvalues = conflictA['fields'][fieldName];
         newmerged[fieldName] = newvalues['avp_id'];
       } else if (
         choosevalueA === false &&
@@ -356,8 +355,7 @@ export default function ConflictForm(props: ConflictFormProps) {
         newvalues !== null
       ) {
         if (conflictB !== null) {
-          newvalues['data'] = conflictB['fields'][fieldName]['data'];
-          newvalues['avp_id'] = conflictB['fields'][fieldName]['avp_id'];
+          newvalues = conflictB['fields'][fieldName];
           newmerged[fieldName] = newvalues['avp_id'];
         }
       } else if (
@@ -381,9 +379,10 @@ export default function ConflictForm(props: ConflictFormProps) {
         newvalues['avp_id'] = '';
         newmerged[fieldName] = null;
       }
+      const new_chosenvalues = chosenvalues;
+      new_chosenvalues['fields'][fieldName] = newvalues;
       setChoosenvalues({
-        ...chosenvalues,
-        fields: {...chosenvalues.fields, [fieldName]: newvalues},
+        ...new_chosenvalues,
       });
       setUserMergeResult({
         ...saveduserMergeResult,
@@ -396,7 +395,13 @@ export default function ConflictForm(props: ConflictFormProps) {
           newmerged[key] === null ? (newreject = newreject + 1) : newreject
         );
       }
-      console.log(newmerged);
+      console.debug(
+        'new merge',
+        newmerged,
+        newvalues,
+        conflictA['fields'][fieldName],
+        conflictB['fields'][fieldName]
+      );
       console.log(newreject);
       setnumRejected(newreject);
     }
@@ -676,6 +681,7 @@ export default function ConflictForm(props: ConflictFormProps) {
                   isSyncing={isSyncing}
                   disbaledRight={disbaledRight}
                   disbaledLeft={disbaledLeft}
+                  project_id={props.project_id}
                 />
               </div>
             </TabPanel>

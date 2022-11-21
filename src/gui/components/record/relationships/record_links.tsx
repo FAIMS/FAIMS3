@@ -76,7 +76,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
         valueGetter: (params: GridCellParams) =>
           props.record_id === params.row.record_id
             ? params.value[0]
-            : params.value[1],
+            : params.value[0],
         renderCell: (params: GridCellParams) => (
           <Chip
             label={params.value}

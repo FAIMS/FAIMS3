@@ -383,17 +383,30 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             );
 
             newvalue['attachfilenames'] = filenames;
+          } catch (error) {
+            console.error('Error to get attachment- attachfilenames', error);
+          }
+          if (
+            newvalue['attachfilenames'] !== undefined &&
+            newvalue['attachfilenames'].length > 0
+          ) {
             const files: any = {};
             for (const index in newvalue['attachfilenames']) {
-              const file = await getProjectMetadata(
-                project_id,
-                newvalue['attachfilenames'][index]
-              );
-              files[newvalue['attachfilenames'][index]] = file;
+              try {
+                const file = await getProjectMetadata(
+                  project_id,
+                  newvalue['attachfilenames'][index]
+                );
+                files[newvalue['attachfilenames'][index]] = file;
+              } catch (error) {
+                console.error(
+                  'Error to get attachment-' +
+                    newvalue['attachfilenames'][index],
+                  error
+                );
+              }
             }
             newvalue['files'] = files;
-          } catch (error) {
-            console.error('Error to get attachment', error);
           }
 
           setProjectValue(newvalue);

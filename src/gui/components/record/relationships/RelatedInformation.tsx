@@ -290,8 +290,9 @@ export async function get_RelatedFields_for_field(
   form_type: string | undefined
 ) {
   const child_records = multiple ? values[field_name] : [values[field_name]];
-  const record_id = values['_id'];
   const records: RecordLinkProps[] = [];
+  if (child_records.length === 0) return records;
+  const record_id = values['_id'];
   for (const index in child_records) {
     const child_record = child_records[index];
 

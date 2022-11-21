@@ -15,7 +15,7 @@
  *
  * Filename: RecordTabBar.tsx
  * Description:
- *   Conflict Resolve Working Panel include ConflictA Pannel, Resolved Panel and ConflictB Pannel
+ *   Conflict Resolve Working Panel include ConflictA Panel, Resolved Panel and ConflictB Panel
  */
 
 import React from 'react';
@@ -25,7 +25,7 @@ import {Formik, Form} from 'formik';
 import {FieldWithAnnotation, EmptyField} from './conflictfield';
 import {FieldButtonGroup, FieldEmptyButton} from './conflictbutton';
 import {CircularProgress} from '@mui/material';
-
+import {ProjectID} from '../../../../datamodel/core';
 function getinitial(data: any, fieldslist: Array<string>) {
   const initialvalues: {[key: string]: string} = {};
   fieldslist.map(field =>
@@ -46,6 +46,7 @@ type ConflictSectionPanelProps = {
   conflictfields: Array<string>;
   istoggleAll: boolean;
   isSyncing: string;
+  project_id: ProjectID;
 };
 function ConflictSectionPanel(props: ConflictSectionPanelProps) {
   const {
@@ -61,12 +62,14 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
   } = props;
   if (data === null) return <CircularProgress size={12} thickness={4} />;
   const initialvalues = getinitial(data, fieldslist);
+  initialvalues['_project_id'] = props.project_id;
+  if (type === 'middle') console.debug('initial values', initialvalues);
   return (
     <>
       <Formik
         enableReinitialize={type === 'middle' ? true : false}
         initialValues={initialvalues}
-        validateOnMount={true}
+        validateOnMount={false}
         onSubmit={(values, {setSubmitting}) => {
           setSubmitting(false);
         }}
@@ -161,6 +164,7 @@ function ConflictPanelForm(props: ConflictPanelFormProps) {
       conflictfields={props.conflictfields}
       istoggleAll={props.istoggleAll}
       isSyncing={props.isSyncing}
+      project_id={props.project_id}
     />
   );
 }
@@ -222,6 +226,7 @@ type ConflictPanelProp = {
   isSyncing: string;
   disbaledLeft: {[key: string]: boolean};
   disbaledRight: {[key: string]: boolean};
+  project_id: ProjectID;
 };
 
 export default function ConflictPanel(props: ConflictPanelProp) {
@@ -268,6 +273,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             conflictfields={conflictfields}
             istoggleAll={istoggleAll}
             isSyncing={isSyncing}
+            project_id={props.project_id}
           />
         </Grid>
         <Grid item sm={1} xs={1} md={1}>
@@ -305,6 +311,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             conflictfields={conflictfields}
             istoggleAll={istoggleAll}
             isSyncing={isSyncing}
+            project_id={props.project_id}
           />
         </Grid>
         <Grid item sm={1} xs={1} md={1}>
@@ -342,6 +349,7 @@ export default function ConflictPanel(props: ConflictPanelProp) {
             conflictfields={conflictfields}
             istoggleAll={istoggleAll}
             isSyncing={isSyncing}
+            project_id={props.project_id}
           />
         </Grid>
       </Grid>

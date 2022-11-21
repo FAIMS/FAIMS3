@@ -54,7 +54,7 @@ interface State {
   label: string;
 }
 
-function AddRangDialog() {
+function AddRangeDialog() {
   const [open, setOpen] = React.useState(false);
   return (
     <Grid container>
@@ -128,7 +128,7 @@ export class BasicAutoIncrementer extends React.Component<
         type: ActionType.ADD_ALERT,
         payload: {
           message:
-            'No ranges exist for this notebook yet. Go to Notebook > Settings to add/edit ranges.',
+            'No ranges exist for this notebook yet. Go to the notebook Settings tab to add/edit ranges.',
           severity: 'error',
         },
       });
@@ -228,7 +228,7 @@ export class BasicAutoIncrementer extends React.Component<
           readOnly={true}
           type={'hidden'}
         />
-        {this.state.is_ranger === false && <AddRangDialog />}
+        {this.state.is_ranger === false && <AddRangeDialog />}
       </>
     );
   }

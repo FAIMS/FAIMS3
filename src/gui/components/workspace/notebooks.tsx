@@ -31,7 +31,7 @@ import {
 } from '@mui/x-data-grid';
 
 import * as ROUTES from '../../../constants/routes';
-import {getProjectList, listenProjectList} from '../../../databaseAccess';
+import {getAllProjectList, listenProjectList} from '../../../databaseAccess';
 import {useEventedPromise} from '../../pouchHook';
 import {TokenContents} from '../../../datamodel/core';
 import CircularLoading from '../../components/ui/circular_loading';
@@ -56,7 +56,8 @@ export default function NoteBooks(props: NoteBookListProps) {
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const pouchProjectList = useEventedPromise(
-    getProjectList,
+    'NoteBooks component',
+    getAllProjectList,
     listenProjectList,
     true,
     []

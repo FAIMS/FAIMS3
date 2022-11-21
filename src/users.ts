@@ -26,6 +26,7 @@ import type {KeyLike} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
 import {active_db, local_auth_db} from './sync/databases';
+import {reprocess_listing} from './sync/process-initialization';
 import {
   ClusterProjectRoles,
   ProjectID,
@@ -215,6 +216,7 @@ export async function switchUsername(cluster_id: string, new_username: string) {
     const doc = await local_auth_db.get(cluster_id);
     doc.current_token = doc.available_tokens[new_username].token;
     await local_auth_db.put(doc);
+    reprocess_listing(cluster_id);
   } catch (err) {
     console.error('Failed to switch user for', new_username, cluster_id, err);
   }

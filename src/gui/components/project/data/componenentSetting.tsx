@@ -272,8 +272,8 @@ const uiSettingOthers: ProjectUIModel = {
               label: 'field',
             },
             {
-              value: 'section',
-              label: 'section',
+              value: 'view',
+              label: 'view',
             },
           ],
         },
@@ -454,16 +454,21 @@ const getvalue = (
   if (view === 'meta' && fieldui['meta'] === undefined) {
     return false;
   }
-  if (view === 'logic' && fieldui['logic_select'] === undefined) {
-    return fieldui['logic_select'];
+  if (view === 'logic') {
+    if (
+      fieldui['logic_select'] !== undefined &&
+      fieldui['logic_select']['type'] !== undefined
+    )
+      return fieldui['logic_select']['type'];
+    else return [];
   }
   try {
-    return (
-      fieldui['component-parameters'][view][name] ??
-      fieldui['component-parameters'][view]['children']
-    );
+    return fieldui['component-parameters'][view] !== undefined
+      ? fieldui['component-parameters'][view][name] ??
+          fieldui['component-parameters'][view]['children']
+      : fieldui['component-parameters'][name];
   } catch (err) {
-    console.error('error to get value:', view, name, err);
+    console.error('error to get value:', view, name, err, fieldui);
     return 'not get value' + view + name;
   }
 };
@@ -826,9 +831,7 @@ const definelogic = (
 
     return newvalues;
   }
-  if (
-    newvalues['fields'][fieldname]['logic_select']['type'].includes('section')
-  ) {
+  if (newvalues['fields'][fieldname]['logic_select']['type'].includes('view')) {
     // newvalues['fields'][fieldname]['logic_select'][
     //   name.replace('select', '').replace(fieldname, '')
     // ] = value;
@@ -845,6 +848,7 @@ const definelogic = (
     }
     return newvalues;
   }
+  console.error(newvalues);
   return newvalues;
 };
 
@@ -868,7 +872,7 @@ const getlogicoption = (
     return options;
   }
 
-  if (type.includes('section')) {
+  if (type.includes('view')) {
     uiSpec['viewsets'][currentform]['views'].map((view: string) => {
       options.push({
         value: view,

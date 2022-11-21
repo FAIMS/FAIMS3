@@ -40,6 +40,7 @@ export default function MetadataRenderer(props: MetadataProps) {
   const metadata_key = props.metadata_key;
   const metadata_label = props.metadata_label;
   const metadata_value = useEventedPromise(
+    'MetadataRenderer component',
     async (project_id: ProjectID, metadata_key: string) => {
       try {
         return await getProjectMetadata(project_id, metadata_key);
