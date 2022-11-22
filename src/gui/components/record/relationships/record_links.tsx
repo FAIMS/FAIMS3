@@ -444,7 +444,9 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                   }}
                   rows={subGroup}
                   getRowId={getRowId}
-                  className={'test'}
+                  components={{
+                    Footer: RecordLinksToolbar,
+                  }}
                   sx={
                     {
                       // borderLeft: 'none',

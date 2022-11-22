@@ -244,7 +244,7 @@ export default function DataGridFieldLinksComponent(
       field: 'lastUpdatedBy',
       headerName: 'Last Updated By',
       headerClassName: 'faims-record-link--header',
-      minWidth: 100,
+      minWidth: 150,
       flex: 0.2,
       valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
     },
