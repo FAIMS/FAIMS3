@@ -181,7 +181,7 @@ export default function SectionComponent(props: SectionComponent) {
         <Grid
           container
           className={classes.newfield}
-          key={`formcompoenet-form-${fieldName}`}
+          key={`formcomponent-form-${fieldName}`}
         >
           <Grid item sm={10} xs={12}>
             <Grid container spacing={1}>

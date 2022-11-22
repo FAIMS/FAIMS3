@@ -15,7 +15,7 @@
  *
  * Filename: PSettingCard.ts
  * Description:
- *   TODO: get lists from CompoenetSettings file
+ *   TODO: get lists from ComponentSettings file
  *   TODO: add highlight for selected tab
  *   TODO: any type
  */
