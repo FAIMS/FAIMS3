@@ -52,6 +52,7 @@ interface Props {
 
 interface State {
   ranges: LocalAutoIncrementRange[] | null;
+  ranges_initialised: boolean;
 }
 
 const FORM_SCHEMA = yup.object().shape({
@@ -67,6 +68,7 @@ export default class BasicAutoIncrementer extends React.Component<
     super(props);
     this.state = {
       ranges: null,
+      ranges_initialised: false,
     };
   }
 
@@ -137,7 +139,14 @@ export default class BasicAutoIncrementer extends React.Component<
           },
         });
       });
-      this.setState({ranges: ranges});
+      let ranges_initialised = false;
+      for (const range of ranges) {
+        if (range.using || range.fully_used) {
+          ranges_initialised = true;
+          break;
+        }
+      }
+      this.setState({ranges: ranges, ranges_initialised: ranges_initialised});
     } catch (err: any) {
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
@@ -154,6 +163,7 @@ export default class BasicAutoIncrementer extends React.Component<
     range_index: number,
     ranges: LocalAutoIncrementRange[]
   ) {
+    const range_count = ranges.length;
     const start_props = {
       id: 'start',
       label: 'start',
@@ -232,6 +242,33 @@ export default class BasicAutoIncrementer extends React.Component<
                   >
                     Remove range
                   </Button>
+                  {range.using ? (
+                    <Button
+                      color="error"
+                      onClick={async () => {
+                        range.fully_used = true;
+                        range.using = false;
+
+                        await this.update_ranges(ranges);
+                      }}
+                    >
+                      Disable range
+                    </Button>
+                  ) : (
+                    <Button
+                      color="error"
+                      disabled={
+                        range_count < 2 && this.state.ranges_initialised
+                      }
+                      onClick={async () => {
+                        ranges.splice(range_index, 1);
+
+                        await this.update_ranges(ranges);
+                      }}
+                    >
+                      Remove range
+                    </Button>
+                  )}
                   <Button
                     color="primary"
                     disabled={isSubmitting || range.fully_used}

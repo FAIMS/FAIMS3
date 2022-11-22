@@ -114,7 +114,6 @@ const FAIMSViewImageList = (props: {images: Array<any>; fieldName: string}) => {
 const FAIMSImageList = (props: ImageListProps) => {
   const {images, setopen, setimage} = props;
   const disabled = props.disabled ?? false;
-  console.log(disabled);
   const handelonClick = (index: number) => {
     if (images.length > index) {
       const newimages = images.filter((image: any, i: number) => i !== index);
@@ -228,7 +227,7 @@ export class TakePhoto extends React.Component<
   render() {
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    console.log(images);
+    console.debug('images', images);
 
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
