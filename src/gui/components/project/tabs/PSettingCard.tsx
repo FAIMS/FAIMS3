@@ -45,7 +45,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import TaskIcon from '@mui/icons-material/Task';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({
-  settiglist: {
+  settingList: {
     // backgroundColor:'#e1e4e8',
     marginBottom: 2,
     '&$selected': {
@@ -77,7 +77,7 @@ export function SettingCard(props: SettingCard) {
     <List
       component="nav"
       aria-label="settings bar"
-      className={classes.settiglist}
+      className={classes.settingList}
     >
       <ListItem
         button

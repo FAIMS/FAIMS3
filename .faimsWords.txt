@@ -627,6 +627,7 @@ appium
 DBNAME
 usees
 conn
-availabe
-# TODO FIX
-Ramdom
+FALSEY
+retval
+hrids
+isodate

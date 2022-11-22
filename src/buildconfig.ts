@@ -30,28 +30,28 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
  */
 
 function commit_version(): string {
-  const commitver = process.env.REACT_APP_COMMIT_VERSION;
-  console.log('Commit version', commitver);
+  const commitVersion = process.env.REACT_APP_COMMIT_VERSION;
+  console.log('Commit version', commitVersion);
   if (
-    commitver === '' ||
-    commitver === undefined ||
-    FALSEY_STRINGS.includes(commitver.toLowerCase())
+    commitVersion === '' ||
+    commitVersion === undefined ||
+    FALSEY_STRINGS.includes(commitVersion.toLowerCase())
   ) {
     return 'unknown dev';
   } else {
-    return commitver;
+    return commitVersion;
   }
 }
 
 function prod_build(): boolean {
-  const prodbuild = process.env.REACT_APP_PRODUCTION_BUILD;
+  const productionBuild = process.env.REACT_APP_PRODUCTION_BUILD;
   if (
-    prodbuild === '' ||
-    prodbuild === undefined ||
-    TRUTHY_STRINGS.includes(prodbuild.toLowerCase())
+    productionBuild === '' ||
+    productionBuild === undefined ||
+    TRUTHY_STRINGS.includes(productionBuild.toLowerCase())
   ) {
     return true;
-  } else if (FALSEY_STRINGS.includes(prodbuild.toLowerCase())) {
+  } else if (FALSEY_STRINGS.includes(productionBuild.toLowerCase())) {
     return false;
   } else {
     console.error('REACT_APP_PRODUCTION_BUILD badly defined, assuming false');
@@ -61,7 +61,7 @@ function prod_build(): boolean {
 /*
  * This isn't exported, instead to help reduce the number of environment
  * variables to set to get a production build for real users. Can be used in the
- * rest of the configuartion.
+ * rest of the configuration.
  */
 const PROD_BUILD = prod_build();
 
@@ -141,16 +141,16 @@ function show_new_notebook(): boolean {
 }
 
 function directory_protocol(): string {
-  const usehttps = process.env.REACT_APP_USE_HTTPS;
+  const useHTTPS = process.env.REACT_APP_USE_HTTPS;
   if (PROD_BUILD) {
     return 'https';
   } else if (
-    usehttps === '' ||
-    usehttps === undefined ||
-    FALSEY_STRINGS.includes(usehttps.toLowerCase())
+    useHTTPS === '' ||
+    useHTTPS === undefined ||
+    FALSEY_STRINGS.includes(useHTTPS.toLowerCase())
   ) {
     return 'http';
-  } else if (TRUTHY_STRINGS.includes(usehttps.toLowerCase())) {
+  } else if (TRUTHY_STRINGS.includes(useHTTPS.toLowerCase())) {
     return 'https';
   } else {
     console.error('REACT_APP_USE_HTTPS badly defined, assuming false');

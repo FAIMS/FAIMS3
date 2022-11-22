@@ -157,14 +157,14 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
   return newuiSetting;
 };
 
-const basemapCache: {[key: string]: string} = {};
+const baseMapCache: {[key: string]: string} = {};
 
 const addFileAttachmentSelect = (
   project_id: string,
   newuiSetting: ProjectUIModel
 ) => {
   // add any attached files to the select list for basemap
-  // first need to work out the fieldname which is 'basenamXYZZY'
+  // first need to work out the fieldname which is 'geoTiff12345'
   const fields = Object.keys(newuiSetting.fields);
   let fieldname = '';
   fields.forEach(f => {
@@ -186,11 +186,11 @@ const addFileAttachmentSelect = (
 
       attachments.map((file: File) => {
         let url;
-        if (file.name in basemapCache) {
-          url = basemapCache[file.name];
+        if (file.name in baseMapCache) {
+          url = baseMapCache[file.name];
         } else {
           url = URL.createObjectURL(file);
-          basemapCache[file.name] = url;
+          baseMapCache[file.name] = url;
         }
         console.log(file.name, url);
 
