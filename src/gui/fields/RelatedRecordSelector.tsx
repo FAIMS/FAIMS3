@@ -220,8 +220,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [updated, SetUpdated] = React.useState(uuidv4());
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
   const [preferred, setPreferred] = React.useState(null as string | null);
-  const relation_preferred_label =
-    props.relation_preferred_label ?? 'Preferred';
+  const relation_preferred_label = props.relation_preferred_label ?? '';
+  // BBS 20221117 using empty string instead of null as a quick hack to toggle control of preferred checkbox in absence of a different boolean.
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -733,7 +733,8 @@ const uiSetting = () => {
       required: false,
     },
     validationSchema: [['yup.string']],
-    initialValue: 'Preferred',
+    initialValue: null,
+    // BBS 20221117 set initialValue to null to default to disabled
   };
   newuiSetting['fields']['related_type'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
