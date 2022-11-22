@@ -87,8 +87,8 @@ import {
   MultiTextuiSetting,
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
+import {RandomStyle, RandomStyleSetting} from '../fields/RandomStyle';
 // Mapping plugin imports
-import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
 import {
   MapFormField,
   MapFieldBuilderSettings,
