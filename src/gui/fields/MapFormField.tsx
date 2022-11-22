@@ -31,6 +31,9 @@ import {getProjectMetadata} from '../../projectMetadata';
 import {getComponentFromField} from '../components/project/FormElement';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 
+
+const GEOTIFF_DEFAULT = '';
+
 const MapFieldUISpec = {
   'component-namespace': 'mapping-plugin', // this says what web component to use to render/acquire value from
   'component-name': 'MapFormField',
@@ -43,7 +46,7 @@ const MapFieldUISpec = {
     featureType: 'Point',
     zoom: 12,
     label: '',
-    geoTiff: 'default',
+    geoTiff: '',
     FormLabelProps: {
       children: '',
     },
@@ -118,7 +121,7 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
       fullWidth: true,
       helperText: '',
       variant: 'outlined',
-      defaultValue: 'default',
+      defaultValue: GEOTIFF_DEFAULT,
       required: true,
       select: true,
       InputProps: {},
@@ -126,7 +129,7 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
       ElementProps: {
         options: [
           {
-            value: 'default',
+            value: GEOTIFF_DEFAULT,
             label: 'Use Default Basemap',
           },
         ],
@@ -136,7 +139,7 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
       },
     },
     validationSchema: [['yup.string']],
-    initialValue: 'default',
+    initialValue: GEOTIFF_DEFAULT,
   };
 
   newuiSetting['views']['FormParamater']['fields'] = [
@@ -153,7 +156,6 @@ const MapFieldUISetting = (defaultSetting: ProjectUIModel) => {
     },
   };
 
-  console.log('MapFieldUISetting:', newuiSetting);
   return newuiSetting;
 };
 
@@ -172,14 +174,11 @@ const addFileAttachmentSelect = (
       fieldname = f;
     }
   });
-  console.log('geoTiff field is', fieldname);
   return getProjectMetadata(project_id, 'attachments')
     .then(attachments => {
-      console.log('Attachments:', attachments);
-      console.log('newuiSetting:', newuiSetting);
       const options = [
         {
-          value: 'default',
+          value: GEOTIFF_DEFAULT,
           label: 'Use Default Basemap',
         },
       ];
@@ -192,8 +191,6 @@ const addFileAttachmentSelect = (
           url = URL.createObjectURL(file);
           baseMapCache[file.name] = url;
         }
-        console.log(file.name, url);
-
         const option = {
           value: url,
           label: file.name,
@@ -247,8 +244,6 @@ const getfieldNamesbyView = (
 const MapComponentSetting = (props: componenentSettingprops) => {
   const [uiSetting, setuiSetting] = React.useState(props.uiSetting);
 
-  console.log('State uiSetting:', uiSetting);
-
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     if (props.handlerchanges !== undefined) {
       props.handlerchanges(event);
@@ -267,7 +262,6 @@ const MapComponentSetting = (props: componenentSettingprops) => {
     handlerchangewithview: any,
     view: string
   ) => {
-    console.log('GETFIELD', fieldName, uiSetting, formProps);
     return (
       <div key={'key' + fieldName}>
         {getComponentFromField(
@@ -287,11 +281,8 @@ const MapComponentSetting = (props: componenentSettingprops) => {
     );
   };
 
-  console.log('Here we are in MapComponentSetting', props);
-
   addFileAttachmentSelect(props.projectvalue.project_id, props.uiSetting).then(
     settings => {
-      console.log('Updating uiSetting:', settings);
       setuiSetting(settings);
     }
   );
