@@ -24,7 +24,6 @@ import {ProjectID, FAIMSTypeName} from './datamodel/core';
 import {
   PROJECT_SPECIFICATION_PREFIX,
   ProjectSchema,
-  AttributeValuePair,
 } from './datamodel/database';
 import {FAIMSType, FAIMSConstant} from './datamodel/typesystem';
 
@@ -141,9 +140,12 @@ export async function lookupFAIMSConstant(
 }
 
 async function lookupBuiltinReference(
-  faimsType: TypeReference,
-  context: TypeContext,
-  specOpt: ProjectSpecOptions
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _faimsType: TypeReference,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _context: TypeContext,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _specOpt: ProjectSpecOptions
 ) {
   return {};
 }
@@ -314,8 +316,10 @@ export async function upsertFAIMSConstant(
 }
 
 function allowedProjectSpecUpsertPermissions(
-  name: TypeReference,
-  context: TypeContext
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _name: TypeReference,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _context: TypeContext
 ): boolean {
   // Not implemented yet
   return true;

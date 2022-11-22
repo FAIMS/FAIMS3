@@ -33,8 +33,6 @@ import {
 } from './data_storage';
 import {equals} from './utils/eqTestSupport';
 
-import {getDataDB} from './sync/index';
-
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 const projdbs: any = {};
