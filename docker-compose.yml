@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  faims3-web-app:
+    build:
+      context: .
+      args:
+        - REACT_APP_CLUSTER_ADMIN_GROUP_NAME
+        - REACT_APP_COMMIT_VERSION
+        - REACT_APP_USE_HTTPS=true
+        - REACT_APP_SHOW_NEW_NOTEBOOK=false
+        - REACT_APP_DIRECTORY_HOST
+        - REACT_APP_POUCH_BATCHES_LIMIT
+        - REACT_APP_POUCH_BATCH_SIZE
+        - REACT_APP_PRODUCTION_BUILD=true
+    ports:
+      - "0.0.0.0:${WEB_APP_LOCAL_PORT}:80"
