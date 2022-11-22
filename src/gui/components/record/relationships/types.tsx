@@ -27,7 +27,7 @@ export interface RecordLinkProps {
   hrid: string | number;
   type: string;
   route: string;
-  relation_type_vocabPair?: string[];
+  relation_type_vocabPair: string[];
   link: FieldLinkProps;
   lastUpdatedBy?: string;
   relation_preferred?: boolean;
