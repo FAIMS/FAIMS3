@@ -21,12 +21,7 @@
 import React, {useEffect} from 'react';
 import {useHistory} from 'react-router-dom';
 
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridEventListener,
-} from '@mui/x-data-grid';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import {
   Typography,
   Box,
@@ -55,6 +50,7 @@ import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
+import RecordDelete from '../record/delete';
 
 type RecordsTableProps = {
   project_id: ProjectID;
@@ -116,7 +112,7 @@ function RecordsTable(props: RecordsTableProps) {
       ? props.viewsets[params.row.type.toString()].label ?? params.row.type
       : params.row.type;
   }
-  const columns: GridColDef[] = !mobileView
+  const columns = !mobileView
     ? [
         {
           field: 'article_icon',
@@ -210,6 +206,23 @@ function RecordsTable(props: RecordsTableProps) {
           filterable: true,
           hide: true,
         },
+
+        {
+          field: 'delete',
+          headerName: 'Actions',
+          type: 'actions',
+          renderCell: (params: GridCellParams) => {
+            return (
+              <RecordDelete
+                project_id={project_id}
+                record_id={params.row.record_id}
+                revision_id={params.row.revision_id}
+                is_draft={false}
+                show_label={false}
+              />
+            );
+          },
+        },
       ]
     : [
         {
@@ -290,6 +303,22 @@ function RecordsTable(props: RecordsTableProps) {
                   <Alert severity={'warning'}>Record has conflicts</Alert>
                 )}
               </Box>
+            );
+          },
+        },
+        {
+          field: 'delete',
+          headerName: 'Actions',
+          type: 'actions',
+          renderCell: (params: GridCellParams) => {
+            return (
+              <RecordDelete
+                project_id={project_id}
+                record_id={params.row.record_id}
+                revision_id={params.row.revision_id}
+                is_draft={false}
+                show_label={false}
+              />
             );
           },
         },

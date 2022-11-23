@@ -21,7 +21,13 @@
 import React, {useContext} from 'react';
 import {useHistory} from 'react-router-dom';
 
-import {Button, Dialog, DialogActions, AlertTitle} from '@mui/material';
+import {
+  Button,
+  IconButton,
+  Dialog,
+  DialogActions,
+  AlertTitle,
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {Alert} from '@mui/material';
 
@@ -38,6 +44,7 @@ type RecordDeleteProps = {
   record_id: RecordID;
   revision_id: RevisionID | null;
   is_draft: boolean;
+  show_label: boolean;
 };
 
 export default function RecordDelete(props: RecordDeleteProps) {
@@ -97,14 +104,21 @@ export default function RecordDelete(props: RecordDeleteProps) {
 
   return (
     <div>
-      <Button
-        variant="outlined"
-        color="error"
-        onClick={handleClickOpen}
-        startIcon={<DeleteIcon />}
-      >
-        Delete {!props.is_draft ? 'Record' : 'Draft'}
-      </Button>
+      {props.show_label ? (
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleClickOpen}
+          startIcon={<DeleteIcon />}
+        >
+          {!props.is_draft ? 'Delete Record' : 'Delete Draft'}
+        </Button>
+      ) : (
+        <IconButton aria-label="delete" onClick={handleClickOpen}>
+          <DeleteIcon />
+        </IconButton>
+      )}
+
       <Dialog
         open={open}
         onClose={handleClose}
@@ -117,7 +131,10 @@ export default function RecordDelete(props: RecordDeleteProps) {
             {!props.is_draft ? 'record' : 'draft'} {record_id}?
           </AlertTitle>
           You cannot reverse this action! Be sure you wish to delete this{' '}
-          {!props.is_draft ? 'record' : 'draft'}.
+          {!props.is_draft ? 'record ' : 'draft. '}
+          {!props.is_draft
+            ? '(all associated drafts of this record will also be removed).'
+            : ''}
         </Alert>
         <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} color="primary">
@@ -136,3 +153,6 @@ export default function RecordDelete(props: RecordDeleteProps) {
     </div>
   );
 }
+RecordDelete.defaultProps = {
+  show_label: true,
+};
