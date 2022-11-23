@@ -23,6 +23,7 @@ import {
   getParentlinkInfo,
   // getParentInfo,
   getChildInfo,
+  get_all_child_records
 } from './RelatedInformation';
 
 // PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
@@ -126,4 +127,106 @@ test('test get child information to save in parent', () => {
     })
   ).toBe(true);
   expect(equals(is_related, true)).toBe(true);
+});
+
+//get_all_child_records, single child_record
+test('test single get_all_child_records conflictA and conflictB 2 records', () => {
+  const conflictA = { 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  }
+  const conflictB = { 
+    project_id:'project_id',
+    record_id:'record_B'
+  }
+  const mergeresult = [{ 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  },{ 
+    project_id:'project_id',
+    record_id:'record_B'
+  }]
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
+});
+//get_all_child_records, multiple child_record
+test('test multiple get_all_child_records conflictA and conflictB 3 records', () => {
+  const conflictA = [{ 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  },{ 
+    project_id:'project_id',
+    record_id:'record_A2',
+    record_label:'record_A2'
+  }]
+  const conflictB = [{ 
+    project_id:'project_id',
+    record_id:'record_B'
+  }]
+  let mergeresult = [{ 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  },{ 
+    project_id:'project_id',
+    record_id:'record_A2',
+    record_label:'record_A2'
+  },{ 
+    project_id:'project_id',
+    record_id:'record_B'
+  }]
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
+
+  const child_records = get_all_child_records(conflictB, conflictA);
+  mergeresult = [{ 
+    project_id:'project_id',
+    record_id:'record_B'
+  },{ 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  },{ 
+    project_id:'project_id',
+    record_id:'record_A2',
+    record_label:'record_A2'
+  }]
+  expect(equals(mergeresult, child_records)).toBe(true);
+});
+
+//get_all_child_records, single child_record with one is ''( child been removed )
+test('test single get_all_child_records conflictB child is removed', () => {
+  const conflictA = { 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  }
+  const conflictB = ''
+  const mergeresult = [{ 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  }]
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
+});
+
+//get_all_child_records, multiple child_record with one is []( child been removed )
+test('test multiple get_all_child_records conflictB child been removed', () => {
+  const conflictA = [{ 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  }]
+  const conflictB: any[]= []
+  const mergeresult = [{ 
+    project_id:'project_id',
+    record_id:'record_A',
+    record_label:'record_A'
+  }]
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
 });

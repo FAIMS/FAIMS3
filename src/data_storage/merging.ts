@@ -452,6 +452,7 @@ export async function getMergeInformationForRevision(
 ): Promise<RecordMergeInformation> {
   const avp_ids = Object.values(revision.avps);
   const avps = await getAttributeValuePairs(project_id, avp_ids);
+  console.error('revisions',revision)
 
   const record_info: RecordMergeInformation = {
     project_id: project_id,
@@ -462,6 +463,7 @@ export async function getMergeInformationForRevision(
     updated_by: revision.created_by,
     fields: {},
     deleted: revision.deleted ?? false,
+    relationship:revision.relationship ?? {} //relationship?: Relationship; 
   };
 
   for (const [name, avp_id] of Object.entries(revision.avps)) {
@@ -664,6 +666,7 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
     created_by: updated_by,
     deleted: false,
     type: type,
+    relationship: merge_result.relationship
   };
   await datadb.put(new_revision);
 

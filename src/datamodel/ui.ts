@@ -119,6 +119,7 @@ export interface RecordMergeInformation {
   updated_by: string;
   fields: {[field_name: string]: FieldMergeInformation};
   deleted: boolean;
+  relationship: Relationship; 
 }
 
 export interface UserMergeResult {
@@ -130,6 +131,7 @@ export interface UserMergeResult {
   type: FAIMSTypeName;
   field_choices: {[field_name: string]: AttributeValuePairID | null};
   field_types: {[field_name: string]: FAIMSTypeName};
+  relationship: Relationship
 }
 
 export type RecordList = {

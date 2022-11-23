@@ -718,6 +718,13 @@ class RecordForm extends React.Component<
   // - save doc/record
   // - save persistence data
   // - get new revision id, and set new revision id if user click save and continue
+  // - clear the draft
+  // after save: direct user to different path
+  // - - publish and continue: setSubmitting re-enabled, so user can save form for the new revision id
+  // - - publish and close: - close the current record and return to project list
+  //                     - close the current record and back to parent record if record created from parent or if record has parent
+  // - - publish and new:  - close the current record and create new record when current record has no parent relationship
+  //                    - when current record has parent: close current record, add new record into parent record, open the new record with parent
 
   save(
     values: object,
