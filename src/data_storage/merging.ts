@@ -462,7 +462,7 @@ export async function getMergeInformationForRevision(
     updated_by: revision.created_by,
     fields: {},
     deleted: revision.deleted ?? false,
-    relationship:revision.relationship ?? {} //relationship?: Relationship; 
+    relationship: revision.relationship ?? {}, //relationship?: Relationship;
   };
 
   for (const [name, avp_id] of Object.entries(revision.avps)) {
@@ -665,7 +665,7 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
     created_by: updated_by,
     deleted: false,
     type: type,
-    relationship: merge_result.relationship
+    relationship: merge_result.relationship,
   };
   await datadb.put(new_revision);
 

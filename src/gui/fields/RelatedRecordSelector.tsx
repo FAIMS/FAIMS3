@@ -388,7 +388,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (selectedRecord === null) return false;
     let newValue = props.form.values[field_name];
 
-    if (multiple) newValue=[...(newValue ?? []), selectedRecord];
+    if (multiple) newValue = [...(newValue ?? []), selectedRecord];
     else newValue = selectedRecord;
 
     setFieldValue(newValue);
