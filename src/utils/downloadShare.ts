@@ -37,7 +37,7 @@ export async function shareStringAsFileOnApp(
   title: string,
   dialogTitle: string,
   filename: string
-) {
+): Promise<undefined> {
   const isodate = new Date().toJSON().slice(0, 10);
   console.debug('Starting writing of file');
   for (const dir of [
@@ -66,10 +66,10 @@ export async function shareStringAsFileOnApp(
         url: url,
         dialogTitle: dialogTitle,
       });
-      break;
+      return undefined;
     } catch (err) {
       console.error('Sharing failed with', dir, err);
     }
   }
-  console.debug('Shared file');
+  return undefined;
 }
