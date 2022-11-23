@@ -136,6 +136,7 @@ export class BasicAutoIncrementer extends React.Component<
       return null;
     }
     if (local_state.last_used_id === null) {
+      console.debug('local_auto_inc starting with clean slate');
       // We've got a clean slate with ranges allocated, start allocating ids
       const new_id = local_state.ranges[0].start;
       local_state.ranges[0].using = true;
@@ -148,13 +149,15 @@ export class BasicAutoIncrementer extends React.Component<
     for (const range of local_state.ranges) {
       if (range.using) {
         if (local_state.last_used_id + 1 < range.stop) {
+          console.debug('local_auto_inc using existing range', range);
           const next_id = local_state.last_used_id + 1;
           local_state.last_used_id = next_id;
           await set_local_autoincrement_state_for_field(local_state);
           return next_id;
         }
         range.fully_used = true;
-        await set_local_autoincrement_state_for_field(local_state);
+        range.using = false;
+        console.debug('local_auto_inc finished with range', range);
       }
     }
     // find a new range to use
@@ -162,6 +165,8 @@ export class BasicAutoIncrementer extends React.Component<
       if (!range.fully_used) {
         const next_id = range.start;
         range.using = true;
+        local_state.last_used_id = next_id;
+        console.debug('local_auto_inc staring with range', range);
         await set_local_autoincrement_state_for_field(local_state);
         return next_id;
       }
@@ -175,8 +180,12 @@ export class BasicAutoIncrementer extends React.Component<
         max_stop = range.stop;
       }
     }
+    if (max_stop === local_state.last_used_id) {
+      max_stop = max_stop + 1;
+    }
     local_state.last_used_id = max_stop;
     await set_local_autoincrement_state_for_field(local_state);
+    console.debug('local_auto_inc using overrun', local_state);
     return max_stop;
   }
 

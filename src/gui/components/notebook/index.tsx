@@ -12,7 +12,11 @@ import {
   TableCell,
   AppBar,
   TableContainer,
+  Alert,
+  AlertTitle,
+  Button,
 } from '@mui/material';
+import {useHistory} from 'react-router-dom';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectInformation, ProjectUIModel} from '../../../datamodel/ui';
@@ -26,6 +30,8 @@ import {useTheme} from '@mui/material/styles';
 import DraftTabBadge from './draft_tab_badge';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import CircularLoading from '../ui/circular_loading';
+import * as ROUTES from '../../../constants/routes';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -64,7 +70,6 @@ type NotebookComponentProps = {
   project: ProjectInformation;
 };
 export default function NotebookComponent(props: NotebookComponentProps) {
-  console.log('NotebookComponent props', props);
   /**
    * Notebook component. Consolidating into three tabs; records, info (meta) and settings.
    * Display customized for smaller screens
@@ -88,11 +93,12 @@ export default function NotebookComponent(props: NotebookComponentProps) {
 
   const {project} = props;
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
   const [viewsets, setViewsets] = useState<null | ProjectUIViewsets>(null);
   const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-
+  const history = useHistory();
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       getUiSpecForProject(project.project_id)
@@ -100,19 +106,44 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           setUiSpec(spec);
           setViewsets(spec.viewsets);
           setLoading(false);
+          setErr('');
         })
-        .catch(console.error);
+        .catch(err => {
+          setErr(err.message);
+        });
     }
     return () => {
       setViewsets(null);
       setUiSpec(null);
+      setErr('');
       setLoading(true);
     };
   }, [project]);
 
   return (
     <Box>
-      {loading ? (
+      {err ? (
+        <Alert severity="error">
+          <AlertTitle>
+            {' '}
+            {props.project.name} notebook cannot sync right now.
+          </AlertTitle>
+          Your device may be offline.
+          <br />
+          <Typography variant={'caption'}>{err}</Typography>
+          <br />
+          <br />
+          Go to
+          <Button
+            variant="text"
+            size={'small'}
+            onClick={() => history.push(ROUTES.WORKSPACE)}
+            startIcon={<DashboardIcon />}
+          >
+            Workspace
+          </Button>
+        </Alert>
+      ) : loading ? (
         <CircularLoading label={'Notebook is loading'} />
       ) : (
         <Box>
