@@ -97,7 +97,7 @@ export function DataGridNoLink(props: {
       flex: 0.4,
     },
   ];
-  if (props.relation_type === 'Child')
+  if (props.relation_type === 'Child' && props.relation_preferred_label !== '')
     columns.push({
       field: 'preferred',
       headerName: props.relation_preferred_label,
@@ -243,7 +243,13 @@ export default function DataGridFieldLinksComponent(
     },
   ];
   // for read ONLY
-  if (props.relation_type === 'Child' && props.disabled !== true)
+
+  // BBS 20221117 checking on empty label to toggle. Label is set in src/gui/fields/RelatedRecordSelector.tsx
+  if (
+    props.relation_type === 'Child' &&
+    props.disabled !== true &&
+    props.relation_preferred_label !== ''
+  )
     columns.push({
       field: 'preferred',
       headerName: 'Make ' + props.relation_preferred_label,
@@ -274,7 +280,11 @@ export default function DataGridFieldLinksComponent(
         />
       ),
     });
-  else if (props.relation_type === 'Child' && props.disabled === true)
+  else if (
+    props.relation_type === 'Child' &&
+    props.disabled === true &&
+    props.relation_preferred_label !== ''
+  )
     columns.push({
       field: 'preferred',
       headerName: 'Make ' + props.relation_preferred_label,
