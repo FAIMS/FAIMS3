@@ -53,14 +53,14 @@ function get_updated_by(conflict: any) {
   return updated_by;
 }
 export default function ConflictLinkBar(props: conflictLinkBarProps) {
-  const isexpend =
+  const isdisplay =
     (props.linksA !== null && props.linksA.length > 0) ||
     (props.linksB !== null && props.linksB.length > 0) ||
     (props.mergedLinks !== null && props.mergedLinks.length > 0)
       ? true
       : false;
-  return (
-    <Accordion defaultExpanded={isexpend}>
+  return isdisplay ? (
+    <Accordion defaultExpanded={true}>
       <AccordionSummary
         aria-controls="links-accordion-content"
         id="links-accordion"
@@ -82,6 +82,8 @@ export default function ConflictLinkBar(props: conflictLinkBarProps) {
         />
       </AccordionDetails>
     </Accordion>
+  ) : (
+    <></>
   );
 }
 function ConflictLinkComponent(props: conflictLinkBarProps) {

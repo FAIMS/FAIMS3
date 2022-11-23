@@ -27,7 +27,6 @@ import {
   Typography,
   Modal,
   Paper,
-  Chip,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -38,7 +37,7 @@ import {
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
-import {DataGridLinksComponentProps, PARENT_CHILD_VOCAB} from '../types';
+import {DataGridLinksComponentProps} from '../types';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
 import {RecordID} from '../../../../../datamodel/core';
@@ -64,10 +63,22 @@ export function DataGridNoLink(props: {
 }) {
   const columns: GridColumns = [
     {
-      field: 'record_label',
-      headerName: 'Record',
+      field: 'relation_type_vocabPair',
+      headerName: 'Relationship',
+      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
+      valueGetter: (params: GridCellParams) =>
+        params.value !== undefined
+          ? params.value[0]
+          : props.relation_linked_vocab,
+    },
+    {
+      field: 'record_label',
+      headerName: 'Record',
+      headerClassName: 'faims-record-link--header',
+      minWidth: 200,
+      flex: 0.4,
       valueGetter: (params: GridCellParams) =>
         params.row.record_label ?? params.row.record_id,
       renderCell: (params: GridCellParams) => (
@@ -78,28 +89,9 @@ export function DataGridNoLink(props: {
       ),
     },
     {
-      field: 'relation_type_vocabPair',
-      headerName: 'Relationship to ',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) =>
-        params.value !== undefined
-          ? params.value[0]
-          : props.relation_linked_vocab,
-      renderCell: (params: GridCellParams) => (
-        <Chip
-          label={params.value}
-          component={'span'}
-          size={'small'}
-          color={
-            PARENT_CHILD_VOCAB.includes(params.value) ? 'secondary' : 'default'
-          }
-        />
-      ),
-    },
-    {
       field: 'record_id',
       headerName: 'Last Updated By',
+      headerClassName: 'faims-record-link--header',
       minWidth: 100,
       valueGetter: () => '',
       flex: 0.4,
@@ -109,6 +101,7 @@ export function DataGridNoLink(props: {
     columns.push({
       field: 'preferred',
       headerName: props.relation_preferred_label,
+      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) => params.row.is_preferred ?? false,
