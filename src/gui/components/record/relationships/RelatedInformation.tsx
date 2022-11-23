@@ -229,7 +229,7 @@ async function getRecordInformation(child_record: RecordReference) {
       revision_id
     );
   } catch (error) {
-    throw Error('Error to get record information');
+    throw Error('Error to get record information' + child_record.project_id);
   }
   return {latest_record, revision_id};
 }
@@ -1005,13 +1005,14 @@ function check_if_child_link(relationship: Relationship|undefined,field_id:strin
   
 }
 //function is to check if child record has the correct link relationship, if not update it
-export async function update_child_records_conflict(conflictA:any,conflictB:any,mergeresult:any,relation_fields:{[field_name: string]: any},project_id:string){
+export async function update_child_records_conflict(conflictA:any,conflictB:any,mergeresult:any,relation_fields:{[field_name: string]: any},project_id:string,current_record_id:string){
   for (const field of Object.keys(relation_fields)){
     const field_info = relation_fields[field]
-    await update_child_record_conflict(conflictA.fields[field],conflictB.fields[field],mergeresult.fields[field],field_info.relation_type.replace('faims-core::', ''),project_id,field)
+    console.debug('conflict update child record',conflictA.fields[field].data,conflictB.fields[field].data,mergeresult.fields[field].data,field_info.relation_type.replace('faims-core::', ''),project_id,field)
+    await update_field_child_record_conflict(conflictA.fields[field].data,conflictB.fields[field].data,mergeresult.fields[field].data,field_info.relation_type.replace('faims-core::', ''),project_id,field,current_record_id)
   }
 }
-async function update_child_record_conflict(conflictA: RecordReference|RecordReference[],conflictB: RecordReference|RecordReference[],mergeresult:RecordReference|RecordReference[]|null,relation_type:string,project_id:string,field_id:string){
+async function update_field_child_record_conflict(conflictA: RecordReference|RecordReference[],conflictB: RecordReference|RecordReference[],mergeresult:RecordReference|RecordReference[]|null,relation_type:string,project_id:string,field_id:string,current_record_id:string){
   const all_child_records = get_all_child_records(conflictA,conflictB);
   const child_values:string[] = []
   if(all_child_records!==null){
@@ -1020,65 +1021,81 @@ async function update_child_record_conflict(conflictA: RecordReference|RecordRef
       //check when the record_id is not been checked
       if(!child_values.includes(record_id)){
         child_values.push(record_id)
-        const record = {
-          project_id: project_id,
-          record_id: record_id,
-          record_label: record_id,
-        }
-        const {latest_record, revision_id} = await getRecordInformation(record)
-        if(latest_record!==null){
-        const is_linked = check_if_child_link(latest_record?.relationship,field_id,record_id,relation_type)
-        let is_merged_lnked = false
-        const new_doc = latest_record;
-        let is_updated_link = false
-        const link={record_id:record_id,field_id:field_id,relation_type_vocabPair:all_child_records[index]['relation_type_vocabPair']}
-        if(mergeresult!==null){
-          if(Array.isArray(mergeresult)){
-            mergeresult.map(record=>record.record_id===record_id?is_merged_lnked = true:record)
-          }else if(mergeresult.record_id===record_id) is_merged_lnked = true
-        }
-          // merged value is null, then remove all links
-        if(new_doc['relationship']===undefined){
-          if(is_merged_lnked){
-            is_updated_link = true
-            //child record has no link, merge has link, add link
-            if(relation_type==='Child') new_doc['relationship']={'parent':link}
-            else new_doc['relationship']={'linked':[link]}
-          }
-        }else if(is_linked&&!is_merged_lnked){
-            is_updated_link =true
-            //current child has the link, merge has no link, remove the link
-            if(relation_type==='Child'){
-              if(new_doc['relationship']['parent']!==undefined){
-                // need to be updated if the reord has parent and it's current record,remove the parent
-                if(new_doc['relationship']['linked']===undefined) new_doc['relationship']={}
-                else new_doc['relationship']={linked:new_doc['relationship']['linked']}
-              }
-            }else {
-              if(new_doc['relationship']['linked']!==undefined){
-                const new_link=RemoveLink(new_doc['relationship'],link)
-                new_doc['relationship']['linked'] = new_link
-              }
-            }
-        }else if(!is_linked&&is_merged_lnked){
-          is_updated_link =true
-          //current record has no link, merge has link, add the link
-          if(relation_type==='Child')
-            new_doc['relationship']['parent'] = link
-          else
-          new_doc['relationship']['linked'] = AddLink(new_doc['relationship'],link)
-        }
-        if(is_updated_link){
-          const now = new Date();
-            new_doc['updated'] = now;
-            const current_revision_id = await upsertFAIMSData(
-              project_id,
-              new_doc
-            );}
-        }
+        const link={record_id:current_record_id,field_id:field_id,relation_type_vocabPair:all_child_records[index]['relation_type_vocabPair']}
+          await conflict_update_child_record(mergeresult,link,record_id,relation_type,project_id,field_id,current_record_id)
         }
       }
     }
+}
+
+async function conflict_update_child_record(mergeresult:RecordReference|RecordReference[]|null,link:LinkedRelation,record_id:string,relation_type:string,project_id:string,field_id:string,current_record_id:string){
+  try{
+    const record = {
+      project_id: project_id,
+      record_id: record_id,
+      record_label: record_id,
+    }
+    const {latest_record, revision_id} = await getRecordInformation(record)
+    if(latest_record!==null){
+    const is_linked = check_if_child_link(latest_record?.relationship,field_id,current_record_id,relation_type)
+    let is_merged_lnked = false
+    const new_doc = latest_record;
+    let is_updated_link = false
+    
+    let new_relation = latest_record.relationship
+    if(mergeresult!==null){
+      if(Array.isArray(mergeresult)){
+        mergeresult.map(record=>record.record_id===record_id?is_merged_lnked = true:record)
+      }else if(mergeresult.record_id===record_id) is_merged_lnked = true
+    }
+      // merged value is null, then remove all links
+    if(new_relation===undefined){
+      if(is_merged_lnked){
+        is_updated_link = true
+        //child record has no link, merge has link, add link
+        if(relation_type==='Child') new_relation={'parent':link}
+        else new_relation={'linked':[link]}
+      }
+    }else if(is_linked&&!is_merged_lnked){
+        is_updated_link =true
+        //current child has the link, merge has no link, remove the link
+        if(relation_type==='Child'){
+          if(new_relation['parent']!==undefined){
+            // need to be updated if the reord has parent and it's current record,remove the parent
+            if(new_relation['linked']===undefined) new_relation={}
+            else new_relation={linked:new_relation['linked']}
+          }
+        }else {
+          if(new_relation['linked']!==undefined){
+            const new_link=RemoveLink(new_relation,link)
+            new_relation['linked'] = new_link
+          }
+        }
+    }else if(!is_linked&&is_merged_lnked){
+      is_updated_link =true
+      //current record has no link, merge has link, add the link
+      if(relation_type==='Child')
+      new_relation['parent'] = link
+      else
+      new_relation['linked'] = AddLink(new_relation,link)
+    }
+    
+    if(is_updated_link){
+      const now = new Date();
+        new_doc['updated'] = now;
+        new_doc['relationship']=new_relation
+        try{
+           await upsertFAIMSData(
+            project_id,
+            new_doc
+          );
+        }catch(error){
+          console.error('update child record error',error)
+        } 
+    }}
+  }catch(error){
+    console.error('update child record error',error)
+  }
 }
   
 

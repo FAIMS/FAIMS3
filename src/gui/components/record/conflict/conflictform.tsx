@@ -494,6 +494,8 @@ export default function ConflictForm(props: ConflictFormProps) {
       if (disbaledLeft[fieldName])
         setdisbaledLeft({...disbaledLeft, [fieldName]: false});
     }
+
+    
   };
 
   const setChooseAll = (value: string) => {
@@ -595,7 +597,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           field_choices: {...fieldchoise},
           relationship:{...chosenvalues.relationship}
         });
-        console.debug('saveduserMergeResult',saveduserMergeResult)
+        
         if (result) {
           dispatch({
             type: ActionType.ADD_ALERT,
@@ -604,6 +606,19 @@ export default function ConflictForm(props: ConflictFormProps) {
               severity: 'success',
             },
           });
+          try{
+            const new_result = await check_relatioship(fieldchoise)
+            console.debug('saveduserMergeResult',saveduserMergeResult,new_result)
+          }catch(error){
+            console.error('error to save update child of the conflict', error)
+            dispatch({
+              type: ActionType.ADD_ALERT,
+              payload: {
+                message: 'Error to save update child record information',
+                severity: 'error',
+              },
+            });
+          }
           //this function need to be tested more
           // setRevisionList(['', '']);
           setConflictB(null);
@@ -612,7 +627,8 @@ export default function ConflictForm(props: ConflictFormProps) {
           // setloading(false);
           console.log('Saved Conflict Resolved');
         }
-      } catch {
+      } catch(error){
+        console.error('error to save the conflict', error)
         // alert user if the conflict not been saved
         setloading(false);
         dispatch({
@@ -642,7 +658,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   //for relationship: check which/if parent has the child, if both none, then set the relationship parent null
   //                  check if linked record(s) have relationship, update the records. 
 
-  const check_relatioship = async (field_choices:{[field_name: string]: AttributeValuePairID | null}) =>{
+  const check_relatioship =   async (field_choices:{[field_name: string]: AttributeValuePairID | null}) =>{
     
     const relation_fields:{[field_name: string]: any} = {}
     Object.keys(field_choices).map(
@@ -654,10 +670,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       }
     )
 
-    await update_child_records_conflict(conflictA,conflictB,chosenvalues,relation_fields,project_id)
-
-      
-    
+     await update_child_records_conflict(conflictA,conflictB,chosenvalues,relation_fields,project_id,record_id)
   }
 
   const onButtonDiscard = () => {

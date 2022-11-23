@@ -452,7 +452,6 @@ export async function getMergeInformationForRevision(
 ): Promise<RecordMergeInformation> {
   const avp_ids = Object.values(revision.avps);
   const avps = await getAttributeValuePairs(project_id, avp_ids);
-  console.error('revisions',revision)
 
   const record_info: RecordMergeInformation = {
     project_id: project_id,
