@@ -21,7 +21,12 @@
 
 import React, {useEffect} from 'react';
 import {useContext, useState} from 'react';
-import {ProjectID, RecordID, RevisionID} from '../../../../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  AttributeValuePairID,
+} from '../../../../datamodel/core';
 import {
   ProjectUIModel,
   RecordMergeInformation,
@@ -46,6 +51,13 @@ import {ConflictSaveButton} from './conflictbutton';
 import {store} from '../../../../context/store';
 import {ActionType} from '../../../../context/actions';
 import {isEqualFAIMS} from '../../../../datamodel/typesystem';
+import ConflictLinkBar from './conflictLinkBar';
+import {RecordLinkProps} from '../relationships/types';
+import {
+  addLinkedRecord,
+  update_child_records_conflict,
+  check_if_record_relationship,
+} from '../relationships/RelatedInformation';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -153,6 +165,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     field_choices: {},
     field_types: {},
     type: type,
+    relationship: conflictA.relationship,
   };
 
   ui_specification['viewsets'][type]['views'].map((view: string) =>
@@ -171,6 +184,11 @@ export default function ConflictForm(props: ConflictFormProps) {
     })
   );
   const [chosenvalues, setChoosenvalues] = useState(initialvalues);
+  const [linksA, setLinksA] = useState(null as RecordLinkProps[] | null);
+  const [linksB, setLinksB] = useState(null as RecordLinkProps[] | null);
+  const [mergedLinks, setMergedLinks] = useState(
+    null as RecordLinkProps[] | null
+  );
   //this the header data of middle column, which is the chosen one
   //above are the header data of three columns
   // to get all fields of the form
@@ -211,6 +229,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   const {dispatch} = useContext(store);
   const [loading, setloading] = useState(false);
   const [numRejected, setnumRejected] = useState(0);
+  const now = new Date();
 
   const updateconflictvalue = async (
     setconflict: any,
@@ -238,9 +257,10 @@ export default function ConflictForm(props: ConflictFormProps) {
     }
   };
   const updateconflict = async (
-    setconflict: any,
+    setconflict: Function,
     revisionvalue: string,
-    compareconflict: RecordMergeInformation | null
+    compareconflict: RecordMergeInformation | null,
+    setLinks: Function
   ) => {
     if (revisionvalue !== '') {
       setconflict(null);
@@ -257,6 +277,50 @@ export default function ConflictForm(props: ConflictFormProps) {
       });
       resettyle();
       setIsloading(false);
+      const new_relationship = await check_if_record_relationship(
+        compareconflict?.relationship,
+        result?.relationship,
+        project_id,
+        record_id
+      );
+      setChoosenvalues({
+        ...chosenvalues,
+        relationship: new_relationship,
+        updated: now,
+      });
+      if (saveduserMergeResult !== null)
+        setUserMergeResult({
+          ...saveduserMergeResult,
+          relationship: new_relationship,
+          updated: now,
+        });
+
+      if (result !== null) {
+        const type = result['type'];
+        // get the parent and linked item
+        const newLinks: RecordLinkProps[] = await addLinkedRecord(
+          ui_specification,
+          [],
+          project_id,
+          result?.relationship,
+          record_id,
+          type,
+          record_id,
+          revisionvalue
+        );
+        setLinks(newLinks);
+        const newMergedLinks: RecordLinkProps[] = await addLinkedRecord(
+          ui_specification,
+          [],
+          project_id,
+          new_relationship,
+          record_id,
+          type,
+          record_id,
+          revisionvalue
+        );
+        setMergedLinks(newMergedLinks);
+      }
     }
   };
 
@@ -279,10 +343,34 @@ export default function ConflictForm(props: ConflictFormProps) {
         return;
       }
       if (comparedrevision.charAt(0) === '1') {
-        return await updateconflict(setConflictB, revisionlist[1], conflictA);
+        //get the linksA for first loading
+        if (linksA === null) {
+          const newLinks: RecordLinkProps[] = await addLinkedRecord(
+            ui_specification,
+            [],
+            project_id,
+            conflictA.relationship,
+            record_id,
+            conflictA.type,
+            record_id,
+            revisionlist[0]
+          );
+          setLinksA(newLinks);
+        }
+        return await updateconflict(
+          setConflictB,
+          revisionlist[1],
+          conflictA,
+          setLinksB
+        );
       }
       if (comparedrevision.charAt(0) === '0') {
-        return await updateconflict(setConflictA, revisionlist[0], conflictB);
+        return await updateconflict(
+          setConflictA,
+          revisionlist[0],
+          conflictB,
+          setLinksA
+        );
       }
     };
     getConflict();
@@ -530,7 +618,9 @@ export default function ConflictForm(props: ConflictFormProps) {
         const result = await saveUserMergeResult({
           ...saveduserMergeResult,
           field_choices: {...fieldchoise},
+          relationship: {...chosenvalues.relationship},
         });
+
         if (result) {
           dispatch({
             type: ActionType.ADD_ALERT,
@@ -539,6 +629,23 @@ export default function ConflictForm(props: ConflictFormProps) {
               severity: 'success',
             },
           });
+          try {
+            const new_result = await check_relationship(fieldchoise);
+            console.debug(
+              'saveduserMergeResult',
+              saveduserMergeResult,
+              new_result
+            );
+          } catch (error) {
+            console.error('error to save update child of the conflict', error);
+            dispatch({
+              type: ActionType.ADD_ALERT,
+              payload: {
+                message: 'Error to save update child record information',
+                severity: 'error',
+              },
+            });
+          }
           //this function need to be tested more
           // setRevisionList(['', '']);
           setConflictB(null);
@@ -547,7 +654,8 @@ export default function ConflictForm(props: ConflictFormProps) {
           // setloading(false);
           console.log('Saved Conflict Resolved');
         }
-      } catch {
+      } catch (error) {
+        console.error('error to save the conflict', error);
         // alert user if the conflict not been saved
         setloading(false);
         dispatch({
@@ -571,6 +679,41 @@ export default function ConflictForm(props: ConflictFormProps) {
       });
       setissavedconflict(record_id + revisionlist[1]);
     }
+  };
+
+  //for field relationship: check if fields has relationship, update the child/link records
+  //for relationship: check which/if parent has the child, if both none, then set the relationship parent null
+  //                  check if linked record(s) have relationship, update the records.
+
+  const check_relationship = async (field_choices: {
+    [field_name: string]: AttributeValuePairID | null;
+  }) => {
+    const relation_fields: {[field_name: string]: any} = {};
+    Object.keys(field_choices).map((field_name: string) => {
+      if (
+        ui_specification.fields[field_name]['component-name'] ===
+        'RelatedRecordSelector'
+      )
+        relation_fields[field_name] = {
+          relation_type:
+            ui_specification.fields[field_name]['component-parameters'][
+              'relation_type'
+            ],
+          multiple:
+            ui_specification.fields[field_name]['component-parameters'][
+              'multiple'
+            ],
+        };
+    });
+
+    await update_child_records_conflict(
+      conflictA,
+      conflictB,
+      chosenvalues,
+      relation_fields,
+      project_id,
+      record_id
+    );
   };
 
   const onButtonDiscard = () => {
@@ -645,6 +788,19 @@ export default function ConflictForm(props: ConflictFormProps) {
               numResolved={numResolved}
             />
           </Grid>
+        )}
+      {conflictA !== null &&
+        conflictB !== null &&
+        !(linksA === null && linksB === null) && (
+          <ConflictLinkBar
+            conflictA={conflictA}
+            conflictB={conflictB}
+            linksA={linksA}
+            linksB={linksB}
+            record_id={record_id}
+            choosenconflict={chosenvalues}
+            mergedLinks={mergedLinks}
+          />
         )}
       <TabContext value={tabvalue}>
         <RecordTabBar

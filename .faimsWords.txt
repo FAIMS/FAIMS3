@@ -631,3 +631,9 @@ conn
 availabe
 # TODO FIX
 Ramdom
+hrids
+isodate
+choosenconflict
+abutts
+usecase
+isdisplay
