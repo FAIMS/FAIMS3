@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {Stack, Button} from '@mui/material';
+import {Stack, Button, FormHelperText} from '@mui/material';
 // import moment from 'moment';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import MuiTextField from '@mui/material/TextField';
@@ -44,7 +44,7 @@ export function DateTimeNow(props: TextFieldProps) {
    * displayValue: the input-expected value of format yyyy-MM-ddTHH:mm:ss
    */
   const {
-    form: {setFieldValue},
+    form: {setFieldValue, setFieldError},
     field: {name, value},
   } = props;
 
@@ -56,7 +56,6 @@ export function DateTimeNow(props: TextFieldProps) {
      */
     const date = new Date(newValue);
     setFieldValue(name, date.toISOString());
-    // setDisplayValue(getLocalDate(date));
   };
 
   const onChange = React.useCallback(
@@ -75,49 +74,64 @@ export function DateTimeNow(props: TextFieldProps) {
   useEffect(() => {
     // if the value is updated, update the rendered value too
     if (value) {
-      setDisplayValue(getLocalDate(new Date(value)));
+      try {
+        setDisplayValue(getLocalDate(new Date(value)));
+      } catch (err) {
+        setFieldError(name, 'Could not set displayValue. Contact support.');
+        console.error(err);
+      }
     }
-
   }, [value]);
   return (
-    <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
-      <MuiTextField
-        {...fieldToTextField(props)}
-        id="datetime-stamp"
-        label="datetime-stamp with now button"
-        type="datetime-local"
-        inputProps={{
-          step: 1, // this allows for 1s granularity
-        }}
-        sx={{
-          minWidth: 250,
-          '& .MuiOutlinedInput-root': {borderRadius: '4px 0px 0px 4px'},
-        }}
-        onChange={onChange}
-        InputLabelProps={{
-          shrink: true,
-        }}
-        value={displayValue}
+    <React.Fragment>
+      <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
+        <MuiTextField
+          {...fieldToTextField(props)}
+          label={props.label}
+          type="datetime-local"
+          inputProps={{
+            step: 1, // this allows for 1s granularity
+          }}
+          sx={{
+            minWidth: 250,
+            '& .MuiOutlinedInput-root': {borderRadius: '4px 0px 0px 4px'},
+          }}
+          onChange={onChange}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          value={displayValue}
+          error={!!props.form.errors[name]}
+        />
+        <Button
+          variant="contained"
+          disableElevation
+          aria-label="capture time now"
+          onClick={onClick}
+          sx={{
+            borderRadius: {xs: '4px', sm: '0px 4px 4px 0px'},
+          }}
+        >
+          Now
+        </Button>
+      </Stack>
+      <FormHelperText
+        children={
+          props.helperText ? props.helperText : 'Select a date and time'
+        }
       />
-      <Button
-        variant="contained"
-        disableElevation
-        aria-label="capture time now"
-        onClick={onClick}
-        sx={{
-          borderRadius: {xs: '4px', sm: '0px 4px 4px 0px'},
-        }}
-      >
-        Now
-      </Button>
+      {props.form.errors[name] && (
+        <FormHelperText error={true} children={props.form.errors[name]} />
+      )}
       {/*<br />*/}
       {/*value: {value}*/}
       {/*<br />*/}
       {/*displayValue: {displayValue}*/}
-    </Stack>
+      {/*<Button onClick={() => setFieldError(name, 'ttest that')}>error</Button>*/}
+    </React.Fragment>
   );
 }
-
+// TODO Kate to fill in for notebook editor
 export function DateTimeNowComponentSettings(props: componenentSettingprops) {
   const {handlerchangewithview, ...others} = props;
   const handlerchanges = (event: FAIMSEVENTTYPE) => {};
@@ -167,7 +181,8 @@ const uiSetting = () => {
       SelectProps: {},
       ElementProps: {},
       InputLabelProps: {
-        label: 'Add a datetime stamp (click now records the current date+time)',
+        label:
+          'Add a datetime stamp (clicking now records the current date+time).',
       },
     },
     validationSchema: [['yup.string']],
