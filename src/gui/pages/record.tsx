@@ -51,7 +51,6 @@ import {getUiSpecForProject} from '../../uiSpecification';
 
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
-import RecordDelete from '../components/record/delete';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
@@ -480,7 +479,7 @@ export default function Record() {
             >
               <Tab label="Edit" value="1" />
               <Tab label="Revisions" value="2" />
-              <Tab label="Settings" value="3" />
+              <Tab label="Meta" value="3" />
               {conflicts !== null &&
               conflicts['available_heads'] !== undefined &&
               Object.keys(conflicts['available_heads']).length > 1 ? (
@@ -662,14 +661,6 @@ export default function Record() {
               record_id={record_id}
               revision_id={updatedrevision_id}
             />
-            <Box mt={2}>
-              <RecordDelete
-                project_id={project_id}
-                record_id={record_id}
-                revision_id={updatedrevision_id}
-                draft_id={draft_id === undefined ? null : draft_id}
-              />
-            </Box>
           </TabPanel>
           <TabPanel
             value="4"

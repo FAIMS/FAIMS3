@@ -69,7 +69,7 @@ async function deleteFromDB(
 }
 
 export default function RecordDelete(props: RecordDeleteProps) {
-  console.debug("Delete props", props);
+  console.debug('Delete props', props);
   const {project_id, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useHistory();
@@ -91,7 +91,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
       )
       .then(() => {
         const message = is_draft
-          ? `Draft ${draft_id} for Record ${record_id} deleted`
+          ? `Draft ${draft_id} for record ${record_id} discarded`
           : `Record ${record_id} deleted`;
         dispatch({
           type: ActionType.ADD_ALERT,
@@ -100,12 +100,13 @@ export default function RecordDelete(props: RecordDeleteProps) {
             severity: 'success',
           },
         });
+        handleClose();
         history.push(ROUTES.NOTEBOOK + project_id);
       })
       .catch(err => {
         console.log('Failed to delete', record_id, draft_id, err);
         const message = is_draft
-          ? `Draft ${draft_id} for Record ${record_id} could not be deleted`
+          ? `Draft ${draft_id} for record ${record_id} could not be discarded`
           : `Record ${record_id} could not be deleted`;
         dispatch({
           type: ActionType.ADD_ALERT,
@@ -114,6 +115,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             severity: 'error',
           },
         });
+        handleClose();
       });
   };
 
@@ -126,7 +128,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           onClick={handleClickOpen}
           startIcon={<DeleteIcon />}
         >
-          {!is_draft ? 'Delete Record' : 'Delete Draft'}
+          {!is_draft ? 'Delete Record' : 'Discard Draft'}
         </Button>
       ) : (
         <IconButton aria-label="delete" onClick={handleClickOpen}>
@@ -142,14 +144,13 @@ export default function RecordDelete(props: RecordDeleteProps) {
       >
         <Alert severity="error">
           <AlertTitle>
-            Are you sure you want to delete {is_draft ? 'draft' : 'record'}{' '}
+            Are you sure you want to {is_draft ? 'discard draft' : 'record'}{' '}
             {is_draft ? draft_id : record_id}?
           </AlertTitle>
-          You cannot reverse this action! Be sure you wish to delete this{' '}
-          {!is_draft ? 'record ' : 'draft. '}
+          You cannot reverse this action! Be sure you wish to proceed
           {!is_draft
-            ? '(all associated drafts of this record will also be removed).'
-            : ''}
+            ? ' (all associated drafts of this record will also be removed).'
+            : '.'}
         </Alert>
         <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} color="primary">
@@ -161,7 +162,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             disableElevation
             variant={'contained'}
           >
-            Delete
+            {is_draft ? 'Discard' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

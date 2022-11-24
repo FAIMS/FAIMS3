@@ -47,7 +47,7 @@ import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
-import RecordDelete from '../record/delete';
+import RecordDelete from './delete';
 
 type DraftsTableProps = {
   project_id: ProjectID;

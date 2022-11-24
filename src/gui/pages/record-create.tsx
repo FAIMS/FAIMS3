@@ -53,7 +53,6 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {getProjectMetadata} from '../../projectMetadata';
-import RecordDelete from '../components/record/delete';
 import UnpublishedWarning from '../components/record/unpublished_warning';
 import DraftSyncStatus from '../components/record/sync_status';
 import {grey} from '@mui/material/colors';
@@ -247,7 +246,6 @@ function DraftEdit(props: DraftEditProps) {
                 textColor="secondary"
               >
                 <Tab label="Create" value="1" sx={{color: '#c2c2c2'}} />
-                <Tab label="Settings" value="2" sx={{color: '#c2c2c2'}} />
               </TabList>
             </AppBar>
             <TabPanel value="1" sx={{p: 0}}>
@@ -288,16 +286,6 @@ function DraftEdit(props: DraftEditProps) {
                     />
                   </Box>
                 </Box>
-              </Box>
-            </TabPanel>
-            <TabPanel value="2">
-              <Box mt={2}>
-                <RecordDelete
-                  project_id={project_id}
-                  record_id={record_id}
-                  revision_id={null}
-                  draft_id={draft_id}
-                />
               </Box>
             </TabPanel>
           </TabContext>
