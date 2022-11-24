@@ -639,6 +639,8 @@ class RecordDraftState {
   async clear() {
     if (this.data.state === 'edited') {
       await deleteStagedData(await this.data.draft_id, this.last_revision);
+    } else {
+      console.info('Draft not edited, so not being cleared');
     }
 
     this.data = {state: 'uninitialized'};

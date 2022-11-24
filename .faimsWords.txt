@@ -301,6 +301,7 @@ pressedvalue
 pretabs
 prevalue
 primarytab
+projdb
 PROJECTATTACHMENT
 projectid
 projectinfo
@@ -630,3 +631,9 @@ conn
 availabe
 # TODO FIX
 Ramdom
+hrids
+isodate
+choosenconflict
+abutts
+usecase
+isdisplay

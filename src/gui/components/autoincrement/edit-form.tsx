@@ -232,16 +232,6 @@ export default class BasicAutoIncrementer extends React.Component<
                   variant={'outlined'}
                   size={'small'}
                 >
-                  <Button
-                    color="error"
-                    disabled={range.using || range.fully_used}
-                    onClick={async () => {
-                      ranges.splice(range_index, 1);
-                      await this.update_ranges(ranges);
-                    }}
-                  >
-                    Remove range
-                  </Button>
                   {range.using ? (
                     <Button
                       color="error"

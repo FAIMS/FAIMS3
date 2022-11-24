@@ -86,7 +86,6 @@ import {
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
-import {useLocation} from 'react-router-dom';
 import RecordData from '../components/record/RecordData';
 
 export default function Record() {
@@ -154,9 +153,6 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const location: any = useLocation();
-  console.debug('Location', location.state);
-
   const [breadcrumbs, setBreadcrumbs] = useState<
     {link?: string; title: string}[]
   >([]);
@@ -177,8 +173,11 @@ export default function Record() {
 
   useEffect(() => {
     const getIni = async () => {
+      console.debug('record start initial', project_id, record_id, revision_id);
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
+      setrevision_id(revision_id);
+      setselectedRevision(revision_id);
       listFAIMSRecordRevisions(project_id, record_id)
         .then(all_revisions => {
           setRevisions(all_revisions);
@@ -195,6 +194,8 @@ export default function Record() {
           },
           {title: hrid ?? record_id},
         ]);
+        //check if record loading correctly when link
+        setValue('1');
       });
     };
 
@@ -221,6 +222,7 @@ export default function Record() {
 
   useEffect(() => {
     const getConflictList = async () => {
+      console.debug('record start initial conflict', selectrevision);
       try {
         if (selectrevision !== null)
           setConflictfields(
@@ -235,6 +237,12 @@ export default function Record() {
 
   useEffect(() => {
     const getType = async () => {
+      console.debug(
+        'record start initial type',
+        project_id,
+        record_id,
+        updatedrevision_id
+      );
       try {
         const latest_record = await getFullRecordData(
           project_id,
@@ -264,13 +272,25 @@ export default function Record() {
     // this is function to get child information
 
     const getrelated_Info = async () => {
-      console.debug(relatedRecords);
+      console.debug(
+        'record start initial relationship',
+        record_id,
+        type,
+        hrid,
+        relatedRecords
+      );
       try {
         if (uiSpec !== null && type !== null) {
           const latest_record = await getFullRecordData(
             project_id,
             record_id,
             updatedrevision_id
+          );
+          console.debug(
+            'record start initial relationship revision',
+            updatedrevision_id,
+            revision_id,
+            latest_record
           );
           if (latest_record !== null) {
             const newRelationship = await getDetailRelatedInformation(
@@ -281,6 +301,10 @@ export default function Record() {
               latest_record.relationship ?? null,
               record_id,
               updatedrevision_id
+            );
+            console.debug(
+              'record start initial relationship relationship',
+              newRelationship
             );
             setRelatedRecords(newRelationship);
             const newParent = await getParentPersistenceData(
@@ -321,10 +345,11 @@ export default function Record() {
         }
       } catch (error) {
         console.error('Error to get child information', error);
+        //setIs_link_ready(true);
       }
     };
     getrelated_Info();
-  }, [uiSpec, type]);
+  }, [uiSpec, type, updatedrevision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
