@@ -642,7 +642,7 @@ export default function Record() {
                 project_id={project_id}
                 record_id={record_id}
                 revision_id={updatedrevision_id}
-                is_draft={draft_id !== undefined}
+                draft_id={draft_id === undefined ? null : draft_id}
               />
             </Box>
           </TabPanel>

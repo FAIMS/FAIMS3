@@ -38,21 +38,44 @@ import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setRecordAsDeleted} from '../../../data_storage';
 import {deleteStagedData} from '../../../sync/draft-storage';
+import {deleteDraftsForRecord} from '../../../drafts';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
   record_id: RecordID;
   revision_id: RevisionID | null;
-  is_draft: boolean;
+  draft_id: string | null;
   show_label: boolean;
 };
 
+async function deleteFromDB(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revision_id: RevisionID | null,
+  draft_id: string | null,
+  userid: string
+) {
+  if (draft_id !== null) {
+    await deleteStagedData(draft_id, null);
+  } else {
+    await setRecordAsDeleted(
+      project_id,
+      record_id,
+      revision_id as RevisionID,
+      userid
+    );
+    await deleteDraftsForRecord(project_id, record_id);
+  }
+}
+
 export default function RecordDelete(props: RecordDeleteProps) {
-  const {project_id, record_id, revision_id} = props;
+  console.debug("Delete props", props);
+  const {project_id, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useHistory();
   const globalState = useContext(store);
   const {dispatch} = globalState;
+  const is_draft = draft_id !== null;
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -61,41 +84,33 @@ export default function RecordDelete(props: RecordDeleteProps) {
     setOpen(false);
   };
 
-  const handleDeletefunction = (userid: string) => {
-    if (revision_id !== null)
-      return setRecordAsDeleted(
-        project_id,
-        record_id,
-        revision_id,
-        userid
-      ).then(() => {
-        return record_id;
-      });
-    else
-      return deleteStagedData(record_id, revision_id).then(() => {
-        return record_id;
-      });
-  };
-
   const handleDelete = () => {
     getCurrentUserId(project_id)
-      .then(userid => handleDeletefunction(userid))
+      .then(userid =>
+        deleteFromDB(project_id, record_id, revision_id, draft_id, userid)
+      )
       .then(() => {
+        const message = is_draft
+          ? `Draft ${draft_id} for Record ${record_id} deleted`
+          : `Record ${record_id} deleted`;
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Record ' + record_id + ' deleted',
+            message: message,
             severity: 'success',
           },
         });
         history.push(ROUTES.NOTEBOOK + project_id);
       })
       .catch(err => {
-        console.log('Could not delete record: ' + record_id, err);
+        console.log('Failed to delete', record_id, draft_id, err);
+        const message = is_draft
+          ? `Draft ${draft_id} for Record ${record_id} could not be deleted`
+          : `Record ${record_id} could not be deleted`;
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Could not delete record: ' + record_id,
+            message: message,
             severity: 'error',
           },
         });
@@ -111,7 +126,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           onClick={handleClickOpen}
           startIcon={<DeleteIcon />}
         >
-          {!props.is_draft ? 'Delete Record' : 'Delete Draft'}
+          {!is_draft ? 'Delete Record' : 'Delete Draft'}
         </Button>
       ) : (
         <IconButton aria-label="delete" onClick={handleClickOpen}>
@@ -127,12 +142,12 @@ export default function RecordDelete(props: RecordDeleteProps) {
       >
         <Alert severity="error">
           <AlertTitle>
-            Are you sure you want to delete{' '}
-            {!props.is_draft ? 'record' : 'draft'} {record_id}?
+            Are you sure you want to delete {is_draft ? 'draft' : 'record'}{' '}
+            {is_draft ? draft_id : record_id}?
           </AlertTitle>
           You cannot reverse this action! Be sure you wish to delete this{' '}
-          {!props.is_draft ? 'record ' : 'draft. '}
-          {!props.is_draft
+          {!is_draft ? 'record ' : 'draft. '}
+          {!is_draft
             ? '(all associated drafts of this record will also be removed).'
             : ''}
         </Alert>

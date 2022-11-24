@@ -162,7 +162,7 @@ function DraftRecord(props: DraftsRecordProps) {
                 project_id={project_id}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
-                is_draft={true}
+                draft_id={params.row._id}
                 show_label={false}
               />
             );
@@ -227,7 +227,7 @@ function DraftRecord(props: DraftsRecordProps) {
                 project_id={project_id}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
-                is_draft={true}
+                draft_id={params.row._id}
                 show_label={false}
               />
             );

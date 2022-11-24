@@ -294,9 +294,9 @@ function DraftEdit(props: DraftEditProps) {
               <Box mt={2}>
                 <RecordDelete
                   project_id={project_id}
-                  record_id={draft_id}
+                  record_id={record_id}
                   revision_id={null}
-                  is_draft={draft_id !== undefined}
+                  draft_id={draft_id}
                 />
               </Box>
             </TabPanel>

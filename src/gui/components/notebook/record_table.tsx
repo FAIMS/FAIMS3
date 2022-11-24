@@ -217,7 +217,7 @@ function RecordsTable(props: RecordsTableProps) {
                 project_id={project_id}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
-                is_draft={false}
+                draft_id={null}
                 show_label={false}
               />
             );
@@ -316,7 +316,7 @@ function RecordsTable(props: RecordsTableProps) {
                 project_id={project_id}
                 record_id={params.row.record_id}
                 revision_id={params.row.revision_id}
-                is_draft={false}
+                draft_id={null}
                 show_label={false}
               />
             );
