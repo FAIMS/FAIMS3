@@ -1196,7 +1196,7 @@ async function conflict_update_child_record(
   }
 }
 
-// function to get all child record infomation, child records could be duplicated
+// function to get all child record information, child records could be duplicated
 export function get_all_child_records(conflictA: any, conflictB: any) {
   if (
     conflictA === null ||
