@@ -68,6 +68,7 @@ export interface RecordLinksComponentProps {
   record_links: Array<RecordLinkProps> | null;
   record_id: RecordID;
   handleSetSection: Function;
+  isconflict?: boolean; //add for conflict component
 }
 
 export interface DataGridLinksComponentProps {

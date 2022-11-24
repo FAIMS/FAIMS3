@@ -142,6 +142,7 @@ function ConflictGridComponent(props: ConflictGridComponentProps) {
             record_links={props.links ?? []}
             record_id={props.record_id}
             handleSetSection={() => console.log('click')}
+            isconflict={true}
           />
         }
       </Grid>

@@ -95,6 +95,140 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
     }
   }, [props.record_links]);
 
+  const columns = props.isconflict
+    ? [
+        {
+          field: 'relation_type_vocabPair',
+          headerName: 'Relationship',
+          headerClassName: 'faims-record-link--header',
+          flex: 0.1,
+          valueGetter: (params: GridCellParams) => params.value[0],
+        },
+        {
+          field: 'linked_field',
+          headerName: 'Field',
+          headerClassName: 'faims-record-link--header',
+          minWidth: 300,
+          flex: 0.3,
+          valueGetter: (params: GridCellParams) => params.row.link.field_label,
+          renderCell: (params: GridCellParams) => (
+            <React.Fragment>
+              <Typography
+                variant={'body2'}
+                fontWeight={'bold'}
+                component={'span'}
+                sx={{ml: '3px'}}
+              >
+                {params.row.link.type} {params.row.link.hrid}{' '}
+              </Typography>
+              <Typography
+                variant={'body2'}
+                fontWeight={'bold'}
+                component={'span'}
+                sx={{ml: '3px'}}
+              >
+                {params.row.link.field_label}{' '}
+              </Typography>{' '}
+              <Typography
+                variant={'caption'}
+                sx={{
+                  backgroundColor: grey[300],
+                  py: '2px',
+                  px: '3px',
+                  borderRadius: '3px',
+                  ml: '3px',
+                }}
+                fontSize={'10px'}
+              >
+                {params.row.link.section_label}
+              </Typography>
+            </React.Fragment>
+          ),
+        },
+        {
+          field: 'lastUpdatedBy',
+          headerName: 'Last Updated By',
+          headerClassName: 'faims-record-link--header',
+          minWidth: 300,
+          flex: 0.2,
+        },
+      ]
+    : [
+        {
+          field: 'record',
+          headerName: 'Record',
+          headerClassName: 'faims-record-link--header',
+          minWidth: 200,
+          flex: 0.2,
+          valueGetter: (params: GridCellParams) =>
+            params.row.type + ' ' + params.row.hrid,
+          renderCell: (params: GridCellParams) =>
+            recordDisplay(
+              props.record_id,
+              params.row.record_id,
+              params.row.type,
+              params.row.hrid,
+              params.row.route
+            ),
+        },
+
+        {
+          field: 'relation_type_vocabPair',
+          headerName: 'Relationship',
+          headerClassName: 'faims-record-link--header',
+          minWidth: 150,
+          flex: 0.1,
+          valueGetter: (params: GridCellParams) => params.value[0],
+        },
+        {
+          field: 'linked_field',
+          headerName: 'Field',
+          headerClassName: 'faims-record-link--header',
+          minWidth: 300,
+          flex: 0.3,
+          valueGetter: (params: GridCellParams) => params.row.link.field_label,
+          renderCell: (params: GridCellParams) => (
+            <React.Fragment>
+              {recordDisplay(
+                props.record_id,
+                params.row.link.record_id,
+                params.row.link.type,
+                params.row.link.hrid,
+                params.row.link.route
+              )}
+              <Typography
+                variant={'body2'}
+                fontWeight={'bold'}
+                component={'span'}
+                sx={{ml: '3px'}}
+              >
+                {params.row.link.field_label}{' '}
+              </Typography>{' '}
+              <Typography
+                variant={'caption'}
+                sx={{
+                  backgroundColor: grey[300],
+                  py: '2px',
+                  px: '3px',
+                  borderRadius: '3px',
+                  ml: '3px',
+                }}
+                fontSize={'10px'}
+              >
+                {params.row.link.section_label}
+              </Typography>
+            </React.Fragment>
+          ),
+        },
+        {
+          field: 'lastUpdatedBy',
+          headerName: 'Last Updated By',
+          headerClassName: 'faims-record-link--header',
+          minWidth: 300,
+          flex: 0.2,
+        },
+      ];
+
   if (props.record_links !== null) {
     return (
       <Box component={Paper} elevation={0}>
@@ -116,102 +250,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                   disableSelectionOnClick
                   columns={
                     linkKey === 'links_to_record'
-                      ? [
-                          {
-                            field: 'record',
-                            headerName: 'Record',
-                            headerClassName: 'faims-record-link--header',
-                            minWidth: 200,
-                            flex: 0.2,
-                            valueGetter: (params: GridCellParams) =>
-                              params.row.type + ' ' + params.row.hrid,
-                            renderCell: (params: GridCellParams) =>
-                              recordDisplay(
-                                props.record_id,
-                                params.row.record_id,
-                                params.row.type,
-                                params.row.hrid,
-                                params.row.route
-                              ),
-                          },
-
-                          {
-                            field: 'relation_type_vocabPair',
-                            headerName: 'Relationship',
-                            headerClassName: 'faims-record-link--header',
-                            minWidth: 150,
-                            flex: 0.1,
-                            valueGetter: (params: GridCellParams) =>
-                              params.value[0],
-                          },
-                          {
-                            field: 'linked_field',
-                            headerName: 'Field',
-                            headerClassName: 'faims-record-link--header',
-                            minWidth: 300,
-                            flex: 0.3,
-                            valueGetter: (params: GridCellParams) =>
-                              params.row.link.field_label,
-                            renderCell: (params: GridCellParams) => (
-                              <React.Fragment>
-                                {recordDisplay(
-                                  props.record_id,
-                                  params.row.link.record_id,
-                                  params.row.link.type,
-                                  params.row.link.hrid,
-                                  params.row.link.route
-                                )}
-                                <Typography
-                                  variant={'body2'}
-                                  fontWeight={'bold'}
-                                  component={'span'}
-                                  sx={{ml: '3px'}}
-                                >
-                                  {params.row.link.field_label}{' '}
-                                </Typography>{' '}
-                                <Typography
-                                  variant={'caption'}
-                                  sx={{
-                                    backgroundColor: grey[300],
-                                    py: '2px',
-                                    px: '3px',
-                                    borderRadius: '3px',
-                                    ml: '3px',
-                                  }}
-                                  fontSize={'10px'}
-                                >
-                                  {params.row.link.section_label}
-                                </Typography>
-                              </React.Fragment>
-                            ),
-                          },
-                          {
-                            field: 'lastUpdatedBy',
-                            headerName: 'Last Updated By',
-                            headerClassName: 'faims-record-link--header',
-                            minWidth: 300,
-                            flex: 0.2,
-                          },
-                          // {
-                          //   field: 'actions',
-                          //   type: 'actions',
-                          //   headerName: 'Actions',
-                          //   headerClassName: 'faims-record-link--header',
-                          //   minWidth: 100,
-                          //   flex: 0.1,
-                          //   getActions: (params: GridRowParams) => [
-                          //     <GridActionsCellItem
-                          //       icon={<EditIcon color={'primary'} />}
-                          //       onClick={() => {
-                          //         alert('go to record>section>field');
-                          //         console.debug(params);
-                          //       }}
-                          //       label="Edit link"
-                          //       showInMenu
-                          //     />,
-                          //   ],
-                          // },
-                        ]
+                      ? columns
                       : [
                           {
                             field: 'linked_field',
