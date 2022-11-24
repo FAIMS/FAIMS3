@@ -1138,7 +1138,7 @@ async function conflict_update_child_record(
         current_record_id,
         relation_type
       );
-      let is_merged_lnked = false;
+      let is_merged_linked = false;
       const new_doc = latest_record;
       let is_updated_link = false;
 
@@ -1146,19 +1146,19 @@ async function conflict_update_child_record(
       if (mergeresult !== null) {
         if (Array.isArray(mergeresult)) {
           mergeresult.map(record =>
-            record.record_id === record_id ? (is_merged_lnked = true) : record
+            record.record_id === record_id ? (is_merged_linked = true) : record
           );
-        } else if (mergeresult.record_id === record_id) is_merged_lnked = true;
+        } else if (mergeresult.record_id === record_id) is_merged_linked = true;
       }
       // merged value is null, then remove all links
       if (new_relation === undefined) {
-        if (is_merged_lnked) {
+        if (is_merged_linked) {
           is_updated_link = true;
           //child record has no link, merge has link, add link
           if (relation_type === 'Child') new_relation = {parent: link};
           else new_relation = {linked: [link]};
         }
-      } else if (is_linked && !is_merged_lnked) {
+      } else if (is_linked && !is_merged_linked) {
         is_updated_link = true;
         //current child has the link, merge has no link, remove the link
         if (relation_type === 'Child') {
@@ -1173,7 +1173,7 @@ async function conflict_update_child_record(
             new_relation['linked'] = new_link;
           }
         }
-      } else if (!is_linked && is_merged_lnked) {
+      } else if (!is_linked && is_merged_linked) {
         is_updated_link = true;
         //current record has no link, merge has link, add the link
         if (relation_type === 'Child') new_relation['parent'] = link;

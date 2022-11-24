@@ -173,7 +173,7 @@ export default function Record() {
 
   useEffect(() => {
     const getIni = async () => {
-      console.debug('record start inital', project_id, record_id, revision_id);
+      console.debug('record start initial', project_id, record_id, revision_id);
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
       setrevision_id(revision_id);
@@ -222,7 +222,7 @@ export default function Record() {
 
   useEffect(() => {
     const getConflictList = async () => {
-      console.debug('record start inital conflict', selectrevision);
+      console.debug('record start initial conflict', selectrevision);
       try {
         if (selectrevision !== null)
           setConflictfields(
@@ -238,7 +238,7 @@ export default function Record() {
   useEffect(() => {
     const getType = async () => {
       console.debug(
-        'record start inital type',
+        'record start initial type',
         project_id,
         record_id,
         updatedrevision_id
@@ -273,7 +273,7 @@ export default function Record() {
 
     const getrelated_Info = async () => {
       console.debug(
-        'record start inital relationship',
+        'record start initial relationship',
         record_id,
         type,
         hrid,
@@ -287,7 +287,7 @@ export default function Record() {
             updatedrevision_id
           );
           console.debug(
-            'record start inital relationship revision',
+            'record start initial relationship revision',
             updatedrevision_id,
             revision_id,
             latest_record
@@ -303,7 +303,7 @@ export default function Record() {
               updatedrevision_id
             );
             console.debug(
-              'record start inital relationship relationship',
+              'record start initial relationship relationship',
               newRelationship
             );
             setRelatedRecords(newRelationship);
