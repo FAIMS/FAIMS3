@@ -28,10 +28,13 @@ import {
   Paper,
   Button,
   Container,
+  LinearProgress,
 } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import {Formik, Form, Field} from 'formik';
+import {DateTimeNow} from '../fields/DateTimeNow';
 // import moment from 'moment/moment';
 
 export function getLocalDate(value: Date) {
@@ -139,6 +142,43 @@ export default function Sandbox() {
           Load {dummyIsoString}
         </Button>{' '}
         <small> ← Mock loading ISO string from DB </small>
+      </Box>
+      <Box component={Paper} variant={'outlined'} elevation={0} p={1} my={2}>
+        <Typography variant={'caption'} gutterBottom sx={{mb: 1}}>
+          Formik Form
+        </Typography>
+
+        <Formik
+          initialValues={{
+            datetime_test: '',
+          }}
+          onSubmit={(values, {setSubmitting}) => {
+            setTimeout(() => {
+              setSubmitting(false);
+              alert(JSON.stringify(values, null, 2));
+            }, 500);
+          }}
+        >
+          {({submitForm, isSubmitting}) => (
+            <Form>
+              <Field
+                name="datetime_test"
+                type="datetime-local"
+                component={DateTimeNow}
+              />
+              {isSubmitting && <LinearProgress />}
+              <br />
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={isSubmitting}
+                onClick={submitForm}
+              >
+                Submit
+              </Button>
+            </Form>
+          )}
+        </Formik>
       </Box>
     </Container>
   );

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {Stack, Button} from '@mui/material';
-import moment from 'moment';
+// import moment from 'moment';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import MuiTextField from '@mui/material/TextField';
 import {
@@ -33,23 +33,52 @@ export function getLocalDate(value: Date) {
 }
 
 export function DateTimeNow(props: TextFieldProps) {
+  /**
+   * Store value as ISO, but <input> elements of type datetime-local
+   * requires format yyyy-MM-ddTHH:mm:ss. We separate the two by keeping
+   * a local state displayValue for rendering, and use the formik value to
+   * store the ISO formated datetime.
+   *
+   *
+   * value: the formik-controlled value
+   * displayValue: the input-expected value of format yyyy-MM-ddTHH:mm:ss
+   */
   const {
     form: {setFieldValue},
-    field: {name},
+    field: {name, value},
   } = props;
+
+  const [displayValue, setDisplayValue] = React.useState('');
+
+  const handleValues = (newValue: string) => {
+    /**
+     * The internal value is ISO, display value is yyyy-MM-ddTHH:mm:ss
+     */
+    const date = new Date(newValue);
+    setFieldValue(name, date.toISOString());
+    // setDisplayValue(getLocalDate(date));
+  };
 
   const onChange = React.useCallback(
     event => {
       const {value} = event.target;
-      setFieldValue(name, value);
+      handleValues(value);
     },
     [setFieldValue, name]
   );
 
   const onClick = React.useCallback(() => {
-    setFieldValue(name, getLocalDate(new Date()));
+    // Populate the form with time now to within 1s.
+    handleValues(getLocalDate(new Date()));
   }, [setFieldValue, name]);
 
+  useEffect(() => {
+    // if the value is updated, update the rendered value too
+    if (value) {
+      setDisplayValue(getLocalDate(new Date(value)));
+    }
+
+  }, [value]);
   return (
     <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
       <MuiTextField
@@ -57,6 +86,9 @@ export function DateTimeNow(props: TextFieldProps) {
         id="datetime-stamp"
         label="datetime-stamp with now button"
         type="datetime-local"
+        inputProps={{
+          step: 1, // this allows for 1s granularity
+        }}
         sx={{
           minWidth: 250,
           '& .MuiOutlinedInput-root': {borderRadius: '4px 0px 0px 4px'},
@@ -65,6 +97,7 @@ export function DateTimeNow(props: TextFieldProps) {
         InputLabelProps={{
           shrink: true,
         }}
+        value={displayValue}
       />
       <Button
         variant="contained"
@@ -77,6 +110,10 @@ export function DateTimeNow(props: TextFieldProps) {
       >
         Now
       </Button>
+      {/*<br />*/}
+      {/*value: {value}*/}
+      {/*<br />*/}
+      {/*displayValue: {displayValue}*/}
     </Stack>
   );
 }

@@ -7,6 +7,7 @@ test('ISO string loaded ', () => {
    * Load in ISO string from DB, converted to local time correctly in
    * DateTimeNow field (input:datetime-local)
    */
+  const dummyIsoString = '2020-02-13T22:00:35.736Z';
 });
 
 test('ISO string returned from picker', () => {
