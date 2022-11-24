@@ -1163,7 +1163,7 @@ async function conflict_update_child_record(
         //current child has the link, merge has no link, remove the link
         if (relation_type === 'Child') {
           if (new_relation['parent'] !== undefined) {
-            // need to be updated if the reord has parent and it's current record,remove the parent
+            // need to be updated if the record has parent and it's current record,remove the parent
             if (new_relation['linked'] === undefined) new_relation = {};
             else new_relation = {linked: new_relation['linked']};
           }

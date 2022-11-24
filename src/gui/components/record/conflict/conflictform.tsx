@@ -630,7 +630,7 @@ export default function ConflictForm(props: ConflictFormProps) {
             },
           });
           try {
-            const new_result = await check_relatioship(fieldchoise);
+            const new_result = await check_relationship(fieldchoise);
             console.debug(
               'saveduserMergeResult',
               saveduserMergeResult,
@@ -685,7 +685,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   //for relationship: check which/if parent has the child, if both none, then set the relationship parent null
   //                  check if linked record(s) have relationship, update the records.
 
-  const check_relatioship = async (field_choices: {
+  const check_relationship = async (field_choices: {
     [field_name: string]: AttributeValuePairID | null;
   }) => {
     const relation_fields: {[field_name: string]: any} = {};

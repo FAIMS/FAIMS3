@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: RelatedInfomation.test.jsx
+ * Filename: RelatedInformation.test.jsx
  * Description:
- * file is to test the function in RelatedInfomation
+ * file is to test the function in RelatedInformation
  */
 import {equals} from '../../../../utils/eqTestSupport';
 import {v4 as uuidv4} from 'uuid';
