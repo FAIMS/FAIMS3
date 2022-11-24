@@ -70,7 +70,6 @@ type RecordsBrowseTableProps = {
 
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
-  console.log('RecordsTable props', props);
 
   // default for mobileView is on (collapsed table)
   const [mobileViewSwitchValue, setMobileViewSwitchValue] =

@@ -32,7 +32,15 @@ import {CircularProgress} from '@mui/material';
 import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import RefreshNotebook from '../components/notebook/refresh';
+import {ProjectInformation} from '../../datamodel/ui';
 
+async function refreshProject(
+  project_id: ProjectID
+): Promise<ProjectInformation> {
+  // TODO dummy function to be replaced with actual project refresh
+  return await getProjectInfo(project_id);
+}
 export default function Notebook() {
   /**
    *
@@ -47,7 +55,7 @@ export default function Notebook() {
     [project_id],
     project_id
   );
-  console.log('Notebook page', project_id, project_info_promise);
+
   const project_info = project_info_promise.value;
   const loading = project_info_promise.loading || project_info === undefined;
 
@@ -69,6 +77,13 @@ export default function Notebook() {
     );
     return <Redirect to="/404" />;
   }
+  const handleRefresh = () => {
+    /**
+     * Handler for Refreshing project
+     */
+    console.log('HOW REFRESHING');
+    return refreshProject(project_id);
+  };
 
   return !loading ? (
     <Box>
@@ -103,7 +118,10 @@ export default function Notebook() {
           <Breadcrumbs data={breadcrumbs} />
         </Grid>
       </Grid>
-
+      <RefreshNotebook
+        handleRefresh={handleRefresh}
+        project_name={project_info?.name}
+      />
       <NotebookComponent project={project_info} />
     </Box>
   ) : (
