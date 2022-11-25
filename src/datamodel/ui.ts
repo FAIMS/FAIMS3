@@ -99,6 +99,7 @@ export interface Record {
   created_by?: string;
   /**add for relationship*/
   relationship?: Relationship; // added for save relation to child/linked record
+  deleted?: boolean;
 }
 
 export interface FieldMergeInformation {

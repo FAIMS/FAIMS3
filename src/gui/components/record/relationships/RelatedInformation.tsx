@@ -225,8 +225,10 @@ async function getRecordInformation(child_record: RecordReference) {
     latest_record = await getFullRecordData(
       child_record.project_id,
       child_record.record_id,
-      revision_id
+      revision_id,
+      false
     );
+    console.debug('get latest record', latest_record);
   } catch (error) {
     throw Error('Error to get record information' + child_record.project_id);
   }
@@ -320,7 +322,8 @@ export async function get_RelatedFields_for_field(
   field_label: string,
   multiple: boolean,
   related_type_label: string | undefined,
-  form_type: string | undefined
+  form_type: string | undefined,
+  realtion_type: string
 ) {
   const child_records = multiple ? values[field_name] : [values[field_name]];
   const records: RecordLinkProps[] = [];
@@ -371,7 +374,9 @@ export async function get_RelatedFields_for_field(
               child_record.project_id,
               record_id,
               values['_current_revision_id']
-            )
+            ),
+            realtion_type,
+            latest_record?.deleted ?? false
           );
           records.push(child);
         }
@@ -391,7 +396,8 @@ export async function get_RelatedFields_for_field(
           '',
           field_name,
           field_label,
-          ''
+          '',
+          realtion_type
         );
         records.push(child);
         console.error('Error to get child information', child_record.record_id);
@@ -431,7 +437,10 @@ function generate_RecordLink(
   section_label: string,
   field: string,
   field_label: string,
-  link_route: string
+  link_route: string,
+  relation_type: string,
+  record_deleted = false,
+  parent_deleted = false
 ): RecordLinkProps {
   const child: RecordLinkProps = {
     record_id: child_record.record_id,
@@ -448,8 +457,11 @@ function generate_RecordLink(
       section_label: section_label,
       field_id: field,
       field_label: field_label,
+      deleted: parent_deleted,
     },
     lastUpdatedBy: lastUpdatedBy,
+    deleted: record_deleted,
+    relation_type: relation_type,
   };
   if (child_record.is_preferred === true) child['relation_preferred'] = true;
   return child;
@@ -517,7 +529,9 @@ async function get_field_RelatedFields(
             child_record?.project_id ?? '',
             record_id,
             current_revision_id
-          )
+          ),
+          relation_type,
+          latest_record?.deleted ?? false
         );
         // get the displayed information for the child or link item, this is used by field
         if (is_display && latest_record !== null) {
@@ -551,7 +565,9 @@ export async function addLinkedRecord(
   )
     parent_links = parent.linked;
   //get parent from parent
+  let has_parent = false;
   if (parent !== null && parent.parent !== undefined) {
+    has_parent = true;
     parent_links.push({
       ...parent.parent,
       relation_type_vocabPair: ['is child of', 'is parent of'],
@@ -565,6 +581,12 @@ export async function addLinkedRecord(
       record_id: parent_link.record_id,
       record_label: parent_link.record_id,
     });
+    console.debug(
+      'get revison and latest_record',
+      latest_record,
+      record_id,
+      revision_id
+    );
     if (revision_id !== undefined) {
       const child_record = {
         project_id: project_id,
@@ -596,11 +618,13 @@ export async function addLinkedRecord(
           latest_record?.updated_by ?? '',
           latest_record?.updated
         ),
-        ROUTES.getRecordRoute(
-          child_record.project_id ?? '',
-          (child_record.record_id || '').toString(),
-          (current_revision_id || '').toString()
-        ),
+        latest_record?.deleted === true
+          ? ''
+          : ROUTES.getRecordRoute(
+              child_record.project_id ?? '',
+              (child_record.record_id || '').toString(),
+              (current_revision_id || '').toString()
+            ),
         linked_vocab,
         parent_link.record_id,
         hrid,
@@ -610,11 +634,16 @@ export async function addLinkedRecord(
         section_label,
         parent_link.field_id,
         get_field_label(ui_specification, parent_link.field_id),
-        get_route_for_field(
-          child_record.project_id,
-          parent_link.record_id,
-          revision_id ?? ''
-        )
+        latest_record?.deleted === true
+          ? ''
+          : get_route_for_field(
+              child_record.project_id,
+              parent_link.record_id,
+              revision_id ?? ''
+            ),
+        has_parent === true && index === '0' ? 'Child' : 'Linked',
+        false,
+        latest_record?.deleted
       );
       newfields.push(child);
     }
@@ -708,6 +737,7 @@ export async function getParentPersistenceData(
           type: type,
           children: [],
           persistentData: {data: persistentvalue},
+          deleted: latest_record?.deleted,
         },
       ];
     }
@@ -809,7 +839,8 @@ export async function Update_New_Link(
     '',
     parent.field_id,
     field_label,
-    ''
+    '',
+    relation_type
   );
 
   try {
@@ -829,10 +860,15 @@ export async function Update_New_Link(
       return null;
     }
     const now = new Date();
-    if (latest_record !== null && child_record.project_id !== undefined) {
+    if (
+      latest_record !== null &&
+      child_record.project_id !== undefined &&
+      latest_record.deleted !== true
+    ) {
       const new_doc = latest_record;
       new_doc['relationship'] = relation;
       new_doc['updated'] = now;
+      new_doc['deleted'] = latest_record.deleted;
       current_revision_id = await upsertFAIMSData(
         child_record.project_id,
         new_doc
@@ -862,7 +898,8 @@ export async function Update_New_Link(
         child_record.project_id ?? '',
         parent.record_id,
         form_revision_id ?? ''
-      )
+      ),
+      relation_type
     );
   } catch (error) {
     console.error('Error to get child record', error);
@@ -1222,4 +1259,96 @@ export function get_all_child_records(conflictA: any, conflictB: any) {
     if (!Array.isArray(conflictA)) return [conflictA, conflictB];
     else return [...conflictA, ...conflictB];
   }
+}
+
+function remove_deleted_parent_link(
+  relationRecords: RecordLinkProps[] | null,
+  record_id: string,
+  field_id: string
+) {
+  const newRelationship: RecordLinkProps[] = [];
+  if (relationRecords === null || relationRecords.length === 0) return [];
+  relationRecords.map((linkRecord: RecordLinkProps) => {
+    !(
+      linkRecord.link.record_id === record_id &&
+      linkRecord.link.field_id === field_id
+    )
+      ? newRelationship.push(linkRecord)
+      : linkRecord;
+  });
+  return newRelationship;
+}
+type remove_deleted_parent_props = {
+  is_updated: boolean;
+  new_revision_id: string | null | undefined;
+  new_relation: Relationship;
+  newRelationship: RecordLinkProps[];
+};
+export async function remove_deleted_parent(
+  relation_type: string,
+  project_id: string,
+  current_record_id: string,
+  revision_id: string | undefined | null,
+  field_id: string,
+  record_id: string,
+  relationRecords: RecordLinkProps[] | null
+) {
+  const result: remove_deleted_parent_props = {
+    is_updated: false,
+    new_revision_id: revision_id,
+    new_relation: {},
+    newRelationship: relationRecords ?? [],
+  };
+  try {
+    if (revision_id === undefined || revision_id === null || revision_id === '')
+      return result;
+    const latest_record = await getFullRecordData(
+      project_id,
+      current_record_id,
+      revision_id,
+      false
+    );
+
+    if (latest_record !== null) {
+      let new_relation = latest_record.relationship ?? {};
+      const new_doc = latest_record;
+      const link = {
+        record_id: record_id,
+        field_id: field_id,
+        relation_type_vocabPair: [],
+      };
+      if (relation_type === 'Child') {
+        if (new_relation['parent'] !== undefined) {
+          // need to be updated if the record has parent and it's current record,remove the parent
+          if (new_relation['linked'] === undefined) new_relation = {};
+          else new_relation = {linked: new_relation['linked']};
+        }
+      } else {
+        if (new_relation['linked'] !== undefined) {
+          const new_link = RemoveLink(new_relation, link);
+          new_relation['linked'] = new_link;
+        }
+      }
+      result['new_relation'] = new_relation;
+      const now = new Date();
+      new_doc['updated'] = now;
+      new_doc['relationship'] = new_relation;
+      console.debug('updated record relationship', new_relation);
+      try {
+        result['is_updated'] = true;
+        result['newRelationship'] = remove_deleted_parent_link(
+          relationRecords,
+          record_id,
+          field_id
+        );
+        result['new_revision_id'] = await upsertFAIMSData(project_id, new_doc);
+        return result;
+      } catch (error) {
+        console.error('update  record error', error);
+      }
+    }
+  } catch (error) {
+    console.error('update  record error', error);
+  }
+  return result;
 }

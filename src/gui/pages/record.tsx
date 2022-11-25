@@ -39,7 +39,12 @@ import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  Relationship,
+  RevisionID,
+} from '../../datamodel/core';
 import {
   ProjectUIModel,
   ProjectInformation,
@@ -77,6 +82,7 @@ import {useTheme} from '@mui/material/styles';
 import {
   getDetailRelatedInformation,
   getParentPersistenceData,
+  remove_deleted_parent,
 } from '../components/record/relationships/RelatedInformation';
 import {
   RecordLinkProps,
@@ -323,7 +329,15 @@ export default function Record() {
               },
               {title: hrid ?? record_id},
             ];
-            if (newParent !== null && newParent.length > 0) {
+            console.debug(
+              'updated record relationship parent newParent ',
+              newParent
+            );
+            if (
+              newParent !== null &&
+              newParent.length > 0 &&
+              newParent[0].deleted !== true
+            ) {
               newBreadcrumbs = [
                 // {link: ROUTES.INDEX, title: 'Home'},
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
@@ -361,6 +375,60 @@ export default function Record() {
       setOpen(true);
       setpressedvalue(newValue);
     } else setValue(newValue);
+  };
+
+  const handleUnlink = (
+    parent_record_id: string,
+    relation_type: string,
+    field_id: string
+  ) => {
+    remove_deleted_parent(
+      relation_type,
+      project_id,
+      record_id,
+      revision_id,
+      field_id,
+      parent_record_id,
+      relatedRecords
+    ).then(
+      (result: {
+        is_updated: boolean;
+        new_revision_id: string | null | undefined;
+        new_relation: Relationship;
+        newRelationship: RecordLinkProps[];
+      }) => {
+        if (result.is_updated) {
+          console.debug('updated record relationship parent ', result);
+          if (
+            result.new_revision_id !== undefined &&
+            result.new_revision_id !== null &&
+            result.new_revision_id !== ''
+          )
+            setrevision_id(result.new_revision_id);
+          if (uiSpec !== null) {
+            setRelatedRecords(result.newRelationship);
+
+            getParentPersistenceData(
+              uiSpec,
+              project_id,
+              result.new_relation ?? {},
+              record_id
+            ).then(newParent => {
+              setParentLinks(newParent);
+              console.debug('updated record relationship parent ', newParent);
+            });
+          }
+        } else {
+          dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message: 'Could not remove link,please save and then try again ',
+              severity: 'warning',
+            },
+          });
+        }
+      }
+    );
   };
 
   const handleConfirm = () => {
@@ -581,7 +649,6 @@ export default function Record() {
                             </Grid>
                           </Box>
                           <Box>
-                            {/* Add the component for inherit data from parent */}
                             {(isalerting === false ||
                               draft_id !== undefined) && (
                               <RecordData
@@ -609,6 +676,7 @@ export default function Record() {
                                 parentRecords={parentLinks}
                                 record_to_field_links={relatedRecords}
                                 is_link_ready={is_link_ready}
+                                handleUnlink={handleUnlink}
                               />
                             )}
                           </Box>
@@ -635,6 +703,7 @@ export default function Record() {
                           parentRecords={parentLinks}
                           record_to_field_links={relatedRecords}
                           is_link_ready={is_link_ready}
+                          handleUnlink={handleUnlink}
                         />
                       )}
                     </Box>

@@ -371,7 +371,9 @@ export default function RecordCreate() {
       },
       {
         link: ROUTES.NOTEBOOK + location.state.parent_link,
-        title: type + ':' + location.state.parent_record_id,
+        title:
+          type + ':' + location.state.parent_hrid ??
+          location.state.parent_record_id,
       },
       {title: 'Draft'},
     ];

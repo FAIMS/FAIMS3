@@ -194,18 +194,20 @@ export default function DataGridFieldLinksComponent(
     record_id: RecordID,
     type: string,
     hrid: string,
-    route: any
+    route: any,
+    deleted: boolean
   ) {
     return record_id === current_record_id ? (
       <RecordRouteDisplay>This record</RecordRouteDisplay>
     ) : (
       <Typography variant={'body2'} fontWeight={'bold'}>
-        <RecordRouteDisplay link={route}>
+        <RecordRouteDisplay link={deleted ? '' : route} deleted={deleted}>
           {type + ' ' + hrid}
         </RecordRouteDisplay>
       </Typography>
     );
   }
+  console.debug('updated record relationship', props.links);
   const columns: GridColumns = [
     {
       field: 'relation_type_vocabPair',
@@ -229,7 +231,8 @@ export default function DataGridFieldLinksComponent(
           params.row.record_id,
           params.row.type,
           params.row.hrid,
-          params.row.route
+          params.row.route,
+          params.row.deleted
         ),
     },
 

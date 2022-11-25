@@ -229,8 +229,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     search = search.replace(url_split[0] + '&' + url_split[1], '');
   if (search !== '') search = '&' + search;
   const hrid =
-    props.form.values['type'] !== undefined
-      ? props.form.values['hrid' + props.form.values['type']] ??
+    props.current_form !== undefined
+      ? props.form.values['hrid' + props.current_form] ??
         props.form.values['_id']
       : props.form.values['_id'];
 
@@ -280,7 +280,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.InputLabelProps.label,
           multiple,
           props.related_type_label,
-          props.current_form
+          props.current_form,
+          type
         );
         console.debug('record information', records_info);
         setRecordsInformation(records_info);
@@ -309,7 +310,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.InputLabelProps.label,
           multiple,
           props.related_type_label,
-          props.current_form
+          props.current_form,
+          type
         );
         console.debug('record information', records_info);
         setRecordsInformation(records_info);
@@ -335,12 +337,14 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
 
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
+    parent_hrid: hrid,
     field_id: props.id,
     type: type, //type of this relation
     parent_link: location.pathname.replace('/notebooks/', ''), // current form link
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
+  console.debug('updated record relationship newstate', newState);
   const disabled = props.disabled ?? false;
   const location_state: any = location.state;
   if (location_state !== undefined && location_state !== null) {

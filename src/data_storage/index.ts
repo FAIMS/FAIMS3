@@ -96,14 +96,17 @@ export async function upsertFAIMSData(
 export async function getFullRecordData(
   project_id: ProjectID,
   record_id: RecordID,
-  revision_id: RevisionID
+  revision_id: RevisionID,
+  is_deleted = true //default value should be true
 ): Promise<Record | null> {
   const revision = await getRevision(project_id, revision_id);
-  if (revision.deleted === true) {
+  if (revision.deleted === true && is_deleted) {
+    // return null when is_deleted is not set or set as true
     return null;
   }
   const record = await getRecord(project_id, record_id);
   const form_data = await getFormDataFromRevision(project_id, revision);
+
   return {
     project_id: project_id,
     record_id: record_id,
@@ -117,6 +120,7 @@ export async function getFullRecordData(
     annotations: form_data.annotations,
     field_types: form_data.types,
     relationship: revision.relationship,
+    deleted: revision.deleted ?? false,
   };
 }
 
