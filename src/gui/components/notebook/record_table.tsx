@@ -46,8 +46,6 @@ import {
   getMetadataForAllRecords,
   getRecordsWithRegex,
 } from '../../../data_storage';
-import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
-import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
@@ -431,62 +429,49 @@ function RecordsTable(props: RecordsTableProps) {
 }
 
 export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
-  console.error('RecordsBrowseTable props', props);
   const [query, setQuery] = React.useState('');
+  const [pouchData, setPouchData] = React.useState(
+    undefined as RecordMetadata[] | undefined
+  );
 
   if (DEBUG_APP) {
     console.debug('Filter deleted?:', props.filter_deleted);
   }
 
-  const pouchData = useEventedPromise(
-    'RecordsBrowseTable component',
-    async (project_id: ProjectID, query: string) => {
-      if (DEBUG_APP) {
-        console.log('RecordsTable updating', project_id, query);
-      }
-      if (query.length === 0) {
-        return await getMetadataForAllRecords(
-          props.project_id,
-          props.filter_deleted
-        );
-      } else {
-        return await getRecordsWithRegex(
-          props.project_id,
-          query,
-          props.filter_deleted
-        );
-      }
-    },
-    constantArgsSplit(
-      listenDataDB,
-      [props.project_id, {since: 'now', live: true}],
-      [props.project_id, query]
-    ),
-    false,
-    [props.project_id, query],
-    props.project_id,
-    query
-  );
-
   useEffect(() => {
-    if (pouchData !== undefined) {
-      console.log(
-        'pouchData.value changed',
-        pouchData.value?.length,
-        pouchData.value
-      );
-    }
-  }, [pouchData.value]);
+    const getData = async () => {
+      if (DEBUG_APP) {
+        console.log('RecordsTable updating', props.project_id, query);
+      }
+      try {
+        if (query.length === 0) {
+          const ma = await getMetadataForAllRecords(
+            props.project_id,
+            props.filter_deleted
+          );
+          setPouchData(ma);
+        } else {
+          const ra = await getRecordsWithRegex(
+            props.project_id,
+            query,
+            props.filter_deleted
+          );
+          setPouchData(ra);
+        }
+      } catch (err) {
+        console.error('Unable to load records', props, query, err);
+        setPouchData(undefined);
+      }
+    };
+    getData();
+  }, [props.project_id, query]);
 
   if (DEBUG_APP) {
     console.debug('New records:', pouchData);
   }
 
-  const rows = pouchData.value ?? [];
-  const loading =
-    pouchData.loading !== undefined ||
-    pouchData.value === undefined ||
-    pouchData.value?.length === undefined;
+  const rows = pouchData ?? [];
+  const loading = pouchData === undefined;
 
   return (
     <RecordsTable
