@@ -78,10 +78,7 @@ export function LoginButton(props: LoginButtonProps) {
           }
         } else {
           // Use the capacitor browser plugin in apps
-          await Browser.open({
-            url: props.conductor_url,
-            presentationStyle: 'popover',
-          });
+          await Browser.open({url: props.conductor_url});
         }
       }}
     >
