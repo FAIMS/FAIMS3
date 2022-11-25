@@ -23,11 +23,10 @@ import {useHistory} from 'react-router-dom';
 
 import {
   Button,
+  IconButton,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
   DialogActions,
+  AlertTitle,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {Alert} from '@mui/material';
@@ -39,19 +38,44 @@ import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
 import {getCurrentUserId} from '../../../users';
 import {setRecordAsDeleted} from '../../../data_storage';
 import {deleteStagedData} from '../../../sync/draft-storage';
+import {deleteDraftsForRecord} from '../../../drafts';
 
 type RecordDeleteProps = {
   project_id: ProjectID;
   record_id: RecordID;
   revision_id: RevisionID | null;
+  draft_id: string | null;
+  show_label: boolean;
 };
 
+async function deleteFromDB(
+  project_id: ProjectID,
+  record_id: RecordID,
+  revision_id: RevisionID | null,
+  draft_id: string | null,
+  userid: string
+) {
+  if (draft_id !== null) {
+    await deleteStagedData(draft_id, null);
+  } else {
+    await setRecordAsDeleted(
+      project_id,
+      record_id,
+      revision_id as RevisionID,
+      userid
+    );
+    await deleteDraftsForRecord(project_id, record_id);
+  }
+}
+
 export default function RecordDelete(props: RecordDeleteProps) {
-  const {project_id, record_id, revision_id} = props;
+  console.debug('Delete props', props);
+  const {project_id, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useHistory();
   const globalState = useContext(store);
   const {dispatch} = globalState;
+  const is_draft = draft_id !== null;
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -60,83 +84,91 @@ export default function RecordDelete(props: RecordDeleteProps) {
     setOpen(false);
   };
 
-  const handleDeletefunction = (userid: string) => {
-    if (revision_id !== null)
-      return setRecordAsDeleted(
-        project_id,
-        record_id,
-        revision_id,
-        userid
-      ).then(() => {
-        return record_id;
-      });
-    else
-      return deleteStagedData(record_id, revision_id).then(() => {
-        return record_id;
-      });
-  };
-
   const handleDelete = () => {
     getCurrentUserId(project_id)
-      .then(userid => handleDeletefunction(userid))
+      .then(userid =>
+        deleteFromDB(project_id, record_id, revision_id, draft_id, userid)
+      )
       .then(() => {
+        const message = is_draft
+          ? `Draft ${draft_id} for record ${record_id} discarded`
+          : `Record ${record_id} deleted`;
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Record ' + record_id + ' deleted',
+            message: message,
             severity: 'success',
           },
         });
+        handleClose();
         history.push(ROUTES.NOTEBOOK + project_id);
       })
       .catch(err => {
-        console.log('Could not delete record: ' + record_id, err);
+        console.log('Failed to delete', record_id, draft_id, err);
+        const message = is_draft
+          ? `Draft ${draft_id} for record ${record_id} could not be discarded`
+          : `Record ${record_id} could not be deleted`;
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
-            message: 'Could not delete record: ' + record_id,
+            message: message,
             severity: 'error',
           },
         });
+        handleClose();
       });
   };
 
   return (
     <div>
-      <Button
-        variant="outlined"
-        color="error"
-        onClick={handleClickOpen}
-        startIcon={<DeleteIcon />}
-      >
-        Delete record
-      </Button>
+      {props.show_label ? (
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleClickOpen}
+          startIcon={<DeleteIcon />}
+        >
+          {!is_draft ? 'Delete Record' : 'Discard Draft'}
+        </Button>
+      ) : (
+        <IconButton aria-label="delete" onClick={handleClickOpen}>
+          <DeleteIcon />
+        </IconButton>
+      )}
+
       <Dialog
         open={open}
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          {'Delete record ' + record_id}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description" component={'div'}>
-            <Alert severity="warning">
-              You cannot reverse this action! Be sure you wish to delete this
-              record.
-            </Alert>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
+        <Alert severity="error">
+          <AlertTitle>
+            Are you sure you want to {is_draft ? 'discard draft' : 'record'}{' '}
+            {is_draft ? draft_id : record_id}?
+          </AlertTitle>
+          You cannot reverse this action! Be sure you wish to proceed
+          {!is_draft
+            ? ' (all associated drafts of this record will also be removed).'
+            : '.'}
+        </Alert>
+        <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} color="primary">
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="primary" variant={'contained'}>
-            Delete
+          <Button
+            onClick={handleDelete}
+            color="error"
+            disableElevation
+            variant={'contained'}
+          >
+            {is_draft ? 'Discard' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
     </div>
   );
 }
+RecordDelete.defaultProps = {
+  show_label: true,
+};
