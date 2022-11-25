@@ -46,6 +46,7 @@ type RecordDeleteProps = {
   revision_id: RevisionID | null;
   draft_id: string | null;
   show_label: boolean;
+  handleRefresh: () => Promise<any>;
 };
 
 async function deleteFromDB(
@@ -53,7 +54,8 @@ async function deleteFromDB(
   record_id: RecordID,
   revision_id: RevisionID | null,
   draft_id: string | null,
-  userid: string
+  userid: string,
+  callback: () => Promise<any>
 ) {
   if (draft_id !== null) {
     await deleteStagedData(draft_id, null);
@@ -66,6 +68,7 @@ async function deleteFromDB(
     );
     await deleteDraftsForRecord(project_id, record_id);
   }
+  await callback();
 }
 
 export default function RecordDelete(props: RecordDeleteProps) {
@@ -87,7 +90,14 @@ export default function RecordDelete(props: RecordDeleteProps) {
   const handleDelete = () => {
     getCurrentUserId(project_id)
       .then(userid =>
-        deleteFromDB(project_id, record_id, revision_id, draft_id, userid)
+        deleteFromDB(
+          project_id,
+          record_id,
+          revision_id,
+          draft_id,
+          userid,
+          props.handleRefresh
+        )
       )
       .then(() => {
         const message = is_draft

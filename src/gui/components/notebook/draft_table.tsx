@@ -53,6 +53,7 @@ type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   viewsets?: ProjectUIViewsets | null;
+  handleRefresh: () => Promise<any>;
 };
 
 type DraftsRecordProps = {
@@ -61,6 +62,7 @@ type DraftsRecordProps = {
   rows: any;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
+  handleRefresh: () => Promise<any>;
 };
 
 function DraftRecord(props: DraftsRecordProps) {
@@ -164,6 +166,7 @@ function DraftRecord(props: DraftsRecordProps) {
                 revision_id={params.row.revision_id}
                 draft_id={params.row._id}
                 show_label={false}
+                handleRefresh={props.handleRefresh}
               />
             );
           },
@@ -229,6 +232,7 @@ function DraftRecord(props: DraftsRecordProps) {
                 revision_id={params.row.revision_id}
                 draft_id={params.row._id}
                 show_label={false}
+                handleRefresh={props.handleRefresh}
               />
             );
           },
@@ -318,6 +322,7 @@ export default function DraftsTable(props: DraftsTableProps) {
       rows={rows}
       loading={loading}
       viewsets={props.viewsets}
+      handleRefresh={props.handleRefresh}
     />
   );
 }

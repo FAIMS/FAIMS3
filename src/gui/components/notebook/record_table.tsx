@@ -59,6 +59,7 @@ type RecordsTableProps = {
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
   handleQueryFunction: Function;
+  handleRefresh: () => Promise<any>;
 };
 
 type RecordsBrowseTableProps = {
@@ -66,11 +67,11 @@ type RecordsBrowseTableProps = {
   maxRows: number | null;
   viewsets?: ProjectUIViewsets | null;
   filter_deleted: boolean;
+  handleRefresh: () => Promise<any>;
 };
 
 function RecordsTable(props: RecordsTableProps) {
   const {project_id, maxRows, rows, loading} = props;
-  console.log('RecordsTable props', props);
 
   // default for mobileView is on (collapsed table)
   const [mobileViewSwitchValue, setMobileViewSwitchValue] =
@@ -219,6 +220,7 @@ function RecordsTable(props: RecordsTableProps) {
                 revision_id={params.row.revision_id}
                 draft_id={null}
                 show_label={false}
+                handleRefresh={props.handleRefresh}
               />
             );
           },
@@ -318,6 +320,7 @@ function RecordsTable(props: RecordsTableProps) {
                 revision_id={params.row.revision_id}
                 draft_id={null}
                 show_label={false}
+                handleRefresh={props.handleRefresh}
               />
             );
           },
@@ -493,6 +496,7 @@ export function RecordsBrowseTable(props: RecordsBrowseTableProps) {
       loading={loading}
       viewsets={props.viewsets}
       handleQueryFunction={setQuery}
+      handleRefresh={props.handleRefresh}
     />
   );
 }
