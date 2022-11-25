@@ -344,7 +344,6 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
-  console.debug('updated record relationship newstate', newState);
   const disabled = props.disabled ?? false;
   const location_state: any = location.state;
   if (location_state !== undefined && location_state !== null) {

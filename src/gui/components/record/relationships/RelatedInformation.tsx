@@ -582,7 +582,7 @@ export async function addLinkedRecord(
       record_label: parent_link.record_id,
     });
     console.debug(
-      'get revison and latest_record',
+      'get revisons and latest_record',
       latest_record,
       record_id,
       revision_id

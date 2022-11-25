@@ -49,10 +49,6 @@ export function AddNewRecordButton(props: {
             (result || '').toString()
           ).replace('/notebooks/', '');
           newState['child_record_id'] = new_child_id;
-          console.debug(
-            'updated record relationship newstate before parent',
-            newState
-          );
           setTimeout(() => {
             // reset local state of component
             setSubmitting(false);

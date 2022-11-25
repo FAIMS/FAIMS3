@@ -265,7 +265,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
               }}
               label={
                 params.row.link.deleted
-                  ? 'Link record not avaliable, delete it'
+                  ? 'Link record not available, delete it'
                   : 'Edit link'
               }
               showInMenu
