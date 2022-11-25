@@ -581,6 +581,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             handleSubmit={() => props.form.submitForm()}
             save_new_record={save_new_record}
             is_active={isactive}
+            handleCreateError={remove_related_child}
           />
         </Grid>
         {props.form.isValid === false && (

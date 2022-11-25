@@ -31,34 +31,42 @@ export function AddNewRecordButton(props: {
   handleSubmit: Function;
   project_id: string;
   save_new_record: Function;
+  handleError: Function;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
   const history = useHistory();
   const handleSubmit = () => {
     setSubmitting(true);
+    const new_child_id = props.save_new_record();
     if (props.handleSubmit !== undefined) {
-      const new_child_id = props.save_new_record();
-      props.handleSubmit().then((result: string) => {
-        const newState = props.state;
-        newState['parent_link'] = ROUTES.getRecordRoute(
-          props.project_id,
-          (props.state.parent_record_id || '').toString(),
-          (result || '').toString()
-        ).replace('/notebooks/', '');
-        newState['child_record_id'] = new_child_id;
-        console.debug(
-          'updated record relationship newstate before parent',
-          newState
-        );
-        setTimeout(() => {
-          // reset local state of component
-          setSubmitting(false);
-          history.push({
-            pathname: props.pathname,
-            state: newState,
-          });
-        }, 1000);
-      });
+      props
+        .handleSubmit()
+        .then((result: string) => {
+          const newState = props.state;
+          newState['parent_link'] = ROUTES.getRecordRoute(
+            props.project_id,
+            (props.state.parent_record_id || '').toString(),
+            (result || '').toString()
+          ).replace('/notebooks/', '');
+          newState['child_record_id'] = new_child_id;
+          console.debug(
+            'updated record relationship newstate before parent',
+            newState
+          );
+          setTimeout(() => {
+            // reset local state of component
+            setSubmitting(false);
+            history.push({
+              pathname: props.pathname,
+              state: newState,
+            });
+          }, 300);
+        })
+        .catch((error: Error) => {
+          console.error('Fail to create new child', error);
+          if (props.handleError !== undefined)
+            props.handleError(new_child_id, new_child_id);
+        });
     }
   };
   return submitting ? (
@@ -263,6 +271,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                     handleSubmit={props.handleSubmit}
                     project_id={props.project_id}
                     save_new_record={props.save_new_record}
+                    handleError={props.handleCreateError}
                   />
                 )}
               </>
