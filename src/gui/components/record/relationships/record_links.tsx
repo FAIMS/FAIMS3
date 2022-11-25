@@ -55,12 +55,15 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
     record_id: RecordID,
     type: string,
     hrid: string | number,
-    route: any
+    route: any,
+    deleted = false
   ) {
     return record_id === current_record_id ? (
       <RecordRouteDisplay>This record</RecordRouteDisplay>
     ) : (
-      <RecordRouteDisplay link={route}>{type + ' ' + hrid}</RecordRouteDisplay>
+      <RecordRouteDisplay link={deleted ? '' : route} deleted={deleted}>
+        {type + ' ' + hrid}
+      </RecordRouteDisplay>
     );
   }
 
@@ -257,7 +260,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                       params.row.relation_type,
                       params.row.link.field_id
                     );
-                } else alert('go to record>section>field');
+                } else alert('go to Form and update in Field');
                 console.debug('params value', params.row);
               }}
               label={
@@ -304,9 +307,6 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                               params.row.link.field_label,
                             renderCell: (params: GridCellParams) => (
                               <React.Fragment>
-                                {params.row.deleted && (
-                                  <DeleteForeverIcon color={'error'} />
-                                )}
                                 <Typography
                                   variant={'body2'}
                                   fontWeight={'bold'}
@@ -353,7 +353,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                                 params.row.record_id,
                                 params.row.type,
                                 params.row.hrid,
-                                params.row.route
+                                params.row.route,
+                                params.row.deleted
                               ),
                           },
                           {
@@ -374,7 +375,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                               <GridActionsCellItem
                                 icon={<EditIcon color={'primary'} />}
                                 onClick={() => {
-                                  alert('go to record>section>field');
+                                  alert('go to Form and update in Field');
                                   console.debug(params);
                                 }}
                                 label="Edit link"
