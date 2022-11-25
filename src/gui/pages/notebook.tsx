@@ -120,7 +120,7 @@ export default function Notebook() {
         handleRefresh={handleRefresh}
         project_name={project_info.name}
       />
-      <NotebookComponent project={project_info} />
+      <NotebookComponent project={project_info} handleRefresh={handleRefresh} />
     </Box>
   ) : (
     <CircularProgress />
