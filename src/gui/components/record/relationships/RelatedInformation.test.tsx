@@ -26,38 +26,6 @@ import {
   get_all_child_records,
 } from './RelatedInformation';
 
-// PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-
-// const projdbs: any = {};
-
-// async function mockProjectDB(project_id: ProjectID) {
-//   if (projdbs[project_id] === undefined) {
-//     const db = new PouchDB(project_id, {adapter: 'memory'});
-//     projdbs[project_id] = db;
-//   }
-//   return projdbs[project_id];
-// }
-
-// async function cleanProjectDBS() {
-//   let db;
-//   for (const project_id in projdbs) {
-//     db = projdbs[project_id];
-//     delete projdbs[project_id];
-
-//     if (db !== undefined) {
-//       try {
-//         await db.destroy();
-//         //await db.close();
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     }
-//   }
-// }
-
-// jest.mock('./sync/index', () => ({
-//   getProjectDB: mockProjectDB,
-// }));
 const RelationState = {
   field_id: 'field',
   parent: {},
@@ -87,33 +55,6 @@ test('testing getParentlinkInfo from dummy Field Location State', () => {
   expect(equals(state_parent, State)).toBe(true);
   expect(equals(is_direct, true)).toBe(true);
 });
-
-// will re-enable when RelatedInformation finished
-// test('testing Parent information when user save child', () => {
-//   const parent = getParentInfo(RelationState, {linked: []}, record_id);
-//   expect(
-//     equals(parent.parent, {
-//       record_id: 'parent_record_id',
-//       field_id: 'field',
-//       relation_type_vocabPair: [],
-//     })
-//   ).toBe(true);
-// });
-
-// test('testing Link information when user save child', () => {
-//   const state = RelationState;
-//   state.type = 'Linked';
-//   const parent = getParentInfo(RelationState, {linked: []}, record_id);
-//   expect(
-//     equals(parent.linked, [
-//       {
-//         record_id: 'parent_record_id',
-//         field_id: 'field',
-//         relation_type_vocabPair: [],
-//       },
-//     ])
-//   ).toBe(true);
-// });
 
 test('test get child information to save in parent', () => {
   const {field_id, new_record, is_related} = getChildInfo(State, 'project_id');
