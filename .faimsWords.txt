@@ -634,6 +634,8 @@ hrids
 isodate
 basemap
 unactivated
+GEOTIFF
+alldocs
 # TODO FIX
 availabe
 hrids
@@ -642,3 +644,10 @@ choosenconflict
 abutts
 usecase
 isdisplay 
+unnamespaced
+fullconst
+splitname
+specdoc
+supertypes
+qualname
+Abramov's
