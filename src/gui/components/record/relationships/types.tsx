@@ -27,7 +27,7 @@ export interface RecordLinkProps {
   hrid: string | number;
   type: string;
   route: string;
-  relation_type_vocabPair?: string[];
+  relation_type_vocabPair: string[];
   link: FieldLinkProps;
   lastUpdatedBy?: string;
   relation_preferred?: boolean;
@@ -68,6 +68,7 @@ export interface RecordLinksComponentProps {
   record_links: Array<RecordLinkProps> | null;
   record_id: RecordID;
   handleSetSection: Function;
+  isconflict?: boolean; //add for conflict component
 }
 
 export interface DataGridLinksComponentProps {

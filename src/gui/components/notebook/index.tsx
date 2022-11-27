@@ -68,6 +68,7 @@ function a11yProps(index: number, id: string) {
 
 type NotebookComponentProps = {
   project: ProjectInformation;
+  handleRefresh: () => Promise<any>;
 };
 export default function NotebookComponent(props: NotebookComponentProps) {
   /**
@@ -211,6 +212,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   maxRows={25}
                   viewsets={viewsets}
                   filter_deleted={true}
+                  handleRefresh={props.handleRefresh}
                 />
               </TabPanel>
               <TabPanel
@@ -222,6 +224,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
                   project_id={project.project_id}
                   maxRows={25}
                   viewsets={viewsets}
+                  handleRefresh={props.handleRefresh}
                 />
               </TabPanel>
             </Box>

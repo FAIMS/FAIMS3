@@ -27,7 +27,6 @@ import {
   Typography,
   Modal,
   Paper,
-  Chip,
   CircularProgress,
 } from '@mui/material';
 import {
@@ -38,13 +37,12 @@ import {
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
-import {DataGridLinksComponentProps, PARENT_CHILD_VOCAB} from '../types';
+import {DataGridLinksComponentProps} from '../types';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
 import {RecordID} from '../../../../../datamodel/core';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from '../../../../../datamodel/ui';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 const style = {
@@ -65,10 +63,22 @@ export function DataGridNoLink(props: {
 }) {
   const columns: GridColumns = [
     {
-      field: 'record_label',
-      headerName: 'Record',
+      field: 'relation_type_vocabPair',
+      headerName: 'Relationship',
+      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
+      valueGetter: (params: GridCellParams) =>
+        params.value !== undefined
+          ? params.value[0]
+          : props.relation_linked_vocab,
+    },
+    {
+      field: 'record_label',
+      headerName: 'Record',
+      headerClassName: 'faims-record-link--header',
+      minWidth: 200,
+      flex: 0.4,
       valueGetter: (params: GridCellParams) =>
         params.row.record_label ?? params.row.record_id,
       renderCell: (params: GridCellParams) => (
@@ -79,28 +89,9 @@ export function DataGridNoLink(props: {
       ),
     },
     {
-      field: 'relation_type_vocabPair',
-      headerName: 'Relationship to ',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) =>
-        params.value !== undefined
-          ? params.value[0]
-          : props.relation_linked_vocab,
-      renderCell: (params: GridCellParams) => (
-        <Chip
-          label={params.value}
-          component={'span'}
-          size={'small'}
-          color={
-            PARENT_CHILD_VOCAB.includes(params.value) ? 'secondary' : 'default'
-          }
-        />
-      ),
-    },
-    {
       field: 'record_id',
       headerName: 'Last Updated By',
+      headerClassName: 'faims-record-link--header',
       minWidth: 100,
       valueGetter: () => '',
       flex: 0.4,
@@ -110,6 +101,7 @@ export function DataGridNoLink(props: {
     columns.push({
       field: 'preferred',
       headerName: props.relation_preferred_label,
+      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) => params.row.is_preferred ?? false,
@@ -144,8 +136,8 @@ export default function DataGridFieldLinksComponent(
   props: DataGridLinksComponentProps
 ) {
   /**
-   * Display the linked records in a MUI Data Grid
-   * Data Grid is set to autoHeight (grid will size according to its content) up to 5 rows
+   * Display the linked records in a MUI Datagrid.
+   * Datagrid is set to autoHeight (grid will size according to its content) up to 5 rows
    * Optionally display title, link_type, records' section and field that the link belongs to.
    * Links can be unlinked via a modal interface accessible through an action menu
    */
@@ -178,6 +170,7 @@ export default function DataGridFieldLinksComponent(
     },
     []
   );
+
   function handleUnlink() {
     setIsSubmitting(true);
 
@@ -215,10 +208,19 @@ export default function DataGridFieldLinksComponent(
   }
   const columns: GridColumns = [
     {
-      field: 'record',
-      headerName: 'Record',
+      field: 'relation_type_vocabPair',
+      headerName: 'Relationship',
+      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
+      valueGetter: (params: GridCellParams) => params.value[1],
+    },
+    {
+      field: 'record',
+      headerName: 'Record',
+      headerClassName: 'faims-record-link--header',
+      minWidth: 200,
+      flex: 0.4,
       valueGetter: (params: GridCellParams) =>
         params.row.type + ' ' + params.row.hrid,
       renderCell: (params: GridCellParams) =>
@@ -230,29 +232,14 @@ export default function DataGridFieldLinksComponent(
           params.row.route
         ),
     },
-    {
-      field: 'relation_type_vocabPair',
-      headerName: 'Relationship to ' + props.field_label,
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.value[0],
-      renderCell: (params: GridCellParams) => (
-        <Chip
-          label={params.value}
-          component={'span'}
-          size={'small'}
-          color={
-            PARENT_CHILD_VOCAB.includes(params.value) ? 'secondary' : 'default'
-          }
-        />
-      ),
-    },
+
     {
       field: 'lastUpdatedBy',
       headerName: 'Last Updated By',
-      minWidth: 100,
+      headerClassName: 'faims-record-link--header',
+      minWidth: 150,
+      flex: 0.2,
       valueGetter: (params: GridCellParams) => params.row.lastUpdatedBy,
-      flex: 0.4,
     },
   ];
   // for read ONLY
@@ -266,33 +253,30 @@ export default function DataGridFieldLinksComponent(
     columns.push({
       field: 'preferred',
       headerName: 'Make ' + props.relation_preferred_label,
-      minWidth: 200,
+      headerClassName: 'faims-record-link--header',
+      minWidth: 100,
       flex: 0.2,
+      align: 'center',
+      headerAlign: 'center',
       valueGetter: (params: GridCellParams) =>
         params.row.relation_preferred ?? false,
       renderCell: (params: GridCellParams) => (
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={params.value}
-              disabled={
-                props.preferred !== undefined &&
-                props.preferred !== null &&
-                props.preferred !== params.row.record_id
-                  ? true
-                  : false
-              }
-              onChange={(event: any) => {
-                console.log(event.target.checked);
-                if (props.handleMakePreferred !== undefined)
-                  props.handleMakePreferred(
-                    params.row.record_id,
-                    event.target.checked
-                  );
-              }}
-            />
+        <Checkbox
+          checked={params.value}
+          disabled={
+            props.preferred !== undefined &&
+            props.preferred !== null &&
+            props.preferred !== params.row.record_id
+              ? true
+              : false
           }
-          label={'Make ' + props.relation_preferred_label}
+          onChange={(event: any) => {
+            if (props.handleMakePreferred !== undefined)
+              props.handleMakePreferred(
+                params.row.record_id,
+                event.target.checked
+              );
+          }}
         />
       ),
     });
@@ -304,6 +288,7 @@ export default function DataGridFieldLinksComponent(
     columns.push({
       field: 'preferred',
       headerName: 'Make ' + props.relation_preferred_label,
+      headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
       valueGetter: (params: GridCellParams) =>
@@ -322,6 +307,7 @@ export default function DataGridFieldLinksComponent(
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
+      headerClassName: 'faims-record-link--header',
       flex: 0.2,
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
@@ -363,25 +349,10 @@ export default function DataGridFieldLinksComponent(
                     >
                       Do you wish to remove the link <br />
                       <br />
+                      <strong>Field: {modalLink.link.field_label} </strong>
+                      {modalLink.relation_type_vocabPair[1]}{' '}
                       <RecordRouteDisplay>
                         {modalLink.type} {modalLink.hrid}
-                      </RecordRouteDisplay>
-                      <Chip
-                        component={'span'}
-                        size={'small'}
-                        color={
-                          PARENT_CHILD_VOCAB.includes(
-                            modalLink.relation_type_vocabPair[0]
-                          )
-                            ? 'secondary'
-                            : 'default'
-                        }
-                        sx={{m: 1}}
-                        label={modalLink.relation_type_vocabPair[0]}
-                      />
-                      <RecordRouteDisplay>
-                        {modalLink.link.type}&nbsp;{modalLink.link.hrid}
-                        &nbsp;&gt;&nbsp;{modalLink.link.field_label}
                       </RecordRouteDisplay>
                     </Box>
                   </Alert>

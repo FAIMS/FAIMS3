@@ -228,7 +228,7 @@ async function getRecordInformation(child_record: RecordReference) {
       revision_id
     );
   } catch (error) {
-    throw Error('Error to get record information');
+    throw Error('Error to get record information' + child_record.project_id);
   }
   return {latest_record, revision_id};
 }
@@ -910,4 +910,316 @@ export function RemoveLink(relation: Relationship, linked: LinkedRelation) {
       : linkRecord;
   });
   return new_linked;
+}
+
+export async function check_if_record_relationship(
+  relationA: Relationship | null | undefined,
+  relationB: Relationship | null | undefined,
+  project_id: string,
+  record_id: string
+) {
+  const new_relation: Relationship = {};
+  const parentA = await check_parent(relationA, project_id, record_id);
+  if (parentA !== null) new_relation['parent'] = parentA;
+  else {
+    const parentB = await check_parent(relationB, project_id, record_id);
+    if (parentB !== null) new_relation['parent'] = parentB;
+  }
+  const new_linked_array: string[] = [];
+  let linked: any[] = [];
+  if (
+    relationA !== null &&
+    relationA !== undefined &&
+    relationA.linked !== undefined
+  )
+    linked = relationA.linked;
+  if (
+    relationB !== null &&
+    relationB !== undefined &&
+    relationB.linked !== undefined
+  )
+    linked = [...linked, relationB.linked];
+
+  if (linked.length > 0) {
+    new_relation['linked'] = [];
+    for (const index in linked) {
+      const id = linked[index].record_id + linked[index].field_id;
+      if (!new_linked_array.includes(id)) {
+        new_linked_array.push(id);
+        const link = {
+          project_id: project_id,
+          record_id: linked[index].record_id,
+          record_label: linked[index].record_id,
+        };
+        const is_linked = await check_if_parent_link(
+          link,
+          linked[index].field_id,
+          record_id
+        );
+        if (is_linked)
+          new_relation['linked'] = [...new_relation['linked'], linked[index]];
+      }
+    }
+  }
+  return new_relation;
+}
+
+async function check_parent(
+  relation: Relationship | null | undefined,
+  project_id: string,
+  record_id: string
+) {
+  //check if the parent is the parent
+  if (relation === undefined || relation === null) return null;
+  if (relation.parent !== undefined) {
+    const parent = {
+      project_id: project_id,
+      record_id: relation.parent.record_id,
+      record_label: relation.parent.record_id,
+    };
+    const is_linked = await check_if_parent_link(
+      parent,
+      relation.parent.field_id,
+      record_id
+    );
+    if (is_linked) return relation.parent;
+  }
+  return null;
+}
+
+async function check_if_parent_link(
+  record: RecordReference,
+  field_id: string,
+  record_id: string
+) {
+  let is_exist = false;
+  const {latest_record, revision_id} = await getRecordInformation(record);
+  console.log(revision_id);
+  if (latest_record !== null) {
+    if (Array.isArray(latest_record.data[field_id])) {
+      //if field value is array, child_record has this record,then link exist
+      latest_record.data[field_id].map((child_record: RecordReference) => {
+        if (child_record.record_id === record_id) is_exist = true;
+      });
+      return is_exist;
+    } else {
+      if (latest_record.data[field_id].record_id === record_id) return true;
+    }
+  }
+  return is_exist;
+}
+function check_if_child_link(
+  relationship: Relationship | undefined,
+  field_id: string,
+  record_id: string,
+  relation_type: string
+) {
+  let is_exist = false;
+  if (relationship === undefined) return false;
+  if (relation_type === 'Child') {
+    if (relationship.parent === undefined || relationship.parent === null)
+      return false;
+    if (
+      relationship.parent.record_id === record_id &&
+      relationship.parent.field_id === field_id
+    )
+      return true;
+    else return false; // if parent is not this parent, then return false
+  } else {
+    //if link relationship check parent
+    if (
+      relationship.linked === undefined ||
+      relationship.linked === null ||
+      relationship.linked.length === 0
+    )
+      return false;
+    relationship.linked.map((record: LinkedRelation) => {
+      if (record.record_id === record_id && record.field_id === field_id)
+        is_exist = true;
+    });
+    return is_exist;
+  }
+}
+//function is to check if child record has the correct link relationship, if not update it
+export async function update_child_records_conflict(
+  conflictA: any,
+  conflictB: any,
+  mergeresult: any,
+  relation_fields: {[field_name: string]: any},
+  project_id: string,
+  current_record_id: string
+) {
+  for (const field of Object.keys(relation_fields)) {
+    const field_info = relation_fields[field];
+    console.debug(
+      'conflict update child record',
+      conflictA.fields[field].data,
+      conflictB.fields[field].data,
+      mergeresult.fields[field].data,
+      field_info.relation_type.replace('faims-core::', ''),
+      project_id,
+      field
+    );
+    await update_field_child_record_conflict(
+      conflictA.fields[field].data,
+      conflictB.fields[field].data,
+      mergeresult.fields[field].data,
+      field_info.relation_type.replace('faims-core::', ''),
+      project_id,
+      field,
+      current_record_id
+    );
+  }
+}
+// function to update the child record for single field
+async function update_field_child_record_conflict(
+  conflictA: RecordReference | RecordReference[],
+  conflictB: RecordReference | RecordReference[],
+  mergeresult: RecordReference | RecordReference[] | null,
+  relation_type: string,
+  project_id: string,
+  field_id: string,
+  current_record_id: string
+) {
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  const child_values: string[] = [];
+  if (all_child_records !== null) {
+    for (const index in all_child_records) {
+      const record_id = all_child_records[index]['record_id'];
+      //check when the record_id is not been checked
+      if (!child_values.includes(record_id)) {
+        child_values.push(record_id);
+        const link = {
+          record_id: current_record_id,
+          field_id: field_id,
+          relation_type_vocabPair:
+            all_child_records[index]['relation_type_vocabPair'],
+        };
+        await conflict_update_child_record(
+          mergeresult,
+          link,
+          record_id,
+          relation_type,
+          project_id,
+          field_id,
+          current_record_id
+        );
+      }
+    }
+  }
+}
+
+// function to update the single child record
+// update child record when child record relation is different as parent
+// - child record has no link, merge has link, add link
+// - child has the link, merge has no link, remove the link
+
+async function conflict_update_child_record(
+  mergeresult: RecordReference | RecordReference[] | null,
+  link: LinkedRelation,
+  record_id: string,
+  relation_type: string,
+  project_id: string,
+  field_id: string,
+  current_record_id: string
+) {
+  try {
+    const record = {
+      project_id: project_id,
+      record_id: record_id,
+      record_label: record_id,
+    };
+    const {latest_record, revision_id} = await getRecordInformation(record);
+    console.log(revision_id);
+    if (latest_record !== null) {
+      const is_linked = check_if_child_link(
+        latest_record?.relationship,
+        field_id,
+        current_record_id,
+        relation_type
+      );
+      let is_merged_linked = false;
+      const new_doc = latest_record;
+      let is_updated_link = false;
+
+      let new_relation = latest_record.relationship;
+      if (mergeresult !== null) {
+        if (Array.isArray(mergeresult)) {
+          mergeresult.map(record =>
+            record.record_id === record_id ? (is_merged_linked = true) : record
+          );
+        } else if (mergeresult.record_id === record_id) is_merged_linked = true;
+      }
+      // merged value is null, then remove all links
+      if (new_relation === undefined) {
+        if (is_merged_linked) {
+          is_updated_link = true;
+          //child record has no link, merge has link, add link
+          if (relation_type === 'Child') new_relation = {parent: link};
+          else new_relation = {linked: [link]};
+        }
+      } else if (is_linked && !is_merged_linked) {
+        is_updated_link = true;
+        //current child has the link, merge has no link, remove the link
+        if (relation_type === 'Child') {
+          if (new_relation['parent'] !== undefined) {
+            // need to be updated if the record has parent and it's current record,remove the parent
+            if (new_relation['linked'] === undefined) new_relation = {};
+            else new_relation = {linked: new_relation['linked']};
+          }
+        } else {
+          if (new_relation['linked'] !== undefined) {
+            const new_link = RemoveLink(new_relation, link);
+            new_relation['linked'] = new_link;
+          }
+        }
+      } else if (!is_linked && is_merged_linked) {
+        is_updated_link = true;
+        //current record has no link, merge has link, add the link
+        if (relation_type === 'Child') new_relation['parent'] = link;
+        else new_relation['linked'] = AddLink(new_relation, link);
+      }
+
+      if (is_updated_link) {
+        const now = new Date();
+        new_doc['updated'] = now;
+        new_doc['relationship'] = new_relation;
+        try {
+          await upsertFAIMSData(project_id, new_doc);
+        } catch (error) {
+          console.error('update child record error', error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('update child record error', error);
+  }
+}
+
+// function to get all child record information, child records could be duplicated
+export function get_all_child_records(conflictA: any, conflictB: any) {
+  if (
+    conflictA === null ||
+    conflictA === '' ||
+    (Array.isArray(conflictA) && conflictA.length === 0)
+  ) {
+    if (
+      conflictB === null ||
+      conflictB === '' ||
+      (Array.isArray(conflictB) && conflictB.length === 0)
+    )
+      return null;
+    else if (!Array.isArray(conflictB)) return [conflictB];
+    else return conflictB;
+  } else if (
+    conflictB === null ||
+    conflictB === '' ||
+    (Array.isArray(conflictB) && conflictB.length === 0)
+  ) {
+    if (!Array.isArray(conflictA)) return [conflictA];
+    else return conflictA;
+  } else {
+    if (!Array.isArray(conflictA)) return [conflictA, conflictB];
+    else return [...conflictA, ...conflictB];
+  }
 }
