@@ -309,7 +309,7 @@ class RecordForm extends React.Component<
               payload: {
                 message:
                   'Could not load existing record: ' + this.props.record_id,
-                severity: 'warnings',
+                severity: 'warning',
               },
             });
             return;

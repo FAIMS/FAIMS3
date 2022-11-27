@@ -17,39 +17,49 @@
  * Description:
  *   TODO
  */
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {useParams, Redirect} from 'react-router-dom';
 import {Box, Grid, Typography} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
-import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
+import {getProjectInfo} from '../../databaseAccess';
 import {ProjectID} from '../../datamodel/core';
-import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {CircularProgress} from '@mui/material';
 
 import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import RefreshNotebook from '../components/notebook/refresh';
+import {ProjectInformation} from '../../datamodel/ui';
 
 export default function Notebook() {
   /**
    *
    */
   const {project_id} = useParams<{project_id: ProjectID}>();
-
-  const project_info_promise = useEventedPromise(
-    'notebook page',
-    getProjectInfo,
-    constantArgsShared(listenProjectInfo, project_id),
-    false,
-    [project_id],
-    project_id
+  const [project_info, setProjectInfo] = useState(
+    undefined as ProjectInformation | undefined
   );
-  console.log('Notebook page', project_id, project_info_promise);
-  const project_info = project_info_promise.value;
-  const loading = project_info_promise.loading || project_info === undefined;
+  const [project_error, setProjectError] = useState(null as any);
+  const loading = project_info === undefined;
+
+  const getInfoWrapper = async () => {
+    try {
+      const info = await getProjectInfo(project_id);
+      setProjectInfo(info);
+    } catch (err) {
+      setProjectError(err);
+    }
+  };
+
+  useEffect(() => {
+    const getInfo = async () => {
+      await getInfoWrapper();
+    };
+    getInfo();
+  }, [project_id]);
 
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
@@ -61,14 +71,17 @@ export default function Notebook() {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
-  if (project_info_promise.error !== undefined) {
-    console.error(
-      'Failed to load notebook',
-      project_id,
-      project_info_promise.error
-    );
+  if (project_error !== null) {
+    console.error('Failed to load notebook', project_id, project_error);
     return <Redirect to="/404" />;
   }
+  const handleRefresh = () => {
+    /**
+     * Handler for Refreshing project
+     */
+    console.log('HOW REFRESHING');
+    return getInfoWrapper();
+  };
 
   return !loading ? (
     <Box>
@@ -103,8 +116,11 @@ export default function Notebook() {
           <Breadcrumbs data={breadcrumbs} />
         </Grid>
       </Grid>
-
-      <NotebookComponent project={project_info} />
+      <RefreshNotebook
+        handleRefresh={handleRefresh}
+        project_name={project_info.name}
+      />
+      <NotebookComponent project={project_info} handleRefresh={handleRefresh} />
     </Box>
   ) : (
     <CircularProgress />

@@ -51,7 +51,6 @@ import {getUiSpecForProject} from '../../uiSpecification';
 
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
-import RecordDelete from '../components/record/delete';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
@@ -662,13 +661,6 @@ export default function Record() {
               record_id={record_id}
               revision_id={updatedrevision_id}
             />
-            <Box mt={2}>
-              <RecordDelete
-                project_id={project_id}
-                record_id={record_id}
-                revision_id={updatedrevision_id}
-              />
-            </Box>
           </TabPanel>
           <TabPanel
             value="4"
