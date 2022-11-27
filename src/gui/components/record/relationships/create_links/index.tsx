@@ -80,6 +80,7 @@ export default function CreateLinkComponent(
                 handleSubmit={props.handleSubmit}
                 project_id={props.project_id}
                 save_new_record={props.save_new_record}
+                handleError={props.handleCreateError}
               />
             )}
 

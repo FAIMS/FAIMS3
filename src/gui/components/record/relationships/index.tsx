@@ -56,6 +56,7 @@ export default function RelationshipsViewComponent(
           record_links={props.record_to_field_links}
           record_id={props.record_id}
           handleSetSection={props.handleSetSection}
+          handleUnlink={props.handleUnlink}
         />
       </AccordionDetails>
     </Accordion>

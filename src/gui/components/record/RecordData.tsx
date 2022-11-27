@@ -59,6 +59,7 @@ interface RecordDataTypes {
   parentRecords: Array<ParentLinkProps> | null;
   record_to_field_links: RecordLinkProps[];
   is_link_ready: boolean;
+  handleUnlink: Function;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -95,6 +96,7 @@ export default function RecordData(props: RecordDataTypes) {
               record_hrid={props.hrid ?? props.record_id}
               record_type={props.record_type}
               handleSetSection={setViewName}
+              handleUnlink={props.handleUnlink}
             />
           ) : (
             <CircularProgress size={24} />

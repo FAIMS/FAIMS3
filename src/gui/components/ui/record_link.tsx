@@ -2,9 +2,11 @@ import React from 'react';
 import ArticleIcon from '@mui/icons-material/Article';
 import {Typography, Link} from '@mui/material';
 import {NavLink} from 'react-router-dom';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 interface RecordLinkProps {
   link?: any;
   children: React.ReactNode;
+  deleted?: boolean;
 }
 export default function RecordRouteDisplay(props: RecordLinkProps) {
   const inner = (
@@ -15,34 +17,24 @@ export default function RecordRouteDisplay(props: RecordLinkProps) {
         flexWrap: 'nowrap',
       }}
     >
+      {props.deleted ? (
+        <DeleteForeverIcon color={'error'} />
+      ) : props.link === '' ? (
+        <DeleteForeverIcon color={'error'} />
+      ) : (
+        <></>
+      )}
       <ArticleIcon fontSize={'inherit'} sx={{mt: '3px', mr: '3px'}} />
       <Typography variant={'body2'} fontWeight={'bold'}>
         {props.children}
       </Typography>
     </span>
   );
-  const broken = (
-    <span
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        flexWrap: 'nowrap',
-      }}
-    >
-      <ArticleIcon fontSize={'inherit'} sx={{mt: '3px', mr: '3px'}} />
-      <Typography variant={'body2'} fontWeight={'bold'} color="red">
-        {props.children}
-      </Typography>
-    </span>
-  );
+
   return props.link ? (
-    props.link !== '' ? (
-      <Link component={NavLink} to={props.link} underline={'none'}>
-        {inner}
-      </Link>
-    ) : (
-      broken
-    )
+    <Link component={NavLink} to={props.link} underline={'none'}>
+      {inner}
+    </Link>
   ) : (
     inner
   );

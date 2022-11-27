@@ -1,13 +1,18 @@
 import React, {useEffect} from 'react';
 import {Box, Paper, Typography} from '@mui/material';
-import {DataGrid, GridCellParams} from '@mui/x-data-grid';
-
+import {
+  DataGrid,
+  GridActionsCellItem,
+  GridCellParams,
+  GridRowParams,
+} from '@mui/x-data-grid';
+import EditIcon from '@mui/icons-material/Edit';
 import {RecordLinksComponentProps, RecordLinkProps} from './types';
 import {RecordLinksToolbar} from './toolbars';
 import {RecordID} from '../../../../datamodel/core';
 import RecordRouteDisplay from '../../ui/record_link';
 import {grey} from '@mui/material/colors';
-
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 interface SortedDataType {
   [key: string]: Array<RecordLinkProps>;
 }
@@ -50,12 +55,15 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
     record_id: RecordID,
     type: string,
     hrid: string | number,
-    route: any
+    route: any,
+    deleted = false
   ) {
     return record_id === current_record_id ? (
       <RecordRouteDisplay>This record</RecordRouteDisplay>
     ) : (
-      <RecordRouteDisplay link={route}>{type + ' ' + hrid}</RecordRouteDisplay>
+      <RecordRouteDisplay link={deleted ? '' : route} deleted={deleted}>
+        {type + ' ' + hrid}
+      </RecordRouteDisplay>
     );
   }
 
@@ -171,7 +179,6 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
               params.row.route
             ),
         },
-
         {
           field: 'relation_type_vocabPair',
           headerName: 'Relationship',
@@ -189,6 +196,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           valueGetter: (params: GridCellParams) => params.row.link.field_label,
           renderCell: (params: GridCellParams) => (
             <React.Fragment>
+              {params.row.link.deleted && <DeleteForeverIcon color={'error'} />}
               {recordDisplay(
                 props.record_id,
                 params.row.link.record_id,
@@ -226,6 +234,43 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 300,
           flex: 0.2,
+        },
+        {
+          field: 'actions',
+          type: 'actions',
+          headerName: 'Actions',
+          headerClassName: 'faims-record-link--header',
+          flex: 0.1,
+          minWidth: 100,
+          getActions: (params: GridRowParams) => [
+            <GridActionsCellItem
+              icon={
+                params.row.link.deleted ? (
+                  <DeleteForeverIcon color={'error'} />
+                ) : (
+                  <EditIcon color={'primary'} />
+                )
+              }
+              onClick={() => {
+                if (params.row.link.deleted) {
+                  //this is to remove this relationship
+                  if (props.handleUnlink !== undefined)
+                    props.handleUnlink(
+                      params.row.link.record_id,
+                      params.row.relation_type,
+                      params.row.link.field_id
+                    );
+                } else alert('go to Form and update in Field');
+                console.debug('params value', params.row);
+              }}
+              label={
+                params.row.link.deleted
+                  ? 'Link record not available, delete it'
+                  : 'Edit link'
+              }
+              showInMenu
+            />,
+          ],
         },
       ];
 
@@ -308,7 +353,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                                 params.row.record_id,
                                 params.row.type,
                                 params.row.hrid,
-                                params.row.route
+                                params.row.route,
+                                params.row.deleted
                               ),
                           },
                           {
@@ -318,25 +364,25 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                             minWidth: 300,
                             flex: 0.2,
                           },
-                          // {
-                          //   field: 'actions',
-                          //   type: 'actions',
-                          //   headerName: 'Actions',
-                          //   headerClassName: 'faims-record-link--header',
-                          //   flex: 0.1,
-                          //   minWidth: 100,
-                          //   getActions: (params: GridRowParams) => [
-                          //     <GridActionsCellItem
-                          //       icon={<EditIcon color={'primary'} />}
-                          //       onClick={() => {
-                          //         alert('go to record>section>field');
-                          //         console.debug(params);
-                          //       }}
-                          //       label="Edit link"
-                          //       showInMenu
-                          //     />,
-                          //   ],
-                          // },
+                          {
+                            field: 'actions',
+                            type: 'actions',
+                            headerName: 'Actions',
+                            headerClassName: 'faims-record-link--header',
+                            flex: 0.1,
+                            minWidth: 100,
+                            getActions: (params: GridRowParams) => [
+                              <GridActionsCellItem
+                                icon={<EditIcon color={'primary'} />}
+                                onClick={() => {
+                                  alert('go to Form and update in Field');
+                                  console.debug(params);
+                                }}
+                                label="Edit link"
+                                showInMenu
+                              />,
+                            ],
+                          },
                         ]
                   }
                   initialState={{

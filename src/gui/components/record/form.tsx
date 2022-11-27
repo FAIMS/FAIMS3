@@ -772,6 +772,7 @@ class RecordForm extends React.Component<
             ),
             ugc_comment: this.state.ugc_comment || '',
             relationship: this.state.relationship ?? {},
+            deleted: false,
           };
           if (DEBUG_APP) {
             console.debug(

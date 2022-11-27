@@ -141,6 +141,7 @@ export type LocationState = {
   hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
   relation_type_vocabPair?: string[] | null; //pass the parent information to child
   child_record_id?: RecordID; //child/linked record ID created from parent
+  parent_hrid?: string;
 };
 export interface LinkedRelation {
   record_id: RecordID;
