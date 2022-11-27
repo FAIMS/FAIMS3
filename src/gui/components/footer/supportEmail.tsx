@@ -1,21 +1,18 @@
 import {Typography} from '@mui/material';
 import Obfuscate from 'react-obfuscate';
-import React from 'react';
+import React, {useContext} from 'react';
 import {
   COMMIT_VERSION,
   DIRECTORY_HOST,
   DIRECTORY_PORT,
   DIRECTORY_PROTOCOL,
 } from '../../../buildconfig';
-import {TokenContents} from '../../../datamodel/core';
 import {useTheme} from '@mui/material/styles';
+import {store} from '../../../context/store';
 
-interface SupportEmailProps {
-  token?: null | undefined | TokenContents;
-}
-
-export default function SupportEmail(props: SupportEmailProps) {
+export default function SupportEmail() {
   const theme = useTheme();
+  const {state} = useContext(store);
   let supportEmail = 'info@faims.edu.au';
   if (
     process.env.REACT_APP_COMMIT_VERSION !== undefined &&
@@ -27,10 +24,10 @@ export default function SupportEmail(props: SupportEmailProps) {
     `Directory Server: ${DIRECTORY_PROTOCOL}://${DIRECTORY_HOST}:${DIRECTORY_PORT}/ \r` +
     `Commit Version: ${COMMIT_VERSION} \r` +
     `Username: ${
-      props.token?.username ? props.token.username : 'Unauthenticated'
+      state.token?.username ? state.token.username : 'Unauthenticated'
     } \r` +
     `Roles: ${
-      props.token?.roles ? JSON.stringify(props.token.roles) : 'Unauthenticated'
+      state.token?.roles ? JSON.stringify(state.token.roles) : 'Unauthenticated'
     }`;
 
   return (

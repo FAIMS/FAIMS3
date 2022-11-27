@@ -18,7 +18,7 @@
  *   This contains the navbar React component, which allows users to navigate
  *   throughout the app.
  */
-import React from 'react';
+import React, {useContext} from 'react';
 import {
   Button,
   Menu,
@@ -32,20 +32,18 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import GroupIcon from '@mui/icons-material/Group';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {TokenContents} from '../../../datamodel/core';
 import {checkToken} from '../../../utils/helpers';
+import {store} from '../../../context/store';
 
-interface AppBarAuthProps {
-  token?: null | undefined | TokenContents;
-}
-
-export default function AppBarAuth(props: AppBarAuthProps) {
+export default function AppBarAuth() {
   /**
    * Show username and auth menu if authenticated, otherwise render login button
    */
-  const isAuthenticated = checkToken(props.token);
+  const {state} = useContext(store);
+  const isAuthenticated = checkToken(state.token);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const history = useHistory();
+
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -70,7 +68,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
           onClick={handleMenu}
           color="inherit"
         >
-          {props.token?.username}
+          {state.token?.username}
         </Button>
         <Menu
           id="menu-appbar"
@@ -103,7 +101,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
             <ListItemIcon>
               <LogoutIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Log out {props.token!.username}</ListItemText>
+            <ListItemText>Log out {state.token!.username}</ListItemText>
           </MenuItem>
         </Menu>
       </React.Fragment>

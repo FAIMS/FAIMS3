@@ -31,11 +31,13 @@ import {
   SyncingActions,
   AlertActions,
   ActionType,
+  UserActions,
 } from './actions';
 import LoadingApp from '../gui/components/loadingApp';
 import {initialize} from '../sync/initialize';
 import {set_sync_status_callbacks} from '../sync/connection';
 import {AlertColor} from '@mui/material/Alert/Alert';
+import {TokenContents} from '../datamodel/core';
 
 interface InitialStateProps {
   initialized: boolean;
@@ -52,6 +54,7 @@ interface InitialStateProps {
       key: string;
     } & ({message: string} | {element: JSX.Element[]})
   >;
+  token: TokenContents | null | undefined;
 }
 
 const InitialState = {
@@ -64,12 +67,13 @@ const InitialState = {
   active_project: null,
   active_record: null,
   alerts: [],
+  token: null,
 };
 
 export interface ContextType {
   state: InitialStateProps;
   dispatch: Dispatch<
-    ProjectActions | RecordActions | SyncingActions | AlertActions
+    ProjectActions | RecordActions | SyncingActions | AlertActions | UserActions
   >;
 }
 
@@ -84,7 +88,12 @@ const StateProvider = (props: any) => {
   const [state, dispatch] = useReducer(
     (
       state: InitialStateProps,
-      action: ProjectActions | RecordActions | SyncingActions | AlertActions
+      action:
+        | ProjectActions
+        | RecordActions
+        | SyncingActions
+        | AlertActions
+        | UserActions
     ) => {
       switch (action.type) {
         case ActionType.INITIALIZED: {
@@ -157,31 +166,13 @@ const StateProvider = (props: any) => {
           };
         }
 
-        // case ActionType.APPEND_RECORD_LIST: {
-        //   return {
-        //     ...state,
-        //     record_list: {
-        //       ...state.record_list,
-        //       [action.payload.project_id]: action.payload.data,
-        //     },
-        //   };
-        //   // return {...state, record_list: action.payload};
-        // }
-        // case ActionType.POP_RECORD_LIST: {
-        //   const new_record_list = {
-        //     ...state.record_list[action.payload.project_id],
-        //   };
-        //   action.payload.data_ids.forEach(
-        //     data_id => delete new_record_list[data_id]
-        //   );
-        //   return {
-        //     ...state,
-        //     record_list: {
-        //       ...state.record_list,
-        //       [action.payload.project_id]: new_record_list,
-        //     },
-        //   };
-        // }
+        case ActionType.SET_USER: {
+          return {...state, token: action.payload.token};
+        }
+        case ActionType.DROP_USER: {
+          return {...state, token: null};
+        }
+
         default:
           throw new Error();
       }

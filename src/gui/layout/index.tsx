@@ -1,13 +1,11 @@
 import React from 'react';
 import {Box} from '@mui/material';
 import AppBar from './appBar';
-import {TokenContents} from '../../datamodel/core';
 import Footer from '../components/footer';
 import {useTheme} from '@mui/material/styles';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  token?: null | undefined | TokenContents;
 }
 
 const MainLayout = (props: MainLayoutProps) => {
@@ -18,7 +16,7 @@ const MainLayout = (props: MainLayoutProps) => {
 
   return (
     <React.Fragment>
-      <AppBar token={props.token} />
+      <AppBar />
       <Box
         component="main"
         sx={{
@@ -31,17 +29,9 @@ const MainLayout = (props: MainLayoutProps) => {
           },
         }}
       >
-        {/*<Breadcrumbs*/}
-        {/*  navigation={navigation}*/}
-        {/*  title*/}
-        {/*  titleBottom*/}
-        {/*  card={false}*/}
-        {/*  divider={false}*/}
-        {/*/>*/}
-
         {props.children}
       </Box>
-      <Footer token={props.token} />
+      <Footer />
     </React.Fragment>
   );
 };

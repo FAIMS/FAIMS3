@@ -61,7 +61,6 @@ type ClusterCardProps = {
 type UserSwitcherProps = {
   listing_id: string;
   current_username: string;
-  setToken: Function;
 };
 
 function UserSwitcher(props: UserSwitcherProps) {
@@ -92,7 +91,12 @@ function UserSwitcher(props: UserSwitcherProps) {
       const getToken = async () => {
         await getTokenContentsForCluster(props.listing_id).then(r => {
           console.log('awaiting getTokenInfoForCluster() returned', r);
-          props.setToken(r);
+          dispatch({
+            type: ActionType.SET_USER,
+            payload: {
+              token: r,
+            },
+          });
         });
       };
 
@@ -171,25 +175,30 @@ function UserSwitcher(props: UserSwitcherProps) {
 }
 
 export default function ClusterCard(props: ClusterCardProps) {
-  const [token, setToken] = useState(undefined as undefined | TokenContents);
+  const {state, dispatch} = useContext(store);
   const history = useHistory();
 
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenContentsForCluster(props.listing_id));
+      dispatch({
+        type: ActionType.SET_USER,
+        payload: {
+          token: await getTokenContentsForCluster(props.listing_id),
+        },
+      });
     };
     getToken();
   }, [props.listing_id]);
 
-  useEffect(() => {
-    let isactive = true;
-    if (token !== undefined) {
-      if (isactive) props.setToken(token);
-    }
-    return () => {
-      isactive = false;
-    }; // cleanup toggles value,
-  }, [token]);
+  // useEffect(() => {
+  //   let isactive = true;
+  //   if (state.token !== undefined) {
+  //     if (isactive) props.setToken(token);
+  //   }
+  //   return () => {
+  //     isactive = false;
+  //   }; // cleanup toggles value,
+  // }, [state.token]);
 
   return (
     <MainCard
@@ -220,17 +229,7 @@ export default function ClusterCard(props: ClusterCardProps) {
         </Button>
       }
     >
-      {token === undefined ? (
-        <LoginButton
-          key={props.listing_id}
-          listing_id={props.listing_id}
-          listing_name={props.listing_name}
-          conductor_url={props.conductor_url}
-          setToken={setToken}
-          is_refresh={false}
-          startIcon={<LoginIcon />}
-        />
-      ) : (
+      {state.token ? (
         <React.Fragment>
           <Grid
             container
@@ -244,7 +243,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             </Grid>
             <Grid item sm={6} xs={12}>
               <Typography variant={'body2'} fontWeight={700}>
-                {token.username}
+                {state.token.username}
               </Typography>
             </Grid>
             <Grid item sm={3} xs={12}>
@@ -255,7 +254,12 @@ export default function ClusterCard(props: ClusterCardProps) {
                 disableElevation
                 onClick={() =>
                   forgetCurrentToken(props.listing_id).then(() => {
-                    setToken(undefined);
+                    dispatch({
+                      type: ActionType.SET_USER,
+                      payload: {
+                        token: undefined,
+                      },
+                    });
                     reprocess_listing(props.listing_id);
                   })
                 }
@@ -278,7 +282,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             </Grid>
             <Grid item sm={6} xs={12}>
               <Box sx={{maxHeight: '400px', overflowY: 'scroll'}}>
-                {token.roles.map((group, index) => {
+                {state.token.roles.map((group, index) => {
                   return <Chip key={index} label={group} sx={{mb: 1}} />;
                 })}
               </Box>
@@ -297,7 +301,6 @@ export default function ClusterCard(props: ClusterCardProps) {
                     listing_id={props.listing_id}
                     listing_name={props.listing_name}
                     conductor_url={props.conductor_url}
-                    setToken={setToken}
                     is_refresh={true}
                     label={'refresh'}
                     size={'small'}
@@ -315,12 +318,11 @@ export default function ClusterCard(props: ClusterCardProps) {
           </Grid>
 
           <Divider sx={{my: 2}} />
-          {token.username ? (
+          {state.token.username ? (
             <React.Fragment>
               <UserSwitcher
                 listing_id={props.listing_id}
-                current_username={token.username}
-                setToken={props.setToken}
+                current_username={state.token.username}
               />
 
               <LoginButton
@@ -328,7 +330,6 @@ export default function ClusterCard(props: ClusterCardProps) {
                 listing_id={props.listing_id}
                 listing_name={props.listing_name}
                 conductor_url={props.conductor_url}
-                setToken={setToken}
                 is_refresh={true}
                 label={'add another user'}
                 size={'small'}
@@ -340,6 +341,15 @@ export default function ClusterCard(props: ClusterCardProps) {
             ''
           )}
         </React.Fragment>
+      ) : (
+        <LoginButton
+          key={props.listing_id}
+          listing_id={props.listing_id}
+          listing_name={props.listing_name}
+          conductor_url={props.conductor_url}
+          is_refresh={false}
+          startIcon={<LoginIcon />}
+        />
       )}
     </MainCard>
   );

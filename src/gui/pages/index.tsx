@@ -18,24 +18,23 @@
  *   TODO
  */
 
-import React, {useEffect} from 'react';
+import React, {useContext, useEffect} from 'react';
 import {NavLink} from 'react-router-dom';
 
 import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {useTheme} from '@mui/material/styles';
 import {checkToken} from '../../utils/helpers';
-import {TokenContents} from '../../datamodel/core';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-type IndexProps = {
-  token?: null | undefined | TokenContents;
-};
-export default function Index(props: IndexProps) {
+import {store} from '../../context/store';
+
+export default function Index() {
   /**
    * Landing page
    */
   const theme = useTheme();
-  const isAuthenticated = checkToken(props.token);
+  const {state} = useContext(store);
+  const isAuthenticated = checkToken(state.token);
   useEffect(() => {
     document.body.classList.add('bg-primary-gradient');
 

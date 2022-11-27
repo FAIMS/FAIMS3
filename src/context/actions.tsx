@@ -21,6 +21,7 @@
 import {ProjectObject} from '../datamodel/database';
 import {Record} from '../datamodel/ui';
 import {AlertColor} from '@mui/material/Alert/Alert';
+import {TokenContents} from '../datamodel/core';
 
 export enum ActionType {
   IS_SYNCING_UP,
@@ -41,6 +42,9 @@ export enum ActionType {
   ADD_ALERT,
   DELETE_ALERT,
   ADD_CUSTOM_ALERT,
+
+  SET_USER,
+  DROP_USER,
 }
 
 export interface IS_SYNCING_UP {
@@ -122,5 +126,13 @@ export interface ADD_CUSTOM_ALERT {
     severity: AlertColor;
   };
 }
-
 export type AlertActions = ADD_ALERT | DELETE_ALERT | ADD_CUSTOM_ALERT;
+
+export interface SET_USER {
+  type: ActionType.SET_USER;
+  payload: {token: TokenContents | null | undefined};
+}
+export interface DROP_USER {
+  type: ActionType.DROP_USER;
+}
+export type UserActions = SET_USER | DROP_USER;

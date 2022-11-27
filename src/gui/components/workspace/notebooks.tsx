@@ -33,7 +33,6 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {getAllProjectList, listenProjectList} from '../../../databaseAccess';
 import {useEventedPromise} from '../../pouchHook';
-import {TokenContents} from '../../../datamodel/core';
 import CircularLoading from '../../components/ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
@@ -50,7 +49,6 @@ interface sortModel {
   sort: 'asc' | 'desc';
 }
 type NoteBookListProps = {
-  token?: null | undefined | TokenContents;
   sortModel: sortModel; // {field: 'name', sort: 'asc'}
 };
 

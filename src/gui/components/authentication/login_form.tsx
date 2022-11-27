@@ -1,13 +1,14 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
-import React from 'react';
+import React, {useContext} from 'react';
 import {Button, ButtonProps} from '@mui/material';
 import {Device} from '@capacitor/device';
 import {Browser} from '@capacitor/browser';
 
-import {TokenContents} from '../../../datamodel/core';
 import {ConductorURL} from '../../../datamodel/database';
 import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
+import {ActionType} from '../../../context/actions';
+import {store} from '../../../context/store';
 
 export async function isWeb(): Promise<boolean> {
   const info = await Device.getInfo();
@@ -18,7 +19,6 @@ export type LoginButtonProps = {
   listing_id: string;
   conductor_url: ConductorURL;
   listing_name: string;
-  setToken: React.Dispatch<React.SetStateAction<TokenContents | undefined>>;
   is_refresh: boolean;
   label?: string;
   size?: ButtonProps['size'];
@@ -31,6 +31,7 @@ export type LoginButtonProps = {
  * @param props ID of this cluster + any info if it's already logged in
  */
 export function LoginButton(props: LoginButtonProps) {
+  const {dispatch} = useContext(store);
   return (
     <Button
       variant="outlined"
@@ -56,7 +57,12 @@ export function LoginButton(props: LoginButtonProps) {
                   props.listing_id
                 );
                 console.debug('token is', token);
-                props.setToken(token);
+                dispatch({
+                  type: ActionType.SET_USER,
+                  payload: {
+                    token: token,
+                  },
+                });
                 reprocess_listing(props.listing_id);
               })
               .catch(err => {
@@ -65,7 +71,12 @@ export function LoginButton(props: LoginButtonProps) {
                   props.listing_id,
                   err
                 );
-                props.setToken(undefined);
+                dispatch({
+                  type: ActionType.SET_USER,
+                  payload: {
+                    token: undefined,
+                  },
+                });
               });
           },
           false

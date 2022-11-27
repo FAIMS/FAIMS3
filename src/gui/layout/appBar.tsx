@@ -19,7 +19,7 @@
  *   throughout the app.
  */
 
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {Link as RouterLink, NavLink} from 'react-router-dom';
 import {
   AppBar as MuiAppBar,
@@ -56,10 +56,10 @@ import SystemAlert from '../components/alert';
 import {ProjectInformation} from '../../datamodel/ui';
 import {useEventedPromise} from '../pouchHook';
 import AppBarAuth from '../components/authentication/appbarAuth';
-import {TokenContents} from '../../datamodel/core';
 import {checkToken} from '../../utils/helpers';
 // import ConnectedStatus from '../components/authentication/connectedStatus';
 import SyncStatus from '../components/sync';
+import {store} from '../../context/store';
 
 type ProjectListItemProps = {
   title: string;
@@ -159,16 +159,14 @@ function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   };
 }
 
-type NavbarProps = {
-  token?: null | undefined | TokenContents;
-};
-export default function AppBar(props: NavbarProps) {
+export default function AppBar() {
   const classes = useStyles();
-  // const globalState = useContext(store);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const isAuthenticated = checkToken(props.token);
+
   const toggle = () => setIsOpen(!isOpen);
+  const {state} = useContext(store);
+  const isAuthenticated = checkToken(state.token);
 
   const pouchProjectList = useEventedPromise(
     'AppBar component',
@@ -269,7 +267,7 @@ export default function AppBar(props: NavbarProps) {
             <div>
               {/*{isAuthenticated ? <ConnectedStatus token={props.token} /> : ''}*/}
               {isAuthenticated ? <SyncStatus /> : ''}
-              <AppBarAuth token={props.token} />
+              <AppBarAuth />
             </div>
           </Toolbar>
         </MuiAppBar>

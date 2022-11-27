@@ -2,25 +2,26 @@ import {Route, Redirect, RouteProps} from 'react-router-dom';
 
 import {DISABLE_SIGNIN_REDIRECT} from '../buildconfig';
 import * as ROUTES from './routes';
-import {TokenContents} from '../datamodel/core';
+import {useContext} from 'react';
+import {store} from '../context/store';
 
 interface PrivateRouteProps extends RouteProps {
   // tslint:disable-next-line:no-any
   component: any;
-  token?: undefined | TokenContents;
   extraProps?: any;
   is_sign?: boolean;
 }
 
 export const PrivateRoute = (props: PrivateRouteProps) => {
-  const {component: Component, is_sign, token, extraProps, ...rest} = props;
+  const {component: Component, is_sign, extraProps, ...rest} = props;
+  const {state} = useContext(store);
   return (
     <Route
       {...rest}
       render={routeProps =>
         is_sign === true || DISABLE_SIGNIN_REDIRECT ? (
           <Component {...extraProps} {...routeProps} />
-        ) : token !== undefined ? (
+        ) : state.token ? (
           <Component {...extraProps} {...routeProps} />
         ) : (
           <Redirect

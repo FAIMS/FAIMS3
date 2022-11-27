@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useContext} from 'react';
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
@@ -34,7 +34,7 @@ import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import ProjectCreate from './gui/pages/project-create';
 import NotFound404 from './gui/pages/404';
-import {StateProvider} from './context/store';
+import {StateProvider, store} from './context/store';
 import MainLayout from './gui/layout';
 import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 
@@ -47,9 +47,9 @@ import {ProjectsList} from './datamodel/database';
 import theme from './gui/theme';
 import {getTokenContentsForRouting} from './users';
 
-import {useEffect, useState} from 'react';
+import {useEffect} from 'react';
 
-import {TokenContents} from './datamodel/core';
+import {ActionType} from './context/actions';
 
 // type AppProps = {};
 
@@ -66,32 +66,38 @@ export default function App() {
     projects[active_id] = createdProjects[active_id].project;
   }
 
-  const [token, setToken] = useState(null as null | undefined | TokenContents);
-
-  // TODO: Rather than returning the contents of a token, we should work out
-  // what details are actually needed.
+  // Run once on app load - get the token contents and populate the
+  // global state token key
+  const {dispatch} = useContext(store);
   useEffect(() => {
     const getToken = async () => {
-      setToken(await getTokenContentsForRouting());
+      console.log('getting token...');
+      dispatch({
+        type: ActionType.SET_USER,
+        payload: {
+          token: await getTokenContentsForRouting(),
+        },
+      });
     };
     getToken();
   }, []);
-
-  return token === null ? (
-    <></>
-  ) : (
+  // return token === null ? (
+  //   <></>
+  // ) : (
+  //
+  // );
+  return (
     <StateProvider>
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
           <Router>
-            <MainLayout token={token}>
+            <MainLayout>
               <Switch>
                 <PrivateRoute
                   exact
                   path={ROUTES.SIGN_IN}
                   component={SignIn}
                   is_sign={true}
-                  extraProps={{setToken: setToken}}
                 />
                 <Route
                   exact
@@ -102,36 +108,26 @@ export default function App() {
                   exact
                   path={ROUTES.WORKSPACE}
                   component={Workspace}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact
                   path={ROUTES.NOTEBOOK_LIST}
                   component={NoteBookList}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact
                   path={ROUTES.PROJECT_CREATE}
                   component={ProjectCreate}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact
                   path={ROUTES.PROJECT_DESIGN + ':project_id'}
                   component={ProjectCreate}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact
                   path={ROUTES.NOTEBOOK + ':project_id'}
                   component={Notebook}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 {/* Draft creation happens by redirecting to a fresh minted UUID
                 This is to keep it stable until the user navigates away. So the
@@ -151,8 +147,6 @@ export default function App() {
                     ':record_id'
                   }
                   component={RecordCreate}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact
@@ -163,8 +157,6 @@ export default function App() {
                     ':type_name'
                   }
                   component={RecordCreate}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 {/*Record editing and viewing is a separate affair, separated by
                 the presence/absence of draft_id prop OR draft_id being in the
@@ -185,8 +177,6 @@ export default function App() {
                     ':revision_id'
                   }
                   component={Record}
-                  token={token}
-                  extraProps={{token: token}}
                 />
                 <PrivateRoute
                   exact
@@ -201,16 +191,8 @@ export default function App() {
                     ':draft_id'
                   }
                   component={Record}
-                  token={token}
-                  extraProps={{token: token}}
                 />
-                <PrivateRoute
-                  exact
-                  path="/"
-                  component={Index}
-                  extraProps={{token: token}}
-                  is_sign={true}
-                />
+                <PrivateRoute exact path="/" component={Index} is_sign={true} />
                 <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
                 <Route component={NotFound404} />
               </Switch>
