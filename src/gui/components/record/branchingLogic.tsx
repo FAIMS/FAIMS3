@@ -21,13 +21,78 @@
  * (which means that all fields and tabs with is_logic setup should not be displayed with initial value unless initial value is included)
  */
 import {ProjectUIModel} from '../../../datamodel/ui';
-//function is to get all relevant fields
+
 export function update_by_branching_logic(
   ui_specification: ProjectUIModel,
   values: {[field_name: string]: any},
-  is_field: boolean
+  is_field: boolean,
+  fieldNames: string[],
+  views: string[],
+  viewName: string,
+  viewsetName: string,
+  touched: {[field_name: string]: any}
 ) {
-  const field = values.updateField;
+  let returnValue = update_by_check(
+    ui_specification,
+    values,
+    is_field,
+    viewName,
+    viewsetName,
+    values.updateField
+  );
+  if (returnValue !== null) return returnValue;
+  for (const FieldName of Object.keys(touched)) {
+    returnValue = update_by_check(
+      ui_specification,
+      values,
+      is_field,
+      viewName,
+      viewsetName,
+      FieldName
+    );
+    if (returnValue !== null) {
+      break;
+    }
+  }
+  if (returnValue !== null) return returnValue;
+  if (is_field) return fieldNames;
+  else return views;
+}
+
+function update_by_check(
+  ui_specification: ProjectUIModel,
+  values: {[field_name: string]: any},
+  is_field: boolean,
+  viewName: string,
+  viewsetName: string,
+  fieldName: string
+) {
+  const is_checked = check_by_branching_logic(
+    ui_specification,
+    is_field,
+    fieldName
+  );
+  if (is_checked) {
+    if (is_field) {
+      const newFieldNames = get_logic_fields(
+        ui_specification,
+        values,
+        viewName
+      );
+      return newFieldNames;
+    } else {
+      const newViews = get_logic_views(ui_specification, viewsetName, values);
+      return newViews;
+    }
+  }
+  return null;
+}
+//function is to get all relevant fields
+function check_by_branching_logic(
+  ui_specification: ProjectUIModel,
+  is_field: boolean,
+  field: string
+) {
   if (field === undefined || field === '') return true;
 
   if (ui_specification['fields'][field]['logic_select'] === undefined)
