@@ -31,7 +31,6 @@ import {getProjectMetadata} from '../../projectMetadata';
 import {getComponentFromField} from '../components/project/FormElement';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 
-
 const GEOTIFF_DEFAULT = '';
 
 const MapFieldUISpec = {
