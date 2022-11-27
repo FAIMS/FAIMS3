@@ -133,6 +133,8 @@ type RecordFormState = {
   description: string | null;
   ugc_comment: string | null;
   relationship: Relationship | null;
+  fieldNames: string[];
+  views: string[];
 };
 
 class RecordForm extends React.Component<
@@ -216,6 +218,8 @@ class RecordForm extends React.Component<
       description: null,
       ugc_comment: null,
       relationship: {},
+      fieldNames: [],
+      views: [],
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -604,6 +608,8 @@ class RecordForm extends React.Component<
       related,
       this.props.record_id
     );
+    initialValues['fieldNames'] = [];
+    initialValues['views'] = [];
     this.setState({
       initialValues: initialValues,
       annotation: annotations,
@@ -1225,31 +1231,26 @@ class RecordForm extends React.Component<
             >
               {formProps => {
                 //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    true
-                  )
-                )
-                  fieldNames = get_logic_fields(
-                    this.props.ui_specification,
-                    formProps.values,
-                    viewName
-                  );
-                //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    false
-                  )
-                )
-                  views = get_logic_views(
-                    this.props.ui_specification,
-                    viewsetName,
-                    formProps.values
-                  );
+                fieldNames = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  true,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
+                views = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  false,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
