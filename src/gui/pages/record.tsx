@@ -51,7 +51,6 @@ import {getUiSpecForProject} from '../../uiSpecification';
 
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
-import RecordDelete from '../components/record/delete';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
@@ -86,7 +85,6 @@ import {
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
-import {useLocation} from 'react-router-dom';
 import RecordData from '../components/record/RecordData';
 
 export default function Record() {
@@ -153,19 +151,10 @@ export default function Record() {
   const [pressedvalue, setpressedvalue] = useState(value);
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
-  const location: any = useLocation();
-  console.debug('Location', location.state);
-
-  const [breadcrumbs, setBreadcrumbs] = useState([
-    // {link: ROUTES.INDEX, title: 'Home'},
-    {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
-    {
-      link: ROUTES.NOTEBOOK + project_id,
-      title: project_info !== null ? project_info.name : project_id,
-    },
-    {title: hrid ?? record_id},
-    // {title: recordInfo},
-  ]);
+  const [is_link_ready, setIs_link_ready] = useState(false);
+  const [breadcrumbs, setBreadcrumbs] = useState<
+    {link?: string; title: string}[]
+  >([]);
 
   useEffect(() => {
     getUiSpecForProject(project_id).then(setUISpec, setError);
@@ -183,13 +172,30 @@ export default function Record() {
 
   useEffect(() => {
     const getIni = async () => {
+      console.debug('record start initial', project_id, record_id, revision_id);
+      setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
+      setrevision_id(revision_id);
+      setselectedRevision(revision_id);
       listFAIMSRecordRevisions(project_id, record_id)
         .then(all_revisions => {
           setRevisions(all_revisions);
         })
         .catch(console.error /*TODO*/);
-      getHRIDforRecordID(project_id, record_id).then(hrid => setHrid(hrid));
+      getHRIDforRecordID(project_id, record_id).then(hrid => {
+        setHrid(hrid);
+        setBreadcrumbs([
+          // {link: ROUTES.INDEX, title: 'Home'},
+          {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
+          {
+            link: ROUTES.NOTEBOOK + project_id,
+            title: project_info !== null ? project_info.name : project_id,
+          },
+          {title: hrid ?? record_id},
+        ]);
+        //check if record loading correctly when link
+        setValue('1');
+      });
     };
 
     getIni();
@@ -215,6 +221,7 @@ export default function Record() {
 
   useEffect(() => {
     const getConflictList = async () => {
+      console.debug('record start initial conflict', selectrevision);
       try {
         if (selectrevision !== null)
           setConflictfields(
@@ -229,6 +236,12 @@ export default function Record() {
 
   useEffect(() => {
     const getType = async () => {
+      console.debug(
+        'record start initial type',
+        project_id,
+        record_id,
+        updatedrevision_id
+      );
       try {
         const latest_record = await getFullRecordData(
           project_id,
@@ -258,13 +271,25 @@ export default function Record() {
     // this is function to get child information
 
     const getrelated_Info = async () => {
-      console.debug(relatedRecords);
+      console.debug(
+        'record start initial relationship',
+        record_id,
+        type,
+        hrid,
+        relatedRecords
+      );
       try {
         if (uiSpec !== null && type !== null) {
           const latest_record = await getFullRecordData(
             project_id,
             record_id,
             updatedrevision_id
+          );
+          console.debug(
+            'record start initial relationship revision',
+            updatedrevision_id,
+            revision_id,
+            latest_record
           );
           if (latest_record !== null) {
             const newRelationship = await getDetailRelatedInformation(
@@ -275,6 +300,10 @@ export default function Record() {
               latest_record.relationship ?? null,
               record_id,
               updatedrevision_id
+            );
+            console.debug(
+              'record start initial relationship relationship',
+              newRelationship
             );
             setRelatedRecords(newRelationship);
             const newParent = await getParentPersistenceData(
@@ -310,14 +339,16 @@ export default function Record() {
             }
             setBreadcrumbs(newBreadcrumbs);
           }
-          setValue('1');
+          // setValue('1');
+          setIs_link_ready(true);
         }
       } catch (error) {
         console.error('Error to get child information', error);
+        //setIs_link_ready(true);
       }
     };
     getrelated_Info();
-  }, [uiSpec, type]);
+  }, [uiSpec, type, updatedrevision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
@@ -391,7 +422,7 @@ export default function Record() {
         </Grid>
       </Grid>
       <Grid item xs>
-        <Breadcrumbs data={breadcrumbs} />
+        {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
       </Grid>
       {draft_id !== undefined && (
         <Alert severity={'warning'}>
@@ -576,6 +607,7 @@ export default function Record() {
                                 handleSetDraftError={setDraftError}
                                 parentRecords={parentLinks}
                                 record_to_field_links={relatedRecords}
+                                is_link_ready={is_link_ready}
                               />
                             )}
                           </Box>
@@ -601,6 +633,7 @@ export default function Record() {
                           draftError={draftError}
                           parentRecords={parentLinks}
                           record_to_field_links={relatedRecords}
+                          is_link_ready={is_link_ready}
                         />
                       )}
                     </Box>
@@ -628,13 +661,6 @@ export default function Record() {
               record_id={record_id}
               revision_id={updatedrevision_id}
             />
-            <Box mt={2}>
-              <RecordDelete
-                project_id={project_id}
-                record_id={record_id}
-                revision_id={updatedrevision_id}
-              />
-            </Box>
           </TabPanel>
           <TabPanel
             value="4"

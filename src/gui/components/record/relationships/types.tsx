@@ -27,9 +27,10 @@ export interface RecordLinkProps {
   hrid: string | number;
   type: string;
   route: string;
-  relation_type_vocabPair?: string[];
+  relation_type_vocabPair: string[];
   link: FieldLinkProps;
   lastUpdatedBy?: string;
+  relation_preferred?: boolean;
 }
 /**************need to be updated later */
 export interface ParentLinkProps {
@@ -67,6 +68,7 @@ export interface RecordLinksComponentProps {
   record_links: Array<RecordLinkProps> | null;
   record_id: RecordID;
   handleSetSection: Function;
+  isconflict?: boolean; //add for conflict component
 }
 
 export interface DataGridLinksComponentProps {
@@ -78,6 +80,10 @@ export interface DataGridLinksComponentProps {
   handleUnlink?: Function;
   handleReset?: Function;
   disabled?: boolean;
+  handleMakePreferred?: Function;
+  preferred?: string | null;
+  relation_type?: string;
+  relation_preferred_label?: string;
 }
 export const PARENT_CHILD_VOCAB = [
   'is child of',

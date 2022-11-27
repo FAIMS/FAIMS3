@@ -36,6 +36,7 @@ import {grey} from '@mui/material/colors';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import InheritedDataComponent from './inherited_data';
 import {ParentLinkProps, RecordLinkProps} from './relationships/types';
+import CircularProgress from '@mui/material/CircularProgress';
 interface RecordDataTypes {
   project_id: ProjectID;
   record_id: RecordID;
@@ -57,6 +58,7 @@ interface RecordDataTypes {
   handleSetDraftError: Function;
   parentRecords: Array<ParentLinkProps> | null;
   record_to_field_links: RecordLinkProps[];
+  is_link_ready: boolean;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -71,7 +73,6 @@ export default function RecordData(props: RecordDataTypes) {
   };
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
-
   return (
     <Box bgcolor={grey[100]}>
       <TabContext value={dataTab}>
@@ -87,13 +88,17 @@ export default function RecordData(props: RecordDataTypes) {
             is_saving={props.isDraftSaving}
             error={props.draftError}
           />
-          <RelationshipsViewComponent
-            record_to_field_links={props.record_to_field_links}
-            record_id={props.record_id}
-            record_hrid={props.hrid ?? props.record_id}
-            record_type={props.record_type}
-            handleSetSection={setViewName}
-          />
+          {props.is_link_ready ? (
+            <RelationshipsViewComponent
+              record_to_field_links={props.record_to_field_links}
+              record_id={props.record_id}
+              record_hrid={props.hrid ?? props.record_id}
+              record_type={props.record_type}
+              handleSetSection={setViewName}
+            />
+          ) : (
+            <CircularProgress size={24} />
+          )}
           <Accordion defaultExpanded={true}>
             <AccordionSummary
               aria-controls="form-accordion-content"
@@ -118,22 +123,26 @@ export default function RecordData(props: RecordDataTypes) {
                     p={{xs: 1, sm: 1, md: 2, lg: 2}}
                     variant={is_mobile ? undefined : 'outlined'}
                   >
-                    <RecordForm
-                      project_id={props.project_id}
-                      record_id={props.record_id}
-                      revision_id={props.revision_id}
-                      ui_specification={props.ui_specification}
-                      draft_id={props.draft_id}
-                      metaSection={props.metaSection}
-                      handleChangeTab={props.handleChangeTab}
-                      conflictfields={props.conflictfields}
-                      isSyncing={props.isSyncing}
-                      handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                      handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                      handleSetDraftError={props.handleSetDraftError}
-                      // setRevision_id={setRevision_id}
-                      ViewName={ViewName}
-                    />
+                    {props.is_link_ready ? (
+                      <RecordForm
+                        project_id={props.project_id}
+                        record_id={props.record_id}
+                        revision_id={props.revision_id}
+                        ui_specification={props.ui_specification}
+                        draft_id={props.draft_id}
+                        metaSection={props.metaSection}
+                        handleChangeTab={props.handleChangeTab}
+                        conflictfields={props.conflictfields}
+                        isSyncing={props.isSyncing}
+                        handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+                        handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+                        handleSetDraftError={props.handleSetDraftError}
+                        // setRevision_id={setRevision_id}
+                        ViewName={ViewName}
+                      />
+                    ) : (
+                      <CircularProgress size={24} />
+                    )}
                   </Box>
                 </Grid>
               </Grid>

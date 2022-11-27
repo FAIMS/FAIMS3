@@ -13,7 +13,7 @@ const getdvalue = (value: any) => {
 };
 
 export const getDefaultuiSetting = () => {
-  return getdvalue(DefaultuiSetting);
+  return getdvalue(DefaultuiSetting) as ProjectUIModel;
 };
 
 export const getDefaultuiSpec = () => {

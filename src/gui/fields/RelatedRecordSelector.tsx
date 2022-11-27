@@ -69,6 +69,7 @@ interface Props {
   current_form?: string;
   current_form_label?: string;
   isconflict?: boolean;
+  relation_preferred_label?: string;
 }
 
 function get_default_relation_label(
@@ -140,6 +141,10 @@ type DisplayChildProps = {
   value: any;
   multiple: boolean;
   relationshipLabel: string;
+  handleMakePreferred: Function;
+  preferred: null | string;
+  relation_type: string;
+  relation_preferred_label: string;
 };
 
 function DisplayChild(props: DisplayChildProps) {
@@ -157,6 +162,8 @@ function DisplayChild(props: DisplayChildProps) {
         <DataGridNoLink
           links={props.multiple ? props.value : [props.value]}
           relation_linked_vocab={props.relationshipLabel}
+          relation_type={props.relation_type}
+          relation_preferred_label={props.relation_preferred_label}
         />
       );
   }
@@ -170,6 +177,10 @@ function DisplayChild(props: DisplayChildProps) {
       handleUnlink={props.handleUnlink}
       handleReset={props.handleReset}
       disabled={props.disabled}
+      handleMakePreferred={props.handleMakePreferred}
+      preferred={props.preferred}
+      relation_type={props.relation_type}
+      relation_preferred_label={props.relation_preferred_label}
     />
   );
 }
@@ -208,6 +219,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   );
   const [updated, SetUpdated] = React.useState(uuidv4());
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
+  const [preferred, setPreferred] = React.useState(null as string | null);
+  const relation_preferred_label = props.relation_preferred_label ?? '';
+  // BBS 20221117 using empty string instead of null as a quick hack to toggle control of preferred checkbox in absence of a different boolean.
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -229,6 +243,19 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.form.values[field_name]['record_id'] === undefined
         )
           setIs_enabled(true);
+        if (!multiple) {
+          if (
+            props.form.values[field_name]['record_id'] !== undefined &&
+            props.form.values[field_name]['is_preferred'] === true
+          )
+            setPreferred(props.form.values[field_name]['record_id']);
+        } else {
+          props.form.values[field_name].map((child_record: RecordReference) => {
+            if (child_record.is_preferred === true) {
+              setPreferred(child_record['record_id']);
+            }
+          });
+        }
         const all_records = await getRecordsByType(
           project_id,
           props.related_type,
@@ -361,7 +388,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (selectedRecord === null) return false;
     let newValue = props.form.values[field_name];
 
-    if (multiple) newValue.push(selectedRecord);
+    if (multiple) newValue = [...(newValue ?? []), selectedRecord];
     else newValue = selectedRecord;
 
     setFieldValue(newValue);
@@ -421,22 +448,22 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       record_label: child_hrid,
       relation_type_vocabPair: relationshipPair,
     };
-    let newValue = props.form.values[field_name];
+    const newValue: RecordReference[] = [];
     if (multiple) {
-      let child_record_index = -1;
-      newValue.map((record: RecordReference, index: number) =>
+      // let child_record_index = -1;
+      props.form.values[field_name].map((record: RecordReference) =>
         record.record_id === child_record.record_id
-          ? (child_record_index = index)
-          : record
+          ? record
+          : newValue.push(record)
       );
-      if (child_record_index === 0 && newValue.length === 1) {
-        newValue = [];
-      } else if (child_record_index > -1) {
-        // only splice array when item is found
-        newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
-      }
-    } else newValue = '';
-    setFieldValue(newValue);
+      // if (child_record_index === 0 && newValue.length === 1) {
+      //   newValue = [];
+      // } else if (child_record_index > -1) {
+      //   // only splice array when item is found
+      //   newValue.splice(child_record_index, 1); // 2nd parameter means remove one item only
+      // }
+      setFieldValue(newValue);
+    } else setFieldValue('');
 
     const records = options;
     records.push(child_record);
@@ -491,6 +518,35 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     SetSelectedRecord(null);
     return props.form.values['_current_revision_id'];
     //call the function to trigger the child to be updated??TBD
+  };
+
+  const handleMakePreferred = (
+    child_record_id: string,
+    is_preferred: boolean
+  ) => {
+    //function to set preferred field
+    const newValue = props.form.values[field_name];
+    if (multiple) {
+      newValue.map((child_record: RecordReference) =>
+        child_record.record_id === child_record_id
+          ? (child_record.is_preferred = is_preferred)
+          : child_record
+      );
+    } else {
+      newValue.is_preferred = is_preferred;
+    }
+    if (recordsInformation !== null && recordsInformation.length > 0) {
+      const newRecords = recordsInformation;
+      newRecords.map((record: RecordLinkProps) =>
+        record.record_id === child_record_id
+          ? (record['relation_preferred'] = is_preferred)
+          : record
+      );
+      setRecordsInformation(newRecords);
+    }
+    props.form.setFieldValue(props.field.name, newValue);
+    if (is_preferred === true) setPreferred(child_record_id);
+    else setPreferred(null);
   };
 
   return (
@@ -552,6 +608,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             record_id={record_id}
             record_hrid={props.form.values['_id']}
             record_type={props.form.values['type']}
+            relation_type={type}
             field_label={props.InputLabelProps.label}
             handleUnlink={remove_related_child}
             handleReset={() => SetUpdated(uuidv4())}
@@ -559,6 +616,9 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             value={props.form.values[field_name]}
             multiple={multiple}
             relationshipLabel={relationshipLabel}
+            handleMakePreferred={handleMakePreferred}
+            preferred={preferred}
+            relation_preferred_label={relation_preferred_label}
           />
         </Grid>
       </Grid>
@@ -646,10 +706,10 @@ const uiSetting = () => {
   newuiSetting['fields']['relation_linked_vocabPair'] = {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
-    'type-returned': 'faims-core::Integer',
+    'type-returned': 'faims-core::String',
     'component-parameters': {
       InputLabelProps: {
-        label: 'Number of Line',
+        label: 'Relation type Pair Label',
       },
       fullWidth: false,
       helperText: "Add relation type Pair, use ','to separate pair",
@@ -658,6 +718,23 @@ const uiSetting = () => {
     },
     validationSchema: [['yup.string']],
     initialValue: 'is related to',
+  };
+  newuiSetting['fields']['relation_preferred_label'] = {
+    'component-namespace': 'formik-material-ui',
+    'component-name': 'TextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      InputLabelProps: {
+        label: 'Make Preferred Label',
+      },
+      fullWidth: false,
+      helperText: 'Make Preferred Label',
+      variant: 'outlined',
+      required: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: null,
+    // BBS 20221117 set initialValue to null to default to disabled
   };
   newuiSetting['fields']['related_type'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
@@ -740,6 +817,7 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
         'multiple' + props.fieldName,
         'relation_type' + props.fieldName,
         'related_type' + props.fieldName,
+        'relation_preferred_label' + props.fieldName,
       ];
     setuiSetting({...newvalues});
   };
@@ -770,6 +848,7 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
           'multiple' + props.fieldName,
           'relation_type' + props.fieldName,
           'related_type' + props.fieldName,
+          'relation_preferred_label' + props.fieldName,
         ];
       setuiSetting({...newvalues});
     } else if (name === 'relation_linked_vocabPair') {

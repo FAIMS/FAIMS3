@@ -60,7 +60,7 @@ export default function CreateLinkComponent(
           <LinkIcon fontSize={'inherit'} sx={{mt: '3px'}} />
         </Grid>
         <Grid item xs={'auto'}>
-          <Typography variant={'h6'}>Links from {field_label}</Typography>
+          <Typography variant={'h6'}>{field_label}</Typography>
         </Grid>
         <Grid item xs>
           <Divider />

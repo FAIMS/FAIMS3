@@ -165,15 +165,15 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
       .then((res: [any, any]) => {
         const buf_a = res[0] as ArrayBuffer;
         const buf_b = res[1] as ArrayBuffer;
-        const arr_a = new BigUint64Array(buf_a);
-        const arr_b = new BigUint64Array(buf_b);
+        const arr_a = new Uint8Array(buf_a);
+        const arr_b = new Uint8Array(buf_b);
         console.info('Checking array buffers', arr_a, arr_b);
         return arr_a.every((element, index) => {
           return element === arr_b[index];
         });
       })
       .catch(err => {
-        console.error(err);
+        console.error('Blob checking failed', err);
         return false;
       });
   } else {

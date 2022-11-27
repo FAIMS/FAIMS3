@@ -90,31 +90,49 @@ const ImageGalleryList = styled('ul')(({theme}) => ({
 //   };
 // }
 
-const FAIMSViewImageList = (props: {images: Array<any>; fieldName: string}) => {
-  console.log(props.images);
+const FAIMSViewImageList = (props: {
+  images: Array<any>;
+  fieldName: string;
+  setopen: Function;
+}) => {
   return (
     <List>
-      {props.images.map((image, index) => (
-        <ListItem
-          key={props.fieldName + index}
-          id={props.fieldName + index + 'image'}
-        >
-          <img
-            // {...srcset(item.img, 121, item.rows, item.cols)}
-            style={{maxHeight: 300, maxWidth: 200}}
-            src={URL.createObjectURL(image)}
-            loading="lazy"
-          />
-        </ListItem>
-      ))}
+      {props.images.map((image, index) =>
+        image['attachment_id'] === undefined ? (
+          <ListItem
+            key={props.fieldName + index}
+            id={props.fieldName + index + 'image'}
+          >
+            <img
+              // {...srcset(item.img, 121, item.rows, item.cols)}
+              style={{maxHeight: 300, maxWidth: 200}}
+              src={URL.createObjectURL(image)}
+              loading="lazy"
+            />
+          </ListItem>
+        ) : (
+          // ?? not allow user to delete image if the image is not download yet
+          <FAIMSImageIconList index={index} setopen={props.setopen} />
+        )
+      )}
     </List>
+  );
+};
+
+const FAIMSImageIconList = (props: {index: number; setopen: Function}) => {
+  const {index, setopen} = props;
+  return (
+    <ImageListItem key={index}>
+      <IconButton aria-label="image" onClick={() => setopen(null)}>
+        <ImageIcon />
+      </IconButton>
+    </ImageListItem>
   );
 };
 
 const FAIMSImageList = (props: ImageListProps) => {
   const {images, setopen, setimage} = props;
   const disabled = props.disabled ?? false;
-  console.log(disabled);
   const handelonClick = (index: number) => {
     if (images.length > index) {
       const newimages = images.filter((image: any, i: number) => i !== index);
@@ -126,7 +144,11 @@ const FAIMSImageList = (props: ImageListProps) => {
     return <span>No photo taken.</span>;
   if (disabled === true)
     return (
-      <FAIMSViewImageList images={props.images} fieldName={props.fieldName} />
+      <FAIMSViewImageList
+        images={props.images}
+        fieldName={props.fieldName}
+        setopen={setopen}
+      />
     );
   return (
     <ImageGalleryList>
@@ -164,11 +186,7 @@ const FAIMSImageList = (props: ImageListProps) => {
           </ImageListItem>
         ) : (
           // ?? not allow user to delete image if the image is not download yet
-          <ImageListItem key={index}>
-            <IconButton aria-label="image" onClick={() => setopen(null)}>
-              <ImageIcon />
-            </IconButton>
-          </ImageListItem>
+          <FAIMSImageIconList index={index} setopen={setopen} />
         )
       )}{' '}
     </ImageGalleryList>
@@ -228,7 +246,7 @@ export class TakePhoto extends React.Component<
   render() {
     const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    console.log(images);
+    console.debug('images', images);
 
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {

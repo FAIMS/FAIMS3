@@ -301,6 +301,7 @@ pressedvalue
 pretabs
 prevalue
 primarytab
+projdb
 PROJECTATTACHMENT
 projectid
 projectinfo
@@ -633,3 +634,11 @@ hrids
 isodate
 basemap
 unactivated
+# TODO FIX
+availabe
+hrids
+isodate
+choosenconflict
+abutts
+usecase
+isdisplay 

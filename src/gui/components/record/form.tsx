@@ -66,11 +66,13 @@ import {
   getParentlinkInfo,
   getParentInfo,
   getChildInfo,
+  getParentLink_from_relationship,
 } from './relationships/RelatedInformation';
 
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
+import {generateFAIMSDataID, getFirstRecordHead} from '../../../data_storage';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -131,6 +133,8 @@ type RecordFormState = {
   description: string | null;
   ugc_comment: string | null;
   relationship: Relationship | null;
+  fieldNames: string[];
+  views: string[];
 };
 
 class RecordForm extends React.Component<
@@ -214,6 +218,8 @@ class RecordForm extends React.Component<
       description: null,
       ugc_comment: null,
       relationship: {},
+      fieldNames: [],
+      views: [],
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -268,9 +274,24 @@ class RecordForm extends React.Component<
 
   async formChanged(
     draft_saving_started_already: boolean,
-    revision_id: string | undefined
+    passed_revision_id: string | undefined
   ) {
+    let revision_id = passed_revision_id;
     if (DEBUG_APP) console.debug('check passed revision id', revision_id);
+    if (revision_id === undefined) {
+      try {
+        // for new draft but saved record, get the revision instead of using the null
+        const first_revision_id = await getFirstRecordHead(
+          this.props.project_id,
+          this.props.record_id
+        );
+        revision_id = first_revision_id;
+        if (DEBUG_APP)
+          console.debug('get record revision', this.props.record_id);
+      } catch (error) {
+        if (DEBUG_APP) console.debug('new record', this.props.record_id);
+      }
+    }
     // const revision_id = this.props.revision_id;
     try {
       let this_type;
@@ -281,6 +302,8 @@ class RecordForm extends React.Component<
             this.props.record_id,
             revision_id
           );
+          if (DEBUG_APP)
+            console.debug('get record revision', this.props.record_id);
           if (latest_record === null) {
             this.props.handleSetDraftError(
               `Could not find data for record ${this.props.record_id}`
@@ -290,7 +313,7 @@ class RecordForm extends React.Component<
               payload: {
                 message:
                   'Could not load existing record: ' + this.props.record_id,
-                severity: 'warnings',
+                severity: 'warning',
               },
             });
             return;
@@ -424,9 +447,22 @@ class RecordForm extends React.Component<
           location.state.parent_record_id !== this.props.record_id &&
           this.state.initialValues !== null
         ) {
-          this.save(this.state.initialValues, false, false, () =>
-            console.log('saved')
-          );
+          if (
+            location.state.child_record_id !== undefined &&
+            location.state.child_record_id !== this.props.record_id
+          ) {
+            //child_record_id should always be current record_id, otherwise there would be an issue
+            if (DEBUG_APP) {
+              console.debug(
+                'child_record_id is not record_id  ',
+                this.props.record_id,
+                location.state.child_record_id
+              );
+            }
+          } else
+            this.save(this.state.initialValues, false, 'continue', () =>
+              console.log('saved')
+            );
         }
       }
     } catch (err: any) {
@@ -572,6 +608,8 @@ class RecordForm extends React.Component<
       related,
       this.props.record_id
     );
+    initialValues['fieldNames'] = [];
+    initialValues['views'] = [];
     this.setState({
       initialValues: initialValues,
       annotation: annotations,
@@ -686,11 +724,18 @@ class RecordForm extends React.Component<
   // - save doc/record
   // - save persistence data
   // - get new revision id, and set new revision id if user click save and continue
+  // - clear the draft
+  // after save: direct user to different path
+  // - - publish and continue: setSubmitting re-enabled, so user can save form for the new revision id
+  // - - publish and close: - close the current record and return to project list
+  //                     - close the current record and back to parent record if record created from parent or if record has parent
+  // - - publish and new:  - close the current record and create new record when current record has no parent relationship
+  //                    - when current record has parent: close current record, add new record into parent record, open the new record with parent
 
   save(
     values: object,
     is_final_view: boolean,
-    is_close: boolean,
+    is_close: string,
     setSubmitting: any
   ) {
     const ui_specification = this.props.ui_specification;
@@ -729,7 +774,14 @@ class RecordForm extends React.Component<
             relationship: this.state.relationship ?? {},
           };
           if (DEBUG_APP) {
-            console.log(doc);
+            console.debug(
+              'doc',
+              this.props.record_id,
+              this.state.revision_cached,
+              this.props.location.state,
+              this.state,
+              doc
+            );
           }
           return doc;
         })
@@ -747,7 +799,7 @@ class RecordForm extends React.Component<
               } catch (error) {
                 console.error('update child Error', error);
               }
-              return is_close
+              return is_close === 'close'
                 ? doc.data['hrid' + this.state.type_cached] ??
                     this.props.record_id
                 : revision_id; // return revision id for save and continue function
@@ -778,7 +830,7 @@ class RecordForm extends React.Component<
               severity: 'error',
             },
           });
-          console.error('Failed to save data', err);
+          console.error('Failed to save data', err, this.props.record_id);
         })
         //Clear the current draft area (Possibly after redirecting back to project page)
         .then(result => {
@@ -787,26 +839,265 @@ class RecordForm extends React.Component<
           });
         })
         .then(result => {
-          if (is_close) {
-            const {state_parent, is_direct} = getParentlinkInfo(
-              result,
-              this.props.location.state,
-              this.props.record_id
-            );
-            if (is_direct === false) {
-              this.props.history.push(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
-            } else {
-              this.props.history.push({
-                pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
-                state: state_parent,
-              });
-            }
-            window.scrollTo(0, 0);
-            // scroll to top of page, seems to be needed on mobile devices
-          } else {
+          //when user try to close the page
+          if (is_close === 'continue') {
             setSubmitting(false);
+            return result;
+          } else {
+            const RelationState = this.props.location.state;
+            if (DEBUG_APP) console.debug('Location ', RelationState);
+            if (RelationState !== undefined && RelationState !== null) {
+              const {state_parent, is_direct} = getParentlinkInfo(
+                result,
+                this.props.location.state,
+                this.props.record_id
+              );
+              if (is_direct === false) {
+                if (is_close === 'close') {
+                  this.props.history.push(
+                    ROUTES.NOTEBOOK + this.props.project_id
+                  ); //update for save and close button
+                  window.scrollTo(0, 0);
+                  return result;
+                } else if (is_close === 'new') {
+                  //not child record
+                  setSubmitting(false);
+                  this.props.history.push(
+                    ROUTES.NOTEBOOK +
+                      this.props.project_id +
+                      ROUTES.RECORD_CREATE +
+                      this.state.type_cached
+                  );
+                  window.scrollTo(0, 0);
+                  return result;
+                }
+              } else {
+                if (is_close === 'close') {
+                  this.props.history.push({
+                    pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
+                    state: state_parent,
+                  });
+                  window.scrollTo(0, 0);
+                  return result;
+                } else if (is_close === 'new') {
+                  // for new child record, should save the parent record and pass the location state --TODO
+                  const LocationState: any = this.props.location.state;
+                  setSubmitting(false);
+                  this.props.history.push({
+                    pathname:
+                      ROUTES.NOTEBOOK +
+                      this.props.project_id +
+                      ROUTES.RECORD_CREATE +
+                      this.state.type_cached,
+                    state: this.props.location.state,
+                  });
+                  console.debug('current state', this.state);
+                  const field_id = LocationState.field_id;
+                  const new_record_id = generateFAIMSDataID();
+                  const new_child_record = {
+                    record_id: new_record_id,
+                    project_id: this.props.project_id,
+                  };
+                  getFirstRecordHead(
+                    this.props.project_id,
+                    LocationState.parent_record_id
+                  ).then(revision_id =>
+                    getFullRecordData(
+                      this.props.project_id,
+                      LocationState.parent_record_id,
+                      revision_id
+                    ).then(latest_record => {
+                      const new_doc = latest_record;
+                      if (new_doc !== null) {
+                        if (
+                          this.props.ui_specification['fields'][field_id][
+                            'component-parameters'
+                          ]['multiple'] === true
+                        )
+                          new_doc['data'][field_id] = [
+                            ...new_doc['data'][field_id],
+                            new_child_record,
+                          ];
+                        else
+                          new_doc['data'][field_id] = [
+                            ...new_doc['data'][field_id],
+                            new_child_record,
+                          ];
+                        upsertFAIMSData(this.props.project_id, new_doc)
+                          .then(new_revision_id => {
+                            const location_state: any = LocationState;
+                            location_state['parent_link'] =
+                              ROUTES.getRecordRoute(
+                                this.props.project_id,
+                                (
+                                  location_state.parent_record_id || ''
+                                ).toString(),
+                                (new_revision_id || '').toString()
+                              ).replace('/notebooks/', '');
+                            location_state['child_record_id'] = new_record_id;
+                            if (DEBUG_APP)
+                              console.debug('new child state', location_state);
+                            this.props.history.push({
+                              pathname:
+                                ROUTES.NOTEBOOK +
+                                this.props.project_id +
+                                ROUTES.RECORD_CREATE +
+                                this.state.type_cached,
+                              state: location_state,
+                            });
+                            setSubmitting(false);
+                            window.scrollTo(0, 0);
+                            return result;
+                          })
+                          .catch(error =>
+                            console.error(
+                              'Error to save the parent record',
+                              error
+                            )
+                          );
+                      } else {
+                        console.error(
+                          'Error to save the parent record, latest record is null'
+                        );
+                        this.props.history.push({
+                          pathname:
+                            ROUTES.NOTEBOOK +
+                            this.props.project_id +
+                            ROUTES.RECORD_CREATE +
+                            this.state.type_cached,
+                          state: LocationState.location_state,
+                        });
+                        setSubmitting(false);
+                        window.scrollTo(0, 0);
+                        return result;
+                      }
+                    })
+                  );
+                  return result;
+                }
+              }
+            } else {
+              const relationship = this.state.relationship;
+              if (DEBUG_APP) console.debug('location state', relationship);
+              if (
+                relationship === undefined ||
+                relationship === null ||
+                relationship.parent === undefined ||
+                relationship.parent === null
+              ) {
+                if (is_close === 'close') {
+                  this.props.history.push(
+                    ROUTES.NOTEBOOK + this.props.project_id
+                  );
+                  window.scrollTo(0, 0);
+                  return result;
+                } else if (is_close === 'new') {
+                  //not child record
+                  setSubmitting(false);
+                  this.props.history.push(
+                    ROUTES.NOTEBOOK +
+                      this.props.project_id +
+                      ROUTES.RECORD_CREATE +
+                      this.state.type_cached
+                  );
+                  return result;
+                }
+              } else {
+                getParentLink_from_relationship(
+                  result,
+                  relationship,
+                  this.props.record_id,
+                  this.props.project_id
+                )
+                  .then(LocationState => {
+                    if (is_close === 'close') {
+                      this.props.history.push({
+                        pathname: LocationState.location_state.parent_link,
+                      });
+                      window.scrollTo(0, 0);
+                      return result;
+                    } else if (is_close === 'new') {
+                      // for new child record, should save the parent record and pass the location state --TODO
+                      // update parent information
+                      const new_doc = LocationState.latest_record;
+                      const field_id = LocationState.location_state.field_id;
+                      const new_record_id = generateFAIMSDataID();
+                      const new_child_record = {
+                        record_id: new_record_id,
+                        project_id: this.props.project_id,
+                        // record_label:new_record_id
+                        // relation_type_vocabPair: [],
+                      };
+                      if (new_doc !== null) {
+                        if (
+                          this.props.ui_specification['fields'][field_id][
+                            'component-parameters'
+                          ]['multiple'] === true
+                        )
+                          new_doc['data'][field_id] = [
+                            ...new_doc['data'][field_id],
+                            new_child_record,
+                          ];
+                        else
+                          new_doc['data'][field_id] = [
+                            ...new_doc['data'][field_id],
+                            new_child_record,
+                          ];
+                        upsertFAIMSData(this.props.project_id, new_doc)
+                          .then(new_revision_id => {
+                            const location_state: any =
+                              LocationState.location_state;
+                            location_state['parent_link'] =
+                              ROUTES.getRecordRoute(
+                                this.props.project_id,
+                                (
+                                  location_state.parent_record_id || ''
+                                ).toString(),
+                                (new_revision_id || '').toString()
+                              ).replace('/notebooks/', '');
+                            location_state['child_record_id'] = new_record_id;
+                            console.debug('new child state', location_state);
+                            this.props.history.push({
+                              pathname:
+                                ROUTES.NOTEBOOK +
+                                this.props.project_id +
+                                ROUTES.RECORD_CREATE +
+                                this.state.type_cached,
+                              state: location_state,
+                            });
+                            setSubmitting(false);
+                            window.scrollTo(0, 0);
+                            return result;
+                          })
+                          .catch(error =>
+                            console.error(
+                              'Error to save the parent record from child relationship',
+                              error
+                            )
+                          );
+                      } else {
+                        console.error(
+                          'Error to save the parent record from child relationship, latest record is null'
+                        );
+                        this.props.history.push({
+                          pathname:
+                            ROUTES.NOTEBOOK +
+                            this.props.project_id +
+                            ROUTES.RECORD_CREATE +
+                            this.state.type_cached,
+                          state: LocationState.location_state,
+                        });
+                        setSubmitting(false);
+                        window.scrollTo(0, 0);
+                      }
+                    }
+                  })
+                  .catch(error =>
+                    console.error('Error to get parent record', error)
+                  );
+              }
+            }
           }
-          return result;
         })
     );
   }
@@ -931,7 +1222,7 @@ class RecordForm extends React.Component<
                 return this.save(
                   values,
                   is_final_view,
-                  false,
+                  'continue',
                   setSubmitting
                 ).then(result => {
                   return result;
@@ -940,31 +1231,26 @@ class RecordForm extends React.Component<
             >
               {formProps => {
                 //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    true
-                  )
-                )
-                  fieldNames = get_logic_fields(
-                    this.props.ui_specification,
-                    formProps.values,
-                    viewName
-                  );
-                //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    false
-                  )
-                )
-                  views = get_logic_views(
-                    this.props.ui_specification,
-                    viewsetName,
-                    formProps.values
-                  );
+                fieldNames = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  true,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
+                views = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  false,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
@@ -1020,7 +1306,7 @@ class RecordForm extends React.Component<
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
-                        handleFormSubmit={(is_close: boolean) => {
+                        handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {
                             this.save(
@@ -1043,7 +1329,7 @@ class RecordForm extends React.Component<
                             this.save(
                               formProps.values,
                               is_final_view,
-                              false,
+                              'continue',
                               formProps.setSubmitting
                             );
                           }}
