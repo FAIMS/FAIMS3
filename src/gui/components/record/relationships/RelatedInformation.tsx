@@ -670,15 +670,25 @@ function get_section(
 }
 
 function get_field_label(ui_specification: ProjectUIModel, field: string) {
-  if (
-    ui_specification['fields'][field]['component-parameters'][
-      'InputLabelProps'
-    ]['label']
-  )
-    return ui_specification['fields'][field]['component-parameters'][
-      'InputLabelProps'
-    ]['label'];
-  return field;
+  try {
+    if (
+      ui_specification['fields'][field]['component-parameters'][
+        'InputLabelProps'
+      ]['label']
+    )
+      return ui_specification['fields'][field]['component-parameters'][
+        'InputLabelProps'
+      ]['label'];
+    return field;
+  } catch (error) {
+    console.error(
+      'Error to get field label',
+      error,
+      field,
+      ui_specification['fields']
+    );
+    return field;
+  }
 }
 
 export async function getParentPersistenceData(
