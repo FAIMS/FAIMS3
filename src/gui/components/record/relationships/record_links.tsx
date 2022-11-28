@@ -201,7 +201,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                 params.row.link.record_id,
                 params.row.link.type,
                 params.row.link.hrid,
-                params.row.link.route
+                params.row.link.route,
+                params.row.link.deleted ?? false
               )}
               <Typography
                 variant={'body2'}

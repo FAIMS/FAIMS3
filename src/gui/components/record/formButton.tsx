@@ -150,7 +150,7 @@ type DevToolProps = {
 };
 export function DevTool(props: DevToolProps) {
   const {formProps, state} = props;
-  return String(process.env.REACT_APP_SERVER) === 'developer' ? (
+  return String(process.env.REACT_APP_SERVER) === 'developers' ? (
     <Grid item sm={12} xs={12}>
       <BoxTab title={'Developer tool: form state'} />
       <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>

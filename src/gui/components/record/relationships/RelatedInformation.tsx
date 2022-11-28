@@ -505,6 +505,10 @@ async function get_field_RelatedFields(
           form_type,
           field
         );
+        const {field_name, is_deleted} = get_field_label(
+          ui_specification,
+          field
+        );
         const child = generate_RecordLink(
           child_record,
           get_last_updated(
@@ -524,14 +528,15 @@ async function get_field_RelatedFields(
           section,
           section_label,
           field,
-          get_field_label(ui_specification, field),
+          field_name,
           get_route_for_field(
             child_record?.project_id ?? '',
             record_id,
             current_revision_id
           ),
           relation_type,
-          latest_record?.deleted ?? false
+          latest_record?.deleted ?? false,
+          is_deleted
         );
         // get the displayed information for the child or link item, this is used by field
         if (is_display && latest_record !== null) {
@@ -614,6 +619,12 @@ export async function addLinkedRecord(
         latest_record?.type ?? 'FORM1',
         parent_link.field_id
       );
+      const {field_name, is_deleted} = get_field_label(
+        ui_specification,
+        parent_link.field_id
+      );
+      const is_parent_deleted =
+        latest_record?.deleted === true ? true : is_deleted;
       const child = generate_RecordLink(
         child_record,
         get_last_updated(
@@ -635,7 +646,7 @@ export async function addLinkedRecord(
         section,
         section_label,
         parent_link.field_id,
-        get_field_label(ui_specification, parent_link.field_id),
+        field_name,
         latest_record?.deleted === true
           ? ''
           : get_route_for_field(
@@ -645,7 +656,7 @@ export async function addLinkedRecord(
             ),
         has_parent === true && index === '0' ? 'Child' : 'Linked',
         false,
-        latest_record?.deleted
+        is_parent_deleted
       );
       newfields.push(child);
     }
@@ -673,19 +684,26 @@ function get_section(
 
 function get_field_label(ui_specification: ProjectUIModel, field: string) {
   //TODO:if field not exist, should the link be deleted??? Currently it's saved
+  let field_name = field;
+  let is_deleted = false;
+  if (ui_specification['fields'][field] === undefined) {
+    is_deleted = true;
+    return {field_name, is_deleted};
+  }
   try {
     if (
       ui_specification['fields'][field]['component-parameters'][
         'InputLabelProps'
       ]['label']
     )
-      return ui_specification['fields'][field]['component-parameters'][
-        'InputLabelProps'
-      ]['label'];
-    return field;
+      field_name =
+        ui_specification['fields'][field]['component-parameters'][
+          'InputLabelProps'
+        ]['label'];
+    return {field_name, is_deleted};
   } catch (error) {
     console.error('Error to get field label', error);
-    return field;
+    return {field_name, is_deleted};
   }
 }
 
