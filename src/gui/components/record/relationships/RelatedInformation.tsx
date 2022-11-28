@@ -574,6 +574,8 @@ export async function addLinkedRecord(
     });
   }
 
+  console.debug('parent field information', parent_links, parent);
+
   for (const index in parent_links) {
     const parent_link = parent_links[index];
     const {latest_record, revision_id} = await getRecordInformation({
@@ -670,6 +672,7 @@ function get_section(
 }
 
 function get_field_label(ui_specification: ProjectUIModel, field: string) {
+  //TODO:if field not exist, should the link be deleted??? Currently it's saved
   try {
     if (
       ui_specification['fields'][field]['component-parameters'][
@@ -681,12 +684,7 @@ function get_field_label(ui_specification: ProjectUIModel, field: string) {
       ]['label'];
     return field;
   } catch (error) {
-    console.error(
-      'Error to get field label',
-      error,
-      field,
-      ui_specification['fields']
-    );
+    console.error('Error to get field label', error);
     return field;
   }
 }
