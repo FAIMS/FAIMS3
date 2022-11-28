@@ -172,6 +172,10 @@ export function QRCodeFormField({
   }
 }
 
+// A plain button that implements QRcode scanning with an onScanResult handler
+//
+// Duplicates some code above
+// TODO: refactor common parts to avoid code duplication
 export interface QRCodeButtonProps {
   label?: string;
   onScanResult: (value: string) => void;
@@ -245,10 +249,6 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
       .catch(() => console.log('showBackground'));
   };
 
-  // a string version of the value
-  // to display below the form field
-  const valueText = JSON.stringify(state);
-
   if (scanning) {
     // insert or create an element to hold the overlay
     let target;
@@ -290,7 +290,6 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
             {props.label}
           </Button>
           <div>{canScanMsg}</div>
-          <div>{valueText}</div>
         </div>
       );
     } else {
@@ -299,7 +298,6 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
           <Button variant="outlined" onClick={startScan}>
             {props.label}
           </Button>
-          <div>{valueText}</div>
         </div>
       );
     }

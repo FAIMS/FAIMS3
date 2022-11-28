@@ -15,6 +15,7 @@ import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {getAllRecordsWithRegex} from '../../../data_storage/queries';
 import {RecordMetadata} from '../../../datamodel/ui';
+import {getProjectMetadata} from '../../../projectMetadata';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;
@@ -26,6 +27,14 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
+
+  const [showQRButton, setShowQRButton] = useState(false);
+
+  getProjectMetadata(project_id, 'meta').then(meta => {
+    if (meta.showQRCodeButton === 'true') {
+      setShowQRButton(true);
+    }
+  });
 
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
@@ -74,17 +83,32 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
       {/*we can still show this button, except it will*/}
       {/*redirect to the Record creation without known type*/}
       {visible_types.length === 1 ? (
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<AddIcon />}
-          component={RouterLink}
-          to={
-            ROUTES.NOTEBOOK + project_id + ROUTES.RECORD_CREATE + visible_types
-          }
+        <ButtonGroup
+          fullWidth={mq_above_md ? false : true}
+          orientation={mq_above_sm ? 'horizontal' : 'vertical'}
+          sx={{maxHeight: '400px', overflowY: 'scroll'}}
         >
-          New Record
-        </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<AddIcon />}
+            component={RouterLink}
+            to={
+              ROUTES.NOTEBOOK +
+              project_id +
+              ROUTES.RECORD_CREATE +
+              visible_types
+            }
+          >
+            New Record
+          </Button>
+
+          {showQRButton ? (
+            <QRCodeButton label="Scan QR" onScanResult={handleScanResult} />
+          ) : (
+            <span />
+          )}
+        </ButtonGroup>
       ) : (
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
@@ -109,9 +133,15 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
                 </Button>
               )
           )}
+          {/* Show the QR code button if configured for this project */}
+          {showQRButton ? (
+            <QRCodeButton label="Scan QR" onScanResult={handleScanResult} />
+          ) : (
+            <span />
+          )}
         </ButtonGroup>
       )}
-
+      {/*  if we have selected a record (via QR scanning) then redirect to it here */}
       {selectedRecord ? (
         <Redirect
           to={ROUTES.getRecordRoute(
@@ -121,7 +151,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
           )}
         />
       ) : (
-        <QRCodeButton label="Scan QR" onScanResult={handleScanResult} />
+        <span />
       )}
     </Box>
   );
