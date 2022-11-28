@@ -142,6 +142,7 @@ export default function RecordData(props: RecordDataTypes) {
                         handleSetDraftError={props.handleSetDraftError}
                         setRevision_id={props.setRevision_id}
                         ViewName={ViewName}
+                        draftLastSaved={props.draftLastSaved}
                       />
                     ) : (
                       <CircularProgress size={24} />

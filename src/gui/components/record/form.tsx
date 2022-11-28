@@ -88,7 +88,7 @@ type RecordFormProps = {
   handleSetDraftError: Function;
   setRevision_id?: Function;
   ViewName?: string | null;
-  set_updateddraft_id?:Function;
+  draftLastSaved?: null | Date;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -257,19 +257,30 @@ class RecordForm extends React.Component<
       // Heuristically determine a nice user-facing error
       const error_message =
         (val as {message?: string}).message || val.toString();
-      if (DEBUG_APP) {
-        console.log('saveListener', val);
-      }
 
-      this.props.handleSetIsDraftSaving(false);
-      this.props.handleSetDraftError(error_message);
-      this.context.dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Could not load previous data: ' + error_message,
-          severity: 'warnings',
-        },
-      });
+      if (error_message === 'no changes') {
+        //for existing record with no new draft created, set saving false and reset the last draft time
+        this.props.handleSetIsDraftSaving(false);
+        if (
+          this.props.draftLastSaved === null ||
+          this.props.draftLastSaved === undefined
+        )
+          this.props.handleSetDraftLastSaved(new Date());
+      } else {
+        if (DEBUG_APP) {
+          console.log('saveListener', val);
+        }
+
+        this.props.handleSetIsDraftSaving(false);
+        this.props.handleSetDraftError(error_message);
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Could not load previous data: ' + error_message,
+            severity: 'warnings',
+          },
+        });
+      }
     }
   }
 
