@@ -117,7 +117,6 @@ export type JWTTokenMap = {
 export interface LocalAuthDoc {
   _id: string; //Corresponds to a listings ID
   _rev?: string; // optional as we may want to include the raw json in places
-  current_token: JWTToken;
   current_username: string;
   available_tokens: JWTTokenMap;
 }

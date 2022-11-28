@@ -133,12 +133,11 @@ async function addTokenToDoc(
     };
     return {
       _id: cluster_id,
-      current_token: token,
       available_tokens: available_tokens,
       current_username: new_username,
     };
   }
-  current_doc.current_token = token;
+  current_doc.current_username = new_username;
   current_doc.available_tokens[new_username] = {
     token,
     pubkey,
@@ -158,13 +157,10 @@ async function removeTokenFromDoc(
     // Removing last user results in an empty doc
     return null;
   }
-  const token = current_doc.available_tokens[username].token;
   delete current_doc.available_tokens[username];
-  if (current_doc.current_token === token) {
+  if (current_doc.current_username === username) {
     // Choose first username if removed user is current user
-    current_doc.current_token = Object.values(
-      current_doc.available_tokens
-    )[0].token;
+    current_doc.current_username = Object.keys(current_doc.available_tokens)[0];
   }
   return current_doc;
 }
@@ -174,7 +170,7 @@ export async function getTokenForCluster(
 ): Promise<string | undefined> {
   try {
     const doc = await local_auth_db.get(cluster_id);
-    return doc.current_token;
+    return doc.available_tokens[doc.current_username].token;
   } catch (err) {
     console.warn('Token not found for:', cluster_id, err);
     return undefined;
@@ -214,7 +210,7 @@ export async function switchUsername(cluster_id: string, new_username: string) {
   console.log('Switching user to ', new_username, cluster_id);
   try {
     const doc = await local_auth_db.get(cluster_id);
-    doc.current_token = doc.available_tokens[new_username].token;
+    doc.current_username = new_username;
     await local_auth_db.put(doc);
     reprocess_listing(cluster_id);
   } catch (err) {
@@ -266,6 +262,7 @@ async function getCurrentTokenInfoForDoc(
   doc: LocalAuthDoc
 ): Promise<TokenInfo> {
   const username = doc.current_username;
+  // console.debug('Current username', username, doc);
   return await getTokenInfoForSubDoc(doc.available_tokens[username]);
 }
 
