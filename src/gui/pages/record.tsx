@@ -229,10 +229,12 @@ export default function Record() {
     const getConflictList = async () => {
       console.debug('record start initial conflict', selectrevision);
       try {
-        if (selectrevision !== null)
+        if (selectrevision !== null) {
+          setrevision_id(selectrevision); //set revision_id what is in the form, so it can be consistt
           setConflictfields(
             await findConflictingFields(project_id, record_id, selectrevision)
           );
+        }
       } catch (error) {
         console.error('Error to get Conflict List', error);
       }
@@ -385,7 +387,7 @@ export default function Record() {
       relation_type,
       project_id,
       record_id,
-      revision_id,
+      updatedrevision_id,
       field_id,
       parent_record_id,
       relatedRecords
@@ -445,6 +447,13 @@ export default function Record() {
     uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
       ? '' + uiSpec.viewsets[type]['label']
       : '';
+  // console.debug(
+  //   'check current revision id record revision_id',
+  //   revision_id,
+  //   updatedrevision_id,
+  //   selectrevision,
+  //   draft_id
+  // );
   return (
     <Box>
       <Grid container wrap="nowrap" spacing={2}>
@@ -655,11 +664,12 @@ export default function Record() {
                                 record_id={record_id}
                                 hrid={hrid}
                                 record_type={record_type}
-                                revision_id={
-                                  selectrevision !== null
-                                    ? selectrevision
-                                    : updatedrevision_id
-                                }
+                                // revision_id={
+                                //   selectrevision !== null
+                                //     ? selectrevision
+                                //     : updatedrevision_id
+                                // }
+                                revision_id={updatedrevision_id}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
                                 metaSection={metaSection}
@@ -676,6 +686,7 @@ export default function Record() {
                                 record_to_field_links={relatedRecords}
                                 is_link_ready={is_link_ready}
                                 handleUnlink={handleUnlink}
+                                setRevision_id={setrevision_id}
                               />
                             )}
                           </Box>
@@ -703,6 +714,7 @@ export default function Record() {
                           record_to_field_links={relatedRecords}
                           is_link_ready={is_link_ready}
                           handleUnlink={handleUnlink}
+                          setRevision_id={setrevision_id}
                         />
                       )}
                     </Box>

@@ -88,6 +88,7 @@ type RecordFormProps = {
   handleSetDraftError: Function;
   setRevision_id?: Function;
   ViewName?: string | null;
+  set_updateddraft_id?:Function;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -1205,6 +1206,17 @@ class RecordForm extends React.Component<
       let is_final_view = view_index + 1 === views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
+      // console.debug(
+      //   'check current revision id',
+      //   this.props.revision_id,
+      //   this.state.revision_cached
+      // );
+      console.debug(
+        'check current revision id draft',
+        this.props.draft_id,
+        this.state.draft_created,
+        this.draftState
+      );
       return (
         <Box>
           {/* {this.state.revision_cached} */}

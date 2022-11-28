@@ -93,6 +93,7 @@ function check_by_branching_logic(
   is_field: boolean,
   field: string
 ) {
+  try{
   if (field === undefined || field === '') return true;
 
   if (ui_specification['fields'][field]['logic_select'] === undefined)
@@ -111,6 +112,10 @@ function check_by_branching_logic(
     return true;
 
   return false;
+  }catch(error){
+    console.error('Error to check field in branching logic',field,error)
+    return false
+  }
 }
 
 export function get_logic_fields(
