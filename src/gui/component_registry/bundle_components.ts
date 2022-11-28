@@ -96,6 +96,13 @@ import {
 } from '@faims-project/faims3-map-input';
 import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
 
+import {
+  DateTimeNow,
+  DateTimeNowSetting,
+  DateTimeNowComponentSettings,
+  getDateTimeNowBuilderIcon,
+} from '../fields/DateTimeNow';
+
 const MapFieldBuilderSettings = [
   MapFieldUISetting(getDefaultuiSetting()),
   MapFieldUISpec,
@@ -480,6 +487,25 @@ registerComponent(
     RandomStyleSetting,
     DefaultComponentSetting,
     getAutoBuilderIcon()
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'DateTimeNow',
+  setupComponentProperties(
+    'DateTimeNow',
+    'TZ-aware DateTime field with Now button',
+    'Text',
+    DateTimeNow,
+    {
+      ...DateTimeNowSetting[1],
+      namespace: 'faims-custom',
+      componentName: 'DateTimeNow',
+    },
+    DateTimeNowSetting,
+    DateTimeNowComponentSettings,
+    getDateTimeNowBuilderIcon()
   )
 );
 

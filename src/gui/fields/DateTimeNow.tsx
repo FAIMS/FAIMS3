@@ -12,7 +12,7 @@ import {
   DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
-
+import BookmarksIcon from '@mui/icons-material/Bookmarks';
 export function getLocalDate(value: Date) {
   /**
    * Return local time in yyyy-MM-ddTHH:mm:ss format by converting to
@@ -166,7 +166,7 @@ const uiSpec = {
   initialValue: '',
 };
 
-const uiSetting = () => {
+const UISetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
   newuiSetting['fields']['datetime_now'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
@@ -199,3 +199,8 @@ const uiSetting = () => {
 
   return newuiSetting;
 };
+
+export function getDateTimeNowBuilderIcon() {
+  return <BookmarksIcon />;
+}
+export const DateTimeNowSetting = [() => UISetting(), uiSpec];
