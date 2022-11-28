@@ -223,8 +223,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         projectvalue.pre_description !== undefined &&
         projectvalue.pre_description !== ''
       ) {
-        //this is the function to solve the issue for new record button not be displayed, need to update in the future---Kate
-        handlerprojectsubmit_pounch();
+        //this is the function to solve the issue for new record button not being displayed, need to update in the future---Kate
+        handlerprojectsubmit_pouch();
       }
     }
     return () => {
@@ -556,8 +556,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     console.log('run');
   };
 
-  const handlerprojectsubmit_pounch = async () => {
-    //save into local pounch
+  const handlerprojectsubmit_pouch = async () => {
+    //save into local pouch
     try {
       if (project_id === null) {
         await create_new_project_dbs(projectvalue.name).then(async res => {
@@ -596,7 +596,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
   };
 
-  const handlerprojectsubmit_counch = async () => {
+  const handlerprojectsubmit_couch = async () => {
     //if project online save it
     //else if project local, submit request in Beta
 
@@ -615,6 +615,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const handleSubmit = (values: any) => {
     if (values.attachments !== undefined && values.attachments.length > 0) {
       const newproject = projectvalue;
+      console.log('handleSubmit', projectvalue, values);
       newproject['attachments'] = values.attachments;
       newproject['filenames'] = values.attachments[0].name;
       setProjectValue({...newproject});
@@ -681,7 +682,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                         type="submit"
                         isSubmitting={false}
                         text="Save and Next"
-                        onButtonClick={() => handlerprojectsubmit_pounch()}
+                        onButtonClick={() => handlerprojectsubmit_pouch()}
                       /> */}
                     </TabPanel>
                     <TabPanel
@@ -713,8 +714,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                         project_id={project_id}
                         projectvalue={projectvalue}
                         setProjectValue={setProjectValue}
-                        handleSubmit={handlerprojectsubmit_pounch}
-                        handlepublish={handlerprojectsubmit_counch}
+                        handleSubmit={handlerprojectsubmit_pouch}
+                        handlepublish={handlerprojectsubmit_couch}
                         formProps={formProps}
                         formuiSpec={formuiSpec}
                       />

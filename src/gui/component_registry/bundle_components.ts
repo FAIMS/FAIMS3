@@ -87,19 +87,13 @@ import {
   MultiTextuiSetting,
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
+import {RandomStyle, RandomStyleSetting} from '../fields/RandomStyle';
 // Mapping plugin imports
-import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
 import {
   MapFormField,
-  MapFieldUISetting,
-  MapFieldUISpec,
-} from '@faims-project/faims3-map-input';
-import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
-
-const MapFieldBuilderSettings = [
-  MapFieldUISetting(getDefaultuiSetting()),
-  MapFieldUISpec,
-];
+  MapFieldBuilderSettings,
+  MapComponentSetting,
+} from '../fields/MapFormField';
 
 import {
   setAttachmentLoaderForType,
@@ -427,7 +421,7 @@ registerComponent(
     MapFormField,
     MapFieldBuilderSettings[1],
     MapFieldBuilderSettings,
-    Defaultcomponentsetting
+    MapComponentSetting
   )
 );
 

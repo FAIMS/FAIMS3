@@ -32,8 +32,6 @@ import {
 import {ProjectID} from './datamodel/core';
 import {equals} from './utils/eqTestSupport';
 
-import {getProjectDB} from './sync/index';
-
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 const projdbs: any = {};
