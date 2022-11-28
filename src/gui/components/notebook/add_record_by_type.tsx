@@ -1,5 +1,5 @@
-import React from 'react';
-import {Link as RouterLink} from 'react-router-dom';
+import React, {useState} from 'react';
+import {Link as RouterLink, Redirect} from 'react-router-dom';
 
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -12,6 +12,9 @@ import {ProjectInformation} from '../../../datamodel/ui';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {listenProjectDB} from '../../../sync';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
+import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {getAllRecordsWithRegex} from '../../../data_storage/queries';
+import {RecordMetadata} from '../../../datamodel/ui';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;
@@ -23,6 +26,10 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const mq_above_sm = useMediaQuery(theme.breakpoints.up('sm'));
+
+  const [selectedRecord, setSelectedRecord] = useState<
+    RecordMetadata | undefined
+  >(undefined);
 
   const ui_spec = useEventedPromise(
     'AddRecordButtons component',
@@ -47,6 +54,19 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   }
   const viewsets = ui_spec.value.viewsets;
   const visible_types = ui_spec.value.visible_types;
+
+  const handleScanResult = (value: string) => {
+    console.log('got a scan result...', value);
+    // find a record with this field value
+    getAllRecordsWithRegex(project_id, value).then(records => {
+      // navigate to it
+      console.log('got some records', records);
+      for (const key in records) {
+        console.log('jumping to', key);
+        setSelectedRecord(records[key]);
+      }
+    });
+  };
 
   return (
     <Box>
@@ -90,6 +110,18 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
               )
           )}
         </ButtonGroup>
+      )}
+
+      {selectedRecord ? (
+        <Redirect
+          to={ROUTES.getRecordRoute(
+            project_id || 'dummy',
+            (selectedRecord.record_id || '').toString(),
+            (selectedRecord.revision_id || '').toString()
+          )}
+        />
+      ) : (
+        <QRCodeButton label="Scan QR" onScanResult={handleScanResult} />
       )}
     </Box>
   );

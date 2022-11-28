@@ -79,7 +79,7 @@ export function QRCodeFormField({
           BarcodeScanner.startScan({}).then(result => {
             // if the result has content
             if (result.hasContent) {
-              console.log('Barcode content:', result.content); // log the raw scanned content
+              console.debug('Barcode content:', result.content); // log the raw scanned content
               updateField(result.content);
             }
             stopScan();
@@ -90,6 +90,142 @@ export function QRCodeFormField({
       })
       .catch(() => {
         setCanScanMsg('Scanning not supported in web browsers, mobile only');
+        updateField('1234');
+      });
+  };
+
+  const stopScan = () => {
+    BarcodeScanner.showBackground()
+      .then(() => {
+        const rootcontainer = document.getElementById('root');
+        if (rootcontainer) {
+          rootcontainer.style.visibility = 'visible';
+        }
+        BarcodeScanner.stopScan()
+          .then(() => {
+            setScanning(false);
+          })
+          .catch(() => console.debug('stopScan'));
+      })
+      .catch(() => console.debug('showBackground'));
+  };
+
+  // a string version of the value
+  // to display below the form field
+  const valueText = JSON.stringify(state);
+
+  if (scanning) {
+    // insert or create an element to hold the overlay
+    let target;
+    target = document.getElementById('qrscanner');
+    if (!target) {
+      target = document.createElement('div');
+      target.setAttribute('id', 'qrscanner');
+      document.body.appendChild(target);
+    }
+
+    if (target) {
+      return ReactDOM.createPortal(
+        <div className={styles.container}>
+          <div className={styles.barcodeContainer}>
+            <div className={styles.relative}>
+              <p>Aim your camera at a barcode</p>
+              <Button color="primary" variant="contained" onClick={stopScan}>
+                Stop Scan
+              </Button>
+            </div>
+            <div className={styles.square}>
+              <div className={styles.outer}>
+                <div className={styles.inner}></div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        target
+      );
+    } else {
+      // how did we get here?
+      return <div>Something went wrong</div>;
+    }
+  } else {
+    if (canScanMsg !== '') {
+      return (
+        <div>
+          <Button variant="outlined" disabled={true}>
+            Scan QR Code
+          </Button>
+          <div>{canScanMsg}</div>
+          <div>{valueText}</div>
+        </div>
+      );
+    } else {
+      return (
+        <div>
+          <p>{props.label}</p>
+          <Button variant="outlined" onClick={startScan}>
+            Scan QR Code
+          </Button>
+          <div>{valueText}</div>
+        </div>
+      );
+    }
+  }
+}
+
+export interface QRCodeButtonProps {
+  label?: string;
+  onScanResult: (value: string) => void;
+}
+
+export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
+  const [state, setState] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [canScanMsg, setCanScanMsg] = useState('');
+
+  const updateField = (value: any) => {
+    setState(value);
+    props.onScanResult(value);
+  };
+
+  const startScan = async () => {
+    BarcodeScanner.checkPermission({force: true})
+      .then(permissions => {
+        if (permissions.granted) {
+          // hide the main app so we can overlay the viewfinder
+          // relies on knowing the root id of the page
+          //
+          const rootcontainer = document.getElementById('root');
+          if (rootcontainer) {
+            rootcontainer.style.visibility = 'hidden';
+          }
+
+          // make background of WebView transparent
+          BarcodeScanner.hideBackground();
+
+          // and everything else too
+          document.getElementsByTagName('body')[0].style.backgroundColor =
+            'transparent';
+
+          // scroll to top to so that our viewfinder etc is visible
+          window.scrollTo(0, 0);
+
+          setScanning(true);
+
+          BarcodeScanner.startScan({}).then(result => {
+            // if the result has content
+            if (result.hasContent) {
+              console.debug('Barcode content:', result.content); // log the raw scanned content
+              updateField(result.content);
+            }
+            stopScan();
+          });
+        } else {
+          setCanScanMsg('Camera Access Permission not Granted');
+        }
+      })
+      .catch(() => {
+        setCanScanMsg('Scanning not supported in web browsers, mobile only');
+        updateField('1234');
       });
   };
 
@@ -150,7 +286,9 @@ export function QRCodeFormField({
     if (canScanMsg !== '') {
       return (
         <div>
-          <p>{props.label}</p>
+          <Button variant="outlined" disabled={true}>
+            {props.label}
+          </Button>
           <div>{canScanMsg}</div>
           <div>{valueText}</div>
         </div>
@@ -158,9 +296,8 @@ export function QRCodeFormField({
     } else {
       return (
         <div>
-          <p>{props.label}</p>
           <Button variant="outlined" onClick={startScan}>
-            Scan QR Code
+            {props.label}
           </Button>
           <div>{valueText}</div>
         </div>
