@@ -364,6 +364,7 @@ class RecordDraftState {
           ),
           relationship: relationship,
         };
+        console.error('New draft created', this.data.draft_id, this.data.state);
         this.data.draft_id
           .then(async new_draft_id => {
             if (this.data.state === 'edited') {
@@ -543,6 +544,7 @@ class RecordDraftState {
       if (this.data.state !== 'edited') {
         // Nothing to save yet, probably the user hasn't touched an
         // existing record
+        console.error("Draft not edited, not saving");
         return;
       }
       result = await setStagedData(
@@ -626,6 +628,7 @@ class RecordDraftState {
 
     this.props = newProps;
     this._fetchData(loadedProps);
+    console.error('Called recordChangeHook', newProps, loadedProps);
   }
 
   /**
@@ -639,6 +642,7 @@ class RecordDraftState {
   async clear() {
     if (this.data.state === 'edited') {
       await deleteStagedData(await this.data.draft_id, this.last_revision);
+      console.error('Deleted draft', this.data.draft_id, this.last_revision);
     } else {
       console.info('Draft not edited, so not being cleared');
     }

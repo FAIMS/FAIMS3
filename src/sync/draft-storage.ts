@@ -130,6 +130,7 @@ export async function setStagedData(
   field_types: {[field_name: string]: FAIMSTypeName},
   relationship: Relationship
 ): Promise<PouchDB.Core.Response> {
+  console.error('New draft saved', draft_id);
   const existing = await draft_db.get(draft_id);
   if (DEBUG_APP) {
     console.debug('Saving draft values:', new_data, new_annotations);

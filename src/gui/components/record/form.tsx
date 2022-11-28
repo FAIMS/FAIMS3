@@ -833,9 +833,11 @@ class RecordForm extends React.Component<
           });
           console.error('Failed to save data', err, this.props.record_id);
         })
-        //Clear the current draft area (Possibly after redirecting back to project page)
         .then(result => {
+          // Clear the current draft area
+          // (Possibly after redirecting back to project page)
           return this.draftState.clear().then(() => {
+            console.error("Draft cleared");
             return result;
           });
         })
