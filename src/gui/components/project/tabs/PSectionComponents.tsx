@@ -67,6 +67,7 @@ export default function SectionComponents(props: SectionComponentsProps) {
             {formcomponents[formuiview].map(
               (formcomponent: any, index: any) => (
                 <SectionComponent
+                  key={index}
                   formuiview={formuiview}
                   initialValues={initialValues}
                   formcomponent={formcomponent}

@@ -87,14 +87,14 @@ import {
   MultiTextuiSetting,
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
+import {RandomStyle, RandomStyleSetting} from '../fields/RandomStyle';
 // Mapping plugin imports
-import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
 import {
   MapFormField,
-  MapFieldUISetting,
-  MapFieldUISpec,
-} from '@faims-project/faims3-map-input';
-import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
+  MapFieldBuilderSettings,
+  MapComponentSetting,
+} from '../fields/MapFormField';
+// import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
 
 import {
   DateTimeNow,
@@ -102,11 +102,6 @@ import {
   DateTimeNowComponentSettings,
   getDateTimeNowBuilderIcon,
 } from '../fields/DateTimeNow';
-
-const MapFieldBuilderSettings = [
-  MapFieldUISetting(getDefaultuiSetting()),
-  MapFieldUISpec,
-];
 
 import {
   setAttachmentLoaderForType,
@@ -434,7 +429,7 @@ registerComponent(
     MapFormField,
     MapFieldBuilderSettings[1],
     MapFieldBuilderSettings,
-    DefaultComponentSetting
+    MapComponentSetting
   )
 );
 

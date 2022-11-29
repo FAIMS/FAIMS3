@@ -15,7 +15,7 @@
  *
  * Filename: PSettingCard.ts
  * Description:
- *   TODO: get lists from CompoenetSettings file
+ *   TODO: get lists from ComponentSettings file
  *   TODO: add highlight for selected tab
  *   TODO: any type
  */
@@ -45,7 +45,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import TaskIcon from '@mui/icons-material/Task';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const useStyles = makeStyles(theme => ({
-  settiglist: {
+  settingList: {
     // backgroundColor:'#e1e4e8',
     marginBottom: 2,
     '&$selected': {
@@ -77,7 +77,7 @@ export function SettingCard(props: SettingCard) {
     <List
       component="nav"
       aria-label="settings bar"
-      className={classes.settiglist}
+      className={classes.settingList}
     >
       <ListItem
         button
@@ -112,7 +112,7 @@ export function SettingCard(props: SettingCard) {
         <NoteIcon />
       </ListItem>
       {/* add for branching logic setting, this is for testing/developing ONLY, not ready for production yet */}
-      {String(process.env.REACT_APP_SERVER) === 'developers' && (
+      {String(process.env.REACT_APP_SERVER) === 'developer' && (
         <ListItem
           button
           onClick={() => handelonClick('logic', key_id)}
@@ -172,7 +172,7 @@ export function UserRoleList(props: any) {
                 </ListItemSecondaryAction>
               )}
             </ListItem>
-            <Divider />
+            <Divider key={user + index + 'divider'} />
           </>
         ))}
       </List>
@@ -197,7 +197,7 @@ export function UserLists(props: any) {
               <ListItemText secondary={user} />
               {select ? <AddIcon /> : <DeleteIcon />}
             </ListItem>
-            <Divider />
+            <Divider key={user + index + 'divider'} />
           </>
         ))}
       </List>

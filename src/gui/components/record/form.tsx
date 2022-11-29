@@ -88,6 +88,7 @@ type RecordFormProps = {
   handleSetDraftError: Function;
   setRevision_id?: Function;
   ViewName?: string | null;
+  draftLastSaved?: null | Date;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -133,6 +134,8 @@ type RecordFormState = {
   description: string | null;
   ugc_comment: string | null;
   relationship: Relationship | null;
+  fieldNames: string[];
+  views: string[];
 };
 
 class RecordForm extends React.Component<
@@ -216,6 +219,8 @@ class RecordForm extends React.Component<
       description: null,
       ugc_comment: null,
       relationship: {},
+      fieldNames: [],
+      views: [],
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -252,19 +257,30 @@ class RecordForm extends React.Component<
       // Heuristically determine a nice user-facing error
       const error_message =
         (val as {message?: string}).message || val.toString();
-      if (DEBUG_APP) {
-        console.log('saveListener', val);
-      }
 
-      this.props.handleSetIsDraftSaving(false);
-      this.props.handleSetDraftError(error_message);
-      this.context.dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Could not load previous data: ' + error_message,
-          severity: 'warnings',
-        },
-      });
+      if (error_message === 'no changes') {
+        //for existing record with no new draft created, set saving false and reset the last draft time
+        this.props.handleSetIsDraftSaving(false);
+        if (
+          this.props.draftLastSaved === null ||
+          this.props.draftLastSaved === undefined
+        )
+          this.props.handleSetDraftLastSaved(new Date());
+      } else {
+        if (DEBUG_APP) {
+          console.log('saveListener', val);
+        }
+
+        this.props.handleSetIsDraftSaving(false);
+        this.props.handleSetDraftError(error_message);
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Could not load previous data: ' + error_message,
+            severity: 'warnings',
+          },
+        });
+      }
     }
   }
 
@@ -604,6 +620,8 @@ class RecordForm extends React.Component<
       related,
       this.props.record_id
     );
+    initialValues['fieldNames'] = [];
+    initialValues['views'] = [];
     this.setState({
       initialValues: initialValues,
       annotation: annotations,
@@ -766,6 +784,7 @@ class RecordForm extends React.Component<
             ),
             ugc_comment: this.state.ugc_comment || '',
             relationship: this.state.relationship ?? {},
+            deleted: false,
           };
           if (DEBUG_APP) {
             console.debug(
@@ -1198,6 +1217,17 @@ class RecordForm extends React.Component<
       let is_final_view = view_index + 1 === views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
+      // console.debug(
+      //   'check current revision id',
+      //   this.props.revision_id,
+      //   this.state.revision_cached
+      // );
+      console.debug(
+        'check current revision id draft',
+        this.props.draft_id,
+        this.state.draft_created,
+        this.draftState
+      );
       return (
         <Box>
           {/* {this.state.revision_cached} */}
@@ -1225,31 +1255,26 @@ class RecordForm extends React.Component<
             >
               {formProps => {
                 //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    true
-                  )
-                )
-                  fieldNames = get_logic_fields(
-                    this.props.ui_specification,
-                    formProps.values,
-                    viewName
-                  );
-                //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    false
-                  )
-                )
-                  views = get_logic_views(
-                    this.props.ui_specification,
-                    viewsetName,
-                    formProps.values
-                  );
+                fieldNames = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  true,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
+                views = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  false,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(

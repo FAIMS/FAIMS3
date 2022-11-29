@@ -39,7 +39,12 @@ import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  Relationship,
+  RevisionID,
+} from '../../datamodel/core';
 import {
   ProjectUIModel,
   ProjectInformation,
@@ -76,6 +81,7 @@ import {useTheme} from '@mui/material/styles';
 import {
   getDetailRelatedInformation,
   getParentPersistenceData,
+  remove_deleted_parent,
 } from '../components/record/relationships/RelatedInformation';
 import {
   RecordLinkProps,
@@ -223,10 +229,12 @@ export default function Record() {
     const getConflictList = async () => {
       console.debug('record start initial conflict', selectrevision);
       try {
-        if (selectrevision !== null)
+        if (selectrevision !== null) {
+          setrevision_id(selectrevision); //set revision_id what is in the form, so it can be same
           setConflictfields(
             await findConflictingFields(project_id, record_id, selectrevision)
           );
+        }
       } catch (error) {
         console.error('Error to get Conflict List', error);
       }
@@ -322,7 +330,15 @@ export default function Record() {
               },
               {title: hrid ?? record_id},
             ];
-            if (newParent !== null && newParent.length > 0) {
+            console.debug(
+              'updated record relationship parent newParent ',
+              newParent
+            );
+            if (
+              newParent !== null &&
+              newParent.length > 0 &&
+              newParent[0].deleted !== true
+            ) {
               newBreadcrumbs = [
                 // {link: ROUTES.INDEX, title: 'Home'},
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
@@ -362,6 +378,60 @@ export default function Record() {
     } else setValue(newValue);
   };
 
+  const handleUnlink = (
+    parent_record_id: string,
+    relation_type: string,
+    field_id: string
+  ) => {
+    remove_deleted_parent(
+      relation_type,
+      project_id,
+      record_id,
+      updatedrevision_id,
+      field_id,
+      parent_record_id,
+      relatedRecords
+    ).then(
+      (result: {
+        is_updated: boolean;
+        new_revision_id: string | null | undefined;
+        new_relation: Relationship;
+        newRelationship: RecordLinkProps[];
+      }) => {
+        if (result.is_updated) {
+          console.debug('updated record relationship parent ', result);
+          if (
+            result.new_revision_id !== undefined &&
+            result.new_revision_id !== null &&
+            result.new_revision_id !== ''
+          )
+            setrevision_id(result.new_revision_id);
+          if (uiSpec !== null) {
+            setRelatedRecords(result.newRelationship);
+
+            getParentPersistenceData(
+              uiSpec,
+              project_id,
+              result.new_relation ?? {},
+              record_id
+            ).then(newParent => {
+              setParentLinks(newParent);
+              console.debug('updated record relationship parent ', newParent);
+            });
+          }
+        } else {
+          dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message: 'Could not remove link,please save and then try again ',
+              severity: 'warning',
+            },
+          });
+        }
+      }
+    );
+  };
+
   const handleConfirm = () => {
     setValue(pressedvalue);
     setOpen(false);
@@ -377,6 +447,13 @@ export default function Record() {
     uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
       ? '' + uiSpec.viewsets[type]['label']
       : '';
+  // console.debug(
+  //   'check current revision id record revision_id',
+  //   revision_id,
+  //   updatedrevision_id,
+  //   selectrevision,
+  //   draft_id
+  // );
   return (
     <Box>
       <Grid container wrap="nowrap" spacing={2}>
@@ -580,7 +657,6 @@ export default function Record() {
                             </Grid>
                           </Box>
                           <Box>
-                            {/* Add the component for inherit data from parent */}
                             {(isalerting === false ||
                               draft_id !== undefined) && (
                               <RecordData
@@ -588,11 +664,12 @@ export default function Record() {
                                 record_id={record_id}
                                 hrid={hrid}
                                 record_type={record_type}
-                                revision_id={
-                                  selectrevision !== null
-                                    ? selectrevision
-                                    : updatedrevision_id
-                                }
+                                // revision_id={
+                                //   selectrevision !== null
+                                //     ? selectrevision
+                                //     : updatedrevision_id
+                                // }
+                                revision_id={updatedrevision_id}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
                                 metaSection={metaSection}
@@ -608,6 +685,8 @@ export default function Record() {
                                 parentRecords={parentLinks}
                                 record_to_field_links={relatedRecords}
                                 is_link_ready={is_link_ready}
+                                handleUnlink={handleUnlink}
+                                setRevision_id={setrevision_id}
                               />
                             )}
                           </Box>
@@ -634,6 +713,8 @@ export default function Record() {
                           parentRecords={parentLinks}
                           record_to_field_links={relatedRecords}
                           is_link_ready={is_link_ready}
+                          handleUnlink={handleUnlink}
+                          setRevision_id={setrevision_id}
                         />
                       )}
                     </Box>

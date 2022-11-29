@@ -35,6 +35,7 @@ import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
+
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
     throw Error('No photo data found');
@@ -90,29 +91,56 @@ const ImageGalleryList = styled('ul')(({theme}) => ({
 //   };
 // }
 
-const FAIMSViewImageList = (props: {images: Array<any>; fieldName: string}) => {
-  console.log(props.images);
+const FAIMSViewImageList = (props: {
+  images: Array<any>;
+  fieldName: string;
+  setopen: Function;
+}) => {
   return (
     <List>
-      {props.images.map((image, index) => (
-        <ListItem
-          key={props.fieldName + index}
-          id={props.fieldName + index + 'image'}
-        >
-          <img
-            // {...srcset(item.img, 121, item.rows, item.cols)}
-            style={{maxHeight: 300, maxWidth: 200}}
-            src={URL.createObjectURL(image)}
-            loading="lazy"
+      {props.images.map((image, index) =>
+        image['attachment_id'] === undefined ? (
+          <ListItem
+            key={props.fieldName + index}
+            id={props.fieldName + index + 'image'}
+          >
+            <img
+              // {...srcset(item.img, 121, item.rows, item.cols)}
+              style={{maxHeight: 300, maxWidth: 200}}
+              src={URL.createObjectURL(image)}
+              loading="lazy"
+            />
+          </ListItem>
+        ) : (
+          // ?? not allow user to delete image if the image is not download yet
+          <FAIMSImageIconList
+            index={index}
+            setopen={props.setopen}
+            fieldName={props.fieldName}
           />
-        </ListItem>
-      ))}
+        )
+      )}
     </List>
   );
 };
 
+const FAIMSImageIconList = (props: {
+  index: number;
+  setopen: Function;
+  fieldName: string;
+}) => {
+  const {index, setopen} = props;
+  return (
+    <ImageListItem key={`${props.fieldName}-image-icon-${index}`}>
+      <IconButton aria-label="image" onClick={() => setopen(null)}>
+        <ImageIcon />
+      </IconButton>
+    </ImageListItem>
+  );
+};
+
 const FAIMSImageList = (props: ImageListProps) => {
-  const {images, setopen, setimage} = props;
+  const {images, setopen, setimage, fieldName} = props;
   const disabled = props.disabled ?? false;
   const handelonClick = (index: number) => {
     if (images.length > index) {
@@ -125,13 +153,17 @@ const FAIMSImageList = (props: ImageListProps) => {
     return <span>No photo taken.</span>;
   if (disabled === true)
     return (
-      <FAIMSViewImageList images={props.images} fieldName={props.fieldName} />
+      <FAIMSViewImageList
+        images={props.images}
+        fieldName={props.fieldName}
+        setopen={setopen}
+      />
     );
   return (
     <ImageGalleryList>
       {props.images.map((image: any, index: number) =>
         image['attachment_id'] === undefined ? (
-          <ImageListItem key={index}>
+          <ImageListItem key={`${fieldName}-image-${index}`}>
             <img
               style={{
                 objectFit: 'scale-down',
@@ -163,11 +195,11 @@ const FAIMSImageList = (props: ImageListProps) => {
           </ImageListItem>
         ) : (
           // ?? not allow user to delete image if the image is not download yet
-          <ImageListItem key={index}>
-            <IconButton aria-label="image" onClick={() => setopen(null)}>
-              <ImageIcon />
-            </IconButton>
-          </ImageListItem>
+          <FAIMSImageIconList
+            index={index}
+            setopen={setopen}
+            fieldName={fieldName}
+          />
         )
       )}{' '}
     </ImageGalleryList>

@@ -33,8 +33,6 @@ import {
 } from './data_storage';
 import {equals} from './utils/eqTestSupport';
 
-import {getDataDB} from './sync/index';
-
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 const projdbs: any = {};
@@ -138,6 +136,8 @@ describe('roundtrip reading and writing to db', () => {
         updated: time,
         annotations: {},
         field_types: {field_name: fulltype},
+        relationship: undefined,
+        deleted: false,
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -201,6 +201,8 @@ describe('CRUD for data', () => {
         updated: time,
         annotations: {},
         field_types: {field_name: fulltype},
+        relationship: undefined,
+        deleted: false,
       };
 
       const new_doc: Record = {
@@ -215,6 +217,8 @@ describe('CRUD for data', () => {
         updated: time,
         annotations: {},
         field_types: {field_name: fulltype},
+        relationship: undefined,
+        deleted: false,
       };
 
       return upsertFAIMSData(project_id, doc)
@@ -305,6 +309,8 @@ describe('listing revisions', () => {
         updated: time,
         annotations: {},
         field_types: {field_name: fulltype},
+        relationship: undefined,
+        deleted: false,
       };
 
       return upsertFAIMSData(project_id, doc)

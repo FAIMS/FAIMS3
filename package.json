@@ -25,7 +25,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts --max-old-space-size=4096 build",
     "pretest": "npm run compile",
     "test": "NODE_ENV=test react-scripts test --env=./test/custom-test-env.js --forceExit --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
     "posttest": "npm run lint",
@@ -62,7 +62,7 @@
     "@demvsystems/yup-ast": "1.2.2",
     "@emotion/react": "11.9.3",
     "@emotion/styled": "11.9.3",
-    "@faims-project/faims3-map-input": "1.0.6",
+    "@faims-project/faims3-map-input": "1.2.0",
     "@ionic/pwa-elements": "3.0.2",
     "@mui/icons-material": "5.8.4",
     "@mui/lab": "5.0.0-alpha.88",

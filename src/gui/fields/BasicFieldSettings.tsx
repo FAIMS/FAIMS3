@@ -292,7 +292,7 @@ export function DefaultComponentSetting(props: componenentSettingprops) {
     view: string
   ) => {
     return (
-      <>
+      <div key={'key' + fieldName}>
         {getComponentFromField(
           uiSetting,
           fieldName,
@@ -306,7 +306,7 @@ export function DefaultComponentSetting(props: componenentSettingprops) {
           {formProps.errors[fieldName] !== undefined &&
             formProps.errors[fieldName].replace(fieldName, '  It ')}
         </Typography>
-      </>
+      </div>
     );
   };
   return (

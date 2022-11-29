@@ -347,7 +347,7 @@ export async function update_listing(
   );
 
   // These createdListings objects are created as soon as possible
-  // (As soon as the DBs are availabe)
+  // (As soon as the DBs are available)
   const old_value = createdListings?.[listing_id];
   createdListings[listing_id] = {
     listing: listing_object,
@@ -648,7 +648,7 @@ export async function update_project(
   );
 
   // These createdProjects objects are created as soon as possible
-  // (As soon as the DBs are availabe)
+  // (As soon as the DBs are available)
   const old_value = createdProjects?.[active_id];
   createdProjects[active_id] = {
     project: project_object,

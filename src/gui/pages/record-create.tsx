@@ -283,6 +283,7 @@ function DraftEdit(props: DraftEditProps) {
                       handleSetIsDraftSaving={setIsDraftSaving}
                       handleSetDraftLastSaved={setDraftLastSaved}
                       handleSetDraftError={setDraftError}
+                      draftLastSaved={draftLastSaved}
                     />
                   </Box>
                 </Box>
@@ -360,7 +361,9 @@ export default function RecordCreate() {
       },
       {
         link: ROUTES.NOTEBOOK + location.state.parent_link,
-        title: type + ':' + location.state.parent_record_id,
+        title:
+          type + ':' + location.state.parent_hrid ??
+          location.state.parent_record_id,
       },
       {title: 'Draft'},
     ];

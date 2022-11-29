@@ -98,7 +98,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
   const onButtonClick = async () => {
     //save project value into DB
     if (projectvalue.errors.is_valid === true && props.formProps.isValid) {
-      console.log('submit');
+      console.log('submit', projectvalue);
       props.handleSubmit();
       setischecked(false);
       seState(true);
@@ -121,14 +121,16 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
         {projectvalue.errors.is_valid === true && props.formProps.isValid ? (
           ''
         ) : (
-          <Alert severity="error">
+          <Alert key="key0" severity="error">
             Form has errors, please Check previous Design and make changes
             before re-submitting.
           </Alert>
         )}
         {projectvalue.errors.is_valid === false &&
-          projectvalue.errors.formdesign.map((error: string) => (
-            <Alert severity="error">{error}</Alert>
+          projectvalue.errors.formdesign.map((error: string, index: number) => (
+            <Alert key={'key' + (index + 1)} severity="error">
+              {error}
+            </Alert>
           ))}
         {projectvalue.ispublic !== true &&
           //projectvalue.isrequest !== true &&

@@ -94,7 +94,7 @@ export function DateTimeNow(props: TextFieldProps) {
           }}
           sx={{
             minWidth: 250,
-            '& .MuiOutlinedInput-root': {borderRadius: '4px 0px 0px 4px'},
+            '& .MuiOutlinedInput-root': {borderRadius: '3px 0px 0px 4px'},
           }}
           onChange={onChange}
           InputLabelProps={{
@@ -169,32 +169,31 @@ const uiSpec = {
 
 const UISetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-//   // newuiSetting['fields']['datetime_now'] = {
-//   //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-//   //   'component-name': 'DateTimeNow',
-//   //   'type-returned': 'faims-core::String', // matches a type in the Project Model
-//   //   'component-parameters': {
-//   //     fullWidth: true,
-//   //     helperText: '',
-//   //     variant: 'outlined',
-//   //     required: true,
-//   //     InputProps: {},
-//   //     SelectProps: {},
-//   //     ElementProps: {},
-//   //     InputLabelProps: {
-//   //       label:
-//   //         'Add a datetime stamp (clicking now records the current date+time).',
-//   //     },
-//   //   },
-//   //   validationSchema: [['yup.string']],
-//   //   initialValue: '',
-//   // };
-//   // newuiSetting['views']['FormParameter']['fields'] = ['helperText'];
-
+  //   // newuiSetting['fields']['datetime_now'] = {
+  //   //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+  //   //   'component-name': 'DateTimeNow',
+  //   //   'type-returned': 'faims-core::String', // matches a type in the Project Model
+  //   //   'component-parameters': {
+  //   //     fullWidth: true,
+  //   //     helperText: '',
+  //   //     variant: 'outlined',
+  //   //     required: true,
+  //   //     InputProps: {},
+  //   //     SelectProps: {},
+  //   //     ElementProps: {},
+  //   //     InputLabelProps: {
+  //   //       label:
+  //   //         'Add a datetime stamp (clicking now records the current date+time).',
+  //   //     },
+  //   //   },
+  //   //   validationSchema: [['yup.string']],
+  //   //   initialValue: '',
+  //   // };
+  //   // newuiSetting['views']['FormParameter']['fields'] = ['helperText'];
 
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps','FormParamater'],
+      views: ['InputLabelProps', 'FormParamater'],
       label: 'settings',
     },
   };
