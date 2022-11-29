@@ -230,7 +230,7 @@ export default function Record() {
       console.debug('record start initial conflict', selectrevision);
       try {
         if (selectrevision !== null) {
-          setrevision_id(selectrevision); //set revision_id what is in the form, so it can be consistt
+          setrevision_id(selectrevision); //set revision_id what is in the form, so it can be same
           setConflictfields(
             await findConflictingFields(project_id, record_id, selectrevision)
           );
