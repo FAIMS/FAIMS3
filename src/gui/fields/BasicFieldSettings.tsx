@@ -271,7 +271,7 @@ const getfieldNamesbyView = (
   return [];
 };
 
-export function Defaultcomponentsetting(props: componenentSettingprops) {
+export function DefaultComponentSetting(props: componenentSettingprops) {
   const uiSetting = props.uiSetting;
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     if (props.handlerchanges !== undefined) {

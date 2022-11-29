@@ -89,6 +89,7 @@ type RecordFormProps = {
   setRevision_id?: Function;
   ViewName?: string | null;
   draftLastSaved?: null | Date;
+  mq_above_md?: boolean;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -1284,14 +1285,14 @@ class RecordForm extends React.Component<
                 );
                 return (
                   <Form>
-                    {
+                    {views.length > 1 && (
                       <RecordStepper
                         view_index={view_index}
                         ui_specification={ui_specification}
                         onChangeStepper={this.onChangeStepper}
                         views={views}
                       />
-                    }
+                    )}
 
                     {description !== '' && (
                       <Box
@@ -1330,6 +1331,7 @@ class RecordForm extends React.Component<
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        mq_above_md={this.props.mq_above_md}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {

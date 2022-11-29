@@ -140,7 +140,6 @@ function DraftEdit(props: DraftEditProps) {
   const {project_id, type_name, draft_id, project_info, record_id} = props;
   const {dispatch} = useContext(store);
   const history = useHistory();
-
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
 
@@ -152,6 +151,7 @@ function DraftEdit(props: DraftEditProps) {
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
+  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
 
@@ -284,6 +284,7 @@ function DraftEdit(props: DraftEditProps) {
                       handleSetDraftLastSaved={setDraftLastSaved}
                       handleSetDraftError={setDraftError}
                       draftLastSaved={draftLastSaved}
+                      mq_above_md={mq_above_md}
                     />
                   </Box>
                 </Box>

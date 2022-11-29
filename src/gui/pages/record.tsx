@@ -695,6 +695,7 @@ export default function Record() {
                                 is_link_ready={is_link_ready}
                                 handleUnlink={handleUnlink}
                                 setRevision_id={setrevision_id}
+                                mq_above_md={mq_above_md}
                               />
                             )}
                           </Box>
@@ -723,6 +724,7 @@ export default function Record() {
                           is_link_ready={is_link_ready}
                           handleUnlink={handleUnlink}
                           setRevision_id={setrevision_id}
+                          mq_above_md={mq_above_md}
                         />
                       )}
                     </Box>

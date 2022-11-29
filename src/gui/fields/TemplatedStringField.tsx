@@ -23,7 +23,7 @@ import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import Mustache from 'mustache';
 import {
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 import {generatenewfield} from '../components/project/data/componenentSetting';
@@ -381,7 +381,7 @@ export function TemplatedStringcomponentsetting(
 
   return (
     <>
-      <Defaultcomponentsetting
+      <DefaultComponentSetting
         handlerchanges={handlerchanges}
         {...props}
         fieldui={props.fieldui}

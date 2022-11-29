@@ -61,6 +61,7 @@ interface RecordDataTypes {
   is_link_ready: boolean;
   handleUnlink: Function;
   setRevision_id?: Function;
+  mq_above_md: boolean;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -143,6 +144,7 @@ export default function RecordData(props: RecordDataTypes) {
                         setRevision_id={props.setRevision_id}
                         ViewName={ViewName}
                         draftLastSaved={props.draftLastSaved}
+                        mq_above_md={props.mq_above_md}
                       />
                     ) : (
                       <CircularProgress size={24} />

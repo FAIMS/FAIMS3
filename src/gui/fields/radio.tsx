@@ -38,7 +38,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -142,7 +142,7 @@ export function Radiocomponentsetting(props: componenentSettingprops) {
   };
 
   return (
-    <Defaultcomponentsetting
+    <DefaultComponentSetting
       handlerchangewithview={handlerchangewithviewSpec}
       handlerchanges={handlerchanges}
       {...others}
