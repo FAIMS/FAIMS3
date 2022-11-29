@@ -175,6 +175,7 @@ export interface EncodedRecord {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
+  _conflicts?: string[]; // Pouchdb conflicts array
   record_format_version: number;
   created: string;
   created_by: string;
