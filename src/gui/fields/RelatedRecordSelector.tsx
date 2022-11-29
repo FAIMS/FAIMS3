@@ -651,7 +651,7 @@ const uiSpec = {
     },
     FormHelperTextProps: {},
   },
-  validationSchema: [['yup.string'], ['yup.required']],
+  validationSchema: [['yup.string']],
   initialValue: '',
 };
 

@@ -480,6 +480,7 @@ async function get_field_RelatedFields(
   displayFields: string[] = []
 ): Promise<Array<RecordLinkProps>> {
   for (const index in fields) {
+    console.debug('get related field',fields[index]['value'])
     const field = fields[index]['field'];
     const child_record = fields[index]['value'];
     const related_type =
