@@ -33,7 +33,7 @@ export function getLocalDate(value: Date) {
 }
 
 type DateTimeNowProps = {
-  pick_now?: string;
+  is_auto_pick?: boolean;
   disabled?: boolean;
 };
 
@@ -75,6 +75,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
     // Populate the form with time now to within 1s.
     handleValues(getLocalDate(new Date()));
   }, [setFieldValue, name]);
+  const {helperText, is_auto_pick, ...others} = props;
 
   useEffect(() => {
     // if the value is updated, update the rendered value too
@@ -87,7 +88,20 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
       }
     }
   }, [value]);
-  const {helperText, pick_now, ...others} = props;
+  useEffect(() => {
+    // set intial time when user open the notebook
+    if (is_auto_pick === true && value === '') {
+      try {
+        const now = getLocalDate(new Date());
+        setDisplayValue(now);
+        handleValues(now);
+      } catch (err) {
+        setFieldError(name, 'Could not set displayValue. Contact support.');
+        console.error(err);
+      }
+    }
+  }, []);
+
   return (
     <React.Fragment>
       <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
@@ -109,20 +123,19 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
           value={displayValue}
           error={!!props.form.errors[name]}
         />
-        {props.pick_now !== '' &&
-          props.disabled !== true && ( //add for view and conflict model
-            <Button
-              variant="contained"
-              disableElevation
-              aria-label="capture time now"
-              onClick={onClick}
-              sx={{
-                borderRadius: {xs: '3px', sm: '0px 3px 3px 0px'},
-              }}
-            >
-              {pick_now ?? 'Now'}
-            </Button>
-          )}
+        {props.disabled !== true && ( //add for view and conflict model
+          <Button
+            variant="contained"
+            disableElevation
+            aria-label="capture time now"
+            onClick={onClick}
+            sx={{
+              borderRadius: {xs: '3px', sm: '0px 3px 3px 0px'},
+            }}
+          >
+            Now
+          </Button>
+        )}
       </Stack>
       <FormHelperText
         children={props.helperText ? helperText : 'Select a date and time'}
@@ -141,7 +154,14 @@ export function DateTimeNowComponentSettings(props: componenentSettingprops) {
   };
   const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
     //any actions that could in this form
-    handlerchangewithview(event, view);
+    const name = event.target.name.replace(props.fieldName, '');
+    if (name === 'is_auto_pick') {
+      const newvalues = props.uiSpec;
+      newvalues['fields'][props.fieldName]['component-parameters'][
+        'is_auto_pick'
+      ] = event.target.checked;
+      props.setuiSpec({...newvalues});
+    } else handlerchangewithview(event, view);
   };
 
   return (
@@ -166,7 +186,7 @@ const uiSpec = {
     InputLabelProps: {
       label: 'DateTimeNow Field',
     },
-    pick_now: 'Now',
+    is_auto_pick: false,
   },
   validationSchema: [['yup.string']],
   initialValue: '',
@@ -174,24 +194,31 @@ const uiSpec = {
 
 const UISetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['fields']['pick_now'] = {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::String',
+  newuiSetting['fields']['is_auto_pick'] = {
+    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+    'component-name': 'Checkbox',
+    'type-returned': 'faims-core::Bool', // matches a type in the Project Model
     'component-parameters': {
-      InputLabelProps: {
-        label: 'Button Label',
-      },
-      fullWidth: false,
-      helperText: 'Make Preferred Label, leave empty will hide the button',
-      variant: 'outlined',
+      name: 'multiple',
+      id: 'multiple',
       required: false,
+      type: 'checkbox',
+      FormControlLabelProps: {
+        label: 'Time pre-populated',
+      },
+      FormHelperTextProps: {
+        children:
+          'When the record is first created, populate this field with the current datetime',
+      },
     },
-    validationSchema: [['yup.string']],
-    initialValue: 'Now',
+    validationSchema: [['yup.bool']],
+    initialValue: false,
   };
 
-  newuiSetting['views']['FormParamater']['fields'] = ['helperText', 'pick_now'];
+  newuiSetting['views']['FormParamater']['fields'] = [
+    'helperText',
+    'is_auto_pick',
+  ];
 
   newuiSetting['viewsets'] = {
     settings: {
