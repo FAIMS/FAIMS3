@@ -349,6 +349,11 @@ export async function get_RelatedFields_for_field(
         if (latest_record !== null)
           child_record['record_label'] =
             latest_record.data['hrid' + related_type];
+        if (
+          child_record['record_label'] === undefined ||
+          child_record['record_label'] === ''
+        )
+          child_record['record_label'] = child_record['record_id'];
         if (revision_id !== undefined) {
           const child = generate_RecordLink(
             child_record,
@@ -483,6 +488,7 @@ async function get_field_RelatedFields(
     console.debug('get related field', fields[index]['value']);
     const field = fields[index]['field'];
     const child_record = fields[index]['value'];
+
     const related_type =
       ui_specification['fields'][field]['component-parameters']['related_type'];
     try {
@@ -492,6 +498,12 @@ async function get_field_RelatedFields(
       if (latest_record !== null && revision_id !== undefined) {
         child_record['record_label'] =
           latest_record.data['hrid' + related_type];
+
+        if (
+          child_record['record_label'] === undefined ||
+          child_record['record_label'] === ''
+        )
+          child_record['record_label'] = child_record['record_id'];
 
         const linked_vocab =
           child_record['relation_type_vocabPair'] !== null &&
@@ -608,12 +620,12 @@ export async function addLinkedRecord(
           ? parent_link['relation_type_vocabPair']
           : ['is related to', 'is related to'];
       let type = latest_record?.type;
-      let hrid = record_id;
+      let hrid = parent_link.record_id;
       if (
         latest_record !== null &&
         latest_record.data['hrid' + type] !== undefined
       )
-        hrid = latest_record?.data['hrid' + type] ?? record_id;
+        hrid = latest_record?.data['hrid' + type] ?? parent_link.record_id;
       if (type !== undefined) type = ui_specification.viewsets[type]['label'];
       const {section, section_label} = get_section(
         ui_specification,
