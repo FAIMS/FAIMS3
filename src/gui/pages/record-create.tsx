@@ -283,6 +283,7 @@ function DraftEdit(props: DraftEditProps) {
                       handleSetIsDraftSaving={setIsDraftSaving}
                       handleSetDraftLastSaved={setDraftLastSaved}
                       handleSetDraftError={setDraftError}
+                      draftLastSaved={draftLastSaved}
                     />
                   </Box>
                 </Box>

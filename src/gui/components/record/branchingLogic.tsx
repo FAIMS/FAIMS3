@@ -93,24 +93,31 @@ function check_by_branching_logic(
   is_field: boolean,
   field: string
 ) {
-  if (field === undefined || field === '') return true;
+  try {
+    if (field === undefined || field === '') return true;
 
-  if (ui_specification['fields'][field]['logic_select'] === undefined)
+    if (ui_specification['fields'][field]['logic_select'] === undefined)
+      return false;
+
+    if (
+      is_field &&
+      ui_specification['fields'][field]['logic_select']['type'].includes(
+        'field'
+      )
+    )
+      return true;
+
+    if (
+      !is_field &&
+      ui_specification['fields'][field]['logic_select']['type'].includes('view')
+    )
+      return true;
+
     return false;
-
-  if (
-    is_field &&
-    ui_specification['fields'][field]['logic_select']['type'].includes('field')
-  )
-    return true;
-
-  if (
-    !is_field &&
-    ui_specification['fields'][field]['logic_select']['type'].includes('view')
-  )
-    return true;
-
-  return false;
+  } catch (error) {
+    console.error('Error to check field in branching logic', field, error);
+    return false;
+  }
 }
 
 export function get_logic_fields(

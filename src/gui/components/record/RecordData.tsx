@@ -60,6 +60,7 @@ interface RecordDataTypes {
   record_to_field_links: RecordLinkProps[];
   is_link_ready: boolean;
   handleUnlink: Function;
+  setRevision_id?: Function;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -139,8 +140,9 @@ export default function RecordData(props: RecordDataTypes) {
                         handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                         handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                         handleSetDraftError={props.handleSetDraftError}
-                        // setRevision_id={setRevision_id}
+                        setRevision_id={props.setRevision_id}
                         ViewName={ViewName}
+                        draftLastSaved={props.draftLastSaved}
                       />
                     ) : (
                       <CircularProgress size={24} />
@@ -194,7 +196,7 @@ export default function RecordData(props: RecordDataTypes) {
                       ui_specification={props.ui_specification}
                       draft_id={props.draft_id}
                       metaSection={props.metaSection}
-                      disabled={true}
+                      disabled={true} // for view of the forms
                       handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}

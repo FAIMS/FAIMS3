@@ -543,6 +543,9 @@ class RecordDraftState {
       if (this.data.state !== 'edited') {
         // Nothing to save yet, probably the user hasn't touched an
         // existing record
+        // for existing record, set this.is_saving false, so when draft created, it can be saved correctly
+        this.is_saving = false;
+        this.saveListener(Error('no changes'));
         return;
       }
       result = await setStagedData(

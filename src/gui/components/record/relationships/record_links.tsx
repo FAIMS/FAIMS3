@@ -196,13 +196,13 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           valueGetter: (params: GridCellParams) => params.row.link.field_label,
           renderCell: (params: GridCellParams) => (
             <React.Fragment>
-              {params.row.link.deleted && <DeleteForeverIcon color={'error'} />}
               {recordDisplay(
                 props.record_id,
                 params.row.link.record_id,
                 params.row.link.type,
                 params.row.link.hrid,
-                params.row.link.route
+                params.row.link.route,
+                params.row.link.deleted ?? false
               )}
               <Typography
                 variant={'body2'}
