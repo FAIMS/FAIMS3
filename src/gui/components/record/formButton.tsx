@@ -79,6 +79,7 @@ export default function FormButtonGroup(props: any) {
     handleFormSubmit,
     views,
     ui_specification,
+    mq_above_md,
   } = props;
   return (
     <Grid item sm={12} xs={12} md={12}>
@@ -99,6 +100,7 @@ export default function FormButtonGroup(props: any) {
           <ButtonGroup
             color="primary"
             aria-label="contained primary button group"
+            orientation={mq_above_md ? 'horizontal' : 'vertical'}
           >
             {/* need to fix the issue and re-enable it */}
             <FormSubmitButton
@@ -128,7 +130,7 @@ export default function FormButtonGroup(props: any) {
             <Divider />
           </ButtonGroup>
         </Grid>
-        <Grid item md={12}>
+        <Grid item sm={12} xs={12} md={12}>
           {disabled !== true && (
             <Alert severity={'info'} variant="outlined">
               <AlertTitle>What does publishing mean?</AlertTitle>
@@ -150,8 +152,8 @@ type DevToolProps = {
 };
 export function DevTool(props: DevToolProps) {
   const {formProps, state} = props;
-  return String(process.env.REACT_APP_SERVER) === 'developers' ? (
-    <Grid item sm={12} xs={12}>
+  return String(process.env.REACT_APP_SERVER) === 'developer' ? (
+    <Grid item sm={12} xs={12} md={12}>
       <BoxTab title={'Developer tool: form state'} />
       <Box bgcolor={grey[200]} pl={2} pr={2} style={{overflowX: 'scroll'}}>
         <pre>{JSON.stringify(formProps, null, 2)}</pre>

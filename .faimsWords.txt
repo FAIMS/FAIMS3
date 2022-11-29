@@ -58,7 +58,7 @@ currentform
 currentview
 customtoolbar
 datamodel
-Defaultcomponentsetting
+DefaultComponentSetting
 Defaultui
 Defaultuisettings
 defaultuser
@@ -636,6 +636,7 @@ basemap
 unactivated
 GEOTIFF
 alldocs
+DDTHH
 # TODO FIX
 availabe
 hrids

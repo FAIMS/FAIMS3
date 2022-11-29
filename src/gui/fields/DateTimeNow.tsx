@@ -32,12 +32,17 @@ export function getLocalDate(value: Date) {
   // return moment(value).utcOffset(0, true).format('YYYY-MM-DDTHH:mm:ss');
 }
 
-export function DateTimeNow(props: TextFieldProps) {
+type DateTimeNowProps = {
+  pick_now?: string;
+  disabled?: boolean;
+};
+
+export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
   /**
    * Store value as ISO, but <input> elements of type datetime-local
    * requires format yyyy-MM-ddTHH:mm:ss. We separate the two by keeping
    * a local state displayValue for rendering, and use the formik value to
-   * store the ISO formated datetime.
+   * store the ISO format datetime.
    *
    *
    * value: the formik-controlled value
@@ -82,18 +87,19 @@ export function DateTimeNow(props: TextFieldProps) {
       }
     }
   }, [value]);
+  const {helperText, pick_now, ...others} = props;
   return (
     <React.Fragment>
       <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
         <MuiTextField
-          {...fieldToTextField(props)}
+          {...fieldToTextField(others)}
           label={props.label}
           type="datetime-local"
           inputProps={{
             step: 1, // this allows for 1s granularity
           }}
           sx={{
-            minWidth: 250,
+            // minWidth: 250,
             '& .MuiOutlinedInput-root': {borderRadius: '3px 0px 0px 4px'},
           }}
           onChange={onChange}
@@ -103,41 +109,39 @@ export function DateTimeNow(props: TextFieldProps) {
           value={displayValue}
           error={!!props.form.errors[name]}
         />
-        <Button
-          variant="contained"
-          disableElevation
-          aria-label="capture time now"
-          onClick={onClick}
-          sx={{
-            borderRadius: {xs: '3px', sm: '0px 3px 3px 0px'},
-          }}
-        >
-          Now
-        </Button>
+        {props.pick_now !== '' &&
+          props.disabled !== true && ( //add for view and conflict model
+            <Button
+              variant="contained"
+              disableElevation
+              aria-label="capture time now"
+              onClick={onClick}
+              sx={{
+                borderRadius: {xs: '3px', sm: '0px 3px 3px 0px'},
+              }}
+            >
+              {pick_now ?? 'Now'}
+            </Button>
+          )}
       </Stack>
       <FormHelperText
-        children={
-          props.helperText ? props.helperText : 'Select a date and time'
-        }
+        children={props.helperText ? helperText : 'Select a date and time'}
       />
       {props.form.errors[name] && (
         <FormHelperText error={true} children={props.form.errors[name]} />
       )}
-      {/*<br />*/}
-      {/*value: {value}*/}
-      {/*<br />*/}
-      {/*displayValue: {displayValue}*/}
-      {/*<Button onClick={() => setFieldError(name, 'ttest that')}>error</Button>*/}
     </React.Fragment>
   );
 }
 // TODO Kate to fill in for notebook editor
 export function DateTimeNowComponentSettings(props: componenentSettingprops) {
   const {handlerchangewithview, ...others} = props;
-  const handlerchanges = (event: FAIMSEVENTTYPE) => {};
+  const handlerchanges = (event: FAIMSEVENTTYPE) => {
+    console.log(event);
+  };
   const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
     //any actions that could in this form
-    props.handlerchangewithview(event, view);
+    handlerchangewithview(event, view);
   };
 
   return (
@@ -162,6 +166,7 @@ const uiSpec = {
     InputLabelProps: {
       label: 'DateTimeNow Field',
     },
+    pick_now: 'Now',
   },
   validationSchema: [['yup.string']],
   initialValue: '',
@@ -169,27 +174,24 @@ const uiSpec = {
 
 const UISetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  //   // newuiSetting['fields']['datetime_now'] = {
-  //   //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-  //   //   'component-name': 'DateTimeNow',
-  //   //   'type-returned': 'faims-core::String', // matches a type in the Project Model
-  //   //   'component-parameters': {
-  //   //     fullWidth: true,
-  //   //     helperText: '',
-  //   //     variant: 'outlined',
-  //   //     required: true,
-  //   //     InputProps: {},
-  //   //     SelectProps: {},
-  //   //     ElementProps: {},
-  //   //     InputLabelProps: {
-  //   //       label:
-  //   //         'Add a datetime stamp (clicking now records the current date+time).',
-  //   //     },
-  //   //   },
-  //   //   validationSchema: [['yup.string']],
-  //   //   initialValue: '',
-  //   // };
-  //   // newuiSetting['views']['FormParameter']['fields'] = ['helperText'];
+  newuiSetting['fields']['pick_now'] = {
+    'component-namespace': 'formik-material-ui',
+    'component-name': 'TextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      InputLabelProps: {
+        label: 'Button Label',
+      },
+      fullWidth: false,
+      helperText: 'Make Preferred Label, leave empty will hide the button',
+      variant: 'outlined',
+      required: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: 'Now',
+  };
+
+  newuiSetting['views']['FormParamater']['fields'] = ['helperText', 'pick_now'];
 
   newuiSetting['viewsets'] = {
     settings: {

@@ -53,7 +53,7 @@ interface Props {
 export class Select extends React.Component<TextFieldProps & Props> {
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
-    /***make seect not multiple to avoid error */
+    /***make select not multiple to avoid error */
     return (
       <>
         <MuiTextField
