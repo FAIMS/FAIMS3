@@ -55,7 +55,7 @@ platform :ios do
     )
 
     match(
-      type: 'development',
+      type: 'appstore',
       app_identifier: "#{DEVELOPER_APP_IDENTIFIER}",
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
