@@ -109,7 +109,7 @@ export function DateTimeNow(props: TextFieldProps) {
           aria-label="capture time now"
           onClick={onClick}
           sx={{
-            borderRadius: {xs: '4px', sm: '0px 4px 4px 0px'},
+            borderRadius: {xs: '3px', sm: '0px 3px 3px 0px'},
           }}
         >
           Now
@@ -135,7 +135,11 @@ export function DateTimeNow(props: TextFieldProps) {
 export function DateTimeNowComponentSettings(props: componenentSettingprops) {
   const {handlerchangewithview, ...others} = props;
   const handlerchanges = (event: FAIMSEVENTTYPE) => {};
-  const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {};
+  const handlerchangewithviewSpec = (event: FAIMSEVENTTYPE, view: string) => {
+    //any actions that could in this form
+    props.handlerchangewithview(event, view);
+  };
+
   return (
     <DefaultComponentSetting
       handlerchangewithview={handlerchangewithviewSpec}
@@ -155,9 +159,6 @@ const uiSpec = {
       'Add a datetime stamp (click now to record the current date+time)',
     variant: 'outlined',
     required: false,
-    InputProps: {},
-    SelectProps: {},
-    ElementProps: {},
     InputLabelProps: {
       label: 'DateTimeNow Field',
     },
@@ -168,31 +169,32 @@ const uiSpec = {
 
 const UISetting = () => {
   const newuiSetting: ProjectUIModel = getDefaultuiSetting();
-  newuiSetting['fields']['datetime_now'] = {
-    'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-    'component-name': 'DateTimeNow',
-    'type-returned': 'faims-core::String', // matches a type in the Project Model
-    'component-parameters': {
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: true,
-      InputProps: {},
-      SelectProps: {},
-      ElementProps: {},
-      InputLabelProps: {
-        label:
-          'Add a datetime stamp (clicking now records the current date+time).',
-      },
-    },
-    validationSchema: [['yup.string']],
-    initialValue: '',
-  };
-  newuiSetting['views']['FormParameter']['fields'] = ['helperText'];
+//   // newuiSetting['fields']['datetime_now'] = {
+//   //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
+//   //   'component-name': 'DateTimeNow',
+//   //   'type-returned': 'faims-core::String', // matches a type in the Project Model
+//   //   'component-parameters': {
+//   //     fullWidth: true,
+//   //     helperText: '',
+//   //     variant: 'outlined',
+//   //     required: true,
+//   //     InputProps: {},
+//   //     SelectProps: {},
+//   //     ElementProps: {},
+//   //     InputLabelProps: {
+//   //       label:
+//   //         'Add a datetime stamp (clicking now records the current date+time).',
+//   //     },
+//   //   },
+//   //   validationSchema: [['yup.string']],
+//   //   initialValue: '',
+//   // };
+//   // newuiSetting['views']['FormParameter']['fields'] = ['helperText'];
+
 
   newuiSetting['viewsets'] = {
     settings: {
-      views: ['InputLabelProps', 'FormParameter', 'ElementProps'],
+      views: ['InputLabelProps','FormParamater'],
       label: 'settings',
     },
   };
@@ -203,4 +205,4 @@ const UISetting = () => {
 export function getDateTimeNowBuilderIcon() {
   return <BookmarksIcon />;
 }
-export const DateTimeNowSetting = [() => UISetting(), uiSpec];
+export const DateTimeNowSetting = [UISetting(), uiSpec];

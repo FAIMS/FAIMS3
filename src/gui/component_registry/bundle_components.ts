@@ -496,7 +496,7 @@ registerComponent(
   setupComponentProperties(
     'DateTimeNow',
     'TZ-aware DateTime field with Now button',
-    'Text',
+    'Special',
     DateTimeNow,
     {
       ...DateTimeNowSetting[1],
