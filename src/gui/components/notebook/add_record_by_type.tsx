@@ -65,94 +65,91 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   const visible_types = ui_spec.value.visible_types;
 
   const handleScanResult = (value: string) => {
-    console.log('got a scan result...', value);
     // find a record with this field value
     getAllRecordsWithRegex(project_id, value).then(records => {
       // navigate to it
-      console.log('got some records', records);
+      // what should happen if there are more than one?
       for (const key in records) {
-        console.log('jumping to', key);
         setSelectedRecord(records[key]);
       }
     });
   };
 
-  return (
-    <Box>
-      {/*If the list of views hasn't loaded yet*/}
-      {/*we can still show this button, except it will*/}
-      {/*redirect to the Record creation without known type*/}
-      {visible_types.length === 1 ? (
-        <ButtonGroup
-          fullWidth={mq_above_md ? false : true}
-          orientation={mq_above_sm ? 'horizontal' : 'vertical'}
-          sx={{maxHeight: '400px', overflowY: 'scroll'}}
-        >
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<AddIcon />}
-            component={RouterLink}
-            to={
-              ROUTES.NOTEBOOK +
-              project_id +
-              ROUTES.RECORD_CREATE +
-              visible_types
-            }
-          >
-            New Record
-          </Button>
+  console.log('visible types', visible_types);
+  visible_types.map(vt => {
+    console.log('VT', viewsets[vt]);
+  });
 
-          {showQRButton ? (
-            <QRCodeButton label="Scan QR" onScanResult={handleScanResult} />
-          ) : (
-            <span />
-          )}
-        </ButtonGroup>
-      ) : (
+  if (selectedRecord) {
+    /*  if we have selected a record (via QR scanning) then redirect to it here */
+    return (
+      <Redirect
+        to={ROUTES.getRecordRoute(
+          project_id || 'dummy',
+          (selectedRecord.record_id || '').toString(),
+          (selectedRecord.revision_id || '').toString()
+        )}
+      />
+    );
+  } else {
+    return (
+      <Box>
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
           sx={{maxHeight: '400px', overflowY: 'scroll'}}
         >
-          {visible_types.map(
-            viewset_name =>
-              viewsets[viewset_name].is_visible !== false && (
-                <Button
-                  component={RouterLink}
-                  to={
-                    ROUTES.NOTEBOOK +
-                    project.project_id +
-                    ROUTES.RECORD_CREATE +
-                    viewset_name
-                  }
-                  key={viewset_name}
-                  startIcon={<AddIcon />}
-                >
-                  {viewsets[viewset_name].label || viewset_name}
-                </Button>
-              )
+          {/*If the list of views hasn't loaded yet*/}
+          {/*we can still show this button, except it will*/}
+          {/*redirect to the Record creation without known type*/}
+          {visible_types.length === 1 ? (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<AddIcon />}
+              component={RouterLink}
+              key="newRecord"
+              to={
+                ROUTES.NOTEBOOK +
+                project_id +
+                ROUTES.RECORD_CREATE +
+                visible_types
+              }
+            >
+              New Record
+            </Button>
+          ) : (
+            visible_types.map(
+              (viewset_name: string) =>
+                viewsets[viewset_name].is_visible !== false && (
+                  <Button
+                    component={RouterLink}
+                    to={
+                      ROUTES.NOTEBOOK +
+                      project.project_id +
+                      ROUTES.RECORD_CREATE +
+                      viewset_name
+                    }
+                    key={viewset_name}
+                    startIcon={<AddIcon />}
+                  >
+                    {viewsets[viewset_name].label || viewset_name}
+                  </Button>
+                )
+            )
           )}
           {/* Show the QR code button if configured for this project */}
           {showQRButton ? (
-            <QRCodeButton label="Scan QR" onScanResult={handleScanResult} />
+            <QRCodeButton
+              key="scan-qr"
+              label="Scan QR"
+              onScanResult={handleScanResult}
+            />
           ) : (
             <span />
           )}
         </ButtonGroup>
-      )}
-      {/*  if we have selected a record (via QR scanning) then redirect to it here */}
-      {selectedRecord ? (
-        <Redirect
-          to={ROUTES.getRecordRoute(
-            project_id || 'dummy',
-            (selectedRecord.record_id || '').toString(),
-            (selectedRecord.revision_id || '').toString()
-          )}
-        />
-      ) : (
-        <span />
-      )}
-    </Box>
-  );
+      </Box>
+    );
+  }
 }
