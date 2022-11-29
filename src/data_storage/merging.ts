@@ -372,7 +372,7 @@ export async function mergeHeads(
   if (DEBUG_APP) {
     console.debug('Getting record', project_id, record_id);
   }
-  const record = await getRecord(project_id, record_id);
+  const record = await getRecord(project_id, record_id, true);
   const revision_ids_to_seed_cache = record.revisions.slice(
     0,
     initial_cache_size

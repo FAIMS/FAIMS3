@@ -95,14 +95,64 @@ export async function updateHeads(
   await datadb.put(record);
 }
 
+async function mergeRecordConflicts(
+  project_id: ProjectID,
+  record: EncodedRecord
+): Promise<EncodedRecord> {
+  const datadb = await getDataDB(project_id);
+
+  // There is no merge functionality in couchdb, you pick a revision and delete
+  // the others. Let's use the default revision selected as the base for
+  // consistency.
+
+  if (record._conflicts === undefined) {
+    // If there are no actual conflicts, just return as per normal
+    return record;
+  }
+  // Get current heads, revisions as sets for easy merging
+  const heads = new Set<RevisionID>(record.heads);
+  const revisions = new Set<RevisionID>(record.revisions);
+
+  // Get the additional conflicted revisions
+  const conflicted_docs = await datadb.get(record._id, {
+    open_revs: record._conflicts,
+  });
+  const new_docs = [];
+  for (const doc of conflicted_docs) {
+    const tmp_rec = doc.ok as EncodedRecord;
+    // Add heads
+    for (const rev of tmp_rec.heads) {
+      heads.add(rev);
+    }
+    // Add revisions
+    for (const rev of tmp_rec.revisions) {
+      revisions.add(rev);
+    }
+    // We will delete the additional revisions
+    tmp_rec._deleted = true;
+    new_docs.push(tmp_rec);
+  }
+  record.heads = Array.from(heads);
+  record.heads.sort();
+  record.revisions = Array.from(revisions);
+  record.revisions.sort();
+  new_docs.push(record);
+  await datadb.bulkDocs(new_docs);
+  return record;
+}
+
 export async function getRecord(
   project_id: ProjectID,
-  obsid: RecordID
+  obsid: RecordID,
+  merge_conflicts = false
 ): Promise<EncodedRecord> {
   const records = await getRecords(project_id, [obsid]);
   const record = records[obsid];
   if (record === undefined) {
     throw Error(`no such record ${obsid}`);
+  }
+  if (merge_conflicts) {
+    return await mergeRecordConflicts(project_id, record);
   }
   return record;
 }
