@@ -23,15 +23,27 @@ import {transformAll} from '@demvsystems/yup-ast';
 import {ProjectUIModel} from '../datamodel/ui';
 import {getFieldsForViewSet, getFieldNamesFromFields} from '../uiSpecification';
 
-function check_field_type(ui_specification: ProjectUIModel,fieldName:string,validationSchema:any){
-  const new_validationSchema:any[] = []
-  if(['RelatedRecordSelector'].includes(ui_specification['fields'][fieldName]['component-name'])){
-    validationSchema.map((validate:any)=>Array.isArray(validate)&&validate[0]==='yup.required'?validate:new_validationSchema.push(validate))
-    console.debug('new validation',fieldName,new_validationSchema)
-    return new_validationSchema
+function check_field_type(
+  ui_specification: ProjectUIModel,
+  fieldName: string,
+  validationSchema: any
+) {
+  const new_validationSchema: any[] = [];
+  if (
+    ['RelatedRecordSelector'].includes(
+      ui_specification['fields'][fieldName]['component-name']
+    )
+  ) {
+    validationSchema.map((validate: any) =>
+      Array.isArray(validate) && validate[0] === 'yup.required'
+        ? validate
+        : new_validationSchema.push(validate)
+    );
+    console.debug('new validation', fieldName, new_validationSchema);
+    return new_validationSchema;
   }
-  
-  return validationSchema
+
+  return validationSchema;
 }
 
 export function getValidationSchemaForViewset(
@@ -46,7 +58,11 @@ export function getValidationSchemaForViewset(
   const fieldNames = getFieldNamesFromFields(fields);
   const validationSchema = Object();
   fieldNames.forEach(fieldName => {
-    validationSchema[fieldName] = check_field_type(ui_specification,fieldName,fields[fieldName]['validationSchema']);
+    validationSchema[fieldName] = check_field_type(
+      ui_specification,
+      fieldName,
+      fields[fieldName]['validationSchema']
+    );
   });
   return transformAll([['yup.object'], ['yup.shape', validationSchema]]);
 }

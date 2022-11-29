@@ -35,6 +35,7 @@ import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
+
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
     throw Error('No photo data found');
@@ -112,17 +113,25 @@ const FAIMSViewImageList = (props: {
           </ListItem>
         ) : (
           // ?? not allow user to delete image if the image is not download yet
-          <FAIMSImageIconList index={index} setopen={props.setopen} />
+          <FAIMSImageIconList
+            index={index}
+            setopen={props.setopen}
+            fieldName={props.fieldName}
+          />
         )
       )}
     </List>
   );
 };
 
-const FAIMSImageIconList = (props: {index: number; setopen: Function}) => {
+const FAIMSImageIconList = (props: {
+  index: number;
+  setopen: Function;
+  fieldName: string;
+}) => {
   const {index, setopen} = props;
   return (
-    <ImageListItem key={index}>
+    <ImageListItem key={`${props.fieldName}-image-icon-${index}`}>
       <IconButton aria-label="image" onClick={() => setopen(null)}>
         <ImageIcon />
       </IconButton>
@@ -131,7 +140,7 @@ const FAIMSImageIconList = (props: {index: number; setopen: Function}) => {
 };
 
 const FAIMSImageList = (props: ImageListProps) => {
-  const {images, setopen, setimage} = props;
+  const {images, setopen, setimage, fieldName} = props;
   const disabled = props.disabled ?? false;
   const handelonClick = (index: number) => {
     if (images.length > index) {
@@ -154,7 +163,7 @@ const FAIMSImageList = (props: ImageListProps) => {
     <ImageGalleryList>
       {props.images.map((image: any, index: number) =>
         image['attachment_id'] === undefined ? (
-          <ImageListItem key={index}>
+          <ImageListItem key={`${fieldName}-image-${index}`}>
             <img
               style={{
                 objectFit: 'scale-down',
@@ -186,7 +195,11 @@ const FAIMSImageList = (props: ImageListProps) => {
           </ImageListItem>
         ) : (
           // ?? not allow user to delete image if the image is not download yet
-          <FAIMSImageIconList index={index} setopen={setopen} />
+          <FAIMSImageIconList
+            index={index}
+            setopen={setopen}
+            fieldName={fieldName}
+          />
         )
       )}{' '}
     </ImageGalleryList>
