@@ -83,7 +83,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
       try {
         setDisplayValue(getLocalDate(new Date(value)));
       } catch (err) {
-        setFieldError(name, 'Could not set displayValue. Contact support.');
+        setFieldError(name, 'Could not set display Value. Contact support.');
         console.error(err);
       }
     }
@@ -92,11 +92,9 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
     // set intial time when user open the notebook
     if (is_auto_pick === true && value === '') {
       try {
-        const now = getLocalDate(new Date());
-        setDisplayValue(now);
-        handleValues(now);
+        handleValues(getLocalDate(new Date()));
       } catch (err) {
-        setFieldError(name, 'Could not set displayValue. Contact support.');
+        setFieldError(name, 'Could not set display value. Contact support.');
         console.error(err);
       }
     }
