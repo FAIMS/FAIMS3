@@ -124,15 +124,18 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       //     severity: 'error',
       //   },
       // });
-
-      // response success
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
-          severity: 'success',
-        },
-      });
+      try {
+        // response success
+        dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
+            severity: 'success',
+          },
+        });
+      } catch (error) {
+        console.error('error when update', error, selectedRecord);
+      }
     }, 3000);
     return () => {
       clearTimeout(timer);

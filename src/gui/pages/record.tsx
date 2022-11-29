@@ -181,8 +181,6 @@ export default function Record() {
       console.debug('record start initial', project_id, record_id, revision_id);
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
-      setrevision_id(revision_id);
-      setselectedRevision(revision_id);
       listFAIMSRecordRevisions(project_id, record_id)
         .then(all_revisions => {
           setRevisions(all_revisions);
@@ -199,7 +197,16 @@ export default function Record() {
           },
           {title: hrid ?? record_id},
         ]);
+        setrevision_id(revision_id);
+        setselectedRevision(revision_id);
         //check if record loading correctly when link
+        console.debug(
+          'get breadcrumbs project_id',
+          breadcrumbs,
+          project_id,
+          record_id,
+          hrid
+        );
         setValue('1');
       });
     };
@@ -354,6 +361,13 @@ export default function Record() {
               ];
             }
             setBreadcrumbs(newBreadcrumbs);
+            console.debug(
+              'get breadcrumbs project_id',
+              breadcrumbs,
+              newBreadcrumbs,
+              record_id,
+              hrid
+            );
           }
           // setValue('1');
           setIs_link_ready(true);
@@ -447,13 +461,7 @@ export default function Record() {
     uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
       ? '' + uiSpec.viewsets[type]['label']
       : '';
-  // console.debug(
-  //   'check current revision id record revision_id',
-  //   revision_id,
-  //   updatedrevision_id,
-  //   selectrevision,
-  //   draft_id
-  // );
+  console.debug('get breadcrumbs', breadcrumbs);
   return (
     <Box>
       <Grid container wrap="nowrap" spacing={2}>
