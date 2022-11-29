@@ -135,9 +135,9 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
           .then(() => {
             setScanning(false);
           })
-          .catch(() => console.log('stopScan'));
+          .catch(() => console.debug('stopScan'));
       })
-      .catch(() => console.log('showBackground'));
+      .catch(() => console.debug('showBackground'));
   };
 
   if (scanning) {

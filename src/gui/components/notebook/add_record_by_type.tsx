@@ -74,12 +74,6 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
       }
     });
   };
-
-  console.log('visible types', visible_types);
-  visible_types.map(vt => {
-    console.log('VT', viewsets[vt]);
-  });
-
   if (selectedRecord) {
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
