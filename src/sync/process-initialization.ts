@@ -36,8 +36,8 @@ import {getTokenForCluster} from '../users';
 import {
   ConnectionInfo_create_pouch,
   materializeConnectionInfo,
-  ping_sync_up,
-  ping_sync_down,
+  throttled_ping_sync_up,
+  throttled_ping_sync_down,
   ping_sync_error,
   ping_sync_denied,
 } from './connection';
@@ -167,7 +167,7 @@ export async function update_directory(
     if (DEBUG_APP) {
       console.debug('Directory sync started up again');
     }
-    ping_sync_down();
+    throttled_ping_sync_down();
   };
   const directory_denied = (err: any) => {
     if (DEBUG_APP) {
@@ -190,7 +190,7 @@ export async function update_directory(
   //};
   //const directory_change = (info: any) => {
   //  console.debug('Directory sync change', info);
-  //  ping_sync_down();
+  //  throttled_ping_sync_down();
   //};
 
   const directory_paused = ConnectionInfo_create_pouch<ListingsObject>(
@@ -481,7 +481,7 @@ export async function update_listing(
     projects_remote.remote
       .connection!.on('active', () => {
         console.debug('Projects sync started up again', listing_id);
-        ping_sync_down();
+        throttled_ping_sync_down();
       })
       .on('denied', err => {
         console.debug('Projects sync denied', listing_id, err);
@@ -492,7 +492,7 @@ export async function update_listing(
       //})
       //.on('change', info => {
       //  console.debug('Projects sync change', listing_id, info);
-      //  ping_sync_down();
+      //  throttled_ping_sync_down();
       //})
       .on('error', (err: any) => {
         if (err.status === 401) {
@@ -742,7 +742,7 @@ export async function update_project(
       meta_remote.remote
         .connection!.on('active', () => {
           console.debug('Meta sync started up again', active_id);
-          ping_sync_down();
+          throttled_ping_sync_down();
         })
         .on('denied', err => {
           console.debug('Meta sync denied', active_id, err);
@@ -750,7 +750,7 @@ export async function update_project(
         })
         //.on('change', info => {
         //  console.debug('Meta sync change', active_id, info);
-        //  ping_sync_down();
+        //  throttled_ping_sync_down();
         //})
         //.on('complete', info => {
         //  console.debug('Meta sync complete', active_id, info);
@@ -782,8 +782,8 @@ export async function update_project(
       data_remote.remote
         .connection!.on('active', () => {
           console.debug('Data sync started up again', active_id);
-          ping_sync_down();
-          ping_sync_up();
+          throttled_ping_sync_down();
+          throttled_ping_sync_up();
         })
         .on('denied', err => {
           console.debug('Data sync denied', active_id, err);

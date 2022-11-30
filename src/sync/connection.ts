@@ -23,13 +23,17 @@ import {RUNNING_UNDER_TEST, DEBUG_APP} from '../buildconfig';
 import {SyncStatusCallbacks} from '../datamodel/core';
 import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel/database';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
-
+import * as _ from 'lodash';
 /**
  * Configure local pouchdb settings; note that this applies to *ALL* local
  * databases (remote ones are handled separately), so don't add db-specific
  * logic to this
  */
-
+// the sync status functions are throttled to once per 7s.
+// each time one is triggered it runs for 5s until the reverse is dispatched.
+// No sync events will be captured in the following 2s to give the interface some pause time.
+// (otherwise the arrows flickering can be overwhelming)
+export const THROTTLE_TIME = 7000;
 export const local_pouch_options: any = {};
 if (RUNNING_UNDER_TEST) {
   // enable memory adapter for testing
@@ -70,6 +74,11 @@ export function ping_sync_down() {
     sync_status_callbacks.sync_down();
   }
 }
+export const throttled_ping_sync_up = _.throttle(ping_sync_up, THROTTLE_TIME);
+export const throttled_ping_sync_down = _.throttle(
+  ping_sync_down,
+  THROTTLE_TIME
+);
 
 export function ping_sync_error() {
   if (sync_status_callbacks !== null) {
@@ -114,8 +123,8 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
       }
       opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
     }
-    ping_sync_up();
-    ping_sync_down();
+    throttled_ping_sync_up();
+    throttled_ping_sync_down();
     // Commented out as it seems this may break sending attachments on
     // chrome/safari
     //opts.keepalive = true;

@@ -126,6 +126,7 @@
     "@capacitor/cli": "4.1.0",
     "@types/jest": "27.4.0",
     "@types/json-stable-stringify": "1.0.34",
+    "@types/lodash": "^4.14.190",
     "@types/node": "18.7.14",
     "@types/react-router-hash-link": "^2.4.5",
     "@types/yup": "0.29.14",
