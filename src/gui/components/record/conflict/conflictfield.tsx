@@ -158,7 +158,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
 
   return ['warning', 'delete', 'clear', 'automerge'].includes(styletype) ? (
     <Box p={2} minHeight="470px" maxHeight="470px" sx={{mt: 0}}>
-      <Alert severity={'warning'}>
+      <Alert severity={styletype === 'clear' ? 'info' : 'warning'}>
         {cardstyle.text}
         {fieldName.startsWith('hrid')}
       </Alert>
