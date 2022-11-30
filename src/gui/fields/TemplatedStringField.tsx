@@ -35,7 +35,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {HRID_STRING} from '../../datamodel/core';
-
+import getLocalDate from './LocalDate';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface FieldValues {
   [field_name: string]: any;
@@ -72,7 +72,10 @@ export class TemplatedStringField extends React.Component<
     const field_values: FieldValues = {};
     for (const field_name in textFieldProps.form.values) {
       if (field_name !== textFieldProps.field.name) {
-        field_values[field_name] = textFieldProps.form.values[field_name];
+        let value = textFieldProps.form.values[field_name];
+        if (typeof value === 'function')
+          value = getLocalDate(value).replaceAll('T', ' ');
+        field_values[field_name] = value;
       }
     }
     const value = render_template(template, field_values);

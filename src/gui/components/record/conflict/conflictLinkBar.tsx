@@ -25,7 +25,7 @@ import {RecordLinkProps} from '../relationships/types';
 import {Accordion, AccordionSummary, AccordionDetails} from '../accordion';
 import LinkIcon from '@mui/icons-material/Link';
 import {grey} from '@mui/material/colors';
-
+import getLocalDate from '../../../fields/LocalDate';
 type conflictLinkBarProps = {
   conflictA: any;
   conflictB: any;
@@ -45,10 +45,7 @@ function get_updated_by(conflict: any) {
   let updated_by = '';
 
   if (conflict.updated !== undefined) {
-    updated_by = JSON.stringify(conflict.updated)
-      .replaceAll('"', '')
-      .replaceAll('T', ' ')
-      .slice(0, 19);
+    updated_by = getLocalDate(conflict.updated).replaceAll('T', ' ');
   }
   return updated_by;
 }

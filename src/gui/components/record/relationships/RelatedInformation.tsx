@@ -30,6 +30,7 @@ import {
 } from '../../../../datamodel/core';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
+import getLocalDate from '../../../fields/LocalDate';
 //get parent link when child record been open
 export async function getParentLink_from_relationship(
   hrid: string,
@@ -844,14 +845,14 @@ export async function getDetailRelatedInformation(
 }
 function get_last_updated(updated_by: string, updated: Date | undefined) {
   if (updated === undefined) return updated_by;
-  return (
-    updated_by +
-    ' at ' +
-    JSON.stringify(updated)
-      .replaceAll('"', '')
-      .replaceAll('T', ' ')
-      .slice(0, 19)
+  const update_time = getLocalDate(updated).replaceAll('T', ' ');
+  console.debug(
+    'update time',
+    getLocalDate(updated),
+    getLocalDate(new Date()),
+    update_time
   );
+  return updated_by + ' at ' + update_time;
 }
 export async function Update_New_Link(
   child_record: RecordReference,

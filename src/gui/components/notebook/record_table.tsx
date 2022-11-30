@@ -49,7 +49,7 @@ import {
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
-
+import getLocalDate from '../../fields/LocalDate';
 type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -275,10 +275,10 @@ function RecordsTable(props: RecordsTableProps) {
                     Created{' '}
                     {params.row.created !== undefined &&
                       params.row.created !== '' &&
-                      JSON.stringify(params.row.created)
-                        .replaceAll('"', '')
-                        .replaceAll('T', ' ')
-                        .slice(0, 19)}{' '}
+                      getLocalDate(params.row.created).replaceAll(
+                        'T',
+                        ' '
+                      )}{' '}
                     by {params.row.created_by}
                   </Typography>
                 ) : (
@@ -291,10 +291,10 @@ function RecordsTable(props: RecordsTableProps) {
                     Updated{' '}
                     {params.row.updated !== undefined &&
                       params.row.updated !== '' &&
-                      JSON.stringify(params.row.updated)
-                        .replaceAll('"', '')
-                        .replaceAll('T', ' ')
-                        .slice(0, 19)}{' '}
+                      getLocalDate(params.row.updated).replaceAll(
+                        'T',
+                        ' '
+                      )}{' '}
                     by {params.row.updated_by}
                   </Typography>
                 )}
