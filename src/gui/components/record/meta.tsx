@@ -25,6 +25,7 @@ import {
   Table,
   TableBody,
   TableRow,
+  Typography,
 } from '@mui/material';
 
 import {getRecordMetadata} from '../../../data_storage';
@@ -63,12 +64,15 @@ export default function RecordMeta(props: RecordMetaProps) {
         <CircularProgress color={'primary'} size={'0.75rem'} thickness={5} />
       ) : (
         <div>
-          <Table>
+          <Typography variant={'h5'} gutterBottom>
+            Record Metadata
+          </Typography>
+          <Table size={'small'}>
             <TableBody>
               {Object.keys(meta).map(key => (
                 <TableRow key={'record-meta-' + key}>
                   <TableCell>
-                    <b>{key}</b>
+                    <Typography variant={'overline'}>{key}</Typography>
                   </TableCell>
                   <TableCell>{meta[key]}</TableCell>
                 </TableRow>

@@ -93,6 +93,7 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
 import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
+import RecordDelete from '../components/notebook/delete';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -459,7 +460,20 @@ export default function Record() {
     uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
       ? '' + uiSpec.viewsets[type]['label']
       : '';
-  console.debug('get breadcrumbs', breadcrumbs);
+
+  const handleRefresh = () => {
+    /**
+     * Handler for Refreshing project (go back to notebook)
+     */
+    return new Promise(resolve => {
+      resolve(() => {
+        history.push({
+          pathname: ROUTES.NOTEBOOK + project_id,
+        });
+      });
+    });
+  };
+
   return (
     <Box>
       <Grid container wrap="nowrap" spacing={2}>
@@ -750,6 +764,19 @@ export default function Record() {
               record_id={record_id}
               revision_id={updatedrevision_id}
             />
+            <Box mt={2}>
+              <Typography variant={'h5'} gutterBottom>
+                {draft_id ? 'Discard Draft' : 'Delete Record'}
+              </Typography>
+              <RecordDelete
+                project_id={project_id}
+                record_id={record_id}
+                revision_id={revision_id}
+                draft_id={draft_id ? draft_id : null}
+                show_label={true}
+                handleRefresh={handleRefresh}
+              />
+            </Box>
           </TabPanel>
           <TabPanel
             value="4"
