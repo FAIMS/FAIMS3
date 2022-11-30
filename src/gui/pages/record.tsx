@@ -286,27 +286,28 @@ export default function Record() {
     // this is function to get child information
 
     const getrelated_Info = async () => {
-      console.debug(
-        'record start initial relationship',
-        record_id,
-        type,
-        hrid,
-        relatedRecords
-      );
       try {
         if (uiSpec !== null && type !== null) {
           const latest_record = await getFullRecordData(
             project_id,
             record_id,
-            updatedrevision_id
-          );
-          console.debug(
-            'record start initial relationship revision',
             updatedrevision_id,
-            revision_id,
-            latest_record
+            false
           );
           if (latest_record !== null) {
+            //add checking for deleted record, so it can be direct to notebook page
+            if (latest_record.deleted === true) {
+              dispatch({
+                type: ActionType.ADD_ALERT,
+                payload: {
+                  message: 'Could not load record, it might be deleted ',
+                  severity: 'warning',
+                },
+              });
+              history.push({
+                pathname: ROUTES.NOTEBOOK + project_id,
+              });
+            }
             const newRelationship = await getDetailRelatedInformation(
               uiSpec,
               type,
