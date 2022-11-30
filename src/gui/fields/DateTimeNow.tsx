@@ -89,7 +89,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
     }
   }, [value]);
   useEffect(() => {
-    // set intial time when user open the notebook
+    // set initial time when user open the notebook
     if (is_auto_pick === true && value === '') {
       try {
         const date = new Date();
