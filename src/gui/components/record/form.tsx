@@ -316,7 +316,11 @@ class RecordForm extends React.Component<
             revision_id
           );
           if (DEBUG_APP)
-            console.debug('get record revision', this.props.record_id);
+            console.debug(
+              'record start initial',
+              this.props.record_id,
+              revision_id
+            );
           if (latest_record === null) {
             this.props.handleSetDraftError(
               `Could not find data for record ${this.props.record_id}`
