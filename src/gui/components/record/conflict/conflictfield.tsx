@@ -40,6 +40,7 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import {card_styles, cardstyletype} from './conflictstyle';
 import {CircularProgress} from '@mui/material';
 import {getComponentFromFieldConfig} from '../fields';
+import getLocalDate from '../../../fields/LocalDate';
 type EmptyProps = {
   isspin: boolean;
   text?: string;
@@ -279,10 +280,10 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
           >
             <Typography variant="caption" color="text.secondary">
               {data['fields'][fieldName] !== undefined &&
-                JSON.stringify(data['fields'][fieldName]['created'])
-                  .replaceAll('"', '')
-                  .replaceAll('T', ' ')
-                  .slice(0, 19)}
+                getLocalDate(data['fields'][fieldName]['created']).replaceAll(
+                  'T',
+                  ' '
+                )}
             </Typography>
           </Grid>
         </CardContent>

@@ -29,6 +29,7 @@ import Select, {SelectChangeEvent} from '@mui/material/Select';
 import {Typography} from '@mui/material';
 import {BasicDialog} from './conflictDialog';
 import {InitialMergeRevisionDetailsMap} from '../../../../data_storage/merging';
+import getLocalDate from '../../../fields/LocalDate';
 type ConflictDropSelectprops = {
   label: string;
   headerlist: InitialMergeRevisionDetailsMap;
@@ -113,10 +114,7 @@ function RevisionDropList(props: ConflictDropSelectprops) {
       >
         {Object.keys(headerlist).map((key: string) => (
           <MenuItem value={key} disabled={key === disablerevision}>
-            {JSON.stringify(headerlist[key]['created'])
-              .replaceAll('"', '')
-              .replaceAll('T', ' ')
-              .slice(0, 19) +
+            {getLocalDate(headerlist[key]['created']).replaceAll('T', ' ') +
               ' ' +
               headerlist[key]['created_by']}
           </MenuItem>

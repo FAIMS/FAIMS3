@@ -92,7 +92,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
 import RecordData from '../components/record/RecordData';
-
+import getLocalDate from '../fields/LocalDate';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -267,10 +267,7 @@ export default function Record() {
         if (latest_record !== null) {
           setType(latest_record.type);
           setRecordinfo(
-            JSON.stringify(latest_record.updated)
-              .replaceAll('"', '')
-              .replaceAll('T', ' ')
-              .slice(0, 19) +
+            getLocalDate(latest_record.updated).replaceAll('T', ' ') +
               ' ' +
               latest_record.updated_by
           );
