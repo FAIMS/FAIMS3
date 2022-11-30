@@ -89,10 +89,11 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
     }
   }, [value]);
   useEffect(() => {
-    // set intial time when user open the notebook
+    // set initial time when user open the notebook
     if (is_auto_pick === true && value === '') {
       try {
-        handleValues(getLocalDate(new Date()));
+        const date = new Date();
+        setFieldValue(name, date.toISOString());
       } catch (err) {
         setFieldError(name, 'Could not set display value. Contact support.');
         console.error(err);
