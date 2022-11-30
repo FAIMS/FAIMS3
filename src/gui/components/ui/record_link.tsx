@@ -2,7 +2,7 @@ import React from 'react';
 import ArticleIcon from '@mui/icons-material/Article';
 import {Typography, Link} from '@mui/material';
 import {NavLink} from 'react-router-dom';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import Chip from '@mui/material/Chip';
 interface RecordLinkProps {
   link?: any;
   children: React.ReactNode;
@@ -18,13 +18,12 @@ export default function RecordRouteDisplay(props: RecordLinkProps) {
       }}
     >
       {props.deleted ? (
-        <DeleteForeverIcon color={'error'} />
+        <Chip label="Deleted" color="error" variant="outlined" size="small" />
       ) : props.link === '' ? (
-        <DeleteForeverIcon color={'error'} />
+        <Chip label="Deleted" color="error" variant="outlined" size="small" />
       ) : (
-        <></>
+        <ArticleIcon fontSize={'inherit'} sx={{mt: '3px', mr: '3px'}} />
       )}
-      <ArticleIcon fontSize={'inherit'} sx={{mt: '3px', mr: '3px'}} />
       <Typography variant={'body2'} fontWeight={'bold'}>
         {props.children}
       </Typography>
