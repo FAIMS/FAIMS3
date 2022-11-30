@@ -82,6 +82,9 @@ export class TemplatedStringField extends React.Component<
     if (value !== this.state.value) {
       this.setState({value: value});
       this.props.form.setFieldValue(this.props.field.name, value);
+      if (value !== '')
+        if (this.props.form.errors[this.props.field.name] !== undefined)
+          this.props.form.setFieldError(this.props.field.name, undefined);
     }
   }
 
