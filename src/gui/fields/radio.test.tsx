@@ -112,67 +112,67 @@ test('submitting an option', async () => {
   );
 });
 
-//test('shows error', async () => {
-//  const errorMessage = 'You must choose either 1 or 2';
-//  const validationSchema = Yup.object().shape({
-//    radio: Yup.string().oneOf(['1', '2'], errorMessage).required(),
-//  });
-//  const onSubmit = jest.fn();
-//  const {getByTestId, findByText, asFragment, getByLabelText} = render(
-//    <Field
-//      component={RadioGroup}
-//      name="radio"
-//      type="radio"
-//      data-testid="radio"
-//      FormLabelProps={{
-//        children: 'Pick a number',
-//      }}
-//      ElementProps={{
-//        options: [
-//          {
-//            value: '1',
-//            label: '1',
-//          },
-//          {
-//            value: '2',
-//            label: '2',
-//          },
-//          {
-//            value: '3',
-//            label: '3',
-//          },
-//        ],
-//      }}
-//    />,
-//    {
-//      initialValues: {
-//        radio: '1',
-//      },
-//      validateOnChange: true,
-//      onSubmit,
-//      validationSchema: validationSchema,
-//    }
-//  );
-//
-//  expect(asFragment()).toMatchSnapshot();
-//
-//  const radio3 = getByLabelText('3');
-//  const submit = getByTestId('submit');
-//  expect(radio3).not.toBeChecked();
-//
-//  act(() => {
-//    fireEvent.click(radio3);
-//    fireEvent.click(submit);
-//  });
-//
-//  await expect(radio3).toBeChecked();
-//
-//  // The validation message should be shown and the label should still be present
-//  await findByText('Pick a number');
-//  // check for Mui-error in classList
-//  const errorText = await findByText(errorMessage);
-//  await expect(errorText).toHaveClass('Mui-error');
-//  // await waitFor(() => {
-//  //   expect(getByText(errorMessage)).toBeInTheDocument();
-//  // });
-//});
+test('shows error', async () => {
+  const errorMessage = 'You must choose either 1 or 2';
+  const validationSchema = Yup.object().shape({
+    radio: Yup.string().oneOf(['1', '2'], errorMessage).required(),
+  });
+  const onSubmit = jest.fn();
+  const {getByTestId, findByText, asFragment, getByLabelText} = render(
+    <Field
+      component={RadioGroup}
+      name="radio"
+      type="radio"
+      data-testid="radio"
+      FormLabelProps={{
+        children: 'Pick a number',
+      }}
+      ElementProps={{
+        options: [
+          {
+            value: '1',
+            label: '1',
+          },
+          {
+            value: '2',
+            label: '2',
+          },
+          {
+            value: '3',
+            label: '3',
+          },
+        ],
+      }}
+    />,
+    {
+      initialValues: {
+        radio: '1',
+      },
+      validateOnChange: true,
+      onSubmit,
+      validationSchema: validationSchema,
+    }
+  );
+
+  expect(asFragment()).toMatchSnapshot();
+
+  const radio3 = getByLabelText('3');
+  const submit = getByTestId('submit');
+  expect(radio3).not.toBeChecked();
+
+  act(() => {
+    fireEvent.click(radio3);
+    fireEvent.click(submit);
+  });
+
+  await expect(radio3).toBeChecked();
+
+  // The validation message should be shown and the label should still be present
+  await findByText('Pick a number');
+  // check for Mui-error in classList
+  const errorText = await findByText(errorMessage);
+  await expect(errorText).toHaveClass('Mui-error');
+  // await waitFor(() => {
+  //   expect(getByText(errorMessage)).toBeInTheDocument();
+  // });
+});
