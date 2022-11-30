@@ -60,6 +60,7 @@ export default function RecordTabBar(props: recordTabProps) {
       onChange={handleChange}
       aria-label="Record Tab"
       variant="scrollable"
+      style={{backgroundColor: 'white'}}
     >
       {ui_specification['viewsets'][type]['views'].map((tab, index) => (
         <Tab

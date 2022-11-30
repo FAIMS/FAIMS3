@@ -34,7 +34,7 @@ import {
 } from '../../../../datamodel/ui';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
-import {Grid} from '@mui/material';
+import {Grid, Box, Switch, FormControlLabel} from '@mui/material';
 import RecordTabBar from './recordTab';
 import {
   InitialMergeDetails,
@@ -58,6 +58,7 @@ import {
   update_child_records_conflict,
   check_if_record_relationship,
 } from '../relationships/RelatedInformation';
+import {ConflictHelpDialog} from './conflictDialog';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -759,106 +760,169 @@ export default function ConflictForm(props: ConflictFormProps) {
   console.log(conflictA);
 
   return (
-    <Grid style={{minWidth: '960px', overflowX: 'auto'}}>
-      <ConflictToolBar
-        headerlist={conflicts['available_heads']}
-        revisionlist={revisionlist}
-        setRevisionList={setRevisionList}
-        setR={setR}
-        setChooseAll={setChooseAll}
-        isloading={isloading}
-        istoggleAll={istoggleAll}
-        setIstoggleAll={setIstoggleAll}
-        numResolved={numResolved}
-      />
-      {conflictA !== null &&
-        conflictB !== null &&
-        saveduserMergeResult !== null && (
-          <Grid container>
-            <ConflictResolveIcon
-              numResolved={numResolved}
-              numUnResolved={numUnResolved}
-              num={conflictfields.length}
-              numRejected={numRejected}
-            />
-            <ConflictSaveButton
-              onButtonClick={onButtonSave}
-              numUnResolved={numUnResolved}
-              onButtonDiscard={onButtonDiscard}
-              numResolved={numResolved}
-            />
-          </Grid>
-        )}
-      {conflictA !== null &&
-        conflictB !== null &&
-        !(linksA === null && linksB === null) && (
-          <ConflictLinkBar
-            conflictA={conflictA}
-            conflictB={conflictB}
-            linksA={linksA}
-            linksB={linksB}
-            record_id={record_id}
-            choosenconflict={chosenvalues}
-            mergedLinks={mergedLinks}
-          />
-        )}
-      <TabContext value={tabvalue}>
-        <RecordTabBar
-          handleChange={handleChange}
-          ui_specification={ui_specification}
-          type={type}
-          conflictfields={conflictfields}
+    <React.Fragment>
+      <Box>
+        <ConflictHelpDialog />
+      </Box>
+      <Grid
+        style={{minWidth: '960px', overflowX: 'auto', backgroundColor: 'white'}}
+      >
+        <ConflictToolBar
+          headerlist={conflicts['available_heads']}
+          revisionlist={revisionlist}
+          setRevisionList={setRevisionList}
+          setR={setR}
+          setChooseAll={setChooseAll}
+          isloading={isloading}
+          istoggleAll={istoggleAll}
+          setIstoggleAll={setIstoggleAll}
+          numResolved={numResolved}
         />
-        {conflicts !== null &&
-          ui_specification['viewsets'][type]['views'].map((tab, index) => (
-            <TabPanel
-              key={index + 'conflict_tabpanel'}
-              value={index.toString()}
-              style={{backgroundColor: grey[200], padding: '0px'}}
-            >
-              <div style={{padding: '10px 2px'}}>
-                <ConflictPanel
-                  ui_specification={ui_specification}
-                  type={type}
-                  view={ui_specification['viewsets'][type]['views'][index]} //
-                  conflictA={conflictA}
-                  conflictB={conflictB}
-                  chosenvalues={chosenvalues}
-                  isclickLeft={isclickLeft}
-                  isclickRight={isclickRight}
-                  styletypeLeft={styletypeLeft}
-                  styletypeMiddle={styletypeMiddle}
-                  styletypeRight={styletypeRight}
-                  setFieldChanged={setFieldChanged}
-                  revisionlist={revisionlist}
-                  fieldslist={fieldslist}
-                  conflictfields={conflictfields}
-                  istoggleAll={istoggleAll}
-                  isSyncing={isSyncing}
-                  disbaledRight={disbaledRight}
-                  disbaledLeft={disbaledLeft}
-                  project_id={props.project_id}
+        {conflictA !== null &&
+          conflictB !== null &&
+          saveduserMergeResult !== null && (
+            <Grid container sx={{px: 2}}>
+              <Grid
+                item
+                xs={8}
+                container
+                justifyContent="flex-start"
+                alignItems="center"
+              >
+                <ConflictResolveIcon
+                  numResolved={numResolved}
+                  numUnResolved={numUnResolved}
+                  num={conflictfields.length}
+                  numRejected={numRejected}
                 />
-              </div>
-            </TabPanel>
-          ))}
-        {conflictA !== null && conflictB !== null && (
-          <Grid container>
-            <ConflictResolveIcon
-              numResolved={numResolved}
-              numUnResolved={numUnResolved}
-              num={conflictfields.length}
-              numRejected={numRejected}
+              </Grid>
+              <Grid
+                item
+                xs={4}
+                container
+                justifyContent="flex-end"
+                alignItems="center"
+              >
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={istoggleAll}
+                      onChange={async (event, checked) => {
+                        setIstoggleAll(checked);
+                      }}
+                    />
+                  }
+                  label={'Show all fields'}
+                  sx={{mr: 2}}
+                />
+                <ConflictSaveButton
+                  onButtonClick={onButtonSave}
+                  numUnResolved={numUnResolved}
+                  onButtonDiscard={onButtonDiscard}
+                  numResolved={numResolved}
+                />
+              </Grid>
+            </Grid>
+          )}
+        {conflictA !== null &&
+          conflictB !== null &&
+          !(linksA === null && linksB === null) && (
+            <ConflictLinkBar
+              conflictA={conflictA}
+              conflictB={conflictB}
+              linksA={linksA}
+              linksB={linksB}
+              record_id={record_id}
+              choosenconflict={chosenvalues}
+              mergedLinks={mergedLinks}
             />
-            <ConflictSaveButton
-              onButtonClick={onButtonSave}
-              numUnResolved={numUnResolved}
-              onButtonDiscard={onButtonDiscard}
-              numResolved={numResolved}
-            />
-          </Grid>
-        )}
-      </TabContext>
-    </Grid>
+          )}
+        <TabContext value={tabvalue}>
+          <RecordTabBar
+            handleChange={handleChange}
+            ui_specification={ui_specification}
+            type={type}
+            conflictfields={conflictfields}
+          />
+          {conflicts !== null &&
+            ui_specification['viewsets'][type]['views'].map((tab, index) => (
+              <TabPanel
+                key={index + 'conflict_tabpanel'}
+                value={index.toString()}
+                style={{backgroundColor: grey[200], padding: '0px'}}
+              >
+                <Box pt={2}>
+                  <ConflictPanel
+                    ui_specification={ui_specification}
+                    type={type}
+                    view={ui_specification['viewsets'][type]['views'][index]} //
+                    conflictA={conflictA}
+                    conflictB={conflictB}
+                    chosenvalues={chosenvalues}
+                    isclickLeft={isclickLeft}
+                    isclickRight={isclickRight}
+                    styletypeLeft={styletypeLeft}
+                    styletypeMiddle={styletypeMiddle}
+                    styletypeRight={styletypeRight}
+                    setFieldChanged={setFieldChanged}
+                    revisionlist={revisionlist}
+                    fieldslist={fieldslist}
+                    conflictfields={conflictfields}
+                    istoggleAll={istoggleAll}
+                    isSyncing={isSyncing}
+                    disbaledRight={disbaledRight}
+                    disbaledLeft={disbaledLeft}
+                    project_id={props.project_id}
+                  />
+                </Box>
+              </TabPanel>
+            ))}
+          {conflictA !== null && conflictB !== null && (
+            <Grid container sx={{p: 2}}>
+              <Grid
+                item
+                xs={8}
+                container
+                justifyContent="flex-start"
+                alignItems="center"
+              >
+                <ConflictResolveIcon
+                  numResolved={numResolved}
+                  numUnResolved={numUnResolved}
+                  num={conflictfields.length}
+                  numRejected={numRejected}
+                />
+              </Grid>
+              <Grid
+                item
+                xs={4}
+                container
+                justifyContent="flex-end"
+                alignItems="center"
+              >
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={istoggleAll}
+                      onChange={async (event, checked) => {
+                        setIstoggleAll(checked);
+                      }}
+                    />
+                  }
+                  label={'Show all fields'}
+                  sx={{mr: 2}}
+                />
+                <ConflictSaveButton
+                  onButtonClick={onButtonSave}
+                  numUnResolved={numUnResolved}
+                  onButtonDiscard={onButtonDiscard}
+                  numResolved={numResolved}
+                />
+              </Grid>
+            </Grid>
+          )}
+        </TabContext>
+      </Grid>
+    </React.Fragment>
   );
 }

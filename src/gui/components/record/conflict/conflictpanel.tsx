@@ -67,7 +67,7 @@ function ConflictSectionPanel(props: ConflictSectionPanelProps) {
   return (
     <>
       <Formik
-        enableReinitialize={type === 'middle' ? true : false}
+        enableReinitialize={type === 'middle'}
         initialValues={initialvalues}
         validateOnMount={false}
         onSubmit={(values, {setSubmitting}) => {
@@ -140,7 +140,6 @@ type iscolourList = {[key: string]: string};
 
 const cardgridstyle = {
   backgroundColor: 'white',
-  paddingTop: '20px',
 };
 type ConflictPanelFormProps = any;
 

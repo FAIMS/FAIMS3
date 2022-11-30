@@ -780,7 +780,11 @@ export default function Record() {
           </TabPanel>
           <TabPanel
             value="4"
-            style={{padding: theme.spacing(2), overflowX: 'auto'}}
+            style={{
+              padding: theme.spacing(0),
+              overflowX: 'auto',
+              backgroundColor: '#EEE',
+            }}
           >
             <Box>
               <BasicDialog
