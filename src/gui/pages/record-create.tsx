@@ -48,6 +48,7 @@ import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
 } from '../../uiSpecification';
+import RecordDelete from '../components/notebook/delete';
 import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
@@ -210,6 +211,19 @@ function DraftEdit(props: DraftEditProps) {
     setValue(newValue);
   };
 
+  const handleRefresh = () => {
+    /**
+     * Handler for Refreshing project (go back to notebook)
+     */
+    return new Promise(resolve => {
+      resolve(() => {
+        history.push({
+          pathname: ROUTES.NOTEBOOK + project_id,
+        });
+      });
+    });
+  };
+
   if (error !== null) {
     dispatch({
       type: ActionType.ADD_ALERT,
@@ -246,6 +260,7 @@ function DraftEdit(props: DraftEditProps) {
                 textColor="secondary"
               >
                 <Tab label="Create" value="1" sx={{color: '#c2c2c2'}} />
+                <Tab label="Meta" value="2" sx={{color: '#c2c2c2'}} />
               </TabList>
             </AppBar>
             <TabPanel value="1" sx={{p: 0}}>
@@ -288,6 +303,21 @@ function DraftEdit(props: DraftEditProps) {
                     />
                   </Box>
                 </Box>
+              </Box>
+            </TabPanel>
+            <TabPanel value="2">
+              <Box mt={2}>
+                <Typography variant={'h5'} gutterBottom>
+                  Discard Draft
+                </Typography>
+                <RecordDelete
+                  project_id={project_id}
+                  record_id={record_id}
+                  revision_id={null}
+                  draft_id={draft_id}
+                  show_label={true}
+                  handleRefresh={handleRefresh}
+                />
               </Box>
             </TabPanel>
           </TabContext>

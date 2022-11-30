@@ -19,8 +19,8 @@ interface ExpandMoreProps extends ButtonProps {
 }
 
 export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const {expand, ...other} = props;
-  console.log(expand);
   return <Button {...other} />;
 })(({theme, expand}) => ({
   '	.MuiButton-endIcon': {

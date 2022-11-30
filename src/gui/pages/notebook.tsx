@@ -79,7 +79,6 @@ export default function Notebook() {
     /**
      * Handler for Refreshing project
      */
-    console.log('HOW REFRESHING');
     return getInfoWrapper();
   };
 
