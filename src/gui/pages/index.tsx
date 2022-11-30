@@ -90,7 +90,7 @@ export default function Index(props: IndexProps) {
             <React.Fragment>
               <Button
                 variant="contained"
-                color={'primary'}
+                color={'secondary'}
                 disableElevation
                 sx={{mr: 1}}
                 component={NavLink}
@@ -98,15 +98,15 @@ export default function Index(props: IndexProps) {
               >
                 Sign In
               </Button>
-              <Button
-                variant="outlined"
-                color={'secondary'}
-                disableElevation
-                href="https://faims.edu.au/contact/"
-                target={'_blank'}
-              >
-                Register your interest
-              </Button>
+              {/*<Button*/}
+              {/*  variant="outlined"*/}
+              {/*  color={'primary'}*/}
+              {/*  disableElevation*/}
+              {/*  href="https://faims.edu.au/contact/"*/}
+              {/*  target={'_blank'}*/}
+              {/*>*/}
+              {/*  Register your interest*/}
+              {/*</Button>*/}
             </React.Fragment>
           )}
         </Grid>
