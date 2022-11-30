@@ -45,6 +45,7 @@ import {
   IconButton,
   Typography,
   AlertTitle,
+  Stack,
 } from '@mui/material';
 import {card_styles} from './conflictstyle';
 import InfoIcon from '@mui/icons-material/Info';
@@ -61,6 +62,7 @@ export function ConflictButton(props: any) {
       variant={props.ischoose ? 'outlined' : 'contained'}
       style={{height: '56px'}}
       disabled={props.disabled}
+      disableElevation={true}
     >
       {props.text}
     </Button>
@@ -108,7 +110,7 @@ const ConflictDialogTitle = (props: DialogTitleProps) => {
 
 function ConflictDialogContent() {
   return (
-    <Box pb={20} pt={10} pl={3} pr={3}>
+    <Box p={2}>
       <Grid container spacing={{xs: 2, md: 3}}>
         <Grid
           item
@@ -426,20 +428,20 @@ function ConflictDialogContent() {
 
 function ConflictInfoContent() {
   return (
-    <Box pb={10} pt={10} pl={3} pr={3}>
-      <Typography>
+    <Box>
+      <Typography gutterBottom>
         Conflicts generally arise when two users have changed the same fields in
         a record, or if the user deleted a file while another user was modifying
         it. In these cases, FAIMS cannot automatically determine what is
         correct.
         <br />
       </Typography>
-      <Typography>
+      <Typography gutterBottom>
         The record will be marked as conflicted. It is then the users'
         responsibility to resolve the conflict.
         <br />
       </Typography>
-      <Typography>
+      <Typography gutterBottom>
         Users may continue to edit records whilst conflicts exist, but should be
         aware that doing so may create further conflicts, it is advisable to
         resolve all conflicts before editing.
@@ -464,7 +466,7 @@ export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
   };
 
   return (
-    <Grid container>
+    <React.Fragment>
       {props.type ? (
         <Button
           color="inherit"
@@ -475,13 +477,7 @@ export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
           Why am I seeing this?
         </Button>
       ) : (
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="flex-start"
-          alignItems="center"
-        >
+        <Stack direction="row" alignItems="center" gap={1}>
           <IconButton
             color="primary"
             aria-label="upload picture"
@@ -493,7 +489,7 @@ export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
           <Typography variant="caption" display="block">
             Conflict Resolution Help
           </Typography>
-        </Grid>
+        </Stack>
       )}
 
       <ConflictDialog
@@ -520,7 +516,7 @@ export function ConflictHelpDialog(props: ConflictHelpDialogProps) {
           </Button>
         </DialogActions>
       </ConflictDialog>
-    </Grid>
+    </React.Fragment>
   );
 }
 
@@ -628,12 +624,10 @@ export function BasicDialog(props: BasicDialogProps) {
         {props.content}
       </Alert>
       <DialogActions>
-        <Button onClick={props.handleClose} autoFocus color={'warning'}>
+        <Button onClick={props.handleClose} autoFocus>
           {props.cancel}
         </Button>
-        <Button onClick={props.handleConfirm} color={'success'}>
-          {props.continue}
-        </Button>
+        <Button onClick={props.handleConfirm}>{props.continue}</Button>
       </DialogActions>
     </Dialog>
   );

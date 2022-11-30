@@ -22,7 +22,7 @@
 
 import React from 'react';
 
-import {Box, Grid, Button, ButtonGroup} from '@mui/material';
+import {Box, Button, ButtonGroup} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import DoneIcon from '@mui/icons-material/Done';
 import IconButton from '@mui/material/IconButton';
@@ -60,14 +60,7 @@ export function FieldButton(props: any) {
 
 export function ConflictSaveButton(props: any) {
   return (
-    <Grid
-      item
-      xs={4}
-      container
-      justifyContent="flex-end"
-      alignItems="center"
-      style={{paddingBottom: 10}}
-    >
+    <React.Fragment>
       <DiscardDialog
         discardconflict={props.onButtonDiscard}
         disabled={props.numResolved === 0}
@@ -84,7 +77,7 @@ export function ConflictSaveButton(props: any) {
       >
         Save
       </Button>
-    </Grid>
+    </React.Fragment>
   );
 }
 export const iconstyle = {
@@ -187,24 +180,19 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
       alignItems="flex-start"
       minHeight="470px"
       maxHeight="470px"
-      pt={10}
+      pt={2}
       pb={0}
     >
-      <ButtonGroup variant="contained" orientation="vertical">
-        <Button
-          onClick={onButtonDeleteLeft}
-          size="small"
-          variant={isclick[id] ? 'outlined' : 'contained'}
-          disableElevation
-          disabled={disbaled[id]}
-        >
+      <ButtonGroup
+        size="small"
+        variant={isclick[id] ? 'outlined' : 'contained'}
+        orientation="vertical"
+        disableElevation={true}
+      >
+        <Button onClick={onButtonDeleteLeft} disabled={disbaled[id]}>
           <DeleteOutlineIcon />
         </Button>
-        <Button
-          onClick={onButtonLeft}
-          size="small"
-          variant={isclick[id] ? 'outlined' : 'contained'}
-        >
+        <Button onClick={onButtonLeft}>
           <DoneIcon />
         </Button>
       </ButtonGroup>
@@ -217,25 +205,20 @@ export function FieldButtonGroup(props: FieldButtonGroupProps) {
       alignItems="flex-start"
       minHeight="470px"
       maxHeight="470px"
-      pt={10}
+      pt={2}
       pb={0}
       style={{borderRadius: '5px'}}
     >
-      <ButtonGroup variant="contained" orientation="vertical">
-        <Button
-          onClick={onButtonDeleteRight}
-          size="small"
-          variant={isclick[id] ? 'outlined' : 'contained'}
-          disableElevation
-          disabled={disbaled[id]}
-        >
+      <ButtonGroup
+        variant={isclick[id] ? 'outlined' : 'contained'}
+        orientation="vertical"
+        disableElevation
+        size="small"
+      >
+        <Button onClick={onButtonDeleteRight} disabled={disbaled[id]}>
           <DeleteOutlineIcon />
         </Button>
-        <Button
-          onClick={onButtonRight}
-          size="small"
-          variant={isclick[id] ? 'outlined' : 'contained'}
-        >
+        <Button onClick={onButtonRight}>
           <DoneIcon />
         </Button>
       </ButtonGroup>
@@ -252,7 +235,7 @@ export function FieldEmptyButton() {
       alignItems="flex-start"
       minHeight="470px"
       maxHeight="470px"
-      pt={10}
+      pt={2}
       pb={0}
     ></Box>
   );

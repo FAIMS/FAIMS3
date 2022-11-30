@@ -38,18 +38,16 @@ export const conflicticonstyle = {
   borderRadius: 35,
   textTransform: 'none',
   color: '#f29c3e',
+  border: 'none',
 };
 
 export const card_styles: {[key: string]: cardstyletype} = {
   warning: {
     card: {
       borderColor: '#f9dbaf',
-      height: '450px',
     },
     cardheader: {
       backgroundColor: '#f9dbaf',
-      height: '50px',
-      overflowY: 'auto',
     },
     iconstyle: {
       backgroundColor: '#f9dbaf',
@@ -57,7 +55,7 @@ export const card_styles: {[key: string]: cardstyletype} = {
       paddingLeft: '2px',
       paddingRight: '2px',
       borderRadius: '3px 0px 0px 3px',
-      border: '1px solid #b5b5b5',
+      // border: '1px solid #b5b5b5',
     },
     icon: (
       <InfoIcon
@@ -74,46 +72,29 @@ export const card_styles: {[key: string]: cardstyletype} = {
   default: {
     card: {
       borderColor: '#f6f6f6',
-      height: '450px',
-      paddingLeft: '0px',
-      paddingRight: '0px',
     },
     cardheader: {
       backgroundColor: '#f6f6f6',
-      // height:'35px',
-    },
-    card_content: {
-      paddingLeft: '0px',
-      paddingRight: '0px',
-      overflow: 'visible',
     },
     icon: null,
   },
   success: {
     card: {
       borderColor: '#449852',
-      height: '450px',
       border: '#449852 2px solid',
     },
     cardheader: {
       backgroundColor: '#449852',
     },
-    card_content: {
-      overflowY: 'auto',
-      paddingLeft: '0px',
-      paddingRight: '0px',
-    },
     iconstyle: {
       backgroundColor: '#449852',
       color: '#fff',
-      paddingLeft: '2px',
-      paddingRight: '2px',
       borderRadius: '3px 0px 0px 3px',
-      border: '1px solid #b5b5b5',
+      // border: '1px solid #b5b5b5',
     },
     text_style: {
       padding: '1px 10px',
-      border: '1px solid #b5b5b5',
+      border: '1px solid #eee',
       borderRadius: '0px 3px 3px 0px',
       marginRight: '5px',
     },
@@ -122,18 +103,12 @@ export const card_styles: {[key: string]: cardstyletype} = {
   reject: {
     card: {
       borderColor: '#ee565a',
-      height: '450px',
       border: '#ee565a 2px solid',
     },
     cardheader: {
       backgroundColor: '#ee565a',
     },
-    card_content: {
-      overflowY: 'auto',
-      paddingLeft: '0px',
-      paddingRight: '0px',
-    },
-    icon: <CancelSharpIcon />,
+    icon: <CancelSharpIcon fontSize={'small'} />,
   },
   empty: {
     card: {
@@ -153,11 +128,9 @@ export const card_styles: {[key: string]: cardstyletype} = {
   delete: {
     card: {
       borderColor: '#e8f4fd',
-      height: '450px',
     },
     cardheader: {
       backgroundColor: '#e8f4fd',
-      height: '50px',
     },
     iconstyle: {
       backgroundColor: '#e8f4fd',
@@ -165,10 +138,11 @@ export const card_styles: {[key: string]: cardstyletype} = {
       paddingLeft: '2px',
       paddingRight: '2px',
       borderRadius: '3px 0px 0px 3px',
-      border: '1px solid #b5b5b5',
+      // border: '1px solid #b5b5b5',
     },
     icon: (
       <ErrorOutlineOutlinedIcon
+        fontSize={'small'}
         style={{backgroundColor: '#e8f4fd', color: '#9ccffa'}}
       />
     ),
@@ -177,30 +151,24 @@ export const card_styles: {[key: string]: cardstyletype} = {
   conflict: {
     card: {
       borderColor: '#fff',
-      height: '450px',
     },
     cardheader: {
       backgroundColor: '#fff',
-      height: '50px',
     },
     icon: null,
     iconstyle: {
       backgroundColor: '#000',
       color: '#fff',
-      paddingLeft: '2px',
-      paddingRight: '2px',
       borderRadius: '3px 0px 0px 3px',
-      border: '1px solid #b5b5b5',
+      border: '0px solid #b5b5b5',
     },
   },
   clear: {
     card: {
       borderColor: '#fff',
-      height: '450px',
     },
     cardheader: {
       backgroundColor: '#fff',
-      height: '50px',
       color: '#000',
     },
     iconstyle: {
@@ -215,11 +183,9 @@ export const card_styles: {[key: string]: cardstyletype} = {
   automerge: {
     card: {
       borderColor: '#e8f4fd',
-      height: '450px',
     },
     cardheader: {
       backgroundColor: '#e8f4fd',
-      height: '50px',
     },
     iconstyle: {
       backgroundColor: '#e8f4fd',
@@ -232,9 +198,8 @@ export const card_styles: {[key: string]: cardstyletype} = {
         style={{
           backgroundColor: '#e8f4fd',
           color: '#9ccffa',
-          paddingLeft: 2,
-          paddingRight: 4,
         }}
+        fontSize={'small'}
       />
     ),
     text: 'Field has been auto merged.',
