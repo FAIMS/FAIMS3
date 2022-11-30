@@ -37,11 +37,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
-import {downloadBlob, shareStringAsFileOnApp} from '../../utils/downloadShare';
-import {
-  getFullDBSystemDump,
-  getFullDBSystemDumpAsBlob,
-} from '../../sync/data-dump';
+import {doDumpShare, doDumpDownload} from '../../sync/data-dump';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -170,12 +166,7 @@ export default function AboutBuild() {
                   size={'small'}
                   color={'info'}
                   onClick={async () => {
-                    console.error('Starting browser system dump');
-                    const b = await getFullDBSystemDumpAsBlob();
-                    console.error(
-                      'Finished browser system dump, starting download'
-                    );
-                    downloadBlob(b, 'faims3-dump.json');
+                    await doDumpDownload();
                   }}
                   startIcon={<DownloadIcon />}
                 >
@@ -192,17 +183,7 @@ export default function AboutBuild() {
                   color={'info'}
                   variant={'contained'}
                   onClick={async () => {
-                    console.error('Starting app system dump');
-                    const s = await getFullDBSystemDump();
-                    console.error(
-                      'Finished app system dump, starting app sharing'
-                    );
-                    await shareStringAsFileOnApp(
-                      s,
-                      'FAIMS Database Dump',
-                      'Share all the FAIMS data on your device',
-                      'faims3-dump.json'
-                    );
+                    await doDumpShare();
                   }}
                   startIcon={<ShareIcon />}
                 >
