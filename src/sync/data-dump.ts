@@ -32,6 +32,8 @@ import {
 } from './databases';
 import {downloadBlob, shareCallbackAsFileOnApp} from '../utils/downloadShare';
 
+const PREFIX = 'faims3-';
+
 interface DumpObject {
   [name: string]: unknown;
 }
@@ -46,49 +48,8 @@ async function dumpDatabase(db: PouchDB.Database<any>): Promise<unknown> {
   });
 }
 
-export async function getFullDBSystemDump(): Promise<string> {
-  const dump: DumpObject = {};
-  dump['directory'] = await dumpDatabase(directory_db.local);
-  dump['active'] = await dumpDatabase(active_db);
-  dump['local_state'] = await dumpDatabase(local_state_db);
-  dump['local_auth'] = await dumpDatabase(local_auth_db);
-  dump['draft'] = await dumpDatabase(draft_db);
-
-  for (const [name, db] of Object.entries(projects_dbs)) {
-    dump['proj' + name] = await dumpDatabase(db.local);
-  }
-
-  for (const [name, db] of Object.entries(metadata_dbs)) {
-    dump['meta' + name] = await dumpDatabase(db.local);
-  }
-
-  for (const [name, db] of Object.entries(data_dbs)) {
-    dump['data' + name] = await dumpDatabase(db.local);
-  }
-
-  return JSON.stringify(dump);
-}
-
-export async function getFullDBSystemDumpAsBlob(): Promise<Blob> {
-  const dump: DumpObject = {};
-  dump['directory'] = await dumpDatabase(directory_db.local);
-  dump['active'] = await dumpDatabase(active_db);
-  dump['local_state'] = await dumpDatabase(local_state_db);
-  dump['local_auth'] = await dumpDatabase(local_auth_db);
-  dump['draft'] = await dumpDatabase(draft_db);
-
-  for (const [name, db] of Object.entries(projects_dbs)) {
-    dump['proj' + name] = await dumpDatabase(db.local);
-  }
-
-  for (const [name, db] of Object.entries(metadata_dbs)) {
-    dump['meta' + name] = await dumpDatabase(db.local);
-  }
-
-  for (const [name, db] of Object.entries(data_dbs)) {
-    dump['data' + name] = await dumpDatabase(db.local);
-  }
-  const stream = jsonStringifyStream(dump);
+async function streamedDumpDownload(filename: string, obj: any) {
+  const stream = jsonStringifyStream(obj);
   const chunks: any[] = [];
   const reader = stream.pipeThrough(new TextEncoderStream()).getReader();
   while (true) {
@@ -98,9 +59,10 @@ export async function getFullDBSystemDumpAsBlob(): Promise<Blob> {
     }
     chunks.push(value);
   }
-  return new Blob(chunks, {
+  const b = new Blob(chunks, {
     type: 'application/json',
   });
+  downloadBlob(b, PREFIX + filename + '.json');
 }
 
 export async function doDumpShare() {
@@ -146,7 +108,25 @@ export async function doDumpShare() {
 
 export async function doDumpDownload() {
   console.error('Starting browser system dump');
-  const b = await getFullDBSystemDumpAsBlob();
-  console.error('Finished browser system dump, starting download');
-  downloadBlob(b, 'faims3-dump.json');
+
+  await streamedDumpDownload(
+    'directory',
+    await dumpDatabase(directory_db.local)
+  );
+  await streamedDumpDownload('active', await dumpDatabase(active_db));
+  await streamedDumpDownload('local_state', await dumpDatabase(local_state_db));
+  await streamedDumpDownload('local_auth', await dumpDatabase(local_auth_db));
+  await streamedDumpDownload('draft', await dumpDatabase(draft_db));
+
+  for (const [name, db] of Object.entries(projects_dbs)) {
+    await streamedDumpDownload('proj' + name, await dumpDatabase(db.local));
+  }
+
+  for (const [name, db] of Object.entries(metadata_dbs)) {
+    await streamedDumpDownload('meta' + name, await dumpDatabase(db.local));
+  }
+
+  for (const [name, db] of Object.entries(data_dbs)) {
+    await streamedDumpDownload('data' + name, await dumpDatabase(db.local));
+  }
 }
