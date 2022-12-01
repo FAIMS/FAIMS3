@@ -72,7 +72,7 @@ async function deleteFromDB(
 }
 
 export default function RecordDelete(props: RecordDeleteProps) {
-  console.debug('Delete props', props);
+  //console.debug('Delete props', props);
   const {project_id, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
   const history = useHistory();
