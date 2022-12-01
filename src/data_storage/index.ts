@@ -45,6 +45,7 @@ import {
   listRecordMetadata,
 } from './internals';
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
+import {logError} from '../logging';
 
 export interface ProjectRevisionListing {
   [_id: string]: string[];
@@ -132,8 +133,8 @@ export async function listFAIMSRecordRevisions(
     const record = await getRecord(project_id, record_id);
     return record.revisions;
   } catch (err) {
-    console.warn('failed to list data for id', record_id, err);
-    throw Error(`failed to list data for id ${record_id}`);
+    console.warn('failed to list data for id', record_id);
+    throw err;
   }
 }
 
@@ -289,13 +290,13 @@ export async function getRecordMetadata(
       relationship: revision.relationship,
     };
   } catch (err) {
-    console.error(
+    console.debug(
       'failed to get record metadata:',
       project_id,
       record_id,
-      revision_id,
-      err
+      revision_id
     );
+    logError(err);
     throw Error(
       'failed to get record metadata: {project_id} {record_id} {revision_id}'
     );
@@ -458,7 +459,8 @@ export async function getMetadataForAllRecords(
       filter_deleted
     );
   } catch (error) {
-    console.error('Failed to get record metadata for', project_id, error);
+    console.debug('Failed to get record metadata for', project_id);
+    logError(error);
     return [];
   }
 }
@@ -474,7 +476,8 @@ export async function getRecordsWithRegex(
     );
     return await filterRecordMetadata(project_id, record_list, filter_deleted);
   } catch (error) {
-    console.error('Failed to regex search for', project_id, regex, error);
+    console.debug('Failed to regex search for', project_id, regex);
+    logError(error);
     return [];
   }
 }

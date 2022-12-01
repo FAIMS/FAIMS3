@@ -47,6 +47,8 @@
   "dependencies": {
     "@awesome-cordova-plugins/core": "5.44.0",
     "@awesome-cordova-plugins/in-app-browser": "5.43.0",
+    "@bugsnag/js": "^7.18.0",
+    "@bugsnag/plugin-react": "^7.18.0",
     "@capacitor-community/barcode-scanner": "^3.0.0",
     "@capacitor/android": "4.1.0",
     "@capacitor/app": "4.0.1",

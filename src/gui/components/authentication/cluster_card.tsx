@@ -20,6 +20,7 @@
 import React, {useContext} from 'react';
 import {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
+import {logError} from '../../../logging';
 
 import {
   Autocomplete,
@@ -107,7 +108,7 @@ function UserSwitcher(props: UserSwitcherProps) {
         });
       })
       .catch(err => {
-        console.error('Failed to switch user', value?.username, err);
+        logError('Failed to switch user', value?.username, err);
       });
   };
 
@@ -181,8 +182,6 @@ export default function ClusterCard(props: ClusterCardProps) {
     };
     getToken();
   }, [props.listing_id]);
-
-  console.error('cluster card', props, token);
 
   return (
     <MainCard

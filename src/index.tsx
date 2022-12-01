@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import React from 'react';
+import React, {ErrorInfo, ReactNode} from 'react';
 import ReactDOM from 'react-dom';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
 
@@ -27,13 +27,16 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {addNativeHooks} from './native_hooks';
 // import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
+import {ErrorBoundary} from './logging';
 
 addNativeHooks();
 
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <ErrorBoundary>
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  </ErrorBoundary>,
   document.getElementById('root')
 );
 

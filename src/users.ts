@@ -42,6 +42,7 @@ import {
   JWTTokenMap,
 } from './datamodel/database';
 import {RecordMetadata} from './datamodel/ui';
+import { logError } from './logging';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
@@ -207,14 +208,15 @@ export async function forgetCurrentToken(cluster_id: string) {
 }
 
 export async function switchUsername(cluster_id: string, new_username: string) {
-  console.log('Switching user to ', new_username, cluster_id);
+  console.debug('Switching user to ', new_username, cluster_id);
   try {
     const doc = await local_auth_db.get(cluster_id);
     doc.current_username = new_username;
     await local_auth_db.put(doc);
     reprocess_listing(cluster_id);
   } catch (err) {
-    console.error('Failed to switch user for', new_username, cluster_id, err);
+    // console.debug('Failed to switch user for', new_username, cluster_id, err);
+    logError(err);
   }
 }
 
