@@ -109,7 +109,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           field: 'relation_type_vocabPair',
           headerName: 'Relationship',
           headerClassName: 'faims-record-link--header',
-          flex: 0.1,
+          minWidth: 100,
+          flex: 0.2,
           valueGetter: (params: GridCellParams) => params.value[0],
         },
         {

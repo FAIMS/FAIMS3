@@ -20,10 +20,8 @@
  */
 import * as React from 'react';
 import {useState} from 'react';
-import Box from '@mui/material/Box';
-import {Grid} from '@mui/material';
-import {Switch, FormControlLabel} from '@mui/material';
-import {ConflictHelpDialog, ConflictButton} from './conflictDialog';
+import {Grid, Box, Stack} from '@mui/material';
+import {ConflictButton} from './conflictDialog';
 import {ConflictDropSelect} from './conflictdroplist';
 import {InitialMergeRevisionDetailsMap} from '../../../../data_storage/merging';
 type ConflictToolBarProps = {
@@ -38,15 +36,8 @@ type ConflictToolBarProps = {
   numResolved: number;
 };
 export default function ConflictToolBar(props: ConflictToolBarProps) {
-  const {
-    headerlist,
-    revisionlist,
-    setRevisionList,
-    setChooseAll,
-    isloading,
-    istoggleAll,
-    setIstoggleAll,
-  } = props;
+  const {headerlist, revisionlist, setRevisionList, setChooseAll, isloading} =
+    props;
   const [ischoose, setischoose] = useState(false);
   const onButtonClick = (value: string) => {
     console.log(value);
@@ -62,10 +53,10 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
   };
 
   return (
-    <Box pt={10}>
+    <Box sx={{pt: 3, px: 2}} style={{backgroundColor: 'white'}}>
       <Grid container spacing={2}>
         <Grid item xs={6}>
-          <Grid container>
+          <Stack direction={{xs: 'row', sm: 'row'}} spacing={{xs: 1, sm: 1}}>
             <ConflictDropSelect
               label={'A'}
               headerlist={headerlist}
@@ -83,7 +74,7 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
               ischoose={ischoose}
               disabled={isloading}
             />
-          </Grid>
+          </Stack>
         </Grid>
         <Grid
           item
@@ -92,7 +83,7 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
           justifyContent="flex-end"
           alignItems="flex-start"
         >
-          <Grid item>
+          <Stack direction={{xs: 'row', sm: 'row'}} spacing={{xs: 1, sm: 1}}>
             <ConflictDropSelect
               label={'B'}
               headerlist={headerlist}
@@ -102,8 +93,6 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
               disablerevision={revisionlist[0]}
               numResolved={props.numResolved}
             />
-          </Grid>
-          <Grid item>
             <ConflictButton
               onButtonClick={onButtonClick}
               id="B"
@@ -112,42 +101,7 @@ export default function ConflictToolBar(props: ConflictToolBarProps) {
               ischoose={ischoose}
               disabled={isloading}
             />
-          </Grid>
-        </Grid>
-      </Grid>
-      <Grid
-        container
-        spacing={2}
-        style={{borderBottom: '1px solid rgb(238, 238, 238)'}}
-      >
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="flex-start"
-          alignItems="center"
-        >
-          <ConflictHelpDialog />
-        </Grid>
-        <Grid
-          item
-          xs={6}
-          container
-          justifyContent="flex-end"
-          alignItems="flex-start"
-        >
-          <FormControlLabel
-            control={
-              <Switch
-                checked={istoggleAll}
-                onChange={async (event, checked) => {
-                  setIstoggleAll(checked);
-                }}
-              />
-            }
-            label={'Show all fields'}
-          />
-          <br />
+          </Stack>
         </Grid>
       </Grid>
     </Box>

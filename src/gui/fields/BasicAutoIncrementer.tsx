@@ -21,7 +21,6 @@
 import React from 'react';
 import Input from '@mui/material/Input';
 import {FieldProps} from 'formik';
-
 import {ActionType} from '../../context/actions';
 import {store} from '../../context/store';
 import {
@@ -215,18 +214,25 @@ export class BasicAutoIncrementer extends React.Component<
           });
         } else {
           this.props.form.setFieldValue(this.props.field.name, new_id);
+          if (this.props.form.errors[this.props.field.name] !== undefined)
+            this.props.form.setFieldError(this.props.field.name, undefined);
         }
+      } else {
+        if (this.props.form.errors[this.props.field.name] !== undefined)
+          this.props.form.setFieldError(this.props.field.name, undefined);
       }
     }
   }
 
   async componentDidMount() {
+    console.debug('did mount', this.props.form.values[this.props.field.name]);
     await this.update_form();
   }
-
-  async componentDidUpdate() {
-    await this.update_form();
-  }
+  // remove the update for form, should only be update once
+  // async componentDidUpdate() {
+  //   console.debug('did update',this.props.form.values[this.props.field.name])
+  //   await this.update_form();
+  // }
 
   render() {
     return (
