@@ -24,7 +24,11 @@
 import {jwtVerify, importSPKI} from 'jose';
 import type {KeyLike} from 'jose';
 
-import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
+import {
+  CLUSTER_ADMIN_GROUP_NAME,
+  BUILT_LOGIN_TOKEN,
+  DEBUG_APP,
+} from './buildconfig';
 import {active_db, local_auth_db} from './sync/databases';
 import {reprocess_listing} from './sync/process-initialization';
 import {
@@ -304,7 +308,9 @@ async function parseToken(
 ): Promise<TokenContents> {
   const res = await jwtVerify(token, pubkey);
   const payload = res.payload;
-  console.debug('Token payload is:', payload);
+  if (DEBUG_APP) {
+    console.debug('Token payload is:', payload);
+  }
   const username = payload.sub ?? undefined;
   if (username === undefined) {
     throw Error('Username not specified in token');

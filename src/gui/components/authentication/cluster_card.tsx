@@ -182,7 +182,7 @@ export default function ClusterCard(props: ClusterCardProps) {
     getToken();
   }, [props.listing_id]);
 
-  console.error('cluster card', props, token);
+  console.debug('cluster card', props, token);
 
   return (
     <MainCard
