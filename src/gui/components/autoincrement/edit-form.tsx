@@ -237,7 +237,6 @@ export default class BasicAutoIncrementer extends React.Component<
                       color="error"
                       onClick={async () => {
                         range.fully_used = true;
-                        range.using = false;
 
                         await this.update_ranges(ranges);
                       }}

@@ -146,6 +146,8 @@ export async function set_local_autoincrement_ranges_for_field(
         const new_using_range = new_ranges.find(r => r.using);
         if (new_using_range === undefined) {
           throw Error('Currently used range removed');
+        } else if (new_using_range.fully_used) {
+          new_using_range.using = false;
         } else if (new_using_range.start !== range.start) {
           throw Error('Currently used range start changed');
         } else if (
