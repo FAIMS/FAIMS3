@@ -20,6 +20,8 @@
  *   modifications since its initial commit.
  */
 
+import { logError } from "./logging";
+
 // This optional code is used to register a service worker.
 // register() is not called by default.
 
@@ -121,7 +123,7 @@ function registerValidSW(swUrl: string, config?: Config) {
       };
     })
     .catch(error => {
-      console.error('Error during service worker registration:', error);
+      logError(error);
     });
 }
 
@@ -162,7 +164,7 @@ export function unregister() {
         registration.unregister();
       })
       .catch(error => {
-        console.error(error.message);
+        logError(error.message);
       });
   }
 }

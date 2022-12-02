@@ -54,7 +54,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   );
 
   if (ui_spec.error) {
-    console.error(`Error in gettings UISpec in ${project_id}`, ui_spec.error);
+    logError(ui_spec.error);
   }
 
   if (ui_spec.loading || ui_spec.value === undefined) {

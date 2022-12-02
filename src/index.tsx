@@ -17,7 +17,6 @@
  * Description:
  *   TODO
  */
-import React, {ErrorInfo, ReactNode} from 'react';
 import ReactDOM from 'react-dom';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
 
@@ -28,6 +27,7 @@ import {addNativeHooks} from './native_hooks';
 // import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
 import {ErrorBoundary} from './logging';
+import React from 'react';
 
 addNativeHooks();
 

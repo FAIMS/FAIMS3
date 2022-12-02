@@ -108,7 +108,7 @@ function UserSwitcher(props: UserSwitcherProps) {
         });
       })
       .catch(err => {
-        logError('Failed to switch user', value?.username, err);
+        logError(err); // failed to switch user
       });
   };
 

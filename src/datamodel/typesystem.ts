@@ -18,6 +18,7 @@
  *   TODO
  */
 import {isEqual} from 'lodash';
+import {logError} from '../logging';
 
 import {FAIMSTypeName} from './core';
 import {AttributeValuePair, FAIMSAttachment} from './database';
@@ -140,12 +141,12 @@ function isAttachment(a: any): boolean {
 export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
   if (Array.isArray(a) !== Array.isArray(b)) {
     // only one of a or b is an array, so not equal
-    console.info('Not both arrays', a, b);
+    console.debug('Not both arrays', a, b);
     return false;
   } else if (Array.isArray(a) && Array.isArray(b)) {
-    console.info('Checking arrays', a, b);
+    console.debug('Checking arrays', a, b);
     if (a.length !== b.length) {
-      console.info('arrays different length', a, b);
+      console.debug('arrays different length', a, b);
       return false;
     }
     for (let i = 0; i < a.length; i++) {
@@ -156,11 +157,11 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
     }
     return true;
   } else if (isAttachment(a) && isAttachment(b)) {
-    console.info('Checking blobs', a, b);
+    console.debug('Checking equality of blobs', a, b);
     if (a.size !== b.size || a.type !== b.type || a.name !== b.name) {
       return false;
     }
-    console.info('Checking blob contents', a, b);
+    console.debug('Checking equality of blob contents', a, b);
     return await Promise.all([a.arrayBuffer(), b.arrayBuffer()])
       .then((res: [any, any]) => {
         const buf_a = res[0] as ArrayBuffer;
@@ -173,11 +174,11 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
         });
       })
       .catch(err => {
-        console.error('Blob checking failed', err);
+        logError(err); // blob checking failed
         return false;
       });
   } else {
-    console.info('Using lodash', a, b);
+    console.debug('Using lodash to check equality', a, b);
     return isEqual(a, b);
   }
 }

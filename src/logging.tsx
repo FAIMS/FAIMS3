@@ -21,7 +21,7 @@
 import {BUGSNAG_KEY} from './buildconfig';
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginReact from '@bugsnag/plugin-react';
-import React, {ReactNode} from 'react';
+import React, {ErrorInfo, ReactNode} from 'react';
 
 interface EBProps {
   children: ReactNode;
@@ -32,7 +32,7 @@ interface EBState {
 }
 
 // Define a fallback ErrorBoundary to use in case we don't use Bugsnag
-// 
+//
 class FAIMSErrorBoundary extends React.Component<EBProps, EBState> {
   public state: EBState = {
     hasError: false,

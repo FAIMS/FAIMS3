@@ -27,7 +27,7 @@ import {
   attachments_to_files,
   files_to_attachments,
 } from './data_storage/attachments';
-import { logError } from './logging';
+import {logError} from './logging';
 
 export async function getProjectMetadata(
   project_id: ProjectID,

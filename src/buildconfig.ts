@@ -179,7 +179,7 @@ function directory_port(): number {
   try {
     return parseInt(port);
   } catch (err) {
-    logError('Falling back to default port', err);
+    logError(err);
     return 5984;
   }
 }
@@ -195,7 +195,7 @@ function pouch_batch_size(): number {
   try {
     return parseInt(pouch_batch_size);
   } catch (err) {
-    logError('Falling back to default pouch_batch_size', err);
+    logError(err);
     return 1000;
   }
 }
@@ -211,7 +211,7 @@ function pouch_batches_limit(): number {
   try {
     return parseInt(pouch_batches_limit);
   } catch (err) {
-    logError('Falling back to default pouch_batches_limit', err);
+    logError(err);
     return 10;
   }
 }

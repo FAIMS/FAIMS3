@@ -27,6 +27,7 @@ import {ProjectID} from './core';
 import {LOCAL_FIELDpersistent_PREFIX} from './database';
 import {fieldpersistentdata} from './ui';
 import stable_stringify from 'fast-json-stable-stringify';
+import {logError} from '../logging';
 
 function get_pouch_id(project_id: ProjectID, form_id: string): string {
   return LOCAL_FIELDpersistent_PREFIX + '-' + project_id + '-' + form_id;
@@ -50,12 +51,7 @@ export async function get_fieldpersistentdata(
       };
       return doc;
     }
-    console.error(
-      'Unable to get local increment state:',
-      project_id,
-      form_id,
-      err
-    );
+    logError(err); // Unable to get local increment state
     throw Error(
       `Unable to get local increment state: ${project_id} ${form_id} `
     );
@@ -77,7 +73,7 @@ export async function set_fieldpersistentdata(
   try {
     return await local_state_db.put(doc);
   } catch (err: any) {
-    console.error(err, doc);
+    logError(err);
     throw Error('Unable to set local increment state');
   }
 }
