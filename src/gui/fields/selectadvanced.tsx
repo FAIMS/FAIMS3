@@ -270,7 +270,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
           setIsactive(true);
           SetAttachments(attachments);
         } catch (error) {
-          console.error('error to get Meta data', error);
+          console.warn('error to get Meta data', error);
           setIsactive(true);
         }
       } else {
@@ -283,6 +283,10 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
       mounted = false;
     };
   }, []);
+  useEffect(() => {
+    const value = props.form.values[props.field.name];
+    if (value !== null && value !== undefined) setValue([value]);
+  }, [props.form.values[props.field.name]]);
   /***make select not multiple to avoid error */
   const onselectvalue = (
     newvalue: string,
@@ -292,14 +296,14 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   ) => {
     //get value for only child selection
     if (props.valuetype === 'child') {
-      let newvalue = label;
+      let newvalue = name;
       if (type === 'image') newvalue = label + '(' + name + ')';
       props.form.setFieldValue(props.field.name, newvalue);
-      setValue([name]);
+
       return;
     }
     props.form.setFieldValue(props.field.name, newvalue);
-    setValue([newvalue]);
+
     return;
   };
 

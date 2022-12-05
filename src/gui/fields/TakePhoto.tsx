@@ -55,6 +55,7 @@ interface Props {
   helpertext?: string;
   label?: string;
   issyncing?: string;
+  isconflict?: boolean;
 }
 
 type ImageListProps = {
@@ -208,6 +209,7 @@ const FAIMSImageList = (props: ImageListProps) => {
 interface State {
   open: boolean;
   photopath: string | null;
+  images: Array<any>;
 }
 export class TakePhoto extends React.Component<
   FieldProps &
@@ -232,6 +234,7 @@ export class TakePhoto extends React.Component<
     this.state = {
       open: false,
       photopath: null,
+      images: this.props.form.values[this.props.field.name] ?? [],
     };
   }
   async takePhoto() {
@@ -256,10 +259,20 @@ export class TakePhoto extends React.Component<
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
+
+  componentDidUpdate(prevProps: FieldProps & Props) {
+    if (
+      prevProps.form.values[this.props.field.name] !==
+      this.props.form.values[this.props.field.name]
+    ) {
+      const value = this.props.form.values[this.props.field.name];
+      if (value !== null && value !== undefined) this.setState({images: value});
+    }
+  }
+
   render() {
-    const images = this.props.field.value;
+    //const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    console.debug('images', images);
 
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
@@ -292,13 +305,13 @@ export class TakePhoto extends React.Component<
             : 'Take Photo'}
         </Button>
         <FAIMSImageList
-          images={images}
+          images={this.state.images}
           setopen={(path: string) =>
             this.setState({open: true, photopath: path})
           }
-          setimage={(newfiles: Array<any>) =>
-            this.props.form.setFieldValue(this.props.field.name, newfiles)
-          }
+          setimage={(newfiles: Array<any>) => {
+            this.props.form.setFieldValue(this.props.field.name, newfiles);
+          }}
           disabled={this.props.disabled ?? false}
           fieldName={this.props.field.name}
         />
