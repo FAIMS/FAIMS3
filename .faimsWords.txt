@@ -652,3 +652,4 @@ specdoc
 supertypes
 qualname
 Abramov's
+bugsnag
