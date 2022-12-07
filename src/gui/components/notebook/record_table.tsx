@@ -50,7 +50,8 @@ import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 import getLocalDate from '../../fields/LocalDate';
-import { logError } from '../../../logging';
+import {logError} from '../../../logging';
+
 type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;

@@ -354,7 +354,7 @@ class RecordForm extends React.Component<
         );
       }
 
-      if (this.props.ui_specification.viewsets[this_type].views === []) {
+      if (this.props.ui_specification.viewsets[this_type].views.length === 0) {
         throw Error(`Viewset for type '${this_type}' has no views`);
       }
 

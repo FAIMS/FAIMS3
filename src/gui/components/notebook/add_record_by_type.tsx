@@ -16,6 +16,7 @@ import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {getAllRecordsWithRegex} from '../../../data_storage/queries';
 import {RecordMetadata} from '../../../datamodel/ui';
 import {getProjectMetadata} from '../../../projectMetadata';
+import {logError} from '../../../logging';
 
 type AddRecordButtonsProps = {
   project: ProjectInformation;

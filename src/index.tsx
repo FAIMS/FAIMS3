@@ -26,17 +26,14 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {addNativeHooks} from './native_hooks';
 // import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
-import {ErrorBoundary} from './logging';
 import React from 'react';
 
 addNativeHooks();
 
 ReactDOM.render(
-  <ErrorBoundary>
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  </ErrorBoundary>,
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
   document.getElementById('root')
 );
 

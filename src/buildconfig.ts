@@ -19,7 +19,8 @@
  *   which server to use and whether to include test data
  */
 
-import {logError} from './logging';
+// need to define a local logError here since logging.tsx imports this file
+const logError = (err: any) => console.error(err);
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
@@ -275,11 +276,12 @@ function get_login_token(): string | undefined {
 }
 
 // If REACT_APP_BUGSNAG_KEY is not defined then we don't use Bugsnag
-function get_bugsnag_key(): string | undefined {
+function get_bugsnag_key(): string | false {
   const bugsnag_key = process.env.REACT_APP_BUGSNAG_KEY;
   if (bugsnag_key === '' || bugsnag_key === undefined) {
-    return undefined;
+    return false;
   }
+  console.log('BK', bugsnag_key);
   return bugsnag_key;
 }
 

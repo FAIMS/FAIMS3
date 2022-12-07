@@ -21,10 +21,19 @@
 import {BUGSNAG_KEY} from './buildconfig';
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginReact from '@bugsnag/plugin-react';
-import React, {ErrorInfo, ReactNode} from 'react';
+import React, {ErrorInfo, useEffect} from 'react';
+
+import {Grid, Typography, Button} from '@mui/material';
+import * as ROUTES from './constants/routes';
+import {useTheme} from '@mui/material/styles';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import {useHistory} from 'react-router-dom';
+import { clear } from 'console';
+
+console.log('BUGSNAG_KEY', BUGSNAG_KEY);
 
 interface EBProps {
-  children: ReactNode;
+  children?: React.ReactNode;
 }
 
 interface EBState {
@@ -33,7 +42,7 @@ interface EBState {
 
 // Define a fallback ErrorBoundary to use in case we don't use Bugsnag
 //
-class FAIMSErrorBoundary extends React.Component<EBProps, EBState> {
+export class FAIMSErrorBoundary extends React.Component<EBProps, EBState> {
   public state: EBState = {
     hasError: false,
   };
@@ -50,16 +59,78 @@ class FAIMSErrorBoundary extends React.Component<EBProps, EBState> {
 
   render() {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
-      return <h1>Something went wrong.</h1>;
+      return ErrorPage();
     }
     return this.props.children;
   }
 }
 
-export let ErrorBoundary: any = FAIMSErrorBoundary;
-export let logError = (error: any) => {
-  console.error(error);
+export const ErrorPage = () => {
+  const theme = useTheme();
+
+  useEffect(() => {
+    document.body.classList.add('bg-primary-gradient');
+
+    return () => {
+      document.body.classList.remove('bg-primary-gradient');
+    };
+  });
+
+  // Do a full page reload of the workspace to ensure we get out of
+  // any bogus state...may not be the right way to respond
+  const navigateWS = () => {
+    window.location.href = ROUTES.WORKSPACE;
+  };
+
+  return (
+    <React.Fragment>
+      <Grid
+        container
+        direction="row"
+        justifyContent="center"
+        alignItems="center"
+        spacing={3}
+        sx={{minHeight: '60vh'}}
+      >
+        <Grid item xs={12} sm={6}>
+          <Typography
+            variant={'h4'}
+            sx={{fontWeight: 'light', mb: 3}}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            Sorry, something went wrong.
+          </Typography>
+          <Typography
+            variant={'body1'}
+            sx={{fontWeight: 'light', mb: 3}}
+            color={theme.palette.common.white}
+          >
+            This has been reported to the development team. Use the button below
+            to reload your workspace.
+          </Typography>
+          <Button
+            variant="contained"
+            color={'secondary'}
+            disableElevation
+            onClick={navigateWS}
+            sx={{mr: 1}}
+            startIcon={<DashboardIcon />}
+          >
+            Workspace
+          </Button>
+        </Grid>
+      </Grid>
+    </React.Fragment>
+  );
+};
+
+export const logError = (error: any) => {
+  if (BUGSNAG_KEY) {
+    Bugsnag.notify(error);
+  } else {
+    console.error(error);
+  }
 };
 
 if (BUGSNAG_KEY) {
@@ -67,13 +138,11 @@ if (BUGSNAG_KEY) {
     apiKey: BUGSNAG_KEY,
     plugins: [new BugsnagPluginReact()],
   });
-
-  logError = (error: any) => {
-    Bugsnag.notify(error);
-  };
-
-  const bugsnag = Bugsnag.getPlugin('react');
-  if (bugsnag !== undefined) {
-    ErrorBoundary = bugsnag.createErrorBoundary(React);
-  }
+  console.debug('Logging errors with Bugsnag');
 }
+
+const bugsnag = Bugsnag.getPlugin('react');
+
+export const ErrorBoundary = bugsnag
+  ? bugsnag.createErrorBoundary(React)
+  : FAIMSErrorBoundary;

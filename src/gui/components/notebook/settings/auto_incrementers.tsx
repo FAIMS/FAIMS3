@@ -4,7 +4,8 @@ import {ProjectInformation, ProjectUIModel} from '../../../../datamodel/ui';
 import {get_autoincrement_references_for_project} from '../../../../datamodel/autoincrement';
 import {AutoIncrementReference} from '../../../../datamodel/database';
 import AutoIncrementEditForm from '../../autoincrement/edit-form';
-import { logError } from '../../../../logging';
+import {logError} from '../../../../logging';
+
 interface AutoIncrementerSettingsListProps {
   project_info: ProjectInformation;
   uiSpec: ProjectUIModel;

@@ -42,6 +42,7 @@ export async function getProjectMetadata(
         binary: true,
       }
     );
+
     if (doc.is_attachment && doc._attachments !== undefined) {
       const file_list = attachments_to_files(doc._attachments);
       if (doc.single_attachment) {

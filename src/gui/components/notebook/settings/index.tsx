@@ -64,7 +64,7 @@ import CircularLoading from '../../ui/circular_loading';
 import ProjectStatus from './status';
 import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '../../../../datamodel/ui';
-import { logError } from '../../../../logging';
+import {logError} from '../../../../logging';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
