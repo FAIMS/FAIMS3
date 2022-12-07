@@ -15,10 +15,10 @@
  *
  * Filename: fieldpersistent.ts
  * Description:
- *  This is the document for saving/updating fields persistance
+ *  This is the document for saving/updating fields persistence
  *  persistent state been saved in local_state_db as local data for each device
  *  persistent state will be get when user open record or draft and filled in draft as initial value if initial value is empty
- *  if persitence state updated, all draft created after will be updated, but draft created before won't be affected
+ *  if persistence state updated, all draft created after will be updated, but draft created before won't be affected
  *  persistent state will be updated when record been saved( to be discussed)
  */
 

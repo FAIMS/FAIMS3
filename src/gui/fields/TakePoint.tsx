@@ -98,9 +98,9 @@ export class TakePoint extends React.Component<
     const error = this.props.form.errors[this.props.field.name];
     const instruction_text =
       this.props.instruction_text ?? 'Click to save current location';
-    let postext = <span>No point taken.</span>;
+    let positionText = <span>No point taken.</span>;
     if (pos !== null && pos !== undefined && pos.geometry !== undefined) {
-      postext = (
+      positionText = (
         <span {...this.props['ValueTextProps']}>
           Lat: {pos.geometry.coordinates[1] ?? 'Not captured'}; Long:{' '}
           {pos.geometry.coordinates[0] ?? 'Not captured'}; Acc:{' '}
@@ -138,7 +138,7 @@ export class TakePoint extends React.Component<
             ? this.props.label
             : 'Take Point'}
         </Button>
-        {postext}
+        {positionText}
         {error_text}
       </div>
     );

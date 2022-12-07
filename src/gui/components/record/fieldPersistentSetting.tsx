@@ -29,27 +29,27 @@ export function savefieldpersistentSetting(
   annotations: {[field_name: string]: Annotations},
   uiSpec: ProjectUIModel
 ) {
-  const newdata: {[field_name: string]: any} = {};
-  const newanntation: {[field_name: string]: Annotations} = {};
+  const newData: {[field_name: string]: any} = {};
+  const newAnnotation: {[field_name: string]: Annotations} = {};
   if (form_type === null) return '';
-  // check if there is persisence value be set
-  let ispersitence = false;
+  // check if the persistence value is set
+  let isPersistent = false;
   for (const [name] of Object.entries(uiSpec.fields)) {
     if (uiSpec['fields'][name]['persistent'] !== undefined) {
-      newdata[name] = values[name];
-      newanntation[name] = annotations[name];
-      ispersitence = true;
+      newData[name] = values[name];
+      newAnnotation[name] = annotations[name];
+      isPersistent = true;
     }
   }
 
-  const newstage = {
+  const newStage = {
     project_id: project_id,
     type: form_type || 'FORM1',
-    data: newdata,
-    annotations: newanntation,
+    data: newData,
+    annotations: newAnnotation,
   };
-  return ispersitence
-    ? set_fieldpersistentdata(project_id, form_type || 'FORM1', newstage)
+  return isPersistent
+    ? set_fieldpersistentdata(project_id, form_type || 'FORM1', newStage)
         .then(refs => {
           return refs;
         })

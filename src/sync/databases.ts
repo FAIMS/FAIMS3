@@ -108,7 +108,7 @@ const directory_db_pouch = new PouchDB<ListingsObject>(
   local_pouch_options
 );
 /**
- * Directory: All (public, anyways) Faims instances
+ * Directory: All (public) Faims instances
  */
 export const directory_db: LocalDB<ListingsObject> = {
   local: directory_db_pouch,
@@ -154,9 +154,9 @@ export const projects_dbs: LocalDBList<ProjectObject> = {};
 export const data_dbs: LocalDBList<ProjectDataObject> = {};
 
 /**
- * Synced from the project metadatabase for each active project,
+ * Synced from the project meta-database for each active project,
  * This has the metadata describing a database. Project Schemas,
- * GUI Models, and a Prople database.
+ * GUI Models, and a People database.
  */
 export const metadata_dbs: LocalDBList<ProjectMetaObject> = {};
 
@@ -204,7 +204,7 @@ export async function get_base_connection_info(
         throw err;
       }
 
-      const nullexcept = <T>(val: T | undefined | null, err: any): T => {
+      const nullExcept = <T>(val: T | undefined | null, err: any): T => {
         if (val === null || val === undefined) {
           throw err;
         }
@@ -214,20 +214,20 @@ export async function get_base_connection_info(
       // If running in server mode
       // the listings object MUST have all the connection properties
       return {
-        proto: nullexcept(
+        proto: nullExcept(
           listing_object.projects_db?.proto,
           'Server misconfigured: Missing proto'
         ),
-        host: nullexcept(
+        host: nullExcept(
           listing_object.projects_db?.host,
           'Server misconfigured: Missing host'
         ),
-        port: nullexcept(
+        port: nullExcept(
           listing_object.projects_db?.port,
           'Server misconfigured: Missing port'
         ),
         lan: listing_object.projects_db?.lan,
-        db_name: nullexcept(
+        db_name: nullExcept(
           listing_object.projects_db?.db_name,
           'Server misconfigured: Missing db_name'
         ),
@@ -288,7 +288,7 @@ export function ensure_synced_db<Content extends {}>(
   options: DBReplicateOptions = {}
 ): [boolean, LocalDB<Content>] {
   if (global_dbs[local_db_id] === undefined) {
-    throw 'Logic eror: ensure_local_db must be called before this code';
+    throw 'Logic error: ensure_local_db must be called before this code';
   }
 
   // Already connected/connecting, or local-only database
