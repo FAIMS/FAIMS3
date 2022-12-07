@@ -21,7 +21,7 @@
  * (which means that all fields and tabs with is_logic setup should not be displayed with initial value unless initial value is included)
  */
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {LogError} from '../../../logging';
+import {logError} from '../../../logging';
 
 export function update_by_branching_logic(
   ui_specification: ProjectUIModel,

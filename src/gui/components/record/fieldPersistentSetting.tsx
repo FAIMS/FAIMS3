@@ -20,7 +20,7 @@
 import {set_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
 import {Annotations} from '../../../datamodel/core';
 import {ProjectUIModel} from '../../../datamodel/ui';
-import {LogError} from '../../../logging';
+import {logError} from '../../../logging';
 
 export function savefieldpersistentSetting(
   project_id: string,

@@ -36,7 +36,7 @@ import {
   LocalAuthDoc,
   NonNullListingsObject,
 } from '../datamodel/database';
-import {LogError} from '../logging';
+import {logError} from '../logging';
 import {
   ConnectionInfo_create_pouch,
   local_pouch_options,

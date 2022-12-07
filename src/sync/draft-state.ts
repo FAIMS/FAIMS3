@@ -40,7 +40,7 @@ import {
   Relationship,
 } from '../datamodel/core';
 import {DEBUG_APP} from '../buildconfig';
-import {LogError} from '../logging';
+import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const DRAFT_SAVE_CYCLE = 5000;

@@ -30,7 +30,7 @@ import {ProjectID} from '../../datamodel/core';
 import {getProjectInfo} from '../../databaseAccess';
 import {getUiSpecForProject} from '../../uiSpecification';
 import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
-import {LogError} from '../../logging';
+import {logError} from '../../logging';
 
 export default function ProjectCreate() {
   const {project_id} = useParams<{project_id: ProjectID}>();

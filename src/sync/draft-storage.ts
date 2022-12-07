@@ -36,7 +36,7 @@ import {
   generate_file_name,
   attachment_to_file,
 } from '../data_storage/attachments';
-import {LogError} from '../logging';
+import {logError} from '../logging';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 

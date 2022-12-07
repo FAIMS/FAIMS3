@@ -31,7 +31,7 @@ import {
   ListingsObject,
   ProjectObject,
 } from '../datamodel/database';
-import {LogError} from '../logging';
+import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
 
 import {

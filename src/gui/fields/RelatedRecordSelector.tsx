@@ -53,7 +53,7 @@ import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {generateFAIMSDataID} from '../../data_storage';
-import {LogError} from '../../logging';
+import {logError} from '../../logging';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {

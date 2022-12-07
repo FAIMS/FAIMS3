@@ -470,7 +470,7 @@ const getvalue = (
           fieldui['component-parameters'][view]['children']
       : fieldui['component-parameters'][name];
   } catch (err) {
-    logError(err); 
+    logError(err);
     return 'did not get value' + view + name;
   }
 };

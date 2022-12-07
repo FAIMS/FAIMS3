@@ -26,7 +26,7 @@ import {Geolocation, GeolocationPosition} from '@capacitor/geolocation';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 import {FAIMSPosition} from '../../datamodel/geo';
-import {LogError} from '../../logging';
+import {logError} from '../../logging';
 
 function capacitor_coordindates_to_faims_pos(
   coordinates: GeolocationPosition

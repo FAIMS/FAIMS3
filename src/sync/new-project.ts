@@ -27,7 +27,7 @@ import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
 
 import {directory_db, ensure_local_db, projects_dbs} from './databases';
 import {activate_project} from './process-initialization';
-import {LogError} from '../logging';
+import {logError} from '../logging';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
   console.debug(`Requesting allocation for ${project_id}`);

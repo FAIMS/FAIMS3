@@ -41,7 +41,7 @@ import {HRID_STRING} from '../../../../datamodel/core';
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
 import {FormTab} from './ProjectComponent';
 import {grey} from '@mui/material/colors';
-import {LogError} from '../../../../logging';
+import {logError} from '../../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({

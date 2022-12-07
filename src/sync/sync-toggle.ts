@@ -22,7 +22,7 @@
 
 import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject} from '../datamodel/database';
-import {LogError} from '../logging';
+import {logError} from '../logging';
 import {
   active_db,
   data_dbs,

@@ -27,7 +27,7 @@ import * as ROUTES from '../../constants/routes';
 import {ListingInformation} from '../../datamodel/ui';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {ensure_locally_created_project_listing} from '../../sync/new-project';
-import {LogError} from '../../logging';
+import {logError} from '../../logging';
 
 type SignInProps = {
   setToken?: any;

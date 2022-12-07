@@ -94,7 +94,7 @@ import CircularLoading from '../components/ui/circular_loading';
 import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
 import RecordDelete from '../components/notebook/delete';
-import {LogError} from '../../logging';
+import {logError} from '../../logging';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;

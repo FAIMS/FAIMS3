@@ -33,7 +33,7 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import RefreshNotebook from '../components/notebook/refresh';
 import {ProjectInformation} from '../../datamodel/ui';
-import {LogError} from '../../logging';
+import {logError} from '../../logging';
 
 export default function Notebook() {
   /**

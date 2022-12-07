@@ -42,7 +42,7 @@ import {
   createdProjects,
   createdProjectsInterface,
 } from './state';
-import {LogError} from '../logging';
+import {logError} from '../logging';
 
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);
