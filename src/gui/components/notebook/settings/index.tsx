@@ -173,7 +173,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
               </Grid>
               {role_info.value?.can_edit_notebook_on_device ||
               role_info.value?.can_edit_notebook_on_server ||
-              String(process.env.REACT_APP_SERVER) === 'developers' ? (
+              project_info.status === 'local_draft' ? ( // FAIMS3-573 check local project
                 <Grid item xs={12}>
                   <Button
                     color="primary"
@@ -188,7 +188,8 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
               ) : (
                 ''
               )}
-              {role_info.value?.can_edit_notebook_on_device ? (
+              {role_info.value?.can_edit_notebook_on_device ||
+              project_info.status === 'local_draft' ? (
                 <Grid item xs={12}>
                   <Alert severity={'info'}>
                     You may edit the notebook, but your changes will only be
@@ -200,7 +201,8 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 ''
               )}
               {role_info.value?.can_edit_notebook_on_device ||
-              role_info.value?.can_edit_notebook_on_server ? (
+              role_info.value?.can_edit_notebook_on_server ||
+              project_info.status === 'local_draft' ? (
                 <Grid item xs={12}>
                   <Alert severity={'warning'}>
                     If this notebook already has records saved, editing the
