@@ -42,6 +42,7 @@ import {
   createdProjects,
   createdProjectsInterface,
 } from './state';
+import {LogError} from '../logging';
 
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(pouchdbDebug);
@@ -183,7 +184,7 @@ export function listenProject(
       try {
         error_listener(err);
       } catch (err: unknown) {
-        console.error('Uncaught Error in listenProject error handler', err);
+        logError(err);
         if (detach) {
           detach_cb();
         }
@@ -209,7 +210,7 @@ export function listenProject(
       if (type[0] === 'delete') {
         // Run destructor when the createdProjectsInterface object is deleted.
         if (typeof destructor[0] !== 'function') {
-          console.error(
+          logError(
             'Non-fatal: listenProject destructor has gone ' +
               "missing OR 'delete' event did not follow " +
               "'update' or 'create' event"

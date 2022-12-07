@@ -27,11 +27,6 @@ import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from './constants/routes';
 import {useTheme} from '@mui/material/styles';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import {useHistory} from 'react-router-dom';
-import { clear } from 'console';
-
-console.log('BUGSNAG_KEY', BUGSNAG_KEY);
-
 interface EBProps {
   children?: React.ReactNode;
 }

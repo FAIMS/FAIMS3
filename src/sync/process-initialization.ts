@@ -31,6 +31,7 @@ import {
   ListingsObject,
   ProjectObject,
 } from '../datamodel/database';
+import {LogError} from '../logging';
 import {getTokenForCluster} from '../users';
 
 import {
@@ -85,7 +86,7 @@ export async function update_directory(
         console.debug('ActiveDB Info', info);
       }
       if (info.doc === undefined) {
-        console.error('Active doc changes has doc undefined');
+        logError('Active doc changes has doc undefined');
         return undefined;
       }
       const listing_id = split_full_project_id(info.doc._id).listing_id;
@@ -118,7 +119,7 @@ export async function update_directory(
       return undefined;
     })
     .on('error', err => {
-      console.error('ActiveDB error', err);
+      logError(err);
     });
 
   // We just use the 1 events object
@@ -377,7 +378,7 @@ export async function update_listing(
       .changes({...default_changes_opts, since: 0})
       .on('change', info => {
         if (info.doc === undefined) {
-          console.error('Active doc changes has doc undefined');
+          logError('Active doc changes has doc undefined');
           return undefined;
         }
         const split_id = split_full_project_id(info.doc._id);
@@ -421,7 +422,7 @@ export async function update_listing(
       .changes({...default_changes_opts, since: 0})
       .on('change', async info => {
         if (info.doc === undefined) {
-          console.error('projects_local doc changes has doc undefined');
+          logError('projects_local doc changes has doc undefined');
           return undefined;
         }
         if (info.id in to_sync) {

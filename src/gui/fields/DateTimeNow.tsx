@@ -14,6 +14,7 @@ import {
 } from './BasicFieldSettings';
 import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import getLocalDate from './LocalDate';
+import {logError} from '../../logging';
 
 type DateTimeNowProps = {
   is_auto_pick?: boolean;
@@ -67,7 +68,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
         setDisplayValue(getLocalDate(new Date(value)));
       } catch (err) {
         setFieldError(name, 'Could not set display Value. Contact support.');
-        console.error(err);
+        logError(err);
       }
     }
   }, [value]);
@@ -79,7 +80,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
         setFieldValue(name, date.toISOString());
       } catch (err) {
         setFieldError(name, 'Could not set display value. Contact support.');
-        console.error(err);
+        logError(err);
       }
     }
   }, []);

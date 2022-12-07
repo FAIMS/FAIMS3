@@ -66,7 +66,7 @@ async function streamedDumpDownload(filename: string, obj: any) {
 }
 
 export async function doDumpShare() {
-  console.error('Starting app system dump');
+  console.debug('Starting app system dump');
   const dump: DumpObject = {};
   dump['directory'] = await dumpDatabase(directory_db.local);
   dump['active'] = await dumpDatabase(active_db);
@@ -107,7 +107,7 @@ export async function doDumpShare() {
 }
 
 export async function doDumpDownload() {
-  console.error('Starting browser system dump');
+  console.debug('Starting browser system dump');
 
   await streamedDumpDownload(
     'directory',

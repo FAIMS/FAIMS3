@@ -53,6 +53,7 @@ import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {generateFAIMSDataID} from '../../data_storage';
+import {LogError} from '../../logging';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
@@ -422,9 +423,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             // new_records.push(child_record)
             setRecordsInformation(new_records);
           }
-        } else console.error('Error to Add Link');
+        } else
+          logError(
+            `Child record is null after Update_New_Link ${selectedRecord}`
+          );
       })
-      .catch(error => console.error('Fail to update child', error));
+      .catch(error => logError(error));
     const records = excludes_related_record(
       multiple,
       props.form.values[field_name],
@@ -484,7 +488,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     try {
       revision_id = await props.form.submitForm();
     } catch (error) {
-      console.error('Error to save current record', error);
+      logError(error);
     }
 
     try {
@@ -511,11 +515,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           setRecordsInformation(new_records);
         }
       } else {
-        console.error('Failed to save Child record');
+        logError(
+          `Child record is null after Update_New_Link ${selectedRecord}`
+        );
         return '';
       }
     } catch (error) {
-      console.error('Failed to save Child record', error);
+      logError(error);
       return '';
     }
     SetSelectedRecord(null);

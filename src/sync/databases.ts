@@ -36,6 +36,7 @@ import {
   LocalAuthDoc,
   NonNullListingsObject,
 } from '../datamodel/database';
+import {LogError} from '../logging';
 import {
   ConnectionInfo_create_pouch,
   local_pouch_options,
@@ -406,7 +407,7 @@ export function setLocalConnection<Content extends {}>(
     db_info.remote.connection = null;
     console.debug('Removed sync for', db_info);
   } else {
-    console.error('Sync is still off', db_info);
+    logError(`Sync is still off ${db_info}`);
   }
 }
 
@@ -414,13 +415,13 @@ async function delete_synced_db(name: string, db: LocalDB<any>) {
   try {
     console.debug(await db.remote?.db.close());
   } catch (err) {
-    console.error('Failed to remove remote db', name, err);
+    logError(err);
   }
   try {
     console.debug(await db.local.destroy());
     console.debug('Removed local db', name);
   } catch (err) {
-    console.error('Failed to remove local db', name, err);
+    logError(err);
   }
 }
 
@@ -447,7 +448,7 @@ export async function wipe_all_pouch_databases() {
     try {
       console.debug(await db.destroy());
     } catch (err) {
-      console.error('Error wiping all pouch databases', err);
+      logError(err);
     }
   }
   // TODO: work out how best to recreate the databases, currently using a

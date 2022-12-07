@@ -35,6 +35,7 @@ import {
 import {ProjectValueList} from '../../../../datamodel/ui';
 import {ProjectUIFields} from '../../../../datamodel/typesystem';
 import {HRID_STRING} from '../../../../datamodel/core';
+import {logError} from '../../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const VISIBLE_TYPE = 'visible_types';
@@ -824,12 +825,12 @@ const newfromui = (
             },
           ];
         } catch (error) {
-          console.error(gefieldname + ' not set correctly', error);
+          logError(error);
         }
       });
     });
   });
-  console.log(formdesignuiSpec);
+  console.debug(formdesignuiSpec);
   return {newformcom, initialfieldvalue, formdesignuiSpec};
 };
 

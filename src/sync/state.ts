@@ -31,7 +31,7 @@ import {mergeHeads} from '../data_storage/merging';
 
 import {ExistingActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';
-import Bugsnag from '@bugsnag/js';
+import {logError} from '../logging';
 
 export type createdProjectsInterface = {
   project: ProjectObject;
@@ -243,8 +243,7 @@ function start_listening_for_changes(proj_id: ProjectID) {
         try {
           await mergeHeads(proj_id, doc.id);
         } catch (err: any) {
-          console.error('Automerge errored', err);
-          Bugsnag.notify(err as Error);
+          logError(err);
         }
       }
     }

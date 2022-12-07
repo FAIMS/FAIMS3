@@ -41,6 +41,7 @@ import {HRID_STRING} from '../../../../datamodel/core';
 import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
 import {FormTab} from './ProjectComponent';
 import {grey} from '@mui/material/colors';
+import {LogError} from '../../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -188,7 +189,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
         getValidationSchemaForViewset(formdesignuiSpec, formuiview)
       );
     } catch (error) {
-      console.error('not get validation');
+      logError(error);
     }
 
     return true;
@@ -378,7 +379,7 @@ export default function ProjectDesignTab(props: ProjectDesignProps) {
     try {
       return ['admin'];
     } catch (error) {
-      console.error("can't get access");
+      logError(error);
       return ['admin'];
     }
   };

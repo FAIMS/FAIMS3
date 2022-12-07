@@ -26,6 +26,7 @@ import {Geolocation, GeolocationPosition} from '@capacitor/geolocation';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 import {FAIMSPosition} from '../../datamodel/geo';
+import {LogError} from '../../logging';
 
 function capacitor_coordindates_to_faims_pos(
   coordinates: GeolocationPosition
@@ -88,7 +89,7 @@ export class TakePoint extends React.Component<
       console.debug('Take point coord', coordinates);
       this.props.form.setFieldValue(this.props.field.name, coordinates);
     } catch (err: any) {
-      console.error('Failed to take point', err);
+      logError(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }

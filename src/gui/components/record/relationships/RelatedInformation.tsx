@@ -31,6 +31,7 @@ import {
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
 import getLocalDate from '../../../fields/LocalDate';
+import {logError} from '../../../../logging';
 //get parent link when child record been open
 export async function getParentLink_from_relationship(
   hrid: string,
@@ -292,7 +293,7 @@ function get_related_valued_fields(
       }
     });
   } catch (err) {
-    console.error('Error to get related value of fields', err);
+    logError(err); // Error to get related value of fields
   }
   return {fields_child, fields_linked};
 }
@@ -406,7 +407,7 @@ export async function get_RelatedFields_for_field(
           realtion_type
         );
         records.push(child);
-        console.error('Error to get child information', child_record.record_id);
+        logError(error);
       }
     }
   }
@@ -559,7 +560,7 @@ async function get_field_RelatedFields(
         newfields.push(child);
       }
     } catch (error) {
-      console.error('Error to get record information for field', field, error);
+      logError(error);
     }
   }
   return newfields;
@@ -716,7 +717,7 @@ function get_field_label(ui_specification: ProjectUIModel, field: string) {
         ]['label'];
     return {field_name, is_deleted};
   } catch (error) {
-    console.error('Error to get field label', error);
+    logError(error);
     return {field_name, is_deleted};
   }
 }
@@ -896,7 +897,7 @@ export async function Update_New_Link(
     else if (relation_type === 'Linked' && !is_add)
       relation['linked'] = RemoveLink(relation, parent);
     else {
-      console.error('Error: not correct Type', relation_type);
+      logError(`Error: unknown relation type ${relation_type}`);
       return null;
     }
     const now = new Date();
@@ -942,7 +943,7 @@ export async function Update_New_Link(
       relation_type
     );
   } catch (error) {
-    console.error('Error to get child record', error);
+    logError(error);
   }
 
   return new_child_record;
@@ -1264,12 +1265,12 @@ async function conflict_update_child_record(
         try {
           await upsertFAIMSData(project_id, new_doc);
         } catch (error) {
-          console.error('update child record error', error);
+          logError(error);
         }
       }
     }
   } catch (error) {
-    console.error('update child record error', error);
+    logError(error);
   }
 }
 
@@ -1384,11 +1385,11 @@ export async function remove_deleted_parent(
         result['new_revision_id'] = await upsertFAIMSData(project_id, new_doc);
         return result;
       } catch (error) {
-        console.error('update  record error', error);
+        logError(error);
       }
     }
   } catch (error) {
-    console.error('update  record error', error);
+    logError(error);
   }
   return result;
 }

@@ -27,6 +27,7 @@ import * as ROUTES from '../../constants/routes';
 import {ListingInformation} from '../../datamodel/ui';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {ensure_locally_created_project_listing} from '../../sync/new-project';
+import {LogError} from '../../logging';
 
 type SignInProps = {
   setToken?: any;
@@ -41,7 +42,7 @@ export function SignIn(props: SignInProps) {
       await ensure_locally_created_project_listing();
     };
     getlocalist();
-    getSyncableListingsInfo().then(setListings).catch(console.error);
+    getSyncableListingsInfo().then(setListings).catch(logError);
   }, []);
 
   if (listings === null) {
