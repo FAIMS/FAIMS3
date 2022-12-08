@@ -75,6 +75,7 @@ jobs:
           export REACT_APP_SERVICES=FAIMSTEXT
           export REACT_APP_TAG=testingAndroid          
           export REACT_APP_PROD_BUILD=true
+          export REACT_APP_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           git clean -xfd
           npm ci
           npm run build
