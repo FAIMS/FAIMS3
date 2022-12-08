@@ -73,6 +73,7 @@ import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from '../../../data_storage';
+import {logError} from '../../../logging';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -354,7 +355,7 @@ class RecordForm extends React.Component<
         );
       }
 
-      if (this.props.ui_specification.viewsets[this_type].views === []) {
+      if (this.props.ui_specification.viewsets[this_type].views.length === 0) {
         throw Error(`Viewset for type '${this_type}' has no views`);
       }
 
@@ -421,12 +422,12 @@ class RecordForm extends React.Component<
         });
       }
     } catch (err) {
-      console.error('rare draft error', err);
+      logError(err);
     }
     try {
       await this.setInitialValues(revision_id);
     } catch (err: any) {
-      console.error('setInitialValues error', err);
+      logError(err);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -483,7 +484,7 @@ class RecordForm extends React.Component<
         }
       }
     } catch (err: any) {
-      console.error('Error save Record ', err);
+      logError(err);
     }
   }
 
@@ -700,7 +701,7 @@ class RecordForm extends React.Component<
       if (k !== '_id' && k !== '_project_id' && k !== '_current_revision_id') {
         new_values[k] = v;
         if (k[0] === '_') {
-          console.error(`Including possibly bad key ${k} in record`);
+          logError(`Including possibly bad key ${k} in record`);
         }
       }
     }
@@ -815,7 +816,7 @@ class RecordForm extends React.Component<
                 if (this.props.setRevision_id !== undefined)
                   this.props.setRevision_id(revision_id); //pass the revision id back
               } catch (error) {
-                console.error('update child Error', error);
+                logError(error);
               }
               return is_close === 'close'
                 ? doc.data['hrid' + this.state.type_cached] ??
@@ -848,7 +849,7 @@ class RecordForm extends React.Component<
               severity: 'error',
             },
           });
-          console.error('Failed to save data', err, this.props.record_id);
+          logError(err);
         })
         //Clear the current draft area (Possibly after redirecting back to project page)
         .then(result => {
@@ -967,15 +968,10 @@ class RecordForm extends React.Component<
                             window.scrollTo(0, 0);
                             return result;
                           })
-                          .catch(error =>
-                            console.error(
-                              'Error to save the parent record',
-                              error
-                            )
-                          );
+                          .catch(error => logError(error));
                       } else {
-                        console.error(
-                          'Error to save the parent record, latest record is null'
+                        logError(
+                          'Error saving the parent record, latest record is null'
                         );
                         this.props.history.push({
                           pathname:
@@ -1087,14 +1083,9 @@ class RecordForm extends React.Component<
                             window.scrollTo(0, 0);
                             return result;
                           })
-                          .catch(error =>
-                            console.error(
-                              'Error to save the parent record from child relationship',
-                              error
-                            )
-                          );
+                          .catch(error => logError(error));
                       } else {
-                        console.error(
+                        logError(
                           'Error to save the parent record from child relationship, latest record is null'
                         );
                         this.props.history.push({
@@ -1110,9 +1101,7 @@ class RecordForm extends React.Component<
                       }
                     }
                   })
-                  .catch(error =>
-                    console.error('Error to get parent record', error)
-                  );
+                  .catch(error => logError(error));
               }
             }
           }

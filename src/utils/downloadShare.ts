@@ -19,6 +19,7 @@
  */
 import {Filesystem, Directory, Encoding} from '@capacitor/filesystem';
 import {Share} from '@capacitor/share';
+import {logError} from '../logging';
 
 /// Downloads a blob as a file onto a user's device
 export function downloadBlob(b: Blob, filename: string) {
@@ -76,7 +77,7 @@ export async function shareCallbackAsFileOnApp(
       });
       return undefined;
     } catch (err) {
-      console.error('Sharing failed with', dir, err);
+      logError(err);
     }
   }
   return undefined;

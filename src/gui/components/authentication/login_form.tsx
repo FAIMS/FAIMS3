@@ -8,6 +8,7 @@ import {TokenContents} from '../../../datamodel/core';
 import {ConductorURL} from '../../../datamodel/database';
 import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
+import {logError} from '../../../logging';
 
 export async function isWeb(): Promise<boolean> {
   const info = await Device.getInfo();
@@ -74,7 +75,7 @@ export function LoginButton(props: LoginButtonProps) {
           // Open a new window/tab on web
           const oauth_window = window.open(props.conductor_url);
           if (oauth_window === null) {
-            console.error('Failed to open oauth window');
+            logError('Failed to open oauth window');
           }
         } else {
           // Use the capacitor browser plugin in apps

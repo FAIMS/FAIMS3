@@ -21,6 +21,7 @@
 import {ProjectID, RecordID} from './datamodel/core';
 import {draft_db, listDraftMetadata} from './sync/draft-storage';
 import {DraftMetadataList} from './datamodel/drafts';
+import {logError} from './logging';
 
 export function listenDrafts(
   project_id: ProjectID,
@@ -30,7 +31,7 @@ export function listenDrafts(
   const runCallback = () =>
     listDraftMetadata(project_id, filter)
       .then(callback)
-      .catch(err => console.error('Uncaught draft list error', err));
+      .catch(err => logError(err)); // 'Uncaught draft list error'
 
   const changes = draft_db
     .changes({
@@ -44,7 +45,7 @@ export function listenDrafts(
         runCallback();
       }
     })
-    .on('error', err => console.error('Uncaught draft list error', err));
+    .on('error', err => logError(err)); // 'Uncaught draft list error'
 
   runCallback();
 
@@ -69,12 +70,12 @@ export async function deleteDraftsForRecord(
         _deleted: true,
       };
     });
-    console.error('ids_to_delete', ids_to_delete);
+    console.debug('ids_to_delete', ids_to_delete);
     if (ids_to_delete.length > 0) {
       await (draft_db as PouchDB.Database<{}>).bulkDocs(ids_to_delete);
     }
   } catch (err) {
-    console.error('Failed to remove drafts', err);
+    console.debug('Failed to remove drafts', err);
     throw err;
   }
 }

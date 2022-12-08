@@ -94,6 +94,7 @@ import CircularLoading from '../components/ui/circular_loading';
 import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
 import RecordDelete from '../components/notebook/delete';
+import {logError} from '../../logging';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -168,11 +169,11 @@ export default function Record() {
     if (project_id !== null) {
       getProjectMetadata(project_id, 'sections')
         .then(res => setMetaSection(res))
-        .catch(console.error /*TODO*/);
+        .catch(logError);
       try {
         setIsSyncing(isSyncingProjectAttachments(project_id));
       } catch (error) {
-        console.error('Error to set IsSyncing', error);
+        logError(error);
       }
     }
   }, [project_id]);
@@ -186,7 +187,7 @@ export default function Record() {
         .then(all_revisions => {
           setRevisions(all_revisions);
         })
-        .catch(console.error /*TODO*/);
+        .catch(logError);
       getHRIDforRecordID(project_id, record_id).then(hrid => {
         setHrid(hrid);
         setBreadcrumbs([
@@ -227,7 +228,7 @@ export default function Record() {
               setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
           }
         })
-        .catch(console.error /*TODO*/);
+        .catch(logError);
     };
 
     getconflicts();
@@ -244,7 +245,7 @@ export default function Record() {
           );
         }
       } catch (error) {
-        console.error('Error to get Conflict List', error);
+        logError(error);
       }
     };
     getConflictList();
@@ -274,7 +275,7 @@ export default function Record() {
           );
         }
       } catch (error) {
-        console.error('Error to get Type', error);
+        logError(error);
       }
     };
     getType();
@@ -372,7 +373,7 @@ export default function Record() {
           setIs_link_ready(true);
         }
       } catch (error) {
-        console.error('Error to get child information', error);
+        logError(error);
         //setIs_link_ready(true);
       }
     };

@@ -59,6 +59,7 @@ import {
   check_if_record_relationship,
 } from '../relationships/RelatedInformation';
 import {ConflictHelpDialog} from './conflictDialog';
+import {logError} from '../../../../logging';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -638,7 +639,7 @@ export default function ConflictForm(props: ConflictFormProps) {
               new_result
             );
           } catch (error) {
-            console.error('error to save update child of the conflict', error);
+            logError(error); // error to save update child of the conflict
             dispatch({
               type: ActionType.ADD_ALERT,
               payload: {
@@ -656,7 +657,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           console.log('Saved Conflict Resolved');
         }
       } catch (error) {
-        console.error('error to save the conflict', error);
+        logError(error); // error to save the conflict
         // alert user if the conflict not been saved
         setloading(false);
         dispatch({

@@ -27,6 +27,7 @@ import {
   attachments_to_files,
   files_to_attachments,
 } from './data_storage/attachments';
+import {logError} from './logging';
 
 export async function getProjectMetadata(
   project_id: ProjectID,
@@ -41,6 +42,7 @@ export async function getProjectMetadata(
         binary: true,
       }
     );
+
     if (doc.is_attachment && doc._attachments !== undefined) {
       const file_list = attachments_to_files(doc._attachments);
       if (doc.single_attachment) {
@@ -48,10 +50,8 @@ export async function getProjectMetadata(
       }
       return file_list;
     } else if (doc.is_attachment && doc._attachments === undefined) {
-      console.error(
-        'Unable to load metadata attachments',
-        project_id,
-        metadata_key
+      logError(
+        `Unable to load metadata attachments ${project_id}, ${metadata_key}`
       );
     }
     return doc.metadata;

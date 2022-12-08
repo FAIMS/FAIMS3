@@ -35,6 +35,7 @@ import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
+import {logError} from '../../logging';
 
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
@@ -255,7 +256,7 @@ export class TakePhoto extends React.Component<
           : [image];
       this.props.form.setFieldValue(this.props.field.name, newimages);
     } catch (err: any) {
-      console.error('Failed to take photo', err);
+      logError(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }

@@ -19,6 +19,9 @@
  *   which server to use and whether to include test data
  */
 
+// need to define a local logError here since logging.tsx imports this file
+const logError = (err: any) => console.error(err);
+
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
@@ -54,7 +57,7 @@ function prod_build(): boolean {
   } else if (FALSEY_STRINGS.includes(productionBuild.toLowerCase())) {
     return false;
   } else {
-    console.error('REACT_APP_PRODUCTION_BUILD badly defined, assuming false');
+    logError('REACT_APP_PRODUCTION_BUILD badly defined, assuming false');
     return false;
   }
 }
@@ -75,7 +78,7 @@ function include_pouchdb_debugging(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_pouch.toLowerCase())) {
     return true;
   } else {
-    console.error('REACT_APP_DEBUG_POUCHDB badly defined, assuming false');
+    logError('REACT_APP_DEBUG_POUCHDB badly defined, assuming false');
     return false;
   }
 }
@@ -90,7 +93,7 @@ function include_app_debugging(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    console.error('REACT_APP_DEBUG_APP badly defined, assuming true');
+    logError('REACT_APP_DEBUG_APP badly defined, assuming true');
     return true;
   }
 }
@@ -105,7 +108,7 @@ function show_minifauxton(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    console.error('REACT_APP_SHOW_MINIFAUXTON badly defined, assuming true');
+    logError('REACT_APP_SHOW_MINIFAUXTON badly defined, assuming true');
     return true;
   }
 }
@@ -120,7 +123,7 @@ function show_wipe(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    console.error('REACT_APP_SHOW_WIPE badly defined, assuming true');
+    logError('REACT_APP_SHOW_WIPE badly defined, assuming true');
     return true;
   }
 }
@@ -135,7 +138,7 @@ function show_new_notebook(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    console.error('REACT_APP_SHOW_NEW_NOTEBOOK badly defined, assuming true');
+    logError('REACT_APP_SHOW_NEW_NOTEBOOK badly defined, assuming true');
     return true;
   }
 }
@@ -153,7 +156,7 @@ function directory_protocol(): string {
   } else if (TRUTHY_STRINGS.includes(useHTTPS.toLowerCase())) {
     return 'https';
   } else {
-    console.error('REACT_APP_USE_HTTPS badly defined, assuming false');
+    logError('REACT_APP_USE_HTTPS badly defined, assuming false');
     return 'http';
   }
 }
@@ -177,7 +180,7 @@ function directory_port(): number {
   try {
     return parseInt(port);
   } catch (err) {
-    console.error('Falling back to default port', err);
+    logError(err);
     return 5984;
   }
 }
@@ -193,7 +196,7 @@ function pouch_batch_size(): number {
   try {
     return parseInt(pouch_batch_size);
   } catch (err) {
-    console.error('Falling back to default pouch_batch_size', err);
+    logError(err);
     return 1000;
   }
 }
@@ -209,7 +212,7 @@ function pouch_batches_limit(): number {
   try {
     return parseInt(pouch_batches_limit);
   } catch (err) {
-    console.error('Falling back to default pouch_batches_limit', err);
+    logError(err);
     return 10;
   }
 }
@@ -256,9 +259,7 @@ function disable_signin_redirect(): boolean {
   } else if (TRUTHY_STRINGS.includes(disable_signin.toLowerCase())) {
     return true;
   } else {
-    console.error(
-      'REACT_APP_DISABLE_SIGNIN_REDIRECT badly defined, assuming false'
-    );
+    logError('REACT_APP_DISABLE_SIGNIN_REDIRECT badly defined, assuming false');
     return false;
   }
 }
@@ -269,11 +270,19 @@ function get_login_token(): string | undefined {
     return undefined;
   }
   if (PROD_BUILD) {
-    console.error(
-      'Production builds should not set login token, except under test'
-    );
+    logError('Production builds should not set login token, except under test');
   }
   return login_token;
+}
+
+// If REACT_APP_BUGSNAG_KEY is not defined then we don't use Bugsnag
+function get_bugsnag_key(): string | false {
+  const bugsnag_key = process.env.REACT_APP_BUGSNAG_KEY;
+  if (bugsnag_key === '' || bugsnag_key === undefined) {
+    return false;
+  }
+  console.log('BK', bugsnag_key);
+  return bugsnag_key;
 }
 
 // this should disappear once we have listing activation set up
@@ -295,3 +304,4 @@ export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const DISABLE_SIGNIN_REDIRECT = disable_signin_redirect();
 export const BUILT_LOGIN_TOKEN = get_login_token();
+export const BUGSNAG_KEY = get_bugsnag_key();

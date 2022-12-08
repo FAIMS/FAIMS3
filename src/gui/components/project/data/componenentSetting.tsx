@@ -34,6 +34,8 @@ import {
 } from '../../../../datamodel/core';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {option} from '../../../../datamodel/typesystem';
+import {logError} from '../../../../logging';
+
 const uiSettingOthers: ProjectUIModel = {
   fields: {
     annotation_label: {
@@ -468,8 +470,8 @@ const getvalue = (
           fieldui['component-parameters'][view]['children']
       : fieldui['component-parameters'][name];
   } catch (err) {
-    console.error('error to get value:', view, name, err, fieldui);
-    return 'not get value' + view + name;
+    logError(err);
+    return 'did not get value' + view + name;
   }
 };
 
@@ -781,7 +783,7 @@ const definelogicvalue = (
   pur_fieldname: string
 ) => {
   if (value === undefined) {
-    console.error('Error to get values for define logic');
+    logError('Error to get values for define logic');
     return value;
   }
   if (value['is_logic'] === undefined)
@@ -848,7 +850,7 @@ const definelogic = (
     }
     return newvalues;
   }
-  console.error(newvalues);
+  console.debug(newvalues);
   return newvalues;
 };
 

@@ -4,6 +4,7 @@ import AppBar from './appBar';
 import {TokenContents} from '../../datamodel/core';
 import Footer from '../components/footer';
 import {useTheme} from '@mui/material/styles';
+import {ErrorBoundary, ErrorPage} from '../../logging';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -39,7 +40,9 @@ const MainLayout = (props: MainLayoutProps) => {
         {/*  divider={false}*/}
         {/*/>*/}
 
-        {props.children}
+        <ErrorBoundary FallbackComponent={ErrorPage}>
+          {props.children}
+        </ErrorBoundary>
       </Box>
       <Footer token={props.token} />
     </React.Fragment>

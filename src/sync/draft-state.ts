@@ -40,6 +40,7 @@ import {
   Relationship,
 } from '../datamodel/core';
 import {DEBUG_APP} from '../buildconfig';
+import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const DRAFT_SAVE_CYCLE = 5000;
@@ -391,7 +392,7 @@ class RecordDraftState {
             // something other than 'edited' (possibly when clear() is called
             // before resuming). In which case we don't want to set more data.
           })
-          .catch(console.error);
+          .catch(logError);
       } else {
         // Edit existing document by setting data
         this.data = {

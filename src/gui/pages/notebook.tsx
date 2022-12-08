@@ -33,6 +33,7 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import RefreshNotebook from '../components/notebook/refresh';
 import {ProjectInformation} from '../../datamodel/ui';
+import {logError} from '../../logging';
 
 export default function Notebook() {
   /**
@@ -72,7 +73,7 @@ export default function Notebook() {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
 
   if (project_error !== null) {
-    console.error('Failed to load notebook', project_id, project_error);
+    logError(`Failed to load notebook ${project_id}, ${project_error}`);
     return <Redirect to="/404" />;
   }
   const handleRefresh = () => {

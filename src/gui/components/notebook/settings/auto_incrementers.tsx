@@ -4,6 +4,8 @@ import {ProjectInformation, ProjectUIModel} from '../../../../datamodel/ui';
 import {get_autoincrement_references_for_project} from '../../../../datamodel/autoincrement';
 import {AutoIncrementReference} from '../../../../datamodel/database';
 import AutoIncrementEditForm from '../../autoincrement/edit-form';
+import {logError} from '../../../../logging';
+
 interface AutoIncrementerSettingsListProps {
   project_info: ProjectInformation;
   uiSpec: ProjectUIModel;
@@ -29,7 +31,7 @@ export default function AutoIncrementerSettingsList(
       .then(refs => {
         setReferences(refs);
       })
-      .catch(console.error /*TODO*/);
+      .catch(error => logError(error));
   }, [props.project_info.project_id]);
 
   return (

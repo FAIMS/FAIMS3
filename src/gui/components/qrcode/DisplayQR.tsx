@@ -26,6 +26,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import Toolbar from '@mui/material/Toolbar';
+import {logError} from '../../../logging';
 
 export function DisplayQR({content}: {content: string}): JSX.Element {
   const [url, setUrl] = useState('');
@@ -36,7 +37,7 @@ export function DisplayQR({content}: {content: string}): JSX.Element {
       setUrl(url);
     })
     .catch((err: any) => {
-      console.error(err);
+      logError(err);
     });
 
   return (

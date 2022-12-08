@@ -22,6 +22,7 @@ import {CreateRecordLinkProps} from '../types';
 import {useHistory} from 'react-router-dom';
 import {LocationState} from '../../../../../datamodel/core';
 import * as ROUTES from '../../../../../constants/routes';
+import {logError} from '../../../../../logging';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
@@ -59,7 +60,7 @@ export function AddNewRecordButton(props: {
           }, 300);
         })
         .catch((error: Error) => {
-          console.error('Fail to create new child', error);
+          logError(error);
           if (props.handleError !== undefined)
             props.handleError(new_child_id, new_child_id);
         });
@@ -134,7 +135,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
           },
         });
       } catch (error) {
-        console.error('error when update', error, selectedRecord);
+        logError(error);
       }
     }, 3000);
     return () => {

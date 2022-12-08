@@ -41,6 +41,7 @@ import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import {styled} from '@mui/material/styles';
 import {getProjectMetadata} from '../../projectMetadata';
+import {logError} from '../../logging';
 interface RenderTree {
   // id: string;
   name: string;
@@ -270,7 +271,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
           setIsactive(true);
           SetAttachments(attachments);
         } catch (error) {
-          console.warn('error to get Meta data', error);
+          logError(error);
           setIsactive(true);
         }
       } else {
@@ -392,8 +393,8 @@ export function AdvancedSelectcomponentsetting(props: componenentSettingprops) {
         ]['optiontree'] = JSON.parse(event.target.value);
         //event.target.value;
         props.setuiSpec({...newvalues});
-      } catch (e) {
-        console.error('Not valid');
+      } catch (error) {
+        logError(error);
       }
     }
   };

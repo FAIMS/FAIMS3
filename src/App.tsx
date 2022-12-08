@@ -134,9 +134,9 @@ export default function App() {
                   extraProps={{token: token}}
                 />
                 {/* Draft creation happens by redirecting to a fresh minted UUID
-                This is to keep it stable until the user navigates away. So the
-                draft_id is optional, and when RecordCreate is instantiated
-                without one, it immediately mints a UUID and redirects to it */}
+                  This is to keep it stable until the user navigates away. So the
+                  draft_id is optional, and when RecordCreate is instantiated
+                  without one, it immediately mints a UUID and redirects to it */}
 
                 <PrivateRoute
                   exact
@@ -167,13 +167,13 @@ export default function App() {
                   extraProps={{token: token}}
                 />
                 {/*Record editing and viewing is a separate affair, separated by
-                the presence/absence of draft_id prop OR draft_id being in the
-                state of the Record component. So if the user clicks a draft to
-                make continued changes, the draft_id is in the URL here.
-                Otherwise, they can make changes to a record they view (Which
-                should at some point, TODO, redirect to the same Record form but
-                with the newly minted draft_id attached. BUt this TODO is in the
-                record/form.tsx*/}
+                  the presence/absence of draft_id prop OR draft_id being in the
+                  state of the Record component. So if the user clicks a draft to
+                  make continued changes, the draft_id is in the URL here.
+                  Otherwise, they can make changes to a record they view (Which
+                  should at some point, TODO, redirect to the same Record form but
+                  with the newly minted draft_id attached. BUt this TODO is in the
+                  record/form.tsx*/}
                 <PrivateRoute
                   exact
                   path={

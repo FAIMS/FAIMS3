@@ -64,6 +64,7 @@ import CircularLoading from '../../ui/circular_loading';
 import ProjectStatus from './status';
 import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '../../../../datamodel/ui';
+import {logError} from '../../../../logging';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -111,8 +112,8 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
     try {
       if (project_id !== null)
         setIsSyncing(isSyncingProjectAttachments(project_id));
-    } catch (err: any) {
-      console.error('error to get sync');
+    } catch (error: any) {
+      logError(error);
     }
 
     return listenSyncingProjectAttachments(project_id, setIsSyncing);
