@@ -123,7 +123,7 @@ export class PromiseState<S, L extends null | {}> {
  * @param attacher prototype of a common listen function that takes a set of A
  *     arguments, then the OK & error callbacks. See databaseAccess.tsx for e.g.
  * @param args Arguments to pass to the trigger_callback
- * @returns
+ * @returns trigger function
  */
 export function constantArgs<FirstArgs extends unknown[]>(
   attacher: (
@@ -144,7 +144,7 @@ export function constantArgs<FirstArgs extends unknown[]>(
  *     arguments, then the OK & error callbacks. See databaseAccess.tsx for e.g.
  * @param args Arguments to pass as the first arguments to attacher &
  *     (More importantly) to the trigger_callback
- * @returns
+ * @returns trigger function
  */
 export function constantArgsShared<FirstArgs extends unknown[]>(
   attacher: (
@@ -167,7 +167,7 @@ export function constantArgsShared<FirstArgs extends unknown[]>(
  *     NOT the callback.
  * @param trigger_args Arguments to pass as the first arguments to the
  *     trigger_callback, but NOT the attacher.
- * @returns
+ * @returns the trigger function
  */
 export function constantArgsSplit<
   AttachArgs extends unknown[],
