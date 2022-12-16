@@ -653,3 +653,14 @@ supertypes
 qualname
 Abramov's
 bugsnag
+jscoverage
+lcov
+wscript
+jspm
+eslintcache
+Microbundle
+dotenv
+nuxt
+vuepress
+pycache
+revisionid

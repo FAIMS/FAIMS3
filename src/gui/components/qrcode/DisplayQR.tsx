@@ -28,6 +28,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import Toolbar from '@mui/material/Toolbar';
 import {logError} from '../../../logging';
 
+/**
+ * DisplayQR component displays a QR code representing a string
+ * @component
+ * @category GUI
+ *  */
 export function DisplayQR({content}: {content: string}): JSX.Element {
   const [url, setUrl] = useState('');
 
