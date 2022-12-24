@@ -1,0 +1,268 @@
+<!DOCTYPE html><html class="default" lang="en"><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>pouchdb_debug | @faims-project/faims3</title><meta name="description" content="Documentation for @faims-project/faims3"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script async src="../assets/search.js" id="search-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os"</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container">
+<div class="table-cell" id="tsd-search" data-base="..">
+<div class="field"><label for="tsd-search-field" class="tsd-widget tsd-toolbar-icon search no-caption"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M15.7824 13.833L12.6666 10.7177C12.5259 10.5771 12.3353 10.499 12.1353 10.499H11.6259C12.4884 9.39596 13.001 8.00859 13.001 6.49937C13.001 2.90909 10.0914 0 6.50048 0C2.90959 0 0 2.90909 0 6.49937C0 10.0896 2.90959 12.9987 6.50048 12.9987C8.00996 12.9987 9.39756 12.4863 10.5008 11.6239V12.1332C10.5008 12.3332 10.5789 12.5238 10.7195 12.6644L13.8354 15.7797C14.1292 16.0734 14.6042 16.0734 14.8948 15.7797L15.7793 14.8954C16.0731 14.6017 16.0731 14.1267 15.7824 13.833ZM6.50048 10.499C4.29094 10.499 2.50018 8.71165 2.50018 6.49937C2.50018 4.29021 4.28781 2.49976 6.50048 2.49976C8.71001 2.49976 10.5008 4.28708 10.5008 6.49937C10.5008 8.70852 8.71314 10.499 6.50048 10.499Z" fill="var(--color-text)"></path></svg></label><input type="text" id="tsd-search-field" aria-label="Search"/></div>
+<div class="field">
+<div id="tsd-toolbar-links"></div></div>
+<ul class="results">
+<li class="state loading">Preparing search index...</li>
+<li class="state failure">The search index is not available</li></ul><a href="../index.html" class="title">@faims-project/faims3</a></div>
+<div class="table-cell" id="tsd-widgets"><a href="#" class="tsd-widget tsd-toolbar-icon menu no-caption" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="2" fill="var(--color-text)"></rect><rect x="1" y="7" width="14" height="2" fill="var(--color-text)"></rect><rect x="1" y="11" width="14" height="2" fill="var(--color-text)"></rect></svg></a></div></div></header>
+<div class="container container-main">
+<div class="col-8 col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb">
+<li><a href="../modules.html">@faims-project/faims3</a></li>
+<li><a href="pouchdb_debug.html">pouchdb_debug</a></li></ul>
+<h1>Module pouchdb_debug</h1></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/FAIMS/FAIMS3/blob/c491d364/src/pouchdb_debug.d.ts#L21">src/pouchdb_debug.d.ts:21</a></li></ul></aside></div>
+<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+<div class="tsd-navigation settings">
+<details class="tsd-index-accordion"><summary class="tsd-accordion-summary">
+<h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4.93896 8.531L12 15.591L19.061 8.531L16.939 6.409L12 11.349L7.06098 6.409L4.93896 8.531Z" fill="var(--color-text)"></path></svg> Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility">
+<h4 class="uppercase">Member Visibility</h4><form>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-private" name="private"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Private</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></form></div>
+<div class="tsd-theme-toggle">
+<h4 class="uppercase">Theme</h4><select id="theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<nav class="tsd-navigation primary">
+<details class="tsd-index-accordion" open><summary class="tsd-accordion-summary">
+<h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4.93896 8.531L12 15.591L19.061 8.531L16.939 6.409L12 11.349L7.06098 6.409L4.93896 8.531Z" fill="var(--color-text)"></path></svg> Modules</h3></summary>
+<div class="tsd-accordion-details">
+<ul>
+<li class="current"><a href="../modules.html">@faims-<wbr/>project/faims3</a>
+<ul>
+<li class="tsd-kind-module"><a href="App.html">App</a></li>
+<li class="tsd-kind-module"><a href="buildconfig.html">buildconfig</a></li>
+<li class="tsd-kind-module"><a href="constants_privateRouter.html">constants/private<wbr/>Router</a></li>
+<li class="tsd-kind-module"><a href="constants_routes.html">constants/routes</a></li>
+<li class="tsd-kind-module"><a href="context_actions.html">context/actions</a></li>
+<li class="tsd-kind-module"><a href="context_store.html">context/store</a></li>
+<li class="tsd-kind-module"><a href="data_storage.html">data_<wbr/>storage</a></li>
+<li class="tsd-kind-module"><a href="data_storage_attachments.html">data_<wbr/>storage/attachments</a></li>
+<li class="tsd-kind-module"><a href="data_storage_internals.html">data_<wbr/>storage/internals</a></li>
+<li class="tsd-kind-module"><a href="data_storage_merging.html">data_<wbr/>storage/merging</a></li>
+<li class="tsd-kind-module"><a href="data_storage_queries.html">data_<wbr/>storage/queries</a></li>
+<li class="tsd-kind-module"><a href="data_storage_validation.html">data_<wbr/>storage/validation</a></li>
+<li class="tsd-kind-module"><a href="databaseAccess.html">database<wbr/>Access</a></li>
+<li class="tsd-kind-module"><a href="datamodel.html">datamodel</a></li>
+<li class="tsd-kind-module"><a href="datamodel_test.html">datamodel.test</a></li>
+<li class="tsd-kind-module"><a href="datamodel_autoincrement.html">datamodel/autoincrement</a></li>
+<li class="tsd-kind-module"><a href="datamodel_core.html">datamodel/core</a></li>
+<li class="tsd-kind-module"><a href="datamodel_database.html">datamodel/database</a></li>
+<li class="tsd-kind-module"><a href="datamodel_drafts.html">datamodel/drafts</a></li>
+<li class="tsd-kind-module"><a href="datamodel_fieldpersistent.html">datamodel/fieldpersistent</a></li>
+<li class="tsd-kind-module"><a href="datamodel_geo.html">datamodel/geo</a></li>
+<li class="tsd-kind-module"><a href="datamodel_typesystem.html">datamodel/typesystem</a></li>
+<li class="tsd-kind-module"><a href="datamodel_ui.html">datamodel/ui</a></li>
+<li class="tsd-kind-module"><a href="drafts.html">drafts</a></li>
+<li class="tsd-kind-module"><a href="gui_component_registry.html">gui/component_<wbr/>registry</a></li>
+<li class="tsd-kind-module"><a href="gui_component_registry_ComponentRegistry_test.html">gui/component_<wbr/>registry/<wbr/>Component<wbr/>Registry.test</a></li>
+<li class="tsd-kind-module"><a href="gui_component_registry_bundle_components.html">gui/component_<wbr/>registry/bundle_<wbr/>components</a></li>
+<li class="tsd-kind-module"><a href="gui_component_registry_defaults.html">gui/component_<wbr/>registry/defaults</a></li>
+<li class="tsd-kind-module"><a href="gui_component_registry_internals.html">gui/component_<wbr/>registry/internals</a></li>
+<li class="tsd-kind-module"><a href="gui_components_alert.html">gui/components/alert</a></li>
+<li class="tsd-kind-module"><a href="gui_components_authentication_appbarAuth.html">gui/components/authentication/appbar<wbr/>Auth</a></li>
+<li class="tsd-kind-module"><a href="gui_components_authentication_cluster_card.html">gui/components/authentication/cluster_<wbr/>card</a></li>
+<li class="tsd-kind-module"><a href="gui_components_authentication_login_form.html">gui/components/authentication/login_<wbr/>form</a></li>
+<li class="tsd-kind-module"><a href="gui_components_autoincrement_edit_form.html">gui/components/autoincrement/edit-<wbr/>form</a></li>
+<li class="tsd-kind-module"><a href="gui_components_footer.html">gui/components/footer</a></li>
+<li class="tsd-kind-module"><a href="gui_components_footer_footerEHTML.html">gui/components/footer/footerEHTML</a></li>
+<li class="tsd-kind-module"><a href="gui_components_footer_fullFooter.html">gui/components/footer/full<wbr/>Footer</a></li>
+<li class="tsd-kind-module"><a href="gui_components_footer_react_obfuscate.html">gui/components/footer/react-<wbr/>obfuscate</a></li>
+<li class="tsd-kind-module"><a href="gui_components_footer_slimFooter.html">gui/components/footer/slim<wbr/>Footer</a></li>
+<li class="tsd-kind-module"><a href="gui_components_footer_supportEmail.html">gui/components/footer/support<wbr/>Email</a></li>
+<li class="tsd-kind-module"><a href="gui_components_loadingApp.html">gui/components/loading<wbr/>App</a></li>
+<li class="tsd-kind-module"><a href="gui_components_metadataRenderer.html">gui/components/metadata<wbr/>Renderer</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook.html">gui/components/notebook</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_add_record_by_type.html">gui/components/notebook/add_<wbr/>record_<wbr/>by_<wbr/>type</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_datagrid_toolbar.html">gui/components/notebook/datagrid_<wbr/>toolbar</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_delete.html">gui/components/notebook/delete</a>
+<ul>
+<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="gui_components_notebook_delete.default.html">default</a></li></ul></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_draft_tab_badge.html">gui/components/notebook/draft_<wbr/>tab_<wbr/>badge</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_draft_table.html">gui/components/notebook/draft_<wbr/>table</a>
+<ul>
+<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="gui_components_notebook_draft_table.default.html">default</a></li></ul></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_range_header.html">gui/components/notebook/range_<wbr/>header</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_record_table.html">gui/components/notebook/record_<wbr/>table</a>
+<ul>
+<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="gui_components_notebook_record_table.RecordsBrowseTable.html">Records<wbr/>Browse<wbr/>Table</a></li></ul></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_refresh.html">gui/components/notebook/refresh</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_settings.html">gui/components/notebook/settings</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_settings_activation_switch.html">gui/components/notebook/settings/activation-<wbr/>switch</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_settings_auto_incrementers.html">gui/components/notebook/settings/auto_<wbr/>incrementers</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_settings_metadata_json.html">gui/components/notebook/settings/metadata_<wbr/>json</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_settings_status.html">gui/components/notebook/settings/status</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_settings_sync_switch.html">gui/components/notebook/settings/sync_<wbr/>switch</a></li>
+<li class="tsd-kind-module"><a href="gui_components_notebook_table.html">gui/components/notebook/table</a>
+<ul>
+<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="gui_components_notebook_table.RecordsBrowseTable.html">Records<wbr/>Browse<wbr/>Table</a></li>
+<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="gui_components_notebook_table.RecordsSearchTable.html">Records<wbr/>Search<wbr/>Table</a></li></ul></li>
+<li class="tsd-kind-module"><a href="gui_components_project_CreateProjectCard.html">gui/components/project/<wbr/>Create<wbr/>Project<wbr/>Card</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_FormElement.html">gui/components/project/<wbr/>Form<wbr/>Element</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_RangeHeader.html">gui/components/project/<wbr/>Range<wbr/>Header</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_data_ComponentSetting.html">gui/components/project/data/<wbr/>Component<wbr/>Setting</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_data_componenentSetting.html">gui/components/project/data/componenent<wbr/>Setting</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_data_uiFieldsRegistry.html">gui/components/project/data/ui<wbr/>Fields<wbr/>Registry</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ConfirmdeleteDialog.html">gui/components/project/tabs/<wbr/>Confirmdelete<wbr/>Dialog</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_FieldsListCard.html">gui/components/project/tabs/<wbr/>Fields<wbr/>List<wbr/>Card</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_PSection.html">gui/components/project/tabs/PSection</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_PSectionComponent.html">gui/components/project/tabs/PSection<wbr/>Component</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_PSectionComponents.html">gui/components/project/tabs/PSection<wbr/>Components</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_PSections.html">gui/components/project/tabs/PSections</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_PSettingCard.html">gui/components/project/tabs/PSetting<wbr/>Card</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectBehaviour.html">gui/components/project/tabs/<wbr/>Project<wbr/>Behaviour</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectButton.html">gui/components/project/tabs/<wbr/>Project<wbr/>Button</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectComponent.html">gui/components/project/tabs/<wbr/>Project<wbr/>Component</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectDesign.html">gui/components/project/tabs/<wbr/>Project<wbr/>Design</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectInfo.html">gui/components/project/tabs/<wbr/>Project<wbr/>Info</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectOverview.html">gui/components/project/tabs/<wbr/>Project<wbr/>Overview</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectPreview.html">gui/components/project/tabs/<wbr/>Project<wbr/>Preview</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectSubmit.html">gui/components/project/tabs/<wbr/>Project<wbr/>Submit</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_ProjectUser.html">gui/components/project/tabs/<wbr/>Project<wbr/>User</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_TabPanel.html">gui/components/project/tabs/<wbr/>Tab<wbr/>Panel</a></li>
+<li class="tsd-kind-module"><a href="gui_components_project_tabs_TabTab.html">gui/components/project/tabs/<wbr/>Tab<wbr/>Tab</a></li>
+<li class="tsd-kind-module"><a href="gui_components_qrcode_DisplayQR.html">gui/components/qrcode/<wbr/>DisplayQR</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_Annotation.html">gui/components/record/<wbr/>Annotation</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_RecordData.html">gui/components/record/<wbr/>Record<wbr/>Data</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_UGCReport.html">gui/components/record/UGCReport</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_accordion.html">gui/components/record/accordion</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_branchingLogic.html">gui/components/record/branching<wbr/>Logic</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictDialog.html">gui/components/record/conflict/conflict<wbr/>Dialog</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictLinkBar.html">gui/components/record/conflict/conflict<wbr/>Link<wbr/>Bar</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictbutton.html">gui/components/record/conflict/conflictbutton</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictdroplist.html">gui/components/record/conflict/conflictdroplist</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictfield.html">gui/components/record/conflict/conflictfield</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictform.html">gui/components/record/conflict/conflictform</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictpanel.html">gui/components/record/conflict/conflictpanel</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflictstyle.html">gui/components/record/conflict/conflictstyle</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_conflicttoolbar.html">gui/components/record/conflict/conflicttoolbar</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_conflict_recordTab.html">gui/components/record/conflict/record<wbr/>Tab</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_datagrid_toolbar.html">gui/components/record/datagrid_<wbr/>toolbar</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_fieldPersistentSetting.html">gui/components/record/field<wbr/>Persistent<wbr/>Setting</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_fields.html">gui/components/record/fields</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_form.html">gui/components/record/form</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_formButton.html">gui/components/record/form<wbr/>Button</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_helpers.html">gui/components/record/helpers</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_inherited_data.html">gui/components/record/inherited_<wbr/>data</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_meta.html">gui/components/record/meta</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_read_view.html">gui/components/record/read_<wbr/>view</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_recordStepper.html">gui/components/record/record<wbr/>Stepper</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships.html">gui/components/record/relationships</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_RelatedInformation.html">gui/components/record/relationships/<wbr/>Related<wbr/>Information</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_RelatedInformation_test.html">gui/components/record/relationships/<wbr/>Related<wbr/>Information.test</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_create_links.html">gui/components/record/relationships/create_<wbr/>links</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_create_links_create_record_link.html">gui/components/record/relationships/create_<wbr/>links/create_<wbr/>record_<wbr/>link</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_field_level_links.html">gui/components/record/relationships/field_<wbr/>level_<wbr/>links</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_field_level_links_datagrid.html">gui/components/record/relationships/field_<wbr/>level_<wbr/>links/datagrid</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_parent_form.html">gui/components/record/relationships/parent_<wbr/>form</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_parent_links.html">gui/components/record/relationships/parent_<wbr/>links</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_parent_panel.html">gui/components/record/relationships/parent_<wbr/>panel</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_record_links.html">gui/components/record/relationships/record_<wbr/>links</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_toolbars.html">gui/components/record/relationships/toolbars</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_relationships_types.html">gui/components/record/relationships/types</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_sync_status.html">gui/components/record/sync_<wbr/>status</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_unpublished_warning.html">gui/components/record/unpublished_<wbr/>warning</a></li>
+<li class="tsd-kind-module"><a href="gui_components_record_view.html">gui/components/record/view</a></li>
+<li class="tsd-kind-module"><a href="gui_components_sync.html">gui/components/sync</a></li>
+<li class="tsd-kind-module"><a href="gui_components_sync_connectedStatus.html">gui/components/sync/connected<wbr/>Status</a></li>
+<li class="tsd-kind-module"><a href="gui_components_ui_Dialog.html">gui/components/ui/<wbr/>Dialog</a></li>
+<li class="tsd-kind-module"><a href="gui_components_ui_boxTab.html">gui/components/ui/box<wbr/>Tab</a>
+<ul>
+<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="gui_components_ui_boxTab.default.html">default</a></li></ul></li>
+<li class="tsd-kind-module"><a href="gui_components_ui_breadcrumbs.html">gui/components/ui/breadcrumbs</a></li>
+<li class="tsd-kind-module"><a href="gui_components_ui_circular_loading.html">gui/components/ui/circular_<wbr/>loading</a></li>
+<li class="tsd-kind-module"><a href="gui_components_ui_inProgress.html">gui/components/ui/in<wbr/>Progress</a></li>
+<li class="tsd-kind-module"><a href="gui_components_ui_main_card.html">gui/components/ui/main-<wbr/>card</a>
+<ul>
+<li class="tsd-kind-namespace tsd-parent-kind-module"><a href="gui_components_ui_main_card.default.html">default</a></li></ul></li>
+<li class="tsd-kind-module"><a href="gui_components_ui_record_link.html">gui/components/ui/record_<wbr/>link</a></li>
+<li class="tsd-kind-module"><a href="gui_components_workspace_notebooks.html">gui/components/workspace/notebooks</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_ActionButton.html">gui/fields/<wbr/>Action<wbr/>Button</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_BasicAutoIncrementer.html">gui/fields/<wbr/>Basic<wbr/>Auto<wbr/>Incrementer</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_BasicFieldSettings.html">gui/fields/<wbr/>Basic<wbr/>Field<wbr/>Settings</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_DateTimeNow.html">gui/fields/<wbr/>Date<wbr/>Time<wbr/>Now</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_FileUploader.html">gui/fields/<wbr/>File<wbr/>Uploader</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_LocalDate.html">gui/fields/<wbr/>Local<wbr/>Date</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_MapFormField.html">gui/fields/<wbr/>Map<wbr/>Form<wbr/>Field</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_RandomStyle.html">gui/fields/<wbr/>Random<wbr/>Style</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_RelatedRecordSelector.html">gui/fields/<wbr/>Related<wbr/>Record<wbr/>Selector</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_TakePhoto.html">gui/fields/<wbr/>Take<wbr/>Photo</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_TakePoint.html">gui/fields/<wbr/>Take<wbr/>Point</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_TemplatedStringField.html">gui/fields/<wbr/>Templated<wbr/>String<wbr/>Field</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_checkbox.html">gui/fields/checkbox</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_multiselect.html">gui/fields/multiselect</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_qrcode.html">gui/fields/qrcode</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_qrcode_QRCodeFormField.html">gui/fields/qrcode/QRCode<wbr/>Form<wbr/>Field</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_qrcode_QRCodeFormFieldSettings.html">gui/fields/qrcode/QRCode<wbr/>Form<wbr/>Field<wbr/>Settings</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_radio.html">gui/fields/radio</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_select.html">gui/fields/select</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_selectadvanced.html">gui/fields/selectadvanced</a></li>
+<li class="tsd-kind-module"><a href="gui_fields_utils.html">gui/fields/utils</a>
+<ul>
+<li class="tsd-kind-namespace tsd-parent-kind-module tsd-is-external"><a href="gui_fields_utils.prettyFormat.html">pretty<wbr/>Format</a></li>
+<li class="tsd-kind-namespace tsd-parent-kind-module tsd-is-external"><a href="gui_fields_utils.queries.html">queries</a></li>
+<li class="tsd-kind-namespace tsd-parent-kind-module tsd-is-external"><a href="gui_fields_utils.queryHelpers.html">query<wbr/>Helpers</a></li></ul></li>
+<li class="tsd-kind-module"><a href="gui_layout.html">gui/layout</a></li>
+<li class="tsd-kind-module"><a href="gui_layout_appBar.html">gui/layout/app<wbr/>Bar</a></li>
+<li class="tsd-kind-module"><a href="gui_pages.html">gui/pages</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_404.html">gui/pages/404</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_about_build.html">gui/pages/about-<wbr/>build</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_notebook.html">gui/pages/notebook</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_notebook_list.html">gui/pages/notebook_<wbr/>list</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_project_create.html">gui/pages/project-<wbr/>create</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_record.html">gui/pages/record</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_record_create.html">gui/pages/record-<wbr/>create</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_signin.html">gui/pages/signin</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_signin_return.html">gui/pages/signin-<wbr/>return</a></li>
+<li class="tsd-kind-module"><a href="gui_pages_workspace.html">gui/pages/workspace</a></li>
+<li class="tsd-kind-module"><a href="gui_pouchHook.html">gui/pouch<wbr/>Hook</a></li>
+<li class="tsd-kind-module"><a href="gui_theme.html">gui/theme</a></li>
+<li class="tsd-kind-module"><a href="gui_theme_shadows.html">gui/theme/shadows</a></li>
+<li class="tsd-kind-module"><a href="gui_theme_typography.html">gui/theme/typography</a></li>
+<li class="tsd-kind-module"><a href="index.html">index</a></li>
+<li class="tsd-kind-module"><a href="integration_tests_pouch_to_couch_test.html">integration_<wbr/>tests/pouch_<wbr/>to_<wbr/>couch.test</a></li>
+<li class="tsd-kind-module"><a href="jest___mocks____capacitor_community_barcode_scanner.html">jest/__mocks__/@capacitor-<wbr/>community/barcode-<wbr/>scanner</a></li>
+<li class="tsd-kind-module"><a href="logging.html">logging</a></li>
+<li class="tsd-kind-module"><a href="native_hooks.html">native_<wbr/>hooks</a></li>
+<li class="current selected tsd-kind-module"><a href="pouchdb_debug.html">pouchdb_<wbr/>debug</a></li>
+<li class="tsd-kind-module"><a href="projectMetadata.html">project<wbr/>Metadata</a></li>
+<li class="tsd-kind-module"><a href="projectSpecification.html">project<wbr/>Specification</a></li>
+<li class="tsd-kind-module"><a href="react_app_env.html">react-<wbr/>app-<wbr/>env</a></li>
+<li class="tsd-kind-module"><a href="reportWebVitals.html">report<wbr/>Web<wbr/>Vitals</a></li>
+<li class="tsd-kind-module"><a href="service_worker.html">service-<wbr/>worker</a></li>
+<li class="tsd-kind-module"><a href="serviceWorkerRegistration.html">service<wbr/>Worker<wbr/>Registration</a></li>
+<li class="tsd-kind-module"><a href="setupTests.html">setup<wbr/>Tests</a></li>
+<li class="tsd-kind-module"><a href="sync.html">sync</a></li>
+<li class="tsd-kind-module"><a href="sync_connection.html">sync/connection</a></li>
+<li class="tsd-kind-module"><a href="sync_data_dump.html">sync/data-<wbr/>dump</a></li>
+<li class="tsd-kind-module"><a href="sync_databases.html">sync/databases</a></li>
+<li class="tsd-kind-module"><a href="sync_draft_state.html">sync/draft-<wbr/>state</a></li>
+<li class="tsd-kind-module"><a href="sync_draft_storage.html">sync/draft-<wbr/>storage</a></li>
+<li class="tsd-kind-module"><a href="sync_events.html">sync/events</a></li>
+<li class="tsd-kind-module"><a href="sync_initialize.html">sync/initialize</a></li>
+<li class="tsd-kind-module"><a href="sync_new_project.html">sync/new-<wbr/>project</a></li>
+<li class="tsd-kind-module"><a href="sync_process_initialization.html">sync/process-<wbr/>initialization</a></li>
+<li class="tsd-kind-module"><a href="sync_state.html">sync/state</a></li>
+<li class="tsd-kind-module"><a href="sync_stateful_event_handling.html">sync/stateful-<wbr/>event-<wbr/>handling</a></li>
+<li class="tsd-kind-module"><a href="sync_sync_toggle.html">sync/sync-<wbr/>toggle</a></li>
+<li class="tsd-kind-module"><a href="uiSpecification.html">ui<wbr/>Specification</a></li>
+<li class="tsd-kind-module"><a href="users.html">users</a></li>
+<li class="tsd-kind-module"><a href="utils_custom_hooks.html">utils/custom_<wbr/>hooks</a></li>
+<li class="tsd-kind-module"><a href="utils_downloadShare.html">utils/download<wbr/>Share</a></li>
+<li class="tsd-kind-module"><a href="utils_eqTestSupport.html">utils/eq<wbr/>Test<wbr/>Support</a></li>
+<li class="tsd-kind-module"><a href="utils_fixtures.html">utils/fixtures</a></li>
+<li class="tsd-kind-module"><a href="utils_helpers.html">utils/helpers</a></li>
+<li class="tsd-kind-module"><a href="utils_status.html">utils/status</a></li>
+<li class="tsd-kind-module"><a href="utils_useInterval.html">utils/use<wbr/>Interval</a></li></ul></li></ul></div></details></nav>
+<nav class="tsd-navigation secondary menu-sticky"></nav></div></div>
+<div class="container tsd-generator">
+<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></div>
+<div class="overlay"></div><script src="../assets/main.js"></script></body></html>

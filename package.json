@@ -43,7 +43,7 @@
     "compile": "tsc",
     "fix": "gts fix",
     "prepare": "npm run compile",
-    "doc": "jsdoc -c ./jsdoc.config.json",
+    "doc": "jsdoc -c ./jsdoc.config.json -u tutorials/",
     "docs": "npx typedoc --tsconfig tsconfig.json"
 
   },

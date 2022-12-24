@@ -62,7 +62,7 @@ Further build/install instructions can be found at
 
 The `server_configs` directory contains sourcable scripts for some of the
 development servers, but primarily exporting:
-```!shell
+```
 export REACT_APP_DIRECTORY_HOST=<couchdb_host_name>
 export REACT_APP_DIRECTORY_PORT=<couchdb_port>
 ```
