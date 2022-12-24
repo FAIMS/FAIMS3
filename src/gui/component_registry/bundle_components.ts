@@ -119,9 +119,6 @@ import {QRCodeFormField, QRCodeFieldBuilderSettings} from '../fields/qrcode';
 const bundle = null;
 export default bundle;
 
-// This is temporary, need to work out how to best tie this in as a plugin
-// system
-
 registerComponent(
   'core-material-ui',
   'Input',
@@ -152,7 +149,6 @@ registerComponent(
     TextField
   )
 );
-//this is for testing
 
 registerComponent(
   'formik-material-ui',
