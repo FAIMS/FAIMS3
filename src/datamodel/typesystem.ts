@@ -141,12 +141,12 @@ function isAttachment(a: any): boolean {
 export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
   if (Array.isArray(a) !== Array.isArray(b)) {
     // only one of a or b is an array, so not equal
-    console.debug('Not both arrays', a, b);
+    //console.debug('Not both arrays', a, b);
     return false;
   } else if (Array.isArray(a) && Array.isArray(b)) {
-    console.debug('Checking arrays', a, b);
+    //console.debug('Checking arrays', a, b);
     if (a.length !== b.length) {
-      console.debug('arrays different length', a, b);
+      // console.debug('arrays different length', a, b);
       return false;
     }
     for (let i = 0; i < a.length; i++) {
@@ -157,18 +157,18 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
     }
     return true;
   } else if (isAttachment(a) && isAttachment(b)) {
-    console.debug('Checking equality of blobs', a, b);
+    // console.debug('Checking equality of blobs', a, b);
     if (a.size !== b.size || a.type !== b.type || a.name !== b.name) {
       return false;
     }
-    console.debug('Checking equality of blob contents', a, b);
+    // console.debug('Checking equality of blob contents', a, b);
     return await Promise.all([a.arrayBuffer(), b.arrayBuffer()])
       .then((res: [any, any]) => {
         const buf_a = res[0] as ArrayBuffer;
         const buf_b = res[1] as ArrayBuffer;
         const arr_a = new Uint8Array(buf_a);
         const arr_b = new Uint8Array(buf_b);
-        console.info('Checking array buffers', arr_a, arr_b);
+        // console.info('Checking array buffers', arr_a, arr_b);
         return arr_a.every((element, index) => {
           return element === arr_b[index];
         });
@@ -178,7 +178,7 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
         return false;
       });
   } else {
-    console.debug('Using lodash to check equality', a, b);
+    // console.debug('Using lodash to check equality', a, b);
     return isEqual(a, b);
   }
 }
