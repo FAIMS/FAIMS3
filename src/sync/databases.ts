@@ -342,14 +342,14 @@ export function setLocalConnection<Content extends {}>(
   db_info: LocalDB<Content> & {remote: LocalDBRemote<Content>}
 ) {
   const options = db_info.remote.options;
-  console.debug('Setting local connection:', db_info);
+  console.debug('Setting local connection:', db_info.local.name);
 
   if (db_info.is_sync) {
     if (db_info.remote.connection !== null) {
       // Stop an existing connection
       db_info.remote.connection.cancel();
       db_info.remote.connection = null;
-      console.debug('Removed sync for', db_info);
+      console.debug('Removed sync for', db_info.local.name);
     }
     // Start a new connection
     const push_too = (options as {push?: unknown}).push !== undefined;
@@ -390,7 +390,7 @@ export function setLocalConnection<Content extends {}>(
         },
       });
     } else {
-      console.debug('Pulling only from', db_info, options);
+      console.debug('Pulling only from', db_info.remote.db.name, options);
       connection = PouchDB.replicate(db_info.remote.db, db_info.local, {
         live: true,
         retry: true,
@@ -400,7 +400,7 @@ export function setLocalConnection<Content extends {}>(
     }
 
     db_info.remote.connection = connection;
-    console.debug('Added sync for', db_info);
+    console.debug('Added sync for', db_info.local.name);
   } else if (!db_info.is_sync && db_info.remote.connection !== null) {
     // Stop an existing connection
     db_info.remote.connection.cancel();

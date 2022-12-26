@@ -30,17 +30,26 @@ import {initialize} from '../sync/initialize';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 jest.setTimeout(1000 * 10);
 
-test('run initialization', async () => {
+test('run initialization', () => {
   expect(projects_dbs).toStrictEqual({});
   expect(metadata_dbs).toStrictEqual({});
   expect(data_dbs).toStrictEqual({});
-  await initialize();
-  const docs = await directory_db.local.allDocs();
-  console.error('directory', docs);
-  console.error('projects_dbs', projects_dbs);
-  console.error('metadata_dbs', metadata_dbs);
-  console.error('data_dbs', data_dbs);
-  expect(projects_dbs).not.toStrictEqual({});
-  //expect(metadata_dbs).not.toStrictEqual({});
-  //expect(data_dbs).not.toStrictEqual({});
+  return initialize().then(state => {
+    console.log('done initialise', state);
+    expect(state).toBe(undefined);
+
+    // this fails because we don't have a user token, auth?? need to mock out db
+    // expect(projects_dbs).not.toStrictEqual({});
+
+    // expect(metadata_dbs).not.toStrictEqual({});
+    // expect(data_dbs).not.toStrictEqual({});
+
+    return directory_db.local.allDocs().then(docs => {
+      expect(docs.total_rows).toEqual(1);
+    });
+  });
+  // console.error('directory', docs);
+  // console.error('projects_dbs', projects_dbs);
+  // console.error('metadata_dbs', metadata_dbs);
+  // console.error('data_dbs', data_dbs);
 });

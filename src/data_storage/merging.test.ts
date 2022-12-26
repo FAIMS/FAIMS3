@@ -16,6 +16,7 @@
  * Filename: merging.test.ts
  * Description:
  *   TODO
+ *  @jest-environment jsdom
  */
 
 import PouchDB from 'pouchdb';
