@@ -16,7 +16,6 @@
  * Filename: merging.test.ts
  * Description:
  *   TODO
- *  @jest-environment jsdom
  */
 
 import PouchDB from 'pouchdb';
@@ -66,16 +65,17 @@ jest.mock('../sync/index', () => ({
   getDataDB: mockDataDB,
 }));
 
+beforeEach(async () => {
+  return await cleanDataDBS();
+});
+
+afterAll(async () => {
+  return await cleanDataDBS();
+});
+
 describe('test basic automerge', () => {
   test('single revision', async () => {
     // This tests the case where there is a single revision (i.e. new record)
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -119,13 +119,6 @@ describe('test basic automerge', () => {
   test('no merged needed', async () => {
     // This tests the case where there is a linear history, so there's no need
     // for merging
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -223,13 +216,6 @@ describe('test basic automerge', () => {
     // This tests the case where there is a linear history, but where an old
     // head was not removed (this shouldn't happen, but maybe there's some bad
     // integration code that wrote to couchdb
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -332,13 +318,6 @@ describe('test basic automerge', () => {
   test('same change', async () => {
     // This tests the case where there has been a split, but the same change has
     // been made. This should cause the basic automerge to fail.
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -435,13 +414,6 @@ describe('test basic automerge', () => {
   test('different change', async () => {
     // This tests the case where there has been a split, and different changes
     // have been made. This should cause the basic automerge to fail.
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -539,13 +511,6 @@ describe('test basic automerge', () => {
   test('changes to different avps', async () => {
     // This tests the case where there has been a split, but the changes have
     // been to different avps
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -636,13 +601,6 @@ describe('test basic automerge', () => {
   test('changes to different avps AND different change', async () => {
     // This tests the case where there are three heads, of which two can be
     // merged
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -755,13 +713,6 @@ describe('test basic automerge', () => {
   test('changes to different avps AND different change 4 HEADS', async () => {
     // This tests the case where there are 4 heads, of which three can be merged
     // together
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -1028,13 +979,6 @@ describe('test basic automerge', () => {
   test('merge deleted and non-deleted', async () => {
     // This tests the case where there are 2 heads, and one revision is marked
     // deleted
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
@@ -1124,13 +1068,6 @@ describe('test basic automerge', () => {
   test('merge deleted and deleted', async () => {
     // This tests the case where there are 2 heads, and both revisions are
     // marked deleted
-    try {
-      await cleanDataDBS();
-    } catch (err) {
-      console.error(err);
-      fail('Failed to clean dbs');
-    }
-    expect(projdbs === {});
 
     const project_id = 'test';
     const fulltype = 'test::test';
