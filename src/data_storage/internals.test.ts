@@ -25,7 +25,7 @@ import {ProjectID, HRID_STRING} from '../datamodel/core';
 import {Record} from '../datamodel/ui';
 import {generateFAIMSDataID, upsertFAIMSData} from './index';
 
-import {getHRID, getRevision} from './internals';
+import {getHRID, getRecord, getRevision} from './internals';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
@@ -108,5 +108,8 @@ describe('test internals', () => {
           expect(hrid).toBe(hridValue);
         });
     });
+  });
+  test('test getRecord - undefined', () => {
+    expect(() => getRecord('test', 'unknownId')).toThrow(/no such record/);
   });
 });
