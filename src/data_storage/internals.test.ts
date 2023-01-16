@@ -110,6 +110,8 @@ describe('test internals', () => {
     });
   });
   test('test getRecord - undefined', () => {
-    expect(() => getRecord('test', 'unknownId')).toThrow(/no such record/);
+    expect(() => getRecord('test', 'unknownId')).rejects.toThrow(
+      /no such record/
+    );
   });
 });

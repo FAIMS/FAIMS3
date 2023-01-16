@@ -20,7 +20,7 @@ UI specification is stored in CouchDB and has the following format:
 The `fields` property is an array of field specifications. Each field has an
 identifier unique in the form.  The notebook builder uses the format `newfield + XXX`
 where `XXX` is a random hex string; there is no meaning to this format so could
-be something more intuitive (takepoint1).
+be something more intuitive (`takePoint1`).
 
 ```json
 "newfield5363dcf4": {
