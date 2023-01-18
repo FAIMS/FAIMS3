@@ -33,6 +33,48 @@ export function downloadBlob(b: Blob, filename: string) {
   URL.revokeObjectURL(u);
 }
 
+export async function shareStringAsFileOnApp(
+  s: string,
+  title: string,
+  dialogTitle: string,
+  filename: string
+): Promise<undefined> {
+  const isodate = new Date().toJSON().slice(0, 10);
+  console.debug('Starting writing of file');
+  for (const dir of [
+    Directory.Library,
+    Directory.Cache,
+    Directory.Documents,
+    Directory.Data,
+    Directory.External,
+    Directory.ExternalStorage,
+  ]) {
+    try {
+      console.debug('Trying ', dir);
+      const url = (
+        await Filesystem.writeFile({
+          path: `${isodate}-${dir}-${filename}`,
+          data: s,
+          directory: dir,
+          encoding: Encoding.UTF8,
+          recursive: true,
+        })
+      ).uri;
+      console.debug('Writing of file complete, sharing file', url);
+      await Share.share({
+        title: `${title} ${dir} ${isodate}.json`,
+        text: dialogTitle,
+        url: url,
+        dialogTitle: dialogTitle,
+      });
+      return undefined;
+    } catch (err) {
+      logError(err);
+    }
+  }
+  return undefined;
+}
+
 export async function shareCallbackAsFileOnApp(
   callback: any,
   title: string,
