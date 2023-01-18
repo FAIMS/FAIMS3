@@ -30,7 +30,7 @@ import {
   metadata_dbs,
   data_dbs,
 } from './databases';
-import {downloadBlob, shareCallbackAsFileOnApp} from '../utils/downloadShare';
+import {downloadBlob, shareStringAsFileOnApp} from '../utils/downloadShare';
 
 const PREFIX = 'faims3-';
 
@@ -85,21 +85,10 @@ export async function doDumpShare() {
   for (const [name, db] of Object.entries(data_dbs)) {
     dump['data' + name] = await dumpDatabase(db.local);
   }
-  const stream = jsonStringifyStream(dump);
-  const reader = stream.pipeThrough(new TextEncoderStream()).getReader();
+  const s = JSON.stringify(dump);
 
-  const callback = async (func: any) => {
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) {
-        break;
-      }
-      await func(value);
-    }
-  };
-
-  await shareCallbackAsFileOnApp(
-    callback,
+  await shareStringAsFileOnApp(
+    s,
     'FAIMS Database Dump',
     'Share all the FAIMS data on your device',
     'faims3-dump.json'
