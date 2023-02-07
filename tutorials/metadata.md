@@ -19,6 +19,42 @@ in the metadata:
 * `attachments` - a list of attachments
 * `sections` - a section name?
 
+`projectvalue` seems to be key and is used in `CreateProjectCard` to hold all of the
+metadata while it is being edited. It is initialised there as:
+
+```javascript
+const ini_projectvalue = {
+  project_status: 'draft',
+  accesses: accessgroup,
+  forms: {
+    FORM1: {
+      submitActionFORM1: 'Save and New',
+      annotationFORM1: true,
+      uncertaintyFORM1: false,
+      formaccessinheritFORM1: false,
+      visibleFORM1: true,
+    },
+  },
+  sections: {},
+  access: {
+    accessFORM1: ['admin'],
+  },
+  ispublic: false,
+  isrequest: false,
+  errors: {is_valid: true},
+  meta: {},
+  project_lead: '',
+  lead_institution: '',
+  behaviours: {},
+  filenames: [],
+};
+```
+
+This includes a number of fields not found below so we might need to look at where and how this
+is used to fully understand the metadata usage in FAIMS.  Look in the `FieldSettings` component for 
+significant usage.
+
+
 ## MetadataRenderer
 
 A component that can display a metadata field and it's value.
