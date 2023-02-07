@@ -59,8 +59,8 @@ export default function ProjectUserTab(props: ProjectUserProps) {
   const [initialValuesassign, setinitialValuesassign] = useState(
     setProjectInitialValues(uiSpecassign, 'start-view', {_id: ''})
   );
-  const [tabvalue, settatbValue] = useState(0);
-  const [users, setusesers] = useState(projectvalue.users);
+  const [tabValue, setTabValue] = useState(0);
+  const [users, setUsers] = useState(projectvalue.users);
   const [usersadded, setusersadded] = useState('');
 
   const handleChange = (event: any) => {
@@ -75,7 +75,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     setinitialValuesassign(
       setProjectInitialValues(uiSpecassign, 'start-view', {_id: ''})
     );
-    settatbValue(index);
+    setTabValue(index);
   };
 
   const handlerassignuser = (role: string) => {
@@ -106,7 +106,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     newproject['users'] = checkvalid(newproject['users']);
     newproject['unassigndusers'] = checkvalid(newproject['unassigndusers']);
     setProjectValue({...projectvalue, users: newproject['users']}); //TODO: add to check if duplicated user
-    setusesers(newproject['users']);
+    setUsers(newproject['users']);
   };
 
   const deleteusers = (user: string) => {
@@ -205,7 +205,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
                 type="submit"
                 isSubmitting={false}
                 text="Go To Next"
-                onButtonClick={() => settatbValue(1)}
+                onButtonClick={() => setTabValue(1)}
               />
             ) : (
               ''
@@ -226,15 +226,15 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     <>
       <TabTab
         tabs={['add', 'User Role']}
-        value={tabvalue}
+        value={tabValue}
         handleChange={handleChangetab}
         tab_id="projectuser"
       />
-      <TabPanel value={tabvalue} index={0} tabname="projectuser">
+      <TabPanel value={tabValue} index={0} tabname="projectuser">
         {addtab(uiSpec, addusers, handleChange)}
       </TabPanel>
-      <TabPanel value={tabvalue} index={1} tabname="projectuser">
-        {tabvalue === 1 && projectvalue.users !== undefined ? (
+      <TabPanel value={tabValue} index={1} tabname="projectuser">
+        {tabValue === 1 && projectvalue.users !== undefined ? (
           <Formik
             initialValues={initialValuesassign}
             validateOnMount={true}
