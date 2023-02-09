@@ -411,10 +411,6 @@ export const generatenewfield = (
   return uifield;
 };
 
-export const getdvalue = (value: any) => {
-  return JSON.parse(JSON.stringify(value));
-};
-
 const getvalue = (
   fieldui: ProjectUIFields,
   field: string,

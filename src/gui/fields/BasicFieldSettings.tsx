@@ -6,18 +6,15 @@ import {
 } from '../../datamodel/ui';
 import {ProjectUIFields} from '../../datamodel/typesystem';
 import {Typography} from '@mui/material';
+import {cloneDeep} from 'lodash';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const getdvalue = (value: any) => {
-  return JSON.parse(JSON.stringify(value));
-};
-
 export const getDefaultuiSetting = () => {
-  return getdvalue(DefaultuiSetting) as ProjectUIModel;
+  return cloneDeep(DefaultuiSetting) as ProjectUIModel;
 };
 
 export const getDefaultuiSpec = () => {
-  return getdvalue(DefaultuiSpec);
+  return cloneDeep(DefaultuiSpec);
 };
 
 const DefaultuiSpec = {
