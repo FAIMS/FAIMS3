@@ -44,7 +44,9 @@
     "compile": "tsc",
     "fix": "gts fix",
     "prepare": "npm run compile",
-    "doc": "jsdoc -c ./jsdoc.config.json -u tutorials/"
+    "doc": "jsdoc -c ./jsdoc.config.json -u tutorials/",
+    "depcruise": "depcruise -v -T dot src | dot -T svg | depcruise-wrap-stream-in-html > dependency-graph.html",
+    "depcruise-check": "depcruise --config .dependency-cruiser.js src"
   },
   "dependencies": {
     "@awesome-cordova-plugins/core": "5.44.0",
@@ -136,6 +138,7 @@
     "@types/react-router-hash-link": "^2.4.5",
     "@types/yup": "0.29.14",
     "better-docs": "^2.7.2",
+    "dependency-cruiser": "^12.7.1",
     "fast-check": "2.25.0",
     "gts": "3.1.0",
     "jest": "26.6.0",
