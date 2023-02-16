@@ -52,6 +52,7 @@ import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
+import Link from '@mui/material/Link';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -118,6 +119,32 @@ export default function AboutBuild() {
           alignItems="left"
           spacing={2}
         >
+          <Grid item md={4} sm={6} xs={12}>
+            <Typography variant={'h5'} gutterBottom>
+              Exporting your data?
+            </Typography>
+
+            <Typography variant={'body2'}>
+              Here is a link for a laptop or desktop to visit a page listing our
+              exporters. You can choose to export data from individual notebooks
+              using tools on this page.
+            </Typography>
+          </Grid>
+          <Grid item md={8} sm={6} xs={12}>
+            <Typography variant={'h6'}>
+              <br />
+              <Link
+                href="https://faims.edu.au/export/"
+                target={'_blank'}
+                rel="noreferrer"
+              >
+                Visit exporter list (external to app)
+              </Link>
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <Divider />
+          </Grid>
           <Grid item md={4} sm={6} xs={12}>
             <Typography variant={'h5'} gutterBottom>
               Having issues?
