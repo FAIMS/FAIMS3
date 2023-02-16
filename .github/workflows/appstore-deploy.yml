@@ -1,6 +1,6 @@
 ---
 # Nightly compile for e2e testing
-name: Nightly iOS build
+name: Deploy to Apple App Store on Demo Track, Manual
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the main branch
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
