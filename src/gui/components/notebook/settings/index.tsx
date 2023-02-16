@@ -85,9 +85,13 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
       const is_admin = await isClusterAdmin(split_id.listing_id);
 
       let can_edit_notebook_on_server = false;
-      const can_edit_notebook_on_device = false; // BBS 20230215 workaround because edit notebook isn't appearing at all.
-      for (const role in roles) { // TODO FIX This seems broken, also doesn't account for 'cluster-admin'
-        if ((role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) || is_admin) {
+      const can_edit_notebook_on_device = true; // BBS 20230215 workaround because edit notebook isn't appearing at all.
+      for (const role in roles) {
+        // TODO FIX This seems broken, also doesn't account for 'cluster-admin'
+        if (
+          (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) ||
+          is_admin
+        ) {
           can_edit_notebook_on_server = true;
         }
       }
