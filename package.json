@@ -70,7 +70,7 @@
     "@ionic/pwa-elements": "3.0.2",
     "@mui/icons-material": "5.8.4",
     "@mui/lab": "5.0.0-alpha.88",
-    "@mui/material": "5.8.6",
+    "@mui/material": "5.11.10",
     "@mui/styles": "5.8.6",
     "@mui/x-data-grid": "5.12.3",
     "@sentry/react": "7.11.1",
