@@ -1,0 +1,7140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> Global</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="RecordDraftState.html">RecordDraftState</a></li></ul><h3>Interfaces</h3><ul><li><a href="ProjectObject.html">ProjectObject</a></li><li><a href="ProjectRevisionListing.html">ProjectRevisionListing</a></li><li><a href="SplitRecordID.html">SplitRecordID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ConnectionInfo_create_pouch">ConnectionInfo_create_pouch</a></li><li><a href="global.html#LoginButton">LoginButton</a></li><li><a href="global.html#THROTTLE_TIME">THROTTLE_TIME</a></li><li><a href="global.html#active_db">active_db</a></li><li><a href="global.html#all_meta_synced">all_meta_synced</a></li><li><a href="global.html#all_projects_updated">all_projects_updated</a></li><li><a href="global.html#constantArgs">constantArgs</a></li><li><a href="global.html#constantArgsShared">constantArgsShared</a></li><li><a href="global.html#constantArgsSplit">constantArgsSplit</a></li><li><a href="global.html#createdListings">createdListings</a></li><li><a href="global.html#createdProjects">createdProjects</a></li><li><a href="global.html#data_dbs">data_dbs</a></li><li><a href="global.html#default_changes_opts">default_changes_opts</a></li><li><a href="global.html#deleteStagedData">deleteStagedData</a></li><li><a href="global.html#directory_db">directory_db</a></li><li><a href="global.html#ensure_local_db">ensure_local_db</a></li><li><a href="global.html#ensure_synced_db">ensure_synced_db</a></li><li><a href="global.html#firstDefinedFromList">firstDefinedFromList</a></li><li><a href="global.html#getDataDB">getDataDB</a></li><li><a href="global.html#getProjectDB">getProjectDB</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#initialize_state">initialize_state</a></li><li><a href="global.html#listDraftMetadata">listDraftMetadata</a></li><li><a href="global.html#listDraftsEncoded">listDraftsEncoded</a></li><li><a href="global.html#listRecordMetadata">listRecordMetadata</a></li><li><a href="global.html#listenDataDB">listenDataDB</a></li><li><a href="global.html#listenProject">listenProject</a></li><li><a href="global.html#listenProjectDB">listenProjectDB</a></li><li><a href="global.html#listing_projects_synced">listing_projects_synced</a></li><li><a href="global.html#listings_updated">listings_updated</a></li><li><a href="global.html#local_auth_db">local_auth_db</a></li><li><a href="global.html#local_state_db">local_state_db</a></li><li><a href="global.html#metadata_dbs">metadata_dbs</a></li><li><a href="global.html#newStagedData">newStagedData</a></li><li><a href="global.html#process_listing">process_listing</a></li><li><a href="global.html#process_project">process_project</a></li><li><a href="global.html#projects_dbs">projects_dbs</a></li><li><a href="global.html#projects_meta_synced">projects_meta_synced</a></li><li><a href="global.html#reprocess_listing">reprocess_listing</a></li><li><a href="global.html#resolve_record_id">resolve_record_id</a></li><li><a href="global.html#setLocalConnection">setLocalConnection</a></li><li><a href="global.html#setStagedData">setStagedData</a></li><li><a href="global.html#update_listing">update_listing</a></li><li><a href="global.html#update_project">update_project</a></li><li><a href="global.html#useEventedPromise">useEventedPromise</a></li><li><a href="global.html#waitForStateOnce">waitForStateOnce</a></li></ul></div><div class="category"><h2>Database</h2><h3>Modules</h3><ul><li><a href="module-data_storage.html">data_storage</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p></p>
+                    <h1>Global</h1>
+                </header>
+                
+
+
+
+
+<section>
+
+<header>
+    
+        <h2></h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+    
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <div class='vertical-section'>
+            <h1>Members</h1>
+            <div class="members">
+            
+                <div class="member">
+
+<h4 class="name" id="THROTTLE_TIME">
+    <a class="href-link" href="#THROTTLE_TIME">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        THROTTLE_TIME
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Configure local pouchdb settings; note that this applies to <em>ALL</em> local
+databases (remote ones are handled separately), so don't add db-specific
+logic to this</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_connection.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_connection.ts.html">sync/connection.ts</a>, <a href="sync_connection.ts.html#line34">line 34</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="active_db">
+    <a class="href-link" href="#active_db">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        active_db
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Active: A local (NOT synced) list of:
+{_id, username, password, project_id, listing_id}
+For each project the current device is part of (so this is keyed by listing id + project id),</p>
+<ul>
+<li>listing_id: A couchdb instance object's id (from &quot;directory&quot; db)</li>
+<li>project_id: A project id (from the project_db in the couchdb instance object.)</li>
+<li>authentication mechanism used (id of a doc in the auth_db)</li>
+</ul>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line69">line 69</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="all_meta_synced">
+    <a class="href-link" href="#all_meta_synced">#</a>
+    
+    <span class="code-name">
+        all_meta_synced
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>True when all the metadata DBs have been created &amp; have either:</p>
+<ul>
+<li>Pulled all changes from the remote, if this is the first connection OR</li>
+<li>Don't have a remote to pull from
+(Either case - the metadata DB is not expecting a lot of changes)</li>
+</ul>
+<p>This essentially accumulates meta_sync_state events, combined with
+the all_projects_updated flag. So only when we know what meta DBs there are,
+and they are all done syncing.</p>
+<p>Created/Modified by register_sync_state in state.ts</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_state.ts.html">sync/state.ts</a>, <a href="sync_state.ts.html#line66">line 66</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="all_projects_updated">
+    <a class="href-link" href="#all_projects_updated">#</a>
+    
+    <span class="code-name">
+        all_projects_updated
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>True when the listings_sync_state is true, AND all projects that are to be
+in createdProjects have been created. When this is true, createdProjects
+is not expected to change in a major way. (project_update events may
+still occur, but the purpose of this is so that we can exclude the possibility
+that a project hasn't synced yet when trying to wait for a project.)</p>
+<p>This essentially accumulates all the projects_sync_state events, combined with
+the listings_sync_state. So only when they are all done syncing it is true.</p>
+<p>Created/Modified by register_sync_state in state.ts</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_state.ts.html">sync/state.ts</a>, <a href="sync_state.ts.html#line46">line 46</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="createdListings">
+    <a class="href-link" href="#createdListings">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        createdListings
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>This is appended to whenever a listing has its
+projects/people dbs come into existence. (Each individual project
+isn't guaranteed to be in the createdProjects object. Use the
+data_sync_state or project_update events to listen for such changes)</p>
+<p>This is the way to get ListingsObjects</p>
+<p>Created/Modified by update_listing in process-initialization.ts</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_state.ts.html">sync/state.ts</a>, <a href="sync_state.ts.html#line25">line 25</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="createdProjects">
+    <a class="href-link" href="#createdProjects">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        createdProjects
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>This is appended to whenever a project has its
+meta &amp; data local dbs come into existence.</p>
+<p>This is used by getProjectDB/getDataDB in index.ts, as the way to get
+ProjectObjects</p>
+<p>Created/Modified by update_project in process-initialization.ts</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_state.ts.html">sync/state.ts</a>, <a href="sync_state.ts.html#line14">line 14</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="data_dbs">
+    <a class="href-link" href="#data_dbs">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        data_dbs
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Per-[active]-project project data:
+Contain in these databases (indexed by the active_db id's)
+is project data.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line87">line 87</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="default_changes_opts">
+    <a class="href-link" href="#default_changes_opts">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        default_changes_opts
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Each database has a changes stream.
+This is the template for which the changes stream is listened to
+Some databases might use options added to this like:
+{...default_changes_opts, filter:'abc'}
+If they want to, for example, restrict to only listings in the active DB.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line42">line 42</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="directory_db">
+    <a class="href-link" href="#directory_db">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        directory_db
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Directory: All (public) Faims instances</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line54">line 54</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="initialize_state">
+    <a class="href-link" href="#initialize_state">#</a>
+    
+    <span class="code-name">
+        initialize_state
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>To prevent initialize() being called multiple times
+This is false when the app starts,
+True when initialize() has finished, and
+the initialize promise when it's still in the process of initializing</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_initialize.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_initialize.ts.html">sync/initialize.ts</a>, <a href="sync_initialize.ts.html#line33">line 33</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="listing_projects_synced">
+    <a class="href-link" href="#listing_projects_synced">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        listing_projects_synced
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>For each listing:
+When createdListings is updated (listing_update), this is set to false
+Then when the projects db stops syncing (projects_sync_state(false)),
+this is set to true</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_state.ts.html">sync/state.ts</a>, <a href="sync_state.ts.html#line53">line 53</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="listings_updated">
+    <a class="href-link" href="#listings_updated">#</a>
+    
+    <span class="code-name">
+        listings_updated
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Value:  all listings are reasonably 'known' (i.e. the directory has
+errored/paused after the initial sync pull at app start, OR we're using dummy
+data)</p>
+<p>Created/Modified by register_sync_state in state.ts</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_state.ts.html">sync/state.ts</a>, <a href="sync_state.ts.html#line33">line 33</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="local_auth_db">
+    <a class="href-link" href="#local_auth_db">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        local_auth_db
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Login tokens for each FAIMS Cluster that needs it</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line77">line 77</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="local_state_db">
+    <a class="href-link" href="#local_state_db">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        local_state_db
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>This contains any local app state we want to keep across sessions</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line73">line 73</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="metadata_dbs">
+    <a class="href-link" href="#metadata_dbs">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        metadata_dbs
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Synced from the project meta-database for each active project,
+This has the metadata describing a database. Project Schemas,
+GUI Models, and a People database.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line93">line 93</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="projects_dbs">
+    <a class="href-link" href="#projects_dbs">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        projects_dbs
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Each listing has a Projects database and Users DBs</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line81">line 81</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="projects_meta_synced">
+    <a class="href-link" href="#projects_meta_synced">#</a>
+    
+        
+            <span class='tag'>constant</span>
+        
+    
+    <span class="code-name">
+        projects_meta_synced
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Similar to listing_projects_synced  but is only in the map when the
+project_update event is emitted, and only true when meta is synced
+And it's mapping from ProjectID instead of listing ID</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_state.ts.html">sync/state.ts</a>, <a href="sync_state.ts.html#line73">line 73</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+        <div class='vertical-section'>
+            <h1>Methods</h1>
+            <div class="members">
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="ConnectionInfo_create_pouch">
+        <a class="href-link" href="#ConnectionInfo_create_pouch">#</a>
+        
+        <span class="code-name">
+            
+                ConnectionInfo_create_pouch<span class="signature">(connection_info)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Creates a local PouchDB.Database used to access a remote Couch/Pouch instance</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>connection_info</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Network address/database info to use to initialize the connection</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_connection.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_connection.ts.html">sync/connection.ts</a>, <a href="sync_connection.ts.html#line84">line 84</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>A new PouchDB.Database, interfacing to the remote Couch/Pouch instance</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="LoginButton">
+        <a class="href-link" href="#LoginButton">#</a>
+        
+        <span class="code-name">
+            
+                LoginButton<span class="signature">(props)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>The component that goes inside a card for a FAIMS Cluster</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>props</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>ID of this cluster + any info if it's already logged in</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="gui_components_authentication_login_form.tsx.html" class="button">View Source</a>
+            <span>
+                <a href="gui_components_authentication_login_form.tsx.html">gui/components/authentication/login_form.tsx</a>, <a href="gui_components_authentication_login_form.tsx.html#line18">line 18</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="constantArgs">
+        <a class="href-link" href="#constantArgs">#</a>
+        
+        <span class="code-name">
+            
+                constantArgs<span class="signature">(attacher, args)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>attacher</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>prototype of a common listen function that takes a set of A
+arguments, then the OK &amp; error callbacks. See databaseAccess.tsx for e.g.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>args</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Arguments to pass to the trigger_callback</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="gui_pouchHook.ts.html" class="button">View Source</a>
+            <span>
+                <a href="gui_pouchHook.ts.html">gui/pouchHook.ts</a>, <a href="gui_pouchHook.ts.html#line119">line 119</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>trigger function</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="constantArgsShared">
+        <a class="href-link" href="#constantArgsShared">#</a>
+        
+        <span class="code-name">
+            
+                constantArgsShared<span class="signature">(attacher, args)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>attacher</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>prototype of a common listen function that takes a set of A
+arguments, then the OK &amp; error callbacks. See databaseAccess.tsx for e.g.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>args</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Arguments to pass as the first arguments to attacher &amp;
+(More importantly) to the trigger_callback</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="gui_pouchHook.ts.html" class="button">View Source</a>
+            <span>
+                <a href="gui_pouchHook.ts.html">gui/pouchHook.ts</a>, <a href="gui_pouchHook.ts.html#line130">line 130</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>trigger function</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="constantArgsSplit">
+        <a class="href-link" href="#constantArgsSplit">#</a>
+        
+        <span class="code-name">
+            
+                constantArgsSplit<span class="signature">(attacher, attach_args, trigger_args)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>attacher</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>prototype of a common listen function that takes a set of A
+arguments, then the OK &amp; error callbacks. See databaseAccess.tsx for
+examples.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>attach_args</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Arguments to pass as the first arguments to attacher but
+NOT the callback.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>trigger_args</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Arguments to pass as the first arguments to the
+trigger_callback, but NOT the attacher.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="gui_pouchHook.ts.html" class="button">View Source</a>
+            <span>
+                <a href="gui_pouchHook.ts.html">gui/pouchHook.ts</a>, <a href="gui_pouchHook.ts.html#line144">line 144</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>the trigger function</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="deleteStagedData">
+        <a class="href-link" href="#deleteStagedData">#</a>
+        
+        <span class="code-name">
+            
+                deleteStagedData<span class="signature">(draft_id, revision_cache)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>draft_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Identifies the draft to delete</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>revision_cache</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>To avoid having to look it up, if you know the revision
+id of the draft, pass it through here.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-storage.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-storage.ts.html">sync/draft-storage.ts</a>, <a href="sync_draft-storage.ts.html#line145">line 145</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="ensure_local_db">
+        <a class="href-link" href="#ensure_local_db">#</a>
+        
+        <span class="code-name">
+            
+                ensure_local_db<span class="signature">(prefix, local_db_id, global_dbs)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>prefix</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Name to use to run new PouchDB(prefix + POUCH_SEPARATOR + id), objects of the same type have the same prefix</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>local_db_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>id is per-object of type, to discriminate between them. i.e. a project ID</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>global_dbs</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>projects_db</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line149">line 149</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Flag if newly created =true, already existing=false &amp; The local DB</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="ensure_synced_db">
+        <a class="href-link" href="#ensure_synced_db">#</a>
+        
+        <span class="code-name">
+            
+                ensure_synced_db<span class="signature">(local_db_id, global_dbs, connection_info, options)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>local_db_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>id is per-object of type, to discriminate between them. i.e. a project ID</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>global_dbs</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>projects_db</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>connection_info</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Info to use to connect to remote</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>options</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>PouchDB options. Defaults to live: true, retry: true.
+if options.sync is defined, then this turns into ensuring the DB
+is pushing to the remote as well as pulling.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line177">line 177</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Flag if newly created =true, already existing=false &amp; The local DB &amp; remote</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="firstDefinedFromList">
+        <a class="href-link" href="#firstDefinedFromList">#</a>
+        
+        <span class="code-name">
+            
+                firstDefinedFromList<span class="signature">(list)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Given a list of values, returns the first from the list that isn't null/undefined
+This is to be used instead of list[0] || list[1] || list[2]
+in the case that list can contain the number 0</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>list</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>List of undefined, nulls, or anything else</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="gui_components_record_helpers.ts.html" class="button">View Source</a>
+            <span>
+                <a href="gui_components_record_helpers.ts.html">gui/components/record/helpers.ts</a>, <a href="gui_components_record_helpers.ts.html#line29">line 29</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Always returns null or a defined value, this never returns undefined.</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="getDataDB">
+        <a class="href-link" href="#getDataDB">#</a>
+        
+        <span class="code-name">
+            
+                getDataDB<span class="signature">(active_id)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Returns the current Data PouchDB of a project. This waits for the initial
+sync to finish enough to know if the project exists or not before returning
+(Hence, use this instead of createdProjects)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>active_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Full Project ID to get Pouch data DB of.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_index.ts.html">sync/index.ts</a>, <a href="sync_index.ts.html#line314">line 314</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Pouch Data DB (May become invalid at some point in the future,
+If, for example, the project changes remote DB.
+Make sure to use listenProject to avoid this)</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="getProjectDB">
+        <a class="href-link" href="#getProjectDB">#</a>
+        
+        <span class="code-name">
+            
+                getProjectDB<span class="signature">(active_id)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Returns the current Meta PouchDB of a project. This waits for the initial
+sync to finish enough to know if the project exists or not before returning
+(Hence, use this instead of createdProjects)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>active_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Full Project ID to get Pouch data DB of.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_index.ts.html">sync/index.ts</a>, <a href="sync_index.ts.html#line373">line 373</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Pouch Data DB (May become invalid at some point in the future,
+If, for example, the project changes remote DB.
+Make sure to use listenProject to avoid this)</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="initialize">
+        <a class="href-link" href="#initialize">#</a>
+        
+        <span class="code-name">
+            
+                initialize<span class="signature">()</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_initialize.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_initialize.ts.html">sync/initialize.ts</a>, <a href="sync_initialize.ts.html#line38">line 38</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Promise that resolve when all project PouchDB objects have been created and metadata DBs synced</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="listDraftMetadata">
+        <a class="href-link" href="#listDraftMetadata">#</a>
+        
+        <span class="code-name">
+            
+                listDraftMetadata<span class="signature">(project_id)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Returns a list of not deleted records</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project ID to get list of draft for</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-storage.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-storage.ts.html">sync/draft-storage.ts</a>, <a href="sync_draft-storage.ts.html#line186">line 186</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>key: record id, value: record (NOT NULL)</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="listDraftsEncoded">
+        <a class="href-link" href="#listDraftsEncoded">#</a>
+        
+        <span class="code-name">
+            
+                listDraftsEncoded<span class="signature">(project_id, filter)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project ID (fully qualified) to get the list of drafts for</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>filter</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Determines what subset (or all) of the drafts to get.
+This filters by what type of draft.
+If a given draft is an update to an existing record that has
+been synced, it will show when listing by 'all' or 'updates'.
+Otherwise, it will show when listing by 'all' or 'created'.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-storage.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-storage.ts.html">sync/draft-storage.ts</a>, <a href="sync_draft-storage.ts.html#line165">line 165</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>List of drafts filtered.</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="listRecordMetadata">
+        <a class="href-link" href="#listRecordMetadata">#</a>
+        
+        <span class="code-name">
+            
+                listRecordMetadata<span class="signature">(project_id)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Returns a list of not deleted records</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project ID to get list of record for</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="data_storage_internals.ts.html" class="button">View Source</a>
+            <span>
+                <a href="data_storage_internals.ts.html">data_storage/internals.ts</a>, <a href="data_storage_internals.ts.html#line173">line 173</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>key: record id, value: record (NOT NULL)</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="listenDataDB">
+        <a class="href-link" href="#listenDataDB">#</a>
+        
+        <span class="code-name">
+            
+                listenDataDB<span class="signature">(active_id, change_opts, change_listener, error_listener)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Allows you to listen for changes from a Project's Data DB.
+This is a working alternative to getDataDB.changes
+(as getDataDB.changes that may detach after updates to the owning listing
+or the owning active DB, or if the sync is toggled on/off)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>active_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project ID to listen on the DB for.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>change_opts</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>change_listener</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>error_listener</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_index.ts.html">sync/index.ts</a>, <a href="sync_index.ts.html#line337">line 337</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Detach function: call this to stop all changes</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="listenProject">
+        <a class="href-link" href="#listenProject">#</a>
+        
+        <span class="code-name">
+            
+                listenProject<span class="signature">(project_id, listener, error_listener)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Allows you to listen for changes from a Project's Data/Meta DBs or other
+project info like if it's to be synced or not (from createdProjects)
+This is a working alternative to getDataDB.changes
+(as getDataDB.changes that may detach after updates to the owning listing
+or the owning active DB, or if the sync is toggled on/off)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Full Project ID to listen on the DB for.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>listener</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Called whenever the project you're listening on is available
+<strong>Not necessarily has the data or metadata fully synced</strong>
+But the data &amp; metadata dbs will be in data_dbs, meta_dbs,
+and createdProjects.
+* meta_changed and data_changed events flow from
+the 'project_update' event in events.ts, and signal if the
+PouchDB databases have been recreated (and might need to
+be re-listened on)
+* error is available for the listener to call to asynchronously
+throw errors up to the error_listener. Use this instead of
+what you give into error_listener to ensure cleanup is done.
+* returns a destructor: This destructor is called when either
+* listenProject's destructor is called
+* Errors occur that mean we stop listening
+* The project info is <em>updated</em> (replaced will be true)
+* The project info is dropped (e.g. the user left)
+* Returning <em>'keep'</em> changes behaviour: If this is a project info update,
+the destructor previously returned or kept from listener isn't run,
+and in fact, sticks around until next listener() (not returning keep)
+or other detach/error scenario.
+* Returning <em>'noop'</em> returns a constructor doing nothing
+(This is not 'void' )</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>error_listener</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Called once at the first error condition.
+* All projects are synced, but project_id isn't a known project
+* errors in listener()
+* errors thrown asynchronously form listener
+* errors in the destructor from listener</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_index.ts.html">sync/index.ts</a>, <a href="sync_index.ts.html#line129">line 129</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Detach function: call this to stop all changes</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="listenProjectDB">
+        <a class="href-link" href="#listenProjectDB">#</a>
+        
+        <span class="code-name">
+            
+                listenProjectDB<span class="signature">(active_id, change_opts, change_listener, error_listener)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Allows you to listen for changes from a Project's Meta DB.
+This is a working alternative to getProjectDB.changes
+(as getProjectDB.changes that may detach after updates to the owning listing
+or the owning active DB, or if the sync is toggled on/off)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>active_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project ID to listen on the DB for.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>change_opts</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>change_listener</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>error_listener</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_index.ts.html">sync/index.ts</a>, <a href="sync_index.ts.html#line396">line 396</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Detach function: call this to stop all changes</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="newStagedData">
+        <a class="href-link" href="#newStagedData">#</a>
+        
+        <span class="code-name">
+            
+                newStagedData<span class="signature">(active_id, existing, type)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>active_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>ID of the project that this draft is for</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>existing</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>If this draft is a draft of edits to an existing record,
+these IDs identify the existing record</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>type</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>(Less useful if existing is set, as this can be fetched from
+other pouch databases if existing data is set) The FAIMS type
+of this draft document. Doesn't change when draft is updated.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-storage.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-storage.ts.html">sync/draft-storage.ts</a>, <a href="sync_draft-storage.ts.html#line62">line 62</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>ID of the newly created draft. Use through URL routes to eventually
+call [get|set]stagedData with</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="process_listing">
+        <a class="href-link" href="#process_listing">#</a>
+        
+        <span class="code-name">
+            
+                process_listing<span class="signature">(delete, listing_id_or_listing)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Deletes or updates a listing: If the listing is newly synced (needs a local
+PouchDB to be created) or has been removed</p>
+<p>Guaranteed to emit the listing_updated event before first suspend point</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>delete</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Boolean: true to delete, false if to not be deleted</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>listing_id_or_listing</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Listing to delete/undelete</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_process-initialization.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_process-initialization.ts.html">sync/process-initialization.ts</a>, <a href="sync_process-initialization.ts.html#line196">line 196</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="process_project">
+        <a class="href-link" href="#process_project">#</a>
+        
+        <span class="code-name">
+            
+                process_project<span class="signature">(delete, project_object)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Deletes or updates a project: If the project is newly synced (needs the local
+PouchDB data &amp; metadata to be created) or has been removed</p>
+<p>Guaranteed to emit the project_updated event before first suspend point</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>delete</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Boolean: true to delete, false if to not be deleted</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_object</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project to delete/undelete</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_process-initialization.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_process-initialization.ts.html">sync/process-initialization.ts</a>, <a href="sync_process-initialization.ts.html#line434">line 434</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="reprocess_listing">
+        <a class="href-link" href="#reprocess_listing">#</a>
+        
+        <span class="code-name">
+            
+                reprocess_listing<span class="signature">(listing_id)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Reprocess a listing, usually causing the connections to be recreated.</p>
+<p>This purpose of this is to be a hook when a user on the devices changes
+something that would require the reprocessing of the listing (rather than a
+change in couchdb).</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>listing_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>string: the id of the listing to reprocess</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_process-initialization.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_process-initialization.ts.html">sync/process-initialization.ts</a>, <a href="sync_process-initialization.ts.html#line175">line 175</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="resolve_record_id">
+        <a class="href-link" href="#resolve_record_id">#</a>
+        
+        <span class="code-name">
+            
+                resolve_record_id<span class="signature">(split_id)</span><span class="type-signature"> &rarr; {<a href="global.html#FullyResolvedRecordID">FullyResolvedRecordID</a>}</span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Generate a {FullyResolvedRecordID} from a {SplitRecordID}</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>split_id</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="SplitRecordID.html">SplitRecordID</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>the Split record identifier</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="datamodel_core.ts.html" class="button">View Source</a>
+            <span>
+                <a href="datamodel_core.ts.html">datamodel/core.ts</a>, <a href="datamodel_core.ts.html#line25">line 25</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type"><a href="global.html#FullyResolvedRecordID">FullyResolvedRecordID</a></code>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="setLocalConnection">
+        <a class="href-link" href="#setLocalConnection">#</a>
+        
+        <span class="code-name">
+            
+                setLocalConnection<span class="signature">(db_info)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>If the given remote DB is not synced, starts syncing, and visa versa.
+db_info.remote.{connection, handler} are modified based on what's in
+db_info.is_sync, db_info.remote.info, db_info.remote.create_handler.</p>
+<p>This does NOT ensure that the existing connection info (URL, port, proto)
+matches anything. that's left to ensure_synced_db</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>db_info</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>info to use to create a DB connection:
+Remote connection info, is_sync, the local DB to sync with,</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_databases.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_databases.ts.html">sync/databases.ts</a>, <a href="sync_databases.ts.html#line222">line 222</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="setStagedData">
+        <a class="href-link" href="#setStagedData">#</a>
+        
+        <span class="code-name">
+            
+                setStagedData<span class="signature">(draft_id, new_data)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>draft_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>This is from the routed URL parameter, which is redirected
+to from the list of drafts or the newStagedData. The ID
+that identifies the draft you want to update.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>new_data</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Data to update/insert</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-storage.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-storage.ts.html">sync/draft-storage.ts</a>, <a href="sync_draft-storage.ts.html#line85">line 85</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="update_listing">
+        <a class="href-link" href="#update_listing">#</a>
+        
+        <span class="code-name">
+            
+                update_listing<span class="signature">(listing_object)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Creates or updates the local Databases for a listing, using the info
+The databases might already exist in browser local storage, but this
+creates the corresponding PouchDBs.</p>
+<p>Sync start/end events are emitted.</p>
+<p>Guaranteed to emit the listing_updated event before first suspend point</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>listing_object</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Listing to update/create local DB</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_process-initialization.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_process-initialization.ts.html">sync/process-initialization.ts</a>, <a href="sync_process-initialization.ts.html#line229">line 229</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="update_project">
+        <a class="href-link" href="#update_project">#</a>
+        
+        <span class="code-name">
+            
+                update_project<span class="signature">(project_object)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Creates or updates the local DBs for a project, using the info
+The databases might already exist in browser local storage, but this
+creates the corresponding PouchDBs.</p>
+<p>Sync start/end events are emitted.</p>
+<p>Guaranteed to emit the project_updated event before first suspend point</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_object</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project to update/create local DB</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_process-initialization.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_process-initialization.ts.html">sync/process-initialization.ts</a>, <a href="sync_process-initialization.ts.html#line469">line 469</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="useEventedPromise">
+        <a class="href-link" href="#useEventedPromise">#</a>
+        
+        <span class="code-name">
+            
+                useEventedPromise<span class="signature">(startGetting, startListening, dependencies, stopAtError, args)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>React hook abtracting the use of an EventEmitter combined with a Promise</p>
+<p>Allows you to wait for events to occur, then when they do occur, further
+wait for a Promise to resolve before give you a final value.
+In the intermediate state, you can render something different.</p>
+<p>This can also (because of PouchDB Change events) cause the promise to re-run
+whenever an EventEmitter emits an event. (Attaching to this event emitter
+is left to the user. The user gets a callback to attach)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>startGetting</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Main promise that gets the value you want</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>startListening</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Gives you a callback that you attach to an EventEmitter
+Also, if the user needs to detach this, this should return
+A 'destructor' to detach it (or if listener_dependencies changes)</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>dependencies</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>When values in this list change, the promise re-runs,
+and startListening re-runs, (The stored output of previous call
+to startListening, i.e. last destructor, is run as well)
+You'd usually use this if startListening listens on different things
+depending on some values, in which case, put said values in this array.
+Developer note: I had separate promise and startListening dependencies,
+But in practice they ended up being the same in most use cases,
+and if you've setup destructors properly, it doesn't hurt.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>stopAtError</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Determines behaviour of error handling:
+true: Whenever an error is thrown from the main promise OR
+from the startListening's error_callback, everything
+part of this hook stops, only returning the last error
+false: An error is treated like a regular value: If new events
+from the listener are triggered, or dependencies change,
+the error is discarded and the promise is re-run.</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>args</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Arguments used to call startGetting for the first time, and
+for any subsequent times where a dependency array changes</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="gui_pouchHook.ts.html" class="button">View Source</a>
+            <span>
+                <a href="gui_pouchHook.ts.html">gui/pouchHook.ts</a>, <a href="gui_pouchHook.ts.html#line183">line 183</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Current state of the promise: Loading, Error, or Resolved, and
+Function to manually trigger the Promise to re-run as if an event or
+error occurred</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="waitForStateOnce">
+        <a class="href-link" href="#waitForStateOnce">#</a>
+        
+        <span class="code-name">
+            
+                waitForStateOnce<span class="signature">(statePredicate)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Allows the user to asynchronously await for any of listings_updated,
+all_projects_updated, listing_projects_synced, all_meta_synced,
+all_data_updated, or anything else that is updated along with an emission
+of the 'all_state' event from DirectoryEmitter.</p>
+<p>This will only resolve when the given predicate returns true.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>statePredicate</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Function to run, return true: will cause this
+waitForStateOnce to resolve. Otherwise, return of false will not cause
+anything to happen (yet). If returned false, it may be called again.
+Errors bubble up to this waitForStateOnce's promise.</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_index.ts.html">sync/index.ts</a>, <a href="sync_index.ts.html#line47">line 47</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>Promise that resolves/rejects when state changes.</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+        <div class='vertical-section'>
+            <h1>Type Definitions</h1>
+            <div class="members">
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">string</code>
+
+
+    </span>
+
+<h4 class="name" id="FullyResolvedRecordID">
+    <a class="href-link" href="#FullyResolvedRecordID">#</a>
+    
+    <span class="code-name">
+        FullyResolvedRecordID
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Record identifier unique to the system, includes the project identifier</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="datamodel_core.ts.html" class="button">View Source</a>
+            <span>
+                <a href="datamodel_core.ts.html">datamodel/core.ts</a>, <a href="datamodel_core.ts.html#line61">line 61</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">string</code>
+
+
+    </span>
+
+<h4 class="name" id="ListingID">
+    <a class="href-link" href="#ListingID">#</a>
+    
+    <span class="code-name">
+        ListingID
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Listing identifier</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="datamodel_core.ts.html" class="button">View Source</a>
+            <span>
+                <a href="datamodel_core.ts.html">datamodel/core.ts</a>, <a href="datamodel_core.ts.html#line53">line 53</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">object</code>
+
+
+    </span>
+
+<h4 class="name" id="LoadableProps">
+    <a class="href-link" href="#LoadableProps">#</a>
+    
+    <span class="code-name">
+        LoadableProps
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Important properties that might not be present
+until .start() is called. This is mainly used
+in _fetchData and _saveData</p>
+</div>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+<div class="table-container">
+    <table class="props table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+            
+<tr class="deep-level-0">
+    
+        <td class="name"><code>type</code></td>
+    
+
+    <td class="type">
+    
+        
+<code class="param-type">string</code>
+
+
+    
+    </td>
+
+    
+
+    
+
+    <td class="description last"></td>
+</tr>
+
+        
+            
+<tr class="deep-level-0">
+    
+        <td class="name"><code>field_types</code></td>
+    
+
+    <td class="type">
+    
+        
+<code class="param-type">object</code>
+
+
+    
+    </td>
+
+    
+
+    
+
+    <td class="description last"></td>
+</tr>
+
+  
+      
+<tr class="deep-level-1">
+    
+        <td class="name"><code>field_name:</code></td>
+    
+
+    <td class="type">
+    
+        
+<code class="param-type">FAIMSTypeName</code>
+
+
+    
+    </td>
+
+    
+
+    
+
+    <td class="description last"><p>string</p></td>
+</tr>
+
+  
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line481">line 481</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">string</code>
+
+
+    </span>
+
+<h4 class="name" id="NonUniqueProjectID">
+    <a class="href-link" href="#NonUniqueProjectID">#</a>
+    
+    <span class="code-name">
+        NonUniqueProjectID
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Non Unique project identifier is unique only to the database it comes from, may clash with
+other identifiers in other databases</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="datamodel_core.ts.html" class="button">View Source</a>
+            <span>
+                <a href="datamodel_core.ts.html">datamodel/core.ts</a>, <a href="datamodel_core.ts.html#line49">line 49</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">string</code>
+
+
+    </span>
+
+<h4 class="name" id="ProjectID">
+    <a class="href-link" href="#ProjectID">#</a>
+    
+    <span class="code-name">
+        ProjectID
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Projects are identified by a string unique to the whole system</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="datamodel_core.ts.html" class="button">View Source</a>
+            <span>
+                <a href="datamodel_core.ts.html">datamodel/core.ts</a>, <a href="datamodel_core.ts.html#line46">line 46</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">string</code>
+
+
+    </span>
+
+<h4 class="name" id="RecordID">
+    <a class="href-link" href="#RecordID">#</a>
+    
+    <span class="code-name">
+        RecordID
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Record identifier unique to the project</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="datamodel_core.ts.html" class="button">View Source</a>
+            <span>
+                <a href="datamodel_core.ts.html">datamodel/core.ts</a>, <a href="datamodel_core.ts.html#line58">line 58</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.0</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+
+</body>
+</html>

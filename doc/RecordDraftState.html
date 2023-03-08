@@ -1,0 +1,2954 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> RecordDraftState</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="RecordDraftState.html">RecordDraftState</a></li></ul><h3>Interfaces</h3><ul><li><a href="ProjectObject.html">ProjectObject</a></li><li><a href="ProjectRevisionListing.html">ProjectRevisionListing</a></li><li><a href="SplitRecordID.html">SplitRecordID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ConnectionInfo_create_pouch">ConnectionInfo_create_pouch</a></li><li><a href="global.html#LoginButton">LoginButton</a></li><li><a href="global.html#THROTTLE_TIME">THROTTLE_TIME</a></li><li><a href="global.html#active_db">active_db</a></li><li><a href="global.html#all_meta_synced">all_meta_synced</a></li><li><a href="global.html#all_projects_updated">all_projects_updated</a></li><li><a href="global.html#constantArgs">constantArgs</a></li><li><a href="global.html#constantArgsShared">constantArgsShared</a></li><li><a href="global.html#constantArgsSplit">constantArgsSplit</a></li><li><a href="global.html#createdListings">createdListings</a></li><li><a href="global.html#createdProjects">createdProjects</a></li><li><a href="global.html#data_dbs">data_dbs</a></li><li><a href="global.html#default_changes_opts">default_changes_opts</a></li><li><a href="global.html#deleteStagedData">deleteStagedData</a></li><li><a href="global.html#directory_db">directory_db</a></li><li><a href="global.html#ensure_local_db">ensure_local_db</a></li><li><a href="global.html#ensure_synced_db">ensure_synced_db</a></li><li><a href="global.html#firstDefinedFromList">firstDefinedFromList</a></li><li><a href="global.html#getDataDB">getDataDB</a></li><li><a href="global.html#getProjectDB">getProjectDB</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#initialize_state">initialize_state</a></li><li><a href="global.html#listDraftMetadata">listDraftMetadata</a></li><li><a href="global.html#listDraftsEncoded">listDraftsEncoded</a></li><li><a href="global.html#listRecordMetadata">listRecordMetadata</a></li><li><a href="global.html#listenDataDB">listenDataDB</a></li><li><a href="global.html#listenProject">listenProject</a></li><li><a href="global.html#listenProjectDB">listenProjectDB</a></li><li><a href="global.html#listing_projects_synced">listing_projects_synced</a></li><li><a href="global.html#listings_updated">listings_updated</a></li><li><a href="global.html#local_auth_db">local_auth_db</a></li><li><a href="global.html#local_state_db">local_state_db</a></li><li><a href="global.html#metadata_dbs">metadata_dbs</a></li><li><a href="global.html#newStagedData">newStagedData</a></li><li><a href="global.html#process_listing">process_listing</a></li><li><a href="global.html#process_project">process_project</a></li><li><a href="global.html#projects_dbs">projects_dbs</a></li><li><a href="global.html#projects_meta_synced">projects_meta_synced</a></li><li><a href="global.html#reprocess_listing">reprocess_listing</a></li><li><a href="global.html#resolve_record_id">resolve_record_id</a></li><li><a href="global.html#setLocalConnection">setLocalConnection</a></li><li><a href="global.html#setStagedData">setStagedData</a></li><li><a href="global.html#update_listing">update_listing</a></li><li><a href="global.html#update_project">update_project</a></li><li><a href="global.html#useEventedPromise">useEventedPromise</a></li><li><a href="global.html#waitForStateOnce">waitForStateOnce</a></li></ul></div><div class="category"><h2>Database</h2><h3>Modules</h3><ul><li><a href="module-data_storage.html">data_storage</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Class</p>
+                    <h1>RecordDraftState</h1>
+                </header>
+                
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>RecordDraftState<span class="signature">()</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>Intermediary between React and Pouch Draft storage.</p>
+<p>Because draft data must be accessable synchronously
+(due to Formik) this stores a copy of the draft data.
+(Just for this form, it's not much)</p>
+<p>Unless you open the same record on 2 tabs, it's
+not possible for the pouch to out of sync with this</p>
+<p>This class has an invariant that either _fetchData function is running, or
+this.data !== null, or this.fetch_error !== null
+This invariant doesn't hold before start() or after stop()</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class='vertical-section'>
+                <div class="members">
+                    <div class="member">
+                        <div class=name>
+                            <span class="tag">Constructor</span>
+                        </div>
+                        
+
+
+    
+    <h4 class="name" id="RecordDraftState">
+        <a class="href-link" href="#RecordDraftState">#</a>
+        
+        <span class="code-name">
+            
+                new RecordDraftState<span class="signature">()</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line48">line 48</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    </div>
+                </div>
+            </div>
+        
+    
+    </div>
+    
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <div class='vertical-section'>
+            <h1>Members</h1>
+            <div class="members">
+            
+                <div class="member">
+
+<h4 class="name" id="fetch_error">
+    <a class="href-link" href="#fetch_error">#</a>
+    
+    <span class="code-name">
+        fetch_error
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Last time _fetchData was called, if it produced an error,
+this is said error.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line93">line 93</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">null</code>
+|
+
+<code class="param-type">Object</code>
+
+
+    </span>
+
+<h4 class="name" id="fetch_error">
+    <a class="href-link" href="#fetch_error">#</a>
+    
+    <span class="code-name">
+        fetch_error
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Last time _fetchData was called, if it produced an error,
+this is said error.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line533">line 533</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="fetch_sequence">
+    <a class="href-link" href="#fetch_sequence">#</a>
+    
+    <span class="code-name">
+        fetch_sequence
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Allows the _fetchData to be interrupted.
+Any future _fetchData calls, or any interruptions
+just have to increment this value and _fetchData will check
+it at all its resume points</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line261">line 261</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="fetch_sequence">
+    <a class="href-link" href="#fetch_sequence">#</a>
+    
+    <span class="code-name">
+        fetch_sequence
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Allows the _fetchData to be interrupted.
+Any future _fetchData calls, or any interruptions
+just have to increment this value and _fetchData will check
+it at all its resume points</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line568">line 568</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="interval">
+    <a class="href-link" href="#interval">#</a>
+    
+    <span class="code-name">
+        interval
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Return from setInterval, when the draft save is running.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line67">line 67</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">null</code>
+|
+
+<code class="param-type">number</code>
+
+
+    </span>
+
+<h4 class="name" id="interval">
+    <a class="href-link" href="#interval">#</a>
+    
+    <span class="code-name">
+        interval
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Return from setInterval, when the draft save is running.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line506">line 506</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="is_saving">
+    <a class="href-link" href="#is_saving">#</a>
+    
+    <span class="code-name">
+        is_saving
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Set to true when the touched fields are being iterated on
+or the draft data is being pushed to Pouch,
+Set to false once Pouch has returned, or once pouch
+throws an error</p>
+<p>This should mean it will be true for a few milliseconds,
+every 2 seconds (when saving is on)</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line63">line 63</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="is_saving">
+    <a class="href-link" href="#is_saving">#</a>
+    
+    <span class="code-name">
+        is_saving
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Set to true when the touched fields are being iterated on
+or the draft data is being pushed to Pouch,
+Set to false once Pouch has returned, or once pouch
+throws an error</p>
+<p>This should mean it will be true for a few milliseconds,
+every 2 seconds (when saving is on)</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line501">line 501</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="last_revision">
+    <a class="href-link" href="#last_revision">#</a>
+    
+    <span class="code-name">
+        last_revision
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>(Incrementally increasing) revision ID from draft docs
+Reset when current record/project changes
+Used to avoid collision-avoid lookup before setDraftData
+Whenever setDraftData is called, save the revision to this.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line82">line 82</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">null</code>
+|
+
+<code class="param-type">string</code>
+
+
+    </span>
+
+<h4 class="name" id="last_revision">
+    <a class="href-link" href="#last_revision">#</a>
+    
+    <span class="code-name">
+        last_revision
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>(Incrementally increasing) revision ID from draft docs
+Reset when current record/project changes
+Used to avoid collision-avoid lookup before setDraftData
+Whenever setDraftData is called, save the revision to this.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line522">line 522</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="newDraftListener">
+    <a class="href-link" href="#newDraftListener">#</a>
+    
+    <span class="code-name">
+        newDraftListener
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Called if this state goes from unedited =&gt; edited
+(i.e. the user changed a value in the form)</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line254">line 254</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="newDraftListener">
+    <a class="href-link" href="#newDraftListener">#</a>
+    
+    <span class="code-name">
+        newDraftListener
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Called if this state goes from unedited =&gt; edited
+(i.e. the user changed a value in the form)</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line561">line 561</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="saveListener">
+    <a class="href-link" href="#saveListener">#</a>
+    
+    <span class="code-name">
+        saveListener
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Set in constructor, called when saving starts (true), finishes (false), or
+(after MAX_CONSEQUTIVE_SAVE_ERRORS reached) errors out ({error_object})</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line423">line 423</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">function</code>
+
+
+    </span>
+
+<h4 class="name" id="saveListener">
+    <a class="href-link" href="#saveListener">#</a>
+    
+    <span class="code-name">
+        saveListener
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Set in constructor, called when saving starts (true), finishes (false), or
+(after MAX_CONSEQUTIVE_SAVE_ERRORS reached) errors out ({error_object})</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line625">line 625</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="save_error">
+    <a class="href-link" href="#save_error">#</a>
+    
+    <span class="code-name">
+        save_error
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>First error in the last sequence of errors to occur.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line88">line 88</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        
+<code class="param-type">null</code>
+|
+
+<code class="param-type">Object</code>
+
+
+    </span>
+
+<h4 class="name" id="save_error">
+    <a class="href-link" href="#save_error">#</a>
+    
+    <span class="code-name">
+        save_error
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>First error in the last sequence of errors to occur.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line527">line 527</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="touched_fields">
+    <a class="href-link" href="#touched_fields">#</a>
+    
+    <span class="code-name">
+        touched_fields
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Keeps track of any fields that have changed from their initial values
+This is different from formik's FormikProps.touched, in that it tracks
+when the values change before the blur event (i.e. listens for onChange AND onBlur)
+And it loads whatever was previously touched in the draft storage.
+Used for determining what to save to the draft storage.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line75">line 75</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+<h4 class="name" id="touched_fields">
+    <a class="href-link" href="#touched_fields">#</a>
+    
+    <span class="code-name">
+        touched_fields
+    </span>
+    
+</h4>
+
+
+
+
+<div class="description">
+    <p>Keeps track of any fields that have changed from their initial values
+This is different from formik's FormikProps.touched, in that it tracks
+when the values change before the blur event (i.e. listens for onChange AND onBlur)
+And it loads whatever was previously touched in the draft storage.
+Used for determining what to save to the draft storage.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line514">line 514</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+        <div class='vertical-section'>
+            <h1>Methods</h1>
+            <div class="members">
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="_fetchData">
+        <a class="href-link" href="#_fetchData">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                _fetchData<span class="signature">(loadedprops)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Called from within this class, fetches the latest data from the draft storage
+puts it into data and then resolves any promises waiting for said data.</p>
+<p>This should be called whenever the ID of the draft document changes:
+this ID is made from the project id, (with listing id), record id and
+possibly the view (View-specific draft not implemented yet, TBD)
+So if the project changes, this _fetchData() should be run.
+This should also be run at construction of this class.</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>loadedprops</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#LoadableProps">LoadableProps</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line583">line 583</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">Promise.&lt;void></code>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="_saveData">
+        <a class="href-link" href="#_saveData">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                _saveData<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Pushes the currently touched values into the draft DB</p>
+<p>This is awaitable as a normal async function</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line601">line 601</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">Promise.&lt;void></code>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="_touchedData">
+        <a class="href-link" href="#_touchedData">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                _touchedData<span class="signature">()</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Called from within this class, waits for data if need be, (assuming
+fetchData() is running or data is immediately available) then returns
+the staged data, ONLY fields that are touched</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line592">line 592</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="clear">
+        <a class="href-link" href="#clear">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                clear<span class="signature">()</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Called after save &amp; new button is pressed,
+This deletes the draft from the draft database</p>
+<p>This is done for existing observations and new observations, and therefore
+reverts RecordDraftState to as if it was given draft_id === null
+(Even for editing new drafts)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line659">line 659</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="forceSave">
+        <a class="href-link" href="#forceSave">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                forceSave<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Force pushes the currently touched values into the draft DB, needed when
+the user leaves the page.</p>
+<p>This is awaitable as a normal async function</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line611">line 611</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">Promise.&lt;void></code>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="getInitialValues">
+        <a class="href-link" href="#getInitialValues">#</a>
+        
+            
+                <span class='tag'>async</span>
+            
+        
+        <span class="code-name">
+            
+                getInitialValues<span class="signature">()</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Called by setInitialValues, this function retrieves any existing
+data from the draft storage for this current record/revision</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line619">line 619</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="recordChangeHook">
+        <a class="href-link" href="#recordChangeHook">#</a>
+        
+        <span class="code-name">
+            
+                recordChangeHook<span class="signature">(newProps, loadedProps)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Called from RecordForm.componentDidUpdate,
+this determines if draft data must be changed/refreshed
+and does so.</p>
+<p>setInitialValues of your form must be run after this function,
+i.e. while this runs, initialValues should be non-existant, until
+this function returns. At which point, you may combine existing data
+and data from this.getInitialValues() to give to Formik.</p>
+<p>Note: To avoid the staged values constantly re-fetching themselves,
+only trigger this when any of the following props of your
+component changes:
+record_id, revision_id
+Or other props that change which data the draft storage
+should fetch</p>
+<p>This may trigger a change of state of the RecordForm</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>newProps</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">RelevantProps</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>loadedProps</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#LoadableProps">LoadableProps</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line648">line 648</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="renderHook">
+        <a class="href-link" href="#renderHook">#</a>
+        
+        <span class="code-name">
+            
+                renderHook<span class="signature">(values)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>A function executed when an record form renders with the Formik form showing:
+<Formik>{values =&gt; renderHook(values); return (<other elements>)}</Formik></p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>values</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>FormikProps.values object, retrieved from the First argument
+of the callback to the Formik element's children:</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line555">line 555</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="start">
+        <a class="href-link" href="#start">#</a>
+        
+        <span class="code-name">
+            
+                start<span class="signature">(loadedProps)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Starts any timeouts/timers that need to be started,
+<em>Starts fetching draft data</em> (use getInitialValues() after calling this)</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>loadedProps</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#LoadableProps">LoadableProps</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line540">line 540</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id="stop">
+        <a class="href-link" href="#stop">#</a>
+        
+        <span class="code-name">
+            
+                stop<span class="signature">()</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Stops any pending promises/timeouts, invalidating this class
+Call this before the owning react component unmounts</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="sync_draft-state.ts.html" class="button">View Source</a>
+            <span>
+                <a href="sync_draft-state.ts.html">sync/draft-state.ts</a>, <a href="sync_draft-state.ts.html#line546">line 546</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.0</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+
+</body>
+</html>

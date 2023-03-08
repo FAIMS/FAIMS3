@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> data_storage</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="RecordDraftState.html">RecordDraftState</a></li></ul><h3>Interfaces</h3><ul><li><a href="ProjectObject.html">ProjectObject</a></li><li><a href="ProjectRevisionListing.html">ProjectRevisionListing</a></li><li><a href="SplitRecordID.html">SplitRecordID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ConnectionInfo_create_pouch">ConnectionInfo_create_pouch</a></li><li><a href="global.html#LoginButton">LoginButton</a></li><li><a href="global.html#THROTTLE_TIME">THROTTLE_TIME</a></li><li><a href="global.html#active_db">active_db</a></li><li><a href="global.html#all_meta_synced">all_meta_synced</a></li><li><a href="global.html#all_projects_updated">all_projects_updated</a></li><li><a href="global.html#constantArgs">constantArgs</a></li><li><a href="global.html#constantArgsShared">constantArgsShared</a></li><li><a href="global.html#constantArgsSplit">constantArgsSplit</a></li><li><a href="global.html#createdListings">createdListings</a></li><li><a href="global.html#createdProjects">createdProjects</a></li><li><a href="global.html#data_dbs">data_dbs</a></li><li><a href="global.html#default_changes_opts">default_changes_opts</a></li><li><a href="global.html#deleteStagedData">deleteStagedData</a></li><li><a href="global.html#directory_db">directory_db</a></li><li><a href="global.html#ensure_local_db">ensure_local_db</a></li><li><a href="global.html#ensure_synced_db">ensure_synced_db</a></li><li><a href="global.html#firstDefinedFromList">firstDefinedFromList</a></li><li><a href="global.html#getDataDB">getDataDB</a></li><li><a href="global.html#getProjectDB">getProjectDB</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#initialize_state">initialize_state</a></li><li><a href="global.html#listDraftMetadata">listDraftMetadata</a></li><li><a href="global.html#listDraftsEncoded">listDraftsEncoded</a></li><li><a href="global.html#listRecordMetadata">listRecordMetadata</a></li><li><a href="global.html#listenDataDB">listenDataDB</a></li><li><a href="global.html#listenProject">listenProject</a></li><li><a href="global.html#listenProjectDB">listenProjectDB</a></li><li><a href="global.html#listing_projects_synced">listing_projects_synced</a></li><li><a href="global.html#listings_updated">listings_updated</a></li><li><a href="global.html#local_auth_db">local_auth_db</a></li><li><a href="global.html#local_state_db">local_state_db</a></li><li><a href="global.html#metadata_dbs">metadata_dbs</a></li><li><a href="global.html#newStagedData">newStagedData</a></li><li><a href="global.html#process_listing">process_listing</a></li><li><a href="global.html#process_project">process_project</a></li><li><a href="global.html#projects_dbs">projects_dbs</a></li><li><a href="global.html#projects_meta_synced">projects_meta_synced</a></li><li><a href="global.html#reprocess_listing">reprocess_listing</a></li><li><a href="global.html#resolve_record_id">resolve_record_id</a></li><li><a href="global.html#setLocalConnection">setLocalConnection</a></li><li><a href="global.html#setStagedData">setStagedData</a></li><li><a href="global.html#update_listing">update_listing</a></li><li><a href="global.html#update_project">update_project</a></li><li><a href="global.html#useEventedPromise">useEventedPromise</a></li><li><a href="global.html#waitForStateOnce">waitForStateOnce</a></li></ul></div><div class="category"><h2>Database</h2><h3>Modules</h3><ul><li><a href="module-data_storage.html">data_storage</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Module</p>
+                    <h1>data_storage</h1>
+                </header>
+                
+
+
+
+
+<section>
+
+<header>
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>The Data Storage module provides an API for accessing data from the GUI.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="data_storage_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="data_storage_index.ts.html">data_storage/index.ts</a>, <a href="data_storage_index.ts.html#line22">line 22</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+        
+    
+    </div>
+    
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <div class='vertical-section'>
+            <h1>Methods</h1>
+            <div class="members">
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id=".getFirstRecordHead">
+        <a class="href-link" href="#.getFirstRecordHead">#</a>
+        
+            
+                <span class='tag'>static</span>
+            
+        
+        <span class="code-name">
+            
+                getFirstRecordHead<span class="signature">(project_id, record_id)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Get the revision id of the most recent revision of a record</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>project identifier</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>record_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>record identifier</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="data_storage_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="data_storage_index.ts.html">data_storage/index.ts</a>, <a href="data_storage_index.ts.html#line44">line 44</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>a promise resolving to a revisionid for the record</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id=".getFullRecordData">
+        <a class="href-link" href="#.getFullRecordData">#</a>
+        
+            
+                <span class='tag'>static</span>
+            
+        
+        <span class="code-name">
+            
+                getFullRecordData<span class="signature">(project_id, record_id, revision_id, is_deleted)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Get the full record data for a given revision of a record</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#ProjectID">ProjectID</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Project identifier</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>record_id</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#RecordID">RecordID</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Record identifier</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>revision_id</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">RevisionID</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>Revision identifier</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>is_deleted</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type">boolean</code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>if true (default), return null if the revision has been deleted. If false, return the record even if deleted</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="data_storage_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="data_storage_index.ts.html">data_storage/index.ts</a>, <a href="data_storage_index.ts.html#line83">line 83</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>A promise that resolves to the requested record or null</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id=".listFAIMSProjectRevisions">
+        <a class="href-link" href="#.listFAIMSProjectRevisions">#</a>
+        
+            
+                <span class='tag'>static</span>
+            
+        
+        <span class="code-name">
+            
+                listFAIMSProjectRevisions<span class="signature">(project_id)</span><span class="type-signature"> &rarr; {Promise.&lt;<a href="ProjectRevisionListing.html">ProjectRevisionListing</a>>}</span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Get a list of revisions for a given project</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#ProjectID">ProjectID</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="data_storage_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="data_storage_index.ts.html">data_storage/index.ts</a>, <a href="data_storage_index.ts.html#line129">line 129</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">Promise.&lt;<a href="ProjectRevisionListing.html">ProjectRevisionListing</a>></code>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id=".listFAIMSRecordRevisions">
+        <a class="href-link" href="#.listFAIMSRecordRevisions">#</a>
+        
+            
+                <span class='tag'>static</span>
+            
+        
+        <span class="code-name">
+            
+                listFAIMSRecordRevisions<span class="signature">(project_id, record_id)</span><span class="type-signature"> &rarr; {Promise.&lt;RecordRevisionListing>}</span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Get a list of revisions for a given record</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#ProjectID">ProjectID</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>record_id</code></td>
+  
+
+  <td class="type">
+  
+      
+<code class="param-type"><a href="global.html#RecordID">RecordID</a></code>
+
+
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="data_storage_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="data_storage_index.ts.html">data_storage/index.ts</a>, <a href="data_storage_index.ts.html#line114">line 114</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>A promise resolving to a revision listing</p></div>
+    
+    
+    <div class='column is-5 has-text-left'>
+        <label>Type: </label>
+        
+<code class="param-type">Promise.&lt;RecordRevisionListing></code>
+
+
+    </div>
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+                <div class="member">
+
+
+    
+    <h4 class="name" id=".upsertFAIMSData">
+        <a class="href-link" href="#.upsertFAIMSData">#</a>
+        
+            
+                <span class='tag'>static</span>
+            
+        
+        <span class="code-name">
+            
+                upsertFAIMSData<span class="signature">(project_id, record)</span><span class="type-signature"></span>
+            
+        </span>
+    </h4>
+    
+
+    
+    
+    <div class="description">
+        <p>Either create a new record or update an existing one</p>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+<div class="table-container">
+    <table class="params table">
+        <thead>
+        <tr>
+            
+            <th>Name</th>
+            
+
+            <th>Type</th>
+
+            
+
+            
+
+            <th class="last">Description</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>project_id</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>project identifier</p></td>
+</tr>
+
+
+        
+
+            
+<tr class="deep-level-0">
+  
+      <td class="name"><code>record</code></td>
+  
+
+  <td class="type">
+  
+  </td>
+
+  
+
+  
+
+  <td class="description last"><p>new or existing record</p></td>
+</tr>
+
+
+        
+        </tbody>
+    </table>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    
+
+    
+
+    
+
+    
+        <p class="tag-source">
+            <a href="data_storage_index.ts.html" class="button">View Source</a>
+            <span>
+                <a href="data_storage_index.ts.html">data_storage/index.ts</a>, <a href="data_storage_index.ts.html#line54">line 54</a>
+            </span>
+        </p>
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class='columns method-parameter'>
+        <div class="column is-2"><label>Returns:</label></div>
+        <div class="column is-10">
+            
+                    
+
+<div class="columns">
+    
+    <div class='param-desc column is-7'><p>a promise resolving to the revision id of the new or updated record</p></div>
+    
+    
+</div>
+
+                
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+            </div>
+        </div>
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.0</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+
+</body>
+</html>

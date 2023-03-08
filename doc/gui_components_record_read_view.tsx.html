@@ -1,0 +1,194 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> gui/components/record/read_view.tsx</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="RecordDraftState.html">RecordDraftState</a></li></ul><h3>Interfaces</h3><ul><li><a href="ProjectObject.html">ProjectObject</a></li><li><a href="ProjectRevisionListing.html">ProjectRevisionListing</a></li><li><a href="SplitRecordID.html">SplitRecordID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ConnectionInfo_create_pouch">ConnectionInfo_create_pouch</a></li><li><a href="global.html#LoginButton">LoginButton</a></li><li><a href="global.html#THROTTLE_TIME">THROTTLE_TIME</a></li><li><a href="global.html#active_db">active_db</a></li><li><a href="global.html#all_meta_synced">all_meta_synced</a></li><li><a href="global.html#all_projects_updated">all_projects_updated</a></li><li><a href="global.html#constantArgs">constantArgs</a></li><li><a href="global.html#constantArgsShared">constantArgsShared</a></li><li><a href="global.html#constantArgsSplit">constantArgsSplit</a></li><li><a href="global.html#createdListings">createdListings</a></li><li><a href="global.html#createdProjects">createdProjects</a></li><li><a href="global.html#data_dbs">data_dbs</a></li><li><a href="global.html#default_changes_opts">default_changes_opts</a></li><li><a href="global.html#deleteStagedData">deleteStagedData</a></li><li><a href="global.html#directory_db">directory_db</a></li><li><a href="global.html#ensure_local_db">ensure_local_db</a></li><li><a href="global.html#ensure_synced_db">ensure_synced_db</a></li><li><a href="global.html#firstDefinedFromList">firstDefinedFromList</a></li><li><a href="global.html#getDataDB">getDataDB</a></li><li><a href="global.html#getProjectDB">getProjectDB</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#initialize_state">initialize_state</a></li><li><a href="global.html#listDraftMetadata">listDraftMetadata</a></li><li><a href="global.html#listDraftsEncoded">listDraftsEncoded</a></li><li><a href="global.html#listRecordMetadata">listRecordMetadata</a></li><li><a href="global.html#listenDataDB">listenDataDB</a></li><li><a href="global.html#listenProject">listenProject</a></li><li><a href="global.html#listenProjectDB">listenProjectDB</a></li><li><a href="global.html#listing_projects_synced">listing_projects_synced</a></li><li><a href="global.html#listings_updated">listings_updated</a></li><li><a href="global.html#local_auth_db">local_auth_db</a></li><li><a href="global.html#local_state_db">local_state_db</a></li><li><a href="global.html#metadata_dbs">metadata_dbs</a></li><li><a href="global.html#newStagedData">newStagedData</a></li><li><a href="global.html#process_listing">process_listing</a></li><li><a href="global.html#process_project">process_project</a></li><li><a href="global.html#projects_dbs">projects_dbs</a></li><li><a href="global.html#projects_meta_synced">projects_meta_synced</a></li><li><a href="global.html#reprocess_listing">reprocess_listing</a></li><li><a href="global.html#resolve_record_id">resolve_record_id</a></li><li><a href="global.html#setLocalConnection">setLocalConnection</a></li><li><a href="global.html#setStagedData">setStagedData</a></li><li><a href="global.html#update_listing">update_listing</a></li><li><a href="global.html#update_project">update_project</a></li><li><a href="global.html#useEventedPromise">useEventedPromise</a></li><li><a href="global.html#waitForStateOnce">waitForStateOnce</a></li></ul></div><div class="category"><h2>Database</h2><h3>Modules</h3><ul><li><a href="module-data_storage.html">data_storage</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Source</p>
+                    <h1>gui/components/record/read_view.tsx</h1>
+                </header>
+                
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: read_view.tsx
+ * Description:
+ *   TODO
+ */
+
+import React from 'react';
+import {Box, Paper, Typography} from '@mui/material';
+import RecordForm from './form';
+import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
+import {ProjectUIModel} from '../../../datamodel/ui';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import {useTheme} from '@mui/material/styles';
+
+interface RecordReadViewProps {
+  project_id: ProjectID;
+  record_id: RecordID;
+  // Might be given in the URL:
+  revision_id: RevisionID;
+  ui_specification: ProjectUIModel;
+  conflictfields?: string[] | null;
+  handleChangeTab?: any;
+  metaSection?: any;
+  draft_id?: string;
+  handleSetIsDraftSaving: Function;
+  handleSetDraftLastSaved: Function;
+  handleSetDraftError: Function;
+}
+export default function RecordReadView(props: RecordReadViewProps) {
+  /**
+   * Record read-only view.
+   * TODO Kate - this is just a placeholder.
+   * RecordForm is overkill here (as we're in a read-only state and don't need all the functionality that RecordForm provides).
+   * A quick read-only view of the form data is needed (no draft, state and submitting logic)
+   */
+  const theme = useTheme();
+  const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
+  return (
+    &lt;Box
+      component={Paper}
+      elevation={0}
+      p={{xs: 1, sm: 1, md: 2, lg: 2}}
+      variant={is_mobile ? undefined : 'outlined'}
+      mb={2}
+    >
+      &lt;Typography variant={'overline'} component={'div'}>
+        Record data [component in progress]
+      &lt;/Typography>
+      &lt;RecordForm
+        project_id={props.project_id}
+        record_id={props.record_id}
+        revision_id={props.revision_id}
+        ui_specification={props.ui_specification}
+        draft_id={props.draft_id}
+        metaSection={props.metaSection}
+        disabled={true}
+        handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+        handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+        handleSetDraftError={props.handleSetDraftError}
+      />
+    &lt;/Box>
+  );
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.0</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+
+</body>
+</html>

@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> datamodel/core.ts</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="RecordDraftState.html">RecordDraftState</a></li></ul><h3>Interfaces</h3><ul><li><a href="ProjectObject.html">ProjectObject</a></li><li><a href="ProjectRevisionListing.html">ProjectRevisionListing</a></li><li><a href="SplitRecordID.html">SplitRecordID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ConnectionInfo_create_pouch">ConnectionInfo_create_pouch</a></li><li><a href="global.html#LoginButton">LoginButton</a></li><li><a href="global.html#THROTTLE_TIME">THROTTLE_TIME</a></li><li><a href="global.html#active_db">active_db</a></li><li><a href="global.html#all_meta_synced">all_meta_synced</a></li><li><a href="global.html#all_projects_updated">all_projects_updated</a></li><li><a href="global.html#constantArgs">constantArgs</a></li><li><a href="global.html#constantArgsShared">constantArgsShared</a></li><li><a href="global.html#constantArgsSplit">constantArgsSplit</a></li><li><a href="global.html#createdListings">createdListings</a></li><li><a href="global.html#createdProjects">createdProjects</a></li><li><a href="global.html#data_dbs">data_dbs</a></li><li><a href="global.html#default_changes_opts">default_changes_opts</a></li><li><a href="global.html#deleteStagedData">deleteStagedData</a></li><li><a href="global.html#directory_db">directory_db</a></li><li><a href="global.html#ensure_local_db">ensure_local_db</a></li><li><a href="global.html#ensure_synced_db">ensure_synced_db</a></li><li><a href="global.html#firstDefinedFromList">firstDefinedFromList</a></li><li><a href="global.html#getDataDB">getDataDB</a></li><li><a href="global.html#getProjectDB">getProjectDB</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#initialize_state">initialize_state</a></li><li><a href="global.html#listDraftMetadata">listDraftMetadata</a></li><li><a href="global.html#listDraftsEncoded">listDraftsEncoded</a></li><li><a href="global.html#listRecordMetadata">listRecordMetadata</a></li><li><a href="global.html#listenDataDB">listenDataDB</a></li><li><a href="global.html#listenProject">listenProject</a></li><li><a href="global.html#listenProjectDB">listenProjectDB</a></li><li><a href="global.html#listing_projects_synced">listing_projects_synced</a></li><li><a href="global.html#listings_updated">listings_updated</a></li><li><a href="global.html#local_auth_db">local_auth_db</a></li><li><a href="global.html#local_state_db">local_state_db</a></li><li><a href="global.html#metadata_dbs">metadata_dbs</a></li><li><a href="global.html#newStagedData">newStagedData</a></li><li><a href="global.html#process_listing">process_listing</a></li><li><a href="global.html#process_project">process_project</a></li><li><a href="global.html#projects_dbs">projects_dbs</a></li><li><a href="global.html#projects_meta_synced">projects_meta_synced</a></li><li><a href="global.html#reprocess_listing">reprocess_listing</a></li><li><a href="global.html#resolve_record_id">resolve_record_id</a></li><li><a href="global.html#setLocalConnection">setLocalConnection</a></li><li><a href="global.html#setStagedData">setStagedData</a></li><li><a href="global.html#update_listing">update_listing</a></li><li><a href="global.html#update_project">update_project</a></li><li><a href="global.html#useEventedPromise">useEventedPromise</a></li><li><a href="global.html#waitForStateOnce">waitForStateOnce</a></li></ul></div><div class="category"><h2>Database</h2><h3>Modules</h3><ul><li><a href="module-data_storage.html">data_storage</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Source</p>
+                    <h1>datamodel/core.ts</h1>
+                </header>
+                
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: core.ts
+ * Description:
+ *   Core types/interfaces that are used throughout the codebase.
+ *   Types/interfaces that are only used within the GUI, or are what the GUI
+ *   sees should go in the gui file, whilst those types only used within the
+ *   databases should go in the database file.
+ */
+
+/** Core types/interfaces that are used throughout the codebase.
+ * @module datamodel/core
+ * @category Data Model
+ */
+import type {KeyLike} from 'jose';
+
+// There are two internal IDs for projects, the former is unique to the system
+// (i.e. includes the listing_id), the latter is unique only to the 'projects'
+// database it came from, for a FAIMS listing
+// (It is this way because the list of projects is decentralised and so we
+// cannot enforce system-wide unique project IDs without a 'namespace' listing id)
+
+/** Projects are identified by a string unique to the whole system */
+export type ProjectID = string;
+/** Non Unique project identifier is unique only to the database it comes from, may clash with
+ * other identifiers in other databases */
+export type NonUniqueProjectID = string;
+/** Listing identifier */
+export type ListingID = string;
+
+export function resolve_project_id(
+  listing_id: ListingID,
+  nonunique_id: NonUniqueProjectID
+): ProjectID {
+  const cleaned_listing_id = listing_id.replace('||', '\\|\\|');
+  return cleaned_listing_id + '||' + nonunique_id;
+}
+
+export function split_full_project_id(full_proj_id: ProjectID): {
+  listing_id: ListingID;
+  project_id: NonUniqueProjectID;
+} {
+  const splitId = full_proj_id.split('||');
+  if (
+    splitId.length !== 2 ||
+    splitId[0].trim() === '' ||
+    splitId[1].trim() === ''
+  ) {
+    throw Error('{full_proj_id} is not a valid full project id.');
+  }
+  const cleaned_listing_id = splitId[0].replace('\\|\\|', '||');
+  const cleaned_project_id = splitId[1].replace('\\|\\|', '||');
+  return {
+    listing_id: cleaned_listing_id,
+    project_id: cleaned_project_id,
+  };
+}
+
+// There are two internal ID for records, the former is unique to a
+// project, the latter unique to the system (i.e. includes project_id)
+
+/** Record identifier unique to the project */
+export type RecordID = string;
+/** Record identifier unique to the system, includes the project identifier */
+export type FullyResolvedRecordID = string;
+/** A representation of a {FullyResolvedRecordID} split into the component parts */
+export interface SplitRecordID {
+  project_id: ProjectID;
+  record_id: RecordID;
+}
+
+/**
+ * Generate a {FullyResolvedRecordID} from a {SplitRecordID}
+ * @param {SplitRecordID} split_id the Split record identifier
+ * @returns {FullyResolvedRecordID}
+ */
+export function resolve_record_id(
+  split_id: SplitRecordID
+): FullyResolvedRecordID {
+  const cleaned_project_id = split_id.project_id.replace('||', '\\|\\|');
+  return cleaned_project_id + '||' + split_id.record_id;
+}
+
+export function split_full_record_id(
+  full_record_id: FullyResolvedRecordID
+): SplitRecordID {
+  const splitId = full_record_id.split('||');
+  if (
+    splitId.length !== 2 ||
+    splitId[0].trim() === '' ||
+    splitId[1].trim() === ''
+  ) {
+    throw Error('Not a valid full record id');
+  }
+  const cleaned_project_id = splitId[0].replace('\\|\\|', '||');
+  return {
+    project_id: cleaned_project_id,
+    record_id: splitId[1],
+  };
+}
+
+export type RevisionID = string;
+export type AttributeValuePairID = string;
+export type FAIMSAttachmentID = string;
+
+export type FAIMSTypeName = string;
+
+// This should be locked down more
+export type Annotations = any;
+
+export const HRID_STRING = 'hrid';
+
+export const DEFAULT_REALTION_LINK_VOCAB = 'is related to';
+
+export interface TokenInfo {
+  token: string;
+  pubkey: KeyLike;
+}
+
+export interface TokenContents {
+  username: string;
+  roles: string[];
+  name?: string;
+}
+
+export type ProjectRole = string;
+
+export interface ClusterProjectRoles {
+  [key: string]: Array&lt;ProjectRole>;
+}
+
+export interface SyncStatusCallbacks {
+  sync_up: () => void;
+  sync_down: () => void;
+  sync_error: () => void;
+  sync_denied: () => void;
+}
+
+export type LocationState = {
+  parent_record_id?: string; // parent or linked record id, set from parent or linked record
+  field_id?: string; // parent or linked field id, set from parent or linked record
+  type?: string; // type of relationship: Child or Linked
+  parent_link?: string; // link of parent/linked record, so when child/link record saved, this is the redirect link
+  parent?: any; // parent to save upper level information for nest related, for example, grandparent
+  record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
+  hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
+  relation_type_vocabPair?: string[] | null; //pass the parent information to child
+  child_record_id?: RecordID; //child/linked record ID created from parent
+  parent_hrid?: string;
+};
+export interface LinkedRelation {
+  record_id: RecordID;
+  field_id: string;
+  relation_type_vocabPair: string[];
+}
+export interface Relationship {
+  parent?: LinkedRelation; // has single parent
+  linked?: Array&lt;LinkedRelation>; // has multiple link
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.0</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+
+</body>
+</html>

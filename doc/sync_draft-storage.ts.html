@@ -1,0 +1,430 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> sync/draft-storage.ts</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="RecordDraftState.html">RecordDraftState</a></li></ul><h3>Interfaces</h3><ul><li><a href="ProjectObject.html">ProjectObject</a></li><li><a href="ProjectRevisionListing.html">ProjectRevisionListing</a></li><li><a href="SplitRecordID.html">SplitRecordID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ConnectionInfo_create_pouch">ConnectionInfo_create_pouch</a></li><li><a href="global.html#LoginButton">LoginButton</a></li><li><a href="global.html#THROTTLE_TIME">THROTTLE_TIME</a></li><li><a href="global.html#active_db">active_db</a></li><li><a href="global.html#all_meta_synced">all_meta_synced</a></li><li><a href="global.html#all_projects_updated">all_projects_updated</a></li><li><a href="global.html#constantArgs">constantArgs</a></li><li><a href="global.html#constantArgsShared">constantArgsShared</a></li><li><a href="global.html#constantArgsSplit">constantArgsSplit</a></li><li><a href="global.html#createdListings">createdListings</a></li><li><a href="global.html#createdProjects">createdProjects</a></li><li><a href="global.html#data_dbs">data_dbs</a></li><li><a href="global.html#default_changes_opts">default_changes_opts</a></li><li><a href="global.html#deleteStagedData">deleteStagedData</a></li><li><a href="global.html#directory_db">directory_db</a></li><li><a href="global.html#ensure_local_db">ensure_local_db</a></li><li><a href="global.html#ensure_synced_db">ensure_synced_db</a></li><li><a href="global.html#firstDefinedFromList">firstDefinedFromList</a></li><li><a href="global.html#getDataDB">getDataDB</a></li><li><a href="global.html#getProjectDB">getProjectDB</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#initialize_state">initialize_state</a></li><li><a href="global.html#listDraftMetadata">listDraftMetadata</a></li><li><a href="global.html#listDraftsEncoded">listDraftsEncoded</a></li><li><a href="global.html#listRecordMetadata">listRecordMetadata</a></li><li><a href="global.html#listenDataDB">listenDataDB</a></li><li><a href="global.html#listenProject">listenProject</a></li><li><a href="global.html#listenProjectDB">listenProjectDB</a></li><li><a href="global.html#listing_projects_synced">listing_projects_synced</a></li><li><a href="global.html#listings_updated">listings_updated</a></li><li><a href="global.html#local_auth_db">local_auth_db</a></li><li><a href="global.html#local_state_db">local_state_db</a></li><li><a href="global.html#metadata_dbs">metadata_dbs</a></li><li><a href="global.html#newStagedData">newStagedData</a></li><li><a href="global.html#process_listing">process_listing</a></li><li><a href="global.html#process_project">process_project</a></li><li><a href="global.html#projects_dbs">projects_dbs</a></li><li><a href="global.html#projects_meta_synced">projects_meta_synced</a></li><li><a href="global.html#reprocess_listing">reprocess_listing</a></li><li><a href="global.html#resolve_record_id">resolve_record_id</a></li><li><a href="global.html#setLocalConnection">setLocalConnection</a></li><li><a href="global.html#setStagedData">setStagedData</a></li><li><a href="global.html#update_listing">update_listing</a></li><li><a href="global.html#update_project">update_project</a></li><li><a href="global.html#useEventedPromise">useEventedPromise</a></li><li><a href="global.html#waitForStateOnce">waitForStateOnce</a></li></ul></div><div class="category"><h2>Database</h2><h3>Modules</h3><ul><li><a href="module-data_storage.html">data_storage</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Source</p>
+                    <h1>sync/draft-storage.ts</h1>
+                </header>
+                
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: draft-storage.ts
+ * Description:
+ *   TODO
+ */
+
+import PouchDB from 'pouchdb';
+import {v4 as uuidv4} from 'uuid';
+
+import {
+  RecordID,
+  ProjectID,
+  RevisionID,
+  FAIMSTypeName,
+  HRID_STRING,
+  Relationship,
+} from '../datamodel/core';
+import {DEBUG_APP} from '../buildconfig';
+import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
+import {local_pouch_options} from './connection';
+import {
+  generate_file_name,
+  attachment_to_file,
+} from '../data_storage/attachments';
+import {logError} from '../logging';
+
+export type DraftDB = PouchDB.Database&lt;EncodedDraft>;
+
+export const draft_db: DraftDB = new PouchDB(
+  'draft-storage',
+  local_pouch_options
+);
+
+export async function getStagedData(
+  draft_id: string
+): Promise&lt;EncodedDraft &amp; PouchDB.Core.GetMeta> {
+  const draft = await draft_db.get(draft_id, {
+    attachments: true,
+    binary: true,
+  });
+
+  for (const [field_name, attachment_list] of Object.entries(
+    draft.attachments
+  )) {
+    const files = [];
+    for (const file_name of attachment_list) {
+      if (draft._attachments !== undefined) {
+        if (DEBUG_APP) {
+          console.debug('Loading draft file:', file_name);
+        }
+        files.push(
+          attachment_to_file(file_name, draft._attachments[file_name])
+        );
+      } else {
+        logError(
+          "Attachments weren't loaded from pouch, but there should be some"
+        );
+      }
+    }
+    draft.fields[field_name] = files;
+  }
+  return draft;
+}
+
+/**
+ *
+ * @param active_id ID of the project that this draft is for
+ * @param existing If this draft is a draft of edits to an existing record,
+ *                 these IDs identify the existing record
+ * @param type (Less useful if existing is set, as this can be fetched from
+ *              other pouch databases if existing data is set) The FAIMS type
+ *             of this draft document. Doesn't change when draft is updated.
+ * @returns ID of the newly created draft. Use through URL routes to eventually
+ *          call [get|set]stagedData with
+ */
+export async function newStagedData(
+  active_id: ProjectID,
+  existing: null | {
+    record_id: RecordID;
+    revision_id: RevisionID;
+  },
+  type: string,
+  field_types: {[field_name: string]: FAIMSTypeName},
+  record_id: string
+): Promise&lt;PouchDB.Core.DocumentId> {
+  const _id = 'drf-' + uuidv4();
+  const date = new Date();
+
+  return (
+    await draft_db.put({
+      _id: _id,
+      created: date.toString(),
+      updated: date.toString(),
+      fields: {},
+      annotations: {},
+      attachments: {},
+      project_id: active_id,
+      existing: existing,
+      type: type,
+      field_types: field_types,
+      record_id: record_id,
+    })
+  ).id;
+}
+
+/**
+ * @param draft_id This is from the routed URL parameter, which is redirected
+ *                 to from the list of drafts or the newStagedData. The ID
+ *                 that identifies the draft you want to update.
+ * @param new_data Data to update/insert
+ */
+export async function setStagedData(
+  // Matches the PouchDB.Core.Response type, but with optional rev
+  draft_id: PouchDB.Core.DocumentId,
+  new_data: {[key: string]: unknown},
+  new_annotations: {[key: string]: unknown},
+  field_types: {[field_name: string]: FAIMSTypeName},
+  relationship: Relationship
+): Promise&lt;PouchDB.Core.Response> {
+  const existing = await draft_db.get(draft_id);
+  if (DEBUG_APP) {
+    console.debug('Saving draft values:', new_data, new_annotations);
+  }
+  const encoded_info = encodeStagedData(
+    new_data,
+    new_annotations,
+    field_types,
+    relationship
+  );
+
+  return await draft_db.put({
+    ...existing,
+    ...encoded_info,
+    updated: new Date().toString(),
+  });
+}
+
+function encodeStagedData(
+  new_data: {[key: string]: unknown},
+  new_annotations: {[key: string]: unknown},
+  field_types: {[field_name: string]: FAIMSTypeName},
+  relationship: Relationship
+) {
+  // TODO: work out what we need to do specially for annotations, probably
+  // nothing
+  const encoded_annotations = new_annotations;
+  // TODO: integrate this into the rest of the attachment handling system
+  const encoded_data: {[key: string]: unknown} = {};
+  const attachment_metadata: {[key: string]: string[]} = {};
+  const encoded_attachments: any = {};
+
+  for (const field_name in field_types) {
+    const field_data = new_data[field_name];
+    if (field_data !== undefined) {
+      if (
+        field_types[field_name] === 'faims-attachment::Files' &amp;&amp;
+        field_data !== null
+      ) {
+        attachment_metadata[field_name] = [];
+        for (const tmp_file of field_data as File[]) {
+          const file = tmp_file;
+          const file_name = file.name ?? generate_file_name();
+          encoded_attachments[file_name] = {
+            content_type: file.type,
+            data: file,
+          };
+          if (DEBUG_APP) {
+            console.debug('Saving draft file:', file_name);
+          }
+          attachment_metadata[field_name].push(file_name);
+        }
+      } else {
+        encoded_data[field_name] = field_data;
+      }
+    }
+  }
+
+  return {
+    fields: encoded_data,
+    annotations: encoded_annotations,
+    attachments: attachment_metadata,
+    _attachments: encoded_attachments,
+    relationship: relationship,
+  };
+}
+
+/**
+ *
+ * @param draft_id Identifies the draft to delete
+ * @param revision_cache To avoid having to look it up, if you know the revision
+ *                       id of the draft, pass it through here.
+ */
+export async function deleteStagedData(
+  draft_id: PouchDB.Core.DocumentId,
+  revision_cache: null | PouchDB.Core.RevisionId
+) {
+  const revision =
+    revision_cache !== null
+      ? revision_cache
+      : (await draft_db.get(draft_id))._rev;
+
+  await (draft_db as PouchDB.Database&lt;{}>).put(
+    {
+      _id: draft_id,
+      _rev: revision,
+      _deleted: true,
+    },
+    {force: true}
+  );
+}
+
+/**
+ *
+ * @param project_id Project ID (fully qualified) to get the list of drafts for
+ * @param filter Determines what subset (or all) of the drafts to get.
+ *               This filters by what type of draft.
+ *               If a given draft is an update to an existing record that has
+ *               been synced, it will show when listing by 'all' or 'updates'.
+ *               Otherwise, it will show when listing by 'all' or 'created'.
+ * @returns List of drafts filtered.
+ */
+
+export async function listDraftsEncoded(
+  project_id: string,
+  filter: 'updates' | 'created' | 'all'
+): Promise&lt;EncodedDraft[]> {
+  return (
+    await draft_db.find({
+      selector: {
+        project_id: project_id,
+        // Based on what value filter takes, we either:
+        // all: Don't select on the existing field at all,
+        // created: Select for null existing fields, or
+        // updates: Select for non-null existing fields
+        ...(filter === 'all'
+          ? {}
+          : {
+              existing: filter === 'updates' ? {$ne: null} : null,
+            }),
+      },
+    })
+  ).docs;
+}
+
+/**
+ * Returns a list of not deleted records
+ * @param project_id Project ID to get list of draft for
+ * @returns key: record id, value: record (NOT NULL)
+ */
+export async function listDraftMetadata(
+  project_id: ProjectID,
+  filter: 'updates' | 'created' | 'all'
+): Promise&lt;DraftMetadataList> {
+  try {
+    const records = await listDraftsEncoded(project_id, filter);
+    const out: DraftMetadataList = {};
+    records.forEach(record => {
+      out[record._id] = {
+        project_id: project_id,
+        _id: record._id,
+        created: new Date(record.created),
+        existing: record.existing,
+        updated: new Date(record.updated),
+        type: record.type,
+        hrid: getDraftHRID(record) ?? record._id,
+        record_id: record.record_id,
+      };
+    });
+    return out;
+  } catch (err) {
+    console.warn('Failed to get metadata', err);
+    throw Error('failed to get metadata');
+  }
+}
+
+function getDraftHRID(record: EncodedDraft): string | null {
+  let hrid_name: string | null = null;
+  for (const possible_name of Object.keys(record.fields)) {
+    if (possible_name.startsWith(HRID_STRING)) {
+      hrid_name = possible_name;
+      break;
+    }
+  }
+
+  if (DEBUG_APP) {
+    console.debug('hrid_name:', hrid_name);
+  }
+  if (hrid_name === null) {
+    console.warn('No HRID field found');
+    return null;
+  }
+
+  const hrid_id = record.fields[hrid_name] as string | undefined | null;
+  if (hrid_id === undefined || hrid_id === null) {
+    console.warn('No HRID field set for revision');
+    return null;
+  }
+  return hrid_id;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.0</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+
+</body>
+</html>

@@ -1,0 +1,696 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title> data_storage/internals.ts</title>
+
+  <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./build/entry.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,400,700|Inconsolata,700" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+  <link type="text/css" rel="stylesheet" href="https://jmblog.github.io/color-themes-for-google-code-prettify/themes/tomorrow-night.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/app.min.css">
+  <link type="text/css" rel="stylesheet" href="styles/iframe.css">
+  <link type="text/css" rel="stylesheet" href="">
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+  
+</head>
+
+
+
+<body class="layout small-header">
+    <div id="stickyNavbarOverlay"></div>
+    
+
+<div class="top-nav">
+    <div class="inner">
+        <a id="hamburger" role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+        <div class="logo">
+            
+            
+        </div>
+        <div class="menu">
+            
+            <div class="navigation">
+                <a
+                    href="index.html"
+                    class="link"
+                >
+                    Documentation
+                </a>
+                
+                
+                
+            </div>
+        </div>
+    </div>
+</div>
+    <div id="main">
+        <div
+            class="sidebar "
+            id="sidebarNav"
+        >
+            
+            <nav>
+                
+                    <h2><a href="index.html">Documentation</a></h2><div class="category"><h3>Classes</h3><ul><li><a href="RecordDraftState.html">RecordDraftState</a></li></ul><h3>Interfaces</h3><ul><li><a href="ProjectObject.html">ProjectObject</a></li><li><a href="ProjectRevisionListing.html">ProjectRevisionListing</a></li><li><a href="SplitRecordID.html">SplitRecordID</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ConnectionInfo_create_pouch">ConnectionInfo_create_pouch</a></li><li><a href="global.html#LoginButton">LoginButton</a></li><li><a href="global.html#THROTTLE_TIME">THROTTLE_TIME</a></li><li><a href="global.html#active_db">active_db</a></li><li><a href="global.html#all_meta_synced">all_meta_synced</a></li><li><a href="global.html#all_projects_updated">all_projects_updated</a></li><li><a href="global.html#constantArgs">constantArgs</a></li><li><a href="global.html#constantArgsShared">constantArgsShared</a></li><li><a href="global.html#constantArgsSplit">constantArgsSplit</a></li><li><a href="global.html#createdListings">createdListings</a></li><li><a href="global.html#createdProjects">createdProjects</a></li><li><a href="global.html#data_dbs">data_dbs</a></li><li><a href="global.html#default_changes_opts">default_changes_opts</a></li><li><a href="global.html#deleteStagedData">deleteStagedData</a></li><li><a href="global.html#directory_db">directory_db</a></li><li><a href="global.html#ensure_local_db">ensure_local_db</a></li><li><a href="global.html#ensure_synced_db">ensure_synced_db</a></li><li><a href="global.html#firstDefinedFromList">firstDefinedFromList</a></li><li><a href="global.html#getDataDB">getDataDB</a></li><li><a href="global.html#getProjectDB">getProjectDB</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#initialize_state">initialize_state</a></li><li><a href="global.html#listDraftMetadata">listDraftMetadata</a></li><li><a href="global.html#listDraftsEncoded">listDraftsEncoded</a></li><li><a href="global.html#listRecordMetadata">listRecordMetadata</a></li><li><a href="global.html#listenDataDB">listenDataDB</a></li><li><a href="global.html#listenProject">listenProject</a></li><li><a href="global.html#listenProjectDB">listenProjectDB</a></li><li><a href="global.html#listing_projects_synced">listing_projects_synced</a></li><li><a href="global.html#listings_updated">listings_updated</a></li><li><a href="global.html#local_auth_db">local_auth_db</a></li><li><a href="global.html#local_state_db">local_state_db</a></li><li><a href="global.html#metadata_dbs">metadata_dbs</a></li><li><a href="global.html#newStagedData">newStagedData</a></li><li><a href="global.html#process_listing">process_listing</a></li><li><a href="global.html#process_project">process_project</a></li><li><a href="global.html#projects_dbs">projects_dbs</a></li><li><a href="global.html#projects_meta_synced">projects_meta_synced</a></li><li><a href="global.html#reprocess_listing">reprocess_listing</a></li><li><a href="global.html#resolve_record_id">resolve_record_id</a></li><li><a href="global.html#setLocalConnection">setLocalConnection</a></li><li><a href="global.html#setStagedData">setStagedData</a></li><li><a href="global.html#update_listing">update_listing</a></li><li><a href="global.html#update_project">update_project</a></li><li><a href="global.html#useEventedPromise">useEventedPromise</a></li><li><a href="global.html#waitForStateOnce">waitForStateOnce</a></li></ul></div><div class="category"><h2>Database</h2><h3>Modules</h3><ul><li><a href="module-data_storage.html">data_storage</a></li></ul></div>
+                
+            </nav>
+        </div>
+        <div class="core" id="main-content-wrapper">
+            <div class="content">
+                <header class="page-title">
+                    <p>Source</p>
+                    <h1>data_storage/internals.ts</h1>
+                </header>
+                
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Filename: internals.ts
+ * Description:
+ *   Helper functions to handle converting data between the GUI and pouchdb.
+ */
+
+import {v4 as uuidv4} from 'uuid';
+
+import {DEBUG_APP} from '../buildconfig';
+import {getDataDB} from '../sync';
+import {
+  AttributeValuePairID,
+  RecordID,
+  ProjectID,
+  RevisionID,
+  FAIMSTypeName,
+  Annotations,
+  HRID_STRING,
+} from '../datamodel/core';
+import {
+  AttributeValuePair,
+  AttributeValuePairMap,
+  AttributeValuePairIDMap,
+  EncodedRecord,
+  FAIMSAttachment,
+  RecordMap,
+  Revision,
+  RevisionMap,
+} from '../datamodel/database';
+import {Record, RecordMetadataList} from '../datamodel/ui';
+import {
+  getAttachmentLoaderForType,
+  getAttachmentDumperForType,
+  getEqualityFunctionForType,
+} from '../datamodel/typesystem';
+
+type EncodedRecordMap = Map&lt;RecordID, EncodedRecord>;
+
+interface FormData {
+  data: {[field_name: string]: any};
+  annotations: {[field_name: string]: Annotations};
+  types: {[field_name: string]: FAIMSTypeName};
+}
+
+export function generateFAIMSRevisionID(): RevisionID {
+  return 'frev-' + uuidv4();
+}
+
+export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
+  return 'avp-' + uuidv4();
+}
+
+export async function updateHeads(
+  project_id: ProjectID,
+  obsid: RecordID,
+  base_revids: RevisionID[],
+  new_revid: RevisionID
+) {
+  const datadb = await getDataDB(project_id);
+  const record = await getRecord(project_id, obsid);
+
+  // Add new revision to heads, removing obsolete heads
+  // Using set in case we have the revision already (i.e. we're cleaning up
+  // heads via a fast-forward merge)
+  const heads = new Set&lt;RevisionID>(record.heads);
+  heads.add(new_revid);
+  for (const r of base_revids) {
+    heads.delete(r);
+  }
+  record.heads = Array.from(heads);
+  record.heads.sort();
+
+  // Add new head to revisions also
+  // Using set in case we have the revision already (i.e. we're cleaning up
+  // heads via a fast-forward merge)
+  const revisions = new Set&lt;RevisionID>(record.revisions);
+  revisions.add(new_revid);
+  record.revisions = Array.from(revisions);
+  record.revisions.sort();
+
+  await datadb.put(record);
+}
+
+async function mergeRecordConflicts(
+  project_id: ProjectID,
+  record: EncodedRecord
+): Promise&lt;EncodedRecord> {
+  const datadb = await getDataDB(project_id);
+
+  // There is no merge functionality in couchdb, you pick a revision and delete
+  // the others. Let's use the default revision selected as the base for
+  // consistency.
+
+  if (record._conflicts === undefined) {
+    // If there are no actual conflicts, just return as per normal
+    return record;
+  }
+  // Get current heads, revisions as sets for easy merging
+  const heads = new Set&lt;RevisionID>(record.heads);
+  const revisions = new Set&lt;RevisionID>(record.revisions);
+
+  // Get the additional conflicted revisions
+  const conflicted_docs = await datadb.get(record._id, {
+    open_revs: record._conflicts,
+  });
+  const new_docs = [];
+  for (const doc of conflicted_docs) {
+    const tmp_rec = doc.ok as EncodedRecord;
+    // Add heads
+    for (const rev of tmp_rec.heads) {
+      heads.add(rev);
+    }
+    // Add revisions
+    for (const rev of tmp_rec.revisions) {
+      revisions.add(rev);
+    }
+    // We will delete the additional revisions
+    tmp_rec._deleted = true;
+    new_docs.push(tmp_rec);
+  }
+  record.heads = Array.from(heads);
+  record.heads.sort();
+  record.revisions = Array.from(revisions);
+  record.revisions.sort();
+  new_docs.push(record);
+  await datadb.bulkDocs(new_docs);
+  return record;
+}
+
+export async function getRecord(
+  project_id: ProjectID,
+  obsid: RecordID,
+  merge_conflicts = false
+): Promise&lt;EncodedRecord> {
+  const records = await getRecords(project_id, [obsid]);
+  const record = records[obsid];
+  if (record === undefined) {
+    throw Error(`no such record ${obsid}`);
+  }
+  if (merge_conflicts) {
+    return await mergeRecordConflicts(project_id, record);
+  }
+  return record;
+}
+
+export async function getRevision(
+  project_id: ProjectID,
+  rev_id: RevisionID
+): Promise&lt;Revision> {
+  const revisions = await getRevisions(project_id, [rev_id]);
+  const revision = revisions[rev_id];
+  if (revision === undefined) {
+    throw Error(`no such revision ${rev_id}`);
+  }
+  return revision;
+}
+
+export async function getAttributeValuePair(
+  project_id: ProjectID,
+  avp_id: AttributeValuePairID
+): Promise&lt;AttributeValuePair> {
+  const avps = await getAttributeValuePairs(project_id, [avp_id]);
+  const avp = avps[avp_id];
+  if (avp === undefined) {
+    throw Error(`no such avp ${avp_id}`);
+  }
+  return avp;
+}
+
+export async function getLatestRevision(
+  project_id: ProjectID,
+  docid: string
+): Promise&lt;string | undefined> {
+  const datadb = await getDataDB(project_id);
+  try {
+    const doc = await datadb.get(docid);
+    return doc._rev;
+  } catch (err) {
+    if (DEBUG_APP) {
+      console.debug(err);
+    }
+    return undefined;
+  }
+}
+
+export async function getHRID(
+  project_id: ProjectID,
+  revision: Revision
+): Promise&lt;string | null> {
+  let hrid_name: string | null = null;
+  for (const possible_name of Object.keys(revision.avps)) {
+    if (possible_name.startsWith(HRID_STRING)) {
+      hrid_name = possible_name;
+      break;
+    }
+  }
+
+  if (DEBUG_APP) {
+    console.debug('hrid_name:', hrid_name);
+  }
+  if (hrid_name === null) {
+    console.warn('No HRID field found');
+    return null;
+  }
+  const hrid_avp_id = revision.avps[hrid_name];
+  if (hrid_avp_id === undefined) {
+    console.warn('No HRID field set for revision');
+    return null;
+  }
+  if (DEBUG_APP) {
+    console.debug('hrid_avp_id:', hrid_avp_id);
+  }
+  try {
+    const hrid_avp = await getAttributeValuePair(project_id, hrid_avp_id);
+    if (DEBUG_APP) {
+      console.debug('hrid_avp:', hrid_avp);
+    }
+    return hrid_avp.data as string;
+  } catch (err) {
+    console.warn('Failed to load HRID AVP:', project_id, hrid_avp_id);
+    return null;
+  }
+}
+
+/**
+ * Returns a list of not deleted records
+ * @param project_id Project ID to get list of record for
+ * @returns key: record id, value: record (NOT NULL)
+ */
+export async function listRecordMetadata(
+  project_id: ProjectID,
+  record_ids: RecordID[] | null = null
+): Promise&lt;RecordMetadataList> {
+  try {
+    const out: RecordMetadataList = {};
+    const records =
+      record_ids === null
+        ? await getAllRecords(project_id)
+        : recordToRecordMap(await getRecords(project_id, record_ids));
+    const revision_ids: RevisionID[] = [];
+    records.forEach(o => {
+      revision_ids.push(o.heads[0]);
+    });
+    if (revision_ids.length === 0) {
+      // No records, so return early
+      return out;
+    }
+    const revisions = await getRevisions(project_id, revision_ids);
+    for (const [record_id, record] of records) {
+      const revision_id = record.heads[0];
+      const revision = revisions[revision_id];
+      if (revision === undefined) {
+        // We don't have that revision, so skip
+        console.warn(
+          'Unable to find revision',
+          project_id,
+          record_id,
+          revision_id
+        );
+        continue;
+      }
+      const hrid =
+        revision === undefined
+          ? record_id
+          : (await getHRID(project_id, revision)) ?? record_id;
+      if (DEBUG_APP) {
+        console.debug('hrid:', hrid);
+      }
+      out[record_id] = {
+        project_id: project_id,
+        record_id: record_id,
+        revision_id: revision_id,
+        created: new Date(record.created),
+        created_by: record.created_by,
+        updated: new Date(revision.created),
+        updated_by: revision.created_by,
+        conflicts: record.heads.length > 1,
+        deleted: revision.deleted ? true : false,
+        hrid: hrid,
+        type: record.type,
+        relationship: revision.relationship,
+      };
+    }
+    if (DEBUG_APP) {
+      console.debug('Record metadata list', out);
+    }
+    return out;
+  } catch (err) {
+    console.warn('Failed to get metadata', err);
+    throw Error('failed to get metadata');
+  }
+}
+
+export async function getAttributeValuePairs(
+  project_id: ProjectID,
+  avp_ids: AttributeValuePairID[]
+): Promise&lt;AttributeValuePairMap> {
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.allDocs({
+    include_docs: true,
+    attachments: true,
+    binary: true,
+    keys: avp_ids,
+  });
+  const rows = res.rows;
+  const mapping: AttributeValuePairMap = {};
+  for (const e of rows) {
+    if (e.doc !== undefined) {
+      const doc = e.doc as AttributeValuePair;
+      mapping[doc._id] = await loadAttributeValuePair(project_id, doc);
+    }
+  }
+  return mapping;
+}
+
+export async function getRevisions(
+  project_id: ProjectID,
+  revision_ids: RevisionID[]
+): Promise&lt;RevisionMap> {
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.allDocs({
+    include_docs: true,
+    keys: revision_ids,
+  });
+  const rows = res.rows;
+  const mapping: RevisionMap = {};
+  rows.forEach(e => {
+    if (e.doc !== undefined) {
+      const doc = e.doc as Revision;
+      mapping[doc._id] = doc;
+    }
+  });
+  return mapping;
+}
+
+export async function getRecords(
+  project_id: ProjectID,
+  record_ids: RecordID[]
+): Promise&lt;RecordMap> {
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.allDocs({
+    include_docs: true,
+    keys: record_ids,
+    conflicts: true,
+  });
+  const rows = res.rows;
+  const mapping: RecordMap = {};
+  rows.forEach(e => {
+    if (e.doc !== undefined) {
+      const doc = e.doc as EncodedRecord;
+      mapping[doc._id] = doc;
+    }
+  });
+  return mapping;
+}
+
+function recordToRecordMap(old_recs: RecordMap): EncodedRecordMap {
+  const records: EncodedRecordMap = new Map();
+  for (const r in old_recs) {
+    records.set(r, old_recs[r]);
+  }
+  return records;
+}
+
+export async function getAllRecords(
+  project_id: ProjectID
+): Promise&lt;EncodedRecordMap> {
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.find({
+    selector: {
+      record_format_version: 1,
+    },
+  });
+  const records: EncodedRecordMap = new Map();
+  res.docs.map(o => {
+    records.set(o._id, o as EncodedRecord);
+  });
+  return records;
+}
+
+export async function getFormDataFromRevision(
+  project_id: ProjectID,
+  revision: Revision
+): Promise&lt;FormData> {
+  const form_data: FormData = {
+    data: {},
+    annotations: {},
+    types: {},
+  };
+  const avp_ids = Object.values(revision.avps);
+  const avps = await getAttributeValuePairs(project_id, avp_ids);
+
+  for (const [name, avp_id] of Object.entries(revision.avps)) {
+    form_data.data[name] = avps[avp_id].data;
+    form_data.annotations[name] = avps[avp_id].annotations;
+    form_data.types[name] = avps[avp_id].type;
+  }
+  return form_data;
+}
+
+export async function addNewRevisionFromForm(
+  project_id: ProjectID,
+  record: Record,
+  new_revision_id: RevisionID
+) {
+  const datadb = await getDataDB(project_id);
+  const avp_map = await addNewAttributeValuePairs(
+    project_id,
+    record,
+    new_revision_id
+  );
+  const parents = record.revision_id === null ? [] : [record.revision_id];
+  const new_revision: Revision = {
+    _id: new_revision_id,
+    revision_format_version: 1,
+    avps: avp_map,
+    record_id: record.record_id,
+    parents: parents,
+    created: record.updated.toISOString(),
+    created_by: record.updated_by,
+    type: record.type,
+    ugc_comment: record.ugc_comment,
+    relationship: record.relationship,
+  };
+  await datadb.put(new_revision);
+}
+
+async function addNewAttributeValuePairs(
+  project_id: ProjectID,
+  record: Record,
+  new_revision_id: RevisionID
+): Promise&lt;AttributeValuePairIDMap> {
+  const datadb = await getDataDB(project_id);
+  const avp_map: AttributeValuePairIDMap = {};
+  let revision;
+  let data;
+  if (record.revision_id !== null) {
+    revision = await getRevision(project_id, record.revision_id);
+    data = await getFormDataFromRevision(project_id, revision);
+  } else {
+    revision = {};
+    data = {
+      data: {},
+      annotations: {},
+      types: {},
+    };
+  }
+  const docs_to_dump: Array&lt;AttributeValuePair | FAIMSAttachment> = [];
+  for (const [field_name, field_value] of Object.entries(record.data)) {
+    const stored_data = data.data[field_name];
+    const stored_anno = data.annotations[field_name];
+    const eqfunc = getEqualityFunctionForType(record.field_types[field_name]);
+    const has_data_changed =
+      stored_data === undefined || !(await eqfunc(stored_data, field_value));
+    const has_anno_changed =
+      stored_anno === undefined ||
+      !(await eqfunc(stored_anno, record.annotations[field_name]));
+    if (has_data_changed || has_anno_changed) {
+      const new_avp_id = generateFAIMSAttributeValuePairID();
+      const new_avp = {
+        _id: new_avp_id,
+        avp_format_version: 1,
+        type: record.field_types[field_name] ?? '??:??',
+        data: field_value,
+        revision_id: new_revision_id,
+        record_id: record.record_id,
+        annotations: record.annotations[field_name],
+        created: record.updated.toISOString(),
+        created_by: record.updated_by,
+      };
+      docs_to_dump.push(...dumpAttributeValuePair(new_avp));
+      avp_map[field_name] = new_avp_id;
+    } else {
+      if (DEBUG_APP) {
+        console.info(
+          'Using existing AVP, the following are equal',
+          stored_data,
+          field_value
+        );
+      }
+      if (revision.avps !== undefined) {
+        avp_map[field_name] = revision.avps[field_name];
+      } else {
+        // This should not happen, as if stored_data === field_value and
+        // stored_data is not undefined, then then revision.avps should be
+        // defined
+        throw Error('something odd happened when saving avps...');
+      }
+    }
+  }
+  await datadb.bulkDocs(docs_to_dump);
+  return avp_map;
+}
+
+export async function createNewRecord(
+  project_id: ProjectID,
+  record: Record,
+  revision_id: RevisionID
+) {
+  const datadb = await getDataDB(project_id);
+  const new_encoded_record = {
+    _id: record.record_id,
+    record_format_version: 1,
+    created: record.updated.toISOString(),
+    created_by: record.updated_by,
+    revisions: [revision_id],
+    heads: [revision_id],
+    type: record.type,
+  };
+  try {
+    await datadb.put(new_encoded_record);
+  } catch (err) {
+    // TODO: add proper error handling for conflicts
+    console.warn(err);
+    throw Error('failed to create record document');
+  }
+}
+
+/*
+ * This handles converting attachments to data
+ */
+async function loadAttributeValuePair(
+  project_id: ProjectID,
+  avp: AttributeValuePair
+): Promise&lt;AttributeValuePair> {
+  const attach_refs = avp.faims_attachments;
+  if (attach_refs === null || attach_refs === undefined) {
+    // No attachments
+    return avp;
+  }
+  const loader = getAttachmentLoaderForType(avp.type);
+  if (loader === null) {
+    return avp;
+  }
+  const ids_to_get = attach_refs.map(ref => ref.attachment_id);
+  const datadb = await getDataDB(project_id);
+  const res = await datadb.allDocs({
+    include_docs: true,
+    attachments: true,
+    binary: true,
+    keys: ids_to_get,
+  });
+  const rows = res.rows;
+  const attach_docs: FAIMSAttachment[] = [];
+  rows.forEach(e => {
+    if (e.doc !== undefined) {
+      const doc = e.doc as FAIMSAttachment;
+      attach_docs.push(doc);
+    }
+  });
+  return loader(avp, attach_docs);
+}
+
+/*
+ * This handles converting data to attachments
+ */
+function dumpAttributeValuePair(
+  avp: AttributeValuePair
+): Array&lt;AttributeValuePair | FAIMSAttachment> {
+  const dumper = getAttachmentDumperForType(avp.type);
+  if (dumper === null) {
+    return [avp];
+  }
+  return dumper(avp);
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+            </div>
+            
+            <footer class="footer">
+                <div class="content has-text-centered">
+                    <p>Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.0</a></p>
+                    <p class="sidebar-created-by">
+                        <a href="https://github.com/SoftwareBrothers/better-docs" target="_blank">BetterDocs theme</a> provided with <i class="fas fa-heart"></i> by
+                        <a href="http://softwarebrothers.co" target="_blank">SoftwareBrothers - JavaScript Development Agency</a>
+                    </p>
+                </div>
+            </footer>
+            
+        </div>
+        <div id="side-nav" class="side-nav">
+        </div>
+    </div>
+<script src="scripts/app.min.js"></script>
+<script>PR.prettyPrint();</script>
+<script src="scripts/linenumber.js"> </script>
+
+
+</body>
+</html>
