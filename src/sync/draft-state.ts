@@ -40,6 +40,7 @@ import {
   Relationship,
 } from '../datamodel/core';
 import {DEBUG_APP} from '../buildconfig';
+import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 const DRAFT_SAVE_CYCLE = 5000;
@@ -391,7 +392,7 @@ class RecordDraftState {
             // something other than 'edited' (possibly when clear() is called
             // before resuming). In which case we don't want to set more data.
           })
-          .catch(console.error);
+          .catch(logError);
       } else {
         // Edit existing document by setting data
         this.data = {
@@ -543,6 +544,9 @@ class RecordDraftState {
       if (this.data.state !== 'edited') {
         // Nothing to save yet, probably the user hasn't touched an
         // existing record
+        // for existing record, set this.is_saving false, so when draft created, it can be saved correctly
+        this.is_saving = false;
+        this.saveListener(Error('no changes'));
         return;
       }
       result = await setStagedData(
@@ -639,6 +643,8 @@ class RecordDraftState {
   async clear() {
     if (this.data.state === 'edited') {
       await deleteStagedData(await this.data.draft_id, this.last_revision);
+    } else {
+      console.info('Draft not edited, so not being cleared');
     }
 
     this.data = {state: 'uninitialized'};

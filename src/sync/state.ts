@@ -31,6 +31,7 @@ import {mergeHeads} from '../data_storage/merging';
 
 import {ExistingActiveDoc, LocalDB} from './databases';
 import {DirectoryEmitter} from './events';
+import {logError} from '../logging';
 
 export type createdProjectsInterface = {
   project: ProjectObject;
@@ -41,7 +42,7 @@ export type createdProjectsInterface = {
 
 /**
  * This is appended to whenever a project has its
- * meta & data local dbs come into existance.
+ * meta & data local dbs come into existence.
  *
  * This is used by getProjectDB/getDataDB in index.ts, as the way to get
  * ProjectObjects
@@ -57,7 +58,7 @@ export type createdListingsInterface = {
 
 /**
  * This is appended to whenever a listing has its
- * projects/people dbs come into existance. (Each individual project
+ * projects/people dbs come into existence. (Each individual project
  * isn't guaranteed to be in the createdProjects object. Use the
  * data_sync_state or project_update events to listen for such changes)
  *
@@ -80,7 +81,7 @@ export let listings_updated = false;
  * True when the listings_sync_state is true, AND all projects that are to be
  * in createdProjects have been created. When this is true, createdProjects
  * is not expected to change in a major way. (project_update events may
- * still occur, but the purpose of this is so that we can exclude the possibilty
+ * still occur, but the purpose of this is so that we can exclude the possibility
  * that a project hasn't synced yet when trying to wait for a project.)
  *
  * This essentially accumulates all the projects_sync_state events, combined with
@@ -206,7 +207,7 @@ export function register_sync_state(initializeEvents: DirectoryEmitter) {
     common_check();
   });
 }
-export type MetasCompleteType = {
+export type MetaCompleteType = {
   [active_id in ProjectID]:
     | [ActiveDoc, ProjectObject, LocalDB<ProjectMetaObject>]
     // Error'd out metadata db
@@ -236,13 +237,11 @@ function start_listening_for_changes(proj_id: ProjectID) {
     include_docs: true,
   }).on('change', async doc => {
     if (doc !== undefined) {
-      const pdoc = doc.doc;
-
-      if (pdoc !== undefined && isRecord(pdoc)) {
+      if (doc.doc !== undefined && isRecord(doc.doc)) {
         try {
           await mergeHeads(proj_id, doc.id);
-        } catch (err) {
-          console.error('Automerge errored', err);
+        } catch (err: any) {
+          logError(err);
         }
       }
     }

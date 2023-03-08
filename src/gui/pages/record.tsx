@@ -39,7 +39,12 @@ import {ActionType} from '../../context/actions';
 
 import * as ROUTES from '../../constants/routes';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID, RecordID, RevisionID} from '../../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  Relationship,
+  RevisionID,
+} from '../../datamodel/core';
 import {
   ProjectUIModel,
   ProjectInformation,
@@ -51,7 +56,6 @@ import {getUiSpecForProject} from '../../uiSpecification';
 
 import ConflictForm from '../components/record/conflict/conflictform';
 import RecordMeta from '../components/record/meta';
-import RecordDelete from '../components/record/delete';
 import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
@@ -77,6 +81,7 @@ import {useTheme} from '@mui/material/styles';
 import {
   getDetailRelatedInformation,
   getParentPersistenceData,
+  remove_deleted_parent,
 } from '../components/record/relationships/RelatedInformation';
 import {
   RecordLinkProps,
@@ -86,9 +91,10 @@ import {
 import ArticleIcon from '@mui/icons-material/Article';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CircularLoading from '../components/ui/circular_loading';
-import {useLocation} from 'react-router-dom';
 import RecordData from '../components/record/RecordData';
-
+import getLocalDate from '../fields/LocalDate';
+import RecordDelete from '../components/notebook/delete';
+import {logError} from '../../logging';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -154,9 +160,6 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const location: any = useLocation();
-  console.debug('Location', location.state);
-
   const [breadcrumbs, setBreadcrumbs] = useState<
     {link?: string; title: string}[]
   >([]);
@@ -166,24 +169,25 @@ export default function Record() {
     if (project_id !== null) {
       getProjectMetadata(project_id, 'sections')
         .then(res => setMetaSection(res))
-        .catch(console.error /*TODO*/);
+        .catch(logError);
       try {
         setIsSyncing(isSyncingProjectAttachments(project_id));
       } catch (error) {
-        console.error('Error to set IsSyncing', error);
+        logError(error);
       }
     }
   }, [project_id]);
 
   useEffect(() => {
     const getIni = async () => {
+      console.debug('record start initial', project_id, record_id, revision_id);
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
       listFAIMSRecordRevisions(project_id, record_id)
         .then(all_revisions => {
           setRevisions(all_revisions);
         })
-        .catch(console.error /*TODO*/);
+        .catch(logError);
       getHRIDforRecordID(project_id, record_id).then(hrid => {
         setHrid(hrid);
         setBreadcrumbs([
@@ -195,6 +199,17 @@ export default function Record() {
           },
           {title: hrid ?? record_id},
         ]);
+        setrevision_id(revision_id);
+        setselectedRevision(revision_id);
+        //check if record loading correctly when link
+        console.debug(
+          'get breadcrumbs project_id',
+          breadcrumbs,
+          project_id,
+          record_id,
+          hrid
+        );
+        setValue('1');
       });
     };
 
@@ -213,7 +228,7 @@ export default function Record() {
               setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
           }
         })
-        .catch(console.error /*TODO*/);
+        .catch(logError);
     };
 
     getconflicts();
@@ -221,13 +236,16 @@ export default function Record() {
 
   useEffect(() => {
     const getConflictList = async () => {
+      console.debug('record start initial conflict', selectrevision);
       try {
-        if (selectrevision !== null)
+        if (selectrevision !== null) {
+          setrevision_id(selectrevision); //set revision_id what is in the form, so it can be same
           setConflictfields(
             await findConflictingFields(project_id, record_id, selectrevision)
           );
+        }
       } catch (error) {
-        console.error('Error to get Conflict List', error);
+        logError(error);
       }
     };
     getConflictList();
@@ -235,6 +253,12 @@ export default function Record() {
 
   useEffect(() => {
     const getType = async () => {
+      console.debug(
+        'record start initial type',
+        project_id,
+        record_id,
+        updatedrevision_id
+      );
       try {
         const latest_record = await getFullRecordData(
           project_id,
@@ -245,16 +269,13 @@ export default function Record() {
         if (latest_record !== null) {
           setType(latest_record.type);
           setRecordinfo(
-            JSON.stringify(latest_record.updated)
-              .replaceAll('"', '')
-              .replaceAll('T', ' ')
-              .slice(0, 19) +
+            getLocalDate(latest_record.updated).replaceAll('T', ' ') +
               ' ' +
               latest_record.updated_by
           );
         }
       } catch (error) {
-        console.error('Error to get Type', error);
+        logError(error);
       }
     };
     getType();
@@ -264,15 +285,28 @@ export default function Record() {
     // this is function to get child information
 
     const getrelated_Info = async () => {
-      console.debug(relatedRecords);
       try {
         if (uiSpec !== null && type !== null) {
           const latest_record = await getFullRecordData(
             project_id,
             record_id,
-            updatedrevision_id
+            updatedrevision_id,
+            false
           );
           if (latest_record !== null) {
+            //add checking for deleted record, so it can be direct to notebook page
+            if (latest_record.deleted === true) {
+              dispatch({
+                type: ActionType.ADD_ALERT,
+                payload: {
+                  message: 'Could not load record, it might be deleted ',
+                  severity: 'warning',
+                },
+              });
+              history.push({
+                pathname: ROUTES.NOTEBOOK + project_id,
+              });
+            }
             const newRelationship = await getDetailRelatedInformation(
               uiSpec,
               type,
@@ -281,6 +315,10 @@ export default function Record() {
               latest_record.relationship ?? null,
               record_id,
               updatedrevision_id
+            );
+            console.debug(
+              'record start initial relationship relationship',
+              newRelationship
             );
             setRelatedRecords(newRelationship);
             const newParent = await getParentPersistenceData(
@@ -299,7 +337,15 @@ export default function Record() {
               },
               {title: hrid ?? record_id},
             ];
-            if (newParent !== null && newParent.length > 0) {
+            console.debug(
+              'updated record relationship parent newParent ',
+              newParent
+            );
+            if (
+              newParent !== null &&
+              newParent.length > 0 &&
+              newParent[0].deleted !== true
+            ) {
               newBreadcrumbs = [
                 // {link: ROUTES.INDEX, title: 'Home'},
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
@@ -315,16 +361,24 @@ export default function Record() {
               ];
             }
             setBreadcrumbs(newBreadcrumbs);
+            console.debug(
+              'get breadcrumbs project_id',
+              breadcrumbs,
+              newBreadcrumbs,
+              record_id,
+              hrid
+            );
           }
           // setValue('1');
           setIs_link_ready(true);
         }
       } catch (error) {
-        console.error('Error to get child information', error);
+        logError(error);
+        //setIs_link_ready(true);
       }
     };
     getrelated_Info();
-  }, [uiSpec, type]);
+  }, [uiSpec, type, updatedrevision_id]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
@@ -336,6 +390,60 @@ export default function Record() {
       setOpen(true);
       setpressedvalue(newValue);
     } else setValue(newValue);
+  };
+
+  const handleUnlink = (
+    parent_record_id: string,
+    relation_type: string,
+    field_id: string
+  ) => {
+    remove_deleted_parent(
+      relation_type,
+      project_id,
+      record_id,
+      updatedrevision_id,
+      field_id,
+      parent_record_id,
+      relatedRecords
+    ).then(
+      (result: {
+        is_updated: boolean;
+        new_revision_id: string | null | undefined;
+        new_relation: Relationship;
+        newRelationship: RecordLinkProps[];
+      }) => {
+        if (result.is_updated) {
+          console.debug('updated record relationship parent ', result);
+          if (
+            result.new_revision_id !== undefined &&
+            result.new_revision_id !== null &&
+            result.new_revision_id !== ''
+          )
+            setrevision_id(result.new_revision_id);
+          if (uiSpec !== null) {
+            setRelatedRecords(result.newRelationship);
+
+            getParentPersistenceData(
+              uiSpec,
+              project_id,
+              result.new_relation ?? {},
+              record_id
+            ).then(newParent => {
+              setParentLinks(newParent);
+              console.debug('updated record relationship parent ', newParent);
+            });
+          }
+        } else {
+          dispatch({
+            type: ActionType.ADD_ALERT,
+            payload: {
+              message: 'Could not remove link,please save and then try again ',
+              severity: 'warning',
+            },
+          });
+        }
+      }
+    );
   };
 
   const handleConfirm = () => {
@@ -353,6 +461,20 @@ export default function Record() {
     uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
       ? '' + uiSpec.viewsets[type]['label']
       : '';
+
+  const handleRefresh = () => {
+    /**
+     * Handler for Refreshing project (go back to notebook)
+     */
+    return new Promise(resolve => {
+      resolve(() => {
+        history.push({
+          pathname: ROUTES.NOTEBOOK + project_id,
+        });
+      });
+    });
+  };
+
   return (
     <Box>
       <Grid container wrap="nowrap" spacing={2}>
@@ -556,7 +678,6 @@ export default function Record() {
                             </Grid>
                           </Box>
                           <Box>
-                            {/* Add the component for inherit data from parent */}
                             {(isalerting === false ||
                               draft_id !== undefined) && (
                               <RecordData
@@ -564,11 +685,12 @@ export default function Record() {
                                 record_id={record_id}
                                 hrid={hrid}
                                 record_type={record_type}
-                                revision_id={
-                                  selectrevision !== null
-                                    ? selectrevision
-                                    : updatedrevision_id
-                                }
+                                // revision_id={
+                                //   selectrevision !== null
+                                //     ? selectrevision
+                                //     : updatedrevision_id
+                                // }
+                                revision_id={updatedrevision_id}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
                                 metaSection={metaSection}
@@ -584,6 +706,9 @@ export default function Record() {
                                 parentRecords={parentLinks}
                                 record_to_field_links={relatedRecords}
                                 is_link_ready={is_link_ready}
+                                handleUnlink={handleUnlink}
+                                setRevision_id={setrevision_id}
+                                mq_above_md={mq_above_md}
                               />
                             )}
                           </Box>
@@ -610,6 +735,9 @@ export default function Record() {
                           parentRecords={parentLinks}
                           record_to_field_links={relatedRecords}
                           is_link_ready={is_link_ready}
+                          handleUnlink={handleUnlink}
+                          setRevision_id={setrevision_id}
+                          mq_above_md={mq_above_md}
                         />
                       )}
                     </Box>
@@ -638,16 +766,26 @@ export default function Record() {
               revision_id={updatedrevision_id}
             />
             <Box mt={2}>
+              <Typography variant={'h5'} gutterBottom>
+                {draft_id ? 'Discard Draft' : 'Delete Record'}
+              </Typography>
               <RecordDelete
                 project_id={project_id}
                 record_id={record_id}
-                revision_id={updatedrevision_id}
+                revision_id={revision_id}
+                draft_id={draft_id ? draft_id : null}
+                show_label={true}
+                handleRefresh={handleRefresh}
               />
             </Box>
           </TabPanel>
           <TabPanel
             value="4"
-            style={{padding: theme.spacing(2), overflowX: 'auto'}}
+            style={{
+              padding: theme.spacing(0),
+              overflowX: 'auto',
+              backgroundColor: '#EEE',
+            }}
           >
             <Box>
               <BasicDialog

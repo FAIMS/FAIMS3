@@ -43,6 +43,7 @@ import {
   updateHeads,
 } from './internals';
 import {DEBUG_APP} from '../buildconfig';
+import {logError} from '../logging';
 
 interface InitialMergeHeadDetails {
   initial_head: RevisionID;
@@ -372,7 +373,7 @@ export async function mergeHeads(
   if (DEBUG_APP) {
     console.debug('Getting record', project_id, record_id);
   }
-  const record = await getRecord(project_id, record_id);
+  const record = await getRecord(project_id, record_id, true);
   const revision_ids_to_seed_cache = record.revisions.slice(
     0,
     initial_cache_size
@@ -462,6 +463,7 @@ export async function getMergeInformationForRevision(
     updated_by: revision.created_by,
     fields: {},
     deleted: revision.deleted ?? false,
+    relationship: revision.relationship ?? {}, //relationship?: Relationship;
   };
 
   for (const [name, avp_id] of Object.entries(revision.avps)) {
@@ -553,11 +555,8 @@ export async function findConflictingFields(
     revs_to_get = record.heads;
   } else {
     revs_to_get = [revision_id, ...record.heads];
-    console.error(
-      'Not using a head to find conflicting fields',
-      project_id,
-      record_id,
-      revision_id
+    logError(
+      `Not using a head to find conflicting fields: ${project_id}, ${record_id}, ${revision_id}`
     );
   }
 
@@ -588,22 +587,17 @@ export async function getMergeInformationForHead(
   try {
     const record = await getRecord(project_id, record_id);
     if (!record.heads.includes(revision_id)) {
-      console.error(
-        'Not using a head to find conflicting fields',
-        project_id,
-        record_id,
-        revision_id
+      logError(
+        `Not using a head to find conflicting fields: ${project_id}, ${record_id}, ${revision_id}`
       );
     }
     const revision = await getRevision(project_id, revision_id);
     return await getMergeInformationForRevision(project_id, revision);
   } catch (err) {
-    console.error(
-      'Failed to get merge information for',
-      project_id,
-      revision_id,
-      err
+    logError(
+      `Failed to get merge information for ${project_id} ${revision_id}`
     );
+    logError(err);
     return null;
   }
 }
@@ -664,6 +658,7 @@ export async function saveUserMergeResult(merge_result: UserMergeResult) {
     created_by: updated_by,
     deleted: false,
     type: type,
+    relationship: merge_result.relationship,
   };
   await datadb.put(new_revision);
 

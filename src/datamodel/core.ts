@@ -21,15 +21,24 @@
  *   databases should go in the database file.
  */
 
+/** Core types/interfaces that are used throughout the codebase.
+ * @module datamodel/core
+ * @category Data Model
+ */
+import type {KeyLike} from 'jose';
+
 // There are two internal IDs for projects, the former is unique to the system
 // (i.e. includes the listing_id), the latter is unique only to the 'projects'
 // database it came from, for a FAIMS listing
 // (It is this way because the list of projects is decentralised and so we
 // cannot enforce system-wide unique project IDs without a 'namespace' listing id)
-import type {KeyLike} from 'jose';
 
+/** Projects are identified by a string unique to the whole system */
 export type ProjectID = string;
+/** Non Unique project identifier is unique only to the database it comes from, may clash with
+ * other identifiers in other databases */
 export type NonUniqueProjectID = string;
+/** Listing identifier */
 export type ListingID = string;
 
 export function resolve_project_id(
@@ -62,13 +71,22 @@ export function split_full_project_id(full_proj_id: ProjectID): {
 
 // There are two internal ID for records, the former is unique to a
 // project, the latter unique to the system (i.e. includes project_id)
+
+/** Record identifier unique to the project */
 export type RecordID = string;
+/** Record identifier unique to the system, includes the project identifier */
 export type FullyResolvedRecordID = string;
+/** A representation of a {FullyResolvedRecordID} split into the component parts */
 export interface SplitRecordID {
   project_id: ProjectID;
   record_id: RecordID;
 }
 
+/**
+ * Generate a {FullyResolvedRecordID} from a {SplitRecordID}
+ * @param {SplitRecordID} split_id the Split record identifier
+ * @returns {FullyResolvedRecordID}
+ */
 export function resolve_record_id(
   split_id: SplitRecordID
 ): FullyResolvedRecordID {
@@ -141,6 +159,7 @@ export type LocationState = {
   hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
   relation_type_vocabPair?: string[] | null; //pass the parent information to child
   child_record_id?: RecordID; //child/linked record ID created from parent
+  parent_hrid?: string;
 };
 export interface LinkedRelation {
   record_id: RecordID;

@@ -19,6 +19,7 @@
  */
 import {Filesystem, Directory, Encoding} from '@capacitor/filesystem';
 import {Share} from '@capacitor/share';
+import {logError} from '../logging';
 
 /// Downloads a blob as a file onto a user's device
 export function downloadBlob(b: Blob, filename: string) {
@@ -37,7 +38,7 @@ export async function shareStringAsFileOnApp(
   title: string,
   dialogTitle: string,
   filename: string
-) {
+): Promise<undefined> {
   const isodate = new Date().toJSON().slice(0, 10);
   console.debug('Starting writing of file');
   for (const dir of [
@@ -66,10 +67,60 @@ export async function shareStringAsFileOnApp(
         url: url,
         dialogTitle: dialogTitle,
       });
-      break;
+      return undefined;
     } catch (err) {
-      console.error('Sharing failed with', dir, err);
+      logError(err);
     }
   }
-  console.debug('Shared file');
+  return undefined;
+}
+
+export async function shareCallbackAsFileOnApp(
+  callback: any,
+  title: string,
+  dialogTitle: string,
+  filename: string
+): Promise<undefined> {
+  const isodate = new Date().toJSON().slice(0, 10);
+  console.debug('Starting writing of file');
+  for (const dir of [
+    Directory.Library,
+    Directory.Cache,
+    Directory.Documents,
+    Directory.Data,
+    Directory.External,
+    Directory.ExternalStorage,
+  ]) {
+    try {
+      console.debug('Trying ', dir);
+      const url = (
+        await Filesystem.writeFile({
+          path: `${isodate}-${dir}-${filename}`,
+          data: 'test\n',
+          directory: dir,
+          encoding: Encoding.UTF8,
+          recursive: true,
+        })
+      ).uri;
+      await callback(async (data: any) => {
+        await Filesystem.appendFile({
+          path: `${isodate}-${dir}-${filename}`,
+          data: data,
+          directory: dir,
+          encoding: Encoding.UTF8,
+        });
+      });
+      console.debug('Writing of file complete, sharing file', url);
+      await Share.share({
+        title: `${title} ${dir} ${isodate}.json`,
+        text: dialogTitle,
+        url: url,
+        dialogTitle: dialogTitle,
+      });
+      return undefined;
+    } catch (err) {
+      logError(err);
+    }
+  }
+  return undefined;
 }

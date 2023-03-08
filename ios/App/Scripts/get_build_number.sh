@@ -24,4 +24,4 @@
 
 buildNumber=$(date -u "+%Y%m%d%H%M")
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $buildNumber" "App/Info.plist"
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 0.3.0" "App/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.1" "App/Info.plist"

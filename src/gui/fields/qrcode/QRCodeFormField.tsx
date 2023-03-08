@@ -44,12 +44,43 @@ export function QRCodeFormField({
     initialValue = form.values[field.name];
   }
   const [state, setState] = useState(initialValue);
-  const [scanning, setScanning] = useState(false);
-  const [canScanMsg, setCanScanMsg] = useState('');
 
   const updateField = (value: any) => {
     setState(value);
     form.setFieldValue(field.name, value);
+  };
+
+  // a string version of the value
+  // to display below the form field
+  const valueText = JSON.stringify(state);
+
+  return (
+    <div>
+      <p>{props.label}</p>
+      <QRCodeButton
+        label={props.label || 'Scan QR Code'}
+        onScanResult={updateField}
+      />
+      <div>{valueText}</div>
+    </div>
+  );
+}
+
+// A plain button that implements QRcode scanning with an onScanResult handler
+//
+// Duplicates some code above
+// TODO: refactor common parts to avoid code duplication
+export interface QRCodeButtonProps {
+  label?: string;
+  onScanResult: (value: string) => void;
+}
+
+export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
+  const [scanning, setScanning] = useState(false);
+  const [canScanMsg, setCanScanMsg] = useState('');
+
+  const updateField = (value: any) => {
+    props.onScanResult(value);
   };
 
   const startScan = async () => {
@@ -79,7 +110,7 @@ export function QRCodeFormField({
           BarcodeScanner.startScan({}).then(result => {
             // if the result has content
             if (result.hasContent) {
-              console.log('Barcode content:', result.content); // log the raw scanned content
+              console.debug('Barcode content:', result.content); // log the raw scanned content
               updateField(result.content);
             }
             stopScan();
@@ -104,14 +135,10 @@ export function QRCodeFormField({
           .then(() => {
             setScanning(false);
           })
-          .catch(() => console.log('stopScan'));
+          .catch(() => console.debug('stopScan'));
       })
-      .catch(() => console.log('showBackground'));
+      .catch(() => console.debug('showBackground'));
   };
-
-  // a string version of the value
-  // to display below the form field
-  const valueText = JSON.stringify(state);
 
   if (scanning) {
     // insert or create an element to hold the overlay
@@ -150,19 +177,18 @@ export function QRCodeFormField({
     if (canScanMsg !== '') {
       return (
         <div>
-          <p>{props.label}</p>
+          <Button variant="outlined" disabled={true}>
+            {props.label}
+          </Button>
           <div>{canScanMsg}</div>
-          <div>{valueText}</div>
         </div>
       );
     } else {
       return (
         <div>
-          <p>{props.label}</p>
           <Button variant="outlined" onClick={startScan}>
-            Scan QR Code
+            {props.label}
           </Button>
-          <div>{valueText}</div>
         </div>
       );
     }

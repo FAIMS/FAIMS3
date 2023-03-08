@@ -23,7 +23,7 @@ import MuiTextField from '@mui/material/TextField';
 import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import Mustache from 'mustache';
 import {
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 import {generatenewfield} from '../components/project/data/componenentSetting';
@@ -35,7 +35,7 @@ import {
   FAIMSEVENTTYPE,
 } from '../../datamodel/ui';
 import {HRID_STRING} from '../../datamodel/core';
-
+import getLocalDate from './LocalDate';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface FieldValues {
   [field_name: string]: any;
@@ -72,13 +72,19 @@ export class TemplatedStringField extends React.Component<
     const field_values: FieldValues = {};
     for (const field_name in textFieldProps.form.values) {
       if (field_name !== textFieldProps.field.name) {
-        field_values[field_name] = textFieldProps.form.values[field_name];
+        let value = textFieldProps.form.values[field_name];
+        if (typeof value === 'function')
+          value = getLocalDate(value).replaceAll('T', ' ');
+        field_values[field_name] = value;
       }
     }
     const value = render_template(template, field_values);
     if (value !== this.state.value) {
       this.setState({value: value});
       this.props.form.setFieldValue(this.props.field.name, value);
+      if (value !== '')
+        if (this.props.form.errors[this.props.field.name] !== undefined)
+          this.props.form.setFieldError(this.props.field.name, undefined);
     }
   }
 
@@ -381,7 +387,7 @@ export function TemplatedStringcomponentsetting(
 
   return (
     <>
-      <Defaultcomponentsetting
+      <DefaultComponentSetting
         handlerchanges={handlerchanges}
         {...props}
         fieldui={props.fieldui}

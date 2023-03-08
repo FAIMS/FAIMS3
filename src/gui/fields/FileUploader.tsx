@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {FieldProps} from 'formik';
 import Dropzone from 'react-dropzone';
 import {getDefaultuiSetting} from './BasicFieldSettings';
@@ -50,6 +50,7 @@ interface Props {
   minimum_file_size?: number; // this is in bytes
   helperText?: string;
   issyncing?: string;
+  isconflict?: boolean;
 }
 
 export function FileUploader(props: FieldProps & Props) {
@@ -65,6 +66,13 @@ export function FileUploader(props: FieldProps & Props) {
   const [current_files, setfiles] = React.useState(
     props.form.values[props.field.name] ?? []
   );
+
+  useEffect(() => {
+    if (props.isconflict === true) {
+      const value = props.form.values[props.field.name];
+      if (value !== null && value !== undefined) setfiles(value);
+    }
+  }, [props.form.values[props.field.name]]);
 
   // TODO: work out correct typing for getRootProps and getInputProps
   const baseStyle = {

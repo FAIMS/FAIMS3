@@ -18,6 +18,7 @@
  *   Wrapper around local databases to preform a device-level dump.
  */
 import PouchDB from 'pouchdb';
+import {jsonStringifyStream} from '@worker-tools/json-stream';
 
 import {draft_db} from './draft-storage';
 import {
@@ -29,6 +30,9 @@ import {
   metadata_dbs,
   data_dbs,
 } from './databases';
+import {downloadBlob, shareStringAsFileOnApp} from '../utils/downloadShare';
+
+const PREFIX = 'faims3-';
 
 interface DumpObject {
   [name: string]: unknown;
@@ -44,7 +48,25 @@ async function dumpDatabase(db: PouchDB.Database<any>): Promise<unknown> {
   });
 }
 
-export async function getFullDBSystemDump(): Promise<string> {
+async function streamedDumpDownload(filename: string, obj: any) {
+  const stream = jsonStringifyStream(obj);
+  const chunks: any[] = [];
+  const reader = stream.pipeThrough(new TextEncoderStream()).getReader();
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) {
+      break;
+    }
+    chunks.push(value);
+  }
+  const b = new Blob(chunks, {
+    type: 'application/json',
+  });
+  downloadBlob(b, PREFIX + filename + '.json');
+}
+
+export async function doDumpShare() {
+  console.debug('Starting app system dump');
   const dump: DumpObject = {};
   dump['directory'] = await dumpDatabase(directory_db.local);
   dump['active'] = await dumpDatabase(active_db);
@@ -63,11 +85,37 @@ export async function getFullDBSystemDump(): Promise<string> {
   for (const [name, db] of Object.entries(data_dbs)) {
     dump['data' + name] = await dumpDatabase(db.local);
   }
+  const s = JSON.stringify(dump);
 
-  return JSON.stringify(dump);
+  await shareStringAsFileOnApp(
+    s,
+    'FAIMS Database Dump',
+    'Share all the FAIMS data on your device',
+    'faims3-dump.json'
+  );
 }
 
-export async function getFullDBSystemDumpAsBlob(): Promise<Blob> {
-  const dump = await getFullDBSystemDump();
-  return new Blob([dump], {type: 'application/json'});
+export async function doDumpDownload() {
+  console.debug('Starting browser system dump');
+
+  await streamedDumpDownload(
+    'directory',
+    await dumpDatabase(directory_db.local)
+  );
+  await streamedDumpDownload('active', await dumpDatabase(active_db));
+  await streamedDumpDownload('local_state', await dumpDatabase(local_state_db));
+  await streamedDumpDownload('local_auth', await dumpDatabase(local_auth_db));
+  await streamedDumpDownload('draft', await dumpDatabase(draft_db));
+
+  for (const [name, db] of Object.entries(projects_dbs)) {
+    await streamedDumpDownload('proj' + name, await dumpDatabase(db.local));
+  }
+
+  for (const [name, db] of Object.entries(metadata_dbs)) {
+    await streamedDumpDownload('meta' + name, await dumpDatabase(db.local));
+  }
+
+  for (const [name, db] of Object.entries(data_dbs)) {
+    await streamedDumpDownload('data' + name, await dumpDatabase(db.local));
+  }
 }

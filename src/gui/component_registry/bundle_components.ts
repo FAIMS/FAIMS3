@@ -83,23 +83,25 @@ import {registerComponent, setupComponentProperties} from './internals';
 import {
   TextuiSpec,
   TextuiSetting,
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   MultiTextuiSetting,
   MultiTextuiSpec,
 } from '../fields/BasicFieldSettings';
+import {RandomStyle, RandomStyleSetting} from '../fields/RandomStyle';
 // Mapping plugin imports
-import {RandomStyle, RandomStyleSetting} from '../fields/RamdomStyle';
 import {
   MapFormField,
-  MapFieldUISetting,
-  MapFieldUISpec,
-} from '@faims-project/faims3-map-input';
-import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
+  MapFieldBuilderSettings,
+  MapComponentSetting,
+} from '../fields/MapFormField';
+// import {getDefaultuiSetting} from '../fields/BasicFieldSettings';
 
-const MapFieldBuilderSettings = [
-  MapFieldUISetting(getDefaultuiSetting()),
-  MapFieldUISpec,
-];
+import {
+  DateTimeNow,
+  DateTimeNowSetting,
+  DateTimeNowComponentSettings,
+  getDateTimeNowBuilderIcon,
+} from '../fields/DateTimeNow';
 
 import {
   setAttachmentLoaderForType,
@@ -168,7 +170,7 @@ registerComponent(
       type: 'text',
     },
     [TextuiSetting, TextuiSpec],
-    Defaultcomponentsetting
+    DefaultComponentSetting
   )
 );
 
@@ -261,7 +263,7 @@ registerComponent(
       type: 'checkbox',
     },
     CheckboxSetting,
-    Defaultcomponentsetting,
+    DefaultComponentSetting,
     getCheckBoxBuilderIcon()
   )
 );
@@ -299,7 +301,7 @@ registerComponent(
       type: 'string',
     },
     ActionSetting,
-    Defaultcomponentsetting
+    DefaultComponentSetting
   )
 );
 registerComponent(
@@ -328,7 +330,7 @@ registerComponent(
       ],
     },
     TakePointSetting,
-    Defaultcomponentsetting
+    DefaultComponentSetting
   )
 );
 registerComponent(
@@ -347,7 +349,7 @@ registerComponent(
       validationSchema: [['yup.object'], ['yup.nullable']],
     },
     TakePhotoSetting,
-    Defaultcomponentsetting
+    DefaultComponentSetting
   )
 );
 registerComponent(
@@ -382,7 +384,7 @@ registerComponent(
     BasicAutoIncrementer,
     AutoSetting[1],
     AutoSetting,
-    Defaultcomponentsetting,
+    DefaultComponentSetting,
     getAutoBuilderIcon()
   )
 );
@@ -411,7 +413,7 @@ registerComponent(
     QRCodeFormField,
     QRCodeFieldBuilderSettings[1],
     QRCodeFieldBuilderSettings,
-    Defaultcomponentsetting
+    DefaultComponentSetting
   )
 );
 
@@ -427,7 +429,7 @@ registerComponent(
     MapFormField,
     MapFieldBuilderSettings[1],
     MapFieldBuilderSettings,
-    Defaultcomponentsetting
+    MapComponentSetting
   )
 );
 
@@ -449,7 +451,7 @@ registerComponent(
       multirows: 4,
     },
     [MultiTextuiSetting, MultiTextuiSpec],
-    Defaultcomponentsetting
+    DefaultComponentSetting
   )
 );
 
@@ -463,7 +465,7 @@ registerComponent(
     FileUploader,
     FileuploadSetting[1],
     FileuploadSetting,
-    Defaultcomponentsetting,
+    DefaultComponentSetting,
     getFileuploadBuilderIcon()
   )
 );
@@ -478,8 +480,27 @@ registerComponent(
     RandomStyle,
     RandomStyleSetting[1],
     RandomStyleSetting,
-    Defaultcomponentsetting,
+    DefaultComponentSetting,
     getAutoBuilderIcon()
+  )
+);
+
+registerComponent(
+  'faims-custom',
+  'DateTimeNow',
+  setupComponentProperties(
+    'DateTimeNow',
+    'TZ-aware DateTime field with Now button',
+    'Special',
+    DateTimeNow,
+    {
+      ...DateTimeNowSetting[1],
+      namespace: 'faims-custom',
+      componentName: 'DateTimeNow',
+    },
+    DateTimeNowSetting,
+    DateTimeNowComponentSettings,
+    getDateTimeNowBuilderIcon()
   )
 );
 

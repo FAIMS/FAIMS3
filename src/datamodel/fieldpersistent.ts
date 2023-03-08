@@ -15,10 +15,10 @@
  *
  * Filename: fieldpersistent.ts
  * Description:
- *  This is the document for saving/updating fields persistance
+ *  This is the document for saving/updating fields persistence
  *  persistent state been saved in local_state_db as local data for each device
  *  persistent state will be get when user open record or draft and filled in draft as initial value if initial value is empty
- *  if persitence state updated, all draft created after will be updated, but draft created before won't be affected
+ *  if persistence state updated, all draft created after will be updated, but draft created before won't be affected
  *  persistent state will be updated when record been saved( to be discussed)
  */
 
@@ -27,6 +27,7 @@ import {ProjectID} from './core';
 import {LOCAL_FIELDpersistent_PREFIX} from './database';
 import {fieldpersistentdata} from './ui';
 import stable_stringify from 'fast-json-stable-stringify';
+import {logError} from '../logging';
 
 function get_pouch_id(project_id: ProjectID, form_id: string): string {
   return LOCAL_FIELDpersistent_PREFIX + '-' + project_id + '-' + form_id;
@@ -50,12 +51,7 @@ export async function get_fieldpersistentdata(
       };
       return doc;
     }
-    console.error(
-      'Unable to get local increment state:',
-      project_id,
-      form_id,
-      err
-    );
+    logError(err); // Unable to get local increment state
     throw Error(
       `Unable to get local increment state: ${project_id} ${form_id} `
     );
@@ -77,7 +73,7 @@ export async function set_fieldpersistentdata(
   try {
     return await local_state_db.put(doc);
   } catch (err: any) {
-    console.error(err, doc);
+    logError(err);
     throw Error('Unable to set local increment state');
   }
 }

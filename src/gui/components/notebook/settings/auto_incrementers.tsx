@@ -4,6 +4,8 @@ import {ProjectInformation, ProjectUIModel} from '../../../../datamodel/ui';
 import {get_autoincrement_references_for_project} from '../../../../datamodel/autoincrement';
 import {AutoIncrementReference} from '../../../../datamodel/database';
 import AutoIncrementEditForm from '../../autoincrement/edit-form';
+import {logError} from '../../../../logging';
+
 interface AutoIncrementerSettingsListProps {
   project_info: ProjectInformation;
   uiSpec: ProjectUIModel;
@@ -29,7 +31,7 @@ export default function AutoIncrementerSettingsList(
       .then(refs => {
         setReferences(refs);
       })
-      .catch(console.error /*TODO*/);
+      .catch(error => logError(error));
   }, [props.project_info.project_id]);
 
   return (
@@ -76,7 +78,8 @@ export default function AutoIncrementerSettingsList(
               <Typography variant={'caption'} sx={{mb: 2}} gutterBottom>
                 The allocated range will be &ge; the start value and &lt; the
                 stop value. e.g., a range allocation of start:1, stop:5 will
-                generate hrids in the range (1,2,3,4).
+                generate hrids in the range (1,2,3,4). There must always be a
+                least one range to ensure that new IDs can be generated.
               </Typography>
               <AutoIncrementEditForm
                 project_id={props.project_info.project_id}

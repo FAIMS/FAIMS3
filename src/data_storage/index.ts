@@ -19,6 +19,12 @@
  *   instead wrapper functions should be provided here.
  */
 
+/**
+ * The Data Storage module provides an API for accessing data from the GUI.
+ * @module data_storage
+ * @category Database
+ */
+
 import {v4 as uuidv4} from 'uuid';
 
 import {DEBUG_APP} from '../buildconfig';
@@ -45,7 +51,12 @@ import {
   listRecordMetadata,
 } from './internals';
 import {getAllRecordsOfType, getAllRecordsWithRegex} from './queries';
+import {logError} from '../logging';
 
+/**
+ * Project Revision Listing
+ * @interface
+ */
 export interface ProjectRevisionListing {
   [_id: string]: string[];
 }
@@ -56,6 +67,12 @@ export function generateFAIMSDataID(): RecordID {
   return 'rec-' + uuidv4();
 }
 
+/**
+ * Get the revision id of the most recent revision of a record
+ * @param project_id project identifier
+ * @param record_id record identifier
+ * @returns a promise resolving to a revisionid for the record
+ */
 export async function getFirstRecordHead(
   project_id: ProjectID,
   record_id: RecordID
@@ -64,6 +81,12 @@ export async function getFirstRecordHead(
   return record.heads[0];
 }
 
+/**
+ * Either create a new record or update an existing one
+ * @param project_id project identifier
+ * @param record new or existing record
+ * @returns a promise resolving to the revision id of the new or updated record
+ */
 export async function upsertFAIMSData(
   project_id: ProjectID,
   record: Record
@@ -93,17 +116,28 @@ export async function upsertFAIMSData(
   return revision_id;
 }
 
+/**
+ * Get the full record data for a given revision of a record
+ * @param {ProjectID} project_id  Project identifier
+ * @param {RecordID} record_id Record identifier
+ * @param {RevisionID} revision_id Revision identifier
+ * @param {boolean} is_deleted if true (default), return null if the revision has been deleted. If false, return the record even if deleted
+ * @returns A promise that resolves to the requested record or null
+ */
 export async function getFullRecordData(
   project_id: ProjectID,
   record_id: RecordID,
-  revision_id: RevisionID
+  revision_id: RevisionID,
+  is_deleted = true //default value should be true
 ): Promise<Record | null> {
   const revision = await getRevision(project_id, revision_id);
-  if (revision.deleted === true) {
+  if (revision.deleted === true && is_deleted) {
+    // return null when is_deleted is not set or set as true
     return null;
   }
   const record = await getRecord(project_id, record_id);
   const form_data = await getFormDataFromRevision(project_id, revision);
+
   return {
     project_id: project_id,
     record_id: record_id,
@@ -117,9 +151,16 @@ export async function getFullRecordData(
     annotations: form_data.annotations,
     field_types: form_data.types,
     relationship: revision.relationship,
+    deleted: revision.deleted ?? false,
   };
 }
 
+/**
+ * Get a list of revisions for a given record
+ * @param {ProjectID} project_id
+ * @param {RecordID} record_id
+ * @returns {Promise<RecordRevisionListing>} A promise resolving to a revision listing
+ */
 export async function listFAIMSRecordRevisions(
   project_id: ProjectID,
   record_id: RecordID
@@ -128,11 +169,16 @@ export async function listFAIMSRecordRevisions(
     const record = await getRecord(project_id, record_id);
     return record.revisions;
   } catch (err) {
-    console.warn('failed to list data for id', record_id, err);
-    throw Error(`failed to list data for id ${record_id}`);
+    console.warn('failed to list data for id', record_id);
+    throw err;
   }
 }
 
+/**
+ * Get a list of revisions for a given project
+ * @param {ProjectID} project_id
+ * @returns {Promise<ProjectRevisionListing>}
+ */
 export async function listFAIMSProjectRevisions(
   project_id: ProjectID
 ): Promise<ProjectRevisionListing> {
@@ -285,13 +331,13 @@ export async function getRecordMetadata(
       relationship: revision.relationship,
     };
   } catch (err) {
-    console.error(
+    console.debug(
       'failed to get record metadata:',
       project_id,
       record_id,
-      revision_id,
-      err
+      revision_id
     );
+    logError(err);
     throw Error(
       'failed to get record metadata: {project_id} {record_id} {revision_id}'
     );
@@ -454,7 +500,8 @@ export async function getMetadataForAllRecords(
       filter_deleted
     );
   } catch (error) {
-    console.error('Failed to get record metadata for', project_id, error);
+    console.debug('Failed to get record metadata for', project_id);
+    logError(error);
     return [];
   }
 }
@@ -470,7 +517,8 @@ export async function getRecordsWithRegex(
     );
     return await filterRecordMetadata(project_id, record_list, filter_deleted);
   } catch (error) {
-    console.error('Failed to regex search for', project_id, regex, error);
+    console.debug('Failed to regex search for', project_id, regex);
+    logError(error);
     return [];
   }
 }

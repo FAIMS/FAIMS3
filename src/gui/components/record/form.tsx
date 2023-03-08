@@ -73,6 +73,7 @@ import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from '../../../data_storage';
+import {logError} from '../../../logging';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -88,6 +89,8 @@ type RecordFormProps = {
   handleSetDraftError: Function;
   setRevision_id?: Function;
   ViewName?: string | null;
+  draftLastSaved?: null | Date;
+  mq_above_md?: boolean;
 } & (
   | {
       // When editing existing record, we require the caller to know its revision
@@ -133,6 +136,8 @@ type RecordFormState = {
   description: string | null;
   ugc_comment: string | null;
   relationship: Relationship | null;
+  fieldNames: string[];
+  views: string[];
 };
 
 class RecordForm extends React.Component<
@@ -216,6 +221,8 @@ class RecordForm extends React.Component<
       description: null,
       ugc_comment: null,
       relationship: {},
+      fieldNames: [],
+      views: [],
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -252,19 +259,30 @@ class RecordForm extends React.Component<
       // Heuristically determine a nice user-facing error
       const error_message =
         (val as {message?: string}).message || val.toString();
-      if (DEBUG_APP) {
-        console.log('saveListener', val);
-      }
 
-      this.props.handleSetIsDraftSaving(false);
-      this.props.handleSetDraftError(error_message);
-      this.context.dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: 'Could not load previous data: ' + error_message,
-          severity: 'warnings',
-        },
-      });
+      if (error_message === 'no changes') {
+        //for existing record with no new draft created, set saving false and reset the last draft time
+        this.props.handleSetIsDraftSaving(false);
+        if (
+          this.props.draftLastSaved === null ||
+          this.props.draftLastSaved === undefined
+        )
+          this.props.handleSetDraftLastSaved(new Date());
+      } else {
+        if (DEBUG_APP) {
+          console.log('saveListener', val);
+        }
+
+        this.props.handleSetIsDraftSaving(false);
+        this.props.handleSetDraftError(error_message);
+        this.context.dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: 'Could not load previous data: ' + error_message,
+            severity: 'warnings',
+          },
+        });
+      }
     }
   }
 
@@ -299,7 +317,11 @@ class RecordForm extends React.Component<
             revision_id
           );
           if (DEBUG_APP)
-            console.debug('get record revision', this.props.record_id);
+            console.debug(
+              'record start initial',
+              this.props.record_id,
+              revision_id
+            );
           if (latest_record === null) {
             this.props.handleSetDraftError(
               `Could not find data for record ${this.props.record_id}`
@@ -309,7 +331,7 @@ class RecordForm extends React.Component<
               payload: {
                 message:
                   'Could not load existing record: ' + this.props.record_id,
-                severity: 'warnings',
+                severity: 'warning',
               },
             });
             return;
@@ -333,7 +355,7 @@ class RecordForm extends React.Component<
         );
       }
 
-      if (this.props.ui_specification.viewsets[this_type].views === []) {
+      if (this.props.ui_specification.viewsets[this_type].views.length === 0) {
         throw Error(`Viewset for type '${this_type}' has no views`);
       }
 
@@ -400,12 +422,12 @@ class RecordForm extends React.Component<
         });
       }
     } catch (err) {
-      console.error('rare draft error', err);
+      logError(err);
     }
     try {
       await this.setInitialValues(revision_id);
     } catch (err: any) {
-      console.error('setInitialValues error', err);
+      logError(err);
       this.context.dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -462,7 +484,7 @@ class RecordForm extends React.Component<
         }
       }
     } catch (err: any) {
-      console.error('Error save Record ', err);
+      logError(err);
     }
   }
 
@@ -604,6 +626,8 @@ class RecordForm extends React.Component<
       related,
       this.props.record_id
     );
+    initialValues['fieldNames'] = [];
+    initialValues['views'] = [];
     this.setState({
       initialValues: initialValues,
       annotation: annotations,
@@ -677,7 +701,7 @@ class RecordForm extends React.Component<
       if (k !== '_id' && k !== '_project_id' && k !== '_current_revision_id') {
         new_values[k] = v;
         if (k[0] === '_') {
-          console.error(`Including possibly bad key ${k} in record`);
+          logError(`Including possibly bad key ${k} in record`);
         }
       }
     }
@@ -718,6 +742,13 @@ class RecordForm extends React.Component<
   // - save doc/record
   // - save persistence data
   // - get new revision id, and set new revision id if user click save and continue
+  // - clear the draft
+  // after save: direct user to different path
+  // - - publish and continue: setSubmitting re-enabled, so user can save form for the new revision id
+  // - - publish and close: - close the current record and return to project list
+  //                     - close the current record and back to parent record if record created from parent or if record has parent
+  // - - publish and new:  - close the current record and create new record when current record has no parent relationship
+  //                    - when current record has parent: close current record, add new record into parent record, open the new record with parent
 
   save(
     values: object,
@@ -759,6 +790,7 @@ class RecordForm extends React.Component<
             ),
             ugc_comment: this.state.ugc_comment || '',
             relationship: this.state.relationship ?? {},
+            deleted: false,
           };
           if (DEBUG_APP) {
             console.debug(
@@ -784,7 +816,7 @@ class RecordForm extends React.Component<
                 if (this.props.setRevision_id !== undefined)
                   this.props.setRevision_id(revision_id); //pass the revision id back
               } catch (error) {
-                console.error('update child Error', error);
+                logError(error);
               }
               return is_close === 'close'
                 ? doc.data['hrid' + this.state.type_cached] ??
@@ -817,7 +849,7 @@ class RecordForm extends React.Component<
               severity: 'error',
             },
           });
-          console.error('Failed to save data', err, this.props.record_id);
+          logError(err);
         })
         //Clear the current draft area (Possibly after redirecting back to project page)
         .then(result => {
@@ -936,15 +968,10 @@ class RecordForm extends React.Component<
                             window.scrollTo(0, 0);
                             return result;
                           })
-                          .catch(error =>
-                            console.error(
-                              'Error to save the parent record',
-                              error
-                            )
-                          );
+                          .catch(error => logError(error));
                       } else {
-                        console.error(
-                          'Error to save the parent record, latest record is null'
+                        logError(
+                          'Error saving the parent record, latest record is null'
                         );
                         this.props.history.push({
                           pathname:
@@ -1056,14 +1083,9 @@ class RecordForm extends React.Component<
                             window.scrollTo(0, 0);
                             return result;
                           })
-                          .catch(error =>
-                            console.error(
-                              'Error to save the parent record from child relationship',
-                              error
-                            )
-                          );
+                          .catch(error => logError(error));
                       } else {
-                        console.error(
+                        logError(
                           'Error to save the parent record from child relationship, latest record is null'
                         );
                         this.props.history.push({
@@ -1079,9 +1101,7 @@ class RecordForm extends React.Component<
                       }
                     }
                   })
-                  .catch(error =>
-                    console.error('Error to get parent record', error)
-                  );
+                  .catch(error => logError(error));
               }
             }
           }
@@ -1191,6 +1211,17 @@ class RecordForm extends React.Component<
       let is_final_view = view_index + 1 === views.length;
       // this expression checks if we have the last element in the viewset array
       const description = this.requireDescription(viewName);
+      // console.debug(
+      //   'check current revision id',
+      //   this.props.revision_id,
+      //   this.state.revision_cached
+      // );
+      console.debug(
+        'check current revision id draft',
+        this.props.draft_id,
+        this.state.draft_created,
+        this.draftState
+      );
       return (
         <Box>
           {/* {this.state.revision_cached} */}
@@ -1218,31 +1249,26 @@ class RecordForm extends React.Component<
             >
               {formProps => {
                 //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    true
-                  )
-                )
-                  fieldNames = get_logic_fields(
-                    this.props.ui_specification,
-                    formProps.values,
-                    viewName
-                  );
-                //ONLY update if the updated field is the controller field
-                if (
-                  update_by_branching_logic(
-                    this.props.ui_specification,
-                    formProps.values,
-                    false
-                  )
-                )
-                  views = get_logic_views(
-                    this.props.ui_specification,
-                    viewsetName,
-                    formProps.values
-                  );
+                fieldNames = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  true,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
+                views = update_by_branching_logic(
+                  this.props.ui_specification,
+                  formProps.values,
+                  false,
+                  fieldNames,
+                  views,
+                  viewName,
+                  viewsetName,
+                  formProps.touched
+                );
                 view_index = views.indexOf(viewName);
                 is_final_view = view_index + 1 === views.length;
                 this.draftState.renderHook(
@@ -1252,14 +1278,14 @@ class RecordForm extends React.Component<
                 );
                 return (
                   <Form>
-                    {
+                    {views.length > 1 && (
                       <RecordStepper
                         view_index={view_index}
                         ui_specification={ui_specification}
                         onChangeStepper={this.onChangeStepper}
                         views={views}
                       />
-                    }
+                    )}
 
                     {description !== '' && (
                       <Box
@@ -1298,6 +1324,7 @@ class RecordForm extends React.Component<
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        mq_above_md={this.props.mq_above_md}
                         handleFormSubmit={(is_close: string) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {

@@ -20,6 +20,8 @@
  *   modifications since its initial commit.
  */
 
+import {logError} from './logging';
+
 // This optional code is used to register a service worker.
 // register() is not called by default.
 
@@ -93,7 +95,7 @@ function registerValidSW(swUrl: string, config?: Config) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              // At this point, the updated precached content has been fetched,
+              // At this point, the updated pre-cached content has been fetched,
               // but the previous service worker will still serve the older
               // content until all client tabs are closed.
               console.log(
@@ -106,7 +108,7 @@ function registerValidSW(swUrl: string, config?: Config) {
                 config.onUpdate(registration);
               }
             } else {
-              // At this point, everything has been precached.
+              // At this point, everything has been pre-cached.
               // It's the perfect time to display a
               // "Content is cached for offline use." message.
               console.log('Content is cached for offline use.');
@@ -121,7 +123,7 @@ function registerValidSW(swUrl: string, config?: Config) {
       };
     })
     .catch(error => {
-      console.error('Error during service worker registration:', error);
+      logError(error);
     });
 }
 
@@ -162,7 +164,7 @@ export function unregister() {
         registration.unregister();
       })
       .catch(error => {
-        console.error(error.message);
+        logError(error.message);
       });
   }
 }

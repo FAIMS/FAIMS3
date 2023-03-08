@@ -24,7 +24,7 @@ import {fieldToTextField, TextFieldProps} from 'formik-mui';
 import {MenuItem} from '@mui/material';
 import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 import {option} from '../../datamodel/typesystem';
@@ -53,7 +53,7 @@ interface Props {
 export class Select extends React.Component<TextFieldProps & Props> {
   render() {
     const {ElementProps, children, ...textFieldProps} = this.props;
-    /***make seect not multiple to avoid error */
+    /***make select not multiple to avoid error */
     return (
       <>
         <MuiTextField
@@ -153,7 +153,7 @@ export function Selectcomponentsetting(props: componenentSettingprops) {
   };
 
   return (
-    <Defaultcomponentsetting
+    <DefaultComponentSetting
       handlerchangewithview={handlerchangewithviewSpec}
       handlerchanges={handlerchanges}
       {...others}

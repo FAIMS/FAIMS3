@@ -22,6 +22,7 @@ import {CreateRecordLinkProps} from '../types';
 import {useHistory} from 'react-router-dom';
 import {LocationState} from '../../../../../datamodel/core';
 import * as ROUTES from '../../../../../constants/routes';
+import {logError} from '../../../../../logging';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
@@ -31,30 +32,38 @@ export function AddNewRecordButton(props: {
   handleSubmit: Function;
   project_id: string;
   save_new_record: Function;
+  handleError: Function;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
   const history = useHistory();
   const handleSubmit = () => {
     setSubmitting(true);
+    const new_child_id = props.save_new_record();
     if (props.handleSubmit !== undefined) {
-      const new_child_id = props.save_new_record();
-      props.handleSubmit().then((result: string) => {
-        const newState = props.state;
-        newState['parent_link'] = ROUTES.getRecordRoute(
-          props.project_id,
-          (props.state.parent_record_id || '').toString(),
-          (result || '').toString()
-        ).replace('/notebooks/', '');
-        newState['child_record_id'] = new_child_id;
-        setTimeout(() => {
-          // reset local state of component
-          setSubmitting(false);
-          history.push({
-            pathname: props.pathname,
-            state: newState,
-          });
-        }, 1000);
-      });
+      props
+        .handleSubmit()
+        .then((result: string) => {
+          const newState = props.state;
+          newState['parent_link'] = ROUTES.getRecordRoute(
+            props.project_id,
+            (props.state.parent_record_id || '').toString(),
+            (result || '').toString()
+          ).replace('/notebooks/', '');
+          newState['child_record_id'] = new_child_id;
+          setTimeout(() => {
+            // reset local state of component
+            setSubmitting(false);
+            history.push({
+              pathname: props.pathname,
+              state: newState,
+            });
+          }, 300);
+        })
+        .catch((error: Error) => {
+          logError(error);
+          if (props.handleError !== undefined)
+            props.handleError(new_child_id, new_child_id);
+        });
     }
   };
   return submitting ? (
@@ -116,15 +125,18 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       //     severity: 'error',
       //   },
       // });
-
-      // response success
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
-          message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
-          severity: 'success',
-        },
-      });
+      try {
+        // response success
+        dispatch({
+          type: ActionType.ADD_ALERT,
+          payload: {
+            message: `Link between this record ${props.InputLabelProps.label} and ${selectedRecord.record_label} added`,
+            severity: 'success',
+          },
+        });
+      } catch (error) {
+        logError(error);
+      }
     }, 3000);
     return () => {
       clearTimeout(timer);
@@ -259,6 +271,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                     handleSubmit={props.handleSubmit}
                     project_id={props.project_id}
                     save_new_record={props.save_new_record}
+                    handleError={props.handleCreateError}
                   />
                 )}
               </>

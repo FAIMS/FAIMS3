@@ -48,12 +48,12 @@ import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,
 } from '../../uiSpecification';
+import RecordDelete from '../components/notebook/delete';
 import {newStagedData} from '../../sync/draft-storage';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import RecordForm from '../components/record/form';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {getProjectMetadata} from '../../projectMetadata';
-import RecordDelete from '../components/record/delete';
 import UnpublishedWarning from '../components/record/unpublished_warning';
 import DraftSyncStatus from '../components/record/sync_status';
 import {grey} from '@mui/material/colors';
@@ -141,7 +141,6 @@ function DraftEdit(props: DraftEditProps) {
   const {project_id, type_name, draft_id, project_info, record_id} = props;
   const {dispatch} = useContext(store);
   const history = useHistory();
-
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
 
@@ -153,6 +152,7 @@ function DraftEdit(props: DraftEditProps) {
   const [value, setValue] = React.useState('1');
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
+  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
 
@@ -209,6 +209,19 @@ function DraftEdit(props: DraftEditProps) {
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     setValue(newValue);
+  };
+
+  const handleRefresh = () => {
+    /**
+     * Handler for Refreshing project (go back to notebook)
+     */
+    return new Promise(resolve => {
+      resolve(() => {
+        history.push({
+          pathname: ROUTES.NOTEBOOK + project_id,
+        });
+      });
+    });
   };
 
   if (error !== null) {
@@ -285,6 +298,8 @@ function DraftEdit(props: DraftEditProps) {
                       handleSetIsDraftSaving={setIsDraftSaving}
                       handleSetDraftLastSaved={setDraftLastSaved}
                       handleSetDraftError={setDraftError}
+                      draftLastSaved={draftLastSaved}
+                      mq_above_md={mq_above_md}
                     />
                   </Box>
                 </Box>
@@ -292,10 +307,16 @@ function DraftEdit(props: DraftEditProps) {
             </TabPanel>
             <TabPanel value="2">
               <Box mt={2}>
+                <Typography variant={'h5'} gutterBottom>
+                  Discard Draft
+                </Typography>
                 <RecordDelete
                   project_id={project_id}
-                  record_id={draft_id}
+                  record_id={record_id}
                   revision_id={null}
+                  draft_id={draft_id}
+                  show_label={true}
+                  handleRefresh={handleRefresh}
                 />
               </Box>
             </TabPanel>
@@ -371,7 +392,9 @@ export default function RecordCreate() {
       },
       {
         link: ROUTES.NOTEBOOK + location.state.parent_link,
-        title: type + ':' + location.state.parent_record_id,
+        title:
+          type + ':' + location.state.parent_hrid ??
+          location.state.parent_record_id,
       },
       {title: 'Draft'},
     ];

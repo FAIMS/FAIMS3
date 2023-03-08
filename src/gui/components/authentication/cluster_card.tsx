@@ -20,6 +20,7 @@
 import React, {useContext} from 'react';
 import {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
+import {logError} from '../../../logging';
 
 import {
   Autocomplete,
@@ -87,27 +88,28 @@ function UserSwitcher(props: UserSwitcherProps) {
   }
 
   const handleClick = () => {
-    switchUsername(props.listing_id, value?.username as string).then(r => {
-      console.log('switchUsername returned', r);
-      const getToken = async () => {
-        await getTokenContentsForCluster(props.listing_id).then(r => {
-          console.log('awaiting getTokenInfoForCluster() returned', r);
-          props.setToken(r);
-        });
-      };
-
-      getToken().then(() =>
+    switchUsername(props.listing_id, value?.username as string)
+      .then(async r => {
+        console.log('switchUsername returned', r);
+        const token_contents = await getTokenContentsForCluster(
+          props.listing_id
+        );
+        console.log(
+          'awaiting getTokenInfoForCluster() returned',
+          token_contents
+        );
+        props.setToken(token_contents);
         dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
             message: 'Switching user ' + value?.name,
             severity: 'success',
           },
-        })
-      );
-
-      return;
-    });
+        });
+      })
+      .catch(err => {
+        logError(err); // failed to switch user
+      });
   };
 
   return (
@@ -180,16 +182,6 @@ export default function ClusterCard(props: ClusterCardProps) {
     };
     getToken();
   }, [props.listing_id]);
-
-  useEffect(() => {
-    let isactive = true;
-    if (token !== undefined) {
-      if (isactive) props.setToken(token);
-    }
-    return () => {
-      isactive = false;
-    }; // cleanup toggles value,
-  }, [token]);
 
   return (
     <MainCard

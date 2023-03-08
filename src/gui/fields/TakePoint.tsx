@@ -26,6 +26,7 @@ import {Geolocation, GeolocationPosition} from '@capacitor/geolocation';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import {ProjectUIModel} from '../../datamodel/ui';
 import {FAIMSPosition} from '../../datamodel/geo';
+import {logError} from '../../logging';
 
 function capacitor_coordindates_to_faims_pos(
   coordinates: GeolocationPosition
@@ -88,7 +89,7 @@ export class TakePoint extends React.Component<
       console.debug('Take point coord', coordinates);
       this.props.form.setFieldValue(this.props.field.name, coordinates);
     } catch (err: any) {
-      console.error('Failed to take point', err);
+      logError(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
@@ -97,9 +98,9 @@ export class TakePoint extends React.Component<
     const error = this.props.form.errors[this.props.field.name];
     const instruction_text =
       this.props.instruction_text ?? 'Click to save current location';
-    let postext = <span>No point taken.</span>;
+    let positionText = <span>No point taken.</span>;
     if (pos !== null && pos !== undefined && pos.geometry !== undefined) {
-      postext = (
+      positionText = (
         <span {...this.props['ValueTextProps']}>
           Lat: {pos.geometry.coordinates[1] ?? 'Not captured'}; Long:{' '}
           {pos.geometry.coordinates[0] ?? 'Not captured'}; Acc:{' '}
@@ -137,7 +138,7 @@ export class TakePoint extends React.Component<
             ? this.props.label
             : 'Take Point'}
         </Button>
-        {postext}
+        {positionText}
         {error_text}
       </div>
     );

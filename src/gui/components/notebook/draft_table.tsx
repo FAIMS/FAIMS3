@@ -47,11 +47,13 @@ import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
 import {ProjectUIViewsets} from '../../../datamodel/typesystem';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
+import RecordDelete from './delete';
 
 type DraftsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
   viewsets?: ProjectUIViewsets | null;
+  handleRefresh: () => Promise<any>;
 };
 
 type DraftsRecordProps = {
@@ -60,6 +62,7 @@ type DraftsRecordProps = {
   rows: any;
   loading: boolean;
   viewsets?: ProjectUIViewsets | null;
+  handleRefresh: () => Promise<any>;
 };
 
 function DraftRecord(props: DraftsRecordProps) {
@@ -151,6 +154,23 @@ function DraftRecord(props: DraftsRecordProps) {
         },
         {field: 'updated', headerName: 'Updated', type: 'dateTime', width: 200},
         {field: 'created', headerName: 'Created', type: 'dateTime', width: 200},
+        {
+          field: 'delete',
+          headerName: 'Actions',
+          type: 'actions',
+          renderCell: (params: GridCellParams) => {
+            return (
+              <RecordDelete
+                project_id={project_id}
+                record_id={params.row.record_id}
+                revision_id={params.row.revision_id}
+                draft_id={params.row._id}
+                show_label={false}
+                handleRefresh={props.handleRefresh}
+              />
+            );
+          },
+        },
       ]
     : [
         {
@@ -199,6 +219,23 @@ function DraftRecord(props: DraftsRecordProps) {
               </Typography>
             </Box>
           ),
+        },
+        {
+          field: 'delete',
+          headerName: 'Actions',
+          type: 'actions',
+          renderCell: (params: GridCellParams) => {
+            return (
+              <RecordDelete
+                project_id={project_id}
+                record_id={params.row.record_id}
+                revision_id={params.row.revision_id}
+                draft_id={params.row._id}
+                show_label={false}
+                handleRefresh={props.handleRefresh}
+              />
+            );
+          },
         },
       ];
 
@@ -285,6 +322,7 @@ export default function DraftsTable(props: DraftsTableProps) {
       rows={rows}
       loading={loading}
       viewsets={props.viewsets}
+      handleRefresh={props.handleRefresh}
     />
   );
 }

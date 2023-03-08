@@ -34,6 +34,7 @@ import {
   AutoIncrementReference,
   AutoIncrementReferenceDoc,
 } from './database';
+import {logError} from '../logging';
 
 export interface UserFriendlyAutoincrementStatus {
   label: string;
@@ -75,13 +76,7 @@ export async function get_local_autoincrement_state_for_field(
       };
       return doc;
     }
-    console.error(
-      'Unable to get local increment state:',
-      project_id,
-      form_id,
-      field_id,
-      err
-    );
+    logError(err);
     throw Error(
       `Unable to get local increment state: ${project_id} ${form_id} ${field_id}`
     );
@@ -94,7 +89,7 @@ export async function set_local_autoincrement_state_for_field(
   try {
     return await local_state_db.put(new_state);
   } catch (err) {
-    console.error(err, new_state);
+    logError(err);
     throw Error('Unable to set local increment state');
   }
 }
@@ -146,6 +141,8 @@ export async function set_local_autoincrement_ranges_for_field(
         const new_using_range = new_ranges.find(r => r.using);
         if (new_using_range === undefined) {
           throw Error('Currently used range removed');
+        } else if (new_using_range.fully_used) {
+          new_using_range.using = false;
         } else if (new_using_range.start !== range.start) {
           throw Error('Currently used range start changed');
         } else if (
@@ -176,11 +173,7 @@ export async function get_autoincrement_references_for_project(
       // No autoincrementers
       return [];
     }
-    console.error(
-      'Unable to get local autoincrement references for',
-      project_id,
-      err
-    );
+    logError(err);
     throw Error(
       `Unable to get local autoincrement references for ${project_id}`
     );
@@ -229,8 +222,7 @@ export async function add_autoincrement_reference_for_project(
         references: refs,
       });
     } else {
-      console.error('Unable to add local autoincrement reference', err);
-      throw Error('Unable to add local autoincrement reference');
+      logError(err); // Unable to add local autoincrement reference
     }
   }
 }
@@ -256,8 +248,7 @@ export async function remove_autoincrement_reference_for_project(
     doc.references = Array.from(ref_set.values());
     await projdb.put(doc);
   } catch (err) {
-    console.error('Unable to remove local autoincrement reference', err);
-    throw Error('Unable to remove local autoincrement reference');
+    logError(err); // Unable to remove local autoincrement reference
   }
 }
 
@@ -305,7 +296,7 @@ export async function get_user_friendly_status_for_project(
       statuses.push(status);
     }
   } catch (err) {
-    console.error('Error getting user friendly status', err);
+    logError(err);
   }
   return statuses;
 }

@@ -22,6 +22,7 @@
 
 import {ProjectID} from '../datamodel/core';
 import {ProjectDataObject} from '../datamodel/database';
+import {logError} from '../logging';
 import {
   active_db,
   data_dbs,
@@ -65,7 +66,7 @@ export async function setSyncingProject(
   syncing: boolean
 ) {
   if (syncing === isSyncingProject(active_id)) {
-    console.error('Did not change sync for project', active_id);
+    logError(`Did not change sync for project ${active_id}`);
     return; //Nothing to do, already same value
   }
   console.info('Change sync for project', active_id, syncing);
@@ -91,7 +92,10 @@ export async function setSyncingProject(
     active_doc.is_sync = syncing;
     await active_db.put(active_doc);
   } catch (err) {
-    console.error('Failed to update active_db with sync state', err);
+    logError(err);
+    throw Error(
+      `Could not change sync for this notebook (${active_id}). Contact Support.`
+    );
   }
 
   const created = createdProjects[active_id];
@@ -150,7 +154,7 @@ export async function setSyncingProjectAttachments(
   syncing: boolean
 ) {
   if (syncing === isSyncingProjectAttachments(active_id)) {
-    console.error('Did not change attachment sync for project', active_id);
+    logError(`Did not change attachment sync for project ${active_id}`);
     return; //Nothing to do, already same value
   }
   console.info('Change attachment sync for project', active_id, syncing);
@@ -176,7 +180,7 @@ export async function setSyncingProjectAttachments(
     active_doc.is_sync_attachments = syncing;
     await active_db.put(active_doc);
   } catch (err) {
-    console.error('Failed to update active_db with attachment sync state', err);
+    logError(err);
   }
 
   const created = createdProjects[active_id];

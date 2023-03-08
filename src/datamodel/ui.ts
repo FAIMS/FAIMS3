@@ -99,6 +99,7 @@ export interface Record {
   created_by?: string;
   /**add for relationship*/
   relationship?: Relationship; // added for save relation to child/linked record
+  deleted?: boolean; //add for checking if record been deleted
 }
 
 export interface FieldMergeInformation {
@@ -119,6 +120,7 @@ export interface RecordMergeInformation {
   updated_by: string;
   fields: {[field_name: string]: FieldMergeInformation};
   deleted: boolean;
+  relationship: Relationship;
 }
 
 export interface UserMergeResult {
@@ -130,6 +132,7 @@ export interface UserMergeResult {
   type: FAIMSTypeName;
   field_choices: {[field_name: string]: AttributeValuePairID | null};
   field_types: {[field_name: string]: FAIMSTypeName};
+  relationship: Relationship;
 }
 
 export type RecordList = {

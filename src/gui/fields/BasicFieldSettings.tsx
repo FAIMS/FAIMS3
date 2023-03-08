@@ -13,7 +13,7 @@ const getdvalue = (value: any) => {
 };
 
 export const getDefaultuiSetting = () => {
-  return getdvalue(DefaultuiSetting);
+  return getdvalue(DefaultuiSetting) as ProjectUIModel;
 };
 
 export const getDefaultuiSpec = () => {
@@ -271,7 +271,7 @@ const getfieldNamesbyView = (
   return [];
 };
 
-export function Defaultcomponentsetting(props: componenentSettingprops) {
+export function DefaultComponentSetting(props: componenentSettingprops) {
   const uiSetting = props.uiSetting;
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     if (props.handlerchanges !== undefined) {
@@ -292,7 +292,7 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
     view: string
   ) => {
     return (
-      <>
+      <div key={'key' + fieldName}>
         {getComponentFromField(
           uiSetting,
           fieldName,
@@ -306,7 +306,7 @@ export function Defaultcomponentsetting(props: componenentSettingprops) {
           {formProps.errors[fieldName] !== undefined &&
             formProps.errors[fieldName].replace(fieldName, '  It ')}
         </Typography>
-      </>
+      </div>
     );
   };
   return (

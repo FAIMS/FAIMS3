@@ -35,6 +35,8 @@ import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
+import {logError} from '../../logging';
+
 function base64image_to_blob(image: CameraPhoto): Blob {
   if (image.base64String === undefined) {
     throw Error('No photo data found');
@@ -54,6 +56,7 @@ interface Props {
   helpertext?: string;
   label?: string;
   issyncing?: string;
+  isconflict?: boolean;
 }
 
 type ImageListProps = {
@@ -90,31 +93,57 @@ const ImageGalleryList = styled('ul')(({theme}) => ({
 //   };
 // }
 
-const FAIMSViewImageList = (props: {images: Array<any>; fieldName: string}) => {
-  console.log(props.images);
+const FAIMSViewImageList = (props: {
+  images: Array<any>;
+  fieldName: string;
+  setopen: Function;
+}) => {
   return (
     <List>
-      {props.images.map((image, index) => (
-        <ListItem
-          key={props.fieldName + index}
-          id={props.fieldName + index + 'image'}
-        >
-          <img
-            // {...srcset(item.img, 121, item.rows, item.cols)}
-            style={{maxHeight: 300, maxWidth: 200}}
-            src={URL.createObjectURL(image)}
-            loading="lazy"
+      {props.images.map((image, index) =>
+        image['attachment_id'] === undefined ? (
+          <ListItem
+            key={props.fieldName + index}
+            id={props.fieldName + index + 'image'}
+          >
+            <img
+              // {...srcset(item.img, 121, item.rows, item.cols)}
+              style={{maxHeight: 300, maxWidth: 200}}
+              src={URL.createObjectURL(image)}
+              loading="lazy"
+            />
+          </ListItem>
+        ) : (
+          // ?? not allow user to delete image if the image is not download yet
+          <FAIMSImageIconList
+            index={index}
+            setopen={props.setopen}
+            fieldName={props.fieldName}
           />
-        </ListItem>
-      ))}
+        )
+      )}
     </List>
   );
 };
 
+const FAIMSImageIconList = (props: {
+  index: number;
+  setopen: Function;
+  fieldName: string;
+}) => {
+  const {index, setopen} = props;
+  return (
+    <ImageListItem key={`${props.fieldName}-image-icon-${index}`}>
+      <IconButton aria-label="image" onClick={() => setopen(null)}>
+        <ImageIcon />
+      </IconButton>
+    </ImageListItem>
+  );
+};
+
 const FAIMSImageList = (props: ImageListProps) => {
-  const {images, setopen, setimage} = props;
+  const {images, setopen, setimage, fieldName} = props;
   const disabled = props.disabled ?? false;
-  console.log(disabled);
   const handelonClick = (index: number) => {
     if (images.length > index) {
       const newimages = images.filter((image: any, i: number) => i !== index);
@@ -126,13 +155,17 @@ const FAIMSImageList = (props: ImageListProps) => {
     return <span>No photo taken.</span>;
   if (disabled === true)
     return (
-      <FAIMSViewImageList images={props.images} fieldName={props.fieldName} />
+      <FAIMSViewImageList
+        images={props.images}
+        fieldName={props.fieldName}
+        setopen={setopen}
+      />
     );
   return (
     <ImageGalleryList>
       {props.images.map((image: any, index: number) =>
         image['attachment_id'] === undefined ? (
-          <ImageListItem key={index}>
+          <ImageListItem key={`${fieldName}-image-${index}`}>
             <img
               style={{
                 objectFit: 'scale-down',
@@ -164,11 +197,11 @@ const FAIMSImageList = (props: ImageListProps) => {
           </ImageListItem>
         ) : (
           // ?? not allow user to delete image if the image is not download yet
-          <ImageListItem key={index}>
-            <IconButton aria-label="image" onClick={() => setopen(null)}>
-              <ImageIcon />
-            </IconButton>
-          </ImageListItem>
+          <FAIMSImageIconList
+            index={index}
+            setopen={setopen}
+            fieldName={fieldName}
+          />
         )
       )}{' '}
     </ImageGalleryList>
@@ -177,6 +210,7 @@ const FAIMSImageList = (props: ImageListProps) => {
 interface State {
   open: boolean;
   photopath: string | null;
+  images: Array<any>;
 }
 export class TakePhoto extends React.Component<
   FieldProps &
@@ -201,6 +235,7 @@ export class TakePhoto extends React.Component<
     this.state = {
       open: false,
       photopath: null,
+      images: this.props.form.values[this.props.field.name] ?? [],
     };
   }
   async takePhoto() {
@@ -221,14 +256,24 @@ export class TakePhoto extends React.Component<
           : [image];
       this.props.form.setFieldValue(this.props.field.name, newimages);
     } catch (err: any) {
-      console.error('Failed to take photo', err);
+      logError(err);
       this.props.form.setFieldError(this.props.field.name, err.message);
     }
   }
+
+  componentDidUpdate(prevProps: FieldProps & Props) {
+    if (
+      prevProps.form.values[this.props.field.name] !==
+      this.props.form.values[this.props.field.name]
+    ) {
+      const value = this.props.form.values[this.props.field.name];
+      if (value !== null && value !== undefined) this.setState({images: value});
+    }
+  }
+
   render() {
-    const images = this.props.field.value;
+    //const images = this.props.field.value;
     const error = this.props.form.errors[this.props.field.name];
-    console.log(images);
 
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
@@ -261,13 +306,13 @@ export class TakePhoto extends React.Component<
             : 'Take Photo'}
         </Button>
         <FAIMSImageList
-          images={images}
+          images={this.state.images}
           setopen={(path: string) =>
             this.setState({open: true, photopath: path})
           }
-          setimage={(newfiles: Array<any>) =>
-            this.props.form.setFieldValue(this.props.field.name, newfiles)
-          }
+          setimage={(newfiles: Array<any>) => {
+            this.props.form.setFieldValue(this.props.field.name, newfiles);
+          }}
           disabled={this.props.disabled ?? false}
           fieldName={this.props.field.name}
         />

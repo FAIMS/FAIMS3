@@ -37,11 +37,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import StorageIcon from '@mui/icons-material/Storage';
 import * as ROUTES from '../../constants/routes';
 import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistration';
-import {downloadBlob, shareStringAsFileOnApp} from '../../utils/downloadShare';
-import {
-  getFullDBSystemDump,
-  getFullDBSystemDumpAsBlob,
-} from '../../sync/data-dump';
+import {doDumpShare, doDumpDownload} from '../../sync/data-dump';
 import {
   DIRECTORY_PROTOCOL,
   DIRECTORY_HOST,
@@ -56,6 +52,7 @@ import {wipe_all_pouch_databases} from '../../sync/databases';
 import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
+import Link from '@mui/material/Link';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -124,6 +121,32 @@ export default function AboutBuild() {
         >
           <Grid item md={4} sm={6} xs={12}>
             <Typography variant={'h5'} gutterBottom>
+              Exporting your data?
+            </Typography>
+
+            <Typography variant={'body2'}>
+              Here is a link for a laptop or desktop to visit a page listing our
+              exporters. You can choose to export data from individual notebooks
+              using tools on this page.
+            </Typography>
+          </Grid>
+          <Grid item md={8} sm={6} xs={12}>
+            <Typography variant={'h6'}>
+              <br />
+              <Link
+                href="https://faims.edu.au/export/"
+                target={'_blank'}
+                rel="noreferrer"
+              >
+                Visit exporter list (external to app)
+              </Link>
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <Divider />
+          </Grid>
+          <Grid item md={4} sm={6} xs={12}>
+            <Typography variant={'h5'} gutterBottom>
               Having issues?
             </Typography>
 
@@ -170,12 +193,7 @@ export default function AboutBuild() {
                   size={'small'}
                   color={'info'}
                   onClick={async () => {
-                    console.error('Starting browser system dump');
-                    const b = await getFullDBSystemDumpAsBlob();
-                    console.error(
-                      'Finished browser system dump, starting download'
-                    );
-                    downloadBlob(b, 'faims3-dump.json');
+                    await doDumpDownload();
                   }}
                   startIcon={<DownloadIcon />}
                 >
@@ -192,17 +210,7 @@ export default function AboutBuild() {
                   color={'info'}
                   variant={'contained'}
                   onClick={async () => {
-                    console.error('Starting app system dump');
-                    const s = await getFullDBSystemDump();
-                    console.error(
-                      'Finished app system dump, starting app sharing'
-                    );
-                    await shareStringAsFileOnApp(
-                      s,
-                      'FAIMS Database Dump',
-                      'Share all the FAIMS data on your device',
-                      'faims3-dump.json'
-                    );
+                    await doDumpShare();
                   }}
                   startIcon={<ShareIcon />}
                 >

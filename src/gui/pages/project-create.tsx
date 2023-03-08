@@ -30,6 +30,7 @@ import {ProjectID} from '../../datamodel/core';
 import {getProjectInfo} from '../../databaseAccess';
 import {getUiSpecForProject} from '../../uiSpecification';
 import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
+import {logError} from '../../logging';
 
 export default function ProjectCreate() {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -72,12 +73,12 @@ export default function ProjectCreate() {
       set_project_info(null);
       if (project_id !== undefined) {
         //only get UISpec when project is defined
-        getProjectInfo(project_id).then(set_project_info).catch(console.error);
+        getProjectInfo(project_id).then(set_project_info).catch(logError);
       }
       setUISpec(null);
       if (project_id !== undefined) {
         //only get UISpec when project is defined
-        getUiSpecForProject(project_id).then(setUISpec).catch(console.error);
+        getUiSpecForProject(project_id).then(setUISpec).catch(logError);
       }
       console.debug(uiSpec);
       console.log('project_id changed' + project_id);

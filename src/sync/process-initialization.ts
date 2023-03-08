@@ -31,13 +31,14 @@ import {
   ListingsObject,
   ProjectObject,
 } from '../datamodel/database';
+import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
 
 import {
   ConnectionInfo_create_pouch,
   materializeConnectionInfo,
-  ping_sync_up,
-  ping_sync_down,
+  throttled_ping_sync_up,
+  throttled_ping_sync_down,
   ping_sync_error,
   ping_sync_denied,
 } from './connection';
@@ -85,7 +86,7 @@ export async function update_directory(
         console.debug('ActiveDB Info', info);
       }
       if (info.doc === undefined) {
-        console.error('Active doc changes has doc undefined');
+        logError('Active doc changes has doc undefined');
         return undefined;
       }
       const listing_id = split_full_project_id(info.doc._id).listing_id;
@@ -118,7 +119,7 @@ export async function update_directory(
       return undefined;
     })
     .on('error', err => {
-      console.error('ActiveDB error', err);
+      logError(err);
     });
 
   // We just use the 1 events object
@@ -167,7 +168,7 @@ export async function update_directory(
     if (DEBUG_APP) {
       console.debug('Directory sync started up again');
     }
-    ping_sync_down();
+    throttled_ping_sync_down();
   };
   const directory_denied = (err: any) => {
     if (DEBUG_APP) {
@@ -190,7 +191,7 @@ export async function update_directory(
   //};
   //const directory_change = (info: any) => {
   //  console.debug('Directory sync change', info);
-  //  ping_sync_down();
+  //  throttled_ping_sync_down();
   //};
 
   const directory_paused = ConnectionInfo_create_pouch<ListingsObject>(
@@ -347,7 +348,7 @@ export async function update_listing(
   );
 
   // These createdListings objects are created as soon as possible
-  // (As soon as the DBs are availabe)
+  // (As soon as the DBs are available)
   const old_value = createdListings?.[listing_id];
   createdListings[listing_id] = {
     listing: listing_object,
@@ -377,7 +378,7 @@ export async function update_listing(
       .changes({...default_changes_opts, since: 0})
       .on('change', info => {
         if (info.doc === undefined) {
-          console.error('Active doc changes has doc undefined');
+          logError('Active doc changes has doc undefined');
           return undefined;
         }
         const split_id = split_full_project_id(info.doc._id);
@@ -421,7 +422,7 @@ export async function update_listing(
       .changes({...default_changes_opts, since: 0})
       .on('change', async info => {
         if (info.doc === undefined) {
-          console.error('projects_local doc changes has doc undefined');
+          logError('projects_local doc changes has doc undefined');
           return undefined;
         }
         if (info.id in to_sync) {
@@ -481,7 +482,7 @@ export async function update_listing(
     projects_remote.remote
       .connection!.on('active', () => {
         console.debug('Projects sync started up again', listing_id);
-        ping_sync_down();
+        throttled_ping_sync_down();
       })
       .on('denied', err => {
         console.debug('Projects sync denied', listing_id, err);
@@ -492,7 +493,7 @@ export async function update_listing(
       //})
       //.on('change', info => {
       //  console.debug('Projects sync change', listing_id, info);
-      //  ping_sync_down();
+      //  throttled_ping_sync_down();
       //})
       .on('error', (err: any) => {
         if (err.status === 401) {
@@ -648,7 +649,7 @@ export async function update_project(
   );
 
   // These createdProjects objects are created as soon as possible
-  // (As soon as the DBs are availabe)
+  // (As soon as the DBs are available)
   const old_value = createdProjects?.[active_id];
   createdProjects[active_id] = {
     project: project_object,
@@ -742,7 +743,7 @@ export async function update_project(
       meta_remote.remote
         .connection!.on('active', () => {
           console.debug('Meta sync started up again', active_id);
-          ping_sync_down();
+          throttled_ping_sync_down();
         })
         .on('denied', err => {
           console.debug('Meta sync denied', active_id, err);
@@ -750,7 +751,7 @@ export async function update_project(
         })
         //.on('change', info => {
         //  console.debug('Meta sync change', active_id, info);
-        //  ping_sync_down();
+        //  throttled_ping_sync_down();
         //})
         //.on('complete', info => {
         //  console.debug('Meta sync complete', active_id, info);
@@ -782,8 +783,8 @@ export async function update_project(
       data_remote.remote
         .connection!.on('active', () => {
           console.debug('Data sync started up again', active_id);
-          ping_sync_down();
-          ping_sync_up();
+          throttled_ping_sync_down();
+          throttled_ping_sync_up();
         })
         .on('denied', err => {
           console.debug('Data sync denied', active_id, err);

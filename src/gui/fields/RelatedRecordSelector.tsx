@@ -28,7 +28,7 @@ import {RecordReference} from '../../datamodel/ui';
 import {getRecordsByType} from '../../data_storage';
 import {
   getDefaultuiSetting,
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
 } from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {option} from '../../datamodel/typesystem';
@@ -53,6 +53,7 @@ import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {generateFAIMSDataID} from '../../data_storage';
+import {logError} from '../../logging';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {
@@ -220,8 +221,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
   const [updated, SetUpdated] = React.useState(uuidv4());
   const [is_enabled, setIs_enabled] = React.useState(multiple ? true : false);
   const [preferred, setPreferred] = React.useState(null as string | null);
-  const relation_preferred_label =
-    props.relation_preferred_label ?? 'Preferred';
+  const relation_preferred_label = props.relation_preferred_label ?? '';
+  // BBS 20221117 using empty string instead of null as a quick hack to toggle control of preferred checkbox in absence of a different boolean.
   if (
     url_split.length > 1 &&
     url_split[0].replace('field_id=', '') === props.id
@@ -229,8 +230,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     search = search.replace(url_split[0] + '&' + url_split[1], '');
   if (search !== '') search = '&' + search;
   const hrid =
-    props.form.values['type'] !== undefined
-      ? props.form.values['hrid' + props.form.values['type']] ??
+    props.current_form !== undefined
+      ? props.form.values['hrid' + props.current_form] ??
         props.form.values['_id']
       : props.form.values['_id'];
 
@@ -280,7 +281,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.InputLabelProps.label,
           multiple,
           props.related_type_label,
-          props.current_form
+          props.current_form,
+          type
         );
         console.debug('record information', records_info);
         setRecordsInformation(records_info);
@@ -309,7 +311,8 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           props.InputLabelProps.label,
           multiple,
           props.related_type_label,
-          props.current_form
+          props.current_form,
+          type
         );
         console.debug('record information', records_info);
         setRecordsInformation(records_info);
@@ -335,6 +338,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
 
   const newState: LocationState = {
     parent_record_id: props.form.values._id, //current form record id
+    parent_hrid: hrid,
     field_id: props.id,
     type: type, //type of this relation
     parent_link: location.pathname.replace('/notebooks/', ''), // current form link
@@ -388,7 +392,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     if (selectedRecord === null) return false;
     let newValue = props.form.values[field_name];
 
-    if (multiple) newValue.push(selectedRecord);
+    if (multiple) newValue = [...(newValue ?? []), selectedRecord];
     else newValue = selectedRecord;
 
     setFieldValue(newValue);
@@ -419,9 +423,12 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             // new_records.push(child_record)
             setRecordsInformation(new_records);
           }
-        } else console.error('Error to Add Link');
+        } else
+          logError(
+            `Child record is null after Update_New_Link ${selectedRecord}`
+          );
       })
-      .catch(error => console.error('Fail to update child', error));
+      .catch(error => logError(error));
     const records = excludes_related_record(
       multiple,
       props.form.values[field_name],
@@ -481,7 +488,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
     try {
       revision_id = await props.form.submitForm();
     } catch (error) {
-      console.error('Error to save current record', error);
+      logError(error);
     }
 
     try {
@@ -508,11 +515,13 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
           setRecordsInformation(new_records);
         }
       } else {
-        console.error('Failed to save Child record');
+        logError(
+          `Child record is null after Update_New_Link ${selectedRecord}`
+        );
         return '';
       }
     } catch (error) {
-      console.error('Failed to save Child record', error);
+      logError(error);
       return '';
     }
     SetSelectedRecord(null);
@@ -577,6 +586,7 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
             handleSubmit={() => props.form.submitForm()}
             save_new_record={save_new_record}
             is_active={isactive}
+            handleCreateError={remove_related_child}
           />
         </Grid>
         {props.form.isValid === false && (
@@ -647,7 +657,7 @@ const uiSpec = {
     },
     FormHelperTextProps: {},
   },
-  validationSchema: [['yup.string'], ['yup.required']],
+  validationSchema: [['yup.string']],
   initialValue: '',
 };
 
@@ -733,7 +743,8 @@ const uiSetting = () => {
       required: false,
     },
     validationSchema: [['yup.string']],
-    initialValue: 'Preferred',
+    initialValue: null,
+    // BBS 20221117 set initialValue to null to default to disabled
   };
   newuiSetting['fields']['related_type'] = {
     'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
@@ -884,7 +895,7 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
   };
 
   return (
-    <Defaultcomponentsetting
+    <DefaultComponentSetting
       handlerchanges={handlerchanges}
       {...props}
       fieldui={props.fieldui}

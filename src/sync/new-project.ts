@@ -27,6 +27,7 @@ import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
 
 import {directory_db, ensure_local_db, projects_dbs} from './databases';
 import {activate_project} from './process-initialization';
+import {logError} from '../logging';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
   console.debug(`Requesting allocation for ${project_id}`);
@@ -100,7 +101,7 @@ export async function ensure_locally_created_project_listing(): Promise<Listings
       await directory_db.local.put(listing_object);
       return listing_object;
     } else {
-      console.error('Failed to create locally created projects listing');
+      logError('Failed to create locally created projects listing');
       throw err;
     }
   }

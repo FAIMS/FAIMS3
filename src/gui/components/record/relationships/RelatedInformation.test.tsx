@@ -13,9 +13,9 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: RelatedInfomation.test.jsx
+ * Filename: RelatedInformation.test.jsx
  * Description:
- * file is to test the function in RelatedInfomation
+ * file is to test the function in RelatedInformation
  */
 import {equals} from '../../../../utils/eqTestSupport';
 import {v4 as uuidv4} from 'uuid';
@@ -23,40 +23,9 @@ import {
   getParentlinkInfo,
   // getParentInfo,
   getChildInfo,
+  get_all_child_records,
 } from './RelatedInformation';
 
-// PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-
-// const projdbs: any = {};
-
-// async function mockProjectDB(project_id: ProjectID) {
-//   if (projdbs[project_id] === undefined) {
-//     const db = new PouchDB(project_id, {adapter: 'memory'});
-//     projdbs[project_id] = db;
-//   }
-//   return projdbs[project_id];
-// }
-
-// async function cleanProjectDBS() {
-//   let db;
-//   for (const project_id in projdbs) {
-//     db = projdbs[project_id];
-//     delete projdbs[project_id];
-
-//     if (db !== undefined) {
-//       try {
-//         await db.destroy();
-//         //await db.close();
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     }
-//   }
-// }
-
-// jest.mock('./sync/index', () => ({
-//   getProjectDB: mockProjectDB,
-// }));
 const RelationState = {
   field_id: 'field',
   parent: {},
@@ -87,33 +56,6 @@ test('testing getParentlinkInfo from dummy Field Location State', () => {
   expect(equals(is_direct, true)).toBe(true);
 });
 
-// will re-enable when RelatedInformation finished
-// test('testing Parent information when user save child', () => {
-//   const parent = getParentInfo(RelationState, {linked: []}, record_id);
-//   expect(
-//     equals(parent.parent, {
-//       record_id: 'parent_record_id',
-//       field_id: 'field',
-//       relation_type_vocabPair: [],
-//     })
-//   ).toBe(true);
-// });
-
-// test('testing Link information when user save child', () => {
-//   const state = RelationState;
-//   state.type = 'Linked';
-//   const parent = getParentInfo(RelationState, {linked: []}, record_id);
-//   expect(
-//     equals(parent.linked, [
-//       {
-//         record_id: 'parent_record_id',
-//         field_id: 'field',
-//         relation_type_vocabPair: [],
-//       },
-//     ])
-//   ).toBe(true);
-// });
-
 test('test get child information to save in parent', () => {
   const {field_id, new_record, is_related} = getChildInfo(State, 'project_id');
   expect(equals(field_id, RelationState.field_id)).toBe(true);
@@ -126,4 +68,128 @@ test('test get child information to save in parent', () => {
     })
   ).toBe(true);
   expect(equals(is_related, true)).toBe(true);
+});
+
+//get_all_child_records, single child_record
+test('test single get_all_child_records conflictA and conflictB 2 records', () => {
+  const conflictA = {
+    project_id: 'project_id',
+    record_id: 'record_A',
+    record_label: 'record_A',
+  };
+  const conflictB = {
+    project_id: 'project_id',
+    record_id: 'record_B',
+  };
+  const mergeresult = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_A',
+      record_label: 'record_A',
+    },
+    {
+      project_id: 'project_id',
+      record_id: 'record_B',
+    },
+  ];
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
+});
+//get_all_child_records, multiple child_record
+test('test multiple get_all_child_records conflictA and conflictB 3 records', () => {
+  const conflictA = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_A',
+      record_label: 'record_A',
+    },
+    {
+      project_id: 'project_id',
+      record_id: 'record_A2',
+      record_label: 'record_A2',
+    },
+  ];
+  const conflictB = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_B',
+    },
+  ];
+  let mergeresult = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_A',
+      record_label: 'record_A',
+    },
+    {
+      project_id: 'project_id',
+      record_id: 'record_A2',
+      record_label: 'record_A2',
+    },
+    {
+      project_id: 'project_id',
+      record_id: 'record_B',
+    },
+  ];
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
+
+  const child_records = get_all_child_records(conflictB, conflictA);
+  mergeresult = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_B',
+    },
+    {
+      project_id: 'project_id',
+      record_id: 'record_A',
+      record_label: 'record_A',
+    },
+    {
+      project_id: 'project_id',
+      record_id: 'record_A2',
+      record_label: 'record_A2',
+    },
+  ];
+  expect(equals(mergeresult, child_records)).toBe(true);
+});
+
+//get_all_child_records, single child_record with one is ''( child been removed )
+test('test single get_all_child_records conflictB child is removed', () => {
+  const conflictA = {
+    project_id: 'project_id',
+    record_id: 'record_A',
+    record_label: 'record_A',
+  };
+  const conflictB = '';
+  const mergeresult = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_A',
+      record_label: 'record_A',
+    },
+  ];
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
+});
+
+//get_all_child_records, multiple child_record with one is []( child been removed )
+test('test multiple get_all_child_records conflictB child been removed', () => {
+  const conflictA = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_A',
+      record_label: 'record_A',
+    },
+  ];
+  const conflictB: any[] = [];
+  const mergeresult = [
+    {
+      project_id: 'project_id',
+      record_id: 'record_A',
+      record_label: 'record_A',
+    },
+  ];
+  const all_child_records = get_all_child_records(conflictA, conflictB);
+  expect(equals(mergeresult, all_child_records)).toBe(true);
 });

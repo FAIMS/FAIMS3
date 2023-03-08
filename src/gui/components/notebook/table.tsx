@@ -39,7 +39,7 @@ import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {listenDataDB} from '../../../sync';
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
-
+import getLocalDate from '../../fields/LocalDate';
 type RecordsTableProps = {
   project_id: ProjectID;
   maxRows: number | null;
@@ -204,10 +204,7 @@ function RecordsTable(props: RecordsTableProps) {
                 Created at{' '}
                 {params.row.created !== undefined &&
                   params.row.created !== '' &&
-                  JSON.stringify(params.row.created)
-                    .replaceAll('"', '')
-                    .replaceAll('T', ' ')
-                    .slice(0, 19)}
+                  getLocalDate(params.row.created).replaceAll('T', ' ')}
               </Typography>
               <Typography
                 color="textSecondary"

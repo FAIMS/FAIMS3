@@ -62,6 +62,7 @@ import {getValidationSchemaForViewset} from '../../../data_storage/validation';
 import {HRID_STRING} from '../../../datamodel/core';
 import {grey} from '@mui/material/colors';
 import {getid} from './data/ComponentSetting';
+import {logError} from '../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -223,8 +224,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         projectvalue.pre_description !== undefined &&
         projectvalue.pre_description !== ''
       ) {
-        //this is the function to solve the issue for new record button not be displayed, need to update in the future---Kate
-        handlerprojectsubmit_pounch();
+        //this is the function to solve the issue for new record button not being displayed, need to update in the future---Kate
+        handlerprojectsubmit_pouch();
       }
     }
     return () => {
@@ -349,7 +350,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           autoince.label
         );
       } catch (error) {
-        console.error('Failed to add autoincrement reference', error);
+        logError(error); // Failed to add autoincrement reference
       }
     }
   };
@@ -360,13 +361,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
       const autoince = get_autoincrement();
       await add_autoince_reference(autoince);
-    } catch (err) {
-      console.error(
-        'Failed to set UI spec and autoinc reference',
-        res,
-        project_id,
-        err
-      );
+    } catch (error) {
+      logError(error); // 'Failed to set UI spec and autoinc reference',
     }
   };
 
@@ -384,7 +380,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
 
             newvalue['attachfilenames'] = filenames;
           } catch (error) {
-            console.error('Error to get attachment- attachfilenames', error);
+            logError(error); // Error to get attachment- attachfilenames
           }
           if (
             newvalue['attachfilenames'] !== undefined &&
@@ -399,11 +395,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                 );
                 files[newvalue['attachfilenames'][index]] = file;
               } catch (error) {
-                console.error(
-                  'Error to get attachment-' +
-                    newvalue['attachfilenames'][index],
-                  error
-                );
+                logError(error); // Error to get attachment-
               }
             }
             newvalue['files'] = files;
@@ -418,10 +410,10 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
           );
         }
       } catch (error) {
-        console.error('DO not get the meta data...', error);
+        logError(error);
       }
-    } catch (err) {
-      console.error('databases not created...', err);
+    } catch (error) {
+      logError(error);
     }
   };
 
@@ -466,22 +458,20 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             ]);
             filenames.push(file_id);
           } catch (error) {
-            console.error(
-              'error save attachment',
-              error,
-              new_filenames,
-              key,
-              new_filenames[key]
-            );
+            logError(error);
+            // console.error(
+            //   'error save attachment',
+            //   error,
+            //   new_filenames,
+            //   key,
+            //   new_filenames[key]
+            // );
           }
         }
         await setProjectMetadata(project_id, 'attachfilenames', filenames);
       }
-    } catch (err) {
-      console.error(
-        'databases needs cleaning for save attachment error...',
-        err
-      );
+    } catch (error) {
+      logError(error); // databases needs cleaning for save attachment error...
     }
   };
 
@@ -498,14 +488,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         try {
           if (project_id !== null)
             await setProjectMetadata(project_id, key, values[key]);
-        } catch (err) {
-          console.error(
-            'Failed to set project metadata',
-            project_id,
-            key,
-            values[key],
-            err
-          );
+        } catch (error) {
+          logError(error); // Failed to set project metadata
         }
       }
 
@@ -517,18 +501,13 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
             'projectvalue',
             prevalues.projectvalue
           );
-      } catch (err) {
-        console.error(
-          'Failed to set project value',
-          project_id,
-          prevalues.projectvalue,
-          err
-        );
+      } catch (error) {
+        logError(error); // Failed to set project value
       }
 
       await saveattachement(projectvalue);
-    } catch (err) {
-      console.error('Failed to update project', project_id, err);
+    } catch (error) {
+      logError(error); // Failed to update project'
     }
   };
 
@@ -556,12 +535,11 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     console.log('run');
   };
 
-  const handlerprojectsubmit_pounch = async () => {
-    //save into local pounch
+  const handlerprojectsubmit_pouch = async () => {
+    //save into local pouch
     try {
       if (project_id === null) {
         await create_new_project_dbs(projectvalue.name).then(async res => {
-          console.log('projectid' + res);
           if (res !== '' && res !== null) {
             setProjectID(res);
             setProjectValue({...projectvalue, project_id: res});
@@ -577,9 +555,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
         });
       }
       await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log(project_id);
-    } catch (err) {
-      console.error('not saved meta data', err);
+    } catch (error) {
+      logError(error);
     }
 
     if (
@@ -591,12 +568,12 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
     }
     try {
       await updateproject(projectvalue, PROJECT_META);
-    } catch (err) {
-      console.error('not saved meta data', err);
+    } catch (error) {
+      logError(error);
     }
   };
 
-  const handlerprojectsubmit_counch = async () => {
+  const handlerprojectsubmit_couch = async () => {
     //if project online save it
     //else if project local, submit request in Beta
 
@@ -606,8 +583,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
       newvalue['project_status'] = 'pending';
       setProjectValue({...newvalue});
       await updateproject(newvalue, ['isrequest', 'project_status']);
-    } catch (err) {
-      console.error('not saved meta data', err);
+    } catch (error) {
+      logError(error);
     }
     alert('Request Send!');
   };
@@ -615,6 +592,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const handleSubmit = (values: any) => {
     if (values.attachments !== undefined && values.attachments.length > 0) {
       const newproject = projectvalue;
+      console.log('handleSubmit', projectvalue, values);
       newproject['attachments'] = values.attachments;
       newproject['filenames'] = values.attachments[0].name;
       setProjectValue({...newproject});
@@ -681,7 +659,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                         type="submit"
                         isSubmitting={false}
                         text="Save and Next"
-                        onButtonClick={() => handlerprojectsubmit_pounch()}
+                        onButtonClick={() => handlerprojectsubmit_pouch()}
                       /> */}
                     </TabPanel>
                     <TabPanel
@@ -713,8 +691,8 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
                         project_id={project_id}
                         projectvalue={projectvalue}
                         setProjectValue={setProjectValue}
-                        handleSubmit={handlerprojectsubmit_pounch}
-                        handlepublish={handlerprojectsubmit_counch}
+                        handleSubmit={handlerprojectsubmit_pouch}
+                        handlepublish={handlerprojectsubmit_couch}
                         formProps={formProps}
                         formuiSpec={formuiSpec}
                       />

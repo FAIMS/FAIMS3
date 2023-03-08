@@ -17,7 +17,6 @@
  * Description:
  *   TODO
  */
-import React from 'react';
 import ReactDOM from 'react-dom';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
 
@@ -27,6 +26,7 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {addNativeHooks} from './native_hooks';
 // import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
+import React from 'react';
 
 addNativeHooks();
 

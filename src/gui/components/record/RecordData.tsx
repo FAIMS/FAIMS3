@@ -59,6 +59,9 @@ interface RecordDataTypes {
   parentRecords: Array<ParentLinkProps> | null;
   record_to_field_links: RecordLinkProps[];
   is_link_ready: boolean;
+  handleUnlink: Function;
+  setRevision_id?: Function;
+  mq_above_md: boolean;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -95,6 +98,7 @@ export default function RecordData(props: RecordDataTypes) {
               record_hrid={props.hrid ?? props.record_id}
               record_type={props.record_type}
               handleSetSection={setViewName}
+              handleUnlink={props.handleUnlink}
             />
           ) : (
             <CircularProgress size={24} />
@@ -137,8 +141,10 @@ export default function RecordData(props: RecordDataTypes) {
                         handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                         handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                         handleSetDraftError={props.handleSetDraftError}
-                        // setRevision_id={setRevision_id}
+                        setRevision_id={props.setRevision_id}
                         ViewName={ViewName}
+                        draftLastSaved={props.draftLastSaved}
+                        mq_above_md={props.mq_above_md}
                       />
                     ) : (
                       <CircularProgress size={24} />
@@ -192,7 +198,7 @@ export default function RecordData(props: RecordDataTypes) {
                       ui_specification={props.ui_specification}
                       draft_id={props.draft_id}
                       metaSection={props.metaSection}
-                      disabled={true}
+                      disabled={true} // for view of the forms
                       handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}

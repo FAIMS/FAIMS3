@@ -20,6 +20,7 @@ export interface FieldLinkProps {
   section_label: string;
   field_id: string;
   field_label: string;
+  deleted?: boolean;
 }
 // model as RECORD --> FIELD
 export interface RecordLinkProps {
@@ -27,10 +28,12 @@ export interface RecordLinkProps {
   hrid: string | number;
   type: string;
   route: string;
-  relation_type_vocabPair?: string[];
+  relation_type_vocabPair: string[];
   link: FieldLinkProps;
   lastUpdatedBy?: string;
   relation_preferred?: boolean;
+  deleted?: boolean;
+  relation_type?: string;
 }
 /**************need to be updated later */
 export interface ParentLinkProps {
@@ -47,6 +50,7 @@ export interface ParentLinkProps {
   relation_type_vocabPair?: string[] | null;
   link_type?: string;
   link_id?: string;
+  deleted?: boolean;
 }
 /**************need to be updated later */
 export interface RelationshipsComponentProps {
@@ -55,6 +59,7 @@ export interface RelationshipsComponentProps {
   record_hrid: string;
   record_type: string;
   handleSetSection: Function;
+  handleUnlink?: Function; //function to remove the link
 }
 
 export interface FieldRelationshipComponentProps {
@@ -68,6 +73,8 @@ export interface RecordLinksComponentProps {
   record_links: Array<RecordLinkProps> | null;
   record_id: RecordID;
   handleSetSection: Function;
+  isconflict?: boolean; //add for conflict component
+  handleUnlink?: Function; //function to remove the link
 }
 
 export interface DataGridLinksComponentProps {

@@ -1,12 +1,19 @@
 /* eslint-disable node/no-unsupported-features/node-builtins */
 import React from 'react';
 import {Button, ButtonProps} from '@mui/material';
-import {InAppBrowser} from '@awesome-cordova-plugins/in-app-browser';
+import {Device} from '@capacitor/device';
+import {Browser} from '@capacitor/browser';
 
 import {TokenContents} from '../../../datamodel/core';
 import {ConductorURL} from '../../../datamodel/database';
 import {setTokenForCluster, getTokenContentsForCluster} from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
+import {logError} from '../../../logging';
+
+export async function isWeb(): Promise<boolean> {
+  const info = await Device.getInfo();
+  return info.platform === 'web';
+}
 
 export type LoginButtonProps = {
   listing_id: string;
@@ -34,7 +41,7 @@ export function LoginButton(props: LoginButtonProps) {
         ...props.sx,
       }}
       startIcon={props.startIcon}
-      onClick={() => {
+      onClick={async () => {
         window.addEventListener(
           'message',
           async event => {
@@ -64,36 +71,15 @@ export function LoginButton(props: LoginButtonProps) {
           },
           false
         );
-        const oauth_window = InAppBrowser.create(props.conductor_url);
-        if (oauth_window === null || oauth_window.on('message') === undefined) {
-          console.error('Failed to open oauth window');
+        if (await isWeb()) {
+          // Open a new window/tab on web
+          const oauth_window = window.open(props.conductor_url);
+          if (oauth_window === null) {
+            logError('Failed to open oauth window');
+          }
         } else {
-          oauth_window.on('message').subscribe(async event => {
-            console.log('Received token for:', props.listing_id);
-            await setTokenForCluster(
-              event.data.token,
-              event.data.pubkey,
-              event.data.pubalg,
-              props.listing_id
-            )
-              .then(async () => {
-                const token = await getTokenContentsForCluster(
-                  props.listing_id
-                );
-                console.debug('token is', token);
-                props.setToken(token);
-                reprocess_listing(props.listing_id);
-                oauth_window.close(); // We cannot close the iab inside the iab
-              })
-              .catch(err => {
-                console.warn(
-                  'Failed to get token for: ',
-                  props.listing_id,
-                  err
-                );
-                props.setToken(undefined);
-              });
-          });
+          // Use the capacitor browser plugin in apps
+          await Browser.open({url: props.conductor_url});
         }
       }}
     >

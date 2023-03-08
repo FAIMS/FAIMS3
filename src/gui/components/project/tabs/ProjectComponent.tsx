@@ -35,6 +35,8 @@ import ConfirmdeleteDialog from './ConfirmdeleteDialog';
 
 import SectionTabs from './PSections';
 import {grey} from '@mui/material/colors';
+import {logError} from '../../../../logging';
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 const useStyles = makeStyles(theme => ({
@@ -66,7 +68,7 @@ const getinitaccess = () => {
   try {
     return ['admin'];
   } catch (error) {
-    console.error("can't get access");
+    logError(error);
     return ['admin'];
   }
 };

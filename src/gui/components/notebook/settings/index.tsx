@@ -64,6 +64,7 @@ import CircularLoading from '../../ui/circular_loading';
 import ProjectStatus from './status';
 import NotebookSyncSwitch from './sync_switch';
 import {ProjectUIModel} from '../../../../datamodel/ui';
+import {logError} from '../../../../logging';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const {project_id} = useParams<{project_id: ProjectID}>();
@@ -84,9 +85,13 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
       const is_admin = await isClusterAdmin(split_id.listing_id);
 
       let can_edit_notebook_on_server = false;
-      const can_edit_notebook_on_device = false;
+      const can_edit_notebook_on_device = true; // BBS 20230215 workaround because edit notebook isn't appearing at all.
       for (const role in roles) {
-        if (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) {
+        // TODO FIX This seems broken, also doesn't account for 'cluster-admin'
+        if (
+          (role === split_id.project_id && roles[role].includes(ADMIN_ROLE)) ||
+          is_admin
+        ) {
           can_edit_notebook_on_server = true;
         }
       }
@@ -111,8 +116,8 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
     try {
       if (project_id !== null)
         setIsSyncing(isSyncingProjectAttachments(project_id));
-    } catch (err: any) {
-      console.error('error to get sync');
+    } catch (error: any) {
+      logError(error);
     }
 
     return listenSyncingProjectAttachments(project_id, setIsSyncing);
@@ -172,7 +177,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
               </Grid>
               {role_info.value?.can_edit_notebook_on_device ||
               role_info.value?.can_edit_notebook_on_server ||
-              String(process.env.REACT_APP_SERVER) === 'developers' ? (
+              project_info.status === 'local_draft' ? ( // FAIMS3-573 check local project
                 <Grid item xs={12}>
                   <Button
                     color="primary"
@@ -187,7 +192,8 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
               ) : (
                 ''
               )}
-              {role_info.value?.can_edit_notebook_on_device ? (
+              {role_info.value?.can_edit_notebook_on_device ||
+              project_info.status === 'local_draft' ? (
                 <Grid item xs={12}>
                   <Alert severity={'info'}>
                     You may edit the notebook, but your changes will only be
@@ -199,7 +205,8 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 ''
               )}
               {role_info.value?.can_edit_notebook_on_device ||
-              role_info.value?.can_edit_notebook_on_server ? (
+              role_info.value?.can_edit_notebook_on_server ||
+              project_info.status === 'local_draft' ? (
                 <Grid item xs={12}>
                   <Alert severity={'warning'}>
                     If this notebook already has records saved, editing the

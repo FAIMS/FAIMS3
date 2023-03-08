@@ -117,7 +117,6 @@ export type JWTTokenMap = {
 export interface LocalAuthDoc {
   _id: string; //Corresponds to a listings ID
   _rev?: string; // optional as we may want to include the raw json in places
-  current_token: JWTToken;
   current_username: string;
   available_tokens: JWTTokenMap;
 }
@@ -176,6 +175,7 @@ export interface EncodedRecord {
   _id: string;
   _rev?: string; // optional as we may want to include the raw json in places
   _deleted?: boolean; // This is for couchdb deletion
+  _conflicts?: string[]; // Pouchdb conflicts array
   record_format_version: number;
   created: string;
   created_by: string;

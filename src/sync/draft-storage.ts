@@ -36,6 +36,7 @@ import {
   generate_file_name,
   attachment_to_file,
 } from '../data_storage/attachments';
+import {logError} from '../logging';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
 
@@ -65,7 +66,7 @@ export async function getStagedData(
           attachment_to_file(file_name, draft._attachments[file_name])
         );
       } else {
-        console.error(
+        logError(
           "Attachments weren't loaded from pouch, but there should be some"
         );
       }

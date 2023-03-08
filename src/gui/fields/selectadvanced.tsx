@@ -21,7 +21,7 @@ import React, {useEffect} from 'react';
 import {TextFieldProps} from 'formik-mui';
 
 import {
-  Defaultcomponentsetting,
+  DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
 
@@ -41,6 +41,7 @@ import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
 import {styled} from '@mui/material/styles';
 import {getProjectMetadata} from '../../projectMetadata';
+import {logError} from '../../logging';
 interface RenderTree {
   // id: string;
   name: string;
@@ -270,7 +271,7 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
           setIsactive(true);
           SetAttachments(attachments);
         } catch (error) {
-          console.error('error to get Meta data', error);
+          logError(error);
           setIsactive(true);
         }
       } else {
@@ -283,6 +284,10 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
       mounted = false;
     };
   }, []);
+  useEffect(() => {
+    const value = props.form.values[props.field.name];
+    if (value !== null && value !== undefined) setValue([value]);
+  }, [props.form.values[props.field.name]]);
   /***make select not multiple to avoid error */
   const onselectvalue = (
     newvalue: string,
@@ -292,14 +297,14 @@ export function AdvancedSelect(props: TextFieldProps & Props) {
   ) => {
     //get value for only child selection
     if (props.valuetype === 'child') {
-      let newvalue = label;
+      let newvalue = name;
       if (type === 'image') newvalue = label + '(' + name + ')';
       props.form.setFieldValue(props.field.name, newvalue);
-      setValue([name]);
+
       return;
     }
     props.form.setFieldValue(props.field.name, newvalue);
-    setValue([newvalue]);
+
     return;
   };
 
@@ -388,14 +393,14 @@ export function AdvancedSelectcomponentsetting(props: componenentSettingprops) {
         ]['optiontree'] = JSON.parse(event.target.value);
         //event.target.value;
         props.setuiSpec({...newvalues});
-      } catch (e) {
-        console.error('Not valid');
+      } catch (error) {
+        logError(error);
       }
     }
   };
 
   return (
-    <Defaultcomponentsetting
+    <DefaultComponentSetting
       handlerchangewithview={handlerchangewithviewSpec}
       handlerchanges={handlerchanges}
       {...others}
