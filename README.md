@@ -1,9 +1,11 @@
 # FAIMS3
 
-FAIMS3 is currently in pre-alpha development. This repository is our main
-codebase for development. See <https://faims.edu.au> for updates (soon).
+FAIMS3 is an open-source tool for offline field data-collection brought to you by the FAIMS Project. The FAIMS Project was funded by the ARDC ([https://dx.doi.org/10.47486/PL110]), Macquarie University, and CSIRO along with our other partners. This code is appropriate for building and deploying the Webapp, Android and iOS versions. The conductor, needed for user authentication, is located at [https://github.com/FAIMS/FAIMS3-conductor]. Contact [info@faims.edu.au](mailto:info@faims.edu.au) to enrol to try out the software.
 
-## Setup and development (quick-start)
+## Setting up a field server
+* [Draft instructions for a local offline server.](https://github.com/FAIMS/FAIMS3/settingUpFieldServer.md)
+
+## Developer notes to run test copies of FAIMS
 
 Before you do anything (apart from cloning this repository), you should run
 npm install`to get all the dependencies
