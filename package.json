@@ -45,7 +45,6 @@
     "prepare": "npm run compile",
     "doc": "jsdoc -c ./jsdoc.config.json -u tutorials/",
     "docs": "npx typedoc --tsconfig tsconfig.json"
-
   },
   "dependencies": {
     "@awesome-cordova-plugins/core": "5.44.0",
@@ -138,6 +137,7 @@
     "@types/react-router-hash-link": "^2.4.5",
     "@types/yup": "0.29.14",
     "better-docs": "^2.7.2",
+    "eledoc": "^0.2.1",
     "fast-check": "2.25.0",
     "gts": "3.1.0",
     "jest": "26.6.0",
@@ -147,6 +147,7 @@
     "react-scripts": "4.0.3",
     "serve": "^14.0.1",
     "taffydb": "^2.7.3",
+    "typedoc-theme-yaf": "^0.0.4",
     "typescript": "4.7.4"
   }
 }

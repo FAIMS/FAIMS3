@@ -30,7 +30,9 @@
     "out": "docs",
     "exclude": "**/*.sh",
     "readme": "README.md",
-    "githubPages": true
+    "githubPages": true,
+    "plugin": ["typedoc-theme-yaf"],
+    "theme": "yaf"
   },
   "include": [
     "src"
