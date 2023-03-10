@@ -43,7 +43,9 @@
     "compile": "tsc",
     "fix": "gts fix",
     "prepare": "npm run compile",
-    "doc": "jsdoc -c ./jsdoc.config.json"
+    "doc": "jsdoc -c ./jsdoc.config.json",
+    "docs": "npx typedoc --tsconfig tsconfig.json"
+
   },
   "dependencies": {
     "@awesome-cordova-plugins/core": "5.44.0",
