@@ -81,13 +81,13 @@ export class PromiseState<S, L extends null | {}> {
       // Convert all errors in the fs conversion funcs list, recursively
       // BBS 20230310 Linter reports: src/gui/pouchHook.ts:82:11 - error TS2839: This condition will always return 'false' since JavaScript compares objects by reference, not value.
       // if (fs === []) {
-        // Base case: No conversion whatsoever, just a copy
+      // Base case: No conversion whatsoever, just a copy
       //   return new PromiseState<S, L>({error: this.error});
       // } else {
-        // Recursive case: Convert using the first function given.
-        return new PromiseState<S, L>({error: fs[0](this.error) || {}}).map_err(
-          ...fs.slice(1)
-        );
+      // Recursive case: Convert using the first function given.
+      return new PromiseState<S, L>({error: fs[0](this.error) || {}}).map_err(
+        ...fs.slice(1)
+      );
       // }
     } else if (this.value !== undefined) {
       return new PromiseState({value: this.value});
