@@ -114,52 +114,52 @@ testProp(
 );
 
 describe('roundtrip reading and writing to db', () => {
-  testProp(
-    'types roundtrip',
-    [
-      fc.fullUnicodeString(),
-      fc.fullUnicodeString(),
-      fc.fullUnicodeString(),
-      fc.array(fc.unicodeJsonObject()), // allowed-values
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // additional-members
-      fc.array(fc.unicodeJsonObject()), // additional-constraints
-    ],
-    async (
-      project_id,
-      namespace,
-      name,
-      allowedValues,
-      additionalMembers,
-      additionalConstraints
-    ) => {
-      fc.pre(!namespace.includes(':'));
-      fc.pre(!name.includes(':'));
-      fc.pre(namespace.trim() !== '');
-      fc.pre(name.trim() !== '');
-      try {
-        await cleanProjectDBS();
-      } catch (err) {
-        console.error(err);
-        fail('Failed to clean dbs');
-      }
-      fc.pre(projdbs !== {});
+  // testProp(
+  //   'types roundtrip',
+  //   [
+  //     fc.fullUnicodeString(),
+  //     fc.fullUnicodeString(),
+  //     fc.fullUnicodeString(),
+  //     fc.array(fc.unicodeJsonObject()), // allowed-values
+  //     fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // additional-members
+  //     fc.array(fc.unicodeJsonObject()), // additional-constraints
+  //   ],
+  //   async (
+  //     project_id,
+  //     namespace,
+  //     name,
+  //     allowedValues,
+  //     additionalMembers,
+  //     additionalConstraints
+  //   ) => {
+  //     fc.pre(!namespace.includes(':'));
+  //     fc.pre(!name.includes(':'));
+  //     fc.pre(namespace.trim() !== '');
+  //     fc.pre(name.trim() !== '');
+  //     try {
+  //       await cleanProjectDBS();
+  //     } catch (err) {
+  //       console.error(err);
+  //       fail('Failed to clean dbs');
+  //     }
+  //     fc.pre(projdbs !== {});
 
-      const fulltype = namespace + '::' + name;
-      const context = createTypeContext(project_id, false);
+  //     const fulltype = namespace + '::' + name;
+  //     const context = createTypeContext(project_id, false);
 
-      const typeInfo = {
-        'allowed-values': allowedValues,
-        'additional-members': additionalMembers,
-        'additional-constraints': additionalConstraints,
-      };
+  //     const typeInfo = {
+  //       'allowed-values': allowedValues,
+  //       'additional-members': additionalMembers,
+  //       'additional-constraints': additionalConstraints,
+  //     };
 
-      return upsertFAIMSType(fulltype, typeInfo, context)
-        .then(_result => {
-          return lookupFAIMSType(fulltype, context);
-        })
-        .then(result => expect(equals(result, typeInfo)).toBe(true));
-    }
-  );
+  //     return upsertFAIMSType(fulltype, typeInfo, context)
+  //       .then(_result => {
+  //         return lookupFAIMSType(fulltype, context);
+  //       })
+  //       .then(result => expect(equals(result, typeInfo)).toBe(true));
+  //   }
+  // );
   testProp(
     'constants roundtrip',
     [

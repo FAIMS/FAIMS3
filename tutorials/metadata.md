@@ -13,11 +13,12 @@ in the metadata:
 * `lead_institution` - text shown in the UI
 * `project_lead` - text shown in the UI
 * `last_updated` - text shown in the UI
-* `meta` - an object containing at least the field `showQRCodeButton`
+* `meta` - an object, possibly containing the field `showQRCodeButton`
 * `projectvalue` - an object containing all of the metadata fields
 * `attachedfilenames` - a list of attached filenames
 * `attachments` - a list of attachments
-* `sections` - a section name?
+* `sections` - for each form section (eg. FORM1SECTION1) holds properties of that section with keys such 
+   as `sectiondescriptionFORM1SECTION1`.
 
 `projectvalue` seems to be key and is used in `CreateProjectCard` to hold all of the
 metadata while it is being edited. It is initialised there as:
@@ -51,9 +52,26 @@ const ini_projectvalue = {
 ```
 
 This includes a number of fields not found below so we might need to look at where and how this
-is used to fully understand the metadata usage in FAIMS.  Look in the `FieldSettings` component for 
+is used to fully understand the metadata usage in FAIMS.  Look in the `FieldSettings` component for
 significant usage.
 
+It looks like `projectvalue` is only referenced inside the notebook builder, not when
+the notebook is being used.
+
+The `forms` field is only used inside the notebook builder as well.
+
+The `sections` field holds properties of form sections
+
+```json
+            "sections": {
+                "FORM1SECTION1": {
+                    "sectiondescriptionFORM1SECTION1": "Here you will describe the survey session."
+                }
+            },
+```
+
+`sectiondescription` seems to be the only property used here, referenced in `src/gui/components/record/form.tsx`.  It would make much more sense for this property to be associated with the view in the ui-specification.  Each view has a label property which could be used for the description (label is not 
+currently used anywhere, as far as I can see).
 
 ## MetadataRenderer
 

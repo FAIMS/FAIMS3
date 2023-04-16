@@ -139,6 +139,7 @@ function isAttachment(a: any): boolean {
  * (e.g. without async), but this will have to do for now...
  */
 export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
+  //console.debug('isEqualFAIMS', a, b);
   if (Array.isArray(a) !== Array.isArray(b)) {
     // only one of a or b is an array, so not equal
     //console.debug('Not both arrays', a, b);
@@ -157,11 +158,11 @@ export async function isEqualFAIMS(a: any, b: any): Promise<boolean> {
     }
     return true;
   } else if (isAttachment(a) && isAttachment(b)) {
-    // console.debug('Checking equality of blobs', a, b);
+    console.debug('Checking equality of blobs', a, b);
     if (a.size !== b.size || a.type !== b.type || a.name !== b.name) {
       return false;
     }
-    // console.debug('Checking equality of blob contents', a, b);
+    console.debug('Checking equality of blob contents', a, b);
     return await Promise.all([a.arrayBuffer(), b.arrayBuffer()])
       .then((res: [any, any]) => {
         const buf_a = res[0] as ArrayBuffer;

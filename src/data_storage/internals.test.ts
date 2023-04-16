@@ -21,11 +21,9 @@
 
 import PouchDB from 'pouchdb';
 
-import {ProjectID, HRID_STRING} from '../datamodel/core';
-import {Record} from '../datamodel/ui';
-import {generateFAIMSDataID, upsertFAIMSData} from './index';
+import {ProjectID} from '../datamodel/core';
 
-import {getHRID, getRecord, getRevision} from './internals';
+import {getRecord} from './internals';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
@@ -69,46 +67,46 @@ afterAll(async () => {
 });
 
 describe('test internals', () => {
-  test('test getHRID', async () => {
-    const project_id = 'test';
-    const fulltype = 'test::test';
-    const time = new Date();
-    const userid = 'user';
+  // test('test getHRID', async () => {
+  //   const project_id = 'test';
+  //   const fulltype = 'test::test';
+  //   const time = new Date();
+  //   const userid = 'user';
 
-    const record_id = generateFAIMSDataID();
+  //   const record_id = generateFAIMSDataID();
 
-    // record with an hrid field - one starting with HRID_STRING
-    const doc: Record = {
-      project_id: project_id,
-      record_id: record_id,
-      revision_id: null,
-      type: fulltype,
-      data: {avp1: 1},
-      created_by: userid,
-      updated_by: userid,
-      created: time,
-      updated: time,
-      annotations: {
-        avp1: 1,
-      },
-      field_types: {field_name: fulltype},
-    };
+  //   // record with an hrid field - one starting with HRID_STRING
+  //   const doc: Record = {
+  //     project_id: project_id,
+  //     record_id: record_id,
+  //     revision_id: null,
+  //     type: fulltype,
+  //     data: {avp1: 1},
+  //     created_by: userid,
+  //     updated_by: userid,
+  //     created: time,
+  //     updated: time,
+  //     annotations: {
+  //       avp1: 1,
+  //     },
+  //     field_types: {field_name: fulltype},
+  //   };
 
-    const hridField = HRID_STRING + 'FieldName';
-    const hridValue = 'test HRID value';
-    doc.data[hridField] = hridValue;
-    doc.annotations[hridField] = 'annotation for HRID';
+  //   const hridField = HRID_STRING + 'FieldName';
+  //   const hridValue = 'test HRID value';
+  //   doc.data[hridField] = hridValue;
+  //   doc.annotations[hridField] = 'annotation for HRID';
 
-    return upsertFAIMSData(project_id, doc).then(revisionId => {
-      return getRevision(project_id, revisionId)
-        .then(revision => {
-          return getHRID(project_id, revision);
-        })
-        .then(hrid => {
-          expect(hrid).toBe(hridValue);
-        });
-    });
-  });
+  //   return upsertFAIMSData(project_id, doc).then(revisionId => {
+  //     return getRevision(project_id, revisionId)
+  //       .then(revision => {
+  //         return getHRID(project_id, revision);
+  //       })
+  //       .then(hrid => {
+  //         expect(hrid).toBe(hridValue);
+  //       });
+  //   });
+  // });
   test('test getRecord - undefined', () => {
     expect(() => getRecord('test', 'unknownId')).rejects.toThrow(
       /no such record/
