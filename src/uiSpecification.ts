@@ -20,10 +20,7 @@
 
 import {getProjectDB} from './sync';
 import {ProjectID, FAIMSTypeName} from 'faims3-datamodel';
-import {
-  UI_SPECIFICATION_NAME,
-  EncodedProjectUIModel,
-} from 'faims3-datamodel';
+import {UI_SPECIFICATION_NAME, EncodedProjectUIModel} from 'faims3-datamodel';
 import {ProjectUIModel} from 'faims3-datamodel';
 
 export async function getUiSpecForProject(

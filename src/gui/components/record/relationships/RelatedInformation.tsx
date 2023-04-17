@@ -21,7 +21,7 @@ import {
   upsertFAIMSData,
   getFullRecordData,
   getFirstRecordHead,
-  ProjectUIModel, 
+  ProjectUIModel,
   RecordReference,
   LinkedRelation,
   LocationState,

@@ -30,7 +30,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import * as ROUTES from '../../../constants/routes';
 import {
   ProjectID,
-  ProjectUIViewsets
+  ProjectUIViewsets,
   RecordMetadata,
   getMetadataForAllRecords,
   getRecordsWithRegex,

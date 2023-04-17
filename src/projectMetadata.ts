@@ -23,10 +23,7 @@ import {
   PROJECT_METADATA_PREFIX,
   EncodedProjectMetadata,
 } from 'faims3-datamodel';
-import {
-  attachments_to_files,
-  files_to_attachments,
-} from 'faims3-datamodel';
+import {attachments_to_files, files_to_attachments} from 'faims3-datamodel';
 import {logError} from './logging';
 
 export async function getProjectMetadata(

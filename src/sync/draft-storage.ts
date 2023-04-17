@@ -33,7 +33,7 @@ import {DEBUG_APP} from '../buildconfig';
 import {local_pouch_options} from './connection';
 import {
   EncodedDraft,
-  DraftMetadataList, 
+  DraftMetadataList,
   attachment_to_file,
 } from 'faims3-datamodel';
 import {logError} from '../logging';

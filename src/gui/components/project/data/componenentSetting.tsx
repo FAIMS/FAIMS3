@@ -25,13 +25,10 @@ import {
   resetprops,
   FAIMSEVENTTYPE,
   componenentSettingprops,
+  ProjectUIFields,
 } from 'faims3-datamodel';
-import {ProjectUIFields} from 'faims3-datamodel';
 import {DefaultComponentSetting} from '../../../fields/BasicFieldSettings';
-import {
-  HRID_STRING,
-  DEFAULT_REALTION_LINK_VOCAB,
-} from 'faims3-datamodel';
+import {HRID_STRING, DEFAULT_REALTION_LINK_VOCAB} from 'faims3-datamodel';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {option} from 'faims3-datamodel';
 import {logError} from '../../../../logging';
