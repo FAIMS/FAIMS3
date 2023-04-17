@@ -23,20 +23,20 @@ import React, {useEffect} from 'react';
 import {FieldProps} from 'formik';
 
 import * as ROUTES from '../../constants/routes';
-import {FAIMSTypeName, LocationState} from '../../datamodel/core';
-import {RecordReference} from '../../datamodel/ui';
-import {getRecordsByType} from '../../data_storage';
+import {FAIMSTypeName, LocationState} from 'faims3-datamodel';
+import {RecordReference} from 'faims3-datamodel';
+import {getRecordsByType} from 'faims3-datamodel';
 import {
   getDefaultuiSetting,
   DefaultComponentSetting,
 } from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {option} from '../../datamodel/typesystem';
+import {option} from 'faims3-datamodel';
 import {
   ProjectUIModel,
   componenentSettingprops,
   FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
+} from 'faims3-datamodel';
 import {useLocation} from 'react-router-dom';
 import {Grid, Typography} from '@mui/material';
 import {
@@ -52,7 +52,7 @@ import {RecordLinkProps} from '../components/record/relationships/types';
 import {SelectChangeEvent} from '@mui/material';
 import {v4 as uuidv4} from 'uuid';
 import CreateLinkComponent from '../components/record/relationships/create_links';
-import {generateFAIMSDataID} from '../../data_storage';
+import {generateFAIMSDataID} from 'faims3-datamodel';
 import {logError} from '../../logging';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */

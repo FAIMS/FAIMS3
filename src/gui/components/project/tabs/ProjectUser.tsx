@@ -29,7 +29,7 @@ import {
   getprojectform,
   checkvalid,
 } from '../data/ComponentSetting';
-import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from 'faims3-datamodel';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {UserRoleList, UserLists} from './PSettingCard';

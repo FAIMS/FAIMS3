@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 import {Typography} from '@mui/material';
 
 interface Props {

@@ -38,7 +38,7 @@ import {FormForm} from '../FormElement';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {getprojectform, uiSpecType} from '../data/ComponentSetting';
-import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
+import {ProjectValueList, FAIMShandlerType} from 'faims3-datamodel';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';

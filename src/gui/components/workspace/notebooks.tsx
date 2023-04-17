@@ -33,7 +33,7 @@ import {
 import * as ROUTES from '../../../constants/routes';
 import {getAllProjectList, listenProjectList} from '../../../databaseAccess';
 import {useEventedPromise} from '../../pouchHook';
-import {TokenContents} from '../../../datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 import CircularLoading from '../../components/ui/circular_loading';
 import ProjectStatus from '../notebook/settings/status';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';

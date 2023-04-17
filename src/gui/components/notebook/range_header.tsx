@@ -37,7 +37,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import {
   get_user_friendly_status_for_project,
   UserFriendlyAutoincrementStatus,
-} from '../../../datamodel/autoincrement';
+} from 'faims3-datamodel';
 
 export default function RangeHeader(props: {
   project: any;

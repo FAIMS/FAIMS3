@@ -7,7 +7,7 @@ import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
 import HourglassTopOutlinedIcon from '@mui/icons-material/HourglassTopOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
-// import {ProjectInformation} from '../../../../datamodel/ui';
+// import {ProjectInformation} from 'faims3-datamodel';
 interface ProjectStatusProps {
   status: string | undefined;
   // | 'local_draft'

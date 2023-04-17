@@ -8,13 +8,15 @@ import {useTheme} from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 
 import * as ROUTES from '../../../constants/routes';
-import {ProjectInformation} from '../../../datamodel/ui';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {listenProjectDB} from '../../../sync';
 import {useEventedPromise, constantArgsSplit} from '../../pouchHook';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
-import {getAllRecordsWithRegex} from '../../../data_storage/queries';
-import {RecordMetadata} from '../../../datamodel/ui';
+import {
+  ProjectInformation,
+  getAllRecordsWithRegex,
+  RecordMetadata,
+} from 'faims3-datamodel';
 import {getProjectMetadata} from '../../../projectMetadata';
 import {logError} from '../../../logging';
 

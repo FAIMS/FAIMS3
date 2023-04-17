@@ -21,13 +21,12 @@ import {
   upsertFAIMSData,
   getFullRecordData,
   getFirstRecordHead,
-} from '../../../../data_storage';
-import {ProjectUIModel, RecordReference} from '../../../../datamodel/ui';
-import {
+  ProjectUIModel, 
+  RecordReference,
   LinkedRelation,
   LocationState,
   Relationship,
-} from '../../../../datamodel/core';
+} from 'faims3-datamodel';
 import * as ROUTES from '../../../../constants/routes';
 import {RecordLinkProps, ParentLinkProps} from './types';
 import getLocalDate from '../../../fields/LocalDate';

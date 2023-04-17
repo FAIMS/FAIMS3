@@ -1,8 +1,8 @@
 import React, {useEffect} from 'react';
 import {Box, Grid, Typography, Paper, Alert} from '@mui/material';
-import {ProjectInformation, ProjectUIModel} from '../../../../datamodel/ui';
-import {get_autoincrement_references_for_project} from '../../../../datamodel/autoincrement';
-import {AutoIncrementReference} from '../../../../datamodel/database';
+import {ProjectInformation, ProjectUIModel} from 'faims3-datamodel';
+import {get_autoincrement_references_for_project} from 'faims3-datamodel';
+import {AutoIncrementReference} from 'faims3-datamodel';
 import AutoIncrementEditForm from '../../autoincrement/edit-form';
 import {logError} from '../../../../logging';
 

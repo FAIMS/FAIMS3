@@ -25,15 +25,15 @@ import {
   resetprops,
   FAIMSEVENTTYPE,
   componenentSettingprops,
-} from '../../../../datamodel/ui';
-import {ProjectUIFields} from '../../../../datamodel/typesystem';
+} from 'faims3-datamodel';
+import {ProjectUIFields} from 'faims3-datamodel';
 import {DefaultComponentSetting} from '../../../fields/BasicFieldSettings';
 import {
   HRID_STRING,
   DEFAULT_REALTION_LINK_VOCAB,
-} from '../../../../datamodel/core';
+} from 'faims3-datamodel';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {option} from '../../../../datamodel/typesystem';
+import {option} from 'faims3-datamodel';
 import {logError} from '../../../../logging';
 
 const uiSettingOthers: ProjectUIModel = {

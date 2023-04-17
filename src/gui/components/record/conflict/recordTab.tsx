@@ -21,7 +21,7 @@
 
 import React from 'react';
 
-import {ProjectUIModel} from '../../../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 import {Tab} from '@mui/material';
 import TabList from '@mui/lab/TabList';
 import Badge from '@mui/material/Badge';

@@ -18,16 +18,13 @@
  *   TODO
  */
 import {v4 as uuidv4} from 'uuid';
-
-import {
-  ListingsObject,
-  LOCALLY_CREATED_PROJECT_PREFIX,
-} from '../datamodel/database';
-import {ProjectID, NonUniqueProjectID} from '../datamodel/core';
+import {ListingsObject, ProjectID, NonUniqueProjectID} from 'faims3-datamodel';
 
 import {directory_db, ensure_local_db, projects_dbs} from './databases';
 import {activate_project} from './process-initialization';
 import {logError} from '../logging';
+
+export const LOCALLY_CREATED_PROJECT_PREFIX = 'locallycreatedproject';
 
 export async function request_allocation_for_project(project_id: ProjectID) {
   console.debug(`Requesting allocation for ${project_id}`);

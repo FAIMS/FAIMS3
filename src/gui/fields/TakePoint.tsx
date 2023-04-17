@@ -24,8 +24,7 @@ import Button, {ButtonProps} from '@mui/material/Button';
 import {Geolocation, GeolocationPosition} from '@capacitor/geolocation';
 
 import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui';
-import {FAIMSPosition} from '../../datamodel/geo';
+import {ProjectUIModel, FAIMSPosition} from 'faims3-datamodel';
 import {logError} from '../../logging';
 
 function capacitor_coordindates_to_faims_pos(

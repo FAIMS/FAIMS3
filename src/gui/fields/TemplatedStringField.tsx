@@ -28,13 +28,13 @@ import {
 } from './BasicFieldSettings';
 import {generatenewfield} from '../components/project/data/componenentSetting';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {option} from '../../datamodel/typesystem';
+import {option} from 'faims3-datamodel';
 import {
   ProjectUIModel,
   componenentSettingprops,
   FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
-import {HRID_STRING} from '../../datamodel/core';
+} from 'faims3-datamodel';
+import {HRID_STRING} from 'faims3-datamodel';
 import getLocalDate from './LocalDate';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface FieldValues {

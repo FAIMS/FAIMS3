@@ -9,7 +9,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import {RecordLinksComponentProps, RecordLinkProps} from './types';
 import {RecordLinksToolbar} from './toolbars';
-import {RecordID} from '../../../../datamodel/core';
+import {RecordID} from 'faims3-datamodel';
 import RecordRouteDisplay from '../../ui/record_link';
 import {grey} from '@mui/material/colors';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';

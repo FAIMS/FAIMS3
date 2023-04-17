@@ -20,12 +20,12 @@
 
 import {getProjectDB} from './sync/index';
 import PouchDB from 'pouchdb';
-import {ProjectID, FAIMSTypeName} from './datamodel/core';
+import {ProjectID, FAIMSTypeName} from 'faims3-datamodel';
 import {
   PROJECT_SPECIFICATION_PREFIX,
   ProjectSchema,
-} from './datamodel/database';
-import {FAIMSType, FAIMSConstant} from './datamodel/typesystem';
+} from 'faims3-datamodel';
+import {FAIMSType, FAIMSConstant} from 'faims3-datamodel';
 
 export const FAIMS_NAMESPACES = [
   'faims-core',

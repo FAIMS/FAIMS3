@@ -20,7 +20,7 @@
  *  default value for field could be empty/ ''/none and etc, no relevant tabs/fields should be displayed for the initial value
  * (which means that all fields and tabs with is_logic setup should not be displayed with initial value unless initial value is included)
  */
-import {ProjectUIModel} from '../../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 import {logError} from '../../../logging';
 
 export function update_by_branching_logic(

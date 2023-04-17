@@ -22,8 +22,8 @@ import React, {createContext, useReducer, Dispatch, useEffect} from 'react';
 
 import {v4 as uuidv4} from 'uuid';
 
-import {ProjectObject} from '../datamodel/database';
-import {Record} from '../datamodel/ui';
+import {ProjectObject} from 'faims3-datamodel';
+import {Record} from 'faims3-datamodel';
 import {getSyncStatusCallbacks} from '../utils/status';
 import {
   ProjectActions,

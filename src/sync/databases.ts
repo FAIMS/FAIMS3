@@ -35,7 +35,7 @@ import {
   ProjectObject,
   LocalAuthDoc,
   NonNullListingsObject,
-} from '../datamodel/database';
+} from 'faims3-datamodel';
 import {logError} from '../logging';
 import {
   ConnectionInfo_create_pouch,

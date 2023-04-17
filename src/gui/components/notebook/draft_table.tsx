@@ -41,11 +41,10 @@ import {useHistory} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
-import {ProjectID} from '../../../datamodel/core';
-import {DraftMetadata} from '../../../datamodel/drafts';
+import {ProjectID, DraftMetadata} from 'faims3-datamodel';
 import * as ROUTES from '../../../constants/routes';
 import {listenDrafts} from '../../../drafts';
-import {ProjectUIViewsets} from '../../../datamodel/typesystem';
+import {ProjectUIViewsets} from 'faims3-datamodel';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 

@@ -28,7 +28,7 @@ import {getComponentFromField, AutocompleteForm} from '../FormElement';
 import {updateuiSpec, getacessoption} from '../data/ComponentSetting';
 import {CloseButton, UpButton, DownButton} from './ProjectButton';
 import {ResetComponentProperties} from '../data/componenentSetting';
-import {HRID_STRING} from '../../../../datamodel/core';
+import {HRID_STRING} from 'faims3-datamodel';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 

@@ -28,7 +28,7 @@ import {
   StepButton,
   MobileStepper,
 } from '@mui/material';
-import {ProjectUIModel} from '../../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 import makeStyles from '@mui/styles/makeStyles';
 type RecordStepperProps = {
   view_index: number;

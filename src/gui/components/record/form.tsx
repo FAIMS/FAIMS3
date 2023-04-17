@@ -43,10 +43,13 @@ import {
   RevisionID,
   Annotations,
   Relationship,
-} from '../../../datamodel/core';
-import {ProjectUIModel} from '../../../datamodel/ui';
-import {upsertFAIMSData, getFullRecordData} from '../../../data_storage';
-import {getValidationSchemaForViewset} from '../../../data_storage/validation';
+} from 'faims3-datamodel';
+import {
+  ProjectUIModel,
+  upsertFAIMSData,
+  getFullRecordData,
+} from 'faims3-datamodel';
+import {getValidationSchemaForViewset} from '../validation';
 import {store} from '../../../context/store';
 import RecordDraftState from '../../../sync/draft-state';
 import {
@@ -60,7 +63,7 @@ import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {get_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
+import {get_fieldpersistentdata} from 'faims3-datamodel';
 
 import {
   getParentlinkInfo,
@@ -72,7 +75,7 @@ import {
 import CircularLoading from '../ui/circular_loading';
 import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
-import {generateFAIMSDataID, getFirstRecordHead} from '../../../data_storage';
+import {generateFAIMSDataID, getFirstRecordHead} from 'faims3-datamodel';
 import {logError} from '../../../logging';
 type RecordFormProps = {
   project_id: ProjectID;

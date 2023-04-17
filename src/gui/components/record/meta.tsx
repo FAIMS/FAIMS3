@@ -28,8 +28,12 @@ import {
   Typography,
 } from '@mui/material';
 
-import {getRecordMetadata} from '../../../data_storage';
-import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
+import {
+  getRecordMetadata,
+  ProjectID,
+  RecordID,
+  RevisionID,
+} from 'faims3-datamodel';
 
 type RecordMetaProps = {
   project_id: ProjectID;

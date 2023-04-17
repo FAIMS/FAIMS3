@@ -7,7 +7,7 @@ import {
   DIRECTORY_PORT,
   DIRECTORY_PROTOCOL,
 } from '../../../buildconfig';
-import {TokenContents} from '../../../datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 import {useTheme} from '@mui/material/styles';
 
 interface SupportEmailProps {

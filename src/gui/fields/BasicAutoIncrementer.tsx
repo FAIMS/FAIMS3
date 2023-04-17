@@ -26,10 +26,10 @@ import {store} from '../../context/store';
 import {
   get_local_autoincrement_state_for_field,
   set_local_autoincrement_state_for_field,
-} from '../../datamodel/autoincrement';
+} from 'faims3-datamodel';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 
 import {
   Grid,

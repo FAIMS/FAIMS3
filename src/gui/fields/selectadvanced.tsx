@@ -29,7 +29,7 @@ import {
   ProjectUIModel,
   componenentSettingprops,
   FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
+} from 'faims3-datamodel';
 import Box from '@mui/material/Box';
 import TreeView from '@mui/lab/TreeView';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';

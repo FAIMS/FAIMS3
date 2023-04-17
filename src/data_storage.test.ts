@@ -20,8 +20,8 @@
 
 import {testProp, fc} from 'jest-fast-check';
 import PouchDB from 'pouchdb';
-import {ProjectID} from './datamodel/core';
-import {Record} from './datamodel/ui';
+import {ProjectID} from 'faims3-datamodel';
+import {Record} from 'faims3-datamodel';
 import {
   deleteFAIMSDataForID,
   generateFAIMSDataID,
@@ -30,7 +30,7 @@ import {
   listFAIMSProjectRevisions,
   undeleteFAIMSDataForID,
   upsertFAIMSData,
-} from './data_storage';
+} from 'faims3-datamodel';
 import {equals} from './utils/eqTestSupport';
 
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing

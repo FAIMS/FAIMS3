@@ -28,14 +28,14 @@ import {
   FAIMSTypeName,
   HRID_STRING,
   Relationship,
-} from '../datamodel/core';
+} from 'faims3-datamodel';
 import {DEBUG_APP} from '../buildconfig';
-import {EncodedDraft, DraftMetadataList} from '../datamodel/drafts';
 import {local_pouch_options} from './connection';
 import {
-  generate_file_name,
+  EncodedDraft,
+  DraftMetadataList, 
   attachment_to_file,
-} from '../data_storage/attachments';
+} from 'faims3-datamodel';
 import {logError} from '../logging';
 
 export type DraftDB = PouchDB.Database<EncodedDraft>;
@@ -44,6 +44,12 @@ export const draft_db: DraftDB = new PouchDB(
   'draft-storage',
   local_pouch_options
 );
+
+// Note: duplicated from faims3-datamodel as it doesn't do anything important
+export function generate_file_name(): string {
+  console.debug('Generating a uuid-filename');
+  return 'file-' + uuidv4();
+}
 
 export async function getStagedData(
   draft_id: string

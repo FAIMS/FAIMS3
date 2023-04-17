@@ -21,12 +21,12 @@
 import {MapFormField} from '@faims-project/faims3-map-input';
 import {Typography} from '@mui/material';
 import React from 'react';
-import {ProjectUIFields} from '../../datamodel/typesystem';
+import {ProjectUIFields} from 'faims3-datamodel';
 import {
   componenentSettingprops,
   FAIMSEVENTTYPE,
   ProjectUIModel,
-} from '../../datamodel/ui';
+} from 'faims3-datamodel';
 import {getProjectMetadata} from '../../projectMetadata';
 import {getComponentFromField} from '../components/project/FormElement';
 import {getDefaultuiSetting} from './BasicFieldSettings';

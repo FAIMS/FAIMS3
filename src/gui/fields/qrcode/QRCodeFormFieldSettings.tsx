@@ -18,7 +18,7 @@
  *   Implement Settings widget for QRCodeFormField
  */
 
-import {ProjectUIModel} from '../../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 
 export const QRCodeFieldUISpec = {
   'component-namespace': 'qrcode', // this says what web component to use to render/acquire value from

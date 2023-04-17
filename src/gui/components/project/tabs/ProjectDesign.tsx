@@ -35,10 +35,10 @@ import {TabEditable} from './TabTab';
 
 import TabPanel from './TabPanel';
 import {getid, updateuiSpec, uiSpecType} from '../data/ComponentSetting';
-import {ProjectValueList, FAIMShandlerType} from '../../../../datamodel/ui';
-import {HRID_STRING} from '../../../../datamodel/core';
+import {ProjectValueList, FAIMShandlerType} from 'faims3-datamodel';
+import {HRID_STRING} from 'faims3-datamodel';
 
-import {getValidationSchemaForViewset} from '../../../../data_storage/validation';
+import {getValidationSchemaForViewset} from '../../validation';
 import {FormTab} from './ProjectComponent';
 import {grey} from '@mui/material/colors';
 import {logError} from '../../../../logging';

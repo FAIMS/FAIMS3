@@ -92,6 +92,7 @@
     "clsx": "1.1.1",
     "cordova": "11.0.0",
     "cordova-plugin-inappbrowser": "^5.0.0",
+    "faims3-datamodel": "github:FAIMS/faims3-data-model",
     "fast-json-stable-stringify": "2.1.0",
     "formik": "2.2.9",
     "formik-mui": "4.0.0",

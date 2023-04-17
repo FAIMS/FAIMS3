@@ -20,8 +20,11 @@
 
 import {transformAll} from '@demvsystems/yup-ast';
 
-import {ProjectUIModel} from '../datamodel/ui';
-import {getFieldsForViewSet, getFieldNamesFromFields} from '../uiSpecification';
+import {ProjectUIModel} from 'faims3-datamodel';
+import {
+  getFieldsForViewSet,
+  getFieldNamesFromFields,
+} from '../../uiSpecification';
 
 function check_field_type(
   ui_specification: ProjectUIModel,

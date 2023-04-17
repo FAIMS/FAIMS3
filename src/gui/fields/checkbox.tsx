@@ -30,7 +30,7 @@ import {
 import {fieldToCheckbox, CheckboxProps} from 'formik-mui';
 import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 interface Props {
   FormControlLabelProps: FormControlLabelProps;
   FormHelperTextProps: FormHelperTextProps;

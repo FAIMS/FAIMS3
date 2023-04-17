@@ -36,14 +36,14 @@ import {store} from '../../context/store';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {generateFAIMSDataID} from '../../data_storage';
+import {generateFAIMSDataID} from 'faims3-datamodel';
 import {getProjectInfo, listenProjectInfo} from '../../databaseAccess';
-import {ProjectID, RecordID} from '../../datamodel/core';
+import {ProjectID, RecordID} from 'faims3-datamodel';
 import {
   ProjectUIModel,
   ProjectInformation,
   SectionMeta,
-} from '../../datamodel/ui';
+} from 'faims3-datamodel';
 import {
   getUiSpecForProject,
   getReturnedTypesForViewSet,

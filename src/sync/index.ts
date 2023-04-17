@@ -24,13 +24,13 @@ import {events} from './events';
 import PouchDB from 'pouchdb';
 import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
-import {ProjectID} from '../datamodel/core';
+import {ProjectID} from 'faims3-datamodel';
 import {DEBUG_APP} from '../buildconfig';
 import {
   ProjectDataObject,
   ProjectMetaObject,
   ListingsObject,
-} from '../datamodel/database';
+} from 'faims3-datamodel';
 import {
   data_dbs,
   ExistingActiveDoc,

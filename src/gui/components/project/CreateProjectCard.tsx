@@ -46,20 +46,22 @@ import {
   uiSpecType,
   getprojectform,
 } from './data/ComponentSetting';
-import {ProjectValueList} from '../../../datamodel/ui';
-
-import {ProjectUIFields} from '../../../datamodel/typesystem';
-import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
-import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {
   setProjectMetadata,
   getProjectMetadata,
   setProjectMetadataFiles,
 } from '../../../projectMetadata';
-import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-import {HRID_STRING} from '../../../datamodel/core';
+import {
+  ProjectValueList,
+  ProjectUIFields,
+  add_autoincrement_reference_for_project,
+  ProjectUIModel,
+  ProjectInformation,
+  HRID_STRING,
+} from 'faims3-datamodel';
+import {getValidationSchemaForViewset} from '../validation';
 import {grey} from '@mui/material/colors';
 import {getid} from './data/ComponentSetting';
 import {logError} from '../../../logging';

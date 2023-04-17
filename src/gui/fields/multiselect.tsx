@@ -27,12 +27,12 @@ import {
   DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
-import {option} from '../../datamodel/typesystem';
+import {option} from 'faims3-datamodel';
 import {
   ProjectUIModel,
   componenentSettingprops,
   FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
+} from 'faims3-datamodel';
 
 interface ElementProps {
   options: Array<option>;

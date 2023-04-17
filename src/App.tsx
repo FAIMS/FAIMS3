@@ -43,13 +43,13 @@ import {ThemeProvider, StyledEngineProvider} from '@mui/material/styles';
 // will be resolved in material-ui v5
 
 import {createdProjects} from './sync/state';
-import {ProjectsList} from './datamodel/database';
+import {ProjectsList} from 'faims3-datamodel';
 import theme from './gui/theme';
 import {getTokenContentsForRouting} from './users';
 
 import {useEffect, useState} from 'react';
 
-import {TokenContents} from './datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 
 // type AppProps = {};
 

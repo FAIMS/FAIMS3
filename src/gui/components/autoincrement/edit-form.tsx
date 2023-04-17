@@ -35,13 +35,13 @@ import * as yup from 'yup';
 
 import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';
-import {ProjectID} from '../../../datamodel/core';
-import {LocalAutoIncrementRange} from '../../../datamodel/database';
+import {ProjectID} from 'faims3-datamodel';
+import {LocalAutoIncrementRange} from 'faims3-datamodel';
 import {
   get_local_autoincrement_ranges_for_field,
   set_local_autoincrement_ranges_for_field,
   create_new_autoincrement_range,
-} from '../../../datamodel/autoincrement';
+} from 'faims3-datamodel';
 
 interface Props {
   project_id: ProjectID;

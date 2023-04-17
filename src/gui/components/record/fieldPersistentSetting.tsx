@@ -17,9 +17,11 @@
  * Description:
  *   This is the file is to set the values for persistent state
  */
-import {set_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
-import {Annotations} from '../../../datamodel/core';
-import {ProjectUIModel} from '../../../datamodel/ui';
+import {
+  set_fieldpersistentdata,
+  Annotations,
+  ProjectUIModel,
+} from 'faims3-datamodel';
 import {logError} from '../../../logging';
 
 export function savefieldpersistentSetting(

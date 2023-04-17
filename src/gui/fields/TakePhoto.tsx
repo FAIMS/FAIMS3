@@ -23,7 +23,7 @@ import {FieldProps} from 'formik';
 import Button, {ButtonProps} from '@mui/material/Button';
 import {Camera, CameraResultType, CameraPhoto} from '@capacitor/camera';
 import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 
 // import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
