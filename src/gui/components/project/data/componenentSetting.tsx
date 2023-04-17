@@ -28,7 +28,7 @@ import {
   ProjectUIFields,
 } from 'faims3-datamodel';
 import {DefaultComponentSetting} from '../../../fields/BasicFieldSettings';
-import {HRID_STRING, DEFAULT_REALTION_LINK_VOCAB} from 'faims3-datamodel';
+import {HRID_STRING, DEFAULT_RELATION_LINK_VOCAB} from 'faims3-datamodel';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {option} from 'faims3-datamodel';
 import {logError} from '../../../../logging';
@@ -426,7 +426,7 @@ const getvalue = (
       try {
         return fieldui['component-parameters']['relation_linked_vocabPair'][0];
       } catch (error) {
-        return DEFAULT_REALTION_LINK_VOCAB;
+        return DEFAULT_RELATION_LINK_VOCAB;
       }
     }
     return fieldui['component-parameters'][name];

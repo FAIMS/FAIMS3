@@ -106,8 +106,6 @@ import {
 import {
   setAttachmentLoaderForType,
   setAttachmentDumperForType,
-} from 'faims3-datamodel';
-import {
   file_data_to_attachments,
   file_attachments_to_data,
 } from 'faims3-datamodel';
