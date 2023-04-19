@@ -28,9 +28,9 @@ import {
   ProjectUIFields,
 } from 'faims3-datamodel';
 import {DefaultComponentSetting} from '../../../fields/BasicFieldSettings';
-import {HRID_STRING, DEFAULT_RELATION_LINK_VOCAB} from 'faims3-datamodel';
+import {HRID_STRING, DEFAULT_RELATION_LINK_VOCABULARY} from 'faims3-datamodel';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {option} from 'faims3-datamodel';
+import {ElementOption} from 'faims3-datamodel';
 import {logError} from '../../../../logging';
 
 const uiSettingOthers: ProjectUIModel = {
@@ -426,7 +426,7 @@ const getvalue = (
       try {
         return fieldui['component-parameters']['relation_linked_vocabPair'][0];
       } catch (error) {
-        return DEFAULT_RELATION_LINK_VOCAB;
+        return DEFAULT_RELATION_LINK_VOCABULARY;
       }
     }
     return fieldui['component-parameters'][name];
@@ -856,7 +856,7 @@ const getlogicoption = (
   currentform: string,
   type: string
 ) => {
-  const options: Array<option> = [];
+  const options: Array<ElementOption> = [];
   if (type.includes('field')) {
     uiSpec['viewsets'][currentform]['views'].map((view: string) => {
       uiSpec['views'][view]['fields'].map((field: string) =>

@@ -28,7 +28,7 @@ import {
 } from './BasicFieldSettings';
 import {generatenewfield} from '../components/project/data/componenentSetting';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {option} from 'faims3-datamodel';
+import {ElementOption} from 'faims3-datamodel';
 import {
   ProjectUIModel,
   componenentSettingprops,
@@ -117,7 +117,7 @@ export function TemplatedStringcomponentsetting(
   }, [props.uiSpec['views']]);
 
   const changeui = (
-    options: Array<option>,
+    options: Array<ElementOption>,
     newvalues: ProjectUIModel,
     fieldnum: number,
     isinit: boolean
@@ -181,7 +181,7 @@ export function TemplatedStringcomponentsetting(
   };
 
   const setini = () => {
-    const options: Array<option> = [];
+    const options: Array<ElementOption> = [];
     //TODO pass the value of all field in this form
 
     // let fields: Array<string> = [];
@@ -215,7 +215,7 @@ export function TemplatedStringcomponentsetting(
 
       const numoptions: any = [];
       options.map(
-        (option: option, index: number) =>
+        (option: ElementOption, index: number) =>
           (numoptions[index] = {
             value: index + 1,
             label: index + 1,
@@ -248,7 +248,7 @@ export function TemplatedStringcomponentsetting(
   const handlerchanges = (event: FAIMSEVENTTYPE) => {
     const name = event.target.name.replace(props.fieldName, '');
     if (name === 'numberfield') {
-      const options: Array<option> = [];
+      const options: Array<ElementOption> = [];
       //TODO pass the value of all field in this form
 
       // let fields: Array<string> = [];

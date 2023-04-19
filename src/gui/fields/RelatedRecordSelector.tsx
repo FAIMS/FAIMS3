@@ -31,7 +31,7 @@ import {
   DefaultComponentSetting,
 } from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {option} from 'faims3-datamodel';
+import {ElementOption} from 'faims3-datamodel';
 import {
   ProjectUIModel,
   componenentSettingprops,
@@ -800,8 +800,8 @@ export function Linkedcomponentsetting(props: componenentSettingprops) {
   }, [props.uiSpec['visible_types']]);
 
   const setini = () => {
-    const options: Array<option> = [];
-    const fields: Array<option> = [];
+    const options: Array<ElementOption> = [];
+    const fields: Array<ElementOption> = [];
     props.uiSpec['visible_types'].map((viewset: string) =>
       fields.push({
         label: props.uiSpec['viewsets'][viewset]['label'] ?? viewset,

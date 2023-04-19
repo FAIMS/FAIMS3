@@ -27,7 +27,7 @@ import {
   DefaultComponentSetting,
   getDefaultuiSetting,
 } from './BasicFieldSettings';
-import {option} from 'faims3-datamodel';
+import {ElementOption} from 'faims3-datamodel';
 import {
   ProjectUIModel,
   componenentSettingprops,
@@ -42,7 +42,7 @@ import {
 // }
 
 interface ElementProps {
-  options: Array<option>;
+  options: Array<ElementOption>;
 }
 
 interface Props {
@@ -103,7 +103,7 @@ export function Selectcomponentsetting(props: componenentSettingprops) {
       event.target.name.replace(props.fieldName, '') === 'options'
     ) {
       const newvalues = props.uiSpec;
-      const options: Array<option> = [];
+      const options: Array<ElementOption> = [];
       event.target.value.split(',').map(
         (o: string, index: number) =>
           (options[index] = {
@@ -123,16 +123,16 @@ export function Selectcomponentsetting(props: componenentSettingprops) {
     ) {
       const newvalues = props.uiSpec;
       let isothers = false;
-      let options: Array<option> =
+      let options: Array<ElementOption> =
         newvalues['fields'][props.fieldName]['component-parameters'][
           'ElementProps'
         ]['options'];
 
-      options.map((o: option) =>
+      options.map((o: ElementOption) =>
         o.value === 'Others' ? (isothers = true) : o
       );
       if (event.target.value === 'no') {
-        options = options.filter((o: option) => o.value !== 'Others');
+        options = options.filter((o: ElementOption) => o.value !== 'Others');
       } else {
         if (isothers === false) {
           options = [
