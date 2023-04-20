@@ -131,7 +131,10 @@ export default function ProjectUserTab(props: ProjectUserProps) {
       );
     } else {
       newusers = newusers.filter((user: string) => user !== newuser);
-      newproject['unassignedUsers'] = [...newproject['unassignedUsers'], newuser];
+      newproject['unassignedUsers'] = [
+        ...newproject['unassignedUsers'],
+        newuser,
+      ];
     }
     newusers = checkvalid(newusers);
     newproject['unassignedUsers'] = checkvalid(newproject['unassignedUsers']);
