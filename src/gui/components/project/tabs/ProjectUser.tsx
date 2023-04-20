@@ -33,7 +33,7 @@ import {ProjectValueList, FAIMShandlerType} from 'faims3-datamodel';
 import {TabTab} from './TabTab';
 import TabPanel from './TabPanel';
 import {UserRoleList, UserLists} from './PSettingCard';
-import {AddUserButton, Addusersassign} from './ProjectButton';
+import {AddUserButton, AddUsersAssign} from './ProjectButton';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 type ProjectUserProps = {
   project_id: string | null;
@@ -59,7 +59,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
   const [initialValuesassign, setinitialValuesassign] = useState(
     setProjectInitialValues(uiSpecassign, 'start-view', {_id: ''})
   );
-  const [tabvalue, settatbValue] = useState(0);
+  const [tabValue, setTabValue] = useState(0);
   const [users, setusesers] = useState(projectvalue.users);
   const [usersadded, setusersadded] = useState('');
 
@@ -75,7 +75,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     setinitialValuesassign(
       setProjectInitialValues(uiSpecassign, 'start-view', {_id: ''})
     );
-    settatbValue(index);
+    setTabValue(index);
   };
 
   const handlerassignuser = (role: string) => {
@@ -89,22 +89,22 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     console.log('values');
   };
 
-  const addusers = (values: any) => {
+  const addUsers = (values: any) => {
     const users = values.split(/\r?\n/);
     const newproject = projectvalue;
     if (newproject['users'] === undefined) {
       newproject['users'] = users;
-      newproject['unassigndusers'] = users;
+      newproject['unassignedUsers'] = users;
       usergroups.map((user: string) => (newproject[user] = []));
     } else {
       newproject['users'] = [...newproject['users'], ...users];
-      newproject['unassigndusers'] = [
-        ...newproject['unassigndusers'],
+      newproject['unassignedUsers'] = [
+        ...newproject['unassignedUsers'],
         ...users,
       ];
     }
     newproject['users'] = checkvalid(newproject['users']);
-    newproject['unassigndusers'] = checkvalid(newproject['unassigndusers']);
+    newproject['unassignedUsers'] = checkvalid(newproject['unassignedUsers']);
     setProjectValue({...projectvalue, users: newproject['users']}); //TODO: add to check if duplicated user
     setusesers(newproject['users']);
   };
@@ -126,15 +126,15 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     let newusers = newproject[usergroup] ?? [];
     if (select) {
       newusers = [...newusers, newuser];
-      newproject['unassigndusers'] = newproject['unassigndusers'].filter(
+      newproject['unassignedUsers'] = newproject['unassignedUsers'].filter(
         (u: string) => u !== newuser
       );
     } else {
       newusers = newusers.filter((user: string) => user !== newuser);
-      newproject['unassigndusers'] = [...newproject['unassigndusers'], newuser];
+      newproject['unassignedUsers'] = [...newproject['unassignedUsers'], newuser];
     }
     newusers = checkvalid(newusers);
-    newproject['unassigndusers'] = checkvalid(newproject['unassigndusers']);
+    newproject['unassignedUsers'] = checkvalid(newproject['unassignedUsers']);
     newproject[usergroup] = newusers;
     setProjectValue({...newproject});
   };
@@ -151,7 +151,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
           <br />
           <Typography variant="subtitle2">All users</Typography>
           <UserLists
-            users={projectvalue.unassigndusers ?? []}
+            users={projectvalue.unassignedUsers ?? []}
             delete={false}
             handelonClick={selectusersgroup}
             usergroup={usergroup}
@@ -160,7 +160,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
         </Grid>
         <Grid item sm={1} xs={12}>
           <br />
-          <Addusersassign onButtonClick={handlerassignuser} value={usergroup} />
+          <AddUsersAssign onButtonClick={handlerassignuser} value={usergroup} />
         </Grid>
         <Grid item sm={7} xs={12}>
           <br />
@@ -176,7 +176,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     );
   };
 
-  const addtab = (uiSpec: any, handleSubmit: any, handleChange: any) => {
+  const addTab = (uiSpec: any, handleSubmit: any, handleChange: any) => {
     return (
       <Grid container>
         <Grid item sm={6} xs={12}>
@@ -194,7 +194,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
             <AddUserButton
               id="submit"
               type="submit"
-              onButtonClick={addusers}
+              onButtonClick={addUsers}
               value={usersadded}
             />
           </Box>
@@ -205,7 +205,7 @@ export default function ProjectUserTab(props: ProjectUserProps) {
                 type="submit"
                 isSubmitting={false}
                 text="Go To Next"
-                onButtonClick={() => settatbValue(1)}
+                onButtonClick={() => setTabValue(1)}
               />
             ) : (
               ''
@@ -226,15 +226,15 @@ export default function ProjectUserTab(props: ProjectUserProps) {
     <>
       <TabTab
         tabs={['add', 'User Role']}
-        value={tabvalue}
+        value={tabValue}
         handleChange={handleChangetab}
         tab_id="projectuser"
       />
-      <TabPanel value={tabvalue} index={0} tabname="projectuser">
-        {addtab(uiSpec, addusers, handleChange)}
+      <TabPanel value={tabValue} index={0} tabname="projectuser">
+        {addTab(uiSpec, addUsers, handleChange)}
       </TabPanel>
-      <TabPanel value={tabvalue} index={1} tabname="projectuser">
-        {tabvalue === 1 && projectvalue.users !== undefined ? (
+      <TabPanel value={tabValue} index={1} tabname="projectuser">
+        {tabValue === 1 && projectvalue.users !== undefined ? (
           <Formik
             initialValues={initialValuesassign}
             validateOnMount={true}
