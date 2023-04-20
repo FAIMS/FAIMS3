@@ -32,7 +32,7 @@ export type ProjectMetaList = {
 
 export const state = {
   stabilized: false,
-  project_metas: {} as ProjectMetaList,
+  project_meta_list: {} as ProjectMetaList,
 };
 
 export const events: StatefulEvents = new EventEmitter();
@@ -45,12 +45,12 @@ export interface StatefulEvents extends EventEmitter {
    */
   on(
     event: 'project_meta_stabilize',
-    listener: (project_metas: ProjectMetaList) => unknown
+    listener: (project_meta_list: ProjectMetaList) => unknown
   ): this;
   on(
     event: 'project_meta_update',
     listener: (
-      project_metas: ProjectMetaList,
+      project_meta_list: ProjectMetaList,
       added: ProjectMetaList,
       removed: string[]
     ) => unknown

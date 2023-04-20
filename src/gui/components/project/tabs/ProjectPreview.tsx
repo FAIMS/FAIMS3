@@ -128,8 +128,8 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
 
   const getfieldNames = (fieldNames: Array<string>, rolename: string) => {
     const newfields = fieldNames.filter(
-      (fielName: string) =>
-        formuiSpec['fields'][fielName]['access'].includes(rolename) === true
+      (fieldName: string) =>
+        formuiSpec['fields'][fieldName]['access'].includes(rolename) === true
     );
     console.log(newfields);
     return newfields;
