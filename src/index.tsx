@@ -27,6 +27,18 @@ import {addNativeHooks} from './native_hooks';
 // import {EFooter} from './footer';
 //import reportWebVitals from './reportWebVitals';
 import React from 'react';
+import {registerClient} from 'faims3-datamodel';
+import {getDataDB, getProjectDB} from './sync';
+import {getLocalStateDB} from './sync/databases';
+import {shouldDisplayRecord} from './users';
+
+// set up the database module faims3-datamodel with our callbacks to get databases
+registerClient({
+  getDataDB: getDataDB,
+  getProjectDB: getProjectDB,
+  getLocalStateDB: getLocalStateDB,
+  shouldDisplayRecord: shouldDisplayRecord,
+});
 
 addNativeHooks();
 
