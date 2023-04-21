@@ -26,10 +26,10 @@ import * as ROUTES from '../../constants/routes';
 
 import {Typography, Container, Paper, Box} from '@mui/material';
 
-import {ProjectID} from '../../datamodel/core';
+import {ProjectID} from 'faims3-datamodel';
 import {getProjectInfo} from '../../databaseAccess';
 import {getUiSpecForProject} from '../../uiSpecification';
-import {ProjectUIModel, ProjectInformation} from '../../datamodel/ui';
+import {ProjectUIModel, ProjectInformation} from 'faims3-datamodel';
 import {logError} from '../../logging';
 
 export default function ProjectCreate() {

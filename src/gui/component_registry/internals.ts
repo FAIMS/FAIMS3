@@ -26,7 +26,7 @@ import {
   FAIMSBuilderIcon,
   FAIMSUiSpec,
   FormComponentList,
-} from '../../datamodel/ui';
+} from 'faims3-datamodel';
 
 import {
   getDefaultBuilderComponent,

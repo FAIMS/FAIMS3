@@ -21,8 +21,8 @@
 import {EventEmitter} from 'events';
 
 import {DEBUG_APP} from '../buildconfig';
-import {ListingID} from '../datamodel/core';
-import {ListingsObject, ProjectObject} from '../datamodel/database';
+import {ListingID} from 'faims3-datamodel';
+import {ListingsObject, ProjectObject} from 'faims3-datamodel';
 import {ExistingActiveDoc} from './databases';
 import {createdListingsInterface, createdProjectsInterface} from './state';
 

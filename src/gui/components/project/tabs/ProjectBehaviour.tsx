@@ -19,7 +19,7 @@
  */
 
 import {Grid, Typography} from '@mui/material';
-import {FAIMShandlerType, BehaviourProperties} from '../../../../datamodel/ui';
+import {FAIMShandlerType, BehaviourProperties} from 'faims3-datamodel';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 type ProjectBehaviourProps = any;

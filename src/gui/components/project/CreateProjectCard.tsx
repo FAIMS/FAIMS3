@@ -46,20 +46,22 @@ import {
   uiSpecType,
   getprojectform,
 } from './data/ComponentSetting';
-import {ProjectValueList} from '../../../datamodel/ui';
-
-import {ProjectUIFields} from '../../../datamodel/typesystem';
-import {add_autoincrement_reference_for_project} from '../../../datamodel/autoincrement';
 import {setUiSpecForProject} from '../../../uiSpecification';
-import {ProjectUIModel, ProjectInformation} from '../../../datamodel/ui';
 import {create_new_project_dbs} from '../../../sync/new-project';
 import {
   setProjectMetadata,
   getProjectMetadata,
   setProjectMetadataFiles,
 } from '../../../projectMetadata';
-import {getValidationSchemaForViewset} from '../../../data_storage/validation';
-import {HRID_STRING} from '../../../datamodel/core';
+import {
+  ProjectValueList,
+  ProjectUIFields,
+  ProjectUIModel,
+  ProjectInformation,
+  HRID_STRING,
+} from 'faims3-datamodel';
+import {addAutoincrementReferenceForProject} from '../../../local-data/autoincrement';
+import {getValidationSchemaForViewset} from '../validation';
 import {grey} from '@mui/material/colors';
 import {getid} from './data/ComponentSetting';
 import {logError} from '../../../logging';
@@ -343,7 +345,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const add_autoince_reference = async (autoince: any) => {
     if (project_id !== null) {
       try {
-        await add_autoincrement_reference_for_project(
+        await addAutoincrementReferenceForProject(
           project_id,
           autoince.form_id,
           autoince.field_id,

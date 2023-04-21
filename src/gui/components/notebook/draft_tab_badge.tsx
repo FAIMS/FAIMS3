@@ -2,7 +2,7 @@ import React, {useEffect} from 'react';
 import {Badge, CircularProgress} from '@mui/material';
 import {listenDrafts} from '../../../drafts';
 import _ from 'lodash';
-import {ProjectID} from '../../../datamodel/core';
+import {ProjectID} from 'faims3-datamodel';
 
 export default function DraftTabBadge(props: {project_id: ProjectID}) {
   const {project_id} = props;

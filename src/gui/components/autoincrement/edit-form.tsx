@@ -35,13 +35,12 @@ import * as yup from 'yup';
 
 import {ActionType} from '../../../context/actions';
 import {store} from '../../../context/store';
-import {ProjectID} from '../../../datamodel/core';
-import {LocalAutoIncrementRange} from '../../../datamodel/database';
+import {ProjectID, LocalAutoIncrementRange} from 'faims3-datamodel';
 import {
-  get_local_autoincrement_ranges_for_field,
-  set_local_autoincrement_ranges_for_field,
-  create_new_autoincrement_range,
-} from '../../../datamodel/autoincrement';
+  getLocalAutoincrementRangesForField,
+  setLocalAutoincrementRangesForField,
+  createNewAutoincrementRange,
+} from '../../../local-data/autoincrement';
 
 interface Props {
   project_id: ProjectID;
@@ -74,7 +73,7 @@ export default class BasicAutoIncrementer extends React.Component<
 
   async ensure_ranges() {
     if (this.state.ranges === null) {
-      const ranges = await get_local_autoincrement_ranges_for_field(
+      const ranges = await getLocalAutoincrementRangesForField(
         this.props.project_id,
         this.props.form_id,
         this.props.field_id
@@ -86,7 +85,7 @@ export default class BasicAutoIncrementer extends React.Component<
   async add_new_range() {
     await this.ensure_ranges();
     const ranges = [...(this.state.ranges as LocalAutoIncrementRange[])];
-    ranges.push(create_new_autoincrement_range(0, 0));
+    ranges.push(createNewAutoincrementRange(0, 0));
     this.setState({ranges: ranges});
   }
 
@@ -125,7 +124,7 @@ export default class BasicAutoIncrementer extends React.Component<
   async update_ranges(ranges: LocalAutoIncrementRange[]) {
     const {project_id, form_id, field_id} = this.props;
     try {
-      await set_local_autoincrement_ranges_for_field(
+      await setLocalAutoincrementRangesForField(
         project_id,
         form_id,
         field_id,

@@ -34,9 +34,13 @@ import {Alert} from '@mui/material';
 import {ActionType} from '../../../context/actions';
 import * as ROUTES from '../../../constants/routes';
 import {store} from '../../../context/store';
-import {ProjectID, RecordID, RevisionID} from '../../../datamodel/core';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  setRecordAsDeleted,
+} from 'faims3-datamodel';
 import {getCurrentUserId} from '../../../users';
-import {setRecordAsDeleted} from '../../../data_storage';
 import {deleteStagedData} from '../../../sync/draft-storage';
 import {deleteDraftsForRecord} from '../../../drafts';
 

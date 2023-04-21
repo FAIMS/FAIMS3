@@ -35,9 +35,9 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import {
-  get_user_friendly_status_for_project,
+  getDisplayStatusForProject,
   UserFriendlyAutoincrementStatus,
-} from '../../../datamodel/autoincrement';
+} from '../../../local-data/autoincrement';
 
 export default function RangeHeader(props: {
   project: any;
@@ -48,7 +48,7 @@ export default function RangeHeader(props: {
   useEffect(() => {
     let isactive = true;
     if (isactive) {
-      get_user_friendly_status_for_project(props.project.project_id).then(res =>
+      getDisplayStatusForProject(props.project.project_id).then(res =>
         setStatus(res)
       );
 

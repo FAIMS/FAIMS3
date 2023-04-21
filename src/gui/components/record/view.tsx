@@ -21,7 +21,7 @@
 
 import React, {useEffect, useState} from 'react';
 import {FormikProps} from 'formik';
-import {ProjectUIModel} from '../../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 import RecordDraftState from '../../../sync/draft-state';
 import {getComponentFromFieldConfig} from './fields';
 import {AnnotationField} from './Annotation';

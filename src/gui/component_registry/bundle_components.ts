@@ -106,11 +106,9 @@ import {
 import {
   setAttachmentLoaderForType,
   setAttachmentDumperForType,
-} from '../../datamodel/typesystem';
-import {
   file_data_to_attachments,
   file_attachments_to_data,
-} from '../../data_storage/attachments';
+} from 'faims3-datamodel';
 import {QRCodeFormField, QRCodeFieldBuilderSettings} from '../fields/qrcode';
 
 /*

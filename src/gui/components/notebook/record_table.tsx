@@ -39,13 +39,13 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 import * as ROUTES from '../../../constants/routes';
-import {ProjectID} from '../../../datamodel/core';
-import {ProjectUIViewsets} from '../../../datamodel/typesystem';
-import {RecordMetadata} from '../../../datamodel/ui';
 import {
+  ProjectID,
+  ProjectUIViewsets,
+  RecordMetadata,
   getMetadataForAllRecords,
   getRecordsWithRegex,
-} from '../../../data_storage';
+} from 'faims3-datamodel';
 import {DEBUG_APP} from '../../../buildconfig';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';

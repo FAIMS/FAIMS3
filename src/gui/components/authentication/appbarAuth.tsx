@@ -32,7 +32,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import GroupIcon from '@mui/icons-material/Group';
 import {NavLink} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {TokenContents} from '../../../datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 import {checkToken} from '../../../utils/helpers';
 
 interface AppBarAuthProps {

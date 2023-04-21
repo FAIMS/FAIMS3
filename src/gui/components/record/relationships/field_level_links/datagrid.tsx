@@ -40,9 +40,9 @@ import {
 import {DataGridLinksComponentProps} from '../types';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {RecordLinksToolbar} from '../toolbars';
-import {RecordID} from '../../../../../datamodel/core';
+import {RecordID} from 'faims3-datamodel';
 import RecordRouteDisplay from '../../../ui/record_link';
-import {RecordReference} from '../../../../../datamodel/ui';
+import {RecordReference} from 'faims3-datamodel';
 import Checkbox from '@mui/material/Checkbox';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 const style = {

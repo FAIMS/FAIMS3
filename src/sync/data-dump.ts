@@ -25,7 +25,7 @@ import {
   directory_db,
   active_db,
   local_auth_db,
-  local_state_db,
+  getLocalStateDB,
   projects_dbs,
   metadata_dbs,
   data_dbs,
@@ -70,7 +70,7 @@ export async function doDumpShare() {
   const dump: DumpObject = {};
   dump['directory'] = await dumpDatabase(directory_db.local);
   dump['active'] = await dumpDatabase(active_db);
-  dump['local_state'] = await dumpDatabase(local_state_db);
+  dump['local_state'] = await dumpDatabase(getLocalStateDB());
   dump['local_auth'] = await dumpDatabase(local_auth_db);
   dump['draft'] = await dumpDatabase(draft_db);
 
@@ -103,7 +103,10 @@ export async function doDumpDownload() {
     await dumpDatabase(directory_db.local)
   );
   await streamedDumpDownload('active', await dumpDatabase(active_db));
-  await streamedDumpDownload('local_state', await dumpDatabase(local_state_db));
+  await streamedDumpDownload(
+    'local_state',
+    await dumpDatabase(getLocalStateDB())
+  );
   await streamedDumpDownload('local_auth', await dumpDatabase(local_auth_db));
   await streamedDumpDownload('draft', await dumpDatabase(draft_db));
 

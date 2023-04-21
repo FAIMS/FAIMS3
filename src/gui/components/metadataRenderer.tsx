@@ -22,7 +22,7 @@ import React from 'react';
 import {CircularProgress, Chip} from '@mui/material';
 
 import {getProjectMetadata} from '../../projectMetadata';
-import {ProjectID} from '../../datamodel/core';
+import {ProjectID} from 'faims3-datamodel';
 import {listenProjectDB} from '../../sync';
 import {useEventedPromise, constantArgsSplit} from '../pouchHook';
 import {DEBUG_APP} from '../../buildconfig';

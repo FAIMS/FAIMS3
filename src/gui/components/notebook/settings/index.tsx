@@ -42,9 +42,9 @@ import {
   constantArgsShared,
   constantArgsSplit,
 } from '../../../pouchHook';
-import {ProjectInformation} from '../../../../datamodel/ui';
+import {ProjectInformation} from 'faims3-datamodel';
 import {dumpMetadataDBContents} from '../../../../uiSpecification';
-import {ProjectID, split_full_project_id} from '../../../../datamodel/core';
+import {ProjectID, split_full_project_id} from 'faims3-datamodel';
 import MetaDataJsonComponentProps from './metadata_json';
 import {
   isSyncingProjectAttachments,
@@ -63,7 +63,7 @@ import {listenDataDB} from '../../../../sync';
 import CircularLoading from '../../ui/circular_loading';
 import ProjectStatus from './status';
 import NotebookSyncSwitch from './sync_switch';
-import {ProjectUIModel} from '../../../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 import {logError} from '../../../../logging';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {

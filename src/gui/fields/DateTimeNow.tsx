@@ -7,7 +7,7 @@ import {
   ProjectUIModel,
   componenentSettingprops,
   FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
+} from 'faims3-datamodel';
 import {
   DefaultComponentSetting,
   getDefaultuiSetting,

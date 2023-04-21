@@ -35,7 +35,7 @@ import {
   ProjectObject,
   LocalAuthDoc,
   NonNullListingsObject,
-} from '../datamodel/database';
+} from 'faims3-datamodel';
 import {logError} from '../logging';
 import {
   ConnectionInfo_create_pouch,
@@ -131,7 +131,11 @@ export const active_db = new PouchDB<ActiveDoc>('active', local_pouch_options);
 /**
  * This contains any local app state we want to keep across sessions
  */
-export const local_state_db = new PouchDB('local_state', local_pouch_options);
+const local_state_db = new PouchDB('local_state', local_pouch_options);
+
+export const getLocalStateDB = () => {
+  return local_state_db;
+};
 
 /**
  * Login tokens for each FAIMS Cluster that needs it

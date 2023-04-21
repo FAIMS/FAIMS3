@@ -44,13 +44,16 @@ import {
   RecordID,
   Relationship,
   RevisionID,
-} from '../../datamodel/core';
-import {
   ProjectUIModel,
   ProjectInformation,
   SectionMeta,
-} from '../../datamodel/ui';
-import {listFAIMSRecordRevisions} from '../../data_storage';
+  listFAIMSRecordRevisions,
+  getFullRecordData,
+  getHRIDforRecordID,
+  InitialMergeDetails,
+  getInitialMergeDetails,
+  findConflictingFields,
+} from 'faims3-datamodel';
 import {store} from '../../context/store';
 import {getUiSpecForProject} from '../../uiSpecification';
 
@@ -60,13 +63,8 @@ import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {useEventedPromise, constantArgsShared} from '../pouchHook';
 import {getProjectMetadata} from '../../projectMetadata';
-import {getFullRecordData, getHRIDforRecordID} from '../../data_storage';
 import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
-import {
-  InitialMergeDetails,
-  getInitialMergeDetails,
-  findConflictingFields,
-} from '../../data_storage/merging';
+import {} from 'faims3-datamodel';
 
 import {
   ConflictHelpDialog,

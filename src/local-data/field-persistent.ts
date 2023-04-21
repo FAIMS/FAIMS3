@@ -22,23 +22,37 @@
  *  persistent state will be updated when record been saved( to be discussed)
  */
 
-import {local_state_db} from '../sync/databases';
-import {ProjectID} from './core';
-import {LOCAL_FIELDpersistent_PREFIX} from './database';
-import {fieldpersistentdata} from './ui';
+import {getLocalStateDB} from '../sync/databases';
+import {Annotations, FAIMSTypeName, ProjectID} from 'faims3-datamodel';
 import stable_stringify from 'fast-json-stable-stringify';
 import {logError} from '../logging';
 
-function get_pouch_id(project_id: ProjectID, form_id: string): string {
-  return LOCAL_FIELDpersistent_PREFIX + '-' + project_id + '-' + form_id;
+const LOCAL_FIELD_PERSISTENT_PREFIX = 'local-fieldpersistent-state';
+
+//interface for field persistent state
+interface fieldPersistentData {
+  _id?: string;
+  project_id?: ProjectID;
+  type: FAIMSTypeName;
+  data: {[field_name: string]: any};
+  updated?: Date;
+  field_types?: {[field_name: string]: FAIMSTypeName};
+  annotations: {[field_name: string]: Annotations};
+  created?: Date;
 }
-//function to get new persistent value to db
-export async function get_fieldpersistentdata(
+
+function get_pouch_id(project_id: ProjectID, form_id: string): string {
+  return LOCAL_FIELD_PERSISTENT_PREFIX + '-' + project_id + '-' + form_id;
+}
+
+// Get the persistent value from db for a field
+export async function getFieldPersistentData(
   project_id: ProjectID,
   form_id: string
-): Promise<fieldpersistentdata> {
+): Promise<fieldPersistentData> {
   const pouch_id = get_pouch_id(project_id, form_id);
   try {
+    const local_state_db = getLocalStateDB();
     return await local_state_db.get(pouch_id);
   } catch (err: any) {
     if (err.status === 404) {
@@ -51,26 +65,28 @@ export async function get_fieldpersistentdata(
       };
       return doc;
     }
-    logError(err); // Unable to get local increment state
+    logError(err);
     throw Error(
       `Unable to get local increment state: ${project_id} ${form_id} `
     );
   }
 }
-//function to save new persistent value to db
-export async function set_fieldpersistentdata(
+
+// Save a new persistent value to db
+export async function setFieldPersistentData(
   project_id: ProjectID,
   form_id: string,
-  new_state: fieldpersistentdata
+  new_state: fieldPersistentData
 ) {
-  const doc = await get_fieldpersistentdata(project_id, form_id);
+  const doc = await getFieldPersistentData(project_id, form_id);
   //check if changes
-  if (!check_if_update(new_state, doc)) {
+  if (!checkIfUpdated(new_state, doc)) {
     return true;
   }
   doc.data = new_state.data;
   doc.annotations = new_state.annotations;
   try {
+    const local_state_db = getLocalStateDB();
     return await local_state_db.put(doc);
   } catch (err: any) {
     logError(err);
@@ -78,21 +94,22 @@ export async function set_fieldpersistentdata(
   }
 }
 
-const check_if_update = (
-  new_state: fieldpersistentdata,
-  doc: fieldpersistentdata
+// Check if the persistent value has been updated
+const checkIfUpdated = (
+  new_state: fieldPersistentData,
+  old_state: fieldPersistentData
 ) => {
   //if the origin data empty, always save the value
-  if (Object.keys(doc.data).length === 0) return true;
+  if (Object.keys(old_state.data).length === 0) return true;
   for (const [field] of Object.entries(new_state['data'])) {
     if (
-      stable_stringify(doc.data[field]) !==
+      stable_stringify(old_state.data[field]) !==
       stable_stringify(new_state.data[field])
     ) {
       return true;
     }
     if (
-      stable_stringify(doc.annotations[field]) !==
+      stable_stringify(old_state.annotations[field]) !==
       stable_stringify(new_state.annotations[field])
     ) {
       return true;

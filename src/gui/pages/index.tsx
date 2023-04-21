@@ -25,7 +25,7 @@ import {Grid, Typography, Button} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {useTheme} from '@mui/material/styles';
 import {checkToken} from '../../utils/helpers';
-import {TokenContents} from '../../datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 type IndexProps = {
   token?: null | undefined | TokenContents;

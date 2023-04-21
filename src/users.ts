@@ -21,8 +21,7 @@
  *   on the happy path of not seeing access denied, or at least in ways the GUI
  *   can meaningfully handle.
  */
-import {jwtVerify, importSPKI} from 'jose';
-import type {KeyLike} from 'jose';
+import {jwtVerify, KeyLike, importSPKI} from 'jose';
 
 import {CLUSTER_ADMIN_GROUP_NAME, BUILT_LOGIN_TOKEN} from './buildconfig';
 import {active_db, local_auth_db} from './sync/databases';
@@ -32,21 +31,23 @@ import {
   ProjectID,
   ProjectRole,
   split_full_project_id,
-  TokenInfo,
   TokenContents,
-} from './datamodel/core';
-import {
-  LOCALLY_CREATED_PROJECT_PREFIX,
   LocalAuthDoc,
   JWTTokenInfo,
   JWTTokenMap,
-} from './datamodel/database';
-import {RecordMetadata} from './datamodel/ui';
+} from 'faims3-datamodel';
+import {LOCALLY_CREATED_PROJECT_PREFIX} from './sync/new-project';
+import {RecordMetadata} from 'faims3-datamodel';
 import {logError} from './logging';
 
 interface SplitCouchDBRole {
   project_id: ProjectID;
   project_role: ProjectRole;
+}
+
+interface TokenInfo {
+  token: string;
+  pubkey: KeyLike;
 }
 
 export const ADMIN_ROLE = 'admin';

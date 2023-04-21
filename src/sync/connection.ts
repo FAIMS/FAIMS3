@@ -20,8 +20,8 @@
 
 import PouchDB from 'pouchdb';
 import {RUNNING_UNDER_TEST, DEBUG_APP} from '../buildconfig';
-import {SyncStatusCallbacks} from '../datamodel/core';
-import {ConnectionInfo, PossibleConnectionInfo} from '../datamodel/database';
+import {SyncStatusCallbacks} from 'faims3-datamodel';
+import {ConnectionInfo, PossibleConnectionInfo} from 'faims3-datamodel';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 import * as _ from 'lodash';
 /**

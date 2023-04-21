@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {ProjectID, RecordID, RevisionID} from '../datamodel/core';
+import {ProjectID, RecordID, RevisionID} from 'faims3-datamodel';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';

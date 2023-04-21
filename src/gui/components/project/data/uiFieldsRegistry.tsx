@@ -25,7 +25,7 @@ import {
   getComponentPropertiesByName,
   getAvailableComponents,
 } from '../../../component_registry';
-import {FormComponent} from '../../../../datamodel/ui';
+import {FormComponent} from 'faims3-datamodel';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 export const getfields = () => {

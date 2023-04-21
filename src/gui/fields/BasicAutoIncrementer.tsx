@@ -24,12 +24,12 @@ import {FieldProps} from 'formik';
 import {ActionType} from '../../context/actions';
 import {store} from '../../context/store';
 import {
-  get_local_autoincrement_state_for_field,
-  set_local_autoincrement_state_for_field,
-} from '../../datamodel/autoincrement';
+  getLocalAutoincrementStateForField,
+  setLocalAutoincrementStateForField,
+} from '../../local-data/autoincrement';
 import {getDefaultuiSetting} from './BasicFieldSettings';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
-import {ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 
 import {
   Grid,
@@ -111,7 +111,7 @@ export class BasicAutoIncrementer extends React.Component<
     const project_id = this.props.form.values['_project_id'];
     const form_id = this.props.form_id;
     const field_id = this.props.field.name;
-    const local_state = await get_local_autoincrement_state_for_field(
+    const local_state = await getLocalAutoincrementStateForField(
       project_id,
       form_id,
       field_id
@@ -140,7 +140,7 @@ export class BasicAutoIncrementer extends React.Component<
       const new_id = local_state.ranges[0].start;
       local_state.ranges[0].using = true;
       local_state.last_used_id = new_id;
-      await set_local_autoincrement_state_for_field(local_state);
+      await setLocalAutoincrementStateForField(local_state);
       return new_id;
     }
     // We're now using the allocated ranges, find where we've up to:
@@ -151,7 +151,7 @@ export class BasicAutoIncrementer extends React.Component<
           console.debug('local_auto_inc using existing range', range);
           const next_id = local_state.last_used_id + 1;
           local_state.last_used_id = next_id;
-          await set_local_autoincrement_state_for_field(local_state);
+          await setLocalAutoincrementStateForField(local_state);
           return next_id;
         }
         range.fully_used = true;
@@ -166,7 +166,7 @@ export class BasicAutoIncrementer extends React.Component<
         range.using = true;
         local_state.last_used_id = next_id;
         console.debug('local_auto_inc staring with range', range);
-        await set_local_autoincrement_state_for_field(local_state);
+        await setLocalAutoincrementStateForField(local_state);
         return next_id;
       }
     }
@@ -183,7 +183,7 @@ export class BasicAutoIncrementer extends React.Component<
       max_stop = max_stop + 1;
     }
     local_state.last_used_id = max_stop;
-    await set_local_autoincrement_state_for_field(local_state);
+    await setLocalAutoincrementStateForField(local_state);
     console.debug('local_auto_inc using overrun', local_state);
     return max_stop;
   }

@@ -22,7 +22,7 @@ import React, {useEffect} from 'react';
 import {FieldProps} from 'formik';
 import Dropzone from 'react-dropzone';
 import {getDefaultuiSetting} from './BasicFieldSettings';
-import {ProjectUIModel} from '../../datamodel/ui';
+import {ProjectUIModel} from 'faims3-datamodel';
 import LibraryBooksIcon from '@mui/icons-material/Bookmarks';
 import {Typography} from '@mui/material';
 import {
@@ -38,7 +38,7 @@ import {IconButton} from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
-// import {FAIMSAttachmentReference} from '../../datamodel/database';
+// import {FAIMSAttachmentReference} from 'faims3-datamodel';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 interface Props {

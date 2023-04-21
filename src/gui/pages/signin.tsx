@@ -24,7 +24,7 @@ import {Box, Grid, Typography} from '@mui/material';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import ClusterCard from '../components/authentication/cluster_card';
 import * as ROUTES from '../../constants/routes';
-import {ListingInformation} from '../../datamodel/ui';
+import {ListingInformation} from 'faims3-datamodel';
 import {getSyncableListingsInfo} from '../../databaseAccess';
 import {ensure_locally_created_project_listing} from '../../sync/new-project';
 import {logError} from '../../logging';

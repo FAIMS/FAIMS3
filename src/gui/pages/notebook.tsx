@@ -25,14 +25,14 @@ import Breadcrumbs from '../components/ui/breadcrumbs';
 import * as ROUTES from '../../constants/routes';
 
 import {getProjectInfo} from '../../databaseAccess';
-import {ProjectID} from '../../datamodel/core';
+import {ProjectID} from 'faims3-datamodel';
 import {CircularProgress} from '@mui/material';
 
 import NotebookComponent from '../components/notebook';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import RefreshNotebook from '../components/notebook/refresh';
-import {ProjectInformation} from '../../datamodel/ui';
+import {ProjectInformation} from 'faims3-datamodel';
 import {logError} from '../../logging';
 
 export default function Notebook() {

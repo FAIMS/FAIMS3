@@ -32,9 +32,9 @@ import {
   generatenewfield,
   regeneratesettinguiSpec,
 } from './componenentSetting';
-import {ProjectValueList} from '../../../../datamodel/ui';
-import {ProjectUIFields} from '../../../../datamodel/typesystem';
-import {HRID_STRING} from '../../../../datamodel/core';
+import {ProjectValueList} from 'faims3-datamodel';
+import {ProjectUIFields} from 'faims3-datamodel';
+import {HRID_STRING} from 'faims3-datamodel';
 import {logError} from '../../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 

@@ -23,18 +23,19 @@
 // database it came from, for a FAIMS listing
 // (It is this way because the list of projects is decentralised and so we
 // cannot enforce system-wide unique project IDs without a 'namespace' listing id)
-import {getProjectDB} from '../sync/index';
-import {local_state_db} from '../sync/databases';
-import {ProjectID} from './core';
+import {getProjectDB} from '../sync';
+import {getLocalStateDB} from '../sync/databases';
 import {
-  LOCAL_AUTOINCREMENT_PREFIX,
-  LOCAL_AUTOINCREMENT_NAME,
+  ProjectID,
   LocalAutoIncrementRange,
   LocalAutoIncrementState,
   AutoIncrementReference,
   AutoIncrementReferenceDoc,
-} from './database';
+} from 'faims3-datamodel';
 import {logError} from '../logging';
+
+const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
+const LOCAL_AUTOINCREMENT_NAME = 'local-autoincrementers';
 
 export interface UserFriendlyAutoincrementStatus {
   label: string;
@@ -58,13 +59,14 @@ function get_pouch_id(
   );
 }
 
-export async function get_local_autoincrement_state_for_field(
+export async function getLocalAutoincrementStateForField(
   project_id: ProjectID,
   form_id: string,
   field_id: string
 ): Promise<LocalAutoIncrementState> {
   const pouch_id = get_pouch_id(project_id, form_id, field_id);
   try {
+    const local_state_db = getLocalStateDB();
     return await local_state_db.get(pouch_id);
   } catch (err: any) {
     if (err.status === 404) {
@@ -83,10 +85,11 @@ export async function get_local_autoincrement_state_for_field(
   }
 }
 
-export async function set_local_autoincrement_state_for_field(
+export async function setLocalAutoincrementStateForField(
   new_state: LocalAutoIncrementState
 ) {
   try {
+    const local_state_db = getLocalStateDB();
     return await local_state_db.put(new_state);
   } catch (err) {
     logError(err);
@@ -94,7 +97,7 @@ export async function set_local_autoincrement_state_for_field(
   }
 }
 
-export function create_new_autoincrement_range(
+export function createNewAutoincrementRange(
   start: number,
   stop: number
 ): LocalAutoIncrementRange {
@@ -107,12 +110,12 @@ export function create_new_autoincrement_range(
   return doc;
 }
 
-export async function get_local_autoincrement_ranges_for_field(
+export async function getLocalAutoincrementRangesForField(
   project_id: ProjectID,
   form_id: string,
   field_id: string
 ): Promise<LocalAutoIncrementRange[]> {
-  const state = await get_local_autoincrement_state_for_field(
+  const state = await getLocalAutoincrementStateForField(
     project_id,
     form_id,
     field_id
@@ -120,20 +123,20 @@ export async function get_local_autoincrement_ranges_for_field(
   return state.ranges;
 }
 
-export async function set_local_autoincrement_ranges_for_field(
+export async function setLocalAutoincrementRangesForField(
   project_id: ProjectID,
   form_id: string,
   field_id: string,
   new_ranges: LocalAutoIncrementRange[]
 ) {
-  const state = await get_local_autoincrement_state_for_field(
+  const state = await getLocalAutoincrementStateForField(
     project_id,
     form_id,
     field_id
   );
   if (state.ranges.length === 0) {
     state.ranges = new_ranges;
-    await set_local_autoincrement_state_for_field(state);
+    await setLocalAutoincrementStateForField(state);
   } else {
     // We should check that we're not causing problems for existing ranges
     for (const range of state.ranges) {
@@ -155,11 +158,11 @@ export async function set_local_autoincrement_ranges_for_field(
     }
     // We having broken anything, update ranges and save
     state.ranges = new_ranges;
-    await set_local_autoincrement_state_for_field(state);
+    await setLocalAutoincrementStateForField(state);
   }
 }
 
-export async function get_autoincrement_references_for_project(
+export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
 ): Promise<AutoIncrementReference[]> {
   const projdb = await getProjectDB(project_id);
@@ -180,7 +183,7 @@ export async function get_autoincrement_references_for_project(
   }
 }
 
-export async function add_autoincrement_reference_for_project(
+export async function addAutoincrementReferenceForProject(
   project_id: ProjectID,
   form_id: string[],
   field_id: string[],
@@ -227,7 +230,7 @@ export async function add_autoincrement_reference_for_project(
   }
 }
 
-export async function remove_autoincrement_reference_for_project(
+export async function removeAutoincrementReferenceForProject(
   project_id: ProjectID,
   form_id: string,
   field_id: string,
@@ -252,13 +255,13 @@ export async function remove_autoincrement_reference_for_project(
   }
 }
 
-async function get_user_friendly_status_for_field(
+async function getDisplayStatusForField(
   project_id: ProjectID,
   form_id: string,
   field_id: string,
   label: string
 ): Promise<UserFriendlyAutoincrementStatus> {
-  const ref_state = await get_local_autoincrement_state_for_field(
+  const ref_state = await getLocalAutoincrementStateForField(
     project_id,
     form_id,
     field_id
@@ -280,14 +283,14 @@ async function get_user_friendly_status_for_field(
   };
 }
 
-export async function get_user_friendly_status_for_project(
+export async function getDisplayStatusForProject(
   project_id: ProjectID
 ): Promise<UserFriendlyAutoincrementStatus[]> {
   const statuses: UserFriendlyAutoincrementStatus[] = [];
   try {
-    const refs = await get_autoincrement_references_for_project(project_id);
+    const refs = await getAutoincrementReferencesForProject(project_id);
     for (const ref of refs) {
-      const status = await get_user_friendly_status_for_field(
+      const status = await getDisplayStatusForField(
         project_id,
         ref.form_id,
         ref.field_id,

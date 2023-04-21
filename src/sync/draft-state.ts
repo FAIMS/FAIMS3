@@ -38,7 +38,7 @@ import {
   Annotations,
   FAIMSTypeName,
   Relationship,
-} from '../datamodel/core';
+} from 'faims3-datamodel';
 import {DEBUG_APP} from '../buildconfig';
 import {logError} from '../logging';
 

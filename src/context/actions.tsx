@@ -18,8 +18,8 @@
  *   TODO
  */
 
-import {ProjectObject} from '../datamodel/database';
-import {Record} from '../datamodel/ui';
+import {ProjectObject} from 'faims3-datamodel';
+import {Record} from 'faims3-datamodel';
 import {AlertColor} from '@mui/material/Alert/Alert';
 
 export enum ActionType {

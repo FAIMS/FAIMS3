@@ -20,9 +20,9 @@
  *   If you find yourself writing pouchdb.get(), pouchdb.put(), etc.
  *   put that code in a function in this file
  *
- *   See data_storage/index.ts for accessors specific to Records
+ *   See faims3-datamodel for accessors specific to Records
  *   In comparison, this file is for metadata, or other data
- *   (data_storage/index.ts is called from this file, as data_storage/index.ts
+ *   (faims3-datamodel is called from this file, as faims3-datamodel
  *    does encoding/decoding of records)
  *
  *   TODO: Convert *everything* to listeners that can run more than once
@@ -35,9 +35,9 @@ import {
   ListingID,
   split_full_project_id,
   resolve_project_id,
-} from './datamodel/core';
-import {ProjectObject} from './datamodel/database';
-import {ProjectInformation, ListingInformation} from './datamodel/ui';
+} from 'faims3-datamodel';
+import {ProjectObject} from 'faims3-datamodel';
+import {ProjectInformation, ListingInformation} from 'faims3-datamodel';
 import {
   all_projects_updated,
   createdProjects,

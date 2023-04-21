@@ -3,8 +3,8 @@ import {
   ProjectUIModel,
   componenentSettingprops,
   FAIMSEVENTTYPE,
-} from '../../datamodel/ui';
-import {ProjectUIFields} from '../../datamodel/typesystem';
+} from 'faims3-datamodel';
+import {ProjectUIFields} from 'faims3-datamodel';
 import {Typography} from '@mui/material';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 

@@ -2,7 +2,7 @@ import {Route, Redirect, RouteProps} from 'react-router-dom';
 
 import {DISABLE_SIGNIN_REDIRECT} from '../buildconfig';
 import * as ROUTES from './routes';
-import {TokenContents} from '../datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 
 interface PrivateRouteProps extends RouteProps {
   // tslint:disable-next-line:no-any

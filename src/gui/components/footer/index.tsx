@@ -33,7 +33,7 @@ import SlimFooter from './slimFooter';
 
 import {grey} from '@mui/material/colors';
 import * as ROUTES from '../../../constants/routes';
-import {TokenContents} from '../../../datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 interface FooterProps {
   token?: null | undefined | TokenContents;
 }

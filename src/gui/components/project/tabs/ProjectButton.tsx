@@ -216,7 +216,7 @@ export function DeleteuserButton(props: ButtonProps) {
   );
 }
 
-export function Addusersassign(props: ButtonProps) {
+export function AddUsersAssign(props: ButtonProps) {
   return (
     <IconButton
       color="secondary"

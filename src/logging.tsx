@@ -128,15 +128,17 @@ export const logError = (error: any) => {
   }
 };
 
+let bugsnag;
+
 if (BUGSNAG_KEY) {
   Bugsnag.start({
     apiKey: BUGSNAG_KEY,
     plugins: [new BugsnagPluginReact()],
   });
+
+  bugsnag = Bugsnag.getPlugin('react');
   console.debug('Logging errors with Bugsnag');
 }
-
-const bugsnag = Bugsnag.getPlugin('react');
 
 export const ErrorBoundary = bugsnag
   ? bugsnag.createErrorBoundary(React)

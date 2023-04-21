@@ -17,9 +17,8 @@
  * Description:
  *   This is the file is to set the values for persistent state
  */
-import {set_fieldpersistentdata} from '../../../datamodel/fieldpersistent';
-import {Annotations} from '../../../datamodel/core';
-import {ProjectUIModel} from '../../../datamodel/ui';
+import {Annotations, ProjectUIModel} from 'faims3-datamodel';
+import {setFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';
 
 export function savefieldpersistentSetting(
@@ -49,7 +48,7 @@ export function savefieldpersistentSetting(
     annotations: newAnnotation,
   };
   return isPersistent
-    ? set_fieldpersistentdata(project_id, form_type || 'FORM1', newStage)
+    ? setFieldPersistentData(project_id, form_type || 'FORM1', newStage)
         .then(refs => {
           return refs;
         })

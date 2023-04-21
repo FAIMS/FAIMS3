@@ -24,13 +24,13 @@ import {
   split_full_project_id,
   NonUniqueProjectID,
   resolve_project_id,
-} from '../datamodel/core';
+} from 'faims3-datamodel';
 import {
   ConnectionInfo,
   PossibleConnectionInfo,
   ListingsObject,
   ProjectObject,
-} from '../datamodel/database';
+} from 'faims3-datamodel';
 import {logError} from '../logging';
 import {getTokenForCluster} from '../users';
 

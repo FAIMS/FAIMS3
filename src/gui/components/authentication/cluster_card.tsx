@@ -45,7 +45,7 @@ import {
   switchUsername,
 } from '../../../users';
 import {reprocess_listing} from '../../../sync/process-initialization';
-import {TokenContents} from '../../../datamodel/core';
+import {TokenContents} from 'faims3-datamodel';
 import * as ROUTES from '../../../constants/routes';
 import MainCard from '../ui/main-card';
 import {store} from '../../../context/store';
