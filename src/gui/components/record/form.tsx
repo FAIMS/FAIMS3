@@ -63,7 +63,7 @@ import {Link} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {get_fieldpersistentdata} from 'faims3-datamodel';
+import {getFieldPersistentData} from '../../../local-data/field-persistent';
 
 import {
   getParentlinkInfo,
@@ -534,7 +534,7 @@ class RecordForm extends React.Component<
     // get value from persistent
     let persistentvalue: any = {};
     if (this.state.type_cached !== null)
-      persistentvalue = await get_fieldpersistentdata(
+      persistentvalue = await getFieldPersistentData(
         this.props.project_id,
         this.state.type_cached
       );

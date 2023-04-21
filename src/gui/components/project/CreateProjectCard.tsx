@@ -56,11 +56,11 @@ import {
 import {
   ProjectValueList,
   ProjectUIFields,
-  add_autoincrement_reference_for_project,
   ProjectUIModel,
   ProjectInformation,
   HRID_STRING,
 } from 'faims3-datamodel';
+import {addAutoincrementReferenceForProject} from '../../../local-data/autoincrement';
 import {getValidationSchemaForViewset} from '../validation';
 import {grey} from '@mui/material/colors';
 import {getid} from './data/ComponentSetting';
@@ -345,7 +345,7 @@ export default function CreateProjectCard(props: CreateProjectCardProps) {
   const add_autoince_reference = async (autoince: any) => {
     if (project_id !== null) {
       try {
-        await add_autoincrement_reference_for_project(
+        await addAutoincrementReferenceForProject(
           project_id,
           autoince.form_id,
           autoince.field_id,

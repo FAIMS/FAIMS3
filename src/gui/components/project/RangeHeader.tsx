@@ -22,9 +22,9 @@
 import React from 'react';
 import {useState, useEffect} from 'react';
 import {
-  get_user_friendly_status_for_project,
+  getDisplayStatusForProject,
   UserFriendlyAutoincrementStatus,
-} from 'faims3-datamodel';
+} from '../../../local-data/autoincrement';
 
 export default function RangeHeader(props: {project: any}) {
   const [status, setStatus] = useState<UserFriendlyAutoincrementStatus[]>();
@@ -48,7 +48,7 @@ export default function RangeHeader(props: {project: any}) {
   useEffect(() => {
     let isactive = true;
     if (isactive) {
-      get_user_friendly_status_for_project(props.project.project_id).then(res =>
+      getDisplayStatusForProject(props.project.project_id).then((res: any) =>
         setStatus(res)
       );
 

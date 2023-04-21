@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import {Box, Grid, Typography, Paper, Alert} from '@mui/material';
 import {ProjectInformation, ProjectUIModel} from 'faims3-datamodel';
-import {get_autoincrement_references_for_project} from 'faims3-datamodel';
+import {getAutoincrementReferencesForProject} from '../../../../local-data/autoincrement';
 import {AutoIncrementReference} from 'faims3-datamodel';
 import AutoIncrementEditForm from '../../autoincrement/edit-form';
 import {logError} from '../../../../logging';
@@ -27,7 +27,7 @@ export default function AutoIncrementerSettingsList(
     [] as AutoIncrementReference[]
   );
   useEffect(() => {
-    get_autoincrement_references_for_project(props.project_info.project_id)
+    getAutoincrementReferencesForProject(props.project_info.project_id)
       .then(refs => {
         setReferences(refs);
       })
