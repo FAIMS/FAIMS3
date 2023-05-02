@@ -26,7 +26,7 @@ import {
   ListItemText,
   ListItemIcon,
 } from '@mui/material';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LogoutIcon from '@mui/icons-material/Logout';
 import GroupIcon from '@mui/icons-material/Group';
@@ -45,7 +45,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
    */
   const isAuthenticated = checkToken(props.token);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const history = useHistory();
+  const history = useNavigate();
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -56,7 +56,7 @@ export default function AppBarAuth(props: AppBarAuthProps) {
 
   const handleRoutingAndClose = (route: string) => {
     handleClose();
-    history.push(route);
+    history(route);
   };
 
   if (isAuthenticated) {

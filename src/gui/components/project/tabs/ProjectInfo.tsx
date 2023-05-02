@@ -40,7 +40,7 @@ import {ProjectUIModel} from 'faims3-datamodel';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@mui/material/Alert';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const useStyles = makeStyles(theme => ({}));
+const useStyles = makeStyles((theme: any) => ({}));
 
 type ProjectInfoProps = {
   project_id: string | null;

@@ -77,7 +77,7 @@ type MenuItemProps = {
 
 const drawerWidth = 240;
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   root: {
     display: 'flex',
     boxShadow: 'none',

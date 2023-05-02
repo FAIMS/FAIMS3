@@ -44,7 +44,7 @@ import {grey} from '@mui/material/colors';
 import {logError} from '../../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   formtabcard: {
     minHeight: 200,
     backgroundColor: grey[200],

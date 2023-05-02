@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Link as RouterLink, Redirect} from 'react-router-dom';
+import {Link as RouterLink, Navigate} from 'react-router-dom';
 
 import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -80,7 +80,7 @@ export default function AddRecordButtons(props: AddRecordButtonsProps) {
   if (selectedRecord) {
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
-      <Redirect
+      <Navigate
         to={ROUTES.getRecordRoute(
           project_id || 'dummy',
           (selectedRecord.record_id || '').toString(),

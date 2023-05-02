@@ -48,7 +48,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
   };
 
   const onChange = React.useCallback(
-    event => {
+    (event: any) => {
       const {value} = event.target;
       handleValues(value);
     },

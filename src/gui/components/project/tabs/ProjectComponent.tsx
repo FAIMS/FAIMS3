@@ -39,7 +39,7 @@ import {logError} from '../../../../logging';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   newfield: {
     // backgroundColor:'#e1e4e8',
     // borderTop:'1px solid #e1e4e8',

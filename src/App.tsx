@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
@@ -85,7 +85,7 @@ export default function App() {
         <ThemeProvider theme={theme}>
           <Router>
             <MainLayout token={token}>
-              <Switch>
+              <Routes>
                 <PrivateRoute
                   exact
                   path={ROUTES.SIGN_IN}
@@ -94,9 +94,8 @@ export default function App() {
                   extraProps={{setToken: setToken}}
                 />
                 <Route
-                  exact
                   path={ROUTES.SIGN_IN_RETURN}
-                  component={SignInReturnLoader}
+                  Component={SignInReturnLoader}
                 />
                 <PrivateRoute
                   exact
@@ -211,9 +210,9 @@ export default function App() {
                   extraProps={{token: token}}
                   is_sign={true}
                 />
-                <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
-                <Route component={NotFound404} />
-              </Switch>
+                <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
+                <Route Component={NotFound404} />
+              </Routes>
             </MainLayout>
           </Router>
         </ThemeProvider>

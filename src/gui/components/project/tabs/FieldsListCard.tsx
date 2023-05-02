@@ -32,7 +32,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import {getfields} from '../data/uiFieldsRegistry';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   content: {
     minHeight: 100,
     minWidth: 200,

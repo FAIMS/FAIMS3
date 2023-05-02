@@ -44,7 +44,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import TaskIcon from '@mui/icons-material/Task';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   settingList: {
     // backgroundColor:'#e1e4e8',
     marginBottom: 2,

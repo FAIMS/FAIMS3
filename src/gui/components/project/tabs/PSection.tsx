@@ -35,7 +35,7 @@ import ConfirmdeleteDialog from './ConfirmdeleteDialog';
 import SectionComponents from './PSectionComponents';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   newfield_button: {
     textAlign: 'right',
   },

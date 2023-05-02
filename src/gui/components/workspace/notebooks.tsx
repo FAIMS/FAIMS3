@@ -19,7 +19,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {Box, Paper, Typography, Alert, Button, Stack} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 
@@ -63,7 +63,7 @@ export default function NoteBooks(props: NoteBookListProps) {
     setValue(newValue);
   };
 
-  const history = useHistory();
+  const history = useNavigate();
   const theme = useTheme();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const pouchProjectList = useEventedPromise(
@@ -76,7 +76,7 @@ export default function NoteBooks(props: NoteBookListProps) {
 
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     if (params.row.is_activated) {
-      history.push(ROUTES.NOTEBOOK + params.row.project_id);
+      history(ROUTES.NOTEBOOK + params.row.project_id);
     } else {
       // do nothing
     }
@@ -132,7 +132,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           flex: 0.2,
           minWidth: 160,
           renderCell: (params: GridCellParams) => (
-            <ProjectStatus status={params.value} />
+            <ProjectStatus status={params.row.value} />
           ),
         },
         {
@@ -301,7 +301,9 @@ export default function NoteBooks(props: NoteBookListProps) {
                         sortModel: [props.sortModel],
                       },
                       pagination: {
-                        pageSize: pouchProjectList.length,
+                        paginationModel: {
+                          pageSize: pouchProjectList.length,
+                        },
                       },
                     }}
                     components={{
@@ -337,7 +339,9 @@ export default function NoteBooks(props: NoteBookListProps) {
                         sortModel: [props.sortModel],
                       },
                       pagination: {
-                        pageSize: pouchProjectList.length,
+                        paginationModel: {
+                          pageSize: pouchProjectList.length,
+                        },
                       },
                     }}
                     components={{

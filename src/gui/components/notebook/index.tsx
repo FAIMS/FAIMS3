@@ -16,7 +16,7 @@ import {
   AlertTitle,
   Button,
 } from '@mui/material';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {ProjectUIViewsets} from 'faims3-datamodel';
 import {getUiSpecForProject} from '../../../uiSpecification';
 import {ProjectInformation, ProjectUIModel} from 'faims3-datamodel';
@@ -99,7 +99,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
   const [uiSpec, setUiSpec] = useState<null | ProjectUIModel>(null);
   const theme = useTheme();
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-  const history = useHistory();
+  const history = useNavigate();
   useEffect(() => {
     if (typeof project !== 'undefined' && Object.keys(project).length > 0) {
       getUiSpecForProject(project.project_id)
@@ -138,7 +138,7 @@ export default function NotebookComponent(props: NotebookComponentProps) {
           <Button
             variant="text"
             size={'small'}
-            onClick={() => history.push(ROUTES.WORKSPACE)}
+            onClick={() => history(ROUTES.WORKSPACE)}
             startIcon={<DashboardIcon />}
           >
             Workspace

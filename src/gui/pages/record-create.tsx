@@ -19,7 +19,7 @@
  */
 
 import React, {useContext, useState, useEffect} from 'react';
-import {Redirect, useHistory, useParams, useLocation} from 'react-router-dom';
+import {Navigate, useNavigate, useParams, useLocation} from 'react-router-dom';
 
 import {
   AppBar,
@@ -73,7 +73,7 @@ function DraftCreate(props: DraftCreateProps) {
   const {project_id, type_name, record_id} = props;
 
   const {dispatch} = useContext(store);
-  const history = useHistory();
+  const history = useNavigate();
 
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
@@ -103,26 +103,25 @@ function DraftCreate(props: DraftCreateProps) {
         severity: 'warning',
       },
     });
-    history.goBack();
+    history(-1);
     return <React.Fragment />;
   } else if (draft_id === null) {
     // Creating new draft loading
     return <CircularProgress size={12} thickness={4} />;
   } else {
     return (
-      <Redirect
-        to={{
-          pathname:
-            ROUTES.NOTEBOOK +
-            project_id +
-            ROUTES.RECORD_CREATE +
-            type_name +
-            ROUTES.RECORD_DRAFT +
-            draft_id +
-            ROUTES.RECORD_RECORD +
-            record_id, // update for get record_id persistence for the draft
-          state: props.state,
-        }}
+      <Navigate
+        to={
+          ROUTES.NOTEBOOK +
+          project_id +
+          ROUTES.RECORD_CREATE +
+          type_name +
+          ROUTES.RECORD_DRAFT +
+          draft_id +
+          ROUTES.RECORD_RECORD +
+          record_id
+        }
+        state={props.state}
       />
     );
   }
@@ -140,7 +139,7 @@ interface DraftEditProps {
 function DraftEdit(props: DraftEditProps) {
   const {project_id, type_name, draft_id, project_info, record_id} = props;
   const {dispatch} = useContext(store);
-  const history = useHistory();
+  const history = useNavigate();
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
 
@@ -217,7 +216,7 @@ function DraftEdit(props: DraftEditProps) {
      */
     return new Promise(resolve => {
       resolve(() => {
-        history.push({
+        history({
           pathname: ROUTES.NOTEBOOK + project_id,
         });
       });
@@ -232,7 +231,7 @@ function DraftEdit(props: DraftEditProps) {
         severity: 'warning',
       },
     });
-    history.goBack();
+    history(-1);
     return <React.Fragment />;
   } else if (uiSpec === null) {
     // Loading
@@ -352,16 +351,16 @@ export default function RecordCreate() {
     project_info = useEventedPromise(
       'RecordCreate page',
       getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id),
+      constantArgsShared(listenProjectInfo, project_id!),
       false,
       [project_id],
-      project_id
+      project_id!
     ).expect();
   } catch (err: any) {
     if (err.message !== 'missing') {
       throw err;
     } else {
-      return <Redirect to="/404" />;
+      return <Navigate to="/404" />;
     }
   }
   let breadcrumbs = [
@@ -369,7 +368,7 @@ export default function RecordCreate() {
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
       link: ROUTES.NOTEBOOK + project_id,
-      title: project_info !== null ? project_info.name : project_id,
+      title: project_info !== null ? project_info.name! : project_id!,
     },
     {title: 'Draft'},
   ];
@@ -388,13 +387,13 @@ export default function RecordCreate() {
       {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
       {
         link: ROUTES.NOTEBOOK + project_id,
-        title: project_info !== null ? project_info.name : project_id,
+        title: project_info !== null ? project_info.name! : project_id!,
       },
       {
         link: ROUTES.NOTEBOOK + location.state.parent_link,
         title:
-          type + ':' + location.state.parent_hrid ??
-          location.state.parent_record_id,
+          type! + ':' + location.state.parent_hrid! ??
+          location.state.parent_record_id!,
       },
       {title: 'Draft'},
     ];
@@ -406,16 +405,16 @@ export default function RecordCreate() {
         <Breadcrumbs data={breadcrumbs} />
         {draft_id === undefined || record_id === undefined ? (
           <DraftCreate
-            project_id={project_id}
-            type_name={type_name}
+            project_id={project_id!}
+            type_name={type_name!}
             state={location.state}
             record_id={draft_record_id}
           />
         ) : (
           <DraftEdit
             project_info={project_info}
-            project_id={project_id}
-            type_name={type_name}
+            project_id={project_id!}
+            type_name={type_name!}
             draft_id={draft_id}
             record_id={record_id}
             state={location.state}

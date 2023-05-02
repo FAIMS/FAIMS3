@@ -34,7 +34,7 @@ function a11yProps(tabname: any, index: any) {
   };
 }
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   fieldtab: {
     textAlign: 'left',
     minWidth: 55,

@@ -19,7 +19,7 @@
  */
 
 import React, {useContext} from 'react';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 
 import {
   Button,
@@ -79,7 +79,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
   //console.debug('Delete props', props);
   const {project_id, record_id, revision_id, draft_id} = props;
   const [open, setOpen] = React.useState(false);
-  const history = useHistory();
+  const history = useNavigate();
   const globalState = useContext(store);
   const {dispatch} = globalState;
   const is_draft = draft_id !== null;
@@ -115,7 +115,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
           },
         });
         handleClose();
-        history.push(ROUTES.NOTEBOOK + project_id);
+        history(ROUTES.NOTEBOOK + project_id);
       })
       .catch(err => {
         console.log('Failed to delete', record_id, draft_id, err);

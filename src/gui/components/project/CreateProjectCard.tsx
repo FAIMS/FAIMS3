@@ -67,7 +67,7 @@ import {getid} from './data/ComponentSetting';
 import {logError} from '../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   root: {
     flexGrow: 1,
     backgroundColor: theme.palette.background.paper,
