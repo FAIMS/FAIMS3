@@ -112,7 +112,7 @@
     "react-dom": "18.2.0",
     "react-dropzone": "14.2.3",
     "react-obfuscate": "^3.6.9",
-    "react-router": "6.11.0",
+    "react-router": "^6.2.2",
     "react-router-dom": "6.11.0",
     "react-router-hash-link": "^2.4.3",
     "react-share": "4.4.1",
