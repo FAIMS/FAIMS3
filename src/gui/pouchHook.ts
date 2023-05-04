@@ -79,7 +79,7 @@ export class PromiseState<S, L extends null | {}> {
   map_err(...fs: ((error: {}) => {} | void)[]): PromiseState<S, L> {
     if (this.error !== undefined) {
       // Convert all errors in the fs conversion funcs list, recursively
-      if (fs === []) {
+      if (fs && fs.length == 0) {
         // Base case: No conversion whatsoever, just a copy
         return new PromiseState<S, L>({error: this.error});
       } else {
