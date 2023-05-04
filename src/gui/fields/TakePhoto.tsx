@@ -277,7 +277,9 @@ export class TakePhoto extends React.Component<
 
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
-      error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
+      error_text = (
+        <span {...this.props['ErrorTextProps']}>{error as string}</span>
+      );
     }
 
     // https://mui.com/components/image-list/#masonry-image-list

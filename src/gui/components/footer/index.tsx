@@ -80,7 +80,7 @@ function DevelopTool() {
           {process.env.REACT_APP_TAG}: {packageJson.name} v{packageJson.version}{' '}
           ({COMMIT_VERSION})
         </code>
-        {name}
+        {packageJson.name}
         <Box mt={2}>
           <Typography variant={'h6'}>Key</Typography>
           <InProgress />

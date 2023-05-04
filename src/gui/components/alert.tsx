@@ -26,7 +26,7 @@ import {store} from '../../context/store';
 import {ActionType} from '../../context/actions';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   root: {
     width: '100%',
     '& > * + *': {
