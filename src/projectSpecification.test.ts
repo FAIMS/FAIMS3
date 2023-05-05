@@ -120,9 +120,9 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
-      fc.array(fc.unicodeJsonObject()), // allowed-values
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // additional-members
-      fc.array(fc.unicodeJsonObject()), // additional-constraints
+      fc.array(fc?.unicodeJsonValue()), // allowed-values
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonValue()), // additional-members
+      fc.array(fc.unicodeJsonValue()), // additional-constraints
     ],
     async (
       project_id,
@@ -142,7 +142,7 @@ describe('roundtrip reading and writing to db', () => {
         console.error(err);
         fail('Failed to clean dbs');
       }
-      fc.pre(projdbs !== {});
+      fc.pre(Object.keys(projdbs).length > 0);
 
       const fulltype = namespace + '::' + name;
       const context = createTypeContext(project_id, false);
@@ -166,7 +166,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()),
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJson()),
     ],
     async (project_id, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
@@ -179,7 +179,7 @@ describe('roundtrip reading and writing to db', () => {
         console.error(err);
         fail('Failed to clean dbs');
       }
-      fc.pre(projdbs !== {});
+      fc.pre(Object.keys(projdbs).length > 0);
 
       const fullconst = namespace + '::' + name;
       const context = createTypeContext(project_id, false);
@@ -197,9 +197,9 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
-      fc.array(fc.unicodeJsonObject()), // allowed-values
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()), // additional-members
-      fc.array(fc.unicodeJsonObject()), // additional-constraints
+      fc.array(fc.unicodeJson()), // allowed-values
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJson()), // additional-members
+      fc.array(fc.unicodeJson()), // additional-constraints
     ],
     async (
       project_id,
@@ -220,7 +220,7 @@ describe('roundtrip reading and writing to db', () => {
         fail('Failed to clean dbs');
       }
       clearAllCaches();
-      fc.pre(projdbs !== {});
+      fc.pre(Object.keys(projdbs).length > 0);
 
       const fulltype = namespace + '::' + name;
       const context = createTypeContext(project_id);
@@ -248,7 +248,7 @@ describe('roundtrip reading and writing to db', () => {
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
       fc.fullUnicodeString(),
-      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonObject()),
+      fc.dictionary(fc.fullUnicodeString(), fc.unicodeJsonValue()),
     ],
     async (project_id, namespace, name, constInfo) => {
       fc.pre(!namespace.includes(':'));
@@ -262,7 +262,7 @@ describe('roundtrip reading and writing to db', () => {
         fail('Failed to clean dbs');
       }
       clearAllCaches();
-      fc.pre(projdbs !== {});
+      fc.pre(Object.keys(projdbs).length > 0);
 
       const fullconst = namespace + '::' + name;
       const context = createTypeContext(project_id);
