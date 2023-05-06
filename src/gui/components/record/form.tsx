@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {withRouter} from 'react-router';
+//import {withRouter} from 'react-router';
 import {Formik, Form} from 'formik';
 
 import {Grid, Box, Typography, Divider} from '@mui/material';
@@ -76,7 +76,7 @@ import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from 'faims3-datamodel';
 import {logError} from '../../../logging';
-import {RouteComponentProps} from 'react-router';
+//import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -144,13 +144,15 @@ type RecordFormState = {
 };
 
 class RecordForm extends React.Component<
-  RecordFormProps & RouteComponentProps,
+  // RecordFormProps & RouteComponentProps,
+  // RecordFormState
+  any,
   RecordFormState
 > {
   draftState: RecordDraftState;
 
   // List of timeouts that unmount must cancel
-  timeouts: typeof setTimeout[] = [];
+  timeouts: (typeof setTimeout)[] = [];
   _isMounted = false;
 
   async componentDidUpdate(
@@ -210,7 +212,7 @@ class RecordForm extends React.Component<
     }
   }
 
-  constructor(props: RecordFormProps & RouteComponentProps) {
+  constructor(props: RecordFormProps & /*RouteComponentProps*/ any) {
     super(props);
     this.draftState = new RecordDraftState(this.props as any);
     this.state = {
@@ -1376,4 +1378,5 @@ class RecordForm extends React.Component<
   }
 }
 RecordForm.contextType = store;
-export default withRouter(RecordForm);
+export default RecordForm;
+//export default withRouter(RecordForm);
