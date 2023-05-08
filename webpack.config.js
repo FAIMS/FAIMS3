@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ReactRefreshPlugin=require('react-refresh')
 
 module.exports = {
   // stats: {
@@ -17,7 +18,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/index.html', // to import index.html file inside index.js
-    }),
+    }),new ReactRefreshPlugin({})
   ],
   devServer: {
     port: 3030, // you can change the port
