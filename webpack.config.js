@@ -2,45 +2,39 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  stats: {
-    // Configure the console output
-    errorDetails: true, //this does show errors
-    colors: true,
-    modules: true,
-    reasons: true,
-  },
-  resolve: {
-    extensions: ['.ts', '.js', '.tsx', '.jsx'],
-    fallback: {
-      stream: false,
-    },
-  },
   entry: './src/index.tsx',
-  output: {
-    path: path.join(__dirname, '/dist'), // the bundle output path
-    filename: 'bundle.js', // the name of the bundle
+  output: {path: path.join(__dirname, 'build'), filename: 'index.bundle.js'},
+  mode: process.env.NODE_ENV || 'development',
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+    fallback: {stream: false},
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: './src/index.html', // to import index.html file inside index.js
-    }),
-  ],
-  devServer: {
-    port: 3030, // you can change the port
-  },
+  devServer: {static: {directory: path.join(__dirname, 'src')}},
   module: {
     rules: [
       {
-        test: /\.(ts|tsx|js|jsx)$/, // .js and .jsx files
-        exclude: /node_modules/, // excluding the node_modules folder
-        use: {
-          loader: 'babel-loader',
-        },
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        use: ['babel-loader'],
       },
       {
-        test: /\.css$/i,
+        test: /\.(ts|tsx)$/,
+        exclude: /node_modules/,
+        use: ['ts-loader'],
+      },
+      {
+        test: /\.(css|scss)$/,
         use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.(jpg|jpeg|png|gif|mp3|svg)$/,
+        use: ['file-loader'],
       },
     ],
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, 'src', 'index.html'),
+    }),
+  ],
 };
