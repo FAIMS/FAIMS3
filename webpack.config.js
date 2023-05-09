@@ -7,7 +7,7 @@ module.exports = {
   mode: process.env.NODE_ENV || 'development',
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
-    fallback: {stream: false},
+    fallback: {assert: false, stream: false},
   },
   devServer: {static: {directory: path.join(__dirname, 'src')}},
   module: {
