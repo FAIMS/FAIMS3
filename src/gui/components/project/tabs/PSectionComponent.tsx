@@ -19,8 +19,8 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
-
+// import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 import {Grid, Typography, Card} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {SettingCard} from './PSettingCard';
@@ -59,7 +59,7 @@ type FieldToolBarProps = {
 };
 function FieldToolBar(props: FieldToolBarProps) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const {
     index,
     formuiSpec,
@@ -153,7 +153,7 @@ type SectionComponent = {
 
 export default function SectionComponent(props: SectionComponent) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const {
     formuiSpec,
     formcomponent,

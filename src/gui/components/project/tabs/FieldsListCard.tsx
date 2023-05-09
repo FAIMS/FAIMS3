@@ -28,11 +28,12 @@ import {
   Typography,
   Card,
 } from '@mui/material';
-import makeStyles from '@mui/styles/makeStyles';
+// import makeStyles from '@mui/styles/makeStyles';
 import {getfields} from '../data/uiFieldsRegistry';
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import {createUseStyles} from 'react-jss';
 
-const useStyles = makeStyles((theme: any) => ({
+const useStyles = createUseStyles((theme: any) => ({
   content: {
     minHeight: 100,
     minWidth: 200,

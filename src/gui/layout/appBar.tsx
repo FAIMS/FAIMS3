@@ -28,7 +28,7 @@ import {
   Toolbar,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import makeStyles from '@mui/styles/makeStyles';
+import { createUseStyles as makeStyles } from 'react-jss';
 import CssBaseline from '@mui/material/CssBaseline';
 import clsx from 'clsx';
 import Collapse from '@mui/material/Collapse';

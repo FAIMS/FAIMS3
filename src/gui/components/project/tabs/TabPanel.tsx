@@ -20,9 +20,10 @@
 
 import React from 'react';
 import {Box, Typography} from '@mui/material';
-import makeStyles from '@mui/styles/makeStyles';
+// import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles} from 'react-jss';
 
-const useStyles = makeStyles((theme: any) => ({
+const useStyles = createUseStyles((theme: any) => ({
   TabPanel_F: {
     paddingTop: 5,
 

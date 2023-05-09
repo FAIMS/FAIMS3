@@ -19,7 +19,7 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 
 import {Grid, Paper} from '@mui/material';
 
@@ -71,7 +71,7 @@ type SectionTabProps = {
 
 export default function SectionTab(props: SectionTabProps) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const {
     fieldvalue,
     handleChangetabfield,

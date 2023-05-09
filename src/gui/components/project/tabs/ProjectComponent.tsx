@@ -19,7 +19,7 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
+import { createUseStyles as makeStyles } from 'react-jss';
 import {Grid} from '@mui/material';
 
 import Alert from '@mui/material/Alert';

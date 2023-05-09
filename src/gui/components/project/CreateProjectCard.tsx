@@ -29,7 +29,7 @@ import {Formik, Form} from 'formik';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useTheme} from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
-import makeStyles from '@mui/styles/makeStyles';
+import { createUseStyles as makeStyles } from 'react-jss';
 import {Grid, AppBar, Box} from '@mui/material';
 import {TabTab} from './tabs/TabTab';
 
@@ -138,7 +138,7 @@ const PROJECT_META = [
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [project_id, setProjectID] = useState(props.project_id);

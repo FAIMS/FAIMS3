@@ -23,7 +23,7 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 import {Grid} from '@mui/material';
 
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -79,7 +79,7 @@ type formcomponents = any;
 // eslint-disable-next-line
 export default function ProjectDesignTab(props: ProjectDesignProps) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const {
     project_id,

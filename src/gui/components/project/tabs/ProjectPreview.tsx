@@ -23,7 +23,7 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
+import { createUseStyles as makeStyles } from 'react-jss';
 import {
   Grid,
   Step,
@@ -83,7 +83,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   // if(props.project_id===undefined) console.log('New Project'+props.project_id)
 
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const {
     project_id,
