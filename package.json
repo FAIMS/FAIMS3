@@ -24,7 +24,7 @@
     ]
   },
   "scripts": {
-    "start": "webpack-dev-server",
+    "start": "webpack serve --config webpack.config.js --open",
     "build": "react-scripts --max-old-space-size=4096 build",
     "pretest": "npm run compile",
     "test": "NODE_ENV=test react-scripts test --env=./test/custom-test-env.js --forceExit --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
