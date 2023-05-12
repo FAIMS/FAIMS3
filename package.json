@@ -77,6 +77,7 @@
     "cordova": "11.1.0",
     "cordova-plugin-inappbrowser": "^5.0.0",
     "faims3-datamodel": "github:FAIMS/faims3-data-model",
+    "@faims-project/faims3-map-input" : "git+ssh://git@github.com/FAIMS-Raadco/faims3-map-input.git#fix-deps",
     "fast-check": "^3.8.1",
     "fast-json-stable-stringify": "2.1.0",
     "formik": "2.2.9",
