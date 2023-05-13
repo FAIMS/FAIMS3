@@ -19,7 +19,7 @@
  */
 
 import React, {useState} from 'react';
-import styles from './QRCodeFormField.module.css';
+import './QRCodeFormField.module.css';
 import Button from '@mui/material/Button';
 
 import {BarcodeScanner} from '@capacitor-community/barcode-scanner';
@@ -152,17 +152,17 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
 
     if (target) {
       return ReactDOM.createPortal(
-        <div className={styles.container}>
-          <div className={styles.barcodeContainer}>
-            <div className={styles.relative}>
+        <div className="container">
+          <div className="barcodeContainer">
+            <div className="relative">
               <p>Aim your camera at a barcode</p>
               <Button color="primary" variant="contained" onClick={stopScan}>
                 Stop Scan
               </Button>
             </div>
-            <div className={styles.square}>
-              <div className={styles.outer}>
-                <div className={styles.inner}></div>
+            <div className="square">
+              <div className="outer">
+                <div className="inner"></div>
               </div>
             </div>
           </div>
