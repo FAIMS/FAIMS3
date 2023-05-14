@@ -14,7 +14,7 @@ module.exports = {
           transpileOnly: true,
         },
       });
-      
+
 
       // Add the .ts and .tsx extensions to resolve.extensions
       webpackConfig.resolve.extensions.push('.ts', '.tsx');
@@ -31,7 +31,10 @@ module.exports = {
       webpackConfig.plugins.push(
         new webpack.ProvidePlugin({
           process: 'process/browser',
-        })
+        }),
+        new webpack.ProvidePlugin({
+          Buffer: ['buffer', 'Buffer'],
+        }),
       );
 
       return webpackConfig;

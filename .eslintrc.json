@@ -4,8 +4,9 @@
     {
       "files": "**/*.test.ts",
       "rules": {
-        "node/no-unpublished-import": "off",
-        "node/no-unpublished-require": "off",
+        "node/no-unpublished-import": ["error", {
+          "allowModules": ["react-jss"]
+        }],
         "prettier/prettier": "warn",
         "@typescript-eslint/no-unused-vars": ["warn", {
                 "varsIgnorePattern": "[iI]gnored",
