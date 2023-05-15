@@ -39,30 +39,30 @@ import {logError} from '../../../../logging';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles((theme: any) => ({
-  newfield: {
-    // backgroundColor:'#e1e4e8',
-    // borderTop:'1px solid #e1e4e8',
-  },
-  newfield_button: {
-    textAlign: 'right',
-  },
-  addfield: {
-    // border:'1px solid #e1e4e8',
-    flexGrow: 1,
-    padding: theme.spacing(1),
-  },
-  settingtab: {
-    backgroundColor: '#e1e4e8',
-  },
-  formtabcard: {
-    minHeight: 200,
-    backgroundColor: grey[200],
-  },
-  FieldCard: {
-    width: '100%',
-  },
-}));
+// const useStyles = makeStyles((theme: any) => ({
+//   newfield: {
+//     // backgroundColor:'#e1e4e8',
+//     // borderTop:'1px solid #e1e4e8',
+//   },
+//   newfield_button: {
+//     textAlign: 'right',
+//   },
+//   addfield: {
+//     // border:'1px solid #e1e4e8',
+//     flexGrow: 1,
+//     padding: theme.spacing(1),
+//   },
+//   settingtab: {
+//     backgroundColor: '#e1e4e8',
+//   },
+//   formtabcard: {
+//     minHeight: 200,
+//     backgroundColor: grey[200],
+//   },
+//   FieldCard: {
+//     width: '100%',
+//   },
+// }));
 
 const getinitaccess = () => {
   try {

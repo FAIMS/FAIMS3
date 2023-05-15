@@ -27,9 +27,9 @@ import {useState, useEffect} from 'react';
 import {Formik, Form} from 'formik';
 
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
+import {createTheme, useTheme} from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
-import { createUseStyles as makeStyles } from 'react-jss';
+import {createUseStyles as makeStyles} from 'react-jss';
 import {Grid, AppBar, Box} from '@mui/material';
 import {TabTab} from './tabs/TabTab';
 
@@ -67,13 +67,15 @@ import {getid} from './data/ComponentSetting';
 import {logError} from '../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles((theme: any) => ({
+const theme = createTheme();
+
+const useStyles = makeStyles({
   root: {
     flexGrow: 1,
     backgroundColor: theme.palette.background.paper,
     padding: theme.spacing(2),
   },
-}));
+});
 
 type CreateProjectCardProps = {
   project_id: string | null;

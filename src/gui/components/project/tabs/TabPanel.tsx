@@ -19,11 +19,12 @@
  */
 
 import React from 'react';
-import {Box, Typography} from '@mui/material';
-// import makeStyles from '@mui/styles/makeStyles';
+import {Box, Typography, createTheme} from '@mui/material';
 import {createUseStyles} from 'react-jss';
 
-const useStyles = createUseStyles((theme: any) => ({
+const theme = createTheme();
+
+const useStyles = createUseStyles({
   TabPanel_F: {
     paddingTop: 5,
 
@@ -44,7 +45,7 @@ const useStyles = createUseStyles((theme: any) => ({
       paddingBottom: 10,
     },
   },
-}));
+});
 
 type TabPanelProps = {
   children: any;

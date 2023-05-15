@@ -39,7 +39,7 @@ import clsx from 'clsx';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
-import {styled} from '@mui/material/styles';
+import {createTheme, styled} from '@mui/material/styles';
 import {getProjectMetadata} from '../../projectMetadata';
 import {logError} from '../../logging';
 interface RenderTree {
@@ -174,8 +174,8 @@ interface ValueChipsArrayProps {
   attachments: {[key: string]: File} | null;
   isactive: boolean;
 }
-
-const ListItem = styled('li')(({theme}) => ({
+const theme = createTheme();
+const ListItem = styled('li')(() => ({
   margin: theme.spacing(0.5),
 }));
 
