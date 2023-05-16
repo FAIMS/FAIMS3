@@ -37,6 +37,7 @@
     "serve": "npx serve --config ../serve.json --single --no-clipboard build",
     "prewebapp-build": "npm run build",
     "webapp-build": "cap copy",
+    "webapp-sync": "cap sync",
     "app-update": "cap update",
     "lint": "gts lint",
     "clean": "gts clean",
