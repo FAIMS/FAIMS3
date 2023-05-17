@@ -76,7 +76,7 @@ server (located at `http://<couchdb_host_name>:<couchdb_port>/_utils/`).
 1. Build the source code
    - `npm run webapp-build`
 1. Synchronise Gradle files
-   - `npm run webapp-sync` OR `cap copy`
+   - `npm run webapp-sync` OR `cap sync`
 1. [Optional] Allow to copy to /Library/Ruby/Gems/2.3.0:
    - `export GEM_HOME="$HOME/.gem"`
 1. [Optional] Resolve `xcode-select` error
