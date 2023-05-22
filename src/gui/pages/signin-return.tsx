@@ -21,12 +21,12 @@
 
 import {useContext, useEffect, useState} from 'react';
 import {store} from '../../context/store';
-import {RouteComponentProps} from 'react-router';
+
 import {local_auth_db} from '../../sync/databases';
 import * as ROUTES from '../../constants/routes';
 import {ActionType} from '../../context/actions';
 import {CircularProgress} from '@mui/material';
-import {Redirect} from 'react-router-dom';
+import {Navigate} from 'react-router-dom';
 
 function tryParseStateFromQueryValue(
   query_value?: string | null
@@ -55,7 +55,7 @@ function tryParseStateFromQueryValue(
 }
 
 /* type SignInReturnProps = {}; */
-export function SignInReturnLoader(props: RouteComponentProps<any>) {
+export function SignInReturnLoader(props: any) {
   const params = new URLSearchParams(props.location.search);
   const globalState = useContext(store);
   const dispatch = globalState.dispatch;
@@ -77,7 +77,7 @@ export function SignInReturnLoader(props: RouteComponentProps<any>) {
     });
     // scroll to top of page, seems to be needed on mobile devices
     window.scrollTo(0, 0);
-    return <Redirect to={ROUTES.SIGN_IN} />;
+    return <Navigate to={ROUTES.SIGN_IN} />;
   } else {
     const [putResult, setPutResult] = useState(false as boolean | {error: any});
     const setPutError = (err: any) => setPutResult({error: err});
@@ -126,11 +126,11 @@ export function SignInReturnLoader(props: RouteComponentProps<any>) {
       });
       // scroll to top of page, seems to be needed on mobile devices
       window.scrollTo(0, 0);
-      return <Redirect to={ROUTES.SIGN_IN} />;
+      return <Navigate to={ROUTES.SIGN_IN} />;
     } else {
       // Working
       window.scrollTo(0, 0);
-      return <Redirect to={state_parsed.redirect_url || ROUTES.INDEX} />;
+      return <Navigate to={state_parsed.redirect_url || ROUTES.INDEX} />;
     }
   }
 }

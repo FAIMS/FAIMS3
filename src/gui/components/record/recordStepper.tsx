@@ -29,7 +29,8 @@ import {
   MobileStepper,
 } from '@mui/material';
 import {ProjectUIModel} from 'faims3-datamodel';
-import makeStyles from '@mui/styles/makeStyles';
+// import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles} from 'react-jss';
 type RecordStepperProps = {
   view_index: number;
   ui_specification: ProjectUIModel;
@@ -37,7 +38,7 @@ type RecordStepperProps = {
   views: {[key: string]: any};
 };
 
-const useStyles = makeStyles(() => ({
+const useStyles = createUseStyles(() => ({
   stepperStyle: {
     overflowY: 'hidden',
     overflowX: 'auto',

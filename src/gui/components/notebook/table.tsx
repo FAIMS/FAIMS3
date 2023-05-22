@@ -76,7 +76,7 @@ function RecordsTable(props: RecordsTableProps) {
   //   r.type !== undefined &&
   //   props.viewsets[r.type] !== undefined? newrows[index]={...r,type_label:props.viewsets[r.type].label?? r.type }:newrows[index]={...r})
 
-  const columns: GridColDef[] = not_xs
+  const columns: any[] = not_xs
     ? [
         {
           field: 'type',
@@ -110,7 +110,7 @@ function RecordsTable(props: RecordsTableProps) {
                 (params.row.revision_id || '').toString()
               )}
             >
-              {params.value}
+              {params.row.value}
             </Link>
           ),
         },
@@ -180,7 +180,7 @@ function RecordsTable(props: RecordsTableProps) {
                     (params.row.revision_id || '').toString()
                   )}
                 >
-                  {params.value}
+                  {params.row.value}
                 </Link>
               </Typography>
               <Typography color="textSecondary">
@@ -252,7 +252,7 @@ function RecordsTable(props: RecordsTableProps) {
         columns={columns}
         autoHeight
         rowHeight={not_xs ? 52 : 130}
-        rowsPerPageOptions={[10, 25, 50, 100]}
+        pageSizeOptions={[10, 25, 50, 100]}
         density={not_xs ? 'standard' : 'comfortable'}
         components={{
           Toolbar: NotebookDataGridToolbar,
@@ -265,14 +265,16 @@ function RecordsTable(props: RecordsTableProps) {
             sortModel: [{field: 'updated', sort: 'desc'}],
           },
           pagination: {
-            pageSize:
-              maxRows !== null
-                ? not_xs
-                  ? maxRows
-                  : defaultMaxRowsMobile
-                : not_xs
-                ? 25
-                : defaultMaxRowsMobile,
+            paginationModel: {
+              pageSize:
+                maxRows !== null
+                  ? not_xs
+                    ? maxRows
+                    : defaultMaxRowsMobile
+                  : not_xs
+                  ? 25
+                  : defaultMaxRowsMobile,
+            },
           },
         }}
       />

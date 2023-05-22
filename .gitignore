@@ -107,6 +107,7 @@ dist
 
 # JetBrains IDEs
 .idea
+.vscode
 
 build
 active

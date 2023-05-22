@@ -14,5 +14,8 @@
 			"*.faims.edu.au"
 		]
 	},
+	"android": {
+		"webContentsDebuggingEnabled": true
+	},
 	"cordova": {}
 }

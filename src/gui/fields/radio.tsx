@@ -99,7 +99,9 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
         </MuiRadioGroup>
         {error ? (
           <FormHelperText
-            children={radioGroupProps.form.errors[radioGroupProps.field.name]}
+            children={
+              radioGroupProps.form.errors[radioGroupProps.field.name] as string
+            }
           />
         ) : (
           <FormHelperText {...FormHelperTextProps} />

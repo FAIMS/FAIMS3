@@ -28,22 +28,22 @@ import {
   Typography,
   Card,
 } from '@mui/material';
-import makeStyles from '@mui/styles/makeStyles';
 import {getfields} from '../data/uiFieldsRegistry';
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import {createUseStyles} from 'react-jss';
 
-const useStyles = makeStyles(theme => ({
+const useStyles = createUseStyles({
   content: {
     minHeight: 100,
     minWidth: 200,
-    [theme.breakpoints.down('md')]: {
+    '@media screen and (max-width: 900px)': {
       width: '100%',
     },
   },
   inputfieldscard: {
     backgroundColor: '#353b40',
     textAlign: 'right',
-    [theme.breakpoints.down('md')]: {
+    '@media screen and (max-width: 900px)': {
       marginBottom: 15,
       marginTop: 10,
     },
@@ -51,7 +51,7 @@ const useStyles = makeStyles(theme => ({
   settingtab: {
     backgroundColor: '#e1e4e8',
   },
-}));
+});
 
 function FieldCard(props: any) {
   const {className, handelonClick, fields, ...other} = props;

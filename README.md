@@ -70,3 +70,15 @@ will allow you to choose which couchdb instance to use. Remember to add the
 host-port pair of the system the *FAIMS* app is running on (in most cases
 `localhost:3000`) to the CORS allow list via the Fauxton running on the couchdb
 server (located at `http://<couchdb_host_name>:<couchdb_port>/_utils/`).
+
+## Build mobile app
+
+1. Build the source code
+   - `npm run webapp-build`
+1. Synchronise Gradle files
+   - `npm run webapp-sync` OR `cap sync`
+1. [Optional] Allow to copy to /Library/Ruby/Gems/2.3.0:
+   - `export GEM_HOME="$HOME/.gem"`
+1. [Optional] Resolve `xcode-select` error
+   - `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+1. Build the apk from the build/build bundle/build apk section

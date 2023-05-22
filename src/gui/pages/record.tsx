@@ -19,7 +19,7 @@
  */
 
 import React, {useContext, useEffect, useState} from 'react';
-import {useHistory, useParams, Redirect} from 'react-router-dom';
+import {useParams, Navigate, useNavigate} from 'react-router-dom';
 import {
   AppBar,
   Alert,
@@ -110,7 +110,7 @@ export default function Record() {
   }>();
   const [updatedrevision_id, setrevision_id] = React.useState(revision_id);
   const {dispatch} = useContext(store);
-  const history = useHistory();
+  const history = useNavigate();
 
   const [value, setValue] = React.useState('1');
 
@@ -119,16 +119,16 @@ export default function Record() {
     project_info = useEventedPromise(
       'Record page',
       getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id),
+      constantArgsShared(listenProjectInfo, project_id!),
       false,
       [project_id],
-      project_id
+      project_id!
     ).expect();
   } catch (err: any) {
     if (err.message !== 'missing') {
       throw err;
     } else {
-      return <Redirect to="/404" />;
+      return <Navigate to="/404" />;
     }
   }
 
@@ -163,13 +163,13 @@ export default function Record() {
   >([]);
 
   useEffect(() => {
-    getUiSpecForProject(project_id).then(setUISpec, setError);
+    getUiSpecForProject(project_id!).then(setUISpec, setError);
     if (project_id !== null) {
-      getProjectMetadata(project_id, 'sections')
+      getProjectMetadata(project_id!, 'sections')
         .then(res => setMetaSection(res))
         .catch(logError);
       try {
-        setIsSyncing(isSyncingProjectAttachments(project_id));
+        setIsSyncing(isSyncingProjectAttachments(project_id!));
       } catch (error) {
         logError(error);
       }
@@ -181,24 +181,24 @@ export default function Record() {
       console.debug('record start initial', project_id, record_id, revision_id);
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
-      listFAIMSRecordRevisions(project_id, record_id)
+      listFAIMSRecordRevisions(project_id!, record_id!)
         .then(all_revisions => {
           setRevisions(all_revisions);
         })
         .catch(logError);
-      getHRIDforRecordID(project_id, record_id).then(hrid => {
+      getHRIDforRecordID(project_id!, record_id!).then(hrid => {
         setHrid(hrid);
         setBreadcrumbs([
           // {link: ROUTES.INDEX, title: 'Home'},
           {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
           {
             link: ROUTES.NOTEBOOK + project_id,
-            title: project_info !== null ? project_info.name : project_id,
+            title: project_info !== null ? project_info.name! : project_id!,
           },
           {title: hrid ?? record_id},
         ]);
         setrevision_id(revision_id);
-        setselectedRevision(revision_id);
+        setselectedRevision(revision_id!);
         //check if record loading correctly when link
         console.debug(
           'get breadcrumbs project_id',
@@ -217,7 +217,7 @@ export default function Record() {
   // below function is to get conflicts headers when loading record or after user save the conflict resolve button
   useEffect(() => {
     const getconflicts = async () => {
-      getInitialMergeDetails(project_id, record_id)
+      getInitialMergeDetails(project_id!, record_id!)
         .then(result => {
           setConflicts(result);
           if (result !== null && result['available_heads'] !== undefined) {
@@ -239,7 +239,7 @@ export default function Record() {
         if (selectrevision !== null) {
           setrevision_id(selectrevision); //set revision_id what is in the form, so it can be same
           setConflictfields(
-            await findConflictingFields(project_id, record_id, selectrevision)
+            await findConflictingFields(project_id!, record_id!, selectrevision)
           );
         }
       } catch (error) {
@@ -259,9 +259,9 @@ export default function Record() {
       );
       try {
         const latest_record = await getFullRecordData(
-          project_id,
-          record_id,
-          updatedrevision_id
+          project_id!,
+          record_id!,
+          updatedrevision_id!
         );
 
         if (latest_record !== null) {
@@ -286,9 +286,9 @@ export default function Record() {
       try {
         if (uiSpec !== null && type !== null) {
           const latest_record = await getFullRecordData(
-            project_id,
-            record_id,
-            updatedrevision_id,
+            project_id!,
+            record_id!,
+            updatedrevision_id!,
             false
           );
           if (latest_record !== null) {
@@ -301,7 +301,7 @@ export default function Record() {
                   severity: 'warning',
                 },
               });
-              history.push({
+              history({
                 pathname: ROUTES.NOTEBOOK + project_id,
               });
             }
@@ -309,10 +309,10 @@ export default function Record() {
               uiSpec,
               type,
               latest_record.data,
-              project_id,
+              project_id!,
               latest_record.relationship ?? null,
-              record_id,
-              updatedrevision_id
+              record_id!,
+              updatedrevision_id!
             );
             console.debug(
               'record start initial relationship relationship',
@@ -321,9 +321,9 @@ export default function Record() {
             setRelatedRecords(newRelationship);
             const newParent = await getParentPersistenceData(
               uiSpec,
-              project_id,
+              project_id!,
               latest_record.relationship ?? null,
-              record_id
+              record_id!
             );
             setParentLinks(newParent);
             let newBreadcrumbs = [
@@ -331,9 +331,9 @@ export default function Record() {
               {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
               {
                 link: ROUTES.NOTEBOOK + project_id,
-                title: project_info !== null ? project_info.name : project_id,
+                title: project_info !== null ? project_info.name! : project_id!,
               },
-              {title: hrid ?? record_id},
+              {title: hrid! ?? record_id!},
             ];
             console.debug(
               'updated record relationship parent newParent ',
@@ -349,13 +349,14 @@ export default function Record() {
                 {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
                 {
                   link: ROUTES.NOTEBOOK + project_id,
-                  title: project_info !== null ? project_info.name : project_id,
+                  title:
+                    project_info !== null ? project_info.name! : project_id!,
                 },
                 {
                   link: newParent[0]['route'],
                   title: newParent[0]['hrid'],
                 },
-                {title: hrid ?? record_id},
+                {title: hrid! ?? record_id!},
               ];
             }
             setBreadcrumbs(newBreadcrumbs);
@@ -397,8 +398,8 @@ export default function Record() {
   ) => {
     remove_deleted_parent(
       relation_type,
-      project_id,
-      record_id,
+      project_id!,
+      record_id!,
       updatedrevision_id,
       field_id,
       parent_record_id,
@@ -423,9 +424,9 @@ export default function Record() {
 
             getParentPersistenceData(
               uiSpec,
-              project_id,
+              project_id!,
               result.new_relation ?? {},
-              record_id
+              record_id!
             ).then(newParent => {
               setParentLinks(newParent);
               console.debug('updated record relationship parent ', newParent);
@@ -466,7 +467,7 @@ export default function Record() {
      */
     return new Promise(resolve => {
       resolve(() => {
-        history.push({
+        history({
           pathname: ROUTES.NOTEBOOK + project_id,
         });
       });
@@ -608,7 +609,7 @@ export default function Record() {
                   severity: 'warning',
                 },
               });
-              history.goBack();
+              history(-1);
               return <React.Fragment />;
             } else if (uiSpec === null || type === null || isSyncing === null) {
               return (
@@ -679,8 +680,8 @@ export default function Record() {
                             {(isalerting === false ||
                               draft_id !== undefined) && (
                               <RecordData
-                                project_id={project_id}
-                                record_id={record_id}
+                                project_id={project_id!}
+                                record_id={record_id!}
                                 hrid={hrid}
                                 record_type={record_type}
                                 // revision_id={
@@ -688,7 +689,7 @@ export default function Record() {
                                 //     ? selectrevision
                                 //     : updatedrevision_id
                                 // }
-                                revision_id={updatedrevision_id}
+                                revision_id={updatedrevision_id!}
                                 ui_specification={uiSpec}
                                 draft_id={draft_id}
                                 metaSection={metaSection}
@@ -713,11 +714,11 @@ export default function Record() {
                         </Box>
                       ) : (
                         <RecordData
-                          project_id={project_id}
-                          record_id={record_id}
+                          project_id={project_id!}
+                          record_id={record_id!}
                           hrid={hrid}
                           record_type={record_type}
-                          revision_id={updatedrevision_id}
+                          revision_id={updatedrevision_id!}
                           ui_specification={uiSpec}
                           draft_id={draft_id}
                           metaSection={metaSection}
@@ -759,18 +760,18 @@ export default function Record() {
           </TabPanel>
           <TabPanel value="3" style={{padding: theme.spacing(2)}}>
             <RecordMeta
-              project_id={project_id}
-              record_id={record_id}
-              revision_id={updatedrevision_id}
+              project_id={project_id!}
+              record_id={record_id!}
+              revision_id={updatedrevision_id!}
             />
             <Box mt={2}>
               <Typography variant={'h5'} gutterBottom>
                 {draft_id ? 'Discard Draft' : 'Delete Record'}
               </Typography>
               <RecordDelete
-                project_id={project_id}
-                record_id={record_id}
-                revision_id={revision_id}
+                project_id={project_id!}
+                record_id={record_id!}
+                revision_id={revision_id!}
                 draft_id={draft_id ? draft_id : null}
                 show_label={true}
                 handleRefresh={handleRefresh}
@@ -800,8 +801,8 @@ export default function Record() {
               />
               {isSyncing !== null && (
                 <ConflictForm
-                  project_id={project_id}
-                  record_id={record_id}
+                  project_id={project_id!}
+                  record_id={record_id!}
                   revision_id={updatedrevision_id}
                   ui_specification={uiSpec}
                   metaSection={metaSection}

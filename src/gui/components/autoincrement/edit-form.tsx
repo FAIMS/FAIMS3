@@ -130,7 +130,7 @@ export default class BasicAutoIncrementer extends React.Component<
         field_id,
         ranges
       ).then(() => {
-        this.context.dispatch({
+        (this.context as any).dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
             message: 'Range successfully updated',
@@ -147,7 +147,7 @@ export default class BasicAutoIncrementer extends React.Component<
       }
       this.setState({ranges: ranges, ranges_initialised: ranges_initialised});
     } catch (err: any) {
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message: err.toString(),

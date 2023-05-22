@@ -19,8 +19,7 @@
  */
 
 import React from 'react';
-import {withRouter} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
+//import {withRouter} from 'react-router';
 import {Formik, Form} from 'formik';
 
 import {Grid, Box, Typography, Divider} from '@mui/material';
@@ -77,6 +76,7 @@ import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from 'faims3-datamodel';
 import {logError} from '../../../logging';
+//import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
   project_id: ProjectID;
   record_id: RecordID;
@@ -144,13 +144,15 @@ type RecordFormState = {
 };
 
 class RecordForm extends React.Component<
-  RecordFormProps & RouteComponentProps,
+  // RecordFormProps & RouteComponentProps,
+  // RecordFormState
+  any,
   RecordFormState
 > {
   draftState: RecordDraftState;
 
   // List of timeouts that unmount must cancel
-  timeouts: typeof setTimeout[] = [];
+  timeouts: (typeof setTimeout)[] = [];
   _isMounted = false;
 
   async componentDidUpdate(
@@ -210,9 +212,9 @@ class RecordForm extends React.Component<
     }
   }
 
-  constructor(props: RecordFormProps & RouteComponentProps) {
+  constructor(props: RecordFormProps & /*RouteComponentProps*/ any) {
     super(props);
-    this.draftState = new RecordDraftState(this.props);
+    this.draftState = new RecordDraftState(this.props as any);
     this.state = {
       type_cached: this.props.type ?? null,
       view_cached: null,
@@ -278,7 +280,7 @@ class RecordForm extends React.Component<
 
         this.props.handleSetIsDraftSaving(false);
         this.props.handleSetDraftError(error_message);
-        this.context.dispatch({
+        (this.context as any).dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
             message: 'Could not load previous data: ' + error_message,
@@ -329,7 +331,7 @@ class RecordForm extends React.Component<
             this.props.handleSetDraftError(
               `Could not find data for record ${this.props.record_id}`
             );
-            this.context.dispatch({
+            (this.context as any).dispatch({
               type: ActionType.ADD_ALERT,
               payload: {
                 message:
@@ -388,7 +390,7 @@ class RecordForm extends React.Component<
       });
     } catch (err: any) {
       console.warn('setUISpec/setLastRev error', err);
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message: `Project is not fully downloaded or not setup correctly (${err.toString()})`,
@@ -406,7 +408,7 @@ class RecordForm extends React.Component<
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
       if (draft_saving_started_already) {
-        this.draftState.recordChangeHook(this.props, {
+        this.draftState.recordChangeHook(this.props as any, {
           type: this.state.type_cached!,
           field_types: getReturnedTypesForViewSet(
             this.props.ui_specification,
@@ -431,7 +433,7 @@ class RecordForm extends React.Component<
       await this.setInitialValues(revision_id);
     } catch (err: any) {
       logError(err);
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message: 'Could not load previous data: ' + err.message,
@@ -833,7 +835,7 @@ class RecordForm extends React.Component<
             console.log(result);
           }
           const message = 'Record successfully saved';
-          this.context.dispatch({
+          (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
               message: message,
@@ -845,7 +847,7 @@ class RecordForm extends React.Component<
         })
         .catch(err => {
           const message = 'Could not save record';
-          this.context.dispatch({
+          (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
               message: message,
@@ -1161,7 +1163,7 @@ class RecordForm extends React.Component<
       // If a draft was created, that implies this form started from
       // a non draft, so it must have been an existing record (see props
       // as it's got a type {existing record} | {draft already created}
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_CUSTOM_ALERT,
         payload: {
           severity: 'success',
@@ -1376,4 +1378,5 @@ class RecordForm extends React.Component<
   }
 }
 RecordForm.contextType = store;
-export default withRouter(RecordForm);
+export default RecordForm;
+//export default withRouter(RecordForm);

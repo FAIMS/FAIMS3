@@ -1,4 +1,4 @@
-import {styled} from '@mui/material/styles';
+import {createTheme, styled} from '@mui/material/styles';
 import MuiAccordion, {AccordionProps} from '@mui/material/Accordion';
 import MuiAccordionSummary, {
   AccordionSummaryProps,
@@ -19,6 +19,7 @@ export const Accordion = styled((props: AccordionProps) => (
     display: 'none',
   },
 }));
+const theme = createTheme();
 
 export const AccordionSummary = styled((props: AccordionSummaryProps) => (
   <MuiAccordionSummary expandIcon={<ExpandMoreIcon />} {...props} />
@@ -26,7 +27,7 @@ export const AccordionSummary = styled((props: AccordionSummaryProps) => (
   backgroundColor: grey[200],
 }));
 
-export const AccordionDetails = styled(MuiAccordionDetails)(({theme}) => ({
+export const AccordionDetails = styled(MuiAccordionDetails)(() => ({
   padding: theme.spacing(2),
   borderTop: '1px solid rgba(0, 0, 0, .125)',
 }));

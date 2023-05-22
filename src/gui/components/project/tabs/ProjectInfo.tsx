@@ -19,8 +19,8 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
-
+//import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles} from 'react-jss';
 import {
   Grid,
   Box,
@@ -40,7 +40,7 @@ import {ProjectUIModel} from 'faims3-datamodel';
 import {UserRoleList} from './PSettingCard';
 import Alert from '@mui/material/Alert';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const useStyles = makeStyles(theme => ({}));
+const useStyles = createUseStyles((theme: any) => ({}));
 
 type ProjectInfoProps = {
   project_id: string | null;

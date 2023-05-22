@@ -19,7 +19,7 @@ import {RecordReference} from 'faims3-datamodel';
 import {Field} from 'formik';
 import AddIcon from '@mui/icons-material/Add';
 import {CreateRecordLinkProps} from '../types';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {LocationState} from 'faims3-datamodel';
 import * as ROUTES from '../../../../../constants/routes';
 import {logError} from '../../../../../logging';
@@ -35,7 +35,7 @@ export function AddNewRecordButton(props: {
   handleError: Function;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
-  const history = useHistory();
+  const history = useNavigate();
   const handleSubmit = () => {
     setSubmitting(true);
     const new_child_id = props.save_new_record();
@@ -53,10 +53,7 @@ export function AddNewRecordButton(props: {
           setTimeout(() => {
             // reset local state of component
             setSubmitting(false);
-            history.push({
-              pathname: props.pathname,
-              state: newState,
-            });
+            history(props.pathname, {state: newState});
           }, 300);
         })
         .catch((error: Error) => {

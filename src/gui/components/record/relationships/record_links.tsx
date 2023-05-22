@@ -111,7 +111,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 100,
           flex: 0.2,
-          valueGetter: (params: GridCellParams) => params.value[0],
+          valueGetter: (params: GridCellParams) => params.row.value[0],
         },
         {
           field: 'linked_field',
@@ -186,7 +186,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 150,
           flex: 0.1,
-          valueGetter: (params: GridCellParams) => params.value[0],
+          valueGetter: (params: GridCellParams) => params.row.value[0],
         },
         {
           field: 'linked_field',
@@ -291,9 +291,9 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                 <DataGrid
                   autoHeight
                   density={'compact'}
-                  pageSize={5}
-                  rowsPerPageOptions={[5]}
-                  disableSelectionOnClick
+                  rowCount={5}
+                  pageSizeOptions={[5]}
+                  disableRowSelectionOnClick
                   columns={
                     linkKey === 'links_to_record'
                       ? columns
@@ -338,7 +338,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                             minWidth: 200,
                             flex: 0.1,
                             valueGetter: (params: GridCellParams) =>
-                              params.value[1],
+                              params.row.value[1],
                           },
                           {
                             field: 'record',

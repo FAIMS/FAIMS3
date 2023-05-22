@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {Tab, Tabs, Grid} from '@mui/material';
-import makeStyles from '@mui/styles/makeStyles';
+import { createUseStyles as makeStyles } from 'react-jss';
 import {useState, useEffect} from 'react';
 import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';
@@ -34,7 +34,7 @@ function a11yProps(tabname: any, index: any) {
   };
 }
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   fieldtab: {
     textAlign: 'left',
     minWidth: 55,

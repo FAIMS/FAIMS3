@@ -19,7 +19,7 @@
  */
 
 import React, {useContext, useEffect, useState} from 'react';
-import {useParams, Redirect, Link as RouterLink} from 'react-router-dom';
+import {useParams, Navigate, Link as RouterLink} from 'react-router-dom';
 
 import {
   Box,
@@ -104,23 +104,23 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
     },
     constantArgsSplit(
       listenDataDB,
-      [project_id, {since: 'now', live: true}],
+      [project_id!, {since: 'now', live: true}],
       [project_id]
     ),
     false,
     [project_id],
-    project_id
+    project_id!
   );
 
   useEffect(() => {
     try {
       if (project_id !== null)
-        setIsSyncing(isSyncingProjectAttachments(project_id));
+        setIsSyncing(isSyncingProjectAttachments(project_id!));
     } catch (error: any) {
       logError(error);
     }
 
-    return listenSyncingProjectAttachments(project_id, setIsSyncing);
+    return listenSyncingProjectAttachments(project_id!, setIsSyncing);
   }, [project_id]);
 
   let project_info: ProjectInformation | null;
@@ -128,14 +128,14 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
     project_info = useEventedPromise(
       'NotebookSettings component project info',
       getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id),
+      constantArgsShared(listenProjectInfo, project_id!),
       false,
       [project_id],
-      project_id
+      project_id!
     ).expect();
   } catch (err: any) {
     if (err.message === 'missing') {
-      return <Redirect to="/404" />;
+      return <Navigate to="/404" />;
     } else {
       throw err;
     }
@@ -144,7 +144,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   useEffect(() => {
     if (project_id === null) return;
     const getDB = async () => {
-      setMetadbContents(await dumpMetadataDBContents(project_id));
+      setMetadbContents(await dumpMetadataDBContents(project_id!));
       setLoading(false);
     };
     getDB();
@@ -247,7 +247,10 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                     <Switch
                       checked={isSyncing}
                       onChange={async (event, checked) => {
-                        await setSyncingProjectAttachments(project_id, checked);
+                        await setSyncingProjectAttachments(
+                          project_id!,
+                          checked
+                        );
                         if (checked)
                           dispatch({
                             type: ActionType.ADD_ALERT,

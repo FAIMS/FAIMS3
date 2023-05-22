@@ -35,7 +35,8 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import GroupIcon from '@mui/icons-material/Group';
 import NoteIcon from '@mui/icons-material/Note';
 import AccountTree from '@mui/icons-material/AccountTree';
-import makeStyles from '@mui/styles/makeStyles';
+// import makeStyles from '@mui/styles/makeStyles';
+import { createUseStyles as makeStyles } from 'react-jss';
 import {getconnections} from '../data/ComponentSetting';
 // import NoteIcon from '@mui/icons-material/NoteIcon';
 import {DeleteuserButton} from './ProjectButton';
@@ -44,7 +45,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import TaskIcon from '@mui/icons-material/Task';
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   settingList: {
     // backgroundColor:'#e1e4e8',
     marginBottom: 2,

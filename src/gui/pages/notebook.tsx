@@ -18,7 +18,7 @@
  *   TODO
  */
 import React, {useState, useEffect} from 'react';
-import {useParams, Redirect} from 'react-router-dom';
+import {useParams, Navigate} from 'react-router-dom';
 import {Box, Grid, Typography} from '@mui/material';
 import FolderIcon from '@mui/icons-material/Folder';
 import Breadcrumbs from '../components/ui/breadcrumbs';
@@ -48,7 +48,7 @@ export default function Notebook() {
 
   const getInfoWrapper = async () => {
     try {
-      const info = await getProjectInfo(project_id);
+      const info = await getProjectInfo(project_id!);
       setProjectInfo(info);
     } catch (err) {
       setProjectError(err);
@@ -74,7 +74,7 @@ export default function Notebook() {
 
   if (project_error !== null) {
     logError(`Failed to load notebook ${project_id}, ${project_error}`);
-    return <Redirect to="/404" />;
+    return <Navigate to="/404" />;
   }
   const handleRefresh = () => {
     /**

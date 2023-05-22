@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+    namespace "org.fedarch.faims3"
     //https://stackoverflow.com/a/69312217
     compileSdkVersion rootProject.ext.compileSdkVersion
     defaultConfig {

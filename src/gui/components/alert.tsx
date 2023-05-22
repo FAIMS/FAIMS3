@@ -21,12 +21,22 @@
 import React, {useContext} from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import makeStyles from '@mui/styles/makeStyles';
+// import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles} from 'react-jss';
+
 import {store} from '../../context/store';
 import {ActionType} from '../../context/actions';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const useStyles = makeStyles(theme => ({
+// const useStyles = makeStyles((theme: any) => ({
+//   root: {
+//     width: '100%',
+//     '& > * + *': {
+//       marginTop: '16px',
+//     },
+//   },
+// }));
+const useStyles = createUseStyles((theme: any) => ({
   root: {
     width: '100%',
     '& > * + *': {
