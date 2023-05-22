@@ -45,7 +45,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        node-version: ['16']
+        node-version: ['20']
         experimental: [false]
         # include:
         #   - node-version: 'current' #, 16 ok, it looks like v2 doesn't support /nv even though the docs say it does. Hardcoding version for now.
