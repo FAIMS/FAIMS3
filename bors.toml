@@ -1,7 +1,6 @@
 status = [
   "build (20, false)",
   "test (20, false)",
-  "test (18, false)",
   "license",
 #  "DCO",
 ]
