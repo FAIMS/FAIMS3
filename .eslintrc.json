@@ -1,5 +1,6 @@
 {
   "extends": "./node_modules/gts/",
+  "ignorePatterns": ["*.js"],
   "overrides": [
     {
       "files": "**/*.test.ts",
@@ -7,7 +8,7 @@
         "node/no-unpublished-import": [
           "error",
           {
-            "allowModules": ["react-jss"]
+            "allowModules": ["react-jss", "jest-fast-check"]
           }
         ],
         "prettier/prettier": "warn",

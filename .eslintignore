@@ -3,3 +3,4 @@ ios/
 android/
 test/
 public/pouchdb-*.min.js
+node_modules/
