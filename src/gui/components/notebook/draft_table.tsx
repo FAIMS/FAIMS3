@@ -20,12 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridEventListener,
-} from '@mui/x-data-grid';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import {
   Typography,
   Box,

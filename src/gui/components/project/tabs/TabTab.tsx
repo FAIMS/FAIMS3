@@ -20,7 +20,7 @@
 
 import React from 'react';
 import {Tab, Tabs, Grid} from '@mui/material';
-import { createUseStyles as makeStyles } from 'react-jss';
+import {createUseStyles as makeStyles} from 'react-jss';
 import {useState, useEffect} from 'react';
 import {AddSectionButton, EditButton} from './ProjectButton';
 import {FormForm} from '../FormElement';

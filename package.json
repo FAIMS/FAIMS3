@@ -2,12 +2,6 @@
   "name": "@faims-project/faims3",
   "version": "0.1.0",
   "private": true,
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
   "engines": {
     "node": "20.2.0"
   },
@@ -146,6 +140,8 @@
     "@types/uuid": "9.0.1",
     "@types/yup": "0.29.14",
     "css-loader": "^6.7.3",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.32.2",
     "fast-check": "2.25.0",
     "gts": "3.1.1",
     "html-webpack-plugin": "^5.5.1",

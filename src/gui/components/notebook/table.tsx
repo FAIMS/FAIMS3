@@ -21,7 +21,7 @@
 import React from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 
-import {DataGrid, GridColDef, GridCellParams} from '@mui/x-data-grid';
+import {DataGrid, GridCellParams} from '@mui/x-data-grid';
 import {Typography, Box, Paper} from '@mui/material';
 import Link from '@mui/material/Link';
 import {useTheme} from '@mui/material/styles';
