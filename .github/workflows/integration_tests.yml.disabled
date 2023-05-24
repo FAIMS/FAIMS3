@@ -1,7 +1,7 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: Lint, build, test, cap doctor
+name: Integration tests
 
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 on:
@@ -13,6 +13,10 @@ on:
       - staging
       - trying
   pull_request:
+    branches:
+      - main
+      - staging
+      - trying
   # Also trigger on page_build, as well as release created events
   page_build:
   release:
@@ -21,7 +25,7 @@ on:
 
 
 jobs:
-  build:
+  test:
     # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idcontinue-on-error
     runs-on: ubuntu-latest
     services:
@@ -37,20 +41,21 @@ jobs:
       COUCHDB_PASSWORD: password
       REACT_APP_DIRECTORY_HOST: localhost
       REACT_APP_USE_REAL_DATA: true
+      REACT_APP_PRODUCTION_BUILD: false
       COUCHDB_CURL_HOST: http://admin:password@localhost:5984
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        node-version: ['20']
-        experimental: [false]
+        node-version: ['20'] # '14'
+        experimental: [false] # We know everything after 16 is broken because React.
         # include:
-        #   - node-version: 'current' #, 16 ok, it looks like v2 doesn't support /nv even though the docs say it does. Hardcoding version for now.
+        #   - node-version: 'current'
         #     experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
         #   - node-version: 'latest'
-        #     experimental: true
+        #     experimental: true   # https://www.npmjs.com/package/@pkgjs/nv ? maybe?
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
@@ -63,10 +68,12 @@ jobs:
     - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/credentials -d '"true"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/methods -d '"GET, PUT, POST, HEAD, DELETE"'
     - run: curl -X PUT $COUCHDB_CURL_HOST/_node/_local/_config/cors/headers -d '"accept, authorization, content-type, origin, referer, x-csrf-token"'
+    # setup basic db content
+    - name: Initialise couchdb
+      run: |
+        source bin/couchdb_initialisation.sh
+        initialise_couchdb http localhost 5984 $COUCHDB_USER $COUCHDB_PASSWORD
+    - run: curl http://localhost:5984/directory/_all_docs
     # do the npm stuff
     - run: npm ci
-    - run: npm run lint
-    - run: npm run build --if-present || ${{ matrix.experimental }}
-    - run: npm run test  || ${{ matrix.experimental }}
-    - run: npx cap copy || ${{ matrix.experimental }}
-    - run: npx cap doctor android || ${{ matrix.experimental }} # ios requires xcode
+    - run: npm run integration
