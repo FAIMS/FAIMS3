@@ -109,7 +109,7 @@
     "pouchdb-adapter-memory": "7.3.0",
     "pouchdb-debug": "7.2.1",
     "pouchdb-find": "7.3.0",
-    "qrcode": "^1.5.1",
+    "qrcode": "^1.5.3",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-dropzone": "14.2.1",
