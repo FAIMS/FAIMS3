@@ -8,10 +8,6 @@ on:
       - staging
       - trying
   pull_request:
-    branches:
-      - main
-      - staging
-      - trying
 jobs:
   license:
     runs-on: ubuntu-latest
