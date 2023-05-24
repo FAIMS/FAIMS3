@@ -15,6 +15,11 @@ module.exports = {
         },
       });
 
+      webpackConfig.plugins.forEach(plugin => {
+        if (plugin.config?.maximumFileSizeToCacheInBytes) {
+          plugin.config.maximumFileSizeToCacheInBytes = 10 * 1024 * 1024;
+        }
+      });
 
       // Add the .ts and .tsx extensions to resolve.extensions
       webpackConfig.resolve.extensions.push('.ts', '.tsx');
