@@ -13,7 +13,7 @@ on:
       - staging
       - trying
   pull_request:
-    types: [opened]
+    types: [opened, reopened, edited]
   # Also trigger on page_build, as well as release created events
   page_build:
   release:
