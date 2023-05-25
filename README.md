@@ -82,3 +82,4 @@ server (located at `http://<couchdb_host_name>:<couchdb_port>/_utils/`).
 1. [Optional] Resolve `xcode-select` error
    - `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
 1. Build the apk from the build/build bundle/build apk section
+
