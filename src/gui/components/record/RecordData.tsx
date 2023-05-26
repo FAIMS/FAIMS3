@@ -37,6 +37,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import InheritedDataComponent from './inherited_data';
 import {ParentLinkProps, RecordLinkProps} from './relationships/types';
 import CircularProgress from '@mui/material/CircularProgress';
+import {useNavigate} from 'react-router';
 interface RecordDataTypes {
   project_id: ProjectID;
   record_id: RecordID;
@@ -66,6 +67,7 @@ interface RecordDataTypes {
 
 export default function RecordData(props: RecordDataTypes) {
   const [dataTab, setDataTab] = React.useState('1');
+  const navigate = useNavigate();
   // const [revision_id, setRevision_id] = React.useState(props.revision_id);
   const [ViewName, setViewName] = React.useState(null);
   const handleDataTabChange = (
@@ -76,6 +78,7 @@ export default function RecordData(props: RecordDataTypes) {
   };
   const theme = useTheme();
   const is_mobile = !useMediaQuery(theme.breakpoints.up('sm'));
+
   return (
     <Box bgcolor={grey[100]}>
       <TabContext value={dataTab}>
@@ -145,6 +148,7 @@ export default function RecordData(props: RecordDataTypes) {
                         ViewName={ViewName}
                         draftLastSaved={props.draftLastSaved}
                         mq_above_md={props.mq_above_md}
+                        navigate={navigate}
                       />
                     ) : (
                       <CircularProgress size={24} />
@@ -202,6 +206,7 @@ export default function RecordData(props: RecordDataTypes) {
                       handleSetIsDraftSaving={props.handleSetIsDraftSaving}
                       handleSetDraftLastSaved={props.handleSetDraftLastSaved}
                       handleSetDraftError={props.handleSetDraftError}
+                      navigate={navigate}
                     />
                   </Box>
                 </Grid>
