@@ -62,6 +62,7 @@ import {useTheme} from '@mui/material/styles';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
+
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -73,7 +74,7 @@ function DraftCreate(props: DraftCreateProps) {
   const {project_id, type_name, record_id} = props;
 
   const {dispatch} = useContext(store);
-  const history = useNavigate();
+  const navigate = useNavigate();
 
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
@@ -103,7 +104,7 @@ function DraftCreate(props: DraftCreateProps) {
         severity: 'warning',
       },
     });
-    history(-1);
+    navigate(-1);
     return <React.Fragment />;
   } else if (draft_id === null) {
     // Creating new draft loading
@@ -139,7 +140,7 @@ interface DraftEditProps {
 function DraftEdit(props: DraftEditProps) {
   const {project_id, type_name, draft_id, project_info, record_id} = props;
   const {dispatch} = useContext(store);
-  const history = useNavigate();
+  const navigate = useNavigate();
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
 
@@ -172,8 +173,8 @@ function DraftEdit(props: DraftEditProps) {
     (async () => {
       if (
         uiSpec !== null &&
-        props.state !== undefined &&
-        props.state.parent_record_id !== undefined &&
+        props.state &&
+        props.state.parent_record_id &&
         props.state.parent_record_id !== record_id &&
         props.state.type !== undefined &&
         props.state.type === 'Child'
@@ -216,7 +217,7 @@ function DraftEdit(props: DraftEditProps) {
      */
     return new Promise(resolve => {
       resolve(() => {
-        history({
+        navigate({
           pathname: ROUTES.NOTEBOOK + project_id,
         });
       });
@@ -231,13 +232,14 @@ function DraftEdit(props: DraftEditProps) {
         severity: 'warning',
       },
     });
-    history(-1);
+    navigate(-1);
     return <React.Fragment />;
   } else if (uiSpec === null) {
     // Loading
     return <CircularProgress size={12} thickness={4} />;
   } else {
     // Loaded, variant picked, show form:
+
     return (
       <React.Fragment>
         <Box mb={2}>
@@ -299,6 +301,7 @@ function DraftEdit(props: DraftEditProps) {
                       handleSetDraftError={setDraftError}
                       draftLastSaved={draftLastSaved}
                       mq_above_md={mq_above_md}
+                      navigate={navigate}
                     />
                   </Box>
                 </Box>
@@ -340,10 +343,7 @@ export default function RecordCreate() {
   const location: any = useLocation();
   let draft_record_id = generateFAIMSDataID();
   if (record_id !== undefined) draft_record_id = record_id;
-  if (
-    location.state !== undefined &&
-    location.state.child_record_id !== undefined
-  )
+  if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
   let project_info: ProjectInformation | null;
 
@@ -374,10 +374,7 @@ export default function RecordCreate() {
   ];
 
   // add parent link back for the parent or linked record
-  if (
-    location.state !== undefined &&
-    location.state.parent_record_id !== record_id
-  ) {
+  if (location.state && location.state.parent_record_id !== record_id) {
     const type =
       location.state.type === 'Child'
         ? 'Parent'
@@ -398,7 +395,6 @@ export default function RecordCreate() {
       {title: 'Draft'},
     ];
   }
-
   return (
     <React.Fragment>
       <Box>
