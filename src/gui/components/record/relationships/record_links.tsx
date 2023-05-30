@@ -282,7 +282,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           const subGroup = sortedData[linkKey];
           if (subGroup.length > 0) {
             return (
-              <Box sx={{p: 1}}>
+              <Box key={linkKey} sx={{p: 1}}>
                 <Typography variant={'body2'} fontWeight={'bold'} gutterBottom>
                   {linkKey === 'links_to_record'
                     ? 'Links to this record'
@@ -400,7 +400,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
               </Box>
             );
           } else {
-            return <></>;
+            return null;
           }
         })}
       </Box>

@@ -118,9 +118,9 @@ function excludes_related_record(
   value: any,
   all_records: RecordReference[]
 ) {
-  const relations: string[] = multiple ? [] : [value.record_id];
+  const relations: string[] = multiple ? [] : [value?.record_id];
   const records: RecordReference[] = [];
-  if (multiple && value !== null)
+  if (multiple && value)
     value.map((record: RecordReference) =>
       record !== null ? relations.push(record.record_id) : record
     );
@@ -241,16 +241,18 @@ export function RelatedRecordSelector(props: FieldProps & Props) {
       if (project_id !== undefined && mounted && props.isconflict !== true) {
         if (
           !multiple &&
+          props.form.values[field_name] &&
           props.form.values[field_name]['record_id'] === undefined
         )
           setIs_enabled(true);
         if (!multiple) {
           if (
+            props.form.values[field_name] &&
             props.form.values[field_name]['record_id'] !== undefined &&
             props.form.values[field_name]['is_preferred'] === true
           )
             setPreferred(props.form.values[field_name]['record_id']);
-        } else {
+        } else if (props.form.values[field_name]) {
           props.form.values[field_name].map((child_record: RecordReference) => {
             if (child_record.is_preferred === true) {
               setPreferred(child_record['record_id']);

@@ -328,12 +328,12 @@ export async function get_RelatedFields_for_field(
 ) {
   const child_records = multiple ? values[field_name] : [values[field_name]];
   const records: RecordLinkProps[] = [];
-  if (child_records.length === 0) return records;
+  if (child_records && child_records.length === 0) return records;
   const record_id = values['_id'];
   for (const index in child_records) {
     const child_record = child_records[index];
 
-    if (child_record !== null && child_record.record_id !== undefined) {
+    if (child_record && child_record.record_id) {
       let relationLabel = child_record.relation_type_vocabPair;
       if (
         relationLabel === undefined ||
