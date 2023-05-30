@@ -171,7 +171,7 @@ export function ViewComponent(props: ViewProps) {
     let isactive = true;
     if (isactive) {
       let iserror = false;
-      fieldNames.map(field =>
+      fieldNames?.map(field =>
         props.formProps.errors[field] !== undefined ? (iserror = true) : field
       );
       setError(iserror);
@@ -184,7 +184,7 @@ export function ViewComponent(props: ViewProps) {
 
   return (
     <React.Fragment>
-      {fieldNames.map((fieldName, index) => (
+      {fieldNames?.map((fieldName, index) => (
         <SingleComponent
           fieldName={fieldName}
           fields={fields}

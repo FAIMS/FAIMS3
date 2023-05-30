@@ -154,7 +154,7 @@ class RecordForm extends React.Component<
   // List of timeouts that unmount must cancel
   timeouts: (typeof setTimeout)[] = [];
   _isMounted = false;
- 
+
   async componentDidUpdate(
     prevProps: RecordFormProps,
     prevState: RecordFormState
@@ -579,7 +579,7 @@ class RecordForm extends React.Component<
 
     // save child/link information into the parent/linked record when back to upper level
     const {field_id, new_record, is_related} = getChildInfo(
-      this.props.location.state,
+      this.props.location?.state,
       this.props.project_id
     );
 
@@ -627,7 +627,7 @@ class RecordForm extends React.Component<
       related['linked'] = linked;
 
     const relationship = getParentInfo(
-      this.props.location.state,
+      this.props.location?.state,
       related,
       this.props.record_id
     );
@@ -906,7 +906,7 @@ class RecordForm extends React.Component<
                   const LocationState: any = this.props.location.state;
                   setSubmitting(false);
                   this.props.navigate(
-                      ROUTES.NOTEBOOK +
+                    ROUTES.NOTEBOOK +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached,
@@ -958,7 +958,7 @@ class RecordForm extends React.Component<
                             if (DEBUG_APP)
                               console.debug('new child state', location_state);
                             this.props.navigate(
-                                ROUTES.NOTEBOOK +
+                              ROUTES.NOTEBOOK +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -974,7 +974,7 @@ class RecordForm extends React.Component<
                           'Error saving the parent record, latest record is null'
                         );
                         this.props.navigate(
-                            ROUTES.NOTEBOOK +
+                          ROUTES.NOTEBOOK +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
@@ -1069,7 +1069,7 @@ class RecordForm extends React.Component<
                             location_state['child_record_id'] = new_record_id;
                             console.debug('new child state', location_state);
                             this.props.navigate(
-                                ROUTES.NOTEBOOK +
+                              ROUTES.NOTEBOOK +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
@@ -1085,7 +1085,7 @@ class RecordForm extends React.Component<
                           'Error to save the parent record from child relationship, latest record is null'
                         );
                         this.props.navigate(
-                            ROUTES.NOTEBOOK +
+                          ROUTES.NOTEBOOK +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
@@ -1124,11 +1124,11 @@ class RecordForm extends React.Component<
         this.props.ui_specification,
         this.state.view_cached
       );
-    return (
-      this.state.type_cached !== null &&
-      this.state.initialValues !== null &&
-      this.props.ui_specification !== null &&
-      this.state.view_cached !== null
+    return Boolean(
+      this.state.type_cached &&
+        this.state.initialValues &&
+        this.props.ui_specification &&
+        this.state.view_cached
     );
   }
 
