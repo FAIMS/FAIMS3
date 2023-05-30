@@ -78,7 +78,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
@@ -166,7 +166,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2

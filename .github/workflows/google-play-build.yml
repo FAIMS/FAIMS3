@@ -76,11 +76,11 @@ jobs:
           node-version: ${{ matrix.node-version }}            
           cache: 'npm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
-      - name: Set up adopt JDK 1.11
+      - name: Set up adopt JDK 1.17
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
       # https://www.runway.team/blog/ci-cd-pipeline-android-app-fastlane-github-actions
       # Because fastlane stuff is in android, we need working-directory
       - name: Set up ruby env
