@@ -43,7 +43,9 @@ export default function FullFooter(props: FullFooterProps) {
               }}
             />
             <Typography variant="caption" display="block" gutterBottom>
-              Electronic Field Notebooks publishes this app under an Apache 2.0 open source license. Researcher data copyright belongs to the researchers.
+              Electronic Field Notebooks publishes this app under an Apache 2.0
+              open source license. Researcher data copyright belongs to the
+              researchers.
             </Typography>
           </Box>
         </Grid>
@@ -63,8 +65,8 @@ export default function FullFooter(props: FullFooterProps) {
             About
           </Typography>
           <Typography variant={'caption'}>
-            Fieldmark™ is an open-source tool for born-digital field data collection brought to you by the FAIMS Project
-
+            Fieldmark™ is an open-source tool for born-digital field data
+            collection brought to you by the FAIMS Project
           </Typography>
         </Grid>
         <Grid

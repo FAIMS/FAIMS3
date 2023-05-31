@@ -263,9 +263,9 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 />
                 <Typography variant={'body2'}>
                   This control is notebook and device specific. If this option
-                  is enabled, Fieldmark™ will automatically download and show images
-                  and attachments created by other devices. Be aware that this
-                  may be resource intensive and use your mobile data plan.
+                  is enabled, Fieldmark™ will automatically download and show
+                  images and attachments created by other devices. Be aware that
+                  this may be resource intensive and use your mobile data plan.
                   Disable this setting to minimise network usage. This setting
                   will not affect uploading of your data from this device to the
                   central server. Attachments are always uploaded to the server
