@@ -38,13 +38,13 @@ export default function LoadingApp() {
         justifyContent="center"
         style={{minHeight: '100vh'}}
       >
-        <Grid item xs={3} sm={2} md={1}>
-          <img src="/static/logo/Faims-medium.jpg" style={{maxWidth: '100%'}} />
+        <Grid item xs={8} sm={4} md={4}>
+          <img src="/static/logo/Fieldmark-Portrait-Margin@4x.png" style={{maxWidth: '100%'}} />
         </Grid>
-        <Grid item xs={4} sm={3}>
+        <Grid item xs={8} sm={4}>
           <Box mb={1} mt={2}>
             <Typography variant="subtitle2" align={'center'}>
-              <b>Loading data </b>
+              <h2>Loading data </h2>
               <CircularProgress
                 color={'primary'}
                 size={'0.75rem'}

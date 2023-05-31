@@ -33,7 +33,7 @@ export default function ProjectStatus(props: ProjectStatusProps) {
   const colorMapping: colorMappingProps = {
     local_draft: 'warning',
     awaiting_approval: 'default',
-    published: 'success',
+    published: 'primary',
     archived: 'info',
     deleted: 'error',
   };

@@ -121,7 +121,7 @@ export default function SyncStatus() {
               <React.Fragment>
                 <CloudOffIcon
                   style={{marginLeft: '11px'}}
-                  sx={{color: 'white'}}
+                  sx={{color: 'primary'}}
                 />
                 <ErrorIcon
                   style={{fontSize: '20px', marginTop: '-5px'}}
@@ -129,10 +129,10 @@ export default function SyncStatus() {
                 />
               </React.Fragment>
             ) : state.isSyncingUp || state.isSyncingDown ? (
-              <CloudIcon sx={{color: 'white'}} />
+              <CloudIcon sx={{color: 'primary'}} />
             ) : (
               // state.hasUnsyncedChanges ? (<CloudQueueIcon />) : (<CloudDoneIcon />)
-              <CloudQueueIcon sx={{color: 'white'}} />
+              <CloudQueueIcon sx={{color: 'primary'}} />
             )}
           </Box>
           {!state.isSyncError ? (

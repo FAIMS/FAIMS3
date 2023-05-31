@@ -262,8 +262,8 @@ export default function AppBar(props: NavbarProps) {
             </IconButton>
             <NavLink style={{flexGrow: 1}} to={ROUTES.INDEX}>
               <img
-                src="/static/logo/Faims-white-small.png"
-                style={{maxWidth: '70px', flex: 1}}
+                src="/static/logo/Fieldmark-Short-Green-NoBorder.png"
+                style={{maxWidth: '140px', flex: 1}}
               />
             </NavLink>
             <div>

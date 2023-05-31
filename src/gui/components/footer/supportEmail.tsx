@@ -16,12 +16,12 @@ interface SupportEmailProps {
 
 export default function SupportEmail(props: SupportEmailProps) {
   const theme = useTheme();
-  let supportEmail = 'info@faims.edu.au';
+  let supportEmail = 'support@fieldmark.au';
   if (
     process.env.REACT_APP_COMMIT_VERSION !== undefined &&
     process.env.REACT_APP_COMMIT_VERSION.includes('psmip')
   ) {
-    supportEmail = 'psmipsupport@faims.edu.au';
+    supportEmail = 'support@fieldmark.au';
   }
   const bodyContent =
     `Directory Server: ${DIRECTORY_PROTOCOL}://${DIRECTORY_HOST}:${DIRECTORY_PORT}/ \r` +
@@ -40,7 +40,7 @@ export default function SupportEmail(props: SupportEmailProps) {
         className={'support-link'}
         email={supportEmail}
         headers={{
-          subject: 'FAIMS3 Support',
+          subject: 'Fieldmark Support',
           body: bodyContent,
         }}
       />

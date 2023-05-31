@@ -219,7 +219,7 @@ export default function ProjectSubmitTab(props: ProjectSubmitProps) {
             Once your notebook has been saved to your local device, you can
             access it from notebooks option in the menu bar. You can edit it and
             save again, but it will remain ON YOUR LOCAL DEVICE ONLY and cannot
-            be shared. If you reset the FAIMS3 app you will LOSE YOUR WORK.
+            be shared. If you reset the Fieldmark™ app you will LOSE YOUR WORK.
             Contact support@faims.edu.au for advice on how to save your notebook
             design.
           </Typography>
