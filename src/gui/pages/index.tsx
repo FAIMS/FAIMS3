@@ -68,8 +68,10 @@ export default function Index(props: IndexProps) {
             color={theme.palette.common.white}
             gutterBottom
           >
-            Fieldmark™ is an open-source tool for born-digital field data collection brought to you by the FAIMS Project. Supporting electronic field notebooks by researchers, for researchers.           
-          </Typography>          
+            Fieldmark™ is an open-source tool for born-digital field data
+            collection brought to you by the FAIMS Project. Supporting
+            electronic field notebooks by researchers, for researchers.
+          </Typography>
           <Typography
             variant={'h4'}
             sx={{fontWeight: 'light', mb: 3}}

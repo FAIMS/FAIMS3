@@ -39,7 +39,10 @@ export default function LoadingApp() {
         style={{minHeight: '100vh'}}
       >
         <Grid item xs={8} sm={4} md={4}>
-          <img src="/static/logo/Fieldmark-Portrait-Margin@4x.png" style={{maxWidth: '100%'}} />
+          <img
+            src="/static/logo/Fieldmark-Portrait-Margin@4x.png"
+            style={{maxWidth: '100%'}}
+          />
         </Grid>
         <Grid item xs={8} sm={4}>
           <Box mb={1} mt={2}>
