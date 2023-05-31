@@ -89,9 +89,9 @@ export async function doDumpShare() {
 
   await shareStringAsFileOnApp(
     s,
-    'FAIMS Database Dump',
-    'Share all the FAIMS data on your device',
-    'faims3-dump.json'
+    'Fieldmark Database Dump',
+    'Share all the Fieldmark data on your device',
+    'fieldmark-dump.json'
   );
 }
 

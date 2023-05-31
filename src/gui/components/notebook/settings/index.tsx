@@ -197,7 +197,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 <Grid item xs={12}>
                   <Alert severity={'info'}>
                     You may edit the notebook, but your changes will only be
-                    saved locally to your device. Contact the FAIMS team to
+                    saved locally to your device. Contact the Fieldmark team to
                     publish your notebook.
                   </Alert>
                 </Grid>
@@ -266,7 +266,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                 />
                 <Typography variant={'body2'}>
                   This control is notebook and device specific. If this option
-                  is enabled, FAIMS will automatically download and show images
+                  is enabled, Fieldmark™ will automatically download and show images
                   and attachments created by other devices. Be aware that this
                   may be resource intensive and use your mobile data plan.
                   Disable this setting to minimise network usage. This setting

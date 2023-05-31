@@ -32,9 +32,9 @@ const theme = createTheme({
       default: '#FAFAFB',
     },
     primary: {
-      main: '#1B3E93',
-      light: '#5768c4',
-      dark: '#001964',
+      main: '#669911',
+      light: '#a7e938',
+      dark: '#141E03',
     },
     // secondary: {
     //   100: colors.grey[100],
@@ -47,7 +47,7 @@ const theme = createTheme({
     //   800: colors.grey[800],
     // },
     secondary: {
-      main: '#E59136',
+      main: '#FFA000',
       contrastText: '#fff',
     },
     text: {
@@ -70,8 +70,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: '#1B3E93',
-          color: '#fff',
+          backgroundColor: '#edeeeb',
+          color: '#324C08',
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
