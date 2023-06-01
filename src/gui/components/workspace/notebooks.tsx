@@ -132,7 +132,7 @@ export default function NoteBooks(props: NoteBookListProps) {
           flex: 0.2,
           minWidth: 160,
           renderCell: (params: GridCellParams) => (
-            <ProjectStatus status={params.row.value} />
+            <ProjectStatus status={params.row.status} />
           ),
         },
         {
@@ -221,6 +221,8 @@ export default function NoteBooks(props: NoteBookListProps) {
     counter > 0 && setTimeout(() => setCounter(counter - 1), 1000);
     counter === 0 && setLoading(false);
   }, [counter]);
+
+  console.log('pouchProjectList', pouchProjectList);
 
   return (
     <Box>
