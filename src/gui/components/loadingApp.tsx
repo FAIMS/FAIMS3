@@ -47,7 +47,7 @@ export default function LoadingApp() {
         <Grid item xs={8} sm={4}>
           <Box mb={1} mt={2}>
             <Typography variant="subtitle2" align={'center'}>
-              <h2>Loading data </h2>
+              <p>Loading data</p>
               <CircularProgress
                 color={'primary'}
                 size={'0.75rem'}
