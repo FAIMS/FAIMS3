@@ -182,11 +182,11 @@ export default function SectionTab(props: SectionTabProps) {
             <Paper>
               <Grid container className={classes.addfield}>
                 <Grid item sm={11} xs={11}>
-                  <FieldsListCard cretenefield={handleAddField} />
+                  <FieldsListCard handleOnClick={handleAddField} />
                 </Grid>
                 <Grid item sm={1} xs={1} className={classes.newfield_button}>
                   <CloseButton
-                    id="ColseAddField"
+                    id="CloseAddField"
                     onButtonClick={handleCloseFieldButton}
                     text="X"
                   />

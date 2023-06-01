@@ -106,7 +106,7 @@ export default function FieldsListCard(props: any) {
           <Grid item sm={10} xs={12}>
             <FieldCard
               className={classes.content}
-              handelonClick={props.cretenefield}
+              handelonClick={props.handleOnClick}
               fields={fields[fieldtab]}
             />
           </Grid>
