@@ -95,8 +95,14 @@ export async function ensure_locally_created_project_listing(): Promise<Listings
         local_only: true,
         auth_mechanisms: {}, // No auth needed, nor allowed
       };
-      await directory_db.local.put(listing_object);
-      return listing_object;
+      try {
+        await directory_db.local.put(listing_object);
+        return listing_object;
+      } catch (err: any) {
+        // if we get here, then the document has been created by another
+        // call to this function so let's just return this listing object
+        return listing_object;
+      }
     } else {
       logError('Failed to create locally created projects listing');
       throw err;
