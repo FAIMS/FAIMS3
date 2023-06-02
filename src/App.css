@@ -20,7 +20,7 @@
     background-attachment: fixed;
 
     /* The background image is from the local server, /static/background/background-orange.jpg */
-    background-image: url('/public/static/background/background-5C5A5A.jpg');
+    background-image: url('background-5C5A5A.jpg');
 }
 /* class for conflict warnings */
 .bg-warning{
