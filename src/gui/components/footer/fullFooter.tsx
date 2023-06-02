@@ -43,7 +43,9 @@ export default function FullFooter(props: FullFooterProps) {
               }}
             />
             <Typography variant="caption" display="block" gutterBottom>
-              {/*Copyright © FAIMS {new Date().getFullYear()}*/}
+              Electronic Field Notebooks publishes this app under an Apache 2.0
+              open source license. Researcher data copyright belongs to the
+              researchers.
             </Typography>
           </Box>
         </Grid>
@@ -63,9 +65,8 @@ export default function FullFooter(props: FullFooterProps) {
             About
           </Typography>
           <Typography variant={'caption'}>
-            FAIMS provides tools for the collection of born-digital field data
-            through to archiving for any research discipline, workflow,
-            ontology, and standard.
+            Fieldmark™ is an open-source tool for born-digital field data
+            collection brought to you by the FAIMS Project
           </Typography>
         </Grid>
         <Grid
@@ -86,7 +87,7 @@ export default function FullFooter(props: FullFooterProps) {
           <SupportEmail />
           <Typography variant={'caption'}>
             <Link
-              href="https://faims.edu.au/contact/"
+              href="https://fieldnote.au/contact/"
               underline="none"
               target={'_blank'}
               rel="noreferrer"
@@ -96,7 +97,7 @@ export default function FullFooter(props: FullFooterProps) {
             </Link>
             <br />
             <Link
-              href="https://faims.edu.au/privacy"
+              href="https://fieldnote.au/privacy"
               underline="none"
               target={'_blank'}
               rel="noreferrer"

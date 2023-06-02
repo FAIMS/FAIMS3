@@ -60,8 +60,7 @@ export default function Index(props: IndexProps) {
             color={theme.palette.common.white}
             gutterBottom
           >
-            FAIMS 3.0 Electronic Field{' '}
-            <span style={{color: theme.palette.secondary.main}}>Notebooks</span>
+            <span style={{color: theme.palette.secondary.main}}>Welcome</span>
           </Typography>
           <Typography
             variant={'h4'}
@@ -69,9 +68,19 @@ export default function Index(props: IndexProps) {
             color={theme.palette.common.white}
             gutterBottom
           >
-            The FAIMS 3.0 Project is building the next generation of Electronic
-            Field Notebooks. Join us on the journey.
+            Fieldmark™ is an open-source tool for born-digital field data
+            collection brought to you by the FAIMS Project. Supporting
+            electronic field notebooks by researchers, for researchers.
           </Typography>
+          <Typography
+            variant={'h4'}
+            sx={{fontWeight: 'light', mb: 3}}
+            color={theme.palette.common.white}
+            gutterBottom
+          >
+            Contact info@fieldmark.au for support.
+          </Typography>
+
           {isAuthenticated ? (
             <React.Fragment>
               <Button

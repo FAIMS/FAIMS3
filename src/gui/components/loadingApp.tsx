@@ -36,15 +36,26 @@ export default function LoadingApp() {
         spacing={0}
         alignItems="center"
         justifyContent="center"
-        style={{minHeight: '100vh'}}
+        style={{marginTop: '5vh', minHeight: '50%'}}
       >
-        <Grid item xs={3} sm={2} md={1}>
-          <img src="/static/logo/Faims-medium.jpg" style={{maxWidth: '100%'}} />
+        <Grid item xs={8} sm={3} md={3}>
+          <img
+            src="/static/logo/Fieldmark-Portrait-Margin@4x.png"
+            style={{maxWidth: '100%'}}
+          />
         </Grid>
-        <Grid item xs={4} sm={3}>
+      </Grid>
+      <Grid
+        container
+        spacing={0}
+        alignItems="center"
+        justifyContent="center"
+        style={{minHeight: '50%'}}
+      >
+        <Grid item xs={8} sm={4}>
           <Box mb={1} mt={2}>
             <Typography variant="subtitle2" align={'center'}>
-              <b>Loading data </b>
+              <p>Loading data</p>
               <CircularProgress
                 color={'primary'}
                 size={'0.75rem'}

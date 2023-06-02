@@ -1,6 +1,6 @@
 {
-  "short_name": "FAIMS3",
-  "name": "FAIMS3 web app",
+  "short_name": "Fieldmark",
+  "name": "Fieldmark app",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,13 +8,8 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
       "sizes": "512x512"
     }
   ],

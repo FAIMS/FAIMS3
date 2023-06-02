@@ -647,7 +647,7 @@ export default function Record() {
                                 )}
                               </Grid>
                               <Grid item md={7} xs={12}>
-                                <Alert severity="warning" variant={'filled'}>
+                                <Alert severity="warning" variant={'standard'}>
                                   Edits have been made to this record by
                                   different users that cannot be automatically
                                   merged. Resolve the conflicting fields before

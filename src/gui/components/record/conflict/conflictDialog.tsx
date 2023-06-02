@@ -124,8 +124,8 @@ function ConflictDialogContent() {
             you are currently working on. If these changes do not overlap (i.e.,
             changes were made to different fields), the conflicting records are
             merged automatically. However, if the same fields were affected,
-            FAIMS cannot pick one side over the other, and asks you to resolve
-            the conflict using the Conflict Resolution Tool.
+            Fieldmark™ cannot pick one side over the other, and asks you to
+            resolve the conflict using the Conflict Resolution Tool.
             <br />
             <br />
           </Typography>
