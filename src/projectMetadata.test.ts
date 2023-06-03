@@ -24,8 +24,6 @@ import {getProjectMetadata, setProjectMetadata} from './projectMetadata';
 import {ProjectID} from 'faims3-datamodel';
 import {equals} from './utils/eqTestSupport';
 
-import {getProjectDB} from './sync/index';
-
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 const projdbs: any = {};
@@ -74,7 +72,7 @@ describe('roundtrip reading and writing to db', () => {
         console.error(err);
         fail('Failed to clean dbs');
       }
-      fc.pre(projdbs !== {});
+      fc.pre(projdbs.length !== 0);
 
       return setProjectMetadata(project_id, metadata_key, metadata)
         .then(_result => {

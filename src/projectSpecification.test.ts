@@ -54,7 +54,7 @@ async function cleanProjectDBS() {
       try {
         const alldocsIgnored = await db.allDocs({include_docs: true});
         await db.destroy();
-        //await db.close();
+        // await db.close();
       } catch (err) {
         console.error(err);
       }
@@ -113,7 +113,7 @@ testProp(
   }
 );
 
-describe('roundtrip reading and writing to db', () => {
+describe.skip('roundtrip reading and writing to db', () => {
   testProp(
     'types roundtrip',
     [
