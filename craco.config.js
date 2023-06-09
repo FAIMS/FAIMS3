@@ -3,6 +3,16 @@ const resolve = require('resolve');
 const webpack = require('webpack');
 
 module.exports = {
+  jest: {
+    babel: {
+      addPresets: true /* (default value) */,
+      addPlugins: true /* (default value) */,
+    },
+    configure: (jestConfig, { env, paths, resolve, rootDir }) => {
+      /* ... */
+      return jestConfig;
+    },
+  },
   webpack: {
     configure: (webpackConfig, {env, paths}) => {
       // Replace the babel-loader rule with a rule for ts-loader

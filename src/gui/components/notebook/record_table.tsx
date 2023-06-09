@@ -142,7 +142,7 @@ function RecordsTable(props: RecordsTableProps) {
           minWidth: 200,
           renderCell: (params: GridCellParams) => (
             <Link underline={'none'} sx={{fontWeight: 'bold'}}>
-              {params.row.value}
+              {params.row.hrid}
             </Link>
           ),
         },
@@ -229,7 +229,7 @@ function RecordsTable(props: RecordsTableProps) {
     : [
         {
           field: 'type',
-          headerName: 'Kind',
+          headerName: 'Kind asdsa',
           type: 'string',
           filterable: true,
           hide: true,
