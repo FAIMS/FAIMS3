@@ -229,7 +229,7 @@ function RecordsTable(props: RecordsTableProps) {
     : [
         {
           field: 'type',
-          headerName: 'Kind asdsa',
+          headerName: 'Kind',
           type: 'string',
           filterable: true,
           hide: true,
