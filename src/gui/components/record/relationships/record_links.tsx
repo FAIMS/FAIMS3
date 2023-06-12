@@ -13,9 +13,12 @@ import {RecordID} from 'faims3-datamodel';
 import RecordRouteDisplay from '../../ui/record_link';
 import {grey} from '@mui/material/colors';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+
 interface SortedDataType {
   [key: string]: Array<RecordLinkProps>;
 }
+type gridParamsDataType = Omit<GridCellParams, 'value'> & { value: Array<string> };
+
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
    * Links are stored as {record:..., relation_type_vocabPair:['verb1', 'verb2'], link:{record..., section:..., field...}}
@@ -186,7 +189,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 150,
           flex: 0.1,
-          valueGetter: (params: GridCellParams) => params.row.value[0],
+          valueGetter: (params: gridParamsDataType) => params.value[0],
         },
         {
           field: 'linked_field',
@@ -337,8 +340,8 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                             headerClassName: 'faims-record-link--header',
                             minWidth: 200,
                             flex: 0.1,
-                            valueGetter: (params: GridCellParams) =>
-                              params.row.value[1],
+                            valueGetter: (params: gridParamsDataType) =>
+                              params.value[1],
                           },
                           {
                             field: 'record',
