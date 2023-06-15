@@ -17,7 +17,7 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 interface SortedDataType {
   [key: string]: Array<RecordLinkProps>;
 }
-type gridParamsDataType = Omit<GridCellParams, 'value'> & { value: Array<string> };
+export type gridParamsDataType = Omit<GridCellParams, 'value'> & { value: Array<string> };
 
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
