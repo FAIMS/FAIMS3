@@ -44,7 +44,7 @@ import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from 'faims3-datamodel';
 import Checkbox from '@mui/material/Checkbox';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { gridParamsDataType } from '../record_links';
+import {gridParamsDataType} from '../record_links';
 
 const style = {
   position: 'absolute' as const,
