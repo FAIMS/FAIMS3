@@ -44,6 +44,8 @@ import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from 'faims3-datamodel';
 import Checkbox from '@mui/material/Checkbox';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {gridParamsDataType} from '../record_links';
+
 const style = {
   position: 'absolute' as const,
   top: '50%',
@@ -67,9 +69,9 @@ export function DataGridNoLink(props: {
       headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
-      valueGetter: (params: GridCellParams) =>
+      valueGetter: (params: gridParamsDataType) =>
         params.value !== undefined
-          ? params.row.value[0]
+          ? params.value[0]
           : props.relation_linked_vocab,
     },
     {
@@ -214,7 +216,7 @@ export default function DataGridFieldLinksComponent(
       headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.row.value[1],
+      valueGetter: (params: gridParamsDataType) => params.value[1],
     },
     {
       field: 'record',

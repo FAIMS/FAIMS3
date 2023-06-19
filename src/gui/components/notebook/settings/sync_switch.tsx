@@ -83,7 +83,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
      * the project metadata has changed (project.is_activated))
      */
 
-    await listenSync(project.project_id, setIsSyncing).then(() => {
+    return await listenSync(project.project_id, setIsSyncing).then(() => {
       dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
@@ -91,16 +91,15 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
           severity: 'success',
         },
       });
-      setIsWorking(false); // unblock the UI
-      props.handleTabChange !== undefined && props.handleTabChange('1'); // switch to "Activated" tab
     });
   };
-
   const handleActivation = async () => {
     setIsWorking(true); // block the UI
     await activate_project(project.listing_id, project.non_unique_project_id)
-      .then(() => {
-        handleStartSync();
+      .then(async () => {
+        await handleStartSync();
+        setIsWorking(false); // unblock the UI
+        props.handleTabChange !== undefined && props.handleTabChange('1'); // switch to "Activated" tab
       })
       .catch(e => {
         dispatch({
@@ -110,7 +109,7 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
             severity: 'error',
           },
         });
-      });
+      }).finally(() => location.reload());
   };
 
   return ['published', 'archived'].includes(String(props.project_status)) ? (
