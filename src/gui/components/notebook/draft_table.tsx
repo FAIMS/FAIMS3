@@ -142,7 +142,7 @@ function DraftRecord(props: DraftsRecordProps) {
           width: 300,
           renderCell: (params: GridCellParams) => (
             <Link underline={'none'} sx={{fontWeight: 'bold'}}>
-              {params.row.value}
+              {params.row.hrid}
             </Link>
           ),
         },
