@@ -383,11 +383,13 @@ class RecordForm extends React.Component<
       ) {
         viewName = this.state.view_cached;
       }
+      console.log('state here', this.state);
       await this.setState({
         type_cached: this_type,
         view_cached: viewName,
         revision_cached: revision_id,
       });
+      console.log('state here', this.state);
     } catch (err: any) {
       console.warn('setUISpec/setLastRev error', err);
       (this.context as any).dispatch({
@@ -508,8 +510,7 @@ class RecordForm extends React.Component<
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
-    if (DEBUG_APP)
-      console.debug('current revision id in Initial', this.props.revision_id);
+    if (DEBUG_APP) console.debug('current revision id in Initial', revision_id);
     const fromdb: any =
       revision_id === undefined
         ? {}
@@ -521,6 +522,7 @@ class RecordForm extends React.Component<
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
+    console.log('back from db query', database_data, database_annotations);
     const [staged_data, staged_annotations] =
       await this.draftState.getInitialValues();
     if (DEBUG_APP) {
@@ -797,16 +799,6 @@ class RecordForm extends React.Component<
             relationship: this.state.relationship ?? {},
             deleted: false,
           };
-          if (DEBUG_APP) {
-            console.debug(
-              'doc',
-              this.props.record_id,
-              this.state.revision_cached,
-              this.props.location.state,
-              this.state,
-              doc
-            );
-          }
           return doc;
         })
         .then(doc => {
@@ -854,7 +846,7 @@ class RecordForm extends React.Component<
               severity: 'error',
             },
           });
-          logError(err);
+          logError('Unsaved record error:' + err);
         })
         //Clear the current draft area (Possibly after redirecting back to project page)
         .then(result => {
@@ -1117,13 +1109,12 @@ class RecordForm extends React.Component<
 
   isReady(): boolean {
     if (DEBUG_APP)
-      console.debug(
-        'Initial',
-        this.state.type_cached,
-        this.state.initialValues,
-        this.props.ui_specification,
-        this.state.view_cached
-      );
+      console.debug('isReady', {
+        type_cached: this.state.type_cached,
+        initialValues: this.state.initialValues,
+        ui_specification: this.props.ui_specification,
+        view_cached: this.state.view_cached,
+      });
     return Boolean(
       this.state.type_cached &&
         this.state.initialValues &&
