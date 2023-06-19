@@ -109,7 +109,8 @@ export default function NotebookSyncSwitch(props: NotebookSyncSwitchProps) {
             severity: 'error',
           },
         });
-      }).finally(() => location.reload());
+      })
+      .finally(() => location.reload());
   };
 
   return ['published', 'archived'].includes(String(props.project_status)) ? (
