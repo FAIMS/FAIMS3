@@ -79,7 +79,7 @@
     "cordova-plugin-inappbrowser": "^5.0.0",
     "faims3-datamodel": "https://github.com/FAIMS/faims3-data-model.git#main",
     "fast-json-stable-stringify": "2.1.0",
-    "formik": "2.2.9",
+    "formik": "2.4.2",
     "formik-mui": "4.0.0",
     "formik-mui-lab": "1.0.0",
     "graphviz-react": "1.2.5",
