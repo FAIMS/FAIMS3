@@ -162,7 +162,7 @@ jobs:
           node-version: ${{ matrix.node-version }}            
           cache: 'npm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
-      - name: Set up adopt JDK 1.11
+      - name: Set up adopt JDK 1.17
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'

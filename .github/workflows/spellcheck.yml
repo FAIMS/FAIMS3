@@ -6,11 +6,6 @@ on: # rebuild any PRs and main branch changes
       - staging
       - trying
   pull_request:
-    branches:
-      - main
-      - staging
-      - trying
-
 jobs:
   spellcheck: # run the action
     runs-on: ubuntu-latest

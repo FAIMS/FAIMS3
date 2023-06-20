@@ -21,6 +21,18 @@
 
     /* The background image is from the local server, /static/background/background-orange.jpg */
     background-image: url('/public/static/background/background-5C5A5A.jpg');
+    background-color: #5C5A5A; /* linear-gradient(0deg, rgba(200,159,253,1) 0%, rgba(34,63,142,1) 58%);*/
+    /* I want to use a background image, let it fit top to bottom, let it flow off the sides depending on dimensions. */
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: left;
+    background-clip: border-box;
+    background-origin: content-box;
+    /* The image covers under the footer, but we're going to deal with it for now */
+    background-attachment: fixed;
+
+    /* The background image is from the local server, /static/background/background-orange.jpg */
+    background-image: url('background-5C5A5A.jpg');
 }
 /* class for conflict warnings */
 .bg-warning{

@@ -36,14 +36,22 @@ export default function LoadingApp() {
         spacing={0}
         alignItems="center"
         justifyContent="center"
-        style={{minHeight: '100vh'}}
+        style={{marginTop: '5vh', minHeight: '50%'}}
       >
-        <Grid item xs={8} sm={4} md={4}>
+        <Grid item xs={8} sm={3} md={3}>
           <img
             src="/static/logo/Fieldmark-Portrait-Margin@4x.png"
             style={{maxWidth: '100%'}}
           />
         </Grid>
+      </Grid>
+      <Grid
+        container
+        spacing={0}
+        alignItems="center"
+        justifyContent="center"
+        style={{minHeight: '50%'}}
+      >
         <Grid item xs={8} sm={4}>
           <Box mb={1} mt={2}>
             <Typography variant="subtitle2" align={'center'}>
