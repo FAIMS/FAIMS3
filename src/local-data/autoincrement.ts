@@ -90,7 +90,8 @@ export async function setLocalAutoincrementStateForField(
 ) {
   try {
     const local_state_db = getLocalStateDB();
-    return await local_state_db.put(new_state);
+    // force due to error 409
+    return await local_state_db.put(new_state, {force: true});
   } catch (err) {
     logError(err);
     throw Error('Unable to set local increment state');

@@ -20,12 +20,7 @@
 
 import React, {useEffect, useState} from 'react';
 import _ from 'lodash';
-import {
-  DataGrid,
-  GridColDef,
-  GridCellParams,
-  GridEventListener,
-} from '@mui/x-data-grid';
+import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import {
   Typography,
   Box,
@@ -37,7 +32,7 @@ import {
   Link,
 } from '@mui/material';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
@@ -72,7 +67,7 @@ function DraftRecord(props: DraftsRecordProps) {
     React.useState(true);
 
   const theme = useTheme();
-  const history = useHistory();
+  const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
@@ -88,7 +83,7 @@ function DraftRecord(props: DraftsRecordProps) {
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
-    history.push(
+    history(
       ROUTES.getDraftRoute(
         project_id ?? 'dummy',
         params.row._id as DraftMetadata['_id'],
@@ -110,7 +105,7 @@ function DraftRecord(props: DraftsRecordProps) {
           params.row.type
       : params.row.type;
   }
-  const columns: GridColDef[] = !mobileView
+  const columns: any[] = !mobileView
     ? [
         {
           field: 'draft_icon',
@@ -147,7 +142,7 @@ function DraftRecord(props: DraftsRecordProps) {
           width: 300,
           renderCell: (params: GridCellParams) => (
             <Link underline={'none'} sx={{fontWeight: 'bold'}}>
-              {params.value}
+              {params.row.hrid}
             </Link>
           ),
         },
@@ -202,7 +197,7 @@ function DraftRecord(props: DraftsRecordProps) {
               </Grid>
 
               <Typography color="textSecondary">
-                Draft ID: {params.value}
+                Draft ID: {params.row.value}
               </Typography>
               <Typography color="textSecondary">
                 HRID/UUID: {params.row.hrid}
@@ -250,7 +245,7 @@ function DraftRecord(props: DraftsRecordProps) {
           autoHeight
           sx={{cursor: 'pointer'}}
           getRowHeight={() => 'auto'}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
           onRowClick={handleRowClick}
           components={{
             Toolbar: NotebookDraftDataGridToolbar,
@@ -263,14 +258,16 @@ function DraftRecord(props: DraftsRecordProps) {
               sortModel: [{field: 'updated', sort: 'desc'}],
             },
             pagination: {
-              pageSize:
-                maxRows !== null
-                  ? not_xs
-                    ? maxRows
-                    : defaultMaxRowsMobile
-                  : not_xs
-                  ? 25
-                  : defaultMaxRowsMobile,
+              paginationModel: {
+                pageSize:
+                  maxRows !== null
+                    ? not_xs
+                      ? maxRows
+                      : defaultMaxRowsMobile
+                    : not_xs
+                    ? 25
+                    : defaultMaxRowsMobile,
+              },
             },
           }}
         />

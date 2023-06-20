@@ -33,7 +33,6 @@ import {
   DataGrid,
   GridActionsCellItem,
   GridCellParams,
-  GridColumns,
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
@@ -45,6 +44,8 @@ import RecordRouteDisplay from '../../../ui/record_link';
 import {RecordReference} from 'faims3-datamodel';
 import Checkbox from '@mui/material/Checkbox';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {gridParamsDataType} from '../record_links';
+
 const style = {
   position: 'absolute' as const,
   top: '50%',
@@ -61,14 +62,14 @@ export function DataGridNoLink(props: {
   relation_type: string;
   relation_preferred_label: string;
 }) {
-  const columns: GridColumns = [
+  const columns: any = [
     {
       field: 'relation_type_vocabPair',
       headerName: 'Relationship',
       headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
-      valueGetter: (params: GridCellParams) =>
+      valueGetter: (params: gridParamsDataType) =>
         params.value !== undefined
           ? params.value[0]
           : props.relation_linked_vocab,
@@ -112,9 +113,9 @@ export function DataGridNoLink(props: {
     <DataGrid
       autoHeight
       density={'compact'}
-      pageSize={5}
-      rowsPerPageOptions={[5]}
-      disableSelectionOnClick
+      rowCount={5}
+      pageSizeOptions={[5]}
+      disableRowSelectionOnClick
       componentsProps={{
         filterPanel: {sx: {maxWidth: '96vw'}},
       }}
@@ -208,14 +209,14 @@ export default function DataGridFieldLinksComponent(
     );
   }
   console.debug('updated record relationship', props.links);
-  const columns: GridColumns = [
+  const columns: any = [
     {
       field: 'relation_type_vocabPair',
       headerName: 'Relationship',
       headerClassName: 'faims-record-link--header',
       minWidth: 200,
       flex: 0.2,
-      valueGetter: (params: GridCellParams) => params.value[1],
+      valueGetter: (params: gridParamsDataType) => params.value[1],
     },
     {
       field: 'record',
@@ -265,7 +266,7 @@ export default function DataGridFieldLinksComponent(
         params.row.relation_preferred ?? false,
       renderCell: (params: GridCellParams) => (
         <Checkbox
-          checked={params.value}
+          checked={params.row.value}
           disabled={
             props.preferred !== undefined &&
             props.preferred !== null &&
@@ -374,9 +375,9 @@ export default function DataGridFieldLinksComponent(
           <DataGrid
             autoHeight
             density={'compact'}
-            pageSize={5}
-            rowsPerPageOptions={[5]}
-            disableSelectionOnClick
+            rowCount={5}
+            pageSizeOptions={[5]}
+            disableRowSelectionOnClick
             components={{
               Footer: RecordLinksToolbar,
             }}

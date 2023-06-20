@@ -19,7 +19,7 @@
  */
 
 import React, {useEffect} from 'react';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 
 import {DataGrid, GridCellParams, GridEventListener} from '@mui/x-data-grid';
 import {
@@ -78,7 +78,7 @@ function RecordsTable(props: RecordsTableProps) {
     React.useState(true);
 
   const theme = useTheme();
-  const history = useHistory();
+  const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   // if screensize is > mobile, always set to false i.e., no mobile view. If mobile, allow control via the switch
@@ -94,7 +94,7 @@ function RecordsTable(props: RecordsTableProps) {
 
   // The entire row is clickable to the record
   const handleRowClick: GridEventListener<'rowClick'> = params => {
-    history.push(
+    history(
       ROUTES.getRecordRoute(
         project_id || 'dummy',
         (params.row.record_id || '').toString(),
@@ -142,7 +142,7 @@ function RecordsTable(props: RecordsTableProps) {
           minWidth: 200,
           renderCell: (params: GridCellParams) => (
             <Link underline={'none'} sx={{fontWeight: 'bold'}}>
-              {params.value}
+              {params.row.hrid}
             </Link>
           ),
         },
@@ -381,9 +381,9 @@ function RecordsTable(props: RecordsTableProps) {
           autoHeight
           sx={{cursor: 'pointer'}}
           getRowHeight={() => 'auto'}
-          rowsPerPageOptions={[10, 25, 50, 100]}
+          pageSizeOptions={[10, 25, 50, 100]}
           density={'standard'}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
           onRowClick={handleRowClick}
           getRowClassName={params => {
             return `${params.row.conflicts ? 'bg-warning' : ''}`;
@@ -402,14 +402,16 @@ function RecordsTable(props: RecordsTableProps) {
               sortModel: [{field: 'updated', sort: 'desc'}],
             },
             pagination: {
-              pageSize:
-                maxRows !== null
-                  ? not_xs
-                    ? maxRows
-                    : defaultMaxRowsMobile
-                  : not_xs
-                  ? 25
-                  : defaultMaxRowsMobile,
+              paginationModel: {
+                pageSize:
+                  maxRows !== null
+                    ? not_xs
+                      ? maxRows
+                      : defaultMaxRowsMobile
+                    : not_xs
+                    ? 25
+                    : defaultMaxRowsMobile,
+              },
             },
           }}
         />

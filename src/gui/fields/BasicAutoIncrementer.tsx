@@ -123,7 +123,7 @@ export class BasicAutoIncrementer extends React.Component<
     if (local_state.last_used_id === null && local_state.ranges.length === 0) {
       // We have no range allocations, block
       // TODO: add link to range allocation
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message:
@@ -205,7 +205,7 @@ export class BasicAutoIncrementer extends React.Component<
       if (current_value === null) {
         const new_id = await this.compute_id(this.props.num_digits || 4);
         if (new_id === undefined) {
-          this.context.dispatch({
+          (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
               message: 'Failed to get autoincremented ID',

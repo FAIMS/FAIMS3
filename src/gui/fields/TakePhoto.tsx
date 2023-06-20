@@ -33,7 +33,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import FaimsDialog from '../components/ui/Dialog';
 import {Typography} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {styled} from '@mui/material/styles';
+import {createTheme, styled} from '@mui/material/styles';
 import {List, ListItem} from '@mui/material';
 import {logError} from '../../logging';
 
@@ -66,9 +66,9 @@ type ImageListProps = {
   disabled: boolean;
   fieldName: string;
 };
-
+const theme = createTheme();
 /******** create own Image List for dynamic loading images TODO: need to test if it's working on browsers and phone *** Kate */
-const ImageGalleryList = styled('ul')(({theme}) => ({
+const ImageGalleryList = styled('ul')(() => ({
   display: 'grid',
   padding: 0,
   margin: theme.spacing(0, 4),
@@ -277,7 +277,9 @@ export class TakePhoto extends React.Component<
 
     let error_text = <span {...this.props['NoErrorTextProps']}></span>;
     if (error) {
-      error_text = <span {...this.props['ErrorTextProps']}>{error}</span>;
+      error_text = (
+        <span {...this.props['ErrorTextProps']}>{error as string}</span>
+      );
     }
 
     // https://mui.com/components/image-list/#masonry-image-list

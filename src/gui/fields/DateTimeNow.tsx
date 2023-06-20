@@ -48,7 +48,7 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
   };
 
   const onChange = React.useCallback(
-    event => {
+    (event: any) => {
       const {value} = event.target;
       handleValues(value);
     },
@@ -124,7 +124,10 @@ export function DateTimeNow(props: TextFieldProps & DateTimeNowProps) {
         children={props.helperText ? helperText : 'Select a date and time'}
       />
       {props.form.errors[name] && (
-        <FormHelperText error={true} children={props.form.errors[name]} />
+        <FormHelperText
+          error={true}
+          children={props.form.errors[name] as string}
+        />
       )}
     </React.Fragment>
   );

@@ -19,7 +19,7 @@
  */
 
 import React from 'react';
-import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import {BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import './App.css';
 import * as ROUTES from './constants/routes';
 import {PrivateRoute} from './constants/privateRouter';
@@ -85,61 +85,64 @@ export default function App() {
         <ThemeProvider theme={theme}>
           <Router>
             <MainLayout token={token}>
-              <Switch>
-                <PrivateRoute
-                  exact
+              <Routes>
+                <Route
                   path={ROUTES.SIGN_IN}
-                  component={SignIn}
-                  is_sign={true}
-                  extraProps={{setToken: setToken}}
+                  element={
+                    <PrivateRoute allowed>
+                      <SignIn setToken={setToken} />
+                    </PrivateRoute>
+                  }
                 />
                 <Route
-                  exact
                   path={ROUTES.SIGN_IN_RETURN}
-                  component={SignInReturnLoader}
+                  Component={SignInReturnLoader}
                 />
-                <PrivateRoute
-                  exact
+                <Route
                   path={ROUTES.WORKSPACE}
-                  component={Workspace}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <Workspace />
+                    </PrivateRoute>
+                  }
                 />
-                <PrivateRoute
-                  exact
+                <Route
                   path={ROUTES.NOTEBOOK_LIST}
-                  component={NoteBookList}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <NoteBookList />
+                    </PrivateRoute>
+                  }
                 />
-                <PrivateRoute
-                  exact
+                <Route
                   path={ROUTES.PROJECT_CREATE}
-                  component={ProjectCreate}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <ProjectCreate />
+                    </PrivateRoute>
+                  }
                 />
-                <PrivateRoute
-                  exact
+                <Route
                   path={ROUTES.PROJECT_DESIGN + ':project_id'}
-                  component={ProjectCreate}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <ProjectCreate />
+                    </PrivateRoute>
+                  }
                 />
-                <PrivateRoute
-                  exact
+                <Route
                   path={ROUTES.NOTEBOOK + ':project_id'}
-                  component={Notebook}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <Notebook />
+                    </PrivateRoute>
+                  }
                 />
                 {/* Draft creation happens by redirecting to a fresh minted UUID
                   This is to keep it stable until the user navigates away. So the
                   draft_id is optional, and when RecordCreate is instantiated
                   without one, it immediately mints a UUID and redirects to it */}
-
-                <PrivateRoute
-                  exact
+                <Route
                   path={
                     ROUTES.NOTEBOOK +
                     ':project_id' +
@@ -150,21 +153,24 @@ export default function App() {
                     ROUTES.RECORD_RECORD +
                     ':record_id'
                   }
-                  component={RecordCreate}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <RecordCreate />
+                    </PrivateRoute>
+                  }
                 />
-                <PrivateRoute
-                  exact
+                <Route
                   path={
                     ROUTES.NOTEBOOK +
                     ':project_id' +
                     ROUTES.RECORD_CREATE +
                     ':type_name'
                   }
-                  component={RecordCreate}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <RecordCreate />
+                    </PrivateRoute>
+                  }
                 />
                 {/*Record editing and viewing is a separate affair, separated by
                   the presence/absence of draft_id prop OR draft_id being in the
@@ -174,8 +180,7 @@ export default function App() {
                   should at some point, TODO, redirect to the same Record form but
                   with the newly minted draft_id attached. BUt this TODO is in the
                   record/form.tsx*/}
-                <PrivateRoute
-                  exact
+                <Route
                   path={
                     ROUTES.NOTEBOOK +
                     ':project_id' +
@@ -184,12 +189,13 @@ export default function App() {
                     ROUTES.REVISION +
                     ':revision_id'
                   }
-                  component={Record}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <Record />
+                    </PrivateRoute>
+                  }
                 />
-                <PrivateRoute
-                  exact
+                <Route
                   path={
                     ROUTES.NOTEBOOK +
                     ':project_id' +
@@ -200,20 +206,24 @@ export default function App() {
                     ROUTES.RECORD_DRAFT +
                     ':draft_id'
                   }
-                  component={Record}
-                  token={token}
-                  extraProps={{token: token}}
+                  element={
+                    <PrivateRoute allowed={Boolean(token)}>
+                      <Record />
+                    </PrivateRoute>
+                  }
                 />
-                <PrivateRoute
-                  exact
-                  path="/"
-                  component={Index}
-                  extraProps={{token: token}}
-                  is_sign={true}
+                <Route
+                  path={'/'}
+                  element={
+                    <PrivateRoute allowed>
+                      <Index token={token} />
+                    </PrivateRoute>
+                  }
                 />
-                <Route exact path={ROUTES.ABOUT_BUILD} component={AboutBuild} />
-                <Route component={NotFound404} />
-              </Switch>
+
+                <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
+                <Route Component={NotFound404} />
+              </Routes>
             </MainLayout>
           </Router>
         </ThemeProvider>

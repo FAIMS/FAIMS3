@@ -20,11 +20,10 @@
 
 import {createTheme, colors} from '@mui/material';
 import typography from './typography';
-import {Theme} from '@mui/material/styles';
 
-declare module '@mui/styles/defaultTheme' {
-  interface DefaultTheme extends Theme {}
-}
+// declare module '@mui/styles/defaultTheme' {
+//   interface DefaultTheme extends Theme {}
+// }
 
 const theme = createTheme({
   // spacing: 2,

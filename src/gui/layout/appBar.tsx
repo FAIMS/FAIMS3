@@ -26,9 +26,10 @@ import {
   CircularProgress,
   IconButton,
   Toolbar,
+  createTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 import CssBaseline from '@mui/material/CssBaseline';
 import clsx from 'clsx';
 import Collapse from '@mui/material/Collapse';
@@ -76,8 +77,9 @@ type MenuItemProps = {
 };
 
 const drawerWidth = 240;
+const theme = createTheme();
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles({
   root: {
     display: 'flex',
     boxShadow: 'none',
@@ -138,7 +140,7 @@ const useStyles = makeStyles(theme => ({
   nested: {
     paddingLeft: theme.spacing(4),
   },
-}));
+});
 
 function getNestedProjects(pouchProjectList: ProjectInformation[]) {
   const projectListItems: ProjectListItemProps[] = [];

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 export platform="web"
 export serverprefix="fieldmark"
 export REACT_APP_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
@@ -10,7 +12,8 @@ export REACT_APP_SHOW_NEW_NOTEBOOK=true
 export REACT_APP_SHOW_MINIFAUXTON=true
 export REACT_APP_DIRECTORY_HOST=db.fieldmark.app
 export REACT_APP_DIRECTORY_PORT=443
-export REACT_APP_PRODUCTION_BUILD=true          
+export REACT_APP_PRODUCTION_BUILD=true
 export REACT_APP_SERVICES=FAIMSTEXT
 export REACT_APP_TAG=fieldmark
 export REACT_APP_PROD_BUILD=true
+export REACT_APP_BUGSNAG_KEY=

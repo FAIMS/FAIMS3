@@ -1,36 +1,19 @@
-import {Route, Redirect, RouteProps} from 'react-router-dom';
+import {Navigate} from 'react-router-dom';
 
 import {DISABLE_SIGNIN_REDIRECT} from '../buildconfig';
 import * as ROUTES from './routes';
-import {TokenContents} from 'faims3-datamodel';
 
-interface PrivateRouteProps extends RouteProps {
+interface PrivateRouteProps {
   // tslint:disable-next-line:no-any
-  component: any;
-  token?: undefined | TokenContents;
-  extraProps?: any;
-  is_sign?: boolean;
+  children: React.ReactElement;
+  allowed: boolean;
 }
 
-export const PrivateRoute = (props: PrivateRouteProps) => {
-  const {component: Component, is_sign, token, extraProps, ...rest} = props;
-  return (
-    <Route
-      {...rest}
-      render={routeProps =>
-        is_sign === true || DISABLE_SIGNIN_REDIRECT ? (
-          <Component {...extraProps} {...routeProps} />
-        ) : token !== undefined ? (
-          <Component {...extraProps} {...routeProps} />
-        ) : (
-          <Redirect
-            to={{
-              pathname: ROUTES.SIGN_IN,
-              state: {from: routeProps.location},
-            }}
-          />
-        )
-      }
-    />
+export const PrivateRoute = (props: PrivateRouteProps): React.ReactElement => {
+  const {children, allowed} = props;
+  return allowed || DISABLE_SIGNIN_REDIRECT ? (
+    children
+  ) : (
+    <Navigate to={ROUTES.SIGN_IN} />
   );
 };

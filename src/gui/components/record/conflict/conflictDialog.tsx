@@ -26,7 +26,7 @@
  */
 
 import * as React from 'react';
-import {styled} from '@mui/material/styles';
+import {createTheme, styled} from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -68,8 +68,9 @@ export function ConflictButton(props: any) {
     </Button>
   );
 }
+const theme = createTheme();
 
-const ConflictDialog = styled(Dialog)(({theme}) => ({
+const ConflictDialog = styled(Dialog)(() => ({
   '& .MuiDialogContent-root': {
     padding: theme.spacing(2),
   },

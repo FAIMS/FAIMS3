@@ -19,7 +19,7 @@
  */
 import React, {useContext} from 'react';
 import {useEffect, useState} from 'react';
-import {useHistory} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {logError} from '../../../logging';
 
 import {
@@ -174,7 +174,7 @@ function UserSwitcher(props: UserSwitcherProps) {
 
 export default function ClusterCard(props: ClusterCardProps) {
   const [token, setToken] = useState(undefined as undefined | TokenContents);
-  const history = useHistory();
+  const history = useNavigate();
 
   useEffect(() => {
     const getToken = async () => {
@@ -204,7 +204,7 @@ export default function ClusterCard(props: ClusterCardProps) {
         <Button
           color="primary"
           variant="text"
-          onClick={() => history.push(ROUTES.WORKSPACE)}
+          onClick={() => history(ROUTES.WORKSPACE)}
           startIcon={<DashboardIcon />}
           sx={{ml: 2}}
         >

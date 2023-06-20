@@ -23,7 +23,7 @@
  */
 import React from 'react';
 import {useState, useEffect} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 import {
   Grid,
   Step,
@@ -40,12 +40,15 @@ import TabPanel from './TabPanel';
 import {getprojectform, uiSpecType} from '../data/ComponentSetting';
 import {ProjectValueList, FAIMShandlerType} from 'faims3-datamodel';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
+import {createTheme, useTheme} from '@mui/material/styles';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {ViewComponent} from '../../record/view';
-const useStyles = makeStyles(theme => ({
+
+const theme = createTheme();
+
+const useStyles = makeStyles({
   newfield: {
     // backgroundColor:'#e1e4e8',
     // borderTop:'1px solid #e1e4e8',
@@ -66,7 +69,7 @@ const useStyles = makeStyles(theme => ({
     with: '100%',
     flexGrow: 1,
   },
-}));
+});
 
 type ProjectPreviewProps = {
   project_id: string | null;
@@ -83,7 +86,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
   // if(props.project_id===undefined) console.log('New Project'+props.project_id)
 
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const {
     project_id,

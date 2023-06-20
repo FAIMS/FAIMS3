@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
 
 import './index.css';
@@ -39,12 +39,14 @@ registerClient({
 });
 
 addNativeHooks();
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
 
-ReactDOM.render(
+root.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
 
 //ReactDOM.render(EFooter, document.getElementById('footer')); The footer is

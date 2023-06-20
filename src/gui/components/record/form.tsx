@@ -19,8 +19,6 @@
  */
 
 import React from 'react';
-import {withRouter} from 'react-router-dom';
-import {RouteComponentProps} from 'react-router';
 import {Formik, Form} from 'formik';
 
 import {Grid, Box, Typography, Divider} from '@mui/material';
@@ -60,7 +58,7 @@ import {
 import {DEBUG_APP} from '../../../buildconfig';
 import {getCurrentUserId} from '../../../users';
 import {Link} from '@mui/material';
-import {Link as RouterLink} from 'react-router-dom';
+import {NavigateFunction, Link as RouterLink} from 'react-router-dom';
 import RecordStepper from './recordStepper';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
@@ -77,7 +75,9 @@ import FormButtonGroup, {DevTool} from './formButton';
 import UGCReport from './UGCReport';
 import {generateFAIMSDataID, getFirstRecordHead} from 'faims3-datamodel';
 import {logError} from '../../../logging';
+//import {RouteComponentProps} from 'react-router';
 type RecordFormProps = {
+  navigate: NavigateFunction;
   project_id: ProjectID;
   record_id: RecordID;
   // Might be given in the URL:
@@ -144,13 +144,15 @@ type RecordFormState = {
 };
 
 class RecordForm extends React.Component<
-  RecordFormProps & RouteComponentProps,
+  // RecordFormProps & RouteComponentProps,
+  // RecordFormState
+  any,
   RecordFormState
 > {
   draftState: RecordDraftState;
 
   // List of timeouts that unmount must cancel
-  timeouts: typeof setTimeout[] = [];
+  timeouts: (typeof setTimeout)[] = [];
   _isMounted = false;
 
   async componentDidUpdate(
@@ -210,9 +212,9 @@ class RecordForm extends React.Component<
     }
   }
 
-  constructor(props: RecordFormProps & RouteComponentProps) {
+  constructor(props: RecordFormProps) {
     super(props);
-    this.draftState = new RecordDraftState(this.props);
+    this.draftState = new RecordDraftState(this.props as any);
     this.state = {
       type_cached: this.props.type ?? null,
       view_cached: null,
@@ -278,11 +280,11 @@ class RecordForm extends React.Component<
 
         this.props.handleSetIsDraftSaving(false);
         this.props.handleSetDraftError(error_message);
-        this.context.dispatch({
+        (this.context as any).dispatch({
           type: ActionType.ADD_ALERT,
           payload: {
             message: 'Could not load previous data: ' + error_message,
-            severity: 'warnings',
+            severity: 'warning',
           },
         });
       }
@@ -329,7 +331,7 @@ class RecordForm extends React.Component<
             this.props.handleSetDraftError(
               `Could not find data for record ${this.props.record_id}`
             );
-            this.context.dispatch({
+            (this.context as any).dispatch({
               type: ActionType.ADD_ALERT,
               payload: {
                 message:
@@ -381,14 +383,16 @@ class RecordForm extends React.Component<
       ) {
         viewName = this.state.view_cached;
       }
+      console.log('state here', this.state);
       await this.setState({
         type_cached: this_type,
         view_cached: viewName,
         revision_cached: revision_id,
       });
+      console.log('state here', this.state);
     } catch (err: any) {
       console.warn('setUISpec/setLastRev error', err);
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message: `Project is not fully downloaded or not setup correctly (${err.toString()})`,
@@ -396,7 +400,7 @@ class RecordForm extends React.Component<
         },
       });
       // This form cannot be shown at all. No recovery except go back to project.
-      this.props.history.goBack();
+      this.props.navigate(-1);
       return;
     }
     try {
@@ -406,7 +410,7 @@ class RecordForm extends React.Component<
       // The proper way to change the record/revision/etc is this
       // (saveListener is already bound at this point)
       if (draft_saving_started_already) {
-        this.draftState.recordChangeHook(this.props, {
+        this.draftState.recordChangeHook(this.props as any, {
           type: this.state.type_cached!,
           field_types: getReturnedTypesForViewSet(
             this.props.ui_specification,
@@ -431,11 +435,11 @@ class RecordForm extends React.Component<
       await this.setInitialValues(revision_id);
     } catch (err: any) {
       logError(err);
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_ALERT,
         payload: {
           message: 'Could not load previous data: ' + err.message,
-          severity: 'warnings',
+          severity: 'warning',
         },
       });
       // Show an empty form
@@ -506,8 +510,7 @@ class RecordForm extends React.Component<
      * Formik requires a single object for initialValues, collect these from the
      * (in order high priority to last resort): draft storage, database, ui schema
      */
-    if (DEBUG_APP)
-      console.debug('current revision id in Initial', this.props.revision_id);
+    if (DEBUG_APP) console.debug('current revision id in Initial', revision_id);
     const fromdb: any =
       revision_id === undefined
         ? {}
@@ -519,6 +522,7 @@ class RecordForm extends React.Component<
     const database_data = fromdb.data ?? {};
     const database_annotations = fromdb.annotations ?? {};
 
+    console.log('back from db query', database_data, database_annotations);
     const [staged_data, staged_annotations] =
       await this.draftState.getInitialValues();
     if (DEBUG_APP) {
@@ -577,7 +581,7 @@ class RecordForm extends React.Component<
 
     // save child/link information into the parent/linked record when back to upper level
     const {field_id, new_record, is_related} = getChildInfo(
-      this.props.location.state,
+      this.props.location?.state,
       this.props.project_id
     );
 
@@ -625,7 +629,7 @@ class RecordForm extends React.Component<
       related['linked'] = linked;
 
     const relationship = getParentInfo(
-      this.props.location.state,
+      this.props.location?.state,
       related,
       this.props.record_id
     );
@@ -795,16 +799,6 @@ class RecordForm extends React.Component<
             relationship: this.state.relationship ?? {},
             deleted: false,
           };
-          if (DEBUG_APP) {
-            console.debug(
-              'doc',
-              this.props.record_id,
-              this.state.revision_cached,
-              this.props.location.state,
-              this.state,
-              doc
-            );
-          }
           return doc;
         })
         .then(doc => {
@@ -833,7 +827,7 @@ class RecordForm extends React.Component<
             console.log(result);
           }
           const message = 'Record successfully saved';
-          this.context.dispatch({
+          (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
               message: message,
@@ -845,14 +839,14 @@ class RecordForm extends React.Component<
         })
         .catch(err => {
           const message = 'Could not save record';
-          this.context.dispatch({
+          (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
             payload: {
               message: message,
               severity: 'error',
             },
           });
-          logError(err);
+          logError('Unsaved record error:' + err);
         })
         //Clear the current draft area (Possibly after redirecting back to project page)
         .then(result => {
@@ -866,7 +860,7 @@ class RecordForm extends React.Component<
             setSubmitting(false);
             return result;
           } else {
-            const RelationState = this.props.location.state;
+            const RelationState = this.props.location?.state;
             if (DEBUG_APP) console.debug('Location ', RelationState);
             if (RelationState !== undefined && RelationState !== null) {
               const {state_parent, is_direct} = getParentlinkInfo(
@@ -876,15 +870,13 @@ class RecordForm extends React.Component<
               );
               if (is_direct === false) {
                 if (is_close === 'close') {
-                  this.props.history.push(
-                    ROUTES.NOTEBOOK + this.props.project_id
-                  ); //update for save and close button
+                  this.props.navigate(ROUTES.NOTEBOOK + this.props.project_id); //update for save and close button
                   window.scrollTo(0, 0);
                   return result;
                 } else if (is_close === 'new') {
                   //not child record
                   setSubmitting(false);
-                  this.props.history.push(
+                  this.props.navigate(
                     ROUTES.NOTEBOOK +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
@@ -895,25 +887,23 @@ class RecordForm extends React.Component<
                 }
               } else {
                 if (is_close === 'close') {
-                  this.props.history.push({
-                    pathname: ROUTES.NOTEBOOK + state_parent.parent_link,
-                    state: state_parent,
-                  });
+                  this.props.navigate(
+                    ROUTES.NOTEBOOK + state_parent.parent_link,
+                    {state: state_parent}
+                  );
                   window.scrollTo(0, 0);
                   return result;
                 } else if (is_close === 'new') {
                   // for new child record, should save the parent record and pass the location state --TODO
                   const LocationState: any = this.props.location.state;
                   setSubmitting(false);
-                  this.props.history.push({
-                    pathname:
-                      ROUTES.NOTEBOOK +
+                  this.props.navigate(
+                    ROUTES.NOTEBOOK +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
                       this.state.type_cached,
-                    state: this.props.location.state,
-                  });
-                  console.debug('current state', this.state);
+                    {state: this.props.location.state}
+                  );
                   const field_id = LocationState.field_id;
                   const new_record_id = generateFAIMSDataID();
                   const new_child_record = {
@@ -959,14 +949,13 @@ class RecordForm extends React.Component<
                             location_state['child_record_id'] = new_record_id;
                             if (DEBUG_APP)
                               console.debug('new child state', location_state);
-                            this.props.history.push({
-                              pathname:
-                                ROUTES.NOTEBOOK +
+                            this.props.navigate(
+                              ROUTES.NOTEBOOK +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
-                              state: location_state,
-                            });
+                              {state: location_state}
+                            );
                             setSubmitting(false);
                             window.scrollTo(0, 0);
                             return result;
@@ -976,14 +965,13 @@ class RecordForm extends React.Component<
                         logError(
                           'Error saving the parent record, latest record is null'
                         );
-                        this.props.history.push({
-                          pathname:
-                            ROUTES.NOTEBOOK +
+                        this.props.navigate(
+                          ROUTES.NOTEBOOK +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
-                          state: LocationState.location_state,
-                        });
+                          {state: LocationState.location_state}
+                        );
                         setSubmitting(false);
                         window.scrollTo(0, 0);
                         return result;
@@ -1003,15 +991,13 @@ class RecordForm extends React.Component<
                 relationship.parent === null
               ) {
                 if (is_close === 'close') {
-                  this.props.history.push(
-                    ROUTES.NOTEBOOK + this.props.project_id
-                  );
+                  this.props.navigate(ROUTES.NOTEBOOK + this.props.project_id);
                   window.scrollTo(0, 0);
                   return result;
                 } else if (is_close === 'new') {
                   //not child record
                   setSubmitting(false);
-                  this.props.history.push(
+                  this.props.navigate(
                     ROUTES.NOTEBOOK +
                       this.props.project_id +
                       ROUTES.RECORD_CREATE +
@@ -1028,9 +1014,9 @@ class RecordForm extends React.Component<
                 )
                   .then(LocationState => {
                     if (is_close === 'close') {
-                      this.props.history.push({
-                        pathname: LocationState.location_state.parent_link,
-                      });
+                      this.props.navigate(
+                        LocationState.location_state.parent_link
+                      );
                       window.scrollTo(0, 0);
                       return result;
                     } else if (is_close === 'new') {
@@ -1074,14 +1060,13 @@ class RecordForm extends React.Component<
                               ).replace('/notebooks/', '');
                             location_state['child_record_id'] = new_record_id;
                             console.debug('new child state', location_state);
-                            this.props.history.push({
-                              pathname:
-                                ROUTES.NOTEBOOK +
+                            this.props.navigate(
+                              ROUTES.NOTEBOOK +
                                 this.props.project_id +
                                 ROUTES.RECORD_CREATE +
                                 this.state.type_cached,
-                              state: location_state,
-                            });
+                              {state: location_state}
+                            );
                             setSubmitting(false);
                             window.scrollTo(0, 0);
                             return result;
@@ -1091,14 +1076,13 @@ class RecordForm extends React.Component<
                         logError(
                           'Error to save the parent record from child relationship, latest record is null'
                         );
-                        this.props.history.push({
-                          pathname:
-                            ROUTES.NOTEBOOK +
+                        this.props.navigate(
+                          ROUTES.NOTEBOOK +
                             this.props.project_id +
                             ROUTES.RECORD_CREATE +
                             this.state.type_cached,
-                          state: LocationState.location_state,
-                        });
+                          {state: LocationState.location_state}
+                        );
                         setSubmitting(false);
                         window.scrollTo(0, 0);
                       }
@@ -1125,18 +1109,17 @@ class RecordForm extends React.Component<
 
   isReady(): boolean {
     if (DEBUG_APP)
-      console.debug(
-        'Initial',
-        this.state.type_cached,
-        this.state.initialValues,
-        this.props.ui_specification,
+      console.debug('isReady', {
+        type_cached: this.state.type_cached,
+        initialValues: this.state.initialValues,
+        ui_specification: this.props.ui_specification,
+        view_cached: this.state.view_cached,
+      });
+    return Boolean(
+      this.state.type_cached &&
+        this.state.initialValues &&
+        this.props.ui_specification &&
         this.state.view_cached
-      );
-    return (
-      this.state.type_cached !== null &&
-      this.state.initialValues !== null &&
-      this.props.ui_specification !== null &&
-      this.state.view_cached !== null
     );
   }
 
@@ -1161,7 +1144,7 @@ class RecordForm extends React.Component<
       // If a draft was created, that implies this form started from
       // a non draft, so it must have been an existing record (see props
       // as it's got a type {existing record} | {draft already created}
-      this.context.dispatch({
+      (this.context as any).dispatch({
         type: ActionType.ADD_CUSTOM_ALERT,
         payload: {
           severity: 'success',
@@ -1376,4 +1359,4 @@ class RecordForm extends React.Component<
   }
 }
 RecordForm.contextType = store;
-export default withRouter(RecordForm);
+export default RecordForm;

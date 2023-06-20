@@ -19,11 +19,11 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 
 import {Grid, Paper} from '@mui/material';
 
-import {useTheme} from '@mui/material/styles';
+import {createTheme, useTheme} from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
 import FieldsListCard from './FieldsListCard';
 import {FormForm, AutocompleteForm} from '../FormElement';
@@ -35,7 +35,9 @@ import ConfirmdeleteDialog from './ConfirmdeleteDialog';
 import SectionComponents from './PSectionComponents';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const theme = createTheme();
+
+const useStyles = makeStyles({
   newfield_button: {
     textAlign: 'right',
   },
@@ -47,7 +49,8 @@ const useStyles = makeStyles(theme => ({
   settingtab: {
     backgroundColor: '#e1e4e8',
   },
-}));
+});
+
 type SectionTabProps = {
   formuiSpec: any;
   formvariants: any;
@@ -71,7 +74,7 @@ type SectionTabProps = {
 
 export default function SectionTab(props: SectionTabProps) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const {
     fieldvalue,
     handleChangetabfield,

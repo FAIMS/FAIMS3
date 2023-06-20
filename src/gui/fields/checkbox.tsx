@@ -68,7 +68,7 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
             children={
               checkboxWithLabelProps.form.errors[
                 checkboxWithLabelProps.field.name
-              ]
+              ] as string
             }
           />
         ) : (

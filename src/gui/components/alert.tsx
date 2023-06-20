@@ -20,20 +20,32 @@
 
 import React, {useContext} from 'react';
 import Snackbar from '@mui/material/Snackbar';
+import {ThemeProvider} from '@mui/material/styles';
+import theme from '../../gui/theme';
 import Alert from '@mui/material/Alert';
-import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles} from 'react-jss';
+
 import {store} from '../../context/store';
 import {ActionType} from '../../context/actions';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-const useStyles = makeStyles(theme => ({
+// const useStyles = makeStyles((theme: any) => ({
+//   root: {
+//     width: '100%',
+//     '& > * + *': {
+//       marginTop: '16px',
+//     },
+//   },
+// }));
+
+const useStyles = createUseStyles({
   root: {
     width: '100%',
     '& > * + *': {
       marginTop: '16px',
     },
   },
-}));
+});
 
 export default function SystemAlert() {
   const classes = useStyles();
@@ -61,29 +73,30 @@ export default function SystemAlert() {
     )
       handleClose(oldest_alert.key);
   }, 3000);
-
   // if (alerts.length > 0) console.log(oldest_alert.severity);
   return (
-    <div className={classes.root}>
-      {alerts.length > 0 ? (
-        <Snackbar
-          open={true}
-          autoHideDuration={6000}
-          anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
-        >
-          <Alert
-            onClose={() => handleClose(oldest_alert.key)}
-            severity={oldest_alert.severity}
-            variant={'filled'}
+    <ThemeProvider theme={theme}>
+      <div className={classes.root}>
+        {alerts.length > 0 ? (
+          <Snackbar
+            open={true}
+            autoHideDuration={6000}
+            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
           >
-            {'message' in oldest_alert
-              ? oldest_alert.message
-              : oldest_alert.element}
-          </Alert>
-        </Snackbar>
-      ) : (
-        ''
-      )}
-    </div>
+            <Alert
+              onClose={() => handleClose(oldest_alert.key)}
+              severity={oldest_alert.severity}
+              variant={'filled'}
+            >
+              {'message' in oldest_alert
+                ? oldest_alert.message
+                : oldest_alert.element}
+            </Alert>
+          </Snackbar>
+        ) : (
+          ''
+        )}
+      </div>
+    </ThemeProvider>
   );
 }

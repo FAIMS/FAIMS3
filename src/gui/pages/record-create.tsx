@@ -19,7 +19,7 @@
  */
 
 import React, {useContext, useState, useEffect} from 'react';
-import {Redirect, useHistory, useParams, useLocation} from 'react-router-dom';
+import {Navigate, useNavigate, useParams, useLocation} from 'react-router-dom';
 
 import {
   AppBar,
@@ -62,6 +62,7 @@ import {useTheme} from '@mui/material/styles';
 import {ParentLinkProps} from '../components/record/relationships/types';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
 import InheritedDataComponent from '../components/record/inherited_data';
+
 interface DraftCreateProps {
   project_id: ProjectID;
   type_name: string;
@@ -73,7 +74,7 @@ function DraftCreate(props: DraftCreateProps) {
   const {project_id, type_name, record_id} = props;
 
   const {dispatch} = useContext(store);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [error, setError] = useState(null as null | {});
   const [draft_id, setDraft_id] = useState(null as null | string);
@@ -103,26 +104,25 @@ function DraftCreate(props: DraftCreateProps) {
         severity: 'warning',
       },
     });
-    history.goBack();
+    navigate(-1);
     return <React.Fragment />;
   } else if (draft_id === null) {
     // Creating new draft loading
     return <CircularProgress size={12} thickness={4} />;
   } else {
     return (
-      <Redirect
-        to={{
-          pathname:
-            ROUTES.NOTEBOOK +
-            project_id +
-            ROUTES.RECORD_CREATE +
-            type_name +
-            ROUTES.RECORD_DRAFT +
-            draft_id +
-            ROUTES.RECORD_RECORD +
-            record_id, // update for get record_id persistence for the draft
-          state: props.state,
-        }}
+      <Navigate
+        to={
+          ROUTES.NOTEBOOK +
+          project_id +
+          ROUTES.RECORD_CREATE +
+          type_name +
+          ROUTES.RECORD_DRAFT +
+          draft_id +
+          ROUTES.RECORD_RECORD +
+          record_id
+        }
+        state={props.state}
       />
     );
   }
@@ -140,7 +140,7 @@ interface DraftEditProps {
 function DraftEdit(props: DraftEditProps) {
   const {project_id, type_name, draft_id, project_info, record_id} = props;
   const {dispatch} = useContext(store);
-  const history = useHistory();
+  const navigate = useNavigate();
   const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
   const [error, setError] = useState(null as null | {});
 
@@ -173,8 +173,8 @@ function DraftEdit(props: DraftEditProps) {
     (async () => {
       if (
         uiSpec !== null &&
-        props.state !== undefined &&
-        props.state.parent_record_id !== undefined &&
+        props.state &&
+        props.state.parent_record_id &&
         props.state.parent_record_id !== record_id &&
         props.state.type !== undefined &&
         props.state.type === 'Child'
@@ -217,7 +217,7 @@ function DraftEdit(props: DraftEditProps) {
      */
     return new Promise(resolve => {
       resolve(() => {
-        history.push({
+        navigate({
           pathname: ROUTES.NOTEBOOK + project_id,
         });
       });
@@ -232,13 +232,14 @@ function DraftEdit(props: DraftEditProps) {
         severity: 'warning',
       },
     });
-    history.goBack();
+    navigate(-1);
     return <React.Fragment />;
   } else if (uiSpec === null) {
     // Loading
     return <CircularProgress size={12} thickness={4} />;
   } else {
     // Loaded, variant picked, show form:
+
     return (
       <React.Fragment>
         <Box mb={2}>
@@ -300,6 +301,7 @@ function DraftEdit(props: DraftEditProps) {
                       handleSetDraftError={setDraftError}
                       draftLastSaved={draftLastSaved}
                       mq_above_md={mq_above_md}
+                      navigate={navigate}
                     />
                   </Box>
                 </Box>
@@ -341,10 +343,7 @@ export default function RecordCreate() {
   const location: any = useLocation();
   let draft_record_id = generateFAIMSDataID();
   if (record_id !== undefined) draft_record_id = record_id;
-  if (
-    location.state !== undefined &&
-    location.state.child_record_id !== undefined
-  )
+  if (location.state && location.state.child_record_id !== undefined)
     draft_record_id = location.state.child_record_id; //pass record_id from parent
   let project_info: ProjectInformation | null;
 
@@ -352,16 +351,16 @@ export default function RecordCreate() {
     project_info = useEventedPromise(
       'RecordCreate page',
       getProjectInfo,
-      constantArgsShared(listenProjectInfo, project_id),
+      constantArgsShared(listenProjectInfo, project_id!),
       false,
       [project_id],
-      project_id
+      project_id!
     ).expect();
   } catch (err: any) {
     if (err.message !== 'missing') {
       throw err;
     } else {
-      return <Redirect to="/404" />;
+      return <Navigate to="/404" />;
     }
   }
   let breadcrumbs = [
@@ -369,16 +368,13 @@ export default function RecordCreate() {
     {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
     {
       link: ROUTES.NOTEBOOK + project_id,
-      title: project_info !== null ? project_info.name : project_id,
+      title: project_info !== null ? project_info.name! : project_id!,
     },
     {title: 'Draft'},
   ];
 
   // add parent link back for the parent or linked record
-  if (
-    location.state !== undefined &&
-    location.state.parent_record_id !== record_id
-  ) {
+  if (location.state && location.state.parent_record_id !== record_id) {
     const type =
       location.state.type === 'Child'
         ? 'Parent'
@@ -388,34 +384,33 @@ export default function RecordCreate() {
       {link: ROUTES.NOTEBOOK_LIST, title: 'Notebooks'},
       {
         link: ROUTES.NOTEBOOK + project_id,
-        title: project_info !== null ? project_info.name : project_id,
+        title: project_info !== null ? project_info.name! : project_id!,
       },
       {
         link: ROUTES.NOTEBOOK + location.state.parent_link,
         title:
-          type + ':' + location.state.parent_hrid ??
-          location.state.parent_record_id,
+          type! + ':' + location.state.parent_hrid! ??
+          location.state.parent_record_id!,
       },
       {title: 'Draft'},
     ];
   }
-
   return (
     <React.Fragment>
       <Box>
         <Breadcrumbs data={breadcrumbs} />
         {draft_id === undefined || record_id === undefined ? (
           <DraftCreate
-            project_id={project_id}
-            type_name={type_name}
+            project_id={project_id!}
+            type_name={type_name!}
             state={location.state}
             record_id={draft_record_id}
           />
         ) : (
           <DraftEdit
             project_info={project_info}
-            project_id={project_id}
-            type_name={type_name}
+            project_id={project_id!}
+            type_name={type_name!}
             draft_id={draft_id}
             record_id={record_id}
             state={location.state}

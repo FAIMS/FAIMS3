@@ -13,9 +13,14 @@ import {RecordID} from 'faims3-datamodel';
 import RecordRouteDisplay from '../../ui/record_link';
 import {grey} from '@mui/material/colors';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+
 interface SortedDataType {
   [key: string]: Array<RecordLinkProps>;
 }
+export type gridParamsDataType = Omit<GridCellParams, 'value'> & {
+  value: Array<string>;
+};
+
 export default function RecordLinkComponent(props: RecordLinksComponentProps) {
   /***
    * Links are stored as {record:..., relation_type_vocabPair:['verb1', 'verb2'], link:{record..., section:..., field...}}
@@ -111,7 +116,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 100,
           flex: 0.2,
-          valueGetter: (params: GridCellParams) => params.value[0],
+          valueGetter: (params: GridCellParams) => params.row.value[0],
         },
         {
           field: 'linked_field',
@@ -186,7 +191,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           headerClassName: 'faims-record-link--header',
           minWidth: 150,
           flex: 0.1,
-          valueGetter: (params: GridCellParams) => params.value[0],
+          valueGetter: (params: gridParamsDataType) => params.value[0],
         },
         {
           field: 'linked_field',
@@ -282,7 +287,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
           const subGroup = sortedData[linkKey];
           if (subGroup.length > 0) {
             return (
-              <Box sx={{p: 1}}>
+              <Box key={linkKey} sx={{p: 1}}>
                 <Typography variant={'body2'} fontWeight={'bold'} gutterBottom>
                   {linkKey === 'links_to_record'
                     ? 'Links to this record'
@@ -291,9 +296,9 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                 <DataGrid
                   autoHeight
                   density={'compact'}
-                  pageSize={5}
-                  rowsPerPageOptions={[5]}
-                  disableSelectionOnClick
+                  rowCount={5}
+                  pageSizeOptions={[5]}
+                  disableRowSelectionOnClick
                   columns={
                     linkKey === 'links_to_record'
                       ? columns
@@ -337,7 +342,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                             headerClassName: 'faims-record-link--header',
                             minWidth: 200,
                             flex: 0.1,
-                            valueGetter: (params: GridCellParams) =>
+                            valueGetter: (params: gridParamsDataType) =>
                               params.value[1],
                           },
                           {
@@ -400,7 +405,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
               </Box>
             );
           } else {
-            return <></>;
+            return null;
           }
         })}
       </Box>

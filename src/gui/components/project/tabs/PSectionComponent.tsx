@@ -19,8 +19,8 @@
  */
 import React from 'react';
 import {useState} from 'react';
-import makeStyles from '@mui/styles/makeStyles';
-
+// import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 import {Grid, Typography, Card} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {SettingCard} from './PSettingCard';
@@ -32,7 +32,7 @@ import {HRID_STRING} from 'faims3-datamodel';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles((theme: any) => ({
   newfield: {
     // backgroundColor:'#e1e4e8',
     // borderTop:'1px solid #e1e4e8',
@@ -59,7 +59,7 @@ type FieldToolBarProps = {
 };
 function FieldToolBar(props: FieldToolBarProps) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const {
     index,
     formuiSpec,
@@ -153,7 +153,7 @@ type SectionComponent = {
 
 export default function SectionComponent(props: SectionComponent) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const {
     formuiSpec,
     formcomponent,

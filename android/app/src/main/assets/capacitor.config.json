@@ -1,7 +1,6 @@
 {
 	"appId": "org.fedarch.faims3",
 	"appName": "FAIMS3",
-	"bundledWebRuntime": false,
 	"npmClient": "npm",
 	"webDir": "build",
 	"plugins": {
@@ -13,6 +12,9 @@
 		"allowNavigation": [
 			"*.faims.edu.au"
 		]
+	},
+	"android": {
+		"webContentsDebuggingEnabled": true
 	},
 	"cordova": {}
 }

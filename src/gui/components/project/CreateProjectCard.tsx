@@ -27,9 +27,9 @@ import {useState, useEffect} from 'react';
 import {Formik, Form} from 'formik';
 
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
+import {createTheme, useTheme} from '@mui/material/styles';
 import Alert from '@mui/material/Alert';
-import makeStyles from '@mui/styles/makeStyles';
+import {createUseStyles as makeStyles} from 'react-jss';
 import {Grid, AppBar, Box} from '@mui/material';
 import {TabTab} from './tabs/TabTab';
 
@@ -67,13 +67,15 @@ import {getid} from './data/ComponentSetting';
 import {logError} from '../../../logging';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-const useStyles = makeStyles(theme => ({
+const theme = createTheme();
+
+const useStyles = makeStyles({
   root: {
     flexGrow: 1,
     backgroundColor: theme.palette.background.paper,
     padding: theme.spacing(2),
   },
-}));
+});
 
 type CreateProjectCardProps = {
   project_id: string | null;
@@ -138,7 +140,7 @@ const PROJECT_META = [
 
 export default function CreateProjectCard(props: CreateProjectCardProps) {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStyles();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [project_id, setProjectID] = useState(props.project_id);
