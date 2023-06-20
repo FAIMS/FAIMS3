@@ -3,6 +3,7 @@
 FAIMS3 is an open-source tool for offline field data-collection brought to you by the FAIMS Project. The FAIMS Project was funded by the ARDC ([https://dx.doi.org/10.47486/PL110]), Macquarie University, and CSIRO along with our other partners. This code is appropriate for building and deploying the Webapp, Android and iOS versions. The conductor, needed for user authentication, is located at [https://github.com/FAIMS/FAIMS3-conductor]. Contact [info@faims.edu.au](mailto:info@faims.edu.au) to enrol to try out the software.
 
 ## Setting up a field server
+
 * [Draft instructions for a local offline server.](https://github.com/FAIMS/FAIMS3/settingUpFieldServer.md)
 
 ## Developer notes to run test copies of FAIMS
@@ -36,6 +37,7 @@ Further build/install instructions can be found at
 <https://github.com/FAIMS/FAIMS3/wiki/building-the-webapp>.
 
 ### Docker Desktop setup
+
 1. Install [Docker desktop](https://www.docker.com/get-started/).
 1. Create a new `Dev Environment`.
 1. When prompted for `Existing Git repo` add the FAIMS3 git repo web address.
@@ -43,11 +45,12 @@ Further build/install instructions can be found at
 1. Then follow `Setup and development (quick-start)` steps inside of the VSCode which was opened.
 
 ### (Alternatively) Use the terminal to create containers with Docker
+
 1. Install docker with brew using `brew install docker`.
 1. Clone repository to your local machine.
 1. Spin up a new Ubuntu container with your local machine location of the repository and give it a CONTAINERNAME of your choice `docker run -dt -v /LOCAL_REPO_LOCATION:/opt/projects -p 3000-4000:3000-4000 --name CONTAINERNAME ubuntu /bin/bash`
 1. Check the container was created successfully with `docker container list -a`.
-1. If successfuly enter the container environment using `docker exec -it CONTAINERNAME bash`
+1. If successfully enter the container environment using `docker exec -it CONTAINERNAME bash`
 1. Update linux package sources list to the latest and upgrade the current packages installed to latest versions with `apt update && apt upgrade`, type `y` and press enter for any prompts to allow installs to use disk space.
 1. Install curl and fetch node with `apt install curl` then `curl -fsSL https://deb.nodesource.com/setup_16.x | bash -` to fetch node and make it visible to bash.
 1. Install required tools for the project to run with `apt install gcc g++ make nodejs` which installs GNU Compiler Collection, GNU c++ compiler, Make unix utility and Nodejs.
@@ -60,12 +63,14 @@ Further build/install instructions can be found at
 
 ## Choosing couchdb instances
 
-The `server_configs` directory contains sourcable scripts for some of the
+The `server_configs` directory contains scripts for some of the
 development servers, but primarily exporting:
+
 ```!shell
 export REACT_APP_DIRECTORY_HOST=<couchdb_host_name>
 export REACT_APP_DIRECTORY_PORT=<couchdb_port>
 ```
+
 will allow you to choose which couchdb instance to use. Remember to add the
 host-port pair of the system the *FAIMS* app is running on (in most cases
 `localhost:3000`) to the CORS allow list via the Fauxton running on the couchdb
@@ -74,12 +79,11 @@ server (located at `http://<couchdb_host_name>:<couchdb_port>/_utils/`).
 ## Build mobile app
 
 1. Build the source code
-   - `npm run webapp-build`
+   * `npm run webapp-build`
 1. Synchronise Gradle files
-   - `npm run webapp-sync` OR `cap sync`
+   * `npm run webapp-sync` OR `cap sync`
 1. [Optional] Allow to copy to /Library/Ruby/Gems/2.3.0:
-   - `export GEM_HOME="$HOME/.gem"`
+   * `export GEM_HOME="$HOME/.gem"`
 1. [Optional] Resolve `xcode-select` error
-   - `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+   * `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
 1. Build the apk from the build/build bundle/build apk section
-
