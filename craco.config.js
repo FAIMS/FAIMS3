@@ -7,6 +7,8 @@ module.exports = {
     babel: {
       addPresets: true /* (default value) */,
       addPlugins: true /* (default value) */,
+      collectCoverage: true,
+      coverageReporters: ["json", "html"],
     },
     configure: (jestConfig, { env, paths, resolve, rootDir }) => {
       /* ... */

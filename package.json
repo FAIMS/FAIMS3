@@ -21,7 +21,7 @@
     "start": "GENERATE_SOURCEMAP=false && craco start",
     "build": "craco --max-old-space-size=4096 build",
     "pretest": "npm run compile",
-    "test": "NODE_ENV=test craco test --setupFilesAfterEnv=./setupTests.js --env=./test/custom-test-env.js --forceExit --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
+    "test": "NODE_ENV=test craco test --coverage --setupFilesAfterEnv=./setupTests.js --env=./test/custom-test-env.js --forceExit --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
     "posttest": "npm run lint",
     "preintegration": "npm run compile",
     "integration": "NODE_ENV=test react-scripts test --env=node --forceExit --runInBand --detectOpenHandles src/integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",

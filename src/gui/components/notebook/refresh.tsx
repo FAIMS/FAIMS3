@@ -63,8 +63,14 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
   return (
     <Alert
       severity={counter > TIME_LAPSED ? 'warning' : 'info'}
+      data-testid="refreshAlert"
       action={
-        <Button color="inherit" size="small" onClick={handleRefresh}>
+        <Button
+          color="inherit"
+          size="small"
+          onClick={handleRefresh}
+          data-testid="refreshRecords"
+        >
           Refresh
         </Button>
       }
