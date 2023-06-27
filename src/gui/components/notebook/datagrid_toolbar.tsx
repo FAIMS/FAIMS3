@@ -56,7 +56,12 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
     <Box style={{marginTop: '4px'}} mr={1}>
       <Grid container spacing={1}>
         <Grid item alignItems="stretch" style={{display: 'flex'}}>
-          <Button variant="text" size={'small'} onClick={handleClear}>
+          <Button
+            variant="text"
+            size={'small'}
+            onClick={handleClear}
+            data-testid="searchReset"
+          >
             reset
           </Button>
           <TextField
@@ -72,6 +77,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             size={'small'}
             onClick={handleSubmit}
             sx={{ml: 1}}
+            data-testid="searchButton"
           >
             <SearchIcon />
           </Button>

@@ -84,7 +84,9 @@ export default class BasicAutoIncrementer extends React.Component<
 
   async add_new_range() {
     await this.ensure_ranges();
-    const ranges = [...(this.state.ranges as LocalAutoIncrementRange[])];
+    const ranges = [
+      ...((this.state.ranges || []) as LocalAutoIncrementRange[]),
+    ];
     ranges.push(createNewAutoincrementRange(0, 0));
     this.setState({ranges: ranges});
   }
@@ -184,6 +186,7 @@ export default class BasicAutoIncrementer extends React.Component<
 
     return (
       <Formik
+        key={range_index}
         initialValues={{
           start: range.start,
           stop: range.stop,
@@ -209,18 +212,24 @@ export default class BasicAutoIncrementer extends React.Component<
         }}
       >
         {({submitForm, isSubmitting}) => (
-          <Box sx={{my: 1}}>
-            <Form>
+          <Box sx={{my: 1}} data-testid="rangeBox">
+            <Form data-testid="addRangeForm">
               <Grid container direction="row" spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Field
                     size={'small'}
                     component={TextField}
+                    data-testid="rangeStart"
                     {...start_props}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Field size={'small'} component={TextField} {...stop_props} />
+                  <Field
+                    size={'small'}
+                    component={TextField}
+                    data-testid="rangeStop"
+                    {...stop_props}
+                  />
                 </Grid>
               </Grid>
 
@@ -245,6 +254,7 @@ export default class BasicAutoIncrementer extends React.Component<
                   ) : (
                     <Button
                       color="error"
+                      data-testid="removeRangeBtn"
                       disabled={
                         range_count < 2 && this.state.ranges_initialised
                       }
@@ -294,6 +304,7 @@ export default class BasicAutoIncrementer extends React.Component<
             this.add_new_range();
           }}
           startIcon={<AddIcon />}
+          data-testid="addNewRangeBtn"
         >
           Add new range
         </Button>

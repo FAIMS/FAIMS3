@@ -153,7 +153,9 @@ class RecordDraftState {
   // on if _fetchData has been run
 
   data_listeners: [
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (data: [StagedData, StagedData]) => unknown,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (err: unknown) => unknown
   ][] = [];
 
@@ -417,6 +419,7 @@ class RecordDraftState {
    * Called if this state goes from unedited => edited
    * (i.e. the user changed a value in the form)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   newDraftListener: null | ((draft_id: string) => unknown) = null;
 
   /**
@@ -602,6 +605,7 @@ class RecordDraftState {
    * Set in constructor, called when saving starts (true), finishes (false), or
    * (after MAX_CONSEQUTIVE_SAVE_ERRORS reached) errors out ({error_object})
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   saveListener: (val: boolean | {}) => unknown = () => {};
 
   /**
