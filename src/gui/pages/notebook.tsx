@@ -123,6 +123,6 @@ export default function Notebook() {
       <NotebookComponent project={project_info} handleRefresh={handleRefresh} />
     </Box>
   ) : (
-    <CircularProgress />
+    <CircularProgress data-testid="progressbar" />
   );
 }
