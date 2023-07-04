@@ -877,7 +877,7 @@ const testUiSpecification = {
   visible_types: ['SurveyAreaForm', 'LandscapeElementForm'],
 };
 
-const testValidationSсhema = {
+const testValidationSchema = {
   _deps: [],
   _conditions: [],
   _options: {
@@ -1288,7 +1288,7 @@ jest.mock('faims3-datamodel', () => ({
 jest.mock('../validation', () => ({
   getValidationSchemaForViewset: jest
     .fn()
-    .mockReturnValue(testValidationSсhema),
+    .mockReturnValue(testValidationSchema),
 }));
 
 jest.mock('./fieldPersistentSetting', () => ({
