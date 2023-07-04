@@ -51,6 +51,7 @@ export function getComponentFromFieldConfig(
     <Field
       component={Component}
       name={fieldName}
+      data-testid={fieldName}
       value={formProps.values[fieldName]}
       {...fieldConfig['component-parameters']}
       {...fieldConfig['component-parameters']['InputProps']}
@@ -70,6 +71,7 @@ export function getComponentFromFieldConfig(
     <Field
       component={Component} //e.g, TextField (default <input>)
       name={fieldName}
+      data-testid={fieldName}
       value={formProps.values[fieldName]}
       {...fieldConfig['component-parameters']}
       {...fieldConfig['component-parameters']['InputProps']}

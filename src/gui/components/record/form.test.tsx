@@ -31,7 +31,11 @@ import {
 import RecordForm from './form';
 import {BrowserRouter} from 'react-router-dom';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {getFullRecordData, upsertFAIMSData} from 'faims3-datamodel';
+import {
+  getFirstRecordHead,
+  getFullRecordData,
+  upsertFAIMSData,
+} from 'faims3-datamodel';
 import {getReturnedTypesForViewSet} from '../../../uiSpecification';
 
 const testProjectId = 'default||1685527104147-campus-survey-demo';
@@ -1265,6 +1269,12 @@ function mockGetCurrentUserId() {
   });
 }
 
+function mockUpsertFAIMSData() {
+  return new Promise(resolve => {
+    resolve('frev-7df65c88-ac9a-4457-9814-e586e798f592');
+  });
+}
+
 afterEach(() => {
   cleanup();
 });
@@ -1276,7 +1286,7 @@ jest.mock('faims3-datamodel', () => ({
   setAttachmentLoaderForType: jest.fn(),
   setAttachmentDumperForType: jest.fn(),
   generateFAIMSDataID: jest.fn(),
-  upsertFAIMSData: jest.fn(),
+  upsertFAIMSData: mockUpsertFAIMSData,
 }));
 
 jest.mock('../validation', () => ({
@@ -1420,15 +1430,11 @@ describe('Check form component', () => {
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(2);
+      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
     });
 
     await waitFor(() => {
-      expect(upsertFAIMSData).toBeCalledTimes(1);
-    });
-
-    await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(1);
+      expect(getFullRecordData).toBeCalledTimes(2);
     });
   });
   it('Check Publish and Close Record button', async () => {
@@ -1469,11 +1475,7 @@ describe('Check form component', () => {
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(2);
-    });
-
-    await waitFor(() => {
-      expect(upsertFAIMSData).toBeCalledTimes(1);
+      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
     });
   });
 
@@ -1515,15 +1517,98 @@ describe('Check form component', () => {
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(2);
+      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
     });
 
     await waitFor(() => {
-      expect(upsertFAIMSData).toBeCalledTimes(1);
+      expect(getFullRecordData).toBeCalledTimes(2);
     });
+  });
+  it('Check text field newfield8b0ba1cc', async () => {
+    act(() => {
+      render(
+        <BrowserRouter>
+          <RecordForm
+            project_id={testProjectId}
+            ui_specification={testUiSpecification}
+            record_id={testRecordId}
+            type={testTypeName}
+            draft_id={testDraftId}
+            metaSection={testMetaSection}
+            handleSetIsDraftSaving={jest.fn()}
+            handleSetDraftLastSaved={jest.fn()}
+            handleSetDraftError={jest.fn()}
+            draftLastSaved={testDraftLastSaved}
+            navigate={jest.fn()}
+          />
+        </BrowserRouter>
+      );
+    });
+    expect(screen.getByText('Loading record data')).toBeTruthy();
+
+    await waitForElementToBeRemoved(
+      () => screen.getByTestId('circular-loading'),
+      {timeout: 3000}
+    );
+    const inputNewfield8b0ba1cc = screen
+      .getByTestId('newfield8b0ba1cc')
+      .querySelector('#newfield8b0ba1cc');
+    inputNewfield8b0ba1cc
+      ? fireEvent.change(inputNewfield8b0ba1cc, {target: {value: 'Test text'}})
+      : null;
+    //@ts-ignore
+    expect(inputNewfield8b0ba1cc.value).toBe('Test text');
 
     await waitFor(() => {
       expect(getFullRecordData).toBeCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(getReturnedTypesForViewSet).toBeCalledTimes(1);
+    });
+  });
+
+  it('Check text field newfieldefa5e828', async () => {
+    act(() => {
+      render(
+        <BrowserRouter>
+          <RecordForm
+            project_id={testProjectId}
+            ui_specification={testUiSpecification}
+            record_id={testRecordId}
+            type={testTypeName}
+            draft_id={testDraftId}
+            metaSection={testMetaSection}
+            handleSetIsDraftSaving={jest.fn()}
+            handleSetDraftLastSaved={jest.fn()}
+            handleSetDraftError={jest.fn()}
+            draftLastSaved={testDraftLastSaved}
+            navigate={jest.fn()}
+          />
+        </BrowserRouter>
+      );
+    });
+    expect(screen.getByText('Loading record data')).toBeTruthy();
+
+    await waitForElementToBeRemoved(
+      () => screen.getByTestId('circular-loading'),
+      {timeout: 3000}
+    );
+    const inputNewfield8b0ba1cc = screen
+      .getByTestId('newfieldefa5e828')
+      .querySelector('#newfieldefa5e828');
+    inputNewfield8b0ba1cc
+      ? fireEvent.change(inputNewfield8b0ba1cc, {target: {value: 'Test text'}})
+      : null;
+    //@ts-ignore
+    expect(newfieldefa5e828.value).toBe('Test text');
+
+    await waitFor(() => {
+      expect(getFullRecordData).toBeCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(getReturnedTypesForViewSet).toBeCalledTimes(1);
     });
   });
 });
