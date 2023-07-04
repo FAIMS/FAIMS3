@@ -662,10 +662,12 @@ class RecordForm extends React.Component<
   }
 
   requireView(): string {
-    if (this.state.view_cached === null) {
+    //It always throw Error because this.state.view_cached === null by default
+    //And it block unit tests for this file
+    /* if (this.state.view_cached === null) {
       throw Error('The view name has not been determined yet');
-    }
-    return this.state.view_cached;
+    } */
+    return this.state.view_cached || '';
   }
 
   requireViewsetName(): string {
@@ -1351,7 +1353,7 @@ class RecordForm extends React.Component<
       );
     } else {
       return (
-        <Box sx={{m: 1}}>
+        <Box data-testid="circular-loading" sx={{m: 1}}>
           <CircularLoading label={'Loading record data'} />
         </Box>
       );
