@@ -175,14 +175,14 @@ const testUiSpecification = {
         },
       },
     },
-    newfieldde848d82: {
+    newfield92848d82: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePoint',
       'type-returned': 'faims-pos::Location',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfieldde848d82',
-        id: 'newfieldde848d82',
+        name: 'newfield92848d82',
+        id: 'newfield92848d82',
         helperText: 'Tap to select the end point for the survey.',
         variant: 'outlined',
         label: 'Take GPS End Point',
@@ -214,7 +214,7 @@ const testUiSpecification = {
           'This is unique ID for each landscape element composed from an auto-incrementer and the element type.',
         variant: 'filled',
         required: true,
-        template: 'Element: {{newfieldb284a817}}-{{newfielde48d0b3e}}',
+        template: 'Element: {{newfield9284a817}}-{{newfield648d0b3e}}',
         InputProps: {
           type: 'text',
           readOnly: true,
@@ -223,11 +223,11 @@ const testUiSpecification = {
           label: 'Element ID',
         },
         hrid: true,
-        linked: 'newfieldc18d25ed',
+        linked: 'newfield118d25ed',
         numberfield: 3,
         fieldselect10: 'A',
-        fieldselect11: 'newfieldb284a817',
-        fieldselect12: 'newfielde48d0b3e',
+        fieldselect11: 'newfield9284a817',
+        fieldselect12: 'newfield648d0b3e',
       },
       validationSchema: [['yup.string'], ['yup.required']],
       initialValue: '',
@@ -241,13 +241,13 @@ const testUiSpecification = {
         },
       },
     },
-    newfielde48d0b3e: {
+    newfield648d0b3e: {
       'component-namespace': 'faims-custom',
       'component-name': 'BasicAutoIncrementer',
       'type-returned': 'faims-core::String',
       'component-parameters': {
-        name: 'newfielde48d0b3e',
-        id: 'newfielde48d0b3e',
+        name: 'newfield648d0b3e',
+        id: 'newfield648d0b3e',
         variant: 'outlined',
         required: true,
         num_digits: 5,
@@ -266,7 +266,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfieldb284a817: {
+    newfield9284a817: {
       'component-namespace': 'faims-custom',
       'component-name': 'Select',
       'type-returned': 'faims-core::String',
@@ -330,8 +330,8 @@ const testUiSpecification = {
         InputLabelProps: {
           label: 'Element Type',
         },
-        id: 'newfieldb284a817',
-        name: 'newfieldb284a817',
+        id: 'newfield9284a817',
+        name: 'newfield9284a817',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -345,14 +345,14 @@ const testUiSpecification = {
         },
       },
     },
-    newfieldd31bf571: {
+    newfield231bf571: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePoint',
       'type-returned': 'faims-pos::Location',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfieldd31bf571',
-        id: 'newfieldd31bf571',
+        name: 'newfield231bf571',
+        id: 'newfield231bf571',
         helperText: '',
         variant: 'outlined',
         label: 'Take GPS Point',
@@ -571,7 +571,7 @@ const testUiSpecification = {
           'A read-only field composited from campus-zone and nickname to make a custom ID.',
         variant: 'filled',
         required: true,
-        template: 'Survey Area: {{newfield800c3f33}} {{newfieldefa5e828}}',
+        template: 'Survey Area: {{newfield800c3f33}} {{newfield6fa5e828}}',
         InputProps: {
           type: 'text',
           readOnly: true,
@@ -582,8 +582,8 @@ const testUiSpecification = {
         hrid: true,
         numberfield: 2,
         fieldselect10: 'newfield800c3f33',
-        fieldselect11: 'newfieldefa5e828',
-        linked: 'newfield757083da',
+        fieldselect11: 'newfield6fa5e828',
+        linked: 'newfield157083da',
       },
       validationSchema: [['yup.string'], ['yup.required']],
       initialValue: '',
@@ -597,7 +597,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield59aeae56: {
+    newfield59382156: {
       'component-namespace': 'faims-custom',
       'component-name': 'RelatedRecordSelector',
       'type-returned': 'faims-core::Relationship',
@@ -618,8 +618,8 @@ const testUiSpecification = {
           label: 'Landscape Elements',
         },
         FormHelperTextProps: {},
-        id: 'newfield59aeae56',
-        name: 'newfield59aeae56',
+        id: 'newfield59382156',
+        name: 'newfield59382156',
       },
       validationSchema: [['yup.string']],
       initialValue: [],
@@ -633,7 +633,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfieldefa5e828: {
+    newfield6fa5e828: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'TextField',
       'type-returned': 'faims-core::String',
@@ -650,8 +650,8 @@ const testUiSpecification = {
           label: 'Survey Area Nickname',
         },
         FormHelperTextProps: {},
-        id: 'newfieldefa5e828',
-        name: 'newfieldefa5e828',
+        id: 'newfield6fa5e828',
+        name: 'newfield6fa5e828',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -665,14 +665,14 @@ const testUiSpecification = {
         },
       },
     },
-    newfield2fffda00: {
+    newfield23821200: {
       'component-namespace': 'faims-custom',
       'component-name': 'TakePhoto',
       'type-returned': 'faims-attachment::Files',
       'component-parameters': {
         fullWidth: true,
-        name: 'newfield2fffda00',
-        id: 'newfield2fffda00',
+        name: 'newfield23821200',
+        id: 'newfield23821200',
         helperText: 'Take a photo',
         variant: 'outlined',
         label: 'Take Photo',
@@ -689,7 +689,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfield708566a7: {
+    newfield108566a7: {
       'component-namespace': 'formik-material-ui',
       'component-name': 'MultipleTextField',
       'type-returned': 'faims-core::String',
@@ -708,8 +708,8 @@ const testUiSpecification = {
           label: 'Journal',
         },
         FormHelperTextProps: {},
-        id: 'newfield708566a7',
-        name: 'newfield708566a7',
+        id: 'newfield108566a7',
+        name: 'newfield108566a7',
       },
       validationSchema: [['yup.string']],
       initialValue: '',
@@ -723,13 +723,13 @@ const testUiSpecification = {
         },
       },
     },
-    newfieldc75df5b6: {
+    newfield175df5b6: {
       'component-namespace': 'faims-custom',
       'component-name': 'Checkbox',
       'type-returned': 'faims-core::Bool',
       'component-parameters': {
-        name: 'newfieldc75df5b6',
-        id: 'newfieldc75df5b6',
+        name: 'newfield175df5b6',
+        id: 'newfield175df5b6',
         required: false,
         type: 'checkbox',
         FormControlLabelProps: {
@@ -779,7 +779,7 @@ const testUiSpecification = {
         },
       },
     },
-    newfieldf574953d: {
+    newfield7574953d: {
       'component-namespace': 'faims-custom',
       'component-name': 'RelatedRecordSelector',
       'type-returned': 'faims-core::Relationship',
@@ -799,11 +799,11 @@ const testUiSpecification = {
           label: 'Related Survey Area',
         },
         FormHelperTextProps: {},
-        id: 'newfieldf574953d',
-        name: 'newfieldf574953d',
+        id: 'newfield7574953d',
+        name: 'newfield7574953d',
         relation_linked_vocabPair: [
-          ['performe after', 'performed before'],
-          ['is similiar to', 'is similiar to'],
+          ['performed after', 'performed before'],
+          ['is similar to', 'is similar to'],
           ['overlaps with', 'is overlapped by'],
         ],
         related_type_label: 'Area',
@@ -828,13 +828,13 @@ const testUiSpecification = {
       fields: [
         'hridSurveyAreaForm',
         'newfield800c3f33',
-        'newfieldefa5e828',
+        'newfield6fa5e828',
         'newfield530132cf',
         'newfield5363dcf4',
-        'newfieldde848d82',
+        'newfield92848d82',
         'newfield8b0ba1cc',
-        'newfield59aeae56',
-        'newfieldf574953d',
+        'newfield59382156',
+        'newfield7574953d',
       ],
       uidesign: 'form',
       label: 'Survey Details',
@@ -842,12 +842,12 @@ const testUiSpecification = {
     LandscapeElementFormSECTION1: {
       fields: [
         'hridLandscapeElementForm',
-        'newfielde48d0b3e',
+        'newfield648d0b3e',
         'newfield45892ead',
-        'newfieldb284a817',
-        'newfieldd31bf571',
+        'newfield9284a817',
+        'newfield231bf571',
         'newfield122849e9',
-        'newfieldc75df5b6',
+        'newfield175df5b6',
         'newfield0d7f0350',
         'newfield48b901e2',
         'newfield42b1b859',
@@ -856,7 +856,7 @@ const testUiSpecification = {
       label: 'Description',
     },
     SurveyAreaFormSECTION2: {
-      fields: ['newfield2fffda00', 'newfield708566a7'],
+      fields: ['newfield23821200', 'newfield108566a7'],
       uidesign: 'form',
       label: 'Journal',
       is_logic: {
@@ -877,7 +877,7 @@ const testUiSpecification = {
   visible_types: ['SurveyAreaForm', 'LandscapeElementForm'],
 };
 
-const testValidationShema = {
+const testValidationSсhema = {
   _deps: [],
   _conditions: [],
   _options: {
@@ -942,7 +942,7 @@ const testValidationShema = {
       type: 'string',
       _type: 'string',
     },
-    newfieldefa5e828: {
+    newfield6fa5e828: {
       _deps: [],
       _conditions: [],
       _options: {
@@ -1009,7 +1009,7 @@ const testValidationShema = {
       _excludedEdges: [],
       _nullable: true,
     },
-    newfieldde848d82: {
+    newfield92848d82: {
       _deps: [],
       _conditions: [],
       _options: {
@@ -1055,7 +1055,7 @@ const testValidationShema = {
       type: 'string',
       _type: 'string',
     },
-    newfield59aeae56: {
+    newfield59382156: {
       _deps: [],
       _conditions: [],
       _options: {
@@ -1076,7 +1076,7 @@ const testValidationShema = {
       type: 'string',
       _type: 'string',
     },
-    newfieldf574953d: {
+    newfield7574953d: {
       _deps: [],
       _conditions: [],
       _options: {
@@ -1097,7 +1097,7 @@ const testValidationShema = {
       type: 'string',
       _type: 'string',
     },
-    newfield2fffda00: {
+    newfield23821200: {
       _deps: [],
       _conditions: [],
       _options: {
@@ -1122,7 +1122,7 @@ const testValidationShema = {
       _excludedEdges: [],
       _nullable: true,
     },
-    newfield708566a7: {
+    newfield108566a7: {
       _deps: [],
       _conditions: [],
       _options: {
@@ -1145,15 +1145,15 @@ const testValidationShema = {
     },
   },
   _nodes: [
-    'newfield708566a7',
-    'newfield2fffda00',
-    'newfieldf574953d',
-    'newfield59aeae56',
+    'newfield108566a7',
+    'newfield23821200',
+    'newfield7574953d',
+    'newfield59382156',
     'newfield8b0ba1cc',
-    'newfieldde848d82',
+    'newfield92848d82',
     'newfield5363dcf4',
     'newfield530132cf',
-    'newfieldefa5e828',
+    'newfield6fa5e828',
     'newfield800c3f33',
     'hridSurveyAreaForm',
   ],
@@ -1182,7 +1182,7 @@ const testRecordsByType = [
   {
     project_id: 'default||1685527104147-campus-survey-demo',
     record_id: 'rec-43daa632-a6d8-4ece-8edd-2f1bcc40690e',
-    record_label: 'Survey Area: Zone Charlie;  Super Chalie',
+    record_label: 'Survey Area: Zone Charlie;  Super Charlie',
     relation_type_vocabPair: ['is related to', 'is related to'],
   },
   {
@@ -1206,7 +1206,7 @@ const testRecordsByType = [
   {
     project_id: 'default||1685527104147-campus-survey-demo',
     record_id: 'rec-91bfdfef-6c31-433a-9047-4ede00454793',
-    record_label: 'Survey Area: Zone Delta;  sdfsdf',
+    record_label: 'Survey Area: Zone Delta;  test',
     relation_type_vocabPair: ['is related to', 'is related to'],
   },
   {
@@ -1286,7 +1286,9 @@ jest.mock('faims3-datamodel', () => ({
 }));
 
 jest.mock('../validation', () => ({
-  getValidationSchemaForViewset: jest.fn().mockReturnValue(testValidationShema),
+  getValidationSchemaForViewset: jest
+    .fn()
+    .mockReturnValue(testValidationSсhema),
 }));
 
 jest.mock('./fieldPersistentSetting', () => ({
@@ -1354,7 +1356,7 @@ describe('Check form component', () => {
 
     expect(
       screen.getByText(
-        testUiSpecification.fields.newfieldefa5e828['component-parameters']
+        testUiSpecification.fields.newfield6fa5e828['component-parameters']
           .helperText
       )
     ).toBeTruthy();
@@ -1375,14 +1377,14 @@ describe('Check form component', () => {
 
     expect(
       screen.getByText(
-        testUiSpecification.fields.newfield59aeae56['component-parameters']
+        testUiSpecification.fields.newfield59382156['component-parameters']
           .InputLabelProps.label
       )
     ).toBeTruthy();
 
     expect(
       screen.getByText(
-        testUiSpecification.fields.newfieldf574953d['component-parameters']
+        testUiSpecification.fields.newfield7574953d['component-parameters']
           .InputLabelProps.label
       )
     ).toBeTruthy();
@@ -1568,7 +1570,7 @@ describe('Check form component', () => {
     });
   });
 
-  it('Check text field newfieldefa5e828', async () => {
+  it('Check text field newfield6fa5e828', async () => {
     act(() => {
       render(
         <BrowserRouter>
@@ -1595,8 +1597,8 @@ describe('Check form component', () => {
       {timeout: 3000}
     );
     const inputNewfield8b0ba1cc = screen
-      .getByTestId('newfieldefa5e828')
-      .querySelector('#newfieldefa5e828');
+      .getByTestId('newfield6fa5e828')
+      .querySelector('#newfield6fa5e828');
 
     inputNewfield8b0ba1cc
       ? fireEvent.change(inputNewfield8b0ba1cc, {target: {value: 'Test text'}})
