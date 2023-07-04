@@ -31,11 +31,7 @@ import {
 import RecordForm from './form';
 import {BrowserRouter} from 'react-router-dom';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {
-  getFirstRecordHead,
-  getFullRecordData,
-  upsertFAIMSData,
-} from 'faims3-datamodel';
+import {getFullRecordData} from 'faims3-datamodel';
 import {getReturnedTypesForViewSet} from '../../../uiSpecification';
 
 const testProjectId = 'default||1685527104147-campus-survey-demo';
@@ -1556,8 +1552,12 @@ describe('Check form component', () => {
     inputNewfield8b0ba1cc
       ? fireEvent.change(inputNewfield8b0ba1cc, {target: {value: 'Test text'}})
       : null;
-    //@ts-ignore
-    expect(inputNewfield8b0ba1cc.value).toBe('Test text');
+
+    inputNewfield8b0ba1cc
+      ? expect((inputNewfield8b0ba1cc as HTMLTextAreaElement).value).toBe(
+          'Test text'
+        )
+      : null;
 
     await waitFor(() => {
       expect(getFullRecordData).toBeCalledTimes(1);
@@ -1597,11 +1597,16 @@ describe('Check form component', () => {
     const inputNewfield8b0ba1cc = screen
       .getByTestId('newfieldefa5e828')
       .querySelector('#newfieldefa5e828');
+
     inputNewfield8b0ba1cc
       ? fireEvent.change(inputNewfield8b0ba1cc, {target: {value: 'Test text'}})
       : null;
-    //@ts-ignore
-    expect(newfieldefa5e828.value).toBe('Test text');
+
+    inputNewfield8b0ba1cc
+      ? expect((inputNewfield8b0ba1cc as HTMLTextAreaElement).value).toBe(
+          'Test text'
+        )
+      : null;
 
     await waitFor(() => {
       expect(getFullRecordData).toBeCalledTimes(1);

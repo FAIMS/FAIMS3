@@ -18,21 +18,9 @@
  *   TODO
  */
 
-import {
-  act,
-  cleanup,
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from '@testing-library/react';
+import {act, cleanup, render, screen} from '@testing-library/react';
 
-import ProjectCreate from './project-create';
 import RecordCreate from './record-create';
-import {
-  useEventedPromise,
-  constantArgsShared,
-  PromiseState,
-} from '../pouchHook';
 
 const testProjectInfo = {
   created: 'Unknown',
@@ -76,9 +64,6 @@ class mockPromiseState {
 
 function mockUseEventedPromise() {
   return new mockPromiseState();
-  return new Promise(resolve => {
-    resolve(new mockPromiseState());
-  });
 }
 
 function mockGetFieldNamesFromFields() {
