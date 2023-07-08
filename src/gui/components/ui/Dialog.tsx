@@ -66,12 +66,17 @@ export default function FaimsDialog(props: DiagProps) {
       </DialogTitle>
       <DialogContent>
         {path !== null ? (
-          <img style={{objectFit: 'none'}} src={path} />
+          <img
+            data-testid="dialog-img"
+            style={{objectFit: 'none'}}
+            src={path}
+          />
         ) : isSyncing === 'true' ? (
           <DialogContentText id="alert-dialog-description">
             Photo/File is Syncing
             <CircularProgress
               size={24}
+              data-testid="dialog-progress"
               style={{
                 position: 'absolute',
                 top: '50%',

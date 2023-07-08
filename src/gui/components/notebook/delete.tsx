@@ -137,6 +137,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
     <div>
       {props.show_label ? (
         <Button
+          data-testid="delete-btn"
           variant="outlined"
           color="error"
           onClick={handleClickOpen}
@@ -145,7 +146,11 @@ export default function RecordDelete(props: RecordDeleteProps) {
           {!is_draft ? 'Delete Record' : 'Discard Draft'}
         </Button>
       ) : (
-        <IconButton aria-label="delete" onClick={handleClickOpen}>
+        <IconButton
+          data-testid="delete-btn"
+          aria-label="delete"
+          onClick={handleClickOpen}
+        >
           <DeleteIcon />
         </IconButton>
       )}
@@ -175,6 +180,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             color="error"
             disableElevation
             variant={'contained'}
+            data-testid="confirm-delete"
           >
             {is_draft ? 'Discard' : 'Delete'}
           </Button>
