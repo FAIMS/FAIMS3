@@ -455,7 +455,9 @@ export default function Record() {
   };
 
   if (uiSpec === null || type === null || hrid === null || conflicts === null)
-    return <CircularProgress size={12} thickness={4} />;
+    return (
+      <CircularProgress data-testid="progressbar" size={12} thickness={4} />
+    );
   const record_type =
     uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
       ? '' + uiSpec.viewsets[type]['label']
