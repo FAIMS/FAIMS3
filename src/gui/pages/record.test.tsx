@@ -117,7 +117,7 @@ const testInitialMergeDetails = {
         avp_id: 'avp-efb126c0-e585-44e8-a7a7-c8cb241ccf7c',
       },
       newfield8b0ba1cc: {
-        data: 'xwqrwq',
+        data: 'newfield-data',
         type: 'faims-core::String',
         annotations: {
           annotation: '',
@@ -218,7 +218,7 @@ const testFullRecordData = {
     newfield530132cf: '1',
     newfield5363dcf4: null,
     newfield13848d82: null,
-    newfield8b0ba1cc: 'xwqrwq',
+    newfield8b0ba1cc: 'newfield-data',
     newfield59324156: [],
     newfield0574953d: [],
     newfield25421200: null,
