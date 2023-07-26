@@ -44,6 +44,7 @@ function FormSubmitButton(props: any) {
   return disabled !== true ? (
     <Button
       type="button"
+      data-testid={props['data-testid']}
       color={formProps.isSubmitting ? undefined : 'primary'}
       variant={is_final_view && is_close === 'close' ? 'contained' : 'outlined'}
       disableElevation
@@ -112,6 +113,7 @@ export default function FormButtonGroup(props: any) {
               is_final_view={is_final_view}
             />
             <FormSubmitButton
+              data-testid="publish-close-record"
               disabled={disabled}
               formProps={formProps}
               text="Publish and Close Record"
