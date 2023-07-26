@@ -47,7 +47,7 @@ const theme = createTheme({
     //   800: colors.grey[800],
     // },
     secondary: {
-      main: '#FFA000',
+      main: '#E18200', //'#FFA000',
       contrastText: '#fff',
     },
     text: {
