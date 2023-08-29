@@ -118,10 +118,7 @@ jobs:
           export platform="github-actions-play"
           export serverprefix="testing"
           export REACT_APP_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh gh-play)
-          export REACT_APP_DEBUG_APP=true
-          export REACT_APP_DEBUG_POUCHDB=false
-          export REACT_APP_USE_HTTPS=true
+          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh android)
           export REACT_APP_SHOW_WIPE=true
           export REACT_APP_SHOW_NEW_NOTEBOOK=false
           export REACT_APP_SHOW_MINIFAUXTON=true
@@ -129,8 +126,9 @@ jobs:
           export REACT_APP_DIRECTORY_PORT=443
           export REACT_APP_PRODUCTION_BUILD=true          
           export REACT_APP_SERVICES=FAIMSTEXT
-          export REACT_APP_TAG=testingAndroid          
-          export REACT_APP_PROD_BUILD=true
+          export REACT_APP_USE_REAL_DATA=true
+          export REACT_APP_PROD_BUILD=true          
+          export REACT_APP_TAG=prodAndroid          
           export REACT_APP_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           git clean -xfd
           npm ci
@@ -143,7 +141,7 @@ jobs:
         run: |
           cd android
           bundle install
-          bundle exec fastlane deploy_testing_github
+          bundle exec fastlane deploy_fieldmark_closed_track
         env:
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
           JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}
