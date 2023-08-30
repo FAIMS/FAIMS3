@@ -28,10 +28,8 @@ jobs:
       should_run: ${{ steps.commitswithintime.outputs.has-new-commits-within-time }}
     steps:
       - uses: actions/checkout@v3
-      - name: print latest_commit
-        run: echo ${{ github.sha }}
         with:
-            fetch-depth: 0
+          fetch-depth: 0
 
       - name: Run CommitsWithinTime script
         uses: AlexHolderDeveloper/CommitsWithinTime@v1.1.11
