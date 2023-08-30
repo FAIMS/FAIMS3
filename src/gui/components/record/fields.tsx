@@ -65,7 +65,6 @@ export function getComponentFromFieldConfig(
         formProps.setFieldValue('updateField', fieldName);
       }}
       disabled={disabled}
-      isconflict={isconflict}
     />
   ) : (
     <Field
@@ -85,7 +84,6 @@ export function getComponentFromFieldConfig(
       }}
       issyncing={isSyncing}
       disabled={disabled}
-      isconflict={isconflict}
     />
   );
 }
