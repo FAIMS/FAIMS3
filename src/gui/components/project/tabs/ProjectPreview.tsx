@@ -316,7 +316,7 @@ export default function ProjectPreviewTab(props: ProjectPreviewProps) {
                           ui_specification={formuiSpec}
                           formProps={formProps}
                           annotation={{}}
-                          handerannoattion={updateannotation}
+                          handleAnnotation={updateannotation}
                           fieldNames={fieldNames}
                           disabled={true}
                         />

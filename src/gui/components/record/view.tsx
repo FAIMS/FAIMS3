@@ -37,7 +37,7 @@ type ViewProps = {
   formProps: FormikProps<{[key: string]: unknown}>;
   draftState?: RecordDraftState;
   annotation: any;
-  handerannoattion: any;
+  handleAnnotation: any;
   isSyncing?: string;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
@@ -50,7 +50,7 @@ type SingleComponentProps = {
   index: number;
   formProps: FormikProps<{[key: string]: unknown}>;
   annotation: any;
-  handerannoattion: any;
+  handleAnnotation: any;
   draftState?: RecordDraftState;
   conflictfields?: string[] | null; // those two props are handling the conflict icons
   handleChangeTab?: any;
@@ -122,7 +122,7 @@ function SingleComponent(props: SingleComponentProps) {
                   fieldName={fieldName}
                   field={fields[fieldName]}
                   annotation={props.annotation}
-                  handerannoattion={props.handerannoattion}
+                  handleAnnotation={props.handleAnnotation}
                   isannotationshow={isannotationshow}
                   isuncertityshow={isuncertityshow}
                   disabled={props.disabled}
@@ -191,7 +191,7 @@ export function ViewComponent(props: ViewProps) {
           formProps={props.formProps}
           draftState={props.draftState}
           annotation={props.annotation}
-          handerannoattion={props.handerannoattion}
+          handleAnnotation={props.handleAnnotation}
           index={index}
           key={index}
           isSyncing={props.isSyncing}

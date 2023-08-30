@@ -100,7 +100,7 @@ export function Annotation(props: any) {
 type AnnotationFieldProp = {
   fieldName: string;
   field: any;
-  handerannoattion: any;
+  handleAnnotation: any;
   annotation: any;
   disabled?: boolean;
   isxs?: boolean;
@@ -110,7 +110,7 @@ type AnnotationFieldProp = {
 };
 
 export function AnnotationField(props: AnnotationFieldProp) {
-  const {field, fieldName, handerannoattion} = props;
+  const {field, fieldName, handleAnnotation} = props;
   const disabled = props.disabled ?? false; // this is disabled on conflict tab , default value is false
   const [annotation, setAnnotation] = useState(
     props.annotation !== undefined
@@ -129,7 +129,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
   const handlerchangesAnnotation = (event: any) => {
     const value = event.target.value;
     setAnnotation(event.target.value);
-    handerannoattion(
+    handleAnnotation(
       event.target.name.replace('annotation', ''),
       value,
       'annotation'
@@ -139,7 +139,7 @@ export function AnnotationField(props: AnnotationFieldProp) {
   const handlerchangesUncertainty = (event: any) => {
     const value = !uncertainty;
     setUncertainty(value);
-    handerannoattion(
+    handleAnnotation(
       event.target.name.replace('uncertainty', ''),
       value,
       'uncertainty'
