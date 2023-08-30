@@ -296,7 +296,6 @@ class RecordForm extends React.Component<
     passed_revision_id: string | undefined
   ) {
     let revision_id = passed_revision_id;
-    if (DEBUG_APP) console.debug('check passed revision id', revision_id);
     if (revision_id === undefined) {
       try {
         // for new draft but saved record, get the revision instead of using the null
@@ -305,13 +304,10 @@ class RecordForm extends React.Component<
           this.props.record_id
         );
         revision_id = first_revision_id;
-        if (DEBUG_APP)
-          console.debug('get record revision', this.props.record_id);
       } catch (error) {
         if (DEBUG_APP) console.debug('new record', this.props.record_id);
       }
     }
-    // const revision_id = this.props.revision_id;
     try {
       let this_type;
       if (this.props.type === undefined) {
@@ -322,11 +318,7 @@ class RecordForm extends React.Component<
             revision_id
           );
           if (DEBUG_APP)
-            console.debug(
-              'record start initial',
-              this.props.record_id,
-              revision_id
-            );
+            console.debug('back from getFullRecordData', latest_record);
           if (latest_record === null) {
             this.props.handleSetDraftError(
               `Could not find data for record ${this.props.record_id}`
@@ -804,6 +796,7 @@ class RecordForm extends React.Component<
           return doc;
         })
         .then(doc => {
+          console.log('SAVING DOC', this.props.project_id, doc);
           return upsertFAIMSData(this.props.project_id, doc).then(
             revision_id => {
               // add to save the information for relationship when form saved,  TODO: need to be defined if it's saved when form been save
@@ -1110,13 +1103,16 @@ class RecordForm extends React.Component<
   }
 
   isReady(): boolean {
-    if (DEBUG_APP)
-      console.debug('isReady', {
-        type_cached: this.state.type_cached,
-        initialValues: this.state.initialValues,
-        ui_specification: this.props.ui_specification,
-        view_cached: this.state.view_cached,
-      });
+    if (DEBUG_APP) {
+      if (!this.state.type_cached)
+        console.debug('isReady false because type_cached is false');
+      if (!this.state.initialValues)
+        console.debug('isReady false because initialValues is false');
+      if (!this.props.ui_specification)
+        console.debug('isReady false because ui_specification is false');
+      if (!this.state.view_cached)
+        console.debug('isReady false because view_cached is false');
+    }
     return Boolean(
       this.state.type_cached &&
         this.state.initialValues &&
@@ -1294,7 +1290,7 @@ class RecordForm extends React.Component<
                           formProps={formProps}
                           draftState={this.draftState}
                           annotation={this.state.annotation}
-                          handerannoattion={this.updateannotation}
+                          handleAnnotation={this.updateannotation}
                           isSyncing={this.props.isSyncing}
                           conflictfields={this.props.conflictfields}
                           handleChangeTab={this.props.handleChangeTab}
