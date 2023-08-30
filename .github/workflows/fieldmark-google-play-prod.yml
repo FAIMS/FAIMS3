@@ -45,6 +45,8 @@ jobs:
     strategy:
       matrix:
         node-version: ['20']
+    outputs:
+      prnum: ${{ steps.prnum.outputs.value }}}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -96,8 +98,8 @@ jobs:
       - name: Get PR Number
         id: prnum
         run: |
-          echo -n "::set-output name=value::$(bin/getDescribeString.sh gh-play)"
-        shell: bash
+          echo -n "value=$(bin/getDescribeString.sh gh-play)" >> "$GITHUB_OUTPUT"        
+        shell: bash        
       - name: Decode Service Account Key JSON File
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
