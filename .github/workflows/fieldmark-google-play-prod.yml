@@ -46,7 +46,7 @@ jobs:
       matrix:
         node-version: ['20']
     outputs:
-      prnum: ${{ steps.prnum.outputs.value }}}
+      prnum: ${{ steps.prnum.outputs.value }}
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
