@@ -114,7 +114,7 @@ export function DataGridNoLink(props: {
       autoHeight
       density={'compact'}
       rowCount={5}
-      pageSizeOptions={[5]}
+      pageSizeOptions={[100]} // 100 here to disable an error thrown by MUI
       disableRowSelectionOnClick
       componentsProps={{
         filterPanel: {sx: {maxWidth: '96vw'}},
@@ -376,7 +376,7 @@ export default function DataGridFieldLinksComponent(
             autoHeight
             density={'compact'}
             rowCount={5}
-            pageSizeOptions={[5]}
+            pageSizeOptions={[100]} // 100 here to disable an error thrown by MUI
             disableRowSelectionOnClick
             components={{
               Footer: RecordLinksToolbar,
