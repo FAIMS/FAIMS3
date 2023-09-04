@@ -219,8 +219,11 @@ class RecordDraftState {
    * *Starts fetching draft data* (use getInitialValues() after calling this)
    */
   start(loadedProps: LoadableProps) {
-    this._fetchData(loadedProps);
-
+    try {
+      this._fetchData(loadedProps);
+    } catch (e: any) {
+      console.log('error in _fetchData', e);
+    }
     this.interval = window.setInterval(
       this._saveData.bind(this),
       DRAFT_SAVE_CYCLE
