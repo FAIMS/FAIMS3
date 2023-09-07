@@ -305,9 +305,9 @@ export async function update_listing(
       console.debug('No JWT token for:', listing_id);
     }
   } else {
-    if (DEBUG_APP) {
-      console.debug('Using JWT token for:', listing_id);
-    }
+    // if (DEBUG_APP) {
+    //   console.debug('Using JWT token for:', listing_id);
+    // }
     jwt_conn = {
       jwt_token: jwt_token,
     };

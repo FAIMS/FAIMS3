@@ -19,7 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
-import {RUNNING_UNDER_TEST, DEBUG_APP} from '../buildconfig';
+import {RUNNING_UNDER_TEST} from '../buildconfig';
 import {SyncStatusCallbacks} from 'faims3-datamodel';
 import {ConnectionInfo, PossibleConnectionInfo} from 'faims3-datamodel';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
@@ -118,9 +118,9 @@ export function ConnectionInfo_create_pouch<Content extends {}>(
       'jwt_token' in connection_info &&
       connection_info.jwt_token !== undefined
     ) {
-      if (DEBUG_APP) {
-        console.debug('Using JWT for connection', connection_info);
-      }
+      // if (DEBUG_APP) {
+      //   console.debug('Using JWT for connection', connection_info);
+      // }
       opts.headers.set('Authorization', `Bearer ${connection_info.jwt_token}`);
     }
     throttled_ping_sync_up();

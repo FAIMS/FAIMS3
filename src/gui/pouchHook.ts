@@ -233,7 +233,7 @@ export function useEventedPromise<A extends Array<unknown>, V>(
   dependencies: React.DependencyList,
   ...args: A
 ): PromiseState<V, A> {
-  console.log('useEventedPromise', label, dependencies);
+  //console.log('useEventedPromise', label, dependencies);
   const [state, setState] = useState(
     new PromiseState<V, A>({loading: undefined})
   );
@@ -315,7 +315,7 @@ export function useEventedPromise<A extends Array<unknown>, V>(
         promise_error_callback(triggerCount.current)
       );
     } catch (err: any) {
-      console.debug('useEventedPromise start_waiting_safe error', label, err);
+      //console.debug('useEventedPromise start_waiting_safe error', label, err);
       promise_value_callback(triggerCount.current)(err);
     }
   };

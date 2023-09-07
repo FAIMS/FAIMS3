@@ -297,7 +297,7 @@ export default function RecordLinkComponent(props: RecordLinksComponentProps) {
                   autoHeight
                   density={'compact'}
                   rowCount={5}
-                  pageSizeOptions={[5]}
+                  pageSizeOptions={[100]} // 100 here to disable an error thrown by MUI
                   disableRowSelectionOnClick
                   columns={
                     linkKey === 'links_to_record'

@@ -7,9 +7,7 @@ import {BrowserRouter} from 'react-router-dom';
 test('Check record link', () => {
   render(
     <BrowserRouter>
-      <RecordRouteDisplay link="/test-route">
-        <div>Test link</div>
-      </RecordRouteDisplay>
+      <RecordRouteDisplay link="/test-route">Test link</RecordRouteDisplay>
     </BrowserRouter>
   );
 
