@@ -222,8 +222,6 @@ export default function NoteBooks(props: NoteBookListProps) {
     counter === 0 && setLoading(false);
   }, [counter]);
 
-  console.log('pouchProjectList', pouchProjectList);
-
   return (
     <Box>
       {pouchProjectList === null ? (

@@ -19,7 +19,7 @@
  */
 
 import PouchDB from 'pouchdb';
-import {RUNNING_UNDER_TEST, DEBUG_APP} from '../buildconfig';
+import {RUNNING_UNDER_TEST} from '../buildconfig';
 import {SyncStatusCallbacks} from 'faims3-datamodel';
 import {ConnectionInfo, PossibleConnectionInfo} from 'faims3-datamodel';
 import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';

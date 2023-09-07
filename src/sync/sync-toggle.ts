@@ -144,8 +144,6 @@ export function listenSyncingProjectAttachments(
 }
 
 export function isSyncingProjectAttachments(active_id: ProjectID): boolean {
-  console.debug('current data_dbs', data_dbs);
-  console.debug('current active_db', active_db);
   return data_dbs[active_id]!.is_sync_attachments;
 }
 
@@ -157,7 +155,6 @@ export async function setSyncingProjectAttachments(
     logError(`Did not change attachment sync for project ${active_id}`);
     return; //Nothing to do, already same value
   }
-  console.info('Change attachment sync for project', active_id, syncing);
   const data_db = data_dbs[active_id];
   data_db.is_sync_attachments = syncing;
 
