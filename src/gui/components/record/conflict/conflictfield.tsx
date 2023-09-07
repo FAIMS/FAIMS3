@@ -202,7 +202,6 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
               fieldName,
               formProps,
               isSyncing,
-              true,
               true
             )}
             <br />
