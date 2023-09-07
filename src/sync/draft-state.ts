@@ -39,11 +39,11 @@ import {
   FAIMSTypeName,
   Relationship,
 } from 'faims3-datamodel';
-import {DEBUG_APP} from '../buildconfig';
 import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
-const DRAFT_SAVE_CYCLE = 5000;
+// how frequently do we trigger _saveData for the draft: 10 seconds
+const DRAFT_SAVE_CYCLE = 10000;
 
 type RelevantProps = {
   project_id: ProjectID;
@@ -224,6 +224,10 @@ class RecordDraftState {
     } catch (e: any) {
       console.log('error in _fetchData', e);
     }
+    // clear any existing timers before making a new one
+    if (this.interval) {
+      window.clearInterval(this.interval);
+    }
     this.interval = window.setInterval(
       this._saveData.bind(this),
       DRAFT_SAVE_CYCLE
@@ -253,9 +257,6 @@ class RecordDraftState {
     annotations: {[field_name: string]: Annotations},
     relationship: Relationship
   ) {
-    if (DEBUG_APP) {
-      console.debug('Render hook', values, annotations);
-    }
     if (this.fetch_error === null && this.data.state !== 'uninitialized') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being
@@ -273,29 +274,17 @@ class RecordDraftState {
 
       if (this.data.fields === null) {
         // 1st call to renderHook establishes the 'default' initial data
-        console.debug(
-          'Setting initial data for draft',
-          stable_stringify(values)
-        );
         this.data.fields = values;
       }
 
       if (this.data.annotations === null) {
         // 1st call to renderHook establishes the 'default' initial annotations
-        console.debug(
-          'Setting initial annotations for draft',
-          stable_stringify(annotations)
-        );
         // The JSON step here is to create a deep copy, to avoid both sets of
         // data being modified at the same time.
         this.data.annotations = JSON.parse(JSON.stringify(annotations));
       }
 
-      // 1st call to renderHook establishes the 'default' initial annotations
-      console.debug(
-        'Setting initial annotations for draft',
-        stable_stringify(annotations)
-      );
+      // 1st call to renderHook establishes the 'default' initial relationships
       this.data.relationship = JSON.parse(JSON.stringify(relationship));
       // Don't compare things that are in the staging area
       // but are completely absent from the form
@@ -309,44 +298,18 @@ class RecordDraftState {
         // So we use JSON stable stringify to compare
         //
         // undefined in gives undefined out. Which is perfectly fine
-        if (DEBUG_APP) {
-          console.debug('looking at', field);
-          console.debug(
-            'data',
-            field,
-            this.data.fields?.[field],
-            values?.[field]
-          );
-          console.debug(
-            'anno',
-            field,
-            this.data.annotations?.[field],
-            annotations?.[field]
-          );
-        }
         if (
           stable_stringify(this.data.fields?.[field]) !==
             stable_stringify(values?.[field]) ||
           stable_stringify(this.data.annotations?.[field]) !==
             stable_stringify(annotations?.[field])
         ) {
-          if (DEBUG_APP) {
-            console.debug('field touched', field);
-          }
           this.touched_fields.add(field);
-        }
-        if (DEBUG_APP) {
-          console.debug('finished looking at', field);
         }
       }
 
       if (this.touched_fields.size === 0) {
         return;
-      }
-      if (DEBUG_APP) {
-        console.debug('fields touched', this.touched_fields);
-        console.debug('data', this.data.fields, values);
-        console.debug('anno', this.data.annotations, annotations);
       }
 
       // If anything changed, we create the draft:
@@ -534,11 +497,21 @@ class RecordDraftState {
    * Pushes the currently touched values into the draft DB
    *
    * This is awaitable as a normal async function
+   *
+   * This is called on a timer every DRAFT_SAVE_CYCLE and saves the
+   * draft if there are changes.  Calls back to this.saveListener
+   * with true if saving is in progress, false if it has completed ok
+   * and an error message otherwise.  One error message is special
+   * 'no changes' means that no save was needed and that string
+   * is checked in the calling code.  It should really be an enum response.
+   * Any other error is passed back to this.saveListener and reported via the UI
+   *
+   * TODO: change to call saveListener with an enum response: 'saving', 'saved', 'no changes', 'error'
    */
   async _saveData(): Promise<void> {
     if (this.is_saving) {
       console.warn('Last stage save took longer than ', DRAFT_SAVE_CYCLE);
-      // Leave thes existing running _saveData function to finish its work
+      // Leave the existing running _saveData function to finish its work
       // Doesn't schedule any more saves to happen
       return;
     }
@@ -562,7 +535,6 @@ class RecordDraftState {
         this.data.field_types,
         this.data.relationship ?? {}
       );
-
       if (result.ok) {
         this.last_revision = result.rev;
         this.errors = 0;
@@ -577,6 +549,7 @@ class RecordDraftState {
     } catch (err: any) {
       this.errors += 1;
       this.save_error = err;
+      console.error('error in _saveData', err);
       if (this.errors === MAX_CONSEQUTIVE_SAVE_ERRORS) {
         this.saveListener(this.save_error!);
       }

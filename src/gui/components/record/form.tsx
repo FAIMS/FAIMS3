@@ -805,9 +805,6 @@ class RecordForm extends React.Component<
           );
         })
         .then(result => {
-          if (DEBUG_APP) {
-            console.log(result);
-          }
           const message = 'Record successfully saved';
           (this.context as any).dispatch({
             type: ActionType.ADD_ALERT,
@@ -816,7 +813,6 @@ class RecordForm extends React.Component<
               severity: 'success',
             },
           });
-          console.log('Saved record', result);
           return result;
         })
         .catch(err => {
