@@ -28,8 +28,7 @@ export function getComponentFromFieldConfig(
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>,
   isSyncing = 'false',
-  disabled = false,
-  isconflict = false
+  disabled = false
 ) {
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
