@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 
 import {DEBUG_POUCHDB} from '../buildconfig';
 
