@@ -74,7 +74,7 @@ export class TemplatedStringField extends React.Component<
       if (field_name !== textFieldProps.field.name) {
         let value = textFieldProps.form.values[field_name];
         if (typeof value === 'function')
-          value = getLocalDate(value).replaceAll('T', ' ');
+          value = getLocalDate(value).replace('T', ' ');
         field_values[field_name] = value;
       }
     }

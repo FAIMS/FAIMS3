@@ -277,7 +277,7 @@ function RecordsTable(props: RecordsTableProps) {
                     Created{' '}
                     {params.row.created !== undefined &&
                       params.row.created !== '' &&
-                      getLocalDate(params.row.created).replaceAll(
+                      getLocalDate(params.row.created).replace(
                         'T',
                         ' '
                       )}{' '}
@@ -293,7 +293,7 @@ function RecordsTable(props: RecordsTableProps) {
                     Updated{' '}
                     {params.row.updated !== undefined &&
                       params.row.updated !== '' &&
-                      getLocalDate(params.row.updated).replaceAll(
+                      getLocalDate(params.row.updated).replace(
                         'T',
                         ' '
                       )}{' '}

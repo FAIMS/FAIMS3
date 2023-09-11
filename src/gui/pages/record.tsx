@@ -251,7 +251,7 @@ export default function Record() {
         if (latest_record !== null) {
           setType(latest_record.type);
           setRecordinfo(
-            getLocalDate(latest_record.updated).replaceAll('T', ' ') +
+            getLocalDate(latest_record.updated).replace('T', ' ') +
               ' ' +
               latest_record.updated_by
           );

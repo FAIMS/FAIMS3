@@ -114,7 +114,7 @@ function RevisionDropList(props: ConflictDropSelectprops) {
       >
         {Object.keys(headerlist).map((key: string) => (
           <MenuItem value={key} disabled={key === disablerevision}>
-            {getLocalDate(headerlist[key]['created']).replaceAll('T', ' ') +
+            {getLocalDate(headerlist[key]['created']).replace('T', ' ') +
               ' ' +
               headerlist[key]['created_by']}
           </MenuItem>

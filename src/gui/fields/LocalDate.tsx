@@ -10,7 +10,6 @@ export default function getLocalDate(value: Date) {
   // getTimezoneOffset returns your local timezone offset in minutes
 
   const offset = value.getTimezoneOffset() * 1000 * 60; // convert to ms
-  console.debug('update time time zone', value.getTimezoneOffset());
   const offsetDate = new Date(value).valueOf() - offset; // (valueOf returns milliseconds)
   const date = new Date(offsetDate).toISOString();
   return date.substring(0, 19);

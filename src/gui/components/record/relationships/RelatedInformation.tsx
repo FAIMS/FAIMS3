@@ -845,7 +845,7 @@ export async function getDetailRelatedInformation(
 }
 function get_last_updated(updated_by: string, updated: Date | undefined) {
   if (updated === undefined) return updated_by;
-  const update_time = getLocalDate(updated).replaceAll('T', ' ');
+  const update_time = getLocalDate(updated).replace('T', ' ');
   console.debug(
     'update time',
     getLocalDate(updated),

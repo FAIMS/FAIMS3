@@ -238,7 +238,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {data['fields'][fieldName] !== undefined &&
-                getLocalDate(data['fields'][fieldName]['created']).replaceAll(
+                getLocalDate(data['fields'][fieldName]['created']).replace(
                   'T',
                   ' '
                 )}

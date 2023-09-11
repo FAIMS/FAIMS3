@@ -9,9 +9,7 @@
 		}
 	},
 	"server": {
-		"allowNavigation": [
-			"*.faims.edu.au"
-		]
+		"allowNavigation": []
 	},
 	"android": {
 		"webContentsDebuggingEnabled": true
