@@ -17,7 +17,7 @@
  * Description:
  *   Wrapper around local databases to preform a device-level dump.
  */
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import {jsonStringifyStream} from '@worker-tools/json-stream';
 
 import {draft_db} from './draft-storage';

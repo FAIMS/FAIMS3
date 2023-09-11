@@ -18,11 +18,9 @@
  *   TODO
  */
 
-import PouchDB from 'pouchdb';
-import {RUNNING_UNDER_TEST} from '../buildconfig';
+import PouchDB from 'pouchdb-browser';
 import {SyncStatusCallbacks} from 'faims3-datamodel';
 import {ConnectionInfo, PossibleConnectionInfo} from 'faims3-datamodel';
-import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
 import * as _ from 'lodash';
 /**
  * Configure local pouchdb settings; note that this applies to *ALL* local
@@ -35,12 +33,16 @@ import * as _ from 'lodash';
 // (otherwise the arrows flickering can be overwhelming)
 export const THROTTLE_TIME = 7000;
 export const local_pouch_options: any = {};
-if (RUNNING_UNDER_TEST) {
-  // enable memory adapter for testing
-  // console.log('Using memory store');
-  PouchDB.plugin(PouchDBAdaptorMemory);
-  local_pouch_options['adapter'] = 'memory';
-}
+
+// can't have this under vite browser build without configuration pain
+// import {RUNNING_UNDER_TEST} from '../buildconfig';
+// import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
+// if (RUNNING_UNDER_TEST) {
+//   // enable memory adapter for testing
+//   // console.log('Using memory store');
+//   PouchDB.plugin(PouchDBAdaptorMemory);
+//   local_pouch_options['adapter'] = 'memory';
+// }
 
 export function materializeConnectionInfo(
   base_info: ConnectionInfo,

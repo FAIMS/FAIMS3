@@ -41,7 +41,7 @@ export default function Footer(props: FooterProps) {
   /**
    * Display a large footer for INDEX and WORKSPACE routes
    * Show only the SlimFooter otherwise
-   * Optional byline if process.env.REACT_APP_SERVICES === 'FAIMSTEXT'
+   * Optional byline if import.meta.env.VITE_SERVICES === 'FAIMSTEXT'
    */
   // This is a MASSIVE hack because react-router is dumb and can't seem to work
   // out that shadowing a web API and doing it wrong is a bad idea...
@@ -62,8 +62,8 @@ export default function Footer(props: FooterProps) {
       ) : (
         <SlimFooter token={props.token} />
       )}
-      {/*{process.env.REACT_APP_SERVICES === 'FAIMSTEXT' && <EHTML />}*/}
-      {process.env.REACT_APP_SERVER === 'developer' && <DevelopTool />}
+      {/*{import.meta.env.VITE_SERVICES === 'FAIMSTEXT' && <EHTML />}*/}
+      {import.meta.env.VITE_SERVER === 'developer' && <DevelopTool />}
     </React.Fragment>
   );
 }
@@ -77,7 +77,7 @@ function DevelopTool() {
       </Grid>
       <Grid item xs={12} sm={6}>
         <code>
-          {process.env.REACT_APP_TAG}: {packageJson.name} v{packageJson.version}{' '}
+          {import.meta.env.VITE_TAG}: {packageJson.name} v{packageJson.version}{' '}
           ({COMMIT_VERSION})
         </code>
         {packageJson.name}

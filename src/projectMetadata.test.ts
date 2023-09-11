@@ -19,7 +19,7 @@
  */
 
 import {testProp, fc} from 'jest-fast-check';
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import {getProjectMetadata, setProjectMetadata} from './projectMetadata';
 import {ProjectID} from 'faims3-datamodel';
 import {equals} from './utils/eqTestSupport';

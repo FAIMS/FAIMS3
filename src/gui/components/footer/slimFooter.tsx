@@ -12,7 +12,7 @@ interface SlimFooterProps {
 const SlimFooter = (props: SlimFooterProps) => {
   /**
    * Slim footer with minimal necessary links to reduce user distraction
-   * Switch the contact email based on REACT_APP_COMMIT_VERSION
+   * Switch the contact email based on VITE_COMMIT_VERSION
    * Obfuscate email address
    */
   const theme = useTheme();

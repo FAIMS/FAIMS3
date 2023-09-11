@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import {v4 as uuidv4} from 'uuid';
 
 import {

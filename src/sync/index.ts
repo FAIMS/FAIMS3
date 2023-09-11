@@ -21,7 +21,7 @@
  */
 
 import {events} from './events';
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import pouchdbDebug from 'pouchdb-debug';
 import {ProjectID} from 'faims3-datamodel';
