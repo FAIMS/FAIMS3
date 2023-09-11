@@ -18,7 +18,7 @@
  *   Provides the config interface for the map form field from @faims-project/faims3-map-input
  */
 
-import {MapFormField} from '@faims-project/faims3-map-input';
+import {MapFormField} from './maps/MapFormField';
 import {Typography} from '@mui/material';
 import React from 'react';
 import {ProjectUIFields} from 'faims3-datamodel';
