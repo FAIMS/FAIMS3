@@ -18,11 +18,12 @@
 
 import {render, screen} from '@testing-library/react';
 import FaimsDialog from './Dialog';
+import {expect, vi, describe, it} from 'vitest';
 
 const testData = {
   open: true,
   project_id: 'test-dialog-id',
-  setopen: jest.fn(),
+  setopen: vi.fn(() => {}),
   filedId: 'test',
   isSyncing: 'true',
 };

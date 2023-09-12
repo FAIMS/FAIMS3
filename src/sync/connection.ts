@@ -35,14 +35,14 @@ export const THROTTLE_TIME = 7000;
 export const local_pouch_options: any = {};
 
 // can't have this under vite browser build without configuration pain
-// import {RUNNING_UNDER_TEST} from '../buildconfig';
-// import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
-// if (RUNNING_UNDER_TEST) {
-//   // enable memory adapter for testing
-//   // console.log('Using memory store');
-//   PouchDB.plugin(PouchDBAdaptorMemory);
-//   local_pouch_options['adapter'] = 'memory';
-// }
+import {RUNNING_UNDER_TEST} from '../buildconfig';
+//import PouchDBAdaptorMemory from 'pouchdb-adapter-memory';
+if (RUNNING_UNDER_TEST) {
+  // enable memory adapter for testing
+  // console.log('Using memory store');
+  //PouchDB.plugin(PouchDBAdaptorMemory);
+  local_pouch_options['adapter'] = 'memory';
+}
 
 export function materializeConnectionInfo(
   base_info: ConnectionInfo,

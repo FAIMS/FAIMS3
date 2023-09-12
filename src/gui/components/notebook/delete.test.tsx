@@ -21,6 +21,7 @@
 import RecordDelete from './delete';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {deleteStagedData} from '../../../sync/draft-storage';
+import {expect, vi, test} from 'vitest';
 
 const testDeleteData = {
   project_id: 'test-id',
@@ -28,7 +29,9 @@ const testDeleteData = {
   revision_id: 'test-revision-id',
   draft_id: 'test-draft-id',
   show_label: true,
-  handleRefresh: jest.fn(),
+  handleRefresh: vi.fn(() => {
+    return new Promise<any>(() => {});
+  }),
 };
 
 function mockGetCurrentUserId() {
@@ -37,16 +40,16 @@ function mockGetCurrentUserId() {
   });
 }
 
-jest.mock('../../../users', () => ({
+vi.mock('../../../users', () => ({
   getCurrentUserId: mockGetCurrentUserId,
 }));
 
-jest.mock('react-router-dom', () => ({
-  useNavigate: jest.fn(),
+vi.mock('react-router-dom', () => ({
+  useNavigate: vi.fn(() => {}),
 }));
 
-jest.mock('../../../sync/draft-storage', () => ({
-  deleteStagedData: jest.fn(),
+vi.mock('../../../sync/draft-storage', () => ({
+  deleteStagedData: vi.fn(() => {}),
 }));
 
 test('Check delete component', async () => {

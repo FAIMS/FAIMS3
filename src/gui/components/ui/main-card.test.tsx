@@ -20,6 +20,7 @@
 
 import {render, screen} from '@testing-library/react';
 import MainCard from './main-card';
+import {test, expect} from 'vitest';
 
 test('Check main card', () => {
   render(

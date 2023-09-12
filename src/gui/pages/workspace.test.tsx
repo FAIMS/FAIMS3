@@ -21,6 +21,7 @@
 import {render, screen} from '@testing-library/react';
 import {BrowserRouter as Router} from 'react-router-dom';
 import Workspace from './workspace';
+import {test, expect} from 'vitest';
 
 test('Check workspace component', async () => {
   render(

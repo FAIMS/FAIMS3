@@ -1,8 +1,9 @@
 import {render, screen} from '@testing-library/react';
 import RecordRouteDisplay from './record_link';
 import {BrowserRouter} from 'react-router-dom';
+import {test, expect} from 'vitest';
 
-/* jest.mock() */
+/* vi.mock() */
 
 test('Check record link', () => {
   render(

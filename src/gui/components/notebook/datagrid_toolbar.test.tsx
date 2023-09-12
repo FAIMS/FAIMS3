@@ -21,11 +21,12 @@
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {GridToolbarSearchRecordDataButton} from './datagrid_toolbar';
+import {expect, vi, test} from 'vitest';
 
 const testText = 'Survey';
 
 test('rendering and submitting search section', async () => {
-  const handleSubmit = jest.fn();
+  const handleSubmit = vi.fn(() => {});
   render(
     <GridToolbarSearchRecordDataButton handleQueryFunction={handleSubmit} />
   );

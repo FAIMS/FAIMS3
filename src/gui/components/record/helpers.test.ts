@@ -1,3 +1,4 @@
+/* eslint-disable node/no-unpublished-import */
 /*
  * Copyright 2021, 2022 Macquarie University
  *
@@ -19,6 +20,7 @@
  */
 
 import {firstDefinedFromList} from './helpers';
+import {describe, it, expect} from 'vitest';
 
 const data = [
   undefined as unknown as string,

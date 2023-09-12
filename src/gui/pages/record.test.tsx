@@ -25,6 +25,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
+import {expect, vi, test, afterEach} from 'vitest';
 
 import Record from './record';
 
@@ -1206,26 +1207,26 @@ afterEach(() => {
   cleanup();
 });
 
-jest.mock('react-router-dom', () => {
+vi.mock('react-router-dom', () => {
   return {
     useParams: () => ({
       project_id: testProjectInfo.project_id,
       record_id: 'rec-2d2f08c0-1335-4fb2-a5fa-5c77473795da',
       revision_id: 'frev-2e0743b1-9710-488b-a462-4fdd90cca0d9',
     }),
-    useNavigate: jest.fn(),
+    useNavigate: vi.fn(() => {}),
   };
 });
 
-jest.mock('../../uiSpecification', () => ({
+vi.mock('../../uiSpecification', () => ({
   getUiSpecForProject: mockGetUiSpecForProject,
 }));
 
-jest.mock('faims3-datamodel', () => ({
+vi.mock('faims3-datamodel', () => ({
   listFAIMSRecordRevisions: mockListFAIMSRecordRevisions,
   getHRIDforRecordID: mockGetHRIDforRecordID,
-  setAttachmentLoaderForType: jest.fn(),
-  setAttachmentDumperForType: jest.fn(),
+  setAttachmentLoaderForType: vi.fn(() => {}),
+  setAttachmentDumperForType: vi.fn(() => {}),
   getInitialMergeDetails: mockGetInitialMergeDetails,
   findConflictingFields: mockFindConflictingFields,
   getFullRecordData: mockGetFullRecordData,
@@ -1233,11 +1234,11 @@ jest.mock('faims3-datamodel', () => ({
   getParentPersistenceData: mockGetParentPersistenceData,
 }));
 
-jest.mock('../../projectMetadata', () => ({
+vi.mock('../../projectMetadata', () => ({
   getProjectMetadata: mockGetProjectMetadata,
 }));
 
-jest.setTimeout(20000);
+// jest.setTimeout(20000);
 
 test('Check record component', async () => {
   act(() => {

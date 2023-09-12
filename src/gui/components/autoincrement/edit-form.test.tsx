@@ -20,6 +20,7 @@
 
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import BasicAutoIncrementer from './edit-form';
+import {expect, describe, it} from 'vitest';
 
 const props = {
   project_id: '',

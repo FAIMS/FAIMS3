@@ -1,3 +1,4 @@
+/* eslint-disable node/no-unpublished-import */
 /*
  * Copyright 2021, 2022 Macquarie University
  *
@@ -18,13 +19,12 @@
  *   TODO
  */
 
-import {testProp, fc} from 'jest-fast-check';
+import {test, fc} from '@fast-check/vitest';
+import {describe, vi, expect} from 'vitest';
 import PouchDB from 'pouchdb-browser';
 import {getProjectMetadata, setProjectMetadata} from './projectMetadata';
 import {ProjectID} from 'faims3-datamodel';
 import {equals} from './utils/eqTestSupport';
-
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 const projdbs: any = {};
 
@@ -36,42 +36,41 @@ async function mockProjectDB(project_id: ProjectID) {
   return projdbs[project_id];
 }
 
-async function cleanProjectDBS() {
-  let db;
-  for (const project_id in projdbs) {
-    db = projdbs[project_id];
-    delete projdbs[project_id];
+// async function cleanProjectDBS() {
+//   let db;
+//   for (const project_id in projdbs) {
+//     db = projdbs[project_id];
+//     delete projdbs[project_id];
 
-    if (db !== undefined) {
-      try {
-        await db.destroy();
-        //await db.close();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  }
-}
+//     if (db !== undefined) {
+//       try {
+//         await db.destroy();
+//         //await db.close();
+//       } catch (err) {
+//         console.error(err);
+//       }
+//     }
+//   }
+// }
 
-jest.mock('./sync/index', () => ({
+vi.mock('./sync/index', () => ({
   getProjectDB: mockProjectDB,
 }));
 
 describe('roundtrip reading and writing to db', () => {
-  testProp(
+  test.prop([
+    fc.fullUnicodeString(), // project name
+    fc.fullUnicodeString(), // metadata_key
+    fc.unicodeJsonValue(), //  unicodeJsonObject(), // metadata
+  ])(
     'metadata roundtrip',
-    [
-      fc.fullUnicodeString(), // project name
-      fc.fullUnicodeString(), // metadata_key
-      fc.unicodeJsonObject(), // metadata
-    ],
-    async (project_id, metadata_key, metadata) => {
-      try {
-        await cleanProjectDBS();
-      } catch (err) {
-        console.error(err);
-        fail('Failed to clean dbs');
-      }
+    (project_id: string, metadata_key: string, metadata: any) => {
+      // try {
+      //   await cleanProjectDBS();
+      // } catch (err) {
+      //   console.error(err);
+      //   fail('Failed to clean dbs');
+      // }
       fc.pre(projdbs.length !== 0);
 
       return setProjectMetadata(project_id, metadata_key, metadata)

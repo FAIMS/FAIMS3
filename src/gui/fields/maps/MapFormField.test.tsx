@@ -1,9 +1,6 @@
-/**
- * @jest-environment jsdom
- */
 import React from 'react';
 import {fireEvent, render} from '@testing-library/react';
-
+import {it, expect} from 'vitest';
 import {Field, Formik, FormikConfig, FormikProps} from 'formik';
 import {MapFormField} from './MapFormField';
 import {noop} from 'lodash';
