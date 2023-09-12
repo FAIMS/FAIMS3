@@ -236,7 +236,7 @@ function directory_auth(): undefined | {username: string; password: string} {
 function is_testing() {
   const jest_worker_is_running = import.meta.env.JEST_WORKER_ID !== undefined;
   const jest_imported = typeof jest !== 'undefined';
-  const test_node_env = import.meta.env.NODE_ENV === 'test'; 
+  const test_node_env = import.meta.env.NODE_ENV === 'test';
   return jest_worker_is_running || jest_imported || test_node_env;
 }
 

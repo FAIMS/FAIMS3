@@ -18,24 +18,23 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
-import React, { useState } from 'react'
-import './MapFormField.css'
-import MapWrapper from './MapWrapper'
-import Button from '@mui/material/Button'
+import React, {useState} from 'react';
+import './MapFormField.css';
+import MapWrapper from './MapWrapper';
 
-import { Geolocation } from '@capacitor/geolocation'
-import type { GeoJSONFeatureCollection } from 'ol/format/GeoJSON'
+import {Geolocation} from '@capacitor/geolocation';
+import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 
-import { FieldProps } from 'formik'
-import { AlertError } from './Alert'
+import {FieldProps} from 'formik';
+import {AlertError} from './Alert';
 export interface MapFieldProps extends FieldProps {
-  label?: string
-  featureType: 'Point' | 'Polygon' | 'LineString'
-  geoTiff?: string
-  projection?: string
-  center?: Array<number>
-  zoom?: number
-  FormLabelProps?: any
+  label?: string;
+  featureType: 'Point' | 'Polygon' | 'LineString';
+  geoTiff?: string;
+  projection?: string;
+  center?: Array<number>;
+  zoom?: number;
+  FormLabelProps?: any;
 }
 
 export function MapFormField({
@@ -44,76 +43,76 @@ export function MapFormField({
   ...props
 }: MapFieldProps): JSX.Element {
   // get previous form state if available
-  let initialFeatures = {}
+  let initialFeatures = {};
   if (form.values[field.name]) {
-    initialFeatures = form.values[field.name]
+    initialFeatures = form.values[field.name];
   }
 
-  const [isAlert, setIsAlert] = useState(false)
-  const [geoPositionError, setGeoPositionError] = useState(false)
+  const [isAlert, setIsAlert] = useState(false);
+  const [geoPositionError, setGeoPositionError] = useState(false);
 
   const [drawnFeatures, setDrawnFeatures] =
-    useState<GeoJSONFeatureCollection>(initialFeatures)
+    useState<GeoJSONFeatureCollection>(initialFeatures);
 
   // default props.center if not defined
   if (!props.center) {
-    props.center = [0, 0]
+    props.center = [0, 0];
   }
-  const [center, setCenter] = useState(props.center)
+  const [center, setCenter] = useState(props.center);
 
   if (!props.zoom) {
-    props.zoom = 14
+    props.zoom = 14;
   }
 
   // default to point if not specified
   if (!props.featureType) {
-    props.featureType = 'Point'
+    props.featureType = 'Point';
   }
 
   if (!props.label) {
-    props.label = `Get ${props.featureType}`
+    props.label = `Get ${props.featureType}`;
   }
 
   const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
-    setDrawnFeatures(theFeatures)
-    form.setFieldValue(field.name, theFeatures)
-  }
+    setDrawnFeatures(theFeatures);
+    form.setFieldValue(field.name, theFeatures);
+  };
 
   const handleAlertClose = () => {
-    setIsAlert(false)
-  }
+    setIsAlert(false);
+  };
 
   // get the current GPS location if don't know the map center
   if (center[0] === 0 && center[1] === 0) {
     Geolocation.getCurrentPosition()
-      .then((result) => {
-        setCenter([result.coords.longitude, result.coords.latitude])
+      .then(result => {
+        setCenter([result.coords.longitude, result.coords.latitude]);
       })
-      .catch((err) => {
+      .catch(() => {
         if (!isAlert && !geoPositionError) {
-          setIsAlert(true)
-          setGeoPositionError(true)
+          setIsAlert(true);
+          setGeoPositionError(true);
         }
-      })
+      });
   }
 
-  let valueText = ''
+  let valueText = '';
   if (drawnFeatures.features && drawnFeatures.features.length > 0) {
-    const geom = drawnFeatures.features[0].geometry
+    const geom = drawnFeatures.features[0].geometry;
     switch (geom.type) {
       case 'Point':
         valueText =
           'Point: ' +
           geom.coordinates[0].toFixed(2).toString() +
           ', ' +
-          geom.coordinates[1].toFixed(2).toString()
-        break
+          geom.coordinates[1].toFixed(2).toString();
+        break;
       case 'Polygon':
-        valueText = 'Polygon: ' + (geom.coordinates[0].length - 1) + ' points'
-        break
+        valueText = 'Polygon: ' + (geom.coordinates[0].length - 1) + ' points';
+        break;
       case 'LineString':
-        valueText = 'Line String: ' + geom.coordinates.length + ' points'
-        break
+        valueText = 'Line String: ' + geom.coordinates.length + ' points';
+        break;
     }
   }
   return (
@@ -139,7 +138,7 @@ export function MapFormField({
         <p>{valueText}</p>
       </div>
     </div>
-  )
+  );
 }
 
 //
