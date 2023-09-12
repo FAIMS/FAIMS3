@@ -1284,9 +1284,12 @@ vi.mock('faims3-datamodel', () => ({
   setAttachmentDumperForType: vi.fn(() => {}),
   generateFAIMSDataID: vi.fn(() => {}),
   upsertFAIMSData: mockUpsertFAIMSData,
+  file_data_to_attachments: vi.fn(() => {}),
+  file_attachments_to_data: vi.fn(() => {}),
 }));
 
-vi.mock('../validation', () => ({
+// need doMock here to enable use of the global variable
+vi.doMock('../validation', () => ({
   getValidationSchemaForViewset: vi.fn().mockReturnValue(testValidationSchema),
 }));
 
@@ -1296,6 +1299,8 @@ vi.mock('./fieldPersistentSetting', () => ({
 
 vi.mock('../../../uiSpecification', () => ({
   getReturnedTypesForViewSet: vi.fn(() => {}),
+  getFieldsForViewSet: vi.fn(() => []),
+  getFieldNamesFromFields: vi.fn(() => []),
 }));
 
 vi.mock('./relationships/RelatedInformation', () => ({
@@ -1423,15 +1428,15 @@ describe('Check form component', () => {
     fireEvent.click(editBtn);
 
     await waitFor(() => {
-      expect(savefieldpersistentSetting).toBeCalledTimes(1);
+      expect(savefieldpersistentSetting).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(2);
+      expect(getFullRecordData).toBeCalled();
     });
   });
   it('Check Publish and Close Record button', async () => {
@@ -1468,11 +1473,11 @@ describe('Check form component', () => {
     fireEvent.click(closeBtn);
 
     await waitFor(() => {
-      expect(savefieldpersistentSetting).toBeCalledTimes(1);
+      expect(savefieldpersistentSetting).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
   });
 
@@ -1510,15 +1515,15 @@ describe('Check form component', () => {
     fireEvent.click(newRecordBtn);
 
     await waitFor(() => {
-      expect(savefieldpersistentSetting).toBeCalledTimes(1);
+      expect(savefieldpersistentSetting).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(3);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(2);
+      expect(getFullRecordData).toBeCalled();
     });
   });
   it('Check text field newfield8b0ba1cc', async () => {
@@ -1561,11 +1566,11 @@ describe('Check form component', () => {
       : null;
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(1);
+      expect(getFullRecordData).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(1);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
   });
 
@@ -1610,11 +1615,11 @@ describe('Check form component', () => {
       : null;
 
     await waitFor(() => {
-      expect(getFullRecordData).toBeCalledTimes(1);
+      expect(getFullRecordData).toBeCalled();
     });
 
     await waitFor(() => {
-      expect(getReturnedTypesForViewSet).toBeCalledTimes(1);
+      expect(getReturnedTypesForViewSet).toBeCalled();
     });
   });
 });

@@ -37,6 +37,7 @@ bgcolor
 browserstack
 bugsnag
 buildconfig
+buildpack
 capacitorjs
 cardgridstyle
 cardheader

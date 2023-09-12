@@ -1215,6 +1215,8 @@ vi.mock('react-router-dom', () => {
       revision_id: 'frev-2e0743b1-9710-488b-a462-4fdd90cca0d9',
     }),
     useNavigate: vi.fn(() => {}),
+    Link: vi.fn(() => {}), // this prevents the project name appearing
+    RouterLink: vi.fn(() => {}),
   };
 });
 
@@ -1232,6 +1234,8 @@ vi.mock('faims3-datamodel', () => ({
   getFullRecordData: mockGetFullRecordData,
   getDetailRelatedInformation: mockGetDetailRelatedInformation,
   getParentPersistenceData: mockGetParentPersistenceData,
+  file_data_to_attachments: vi.fn(() => {}),
+  file_attachments_to_data: vi.fn(() => {}),
 }));
 
 vi.mock('../../projectMetadata', () => ({

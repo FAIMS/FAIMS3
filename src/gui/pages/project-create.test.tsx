@@ -267,6 +267,8 @@ vi.mock('react-router-dom', () => {
     }),
 
     useNavigate: vi.fn(() => {}),
+    Link: vi.fn(() => {}), // this prevents the project name appearing
+    RouterLink: vi.fn(() => {}),
   };
 });
 
