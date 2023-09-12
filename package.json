@@ -140,6 +140,7 @@
     "@types/trusted-types": "^2.0.3",
     "@types/uuid": "9.0.1",
     "@types/yup": "0.29.14",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@vitejs/plugin-react-swc": "^3.3.2",
     "css-loader": "^6.7.3",
     "eslint-plugin-prettier": "^4.2.1",
