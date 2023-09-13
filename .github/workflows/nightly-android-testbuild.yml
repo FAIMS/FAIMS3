@@ -56,7 +56,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache node modules
         uses: actions/cache@v3
         env:
@@ -125,19 +125,19 @@ jobs:
         run: |
           export platform="github-actions-play"
           export serverprefix="testing"
-          export REACT_APP_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
-          export REACT_APP_COMMIT_VERSION=$(bin/getDescribeString.sh testing-android)
-          export REACT_APP_SHOW_WIPE=true
-          export REACT_APP_SHOW_NEW_NOTEBOOK=true
-          export REACT_APP_SHOW_MINIFAUXTON=true
-          export REACT_APP_DIRECTORY_HOST=db.testing.fieldmark.app
-          export REACT_APP_DIRECTORY_PORT=443
-          export REACT_APP_PRODUCTION_BUILD=true          
-          export REACT_APP_SERVICES=FAIMSTEXT
-          export REACT_APP_USE_REAL_DATA=true
-          export REACT_APP_PROD_BUILD=true          
-          export REACT_APP_TAG=prodAndroid          
-          export REACT_APP_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
+          export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
+          export VITE_COMMIT_VERSION=$(bin/getDescribeString.sh testing-android)
+          export VITE_SHOW_WIPE=true
+          export VITE_SHOW_NEW_NOTEBOOK=true
+          export VITE_SHOW_MINIFAUXTON=true
+          export VITE_DIRECTORY_HOST=db.testing.fieldmark.app
+          export VITE_DIRECTORY_PORT=443
+          export VITE_PRODUCTION_BUILD=true          
+          export VITE_SERVICES=FAIMSTEXT
+          export VITE_USE_REAL_DATA=true
+          export VITE_PROD_BUILD=true          
+          export VITE_TAG=prodAndroid          
+          export VITE_BUGSNAG_KEY=${{secrets.BUGSNAG_KEY}}
           git clean -xfd
           npm ci
           npm run build
