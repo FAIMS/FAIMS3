@@ -25,7 +25,6 @@
     "test": "vitest",
     "posttest": "npm run lint",
     "precoverage": "npm run compile",
-    "xcoverage": "NODE_ENV=test vite test --coverage --watchAll=false --detectOpenHandles --setupFilesAfterEnv=./setupTests.js --env=./test/custom-test-env.js --forceExit --testPathIgnorePatterns=integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",
     "coverage": "vitest run --coverage --watch=false",
     "preintegration": "npm run compile",
     "integration": "NODE_ENV=test react-scripts test --env=node --forceExit --runInBand --detectOpenHandles src/integration_tests --transformIgnorePatterns \"node_modules/(?!ol)/\"",

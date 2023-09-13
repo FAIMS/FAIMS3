@@ -29,6 +29,9 @@ const global = process.env.NODE_ENV === 'development' ? 'window' : 'global';
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/',
+  build: {
+    outDir: 'build',
+  },
   plugins: [react()],
   define: {
     global: global,

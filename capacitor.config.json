@@ -2,7 +2,7 @@
   "appId": "org.fedarch.faims3",
   "appName": "Fieldmark",
   "npmClient": "npm",
-  "webDir": "dist",
+  "webDir": "build",
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0
