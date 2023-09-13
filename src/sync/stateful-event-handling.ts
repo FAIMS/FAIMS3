@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import EventEmitter from 'events';
 import {ProjectObject, ProjectMetaObject} from 'faims3-datamodel';
 import {ProjectID} from 'faims3-datamodel';

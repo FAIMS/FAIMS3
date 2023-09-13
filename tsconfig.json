@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "ESNext",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
+    "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -16,7 +16,8 @@
     "noEmit": false,
     "jsx": "react-jsx",
     "rootDir": "./",
-    "outDir": "./dist/"
+    "outDir": "./dist/",
+    "types": ["vite/client", "vite-plugin-svgr/client"]
   },
   "include": ["./src/"],
   "exclude": ["node_modules/*", "test/*"]

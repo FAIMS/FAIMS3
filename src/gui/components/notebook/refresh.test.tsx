@@ -21,12 +21,13 @@
 import {render, screen, waitFor} from '@testing-library/react';
 import RefreshNotebook from './refresh';
 import userEvent from '@testing-library/user-event';
+import {vi, test, expect} from 'vitest';
 
 const testProjectName = 'Campus Survey Demo';
 const testText = 'a few seconds ago';
 
 test('Check refresh button', async () => {
-  const handleRefresh = jest.fn(() => Promise.resolve());
+  const handleRefresh = vi.fn(() => Promise.resolve());
   render(
     <RefreshNotebook
       project_name={testProjectName}
@@ -47,9 +48,9 @@ test('Check refresh button', async () => {
 
   await waitFor(() => expect(handleRefresh).toHaveBeenCalledTimes(1));
 
-  jest.useFakeTimers();
+  vi.useFakeTimers();
   setTimeout(() => {
     expect(refreshAlert.textContent).toContain(testText);
   }, 2000);
-  jest.runAllTimers();
+  vi.runAllTimers();
 });

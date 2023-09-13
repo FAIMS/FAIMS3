@@ -20,6 +20,7 @@
 
 import {render, screen} from '@testing-library/react';
 import LoadingApp from './loadingApp';
+import {test, expect} from 'vitest';
 
 test('Check loadingApp component', () => {
   render(<LoadingApp />);

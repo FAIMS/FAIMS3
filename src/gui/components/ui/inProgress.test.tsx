@@ -20,6 +20,7 @@
 
 import {render, screen} from '@testing-library/react';
 import InProgress from './inProgress';
+import {test, expect} from 'vitest';
 
 test('Check inProgress element', () => {
   render(<InProgress />);

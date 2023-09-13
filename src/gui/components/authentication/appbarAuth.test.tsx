@@ -19,6 +19,7 @@
 import {render, screen} from '@testing-library/react';
 import AppBarAuth from './appbarAuth';
 import {BrowserRouter} from 'react-router-dom';
+import {describe, expect, it} from 'vitest';
 
 const testToken = {
   username: 'admin',

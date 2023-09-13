@@ -113,7 +113,7 @@ export function SettingCard(props: SettingCard) {
         <NoteIcon />
       </ListItem>
       {/* add for branching logic setting, this is for testing/developing ONLY, not ready for production yet */}
-      {String(process.env.REACT_APP_SERVER) === 'developer' && (
+      {String(import.meta.env.VITE_SERVER) === 'developer' && (
         <ListItem
           button
           onClick={() => handelonClick('logic', key_id)}

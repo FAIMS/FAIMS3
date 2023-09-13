@@ -13,13 +13,8 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: jest.test.js
+ * Filename: vite-env.d.ts
  * Description:
- *   Always-good test script to make sure that we have one test which always exists
+ *   Vite types
  */
-
-test('testing works', () => {
-  expect(3).toBe(3);
-});
-
-export {};
+/// <reference types="vite/client" />

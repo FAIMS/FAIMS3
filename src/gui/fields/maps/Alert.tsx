@@ -1,5 +1,5 @@
 /*
- * Copyright 2021, 2022 Macquarie University
+ * Copyright 2021 Macquarie University
  *
  * Licensed under the Apache License Version 2.0 (the, "License");
  * you may not use, this file except in compliance with the License.
@@ -13,20 +13,26 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: actions.ts
+ * Filename: Alert.tsx
  * Description:
- *   Jest mock stub for the barcode scanner.
+ *   Alert for MapFormField
  */
-import {vi} from 'vitest';
 
-vi.mock('@capacitor-community/barcode-scanner', () => {
-  return {
-    hideBackground: vi.fn(() => {}),
-    startScan: vi.fn(() => {}),
-    showBackground: vi.fn(() => {}),
-    checkPermission: vi.fn(() => {}),
-    openAppSettings: vi.fn(() => {}),
-  };
-});
+import {Alert, Snackbar} from '@mui/material';
+import {FC} from 'react';
+interface AlertProps {
+  isOpen: boolean;
+  handleClose: () => void;
+}
 
-export {};
+export const AlertError: FC<AlertProps> = (props: AlertProps) => {
+  const {isOpen, handleClose} = props;
+
+  return (
+    <Snackbar open={isOpen} autoHideDuration={2500} onClose={handleClose}>
+      <Alert onClose={handleClose} severity="error" sx={{width: '100%'}}>
+        User denied geolocation access
+      </Alert>
+    </Snackbar>
+  );
+};

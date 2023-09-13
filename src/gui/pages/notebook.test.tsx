@@ -26,6 +26,7 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import Notebook from './notebook';
+import {expect, vi, afterEach, it, describe} from 'vitest';
 
 import {useNavigate} from 'react-router-dom';
 
@@ -49,16 +50,18 @@ export function mockGetProjectInfo(project_id: string) {
   return project_id ? testProjectInfo : undefined;
 }
 
-jest.mock('react-router-dom', () => {
+vi.mock('react-router-dom', () => {
   return {
     useParams: () => ({
       project_id: testProjectInfo.project_id,
     }),
-    useNavigate: jest.fn(),
+    useNavigate: vi.fn(() => {}),
+    Link: vi.fn(() => {}), // this prevents the project name appearing
+    RouterLink: vi.fn(() => {}),
   };
 });
 
-jest.mock('../../databaseAccess', () => ({
+vi.mock('../../databaseAccess', () => ({
   getProjectInfo: mockGetProjectInfo,
 }));
 

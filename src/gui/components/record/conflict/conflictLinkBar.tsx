@@ -45,7 +45,7 @@ function get_updated_by(conflict: any) {
   let updated_by = '';
 
   if (conflict.updated !== undefined) {
-    updated_by = getLocalDate(conflict.updated).replaceAll('T', ' ');
+    updated_by = getLocalDate(conflict.updated).replace('T', ' ');
   }
   return updated_by;
 }

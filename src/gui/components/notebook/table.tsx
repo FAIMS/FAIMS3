@@ -204,7 +204,7 @@ function RecordsTable(props: RecordsTableProps) {
                 Created at{' '}
                 {params.row.created !== undefined &&
                   params.row.created !== '' &&
-                  getLocalDate(params.row.created).replaceAll('T', ' ')}
+                  getLocalDate(params.row.created).replace('T', ' ')}
               </Typography>
               <Typography
                 color="textSecondary"
