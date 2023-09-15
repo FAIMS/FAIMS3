@@ -18,7 +18,6 @@
  *   A rich text field that will render markdown content.
  */
 
-import React, {useEffect} from 'react';
 import MarkdownIt from 'markdown-it';
 
 interface Props {
@@ -31,11 +30,7 @@ export const RichTextField = ({content}: Props) => {
   const md = new MarkdownIt();
   const renderedContent = md.render(content);
 
-  return (
-    <div>
-      <div dangerouslySetInnerHTML={{__html: renderedContent}} />
-    </div>
-  );
+  return <div dangerouslySetInnerHTML={{__html: renderedContent}} />;
 };
 
 const uiSpec = {
