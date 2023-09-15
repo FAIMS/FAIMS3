@@ -24,19 +24,6 @@ import {getComponentFromFieldConfig} from '../components/record/fields';
 import {render} from '@testing-library/react';
 import {Formik, FormikConfig, FormikProps} from 'formik';
 
-const customRender = (
-  ui: React.ReactElement,
-  formikOpts: Omit<Props, 'children'>,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => {
-  return render(ui, {
-    wrapper: function CustomRendererWrapper(props) {
-      return <FormikWrapper {...formikOpts} {...props} />;
-    },
-    ...options,
-  });
-};
-
 /**
  * Render a form element via Formik for testing
  * @param ui - the form element to render
@@ -82,11 +69,12 @@ export const instantiateField = (uiSpec: any) => {
     touched: {},
     handleChange: () => {},
     setFieldValue: () => {},
+    isSubmitting: false,
+    isValidating: false,
+    submitCount: 0,
   };
+  // can't get all of the members of FormikProps, so just ignore the error
+  // @ts-ignore
   const element = getComponentFromFieldConfig(uiSpec, 'test', formProps);
   return renderForm(element);
 };
-
-export * from '@testing-library/react';
-
-export {customRender as render};
