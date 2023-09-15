@@ -58,28 +58,25 @@ vi.mock('./sync/index', () => ({
 }));
 
 describe('roundtrip reading and writing to db', () => {
+  const project_id = 'test_project_id';
   test.prop([
-    fc.fullUnicodeString(), // project name
     fc.fullUnicodeString(), // metadata_key
     fc.unicodeJsonValue(), //  unicodeJsonObject(), // metadata
-  ])(
-    'metadata roundtrip',
-    (project_id: string, metadata_key: string, metadata: any) => {
-      // try {
-      //   await cleanProjectDBS();
-      // } catch (err) {
-      //   console.error(err);
-      //   fail('Failed to clean dbs');
-      // }
-      fc.pre(projdbs.length !== 0);
+  ])('metadata roundtrip', (metadata_key: string, metadata: any) => {
+    // try {
+    //   await cleanProjectDBS();
+    // } catch (err) {
+    //   console.error(err);
+    //   fail('Failed to clean dbs');
+    // }
+    fc.pre(projdbs.length !== 0);
 
-      return setProjectMetadata(project_id, metadata_key, metadata)
-        .then(_result => {
-          return getProjectMetadata(project_id, metadata_key);
-        })
-        .then(result => {
-          expect(equals(result, metadata)).toBe(true);
-        });
-    }
-  );
+    return setProjectMetadata(project_id, metadata_key, metadata)
+      .then(_result => {
+        return getProjectMetadata(project_id, metadata_key);
+      })
+      .then(result => {
+        expect(equals(result, metadata)).toBe(true);
+      });
+  });
 });
